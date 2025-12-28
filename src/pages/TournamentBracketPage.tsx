@@ -41,7 +41,7 @@ const TournamentBracketPage = () => {
 
   const [isLeaving, setIsLeaving] = useState(false);
 
-  // Bracket'ten ayrılma fonksiyonu - aktif maç varsa rakibi kazanan yap
+  // Bracket'ten ayrılma fonksiyonu
   const handleLeaveBracket = async () => {
     if (!user || !tournamentId) return;
 
@@ -49,7 +49,6 @@ const TournamentBracketPage = () => {
     try {
       const currentRound = currentTournament?.current_round || 1;
 
-      // Kullanıcının aktif maçını bul
       const myActiveMatch = matches.find(
         (m) =>
           m.round === currentRound &&
@@ -58,7 +57,6 @@ const TournamentBracketPage = () => {
       );
 
       if (myActiveMatch) {
-        // Rakibi kazanan yap
         const winnerId = myActiveMatch.player1_id === user.id ? myActiveMatch.player2_id : myActiveMatch.player1_id;
 
         console.log(`🚪 Bracket'ten ayrılıyor, maç ${myActiveMatch.id} - Kazanan: ${winnerId}`);
@@ -74,7 +72,6 @@ const TournamentBracketPage = () => {
         toast.info("Maçı bıraktınız, rakibiniz kazandı");
       }
 
-      // Turnuvadan ayrıl
       await leaveTournament();
       navigate("/tournament");
     } catch (error) {
@@ -89,17 +86,15 @@ const TournamentBracketPage = () => {
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
-  const navigatedMatchIdRef = useRef<string | null>(null); // Hangi maça gidildi takibi
-  const [initialLoading, setInitialLoading] = useState(true); // Bracket'e ilk girişte hemen spinner göster
+  const navigatedMatchIdRef = useRef<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  // 🔒 Tamamlanmış maçtan döndüyse, o maça tekrar gitmeyi engelle
   const fromCompletedMatchRef = useRef<string | null>(null);
   useEffect(() => {
     const state = location.state as { fromCompletedMatch?: string } | null;
     if (state?.fromCompletedMatch) {
       console.log(`🔒 Came from completed match: ${state.fromCompletedMatch}, blocking re-navigation`);
       fromCompletedMatchRef.current = state.fromCompletedMatch;
-      // State'i temizle - browser history'de kalmasın
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -108,34 +103,28 @@ const TournamentBracketPage = () => {
   const matchesStartedRef = useRef<string | null>(null);
   const advancingRef = useRef(false);
 
-  // Fetch tournament on mount
   useEffect(() => {
     if (tournamentId) {
-      setInitialLoading(true); // Her yeni tournamentId'de loading'i resetle
+      setInitialLoading(true);
       fetchTournamentDetails(tournamentId).finally(() => {
-        // Data yüklendikten sonra kısa bir delay ile initialLoading'i kapat
         setTimeout(() => setInitialLoading(false), 300);
       });
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
 
-  // Reset navigation flag on round change
   useEffect(() => {
     if (currentTournament?.current_round) {
       console.log(`🔄 Round changed to ${currentTournament.current_round}, resetting navigation flags`);
       setNavigatedToGame(false);
       matchesStartedRef.current = null;
-      navigatedMatchIdRef.current = null; // Yeni round için match ref'i de sıfırla
-      // NOT: completedMatchIdsRef temizlenmemeli - eski tamamlanmış maçları hatırlamalı
+      navigatedMatchIdRef.current = null;
     }
   }, [currentTournament?.current_round]);
 
-  // Start all matches for current round
+  // Start matches logic
   const startAllMatches = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament) return;
-
-    // Only creator starts matches
     if (currentTournament.creator_id !== user.id) return;
 
     const currentRound = currentTournament.current_round || 1;
@@ -147,7 +136,6 @@ const TournamentBracketPage = () => {
     console.log(`🎮 Round ${currentRound} maçları başlatılıyor...`);
 
     try {
-      // Get pending matches for this round
       const { data: pendingMatches } = await supabase
         .from("tournament_matches")
         .select("*")
@@ -157,7 +145,6 @@ const TournamentBracketPage = () => {
 
       if (!pendingMatches || pendingMatches.length === 0) return;
 
-      // Get bot info
       const botIds = new Set<string>();
       participants.forEach((p) => {
         if (p.is_bot && p.user_id) botIds.add(p.user_id);
@@ -168,7 +155,6 @@ const TournamentBracketPage = () => {
         const player2IsBot = botIds.has(match.player2_id || "") || match.player2_id?.startsWith("bot_");
 
         if (player1IsBot && player2IsBot) {
-          // Both bots - complete immediately
           const p1Score = Math.floor(Math.random() * 50) + 20;
           const p2Score = Math.floor(Math.random() * 50) + 20;
           const winnerId = p1Score >= p2Score ? match.player1_id : match.player2_id;
@@ -185,8 +171,6 @@ const TournamentBracketPage = () => {
 
           console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
         } else {
-          // Real player match - start countdown
-          // Özel oda ile aynı mantık: 5sn buffer + 5sn countdown + 120sn oyun = 130sn
           const now = new Date();
           const countdownStartedAt = now.toISOString();
           const endsAt = new Date(now.getTime() + 130 * 1000).toISOString();
@@ -200,11 +184,10 @@ const TournamentBracketPage = () => {
             })
             .eq("id", match.id);
 
-          console.log(`⚔️ Maç başladı: ${match.id}, countdown_started_at: ${countdownStartedAt}, ends_at: ${endsAt}`);
+          console.log(`⚔️ Maç başladı: ${match.id}`);
         }
       }
 
-      // Check if we need to advance
       setTimeout(() => checkAndAdvance(), 2000);
     } catch (error) {
       console.error("❌ Maç başlatma hatası:", error);
@@ -219,9 +202,10 @@ const TournamentBracketPage = () => {
 
     const currentRound = currentTournament.current_round || 1;
 
+    // TÜM alanları çekiyoruz (*) ki winner_id'ye erişelim
     const { data: roundMatches } = await supabase
       .from("tournament_matches")
-      .select("*") // status yerine * çekiyoruz ki winner_id'ye erişelim
+      .select("*")
       .eq("tournament_id", tournamentId)
       .eq("round", currentRound);
 
@@ -237,22 +221,18 @@ const TournamentBracketPage = () => {
     } else if (allCompleted && currentRound === 3) {
       // FİNAL BİTTİ - KAZANANI BUL VE BİLDİRİM GÖNDER
 
-      // 1. Turnuvayı tamamlandı olarak işaretle
       await supabase
         .from("tournaments")
         .update({ status: "completed", finished_at: new Date().toISOString() })
         .eq("id", tournamentId);
 
-      // 2. Final maçını ve kazananı bul
-      const finalMatch = roundMatches[0]; // Final tek maçtır
+      const finalMatch = roundMatches[0];
       if (finalMatch && finalMatch.winner_id) {
-        // Kazananın ismini bulmak için profile ihtiyacımız olabilir
-        // (State'teki participants array'inden bulabiliriz)
         const winnerProfile = participants.find((p) => p.user_id === finalMatch.winner_id);
         const winnerName = winnerProfile?.profiles?.username || "Bir Oyuncu";
 
-        // 3. Bildirim Fonksiyonunu Çağır (RPC)
-        await supabase.rpc("notify_tournament_end", {
+        // Bildirim RPC çağrısı - HATA DÜZELTİLDİ: (supabase.rpc as any)
+        await (supabase.rpc as any)("notify_tournament_end", {
           p_tournament_id: tournamentId,
           p_winner_id: finalMatch.winner_id,
           p_winner_name: winnerName,
@@ -263,20 +243,16 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, user, currentTournament, advanceToNextRound, participants]);
 
-  // ⏰ SÜRESİ DOLAN MAÇLARI OTOMATİK TAMAMLA (Her 5 saniyede kontrol)
-  // Oyuncular uygulamayı kill ederse veya bağlantı koparsa maç takılı kalır
-  // Bu mekanizma süresi dolan maçları mevcut skora göre tamamlar
+  // Süresi dolan maç kontrolü
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.status !== "in_progress") return;
-    // Sadece kurucu kontrol etsin (race condition önleme)
     if (currentTournament.creator_id !== user.id) return;
 
     const checkExpiredMatches = async () => {
       try {
-        // Süresi dolmuş in_progress maçları bul
         const { data: expiredMatches } = await supabase
           .from("tournament_matches")
           .select("*")
@@ -286,23 +262,12 @@ const TournamentBracketPage = () => {
 
         if (!expiredMatches || expiredMatches.length === 0) return;
 
-        console.log(`⏰ ${expiredMatches.length} adet süresi dolmuş maç tespit edildi`);
-
         for (const match of expiredMatches) {
           const p1Score = match.player1_score || 0;
           const p2Score = match.player2_score || 0;
-
-          // Kazananı belirle (beraberlikte önce player1)
           let winnerId: string;
-          if (p1Score >= p2Score) {
-            winnerId = match.player1_id;
-          } else {
-            winnerId = match.player2_id;
-          }
-
-          console.log(
-            `⏰ Maç otomatik tamamlanıyor: ${match.id} | P1: ${p1Score} vs P2: ${p2Score} | Kazanan: ${winnerId?.slice(-8)}`,
-          );
+          if (p1Score >= p2Score) winnerId = match.player1_id;
+          else winnerId = match.player2_id;
 
           await supabase
             .from("tournament_matches")
@@ -311,12 +276,10 @@ const TournamentBracketPage = () => {
               winner_id: winnerId,
             })
             .eq("id", match.id)
-            .eq("status", "in_progress"); // Double-check status
+            .eq("status", "in_progress");
         }
 
-        // Maçlar tamamlandıysa round ilerlemeyi kontrol et ve data yenile
         if (expiredMatches.length > 0) {
-          toast.info(`${expiredMatches.length} maç süre dolduğu için tamamlandı`);
           fetchTournamentDetails(tournamentId);
           setTimeout(() => checkAndAdvance(), 1000);
         }
@@ -325,10 +288,7 @@ const TournamentBracketPage = () => {
       }
     };
 
-    // İlk kontrol
     checkExpiredMatches();
-
-    // Her 5 saniyede bir kontrol et
     expiredMatchCheckRef.current = setInterval(checkExpiredMatches, 5000);
 
     return () => {
@@ -339,7 +299,6 @@ const TournamentBracketPage = () => {
     };
   }, [tournamentId, user?.id, currentTournament?.status, currentTournament?.creator_id, checkAndAdvance]);
 
-  // Countdown for next round
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
     if (!currentTournament.next_round_starts_at) return;
@@ -371,43 +330,20 @@ const TournamentBracketPage = () => {
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
 
-  // Navigate to game when my match starts - with realtime subscription
-  // 🔒 Tamamlanmış maçlara gitmeyi önle ve döngüyü kır
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
-    // Navigasyon fonksiyonu - aynı maça veya tamamlanmış maça gitmeyi önle
     const navigateToMatch = (match: any, source: string) => {
-      // 1. KORUMA: LocalStorage kontrolü (En önemli kısım burası)
-      // GamePage çıkarken bu kaydı oluşturuyor. Eğer varsa, veritabanı "in_progress" dese bile gitme.
       const completedKey = `tournament_match_completed_${match.id}`;
       const isLocallyCompleted = localStorage.getItem(completedKey);
 
-      if (isLocallyCompleted) {
-        console.log(`🚫 Match ${match.id} yerel olarak tamamlanmış (localStorage), navigasyon engellendi.`);
-        return false;
-      }
-
-      // 2. KORUMA: Eğer maç zaten completed statüsündeyse gitme
-      if (match.status === "completed") {
-        console.log(`🚫 Match ${match.id} is completed, skipping navigation`);
-        return false;
-      }
-
-      // 3. KORUMA: Aynı maça zaten gidildiyse tekrar gitme (Ref kontrolü)
-      if (navigatedMatchIdRef.current === match.id) {
-        console.log(`🚫 Already navigated to match ${match.id}, skipping`);
-        return false;
-      }
-
-      // 4. KORUMA: Kazananı belli olan maça gitme (Status in_progress kalsa bile)
-      if (match.winner_id) {
-        console.log(`🚫 Match ${match.id} kazananı belli, navigasyon engellendi.`);
-        return false;
-      }
+      if (isLocallyCompleted) return false;
+      if (match.status === "completed") return false;
+      if (navigatedMatchIdRef.current === match.id) return false;
+      if (match.winner_id) return false;
 
       console.log(`🎮 [${source}] My match started, navigating:`, match.id);
       navigatedMatchIdRef.current = match.id;
@@ -416,7 +352,6 @@ const TournamentBracketPage = () => {
       return true;
     };
 
-    // İlk yükleme kontrolü
     const checkMyMatch = () => {
       const myMatch = matches.find(
         (m) =>
@@ -431,12 +366,10 @@ const TournamentBracketPage = () => {
       return false;
     };
 
-    // İlk kontrol - sadece henüz navigate edilmediyse
     if (!navigatedToGame) {
       if (checkMyMatch()) return;
     }
 
-    // Realtime subscription - maç durumu değiştiğinde kontrol et
     const channel = supabase
       .channel(`my-match-updates-${user.id}-${currentTournament.current_round}`)
       .on(
@@ -449,14 +382,11 @@ const TournamentBracketPage = () => {
         },
         (payload) => {
           const newMatch = payload.new as any;
-
-          // Benim maçım mı ve in_progress mu?
           if (
             newMatch.status === "in_progress" &&
             newMatch.countdown_started_at &&
             (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
           ) {
-            // Navigasyon fonksiyonu gerekli kontrolleri yapıp yönlendirecek
             navigateToMatch(newMatch, "Realtime");
           }
         },
@@ -468,7 +398,6 @@ const TournamentBracketPage = () => {
     };
   }, [matches, user, navigatedToGame, tournamentId, navigate, currentTournament]);
 
-  // Check for champion/eliminated
   useEffect(() => {
     if (!user || !matches.length) return;
 
@@ -480,67 +409,48 @@ const TournamentBracketPage = () => {
     if (finalMatch.winner_id === user.id && !showChampion) {
       setShowChampion(true);
       playSpecialSound("/sampiyon.mp3", 0.8);
-
-      // 🏆 ŞAMPİYONA ÖDÜLÜ VER
       giveChampionReward();
     } else if (isInFinal && finalMatch.winner_id !== user.id && !showEliminated) {
       setShowEliminated(true);
     }
   }, [matches, user, showChampion, showEliminated, playSpecialSound]);
 
-  // 🆕 Şampiyona ödül verme fonksiyonu
   const giveChampionReward = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await (supabase.rpc as any)("give_tournament_champion_reward", {
         p_user_id: user.id,
         p_reward_amount: 5,
       });
 
-      if (error) {
-        console.error("❌ RPC hatası:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       const result = data as { success: boolean; reward_amount: number; new_ink_count: number };
-
       if (result?.success) {
         toast.success("🎉 Tebrikler Şampiyon!", {
           description: `${result.reward_amount} damla mürekkep kazandınız! 💧`,
           duration: 5000,
         });
-
-        console.log(
-          `🏆 Şampiyona ödülü verildi: +${result.reward_amount} mürekkep (Yeni toplam: ${result.new_ink_count})`,
-        );
       }
     } catch (error) {
       console.error("❌ Şampiyona ödülü verme hatası:", error);
-      // Kullanıcıya hata gösterme - sessizce logla
-      // (Şampiyonluk deneyimini bozmamak için)
     }
   };
 
-  // Auto-redirect after champion/eliminated screens
   useEffect(() => {
     if (!showChampion && !showEliminated) return;
     const timer = setTimeout(() => navigate("/tournament"), 10000);
     return () => clearTimeout(timer);
   }, [showChampion, showEliminated, navigate]);
 
-  // Periodically check for round advancement
   useEffect(() => {
     if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
-
     const interval = setInterval(() => {
       checkAndAdvance();
     }, 5000);
-
     return () => clearInterval(interval);
   }, [tournamentId, currentTournament, checkAndAdvance]);
 
-  // Organize matches by round
   const matchesByRound = useMemo(() => {
     const rounds: { [key: number]: typeof matches } = {};
     matches.forEach((m) => {
@@ -551,7 +461,6 @@ const TournamentBracketPage = () => {
     return rounds;
   }, [matches]);
 
-  // Loading state
   if (!currentTournament || initialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4 flex flex-col items-center justify-center">
@@ -566,7 +475,6 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // Champion screen
   if (showChampion) {
     const finalMatch = matches.find((m) => m.round === 3);
     const championName =
@@ -587,7 +495,6 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // Eliminated screen
   if (showEliminated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-red-700 to-purple-800 p-4 flex items-center justify-center">
@@ -603,17 +510,10 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // Check pending matches for countdown
   const currentRound = currentTournament.current_round || 1;
   const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
-
-  // Mevcut round maçları henüz oluşturulmadı mı kontrol et
   const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-
-  // Countdown aktifse (maçlar pending ve geri sayım var) spinner'ı gizle
   const hasActiveCountdown = hasPendingMatches && countdown > 0;
-
-  // Loading spinner: maçlar oluşturulmadıysa VE countdown henüz başlamadıysa göster
   const isWaitingForRoundCreation =
     currentTournament.status === "in_progress" &&
     !hasActiveCountdown &&
@@ -622,7 +522,6 @@ const TournamentBracketPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -656,10 +555,8 @@ const TournamentBracketPage = () => {
           <div className="w-16 sm:w-24" />
         </div>
 
-        {/* Sticky Notification Area - sayfayla scroll olmaz */}
         {(isWaitingForRoundCreation || hasActiveCountdown) && (
           <div className="sticky top-0 z-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-gradient-to-b from-purple-900 via-purple-900/95 to-transparent">
-            {/* Round Oluşturuluyor Loading - countdown başlayana kadar göster */}
             {isWaitingForRoundCreation && (
               <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
                 <CardContent className="p-4 text-center">
@@ -672,7 +569,6 @@ const TournamentBracketPage = () => {
               </Card>
             )}
 
-            {/* Countdown - maçlar oluştuktan sonra geri sayım */}
             {hasActiveCountdown && (
               <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
                 <CardContent className="p-3 text-center">
@@ -687,7 +583,6 @@ const TournamentBracketPage = () => {
           </div>
         )}
 
-        {/* Bracket */}
         <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4">
           {[1, 2, 3].map((round) => {
             const roundInfo = {
@@ -723,7 +618,6 @@ const TournamentBracketPage = () => {
   );
 };
 
-// Match Card Component
 const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: string; border: string } }) => {
   const getPlayerInfo = (playerId: string | null, playerData: any) => {
     if (!playerId) return { name: "TBD", isBot: false, avatar_url: null };
@@ -755,13 +649,11 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
   return (
     <Card className={`${roundInfo.color} border ${roundInfo.border} mb-3`}>
       <CardContent className="p-3">
-        {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-white text-sm font-medium">Maç {match.match_number}</span>
           <span className={`text-xs px-2 py-0.5 rounded ${statusColor} text-white`}>{statusText}</span>
         </div>
 
-        {/* Player 1 */}
         <PlayerRow
           player={player1}
           score={match.player1_score || 0}
@@ -772,7 +664,6 @@ const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: strin
 
         <div className="text-center text-white/60 text-xs my-1">VS</div>
 
-        {/* Player 2 */}
         <PlayerRow
           player={player2}
           score={match.player2_score || 0}
@@ -815,7 +706,6 @@ const PlayerRow = ({
         </Avatar>
         <span className="text-white text-sm truncate">{player.name}</span>
       </div>
-      {/* Skor: Maç devam ederken veya tamamlandığında göster */}
       {(isCompleted || isInProgress) && (
         <div className="flex items-center gap-1 flex-shrink-0">
           {isWinner && <Trophy className="w-4 h-4 text-yellow-400" />}
