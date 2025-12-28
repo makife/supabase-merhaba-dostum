@@ -35,9 +35,12 @@ import {
   Gamepad2,
   ChevronRight,
   Sparkles,
+  Activity,
+  Ghost,
+  Crosshair,
 } from "lucide-react";
 
-// --- YARDIMCI SABİTLER VE FONKSİYONLAR ---
+// --- YARDIMCI SABİTLER ---
 
 const greetingMessages = [
   "Sahne senin! 🌟",
@@ -74,32 +77,24 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   return "short";
 };
 
-// --- ALT BİLEŞENLER (PERFORMANS VE DÜZEN İÇİN AYRILDI) ---
+// --- BİLEŞENLER ---
 
-// 1. İstatistik Kartı (Küçük Widget)
 const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="flex-1 bg-slate-900/50 border border-white/5 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-    <div
-      className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-${colorClass}-500`}
-    />
+  <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group backdrop-blur-sm shadow-sm">
     <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
     <span className="text-lg font-bold text-white tracking-tight">{value}</span>
-    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{label}</span>
+    <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wide opacity-80">{label}</span>
   </div>
 );
 
-// 2. Oyun Modu Kartı (Büyük Kartlar)
 const GameModeCard = ({ mode, onClick }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer overflow-hidden rounded-3xl p-4 h-32 flex flex-col justify-between transition-all duration-300 active:scale-95 border border-white/10 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
   >
-    {/* Arkaplan Gradyanı */}
     <div
       className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity`}
     />
-
-    {/* Dekoratif Daireler */}
     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
 
     <div className="relative z-10 flex justify-between items-start">
@@ -120,7 +115,7 @@ const GameModeCard = ({ mode, onClick }: any) => (
   </div>
 );
 
-// --- ANA COMPONENT ---
+// --- ANA SAYFA ---
 
 const HomePage = () => {
   const { user } = useAuth();
@@ -130,18 +125,15 @@ const HomePage = () => {
   const { startBackgroundMusic } = useMusic();
   const { jokers } = useJokerInventory();
 
-  // State Yönetimi
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
 
-  // Zamanlayıcı State'leri
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
 
-  // Diğer Hook'lar
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
@@ -157,8 +149,7 @@ const HomePage = () => {
 
   const vipType = getVipType(profile);
 
-  // --- HESAPLAMA FONKSİYONLARI ---
-
+  // --- HESAPLAMALAR ---
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -217,7 +208,6 @@ const HomePage = () => {
 
     const timeDiff = expiry.getTime() - now.getTime();
     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
     if (days > 0) setPremiumTimeLeft(`${days} Gün`);
     else {
       const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -235,7 +225,6 @@ const HomePage = () => {
     const lastRefresh = new Date(profile.last_credit_refresh);
     const nextRefresh = new Date(lastRefresh.getTime() + 72 * 60 * 1000);
     if (now >= nextRefresh) return setTimeUntilNextCredit("");
-
     const timeDiff = nextRefresh.getTime() - now.getTime();
     const minutes = Math.floor(timeDiff / (1000 * 60));
     const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
@@ -254,7 +243,6 @@ const HomePage = () => {
           last_credit_refresh: new Date().toISOString(),
         })
         .eq("id", user.id);
-
       if (!error) {
         await refreshProfile();
         toast.success(`🎮 +1 Kredi eklendi!`);
@@ -264,8 +252,6 @@ const HomePage = () => {
       console.error(error);
     }
   };
-
-  // --- USE EFFECTS ---
 
   useEffect(() => {
     if (profile && isUnlimitedLivesActive(profile)) {
@@ -278,7 +264,7 @@ const HomePage = () => {
   useEffect(() => {
     if (profile?.premium_until) {
       calculatePremiumTimeLeft();
-      const interval = setInterval(calculatePremiumTimeLeft, 60000); // Dakikada bir yeterli
+      const interval = setInterval(calculatePremiumTimeLeft, 60000);
       return () => clearInterval(interval);
     }
   }, [profile]);
@@ -317,11 +303,8 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // --- HANDLERS ---
-
   const handleGameModeClick = (modeId: string) => {
     playSound("buttonClick");
-    // Premium veya hak kontrolü
     if (
       !isPremium &&
       (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0 &&
@@ -341,14 +324,14 @@ const HomePage = () => {
     else navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
-  // --- KONFIGURASYON ---
+  // --- CONFIG ---
   const gameModesConfig = [
     {
       id: "random-match",
       title: "Rastgele Rakip",
       description: "Hızlı eşleşme",
       icon: Zap,
-      gradient: "from-violet-600 via-purple-600 to-indigo-600",
+      gradient: "from-violet-500 via-purple-500 to-indigo-500",
       glowColor: "violet",
       isLive: true,
     },
@@ -357,7 +340,7 @@ const HomePage = () => {
       title: "Turnuva",
       description: "Büyük ödüller",
       icon: Trophy,
-      gradient: "from-amber-500 via-orange-600 to-red-600",
+      gradient: "from-amber-400 via-orange-500 to-red-500",
       glowColor: "amber",
       isLive: false,
     },
@@ -366,7 +349,7 @@ const HomePage = () => {
       title: "Yapay Zeka",
       description: "Pratik yap",
       icon: Bot,
-      gradient: "from-cyan-500 via-blue-600 to-sky-600",
+      gradient: "from-cyan-400 via-sky-500 to-blue-500",
       glowColor: "cyan",
       isLive: false,
     },
@@ -375,14 +358,18 @@ const HomePage = () => {
       title: "Özel Oda",
       description: "Arkadaşınla oyna",
       icon: Users,
-      gradient: "from-emerald-500 via-green-600 to-teal-600",
+      gradient: "from-emerald-400 via-green-500 to-teal-500",
       glowColor: "emerald",
       isLive: false,
     },
   ];
 
+  // GÜNCELLENMİŞ MİNİ OYUN LİSTESİ (YILAN, REAKTÖR, SIKI TAKİP EKLENDİ)
   const miniGamesConfig = [
     { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
+    { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" }, // EKLENDİ
+    { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" }, // EKLENDİ
+    { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" }, // EKLENDİ
     {
       id: "memory",
       title: "Hafıza",
@@ -398,68 +385,71 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0F172A] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
-      {/* Arkaplan Efektleri (CSS ile performanslı) */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-[#0F172A] to-[#0F172A] pointer-events-none" />
-      <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
+    // ARKAPLAN GÜNCELLENDİ: Daha açık, daha canlı Indigo/Slate karışımı
+    <div className="fixed inset-0 flex flex-col bg-[#1E293B] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
+      {/* Light Effects - Daha canlı ve açık */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-800/40 via-[#1E293B] to-[#0F172A] pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
 
-      {/* Ana İçerik */}
+      {/* Main Scrollable Area */}
       <div
         className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative z-10 pb-24 transition-all duration-300 ${isMenuOpen ? "blur-sm scale-[0.98]" : ""}`}
       >
         {/* HEADER */}
         <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-          {/* Sol: Profil */}
+          {/* Profil */}
           <div className="flex items-center gap-3" onClick={() => setShowAvatarView(true)}>
             <div className="relative">
               <div
                 className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
               >
-                <Avatar className="w-full h-full border-2 border-[#0F172A]">
+                <Avatar className="w-full h-full border-2 border-[#1E293B]">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-slate-800 text-xs">USER</AvatarFallback>
+                  <AvatarFallback className="bg-slate-700 text-xs">U</AvatarFallback>
                 </Avatar>
               </div>
               {isPremium && (
-                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#0F172A]">
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1E293B]">
                   <Crown className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold leading-tight">{profile?.username || "Misafir"}</h2>
+              <h2 className="text-base font-bold leading-tight drop-shadow-sm">{profile?.username || "Misafir"}</h2>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="h-1.5 w-16 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${progressPercent}%` }} />
+                <div className="h-1.5 w-16 bg-slate-700/60 rounded-full overflow-hidden backdrop-blur-sm">
+                  <div
+                    className="h-full bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)]"
+                    style={{ width: `${progressPercent}%` }}
+                  />
                 </div>
-                <span className="text-[10px] text-slate-400 font-bold">LVL {levelData.level}</span>
+                <span className="text-[10px] text-slate-300 font-bold">LVL {levelData.level}</span>
               </div>
             </div>
           </div>
 
-          {/* Sağ: Mürekkep */}
+          {/* Mürekkep */}
           <div
             onClick={() => {
               playSound("buttonClick");
               navigate("/market");
             }}
-            className="flex items-center gap-2 bg-slate-900/80 border border-slate-700/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform"
+            className="flex items-center gap-2 bg-slate-800/80 border border-slate-600/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform shadow-lg"
           >
             <div className="w-7 h-7 bg-indigo-500/20 rounded-full flex items-center justify-center">
-              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain" />
+              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain drop-shadow" />
             </div>
             <span className="text-sm font-bold">{profile?.ink_count || 0}</span>
             <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
-              <span className="text-[10px] leading-none text-white">+</span>
+              <span className="text-[10px] leading-none text-white font-bold">+</span>
             </div>
           </div>
         </div>
 
-        {/* BİLGİ PANELLERİ (HAK & SÜRE) */}
+        {/* INFO PANELS (SÜRE & HAK) */}
         <div className="px-5 mt-2 space-y-2">
-          {/* Premium Süre */}
           {isPremium && premiumTimeLeft && (
-            <div className="flex items-center justify-between bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/20 rounded-xl p-2 px-3">
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/20 rounded-xl p-2 px-3 shadow-sm">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-400" />
                 <span className="text-xs text-amber-100 font-medium">Premium</span>
@@ -468,10 +458,9 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Kalan Hak & Sınırsız Süre */}
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-slate-800/50 border border-white/5 rounded-xl p-2 px-3 backdrop-blur-sm">
-              <span className="text-xs text-slate-400 font-medium">
+            <div className="flex items-center justify-between bg-slate-800/40 border border-white/10 rounded-xl p-2 px-3 backdrop-blur-sm shadow-sm">
+              <span className="text-xs text-slate-300 font-medium">
                 {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Hak"}
               </span>
 
@@ -497,17 +486,39 @@ const HomePage = () => {
                     {Array.from({ length: 5 }, (_, i) => (
                       <div
                         key={i}
-                        className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < (profile?.game_credits || 0) ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-700"}`}
+                        className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < (profile?.game_credits || 0) ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-slate-700/50"}`}
                       />
                     ))}
                   </div>
                   {timeUntilNextCredit && getTotalCredits() < 5 && (
-                    <span className="text-[10px] text-slate-500 font-mono">{timeUntilNextCredit}</span>
+                    <span className="text-[10px] text-slate-400 font-mono bg-slate-800/50 px-1 rounded">
+                      {timeUntilNextCredit}
+                    </span>
                   )}
                 </div>
               )}
             </div>
           )}
+        </div>
+
+        {/* --- JOKER ENVANTERİ (YENİ YERİ: ÜSTTE) --- */}
+        <div className="px-5 mt-3">
+          <div className="bg-slate-800/30 rounded-xl p-2.5 border border-white/5 flex justify-around backdrop-blur-md shadow-sm">
+            {[
+              { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
+              { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
+              { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+            ].map((j, i) => (
+              <div
+                key={i}
+                className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition-transform cursor-pointer"
+                onClick={() => navigate("/market")}
+              >
+                <img src={j.img} className="w-6 h-6 object-contain drop-shadow-sm opacity-90" alt={j.name} />
+                <span className="text-[10px] font-bold text-slate-300">x{j.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* HEDİYE BANNER */}
@@ -528,7 +539,7 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* OYUN MODLARI (GRID) */}
+        {/* OYUN MODLARI */}
         <div className="px-5 mt-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -544,7 +555,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* MINI OYUNLAR (YATAY SCROLL) */}
+        {/* MINI OYUNLAR (GÜNCELLENMİŞ LİSTE) */}
         <div className="mt-6 pl-5">
           <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
@@ -579,28 +590,12 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* İSTATİSTİKLER (WIDGETS) */}
+        {/* İSTATİSTİKLER */}
         <div className="px-5 mt-2 pb-6">
           <div className="flex gap-3">
             <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="indigo" />
             <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
             <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
-          </div>
-        </div>
-
-        {/* JOKER ENVANTERİ (ALT BİLGİ) */}
-        <div className="px-5 mb-6">
-          <div className="bg-slate-900/60 rounded-xl p-3 border border-white/5 flex justify-around">
-            {[
-              { img: "/degistirIkon.png", count: jokers.degistir },
-              { img: "/fisildaIkon.png", count: jokers.fisilida },
-              { img: "/senyazIkon.png", count: jokers.senYaz },
-            ].map((j, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <img src={j.img} className="w-6 h-6 object-contain opacity-80" alt="joker" />
-                <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -644,7 +639,6 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* FLOATING MENU */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <FloatingMenu onOpenChange={setIsMenuOpen} />
       </div>
