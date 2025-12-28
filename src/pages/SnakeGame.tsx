@@ -11,8 +11,9 @@ const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TAS
 // --- ÖZEL HOOK: useInterval ---
 // Bu hook, React state'i değişse bile sayacı sıfırlamaz.
 // Dan Abramov'un meşhur useInterval pattern'i.
-function useInterval(callback, delay) {
-  const savedCallback = useRef();
+// --- ÖZEL HOOK: useInterval (DÜZELTİLMİŞ) ---
+function useInterval(callback: () => void, delay: number | null) {
+  const savedCallback = useRef<() => void>();
 
   // Son callback'i hatırla.
   useEffect(() => {
@@ -22,7 +23,8 @@ function useInterval(callback, delay) {
   // Interval'ı kur.
   useEffect(() => {
     function tick() {
-      savedCallback.current();
+      // Düzeltme burada: "?.()" ekleyerek sadece doluysa çalıştır diyoruz.
+      savedCallback.current?.();
     }
     if (delay !== null) {
       const id = setInterval(tick, delay);
