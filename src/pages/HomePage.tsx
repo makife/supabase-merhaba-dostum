@@ -70,6 +70,23 @@ const isUnlimitedLivesActive = (profile: any) => {
   return expiry > new Date();
 };
 
+// VIP türünü belirle: 'yearly' (365+ gün), 'monthly' (30+ gün), 'short' (kısa süreli), null (VIP değil)
+const getVipType = (profile: any): 'yearly' | 'monthly' | 'short' | null => {
+  if (!profile?.premium_until) return null;
+  const now = new Date();
+  const premiumUntil = new Date(profile.premium_until);
+  if (premiumUntil <= now) return null;
+  
+  const daysRemaining = Math.ceil((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // 300+ gün kaldıysa yıllık VIP
+  if (daysRemaining >= 300) return 'yearly';
+  // 25+ gün kaldıysa aylık VIP
+  if (daysRemaining >= 25) return 'monthly';
+  // Daha kısa süreli (1 saat, 24 saat vb.)
+  return 'short';
+};
+
 const HomePage = () => {
   const { user } = useAuth();
   const { profile, isPremium, refreshProfile, getTotalCredits, getDisplayCredits } = useUser();
@@ -95,6 +112,9 @@ const HomePage = () => {
   });
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // VIP türünü hesapla
+  const vipType = getVipType(profile);
 
   // Level hesaplama
   const calculateLevel = (totalScore: number) => {
@@ -375,7 +395,25 @@ const HomePage = () => {
         <div
           className="flex-shrink-0 p-3 safe-area-top"
         >
-          <div className="game-glass-card rounded-2xl p-4 relative overflow-hidden">
+          <div className={`rounded-2xl p-4 relative overflow-hidden border transition-all duration-300 ${
+            vipType === 'yearly' 
+              ? 'bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-orange-900/40 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)]' 
+              : vipType === 'monthly' 
+                ? 'bg-gradient-to-br from-sky-900/40 via-cyan-800/30 to-blue-900/40 border-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)]' 
+                : 'game-glass-card'
+          }`}>
+            {/* VIP Badge Overlay */}
+            {(vipType === 'yearly' || vipType === 'monthly') && (
+              <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${
+                vipType === 'yearly' 
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950' 
+                  : 'bg-gradient-to-r from-sky-400 to-cyan-300 text-sky-950'
+              }`}>
+                <Crown className="w-3 h-3" />
+                {vipType === 'yearly' ? 'GOLD VIP' : 'VIP'}
+              </div>
+            )}
+            
             {/* User Info Row */}
             <div className="flex items-center justify-between mb-4">
               {/* Avatar & Name */}
@@ -384,7 +422,13 @@ const HomePage = () => {
                   className="relative cursor-pointer game-avatar-ring"
                   onClick={() => setShowAvatarView(true)}
                 >
-                  <Avatar className="w-14 h-14 border-2 border-primary/50 shadow-lg">
+                  <Avatar className={`w-14 h-14 border-2 shadow-lg ${
+                    vipType === 'yearly' 
+                      ? 'border-amber-400/70' 
+                      : vipType === 'monthly' 
+                        ? 'border-sky-400/70' 
+                        : 'border-primary/50'
+                  }`}>
                     <AvatarImage
                       src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                       alt="Profile"
@@ -395,7 +439,13 @@ const HomePage = () => {
                     </AvatarFallback>
                   </Avatar>
                   {isPremium && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-lg ${
+                      vipType === 'yearly' 
+                        ? 'bg-gradient-to-br from-yellow-400 to-amber-600' 
+                        : vipType === 'monthly' 
+                          ? 'bg-gradient-to-br from-sky-400 to-cyan-500' 
+                          : 'bg-gradient-to-br from-yellow-400 to-amber-600'
+                    }`}>
                       <Crown className="w-3 h-3 text-white" />
                     </div>
                   )}
