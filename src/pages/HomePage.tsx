@@ -180,40 +180,28 @@ const HomePage = () => {
   };
 
   // Premium süre hesaplama (1 saat ve 24 saatlik abonelikler için)
-  const calculateUnlimitedTimeLeft = () => {
-    // Profil veya tarih yoksa boş dön
-    if (!profile || !(profile as any).unlimited_lives_until) {
-      setUnlimitedTimeLeft("");
+  const calculatePremiumTimeLeft = () => {
+    if (!profile?.premium_until) {
+      setPremiumTimeLeft("");
       return;
     }
-
     const now = new Date();
-    const expiry = new Date((profile as any).unlimited_lives_until);
-
-    // Debug için konsola yaz (F12'de görebilirsin)
-    // console.log("Süre Kontrolü:", { now, expiry, isActive: expiry > now });
-
+    const expiry = new Date(profile.premium_until);
     if (now >= expiry) {
-      setUnlimitedTimeLeft("");
+      setPremiumTimeLeft("");
       return;
     }
-
     const timeDiff = expiry.getTime() - now.getTime();
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-    const totalSeconds = Math.floor(timeDiff / 1000);
-    const days = Math.floor(totalSeconds / (3600 * 24));
-    const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (days > 0) {
-      setUnlimitedTimeLeft(`${days} Gün ${hours} Sa`);
-    } else {
-      const h = hours.toString().padStart(2, "0");
-      const m = minutes.toString().padStart(2, "0");
-      const s = seconds.toString().padStart(2, "0");
-      setUnlimitedTimeLeft(`${h}:${m}:${s}`);
-    }
+    let result = "";
+    if (days > 0) result = `${days}g ${hours}s`;
+    else if (hours > 0) result = `${hours}s ${minutes}d`;
+    else result = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    setPremiumTimeLeft(result);
   };
 
   const calculateTimeUntilNextCredit = () => {
@@ -257,19 +245,14 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    // Profil değiştiği an veya bileşen yüklendiğinde hemen hesapla
-    if (profile && (profile as any).unlimited_lives_until) {
-      calculateUnlimitedTimeLeft(); // İlk açılışta hemen çalıştır (Bekleme yapma)
-
-      const interval = setInterval(() => {
-        calculateUnlimitedTimeLeft();
-      }, 1000);
-
+    if (profile && isUnlimitedLivesActive(profile)) {
+      calculateUnlimitedTimeLeft();
+      const interval = setInterval(calculateUnlimitedTimeLeft, 1000);
       return () => clearInterval(interval);
     } else {
       setUnlimitedTimeLeft("");
     }
-  }, [profile, (profile as any)?.unlimited_lives_until]);
+  }, [profile]);
 
   // Premium süre sayacı effect
   useEffect(() => {
