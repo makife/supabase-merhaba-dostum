@@ -364,12 +364,11 @@ const HomePage = () => {
     },
   ];
 
-  // GÜNCELLENMİŞ MİNİ OYUN LİSTESİ (YILAN, REAKTÖR, SIKI TAKİP EKLENDİ)
   const miniGamesConfig = [
     { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
-    { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" }, // EKLENDİ
-    { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" }, // EKLENDİ
-    { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" }, // EKLENDİ
+    { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" },
+    { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" },
+    { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" },
     {
       id: "memory",
       title: "Hafıza",
@@ -384,10 +383,12 @@ const HomePage = () => {
     { id: "puzzle", title: "Puzzle", icon: "🧩", color: "blue", route: "/puzzle-game" },
   ];
 
+  // Toplam hakkı hesapla (Normal + Bonus)
+  const totalCredits = getTotalCredits();
+
   return (
-    // ARKAPLAN GÜNCELLENDİ: Daha açık, daha canlı Indigo/Slate karışımı
     <div className="fixed inset-0 flex flex-col bg-[#1E293B] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
-      {/* Light Effects - Daha canlı ve açık */}
+      {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-800/40 via-[#1E293B] to-[#0F172A] pointer-events-none" />
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
 
@@ -416,15 +417,7 @@ const HomePage = () => {
             </div>
             <div>
               <h2 className="text-base font-bold leading-tight drop-shadow-sm">{profile?.username || "Misafir"}</h2>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="h-1.5 w-16 bg-slate-700/60 rounded-full overflow-hidden backdrop-blur-sm">
-                  <div
-                    className="h-full bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)]"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-300 font-bold">LVL {levelData.level}</span>
-              </div>
+              <p className="text-[10px] text-slate-400 font-medium">{greeting}</p>
             </div>
           </div>
 
@@ -434,7 +427,7 @@ const HomePage = () => {
               playSound("buttonClick");
               navigate("/market");
             }}
-            className="flex items-center gap-2 bg-slate-800/80 border border-slate-600/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform shadow-lg"
+            className="flex items-center gap-2 bg-slate-800/80 border border-slate-600/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform shadow-lg cursor-pointer"
           >
             <div className="w-7 h-7 bg-indigo-500/20 rounded-full flex items-center justify-center">
               <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain drop-shadow" />
@@ -442,6 +435,38 @@ const HomePage = () => {
             <span className="text-sm font-bold">{profile?.ink_count || 0}</span>
             <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
               <span className="text-[10px] leading-none text-white font-bold">+</span>
+            </div>
+          </div>
+        </div>
+
+        {/* --- YENİ EKLENEN LEVEL VE XP KARTI --- */}
+        <div className="px-5 mt-2">
+          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-3 flex items-center justify-between backdrop-blur-md shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <Star className="w-5 h-5 text-white fill-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Seviye {levelData.level}</span>
+                  <span className="text-[10px] text-slate-400">
+                    ({levelData.experience} / {levelData.nextLevelExp} XP)
+                  </span>
+                </div>
+                {/* Progress Bar */}
+                <div className="h-2 w-32 bg-slate-700/50 rounded-full mt-1 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Toplam Puan</span>
+              <span className="text-sm font-mono font-bold text-amber-400">
+                {(profile?.total_score || 0).toLocaleString()}
+              </span>
             </div>
           </div>
         </div>
@@ -482,15 +507,30 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < (profile?.game_credits || 0) ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-slate-700/50"}`}
-                      />
-                    ))}
-                  </div>
-                  {timeUntilNextCredit && getTotalCredits() < 5 && (
+                  {/* DÜZELTME: Eğer hak 5'ten fazlaysa Rozet göster, değilse Bar göster */}
+                  {totalCredits > 5 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 opacity-50">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                        ))}
+                      </div>
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-[0_0_10px_rgba(34,197,94,0.4)]">
+                        {totalCredits} Hak
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-slate-700/50"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {timeUntilNextCredit && totalCredits < 5 && (
                     <span className="text-[10px] text-slate-400 font-mono bg-slate-800/50 px-1 rounded">
                       {timeUntilNextCredit}
                     </span>
@@ -501,7 +541,7 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* --- JOKER ENVANTERİ (YENİ YERİ: ÜSTTE) --- */}
+        {/* JOKER ENVANTERİ */}
         <div className="px-5 mt-3">
           <div className="bg-slate-800/30 rounded-xl p-2.5 border border-white/5 flex justify-around backdrop-blur-md shadow-sm">
             {[
@@ -555,7 +595,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* MINI OYUNLAR (GÜNCELLENMİŞ LİSTE) */}
+        {/* MINI OYUNLAR */}
         <div className="mt-6 pl-5">
           <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
