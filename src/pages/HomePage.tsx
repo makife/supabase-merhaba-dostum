@@ -387,7 +387,7 @@ const HomePage = () => {
   const totalCredits = getTotalCredits();
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#1E293B] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-[#FFFDF5] text-slate-800 font-sans selection:bg-amber-200 overflow-hidden">
       {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-800/40 via-[#1E293B] to-[#0F172A] pointer-events-none" />
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
