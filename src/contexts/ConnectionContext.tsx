@@ -24,7 +24,7 @@ interface ConnectionContextType {
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
 
 export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
-  const { session } = useAuth(); // AuthContext'ten session bilgisini al
+  const { session } = useAuth();
 
   const [state, setState] = useState<ConnectionState>({
     isConnected: true,
@@ -39,13 +39,13 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const consecutiveFailures = useRef(0);
   const appStateListenerRef = useRef<any>(null);
 
-  // --- SAĞLIK KONTROLÜ ---
+  // Sağlık Kontrolü
   const performHealthCheck = useCallback(async (): Promise<boolean> => {
     try {
       const status = await Network.getStatus();
       if (!status.connected) return false;
 
-      // RPC ile sunucu zamanını çekerek gerçek bağlantıyı test et
+      // Basit bir RPC çağrısı
       const { error } = await supabase.rpc("get_server_time");
       if (error) {
         consecutiveFailures.current++;
@@ -59,7 +59,6 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Kanal Durumlarını Kontrol Et
   const checkChannelHealth = useCallback(() => {
     const newHealth = new Map<string, "healthy" | "unhealthy" | "reconnecting">();
     for (const [name, channel] of channelsRef.current) {
@@ -71,30 +70,26 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     return newHealth;
   }, []);
 
-  // --- ANA BAĞLANMA MANTIĞI ---
+  // --- ANA RECONNECT MANTIĞI ---
   const reconnect = useCallback(
     async (force = false): Promise<boolean> => {
-      // Zaten bağlanıyorsak ve zorlama yoksa çık
       if (state.isReconnecting && !force) return false;
 
       setState((prev) => ({ ...prev, isReconnecting: true }));
       console.log("[Connection] 🔄 Reconnect işlemi başladı... Force:", force);
 
       try {
-        // 1. ZORLA KOPARMA (Clean Slate)
-        // Force durumunda veya bağlantı kopuksa önce mevcut soketi temizle
+        // 1. Önce eski bağlantıyı temizle (Nükleer Reset)
         if (force) {
-          console.log("[Connection] 🔌 Eski bağlantı temizleniyor (Disconnect)...");
+          console.log("[Connection] Zorla koparılıyor (Disconnect)...");
           await supabase.realtime.disconnect();
           // Android network stack'inin kendine gelmesi için minik bekleme
           await new Promise((r) => setTimeout(r, 300));
         }
 
-        // 2. TOKEN TAZELEME
-        // Session varsa, token'ın güncel olduğundan emin ol
+        // 2. Token kontrolü ve Ayarlama
         if (session?.access_token) {
-          // AuthContext zaten taze token sağlıyor ama biz sokete işleyelim
-          const { error } = await supabase.auth.refreshSession();
+          const { error } = await supabase.auth.refreshSession(); // Token bayatlamış olabilir, tazele!
           if (!error) {
             const currentSession = await supabase.auth.getSession();
             if (currentSession.data.session?.access_token) {
@@ -103,26 +98,27 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // 3. BAĞLAN
-        console.log("[Connection] 🚀 Bağlanılıyor (Connect)...");
+        // 3. Bağlan
+        console.log("[Connection] Bağlanılıyor (Connect)...");
         supabase.realtime.connect();
 
-        // 4. SONUÇ KONTROLÜ
+        // 4. Sağlık kontrolü
         const isHealthy = await performHealthCheck();
 
-        // 5. KANALLARI CANLANDIR (Re-subscribe)
+        // 5. Kanalları canlandır
         if (isHealthy) {
           const health = checkChannelHealth();
-          // Force durumunda tüm kanalları yeniden abone yap
-          channelsRef.current.forEach((channel, name) => {
-            console.log(`[Connection] Kanal tazeleniyor: ${name}`);
-            // Kanal hataya düşmüşse tekrar subscribe tetikle
-            if (channel.state !== "joined") {
-              channel.subscribe((status) => {
-                if (status === "SUBSCRIBED") checkChannelHealth();
-              });
+          for (const [name, status] of health) {
+            // Unhealthy olanları veya force durumunda hepsini tazele
+            if (status === "unhealthy" || force) {
+              const channel = channelsRef.current.get(name);
+              if (channel) {
+                // Kanalı rejoin yap
+                console.log(`[Connection] Kanal tazeleniyor: ${name}`);
+                channel.subscribe();
+              }
             }
-          });
+          }
         }
 
         setState((prev) => ({
@@ -143,66 +139,33 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     [state.isReconnecting, performHealthCheck, checkChannelHealth, session],
   );
 
-  // --- UYANMA (RESUME) DİNLEYİCİSİ - SABIRLI BEKLEYİŞ ---
+  // --- UYANMA (RESUME) DİNLEYİCİSİ ---
   useEffect(() => {
     const initAppStateListener = async () => {
-      // Varsa eskisini temizle
+      // Eğer varsa eskisini sil (Duplicate önlemek için)
       if (appStateListenerRef.current) {
         await appStateListenerRef.current.remove();
       }
 
       appStateListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
         if (isActive) {
-          console.log("📱 [Connection] Uygulama UYANDI (Foreground)!");
+          console.log("📱 [Connection] UYGULAMA UYANDI (RESUME)!");
+          console.log("⚡ Bağlantı sıfırlanıyor...");
 
-          // 1. Önce bozuk olabilecek bağlantıyı hemen kes
-          await supabase.realtime.disconnect();
-
-          // 2. SABIRLI BEKLEYİŞ DÖNGÜSÜ (Network Polling)
-          // İnternet gelene kadar 500ms aralıklarla kontrol et
-          let attempts = 0;
-          const maxAttempts = 10; // 10 * 500ms = 5 saniye sabret
-
-          const waitForNetworkAndConnect = async () => {
-            const status = await Network.getStatus();
-            console.log(
-              `📡 [Connection] Ağ Kontrolü (${attempts + 1}/${maxAttempts}):`,
-              status.connected ? "VAR" : "YOK",
-            );
-
-            if (status.connected) {
-              console.log("⚡ Ağ Hazır! Bağlantı başlatılıyor...");
-              reconnect(true); // Force reconnect
-            } else if (attempts < maxAttempts) {
-              attempts++;
-              setTimeout(waitForNetworkAndConnect, 500); // 500ms sonra tekrar dene
-            } else {
-              console.log("❌ [Connection] Uygulama uyandı ama internet gelmedi (Zaman aşımı).");
-              // Yine de son bir şans verelim
-              reconnect(true);
-            }
-          };
-
-          // İlk kontrolü hemen başlatma, 500ms avans ver
-          setTimeout(waitForNetworkAndConnect, 500);
+          // Uygulama öne geldiğinde bekleme yapma, direkt NÜKLEER RECONNECT yap.
+          // "true" parametresi disconnect() çağırır.
+          setTimeout(() => {
+            reconnect(true);
+          }, 500); // UI kendine gelsin diye yarım saniye avans veriyoruz
         } else {
           console.log("💤 [Connection] Uygulama uykuya geçti.");
-          stopHeartbeat();
         }
       });
     };
 
     initAppStateListener();
-    startHeartbeat(); // İlk açılışta heartbeat başlat
 
-    return () => {
-      if (appStateListenerRef.current) appStateListenerRef.current.remove();
-      stopHeartbeat();
-    };
-  }, [reconnect]); // Dependency array temizlendi
-
-  // Heartbeat Yönetimi
-  const startHeartbeat = () => {
+    // Heartbeat
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     heartbeatRef.current = setInterval(async () => {
       const isHealthy = await performHealthCheck();
@@ -218,11 +181,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         isConnected: isHealthy || consecutiveFailures.current < 3,
       }));
     }, 10000);
-  };
 
-  const stopHeartbeat = () => {
-    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-  };
+    return () => {
+      if (appStateListenerRef.current) appStateListenerRef.current.remove();
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    };
+  }, [reconnect, performHealthCheck, checkChannelHealth]);
 
   // Helper metodlar
   const registerChannel = useCallback(
