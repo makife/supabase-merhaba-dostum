@@ -1,19 +1,19 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Bot, 
-  Users, 
-  Trophy, 
-  Zap, 
-  MessageSquare, 
-  Gamepad2, 
-  Sparkles, 
+import {
+  Bot,
+  Users,
+  Trophy,
+  Zap,
+  MessageSquare,
+  Gamepad2,
+  Sparkles,
   Gift,
   Target,
   Brain,
   Puzzle,
-  Dices
+  Dices,
 } from "lucide-react";
 
 interface WelcomeIntroDialogProps {
@@ -28,10 +28,21 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent 
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        // Eğer pencere kapanmaya çalışıyorsa (X'e basıldıysa isOpen false gelir)
+        // handleComplete fonksiyonunu çalıştırarak hem kapatırız hem kaydederiz.
+        if (!isOpen) {
+          handleComplete();
+        }
+      }}
+    >
+      <DialogContent
         className="max-w-md max-h-[85vh]"
+        // Dışarı tıklayınca kapanmasını istemiyorsan bunlar kalsın
         onInteractOutside={(e) => e.preventDefault()}
+        // ESC ile kapanmasını istemiyorsan bu kalsın
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
@@ -41,12 +52,8 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
               <Gift className="w-6 h-6 text-primary absolute -bottom-1 -right-1" />
             </div>
           </div>
-          <DialogTitle className="text-center text-xl">
-            Kelimele'ye Hoş Geldin! 🎉
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            Seni aramızda görmekten mutluluk duyuyoruz
-          </DialogDescription>
+          <DialogTitle className="text-center text-xl">Kelimele'ye Hoş Geldin! 🎉</DialogTitle>
+          <DialogDescription className="text-center">Seni aramızda görmekten mutluluk duyuyoruz</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="h-[50vh] pr-4">
@@ -63,15 +70,21 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
               <ul className="space-y-1 ml-2">
                 <li className="flex items-center gap-2">
                   <img src="/degistirIkon.png" alt="Değiştir" className="w-5 h-5" />
-                  <span><strong>3x Değiştir Jokeri:</strong> Harfleri yenile</span>
+                  <span>
+                    <strong>3x Değiştir Jokeri:</strong> Harfleri yenile
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <img src="/fisildaIkon.png" alt="Fısılda" className="w-5 h-5" />
-                  <span><strong>3x Fısılda Jokeri:</strong> Kelime önerisi al</span>
+                  <span>
+                    <strong>3x Fısılda Jokeri:</strong> Kelime önerisi al
+                  </span>
                 </li>
                 <li className="flex items-center gap-2">
                   <img src="/senyazIkon.png" alt="Sen Yaz" className="w-5 h-5" />
-                  <span><strong>3x Sen Yaz Jokeri:</strong> AI sana kelime yazsın</span>
+                  <span>
+                    <strong>3x Sen Yaz Jokeri:</strong> AI sana kelime yazsın
+                  </span>
                 </li>
               </ul>
             </div>
@@ -98,9 +111,7 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                   <Zap className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-purple-500">Rastgele Eşleşme</p>
-                    <p className="text-xs text-muted-foreground">
-                      Gerçek oyuncularla eşleş ve rekabet et!
-                    </p>
+                    <p className="text-xs text-muted-foreground">Gerçek oyuncularla eşleş ve rekabet et!</p>
                   </div>
                 </div>
 
@@ -108,9 +119,7 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                   <Users className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-green-500">Özel Oda</p>
-                    <p className="text-xs text-muted-foreground">
-                      Arkadaşlarınla özel oda oluştur ve davet et!
-                    </p>
+                    <p className="text-xs text-muted-foreground">Arkadaşlarınla özel oda oluştur ve davet et!</p>
                   </div>
                 </div>
 
@@ -133,8 +142,8 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                 Sohbet
               </h3>
               <p className="text-muted-foreground text-xs">
-                Diğer oyuncularla sohbet et, arkadaşlık kur! Genel sohbet odasında 
-                herkesle iletişim kurabilir veya özel mesaj gönderebilirsin.
+                Diğer oyuncularla sohbet et, arkadaşlık kur! Genel sohbet odasında herkesle iletişim kurabilir veya özel
+                mesaj gönderebilirsin.
               </p>
             </div>
 
@@ -169,31 +178,26 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
 
             {/* Günlük Çark */}
             <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">
-                🎡 Günlük Çark
-              </h3>
+              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">🎡 Günlük Çark</h3>
               <p className="text-muted-foreground text-xs">
-                Her gün çarkı çevir ve sürpriz ödüller kazan! 
-                Jokerler, mürekkep ve daha fazlası seni bekliyor.
+                Her gün çarkı çevir ve sürpriz ödüller kazan! Jokerler, mürekkep ve daha fazlası seni bekliyor.
               </p>
             </div>
 
             {/* İpucu */}
             <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">
-                💡 İpucu
-              </h3>
+              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">💡 İpucu</h3>
               <p className="text-muted-foreground text-xs">
-                İlk olarak <strong>"Yapay Zekaya Karşı"</strong> modunda antrenman yapmanı öneriyoruz. 
-                Böylece oyunu öğrenip rakiplerine karşı hazır olabilirsin!
+                İlk olarak <strong>"Yapay Zekaya Karşı"</strong> modunda antrenman yapmanı öneriyoruz. Böylece oyunu
+                öğrenip rakiplerine karşı hazır olabilirsin!
               </p>
             </div>
           </div>
         </ScrollArea>
 
         <div className="pt-4 border-t">
-          <Button 
-            onClick={handleComplete} 
+          <Button
+            onClick={handleComplete}
             className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
           >
             <Sparkles className="w-4 h-4 mr-2" />
