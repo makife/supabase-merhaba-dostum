@@ -80,17 +80,19 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group backdrop-blur-sm shadow-sm">
-    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
-    <span className="text-lg font-bold text-white tracking-tight">{value}</span>
-    <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wide opacity-80">{label}</span>
+  // STAT WIDGET: Border rengi slate-600 yapıldı (Füme)
+  <div className="flex-1 bg-white border border-slate-600 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-sm">
+    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-500`} />
+    <span className="text-lg font-bold text-slate-800 tracking-tight">{value}</span>
+    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide opacity-80">{label}</span>
   </div>
 );
 
 const GameModeCard = ({ mode, onClick }: any) => (
   <div
     onClick={onClick}
-    className={`relative group cursor-pointer overflow-hidden rounded-3xl p-4 h-32 flex flex-col justify-between transition-all duration-300 active:scale-95 border border-white/10 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
+    // GAME MODE CARD: Border rengi slate-600 yapıldı (Füme)
+    className={`relative group cursor-pointer overflow-hidden rounded-3xl p-4 h-32 flex flex-col justify-between transition-all duration-300 active:scale-95 border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
   >
     <div
       className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity`}
@@ -387,17 +389,17 @@ const HomePage = () => {
   const totalCredits = getTotalCredits();
 
   return (
-    // 1. ARKA PLAN RENGİ DEĞİŞTİ: bg-[#1E293B] (Koyu Lacivert) -> bg-[#FFFDF5] (Sıcak Krem)
-    // 2. METİN RENGİ DEĞİŞTİ: text-white -> text-slate-800 (Koyu Gri/Siyah)
     <div className="fixed inset-0 flex flex-col bg-[#FFFDF5] text-slate-800 font-sans selection:bg-amber-200 overflow-hidden">
-      {/* Light Effects - Karanlık efektler yerine sıcak, hafif sarı/turuncu ışıklar */}
+      {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-orange-100/40 via-[#FFFDF5] to-[#FFFDF5] pointer-events-none" />
 
-      {/* Main Scrollable Area */}
-      <div
-        className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative z-10 pb-24 transition-all duration-300 ${isMenuOpen ? "blur-sm scale-[0.98]" : ""}`}
-      >
-        {/* HEADER */}
+      {/* --------------------------------------------------------
+        SABİT ÜST ALAN (FIXED HEADER AREA) 
+        flex-none ve z-30 kullanarak bu alanı yukarı sabitledik.
+        --------------------------------------------------------
+      */}
+      <div className="flex-none z-30 bg-[#FFFDF5] pb-2 relative shadow-sm border-b border-slate-200">
+        {/* HEADER (Profil & Mürekkep) */}
         <div className="px-5 pt-6 pb-2 flex items-center justify-between">
           {/* Profil */}
           <div className="flex items-center gap-3" onClick={() => setShowAvatarView(true)}>
@@ -405,7 +407,8 @@ const HomePage = () => {
               <div
                 className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
               >
-                <Avatar className="w-full h-full border-2 border-[#FFFDF5]">
+                {/* PROFIL FOTOSU: Border füme (slate-600) */}
+                <Avatar className="w-full h-full border-2 border-slate-600">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
                   <AvatarFallback className="bg-slate-200 text-slate-600 text-xs">U</AvatarFallback>
                 </Avatar>
@@ -424,27 +427,30 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Mürekkep - Beyaz zemin, gölge ve koyu yazı */}
+          {/* Mürekkep - İKON BÜYÜTÜLDÜ & Çerçeve Füme */}
           <div
             onClick={() => {
               playSound("buttonClick");
               navigate("/market");
             }}
-            className="flex items-center gap-2 bg-white border border-slate-100 rounded-full pl-1 pr-3 py-1 active:scale-95 transition-transform shadow-md cursor-pointer"
+            className="flex items-center gap-2 bg-white border border-slate-600 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-transform shadow-md cursor-pointer"
           >
-            <div className="w-7 h-7 bg-indigo-50/50 rounded-full flex items-center justify-center">
-              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain drop-shadow-sm" />
+            {/* Mürekkep İkonu Container Büyüdü (w-10 h-10) */}
+            <div className="w-10 h-10 bg-indigo-50/50 rounded-full flex items-center justify-center">
+              {/* İkon Resmi Büyüdü (w-8 h-8) */}
+              <img src="/murekkepikon.png" alt="ink" className="w-8 h-8 object-contain drop-shadow-sm" />
             </div>
-            <span className="text-sm font-bold text-slate-800">{profile?.ink_count || 0}</span>
-            <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
-              <span className="text-[10px] leading-none text-white font-bold">+</span>
+            <span className="text-base font-bold text-slate-800">{profile?.ink_count || 0}</span>
+            <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
+              <span className="text-xs leading-none text-white font-bold">+</span>
             </div>
           </div>
         </div>
 
-        {/* --- LEVEL VE XP KARTI (Krem Temaya Uygun) --- */}
+        {/* --- LEVEL VE XP KARTI --- */}
         <div className="px-5 mt-2">
-          <div className="bg-white border border-slate-100 rounded-xl p-3 flex items-center justify-between shadow-sm">
+          {/* LEVEL KARTI: Border füme (slate-600) */}
+          <div className="bg-white border border-slate-600 rounded-xl p-3 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shadow-orange-200">
                 <Star className="w-5 h-5 text-white fill-white" />
@@ -456,7 +462,6 @@ const HomePage = () => {
                     ({levelData.experience} / {levelData.nextLevelExp} XP)
                   </span>
                 </div>
-                {/* Progress Bar - Arka planı koyulaştırdık */}
                 <div className="h-2 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
@@ -474,9 +479,10 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* --- JOKERLER (Yeni Yeri) --- */}
+        {/* --- JOKERLER --- */}
         <div className="px-5 mt-3">
-          <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex justify-around shadow-sm">
+          {/* JOKER KARTI: Border füme (slate-600) */}
+          <div className="bg-white rounded-xl p-3 border border-slate-600 flex justify-around shadow-sm">
             {[
               { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
               { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
@@ -487,8 +493,9 @@ const HomePage = () => {
                 className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition-transform cursor-pointer"
                 onClick={() => navigate("/market")}
               >
-                <img src={j.img} className="w-6 h-6 object-contain drop-shadow-sm" alt={j.name} />
-                <span className="text-[10px] font-bold text-slate-500">x{j.count}</span>
+                {/* JOKER İKONLARI BÜYÜTÜLDÜ (w-10 h-10) */}
+                <img src={j.img} className="w-10 h-10 object-contain drop-shadow-sm" alt={j.name} />
+                <span className="text-xs font-bold text-slate-500">x{j.count}</span>
               </div>
             ))}
           </div>
@@ -497,7 +504,8 @@ const HomePage = () => {
         {/* INFO PANELS (SÜRE & HAK) */}
         <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
-            <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-2 px-3 shadow-sm">
+            // PREMIUM INFO: Border füme (slate-600)
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
               <div className="flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-500" />
                 <span className="text-xs text-amber-800 font-medium">Premium</span>
@@ -507,7 +515,8 @@ const HomePage = () => {
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-2 px-3 shadow-sm">
+            // LIVES INFO: Border füme (slate-600)
+            <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
               <span className="text-xs text-slate-500 font-medium">
                 {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
               </span>
@@ -580,7 +589,17 @@ const HomePage = () => {
             </div>
           </div>
         )}
+      </div>
+      {/* SABİT ALAN SONU */}
 
+      {/* --------------------------------------------------------
+        KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
+        Buradan sonrası aşağıya doğru kayar.
+        --------------------------------------------------------
+      */}
+      <div
+        className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative z-10 pb-24 transition-all duration-300 ${isMenuOpen ? "blur-sm scale-[0.98]" : ""}`}
+      >
         {/* OYUN MODLARI */}
         <div className="px-5 mt-6">
           <div className="flex items-center justify-between mb-3">
@@ -613,8 +632,9 @@ const HomePage = () => {
                 }}
                 className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
               >
+                {/* MINI GAME CARD: Border füme (slate-600) */}
                 <div
-                  className={`w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden group-active:scale-95 transition-transform`}
+                  className={`w-16 h-16 rounded-2xl bg-white border border-slate-600 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden group-active:scale-95 transition-transform`}
                 >
                   <div
                     className={`absolute inset-0 bg-${game.color}-500/5 opacity-0 group-hover:opacity-100 transition-opacity`}
@@ -635,21 +655,9 @@ const HomePage = () => {
         {/* İSTATİSTİKLER (Açık Tema) */}
         <div className="px-5 mt-2 pb-6">
           <div className="flex gap-3">
-            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
-              <Target className="w-5 h-5 mb-1 text-indigo-500" />
-              <span className="text-lg font-bold text-slate-800">{profile?.daily_games || 0}</span>
-              <span className="text-[10px] text-slate-400 font-medium uppercase">Oyun</span>
-            </div>
-            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
-              <Flame className="w-5 h-5 mb-1 text-orange-500" />
-              <span className="text-lg font-bold text-slate-800">{profile?.win_streak || 0}</span>
-              <span className="text-[10px] text-slate-400 font-medium uppercase">Seri</span>
-            </div>
-            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
-              <Trophy className="w-5 h-5 mb-1 text-amber-500" />
-              <span className="text-lg font-bold text-slate-800">{profile?.wins || 0}</span>
-              <span className="text-[10px] text-slate-400 font-medium uppercase">Zafer</span>
-            </div>
+            <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="indigo" />
+            <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
+            <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
           </div>
         </div>
       </div>
