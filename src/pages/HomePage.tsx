@@ -387,10 +387,11 @@ const HomePage = () => {
   const totalCredits = getTotalCredits();
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#1E293B] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
-      {/* Light Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-800/40 via-[#1E293B] to-[#0F172A] pointer-events-none" />
-      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
+    // 1. ARKA PLAN RENGİ DEĞİŞTİ: bg-[#1E293B] (Koyu Lacivert) -> bg-[#FFFDF5] (Sıcak Krem)
+    // 2. METİN RENGİ DEĞİŞTİ: text-white -> text-slate-800 (Koyu Gri/Siyah)
+    <div className="fixed inset-0 flex flex-col bg-[#FFFDF5] text-slate-800 font-sans selection:bg-amber-200 overflow-hidden">
+      {/* Light Effects - Karanlık efektler yerine sıcak, hafif sarı/turuncu ışıklar */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-orange-100/40 via-[#FFFDF5] to-[#FFFDF5] pointer-events-none" />
 
       {/* Main Scrollable Area */}
       <div
@@ -404,59 +405,61 @@ const HomePage = () => {
               <div
                 className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
               >
-                <Avatar className="w-full h-full border-2 border-[#1E293B]">
+                <Avatar className="w-full h-full border-2 border-[#FFFDF5]">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-slate-700 text-xs">U</AvatarFallback>
+                  <AvatarFallback className="bg-slate-200 text-slate-600 text-xs">U</AvatarFallback>
                 </Avatar>
               </div>
               {isPremium && (
-                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1E293B]">
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#FFFDF5]">
                   <Crown className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold leading-tight drop-shadow-sm">{profile?.username || "Misafir"}</h2>
-              <p className="text-[10px] text-slate-400 font-medium">{greeting}</p>
+              <h2 className="text-base font-bold leading-tight drop-shadow-sm text-slate-900">
+                {profile?.username || "Misafir"}
+              </h2>
+              <p className="text-[10px] text-slate-500 font-medium">{greeting}</p>
             </div>
           </div>
 
-          {/* Mürekkep */}
+          {/* Mürekkep - Beyaz zemin, gölge ve koyu yazı */}
           <div
             onClick={() => {
               playSound("buttonClick");
               navigate("/market");
             }}
-            className="flex items-center gap-2 bg-slate-800/80 border border-slate-600/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform shadow-lg cursor-pointer"
+            className="flex items-center gap-2 bg-white border border-slate-100 rounded-full pl-1 pr-3 py-1 active:scale-95 transition-transform shadow-md cursor-pointer"
           >
-            <div className="w-7 h-7 bg-indigo-500/20 rounded-full flex items-center justify-center">
-              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain drop-shadow" />
+            <div className="w-7 h-7 bg-indigo-50/50 rounded-full flex items-center justify-center">
+              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain drop-shadow-sm" />
             </div>
-            <span className="text-sm font-bold">{profile?.ink_count || 0}</span>
+            <span className="text-sm font-bold text-slate-800">{profile?.ink_count || 0}</span>
             <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
               <span className="text-[10px] leading-none text-white font-bold">+</span>
             </div>
           </div>
         </div>
 
-        {/* --- YENİ EKLENEN LEVEL VE XP KARTI --- */}
+        {/* --- LEVEL VE XP KARTI (Krem Temaya Uygun) --- */}
         <div className="px-5 mt-2">
-          <div className="bg-slate-800/40 border border-white/5 rounded-xl p-3 flex items-center justify-between backdrop-blur-md shadow-sm">
+          <div className="bg-white border border-slate-100 rounded-xl p-3 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shadow-orange-200">
                 <Star className="w-5 h-5 text-white fill-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">Seviye {levelData.level}</span>
+                  <span className="text-sm font-bold text-slate-800">Seviye {levelData.level}</span>
                   <span className="text-[10px] text-slate-400">
                     ({levelData.experience} / {levelData.nextLevelExp} XP)
                   </span>
                 </div>
-                {/* Progress Bar */}
-                <div className="h-2 w-32 bg-slate-700/50 rounded-full mt-1 overflow-hidden">
+                {/* Progress Bar - Arka planı koyulaştırdık */}
+                <div className="h-2 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                    className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -464,86 +467,16 @@ const HomePage = () => {
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Toplam Puan</span>
-              <span className="text-sm font-mono font-bold text-amber-400">
+              <span className="text-sm font-mono font-bold text-amber-600">
                 {(profile?.total_score || 0).toLocaleString()}
               </span>
             </div>
           </div>
         </div>
 
-        {/* INFO PANELS (SÜRE & HAK) */}
-        <div className="px-5 mt-2 space-y-2">
-          {isPremium && premiumTimeLeft && (
-            <div className="flex items-center justify-between bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/20 rounded-xl p-2 px-3 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-400" />
-                <span className="text-xs text-amber-100 font-medium">Premium</span>
-              </div>
-              <span className="text-xs font-mono font-bold text-amber-400">{premiumTimeLeft}</span>
-            </div>
-          )}
-
-          {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-slate-800/40 border border-white/10 rounded-xl p-2 px-3 backdrop-blur-sm shadow-sm">
-              <span className="text-xs text-slate-300 font-medium">
-                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Hak"}
-              </span>
-
-              {isUnlimitedLivesActive(profile) ? (
-                <div className="flex items-center gap-2">
-                  {unlimitedTimeLeft ? (
-                    <div className="flex items-center gap-1.5 bg-indigo-500/20 px-2 py-0.5 rounded-lg border border-indigo-500/30">
-                      <Clock className="w-3 h-3 text-indigo-400 animate-pulse" />
-                      <span className="text-xs font-mono font-bold text-indigo-300 tabular-nums">
-                        {unlimitedTimeLeft}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-5 bg-slate-700/50 rounded animate-pulse" />
-                  )}
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] px-2 py-0.5">
-                    Sınırsız
-                  </Badge>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {/* DÜZELTME: Eğer hak 5'ten fazlaysa Rozet göster, değilse Bar göster */}
-                  {totalCredits > 5 ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1 opacity-50">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
-                        ))}
-                      </div>
-                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-[0_0_10px_rgba(34,197,94,0.4)]">
-                        {totalCredits} Hak
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <div
-                          key={i}
-                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-slate-700/50"}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {timeUntilNextCredit && totalCredits < 5 && (
-                    <span className="text-[10px] text-slate-400 font-mono bg-slate-800/50 px-1 rounded">
-                      {timeUntilNextCredit}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* JOKER ENVANTERİ */}
+        {/* --- JOKERLER (Yeni Yeri) --- */}
         <div className="px-5 mt-3">
-          <div className="bg-slate-800/30 rounded-xl p-2.5 border border-white/5 flex justify-around backdrop-blur-md shadow-sm">
+          <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex justify-around shadow-sm">
             {[
               { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
               { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
@@ -554,24 +487,93 @@ const HomePage = () => {
                 className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition-transform cursor-pointer"
                 onClick={() => navigate("/market")}
               >
-                <img src={j.img} className="w-6 h-6 object-contain drop-shadow-sm opacity-90" alt={j.name} />
-                <span className="text-[10px] font-bold text-slate-300">x{j.count}</span>
+                <img src={j.img} className="w-6 h-6 object-contain drop-shadow-sm" alt={j.name} />
+                <span className="text-[10px] font-bold text-slate-500">x{j.count}</span>
               </div>
             ))}
           </div>
         </div>
 
+        {/* INFO PANELS (SÜRE & HAK) */}
+        <div className="px-5 mt-2 space-y-2">
+          {isPremium && premiumTimeLeft && (
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-2 px-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-500" />
+                <span className="text-xs text-amber-800 font-medium">Premium</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-amber-600">{premiumTimeLeft}</span>
+            </div>
+          )}
+
+          {(!isPremium || isUnlimitedLivesActive(profile)) && (
+            <div className="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-2 px-3 shadow-sm">
+              <span className="text-xs text-slate-500 font-medium">
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Hak"}
+              </span>
+
+              {isUnlimitedLivesActive(profile) ? (
+                <div className="flex items-center gap-2">
+                  {unlimitedTimeLeft ? (
+                    <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                      <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
+                      <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
+                        {unlimitedTimeLeft}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
+                  )}
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
+                    Sınırsız
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {totalCredits > 5 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 opacity-50">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                        ))}
+                      </div>
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
+                        {totalCredits} Hak
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {timeUntilNextCredit && totalCredits < 5 && (
+                    <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                      {timeUntilNextCredit}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* HEDİYE BANNER */}
         {isPremium && isGiftPremium(profile) && (
           <div className="px-5 mt-4">
-            <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-purple-900/20">
+            <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
               <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
                 <Gift className="w-5 h-5 text-white animate-bounce" />
               </div>
               <div className="flex-1 z-10">
                 <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
-                <p className="text-[10px] text-white/80">
+                <p className="text-[10px] text-white/90">
                   Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
                 </p>
               </div>
@@ -582,8 +584,8 @@ const HomePage = () => {
         {/* OYUN MODLARI */}
         <div className="px-5 mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 text-indigo-500" />
               Oyun Modları
             </h3>
           </div>
@@ -597,8 +599,8 @@ const HomePage = () => {
 
         {/* MINI OYUNLAR */}
         <div className="mt-6 pl-5">
-          <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+          <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-500" />
             Mini Oyunlar
           </h3>
           <div className="flex gap-3 overflow-x-auto pb-4 pr-5 scrollbar-hide">
@@ -612,14 +614,14 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
               >
                 <div
-                  className={`w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl shadow-lg relative overflow-hidden group-active:scale-95 transition-transform`}
+                  className={`w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden group-active:scale-95 transition-transform`}
                 >
                   <div
-                    className={`absolute inset-0 bg-${game.color}-500/10 opacity-0 group-hover:opacity-100 transition-opacity`}
+                    className={`absolute inset-0 bg-${game.color}-500/5 opacity-0 group-hover:opacity-100 transition-opacity`}
                   />
                   {game.icon}
                 </div>
-                <span className="text-[10px] font-medium text-slate-400 text-center leading-tight">
+                <span className="text-[10px] font-medium text-slate-600 text-center leading-tight">
                   {game.title}
                   {game.disabled && game.cooldown && (
                     <span className="block text-[9px] text-red-400 mt-0.5">{game.cooldown}</span>
@@ -630,12 +632,24 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* İSTATİSTİKLER */}
+        {/* İSTATİSTİKLER (Açık Tema) */}
         <div className="px-5 mt-2 pb-6">
           <div className="flex gap-3">
-            <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="indigo" />
-            <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
-            <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
+            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
+              <Target className="w-5 h-5 mb-1 text-indigo-500" />
+              <span className="text-lg font-bold text-slate-800">{profile?.daily_games || 0}</span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase">Oyun</span>
+            </div>
+            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
+              <Flame className="w-5 h-5 mb-1 text-orange-500" />
+              <span className="text-lg font-bold text-slate-800">{profile?.win_streak || 0}</span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase">Seri</span>
+            </div>
+            <div className="flex-1 bg-white border border-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm">
+              <Trophy className="w-5 h-5 mb-1 text-amber-500" />
+              <span className="text-lg font-bold text-slate-800">{profile?.wins || 0}</span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase">Zafer</span>
+            </div>
           </div>
         </div>
       </div>
@@ -667,7 +681,7 @@ const HomePage = () => {
       ) : null}
 
       {showMatchmaking && (
-        <div className="fixed inset-0 z-[9999] bg-[#0F172A]">
+        <div className="fixed inset-0 z-[9999] bg-[#FFFDF5]">
           <SlotMatchmaking
             key={`matchmaking-${matchmakingKey}`}
             onCancel={() => {
