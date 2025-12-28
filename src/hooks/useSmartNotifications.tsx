@@ -1,44 +1,44 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner"; // Eğer proje ayarlarında "use-toast" varsa onu kullan
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { getIsAppInForeground } from "./useAppForegroundState";
 
 /**
- * Smart notification system:
- * - App in foreground: Show in-app toast only (no push)
- * - App in background/closed: Send push notification only
+ * Akıllı Bildirim Sistemi:
+ * - Bu hook GENELLİKLE BAŞKALARINA bildirim göndermek için kullanılır.
+ * - Uygulama içi (kendine) bildirim göstermek için `showInAppToast` kullanılır.
  */
 export function useSmartNotifications() {
   const navigate = useNavigate();
 
-  // Show in-app toast notification
+  // 1. Basit Uygulama İçi Toast Gösterici (useChatNotifications içinde kullanılıyor)
   const showInAppToast = useCallback(
     (title: string, description: string, navigateTo?: string) => {
-      toast({
-        title,
+      toast(title, {
         description,
-        duration: 5000,
-        action: navigateTo ? (
-          <Button variant="outline" size="sm" onClick={() => navigate(navigateTo)}>
-            Görüntüle
-          </Button>
-        ) : undefined,
+        duration: 4000,
+        action: navigateTo
+          ? {
+              label: "Görüntüle",
+              onClick: () => navigate(navigateTo),
+            }
+          : undefined,
       });
     },
     [navigate],
   );
 
-  // Send push notification via edge function
-  // skipIfOnline: if true, server will skip push if user was recently active
+  // 2. Sunucuya Push İsteği Gönderme (Edge Function)
+  // skipIfOnline = true ise: Sunucu alıcının last_seen değerine bakar.
+  // Alıcı aktifse Push GÖNDERMEZ (Çünkü alıcı Toast görecektir).
   const sendPushNotification = useCallback(
     async (
       receiverId: string,
       title: string,
       body: string,
       data?: Record<string, string>,
-      skipIfOnline: boolean = true, // Default: skip push if user is online (they'll see in-app toast)
+      skipIfOnline: boolean = true, // VARSAYILAN: TRUE (Bizim hibrit mantık için şart)
     ) => {
       try {
         const { error } = await supabase.functions.invoke("send-push-notification", {
@@ -47,81 +47,45 @@ export function useSmartNotifications() {
             title,
             body,
             data,
-            skipIfOnline, // Server checks if user was active recently
+            skipIfOnline, // Bu bayrak sunucudaki push filtresini çalıştırır
           },
         });
 
         if (error) {
-          console.error("[SmartNotif] Push notification error:", error);
+          console.error("[SmartNotif] Push isteği hatası:", error);
           return false;
         }
 
-        console.log("[SmartNotif] Push notification sent successfully");
+        // Başarılı olsa bile konsola basmaya gerek yok, sessizce çalışsın
         return true;
       } catch (error) {
-        console.error("[SmartNotif] Push notification failed:", error);
+        console.error("[SmartNotif] Push fonksiyonu hatası:", error);
         return false;
       }
     },
     [],
   );
 
-  // Smart notification: decides between in-app toast or push
-  const sendSmartNotification = useCallback(
-    async (options: {
-      receiverId: string;
-      title: string;
-      body: string;
-      navigateTo?: string;
-      data?: Record<string, string>;
-      // If true, always send push (for when receiver is different user)
-      alwaysPush?: boolean;
-    }) => {
-      const { receiverId, title, body, navigateTo, data, alwaysPush } = options;
+  // --- ÖZEL FONKSİYONLAR ---
 
-      const isInForeground = getIsAppInForeground();
-
-      console.log("[SmartNotif] Sending notification:", {
-        isInForeground,
-        alwaysPush,
-        title,
-      });
-
-      // If alwaysPush is true (notification for another user), always send push
-      // The receiving user's app will handle whether to show it based on their app state
-      if (alwaysPush) {
-        await sendPushNotification(receiverId, title, body, data);
-        return;
-      }
-
-      // For current user notifications:
-      // If app is in foreground, show in-app toast
-      // If app is in background, the realtime listener won't work anyway
-      // Push notifications are handled by the server-side when messages are created
-      if (isInForeground) {
-        showInAppToast(title, body, navigateTo);
-      }
-    },
-    [sendPushNotification, showInAppToast],
-  );
-
-  // Specific notification types
+  // Mesaj gönderirken çağrılır
   const sendMessageNotification = useCallback(
     async (receiverId: string, senderUsername: string, chatId: string) => {
-      // skipIfOnline: true (varsayılan) olduğu için,
-      // karşı taraf ONLİNE ise Push gitmeyecek, sadece uygulama içi soket bildirimi alacak.
-      // Karşı taraf OFFLİNE ise Push gidecek.
+      // skipIfOnline: true (varsayılan)
+      // Alıcı oyundaysa Push gitmez, Toast görür.
+      // Alıcı offline ise Push gider.
       await sendPushNotification(
         receiverId,
-        "💬 Yeni Özel Mesaj",
+        "💬 Yeni Mesaj",
         `${senderUsername} sana mesaj gönderdi`,
         { type: "message", chatId },
-        true, // Explicitly true
+        true,
       );
     },
     [sendPushNotification],
   );
 
+  // Biri seni etiketlediğinde
   const sendMentionNotification = useCallback(
     async (receiverId: string, senderUsername: string, message: string) => {
       await sendPushNotification(
@@ -129,25 +93,30 @@ export function useSmartNotifications() {
         "📢 Senden Bahsedildi",
         `${senderUsername}: ${message.substring(0, 50)}...`,
         { type: "mention" },
-        true, // Explicitly true
+        true,
       );
     },
     [sendPushNotification],
   );
 
+  // Oyun daveti (Bunu biraz daha agresif yapabiliriz ama şimdilik hibrit kalsın)
   const sendGameInviteNotification = useCallback(
     async (receiverId: string, senderUsername: string, roomCode: string) => {
-      await sendPushNotification(receiverId, "🎮 Oyun Daveti", `${senderUsername} seni oyuna davet etti!`, {
-        type: "game_invite",
-        roomCode,
-      });
+      await sendPushNotification(
+        receiverId,
+        "🎮 Oyun Daveti",
+        `${senderUsername} seni oyuna davet etti!`,
+        { type: "game_invite", roomCode },
+        true,
+      );
     },
     [sendPushNotification],
   );
 
+  // Turnuva bildirimleri (Genelde herkese gider)
   const sendTournamentNotification = useCallback(
     async (receiverId: string, message: string) => {
-      await sendPushNotification(receiverId, "🏆 Turnuva Bildirimi", message, { type: "tournament" });
+      await sendPushNotification(receiverId, "🏆 Turnuva Bildirimi", message, { type: "tournament" }, true);
     },
     [sendPushNotification],
   );
@@ -155,7 +124,6 @@ export function useSmartNotifications() {
   return {
     showInAppToast,
     sendPushNotification,
-    sendSmartNotification,
     sendMessageNotification,
     sendMentionNotification,
     sendGameInviteNotification,
