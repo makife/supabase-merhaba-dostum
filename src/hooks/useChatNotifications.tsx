@@ -2,28 +2,29 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast"; // veya "sonner" kullanıyorsan onu import et
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
+import { activePrivateChat } from "@/utils/notifications"; // PrivateChat'te kullandığın util
 
 export function useChatNotifications() {
   const { user } = useAuth();
   const { profile } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
 
+  // Okunmamış mesaj sayılarını çek
   const loadUnreadMessages = async () => {
     if (!user?.id) return 0;
-
     try {
       const { count } = await supabase
         .from("private_messages")
         .select("*", { count: "exact" })
         .eq("recipient_id", user.id)
         .eq("is_read", false);
-
       return count || 0;
     } catch (error) {
       console.error("Error loading unread messages:", error);
@@ -31,9 +32,9 @@ export function useChatNotifications() {
     }
   };
 
+  // Global mention sayılarını çek
   const loadGlobalMentions = async () => {
-    if (!user?.id || !profile?.username) return 0;
-
+    if (!user?.id) return 0;
     try {
       const { data } = await supabase
         .from("notifications")
@@ -41,7 +42,6 @@ export function useChatNotifications() {
         .eq("user_id", user.id)
         .eq("type", "mention")
         .eq("is_read", false);
-
       return data?.length || 0;
     } catch (error) {
       console.error("Error loading global mentions:", error);
@@ -49,29 +49,20 @@ export function useChatNotifications() {
     }
   };
 
+  // Okundu olarak işaretleme fonksiyonları
   const markPrivateMessagesAsRead = async () => {
     if (!user?.id) return;
-
     const { error } = await supabase
       .from("private_messages")
       .update({ is_read: true })
       .eq("recipient_id", user.id)
       .eq("is_read", false);
 
-    if (!error) {
-      setUnreadCount(0);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    await markPrivateMessagesAsRead();
-    await markGlobalMessagesAsRead();
-    setGlobalMentionCount(0);
+    if (!error) setUnreadCount(0);
   };
 
   const markGlobalMessagesAsRead = async () => {
     if (!user?.id) return;
-
     await supabase
       .from("notifications")
       .update({ is_read: true })
@@ -82,6 +73,11 @@ export function useChatNotifications() {
     setGlobalMentionCount(0);
   };
 
+  const markAllAsRead = async () => {
+    await markPrivateMessagesAsRead();
+    await markGlobalMessagesAsRead();
+  };
+
   const refreshUnreadCounts = async () => {
     const privateCount = await loadUnreadMessages();
     const mentionCount = await loadGlobalMentions();
@@ -89,43 +85,52 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
-  // Show in-app toast notification (only when app is in foreground)
-  const showInAppNotification = useCallback((
-    title: string,
-    description: string,
-    navigateTo?: string
-  ) => {
-    // Only show toast if app is in foreground
-    if (!getIsAppInForeground()) {
-      console.log("[ChatNotif] App in background, skipping in-app toast");
-      return;
-    }
+  // --- KRİTİK NOKTA: BİLDİRİM GÖSTERME MANTIĞI ---
+  const showInAppNotification = useCallback(
+    (title: string, description: string, navigateTo?: string, relatedChatId?: string) => {
+      // 1. KURAL: Uygulama arka planda ise veya görünür değilse TOAST GÖSTERME.
+      // Bu durumda sunucu (edge function) Push Notification gönderecektir.
+      if (!getIsAppInForeground()) {
+        console.log("App arka planda, toast engellendi (Push bekleniyor).");
+        return;
+      }
 
-    toast({
-      title,
-      description,
-      duration: 5000,
-      action: navigateTo ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(navigateTo)}
-        >
-          Görüntüle
-        </Button>
-      ) : undefined,
-    });
-  }, [navigate]);
+      // 2. KURAL: Eğer kullanıcı şu an o sohbetin içindeyse TOAST GÖSTERME.
+      // activePrivateChat değişkeni PrivateChat component'inden yönetilir.
+      if (relatedChatId && activePrivateChat === relatedChatId) {
+        console.log("Kullanıcı aktif sohbette, toast engellendi.");
+        return;
+      }
 
-  // Real-time notification listener
-  // Only shows in-app toasts - push notifications are handled by the server
+      // Ekstra Güvenlik: URL kontrolü
+      if (relatedChatId && location.pathname.includes("/chat") && location.search.includes(relatedChatId)) {
+        return;
+      }
+
+      // 3. KURAL: Tüm şartlar sağlandıysa (Oyunda, Menüde vb.) TOAST GÖSTER.
+      toast({
+        title,
+        description,
+        duration: 3000, // Seri olması için 3sn
+        action: navigateTo ? (
+          <Button variant="outline" size="sm" onClick={() => navigate(navigateTo)}>
+            Görüntüle
+          </Button>
+        ) : undefined,
+      });
+    },
+    [navigate, location.pathname, location.search],
+  );
+
+  // Real-time listener
   useEffect(() => {
     if (!user?.id) return;
 
     refreshUnreadCounts();
 
     const channel = supabase
-      .channel("notifications-channel")
+      .channel("notifications-global-listener")
+      // 1. ÖZEL MESAJLARI DİNLE
       .on(
         "postgres_changes",
         {
@@ -138,10 +143,10 @@ export function useChatNotifications() {
           const newMsg: any = payload.new;
           if (!newMsg) return;
 
-          // Update unread count
+          // Sayacı güncelle
           refreshUnreadCounts();
 
-          // Get sender info
+          // Gönderen ismini bul
           const { data: senderProfile } = await supabase
             .from("profiles")
             .select("username")
@@ -149,16 +154,22 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
+          const msgPreview = newMsg.message
+            ? newMsg.message.length > 30
+              ? newMsg.message.substring(0, 30) + "..."
+              : newMsg.message
+            : "Fotoğraf";
 
-          // Show in-app toast (only if app is in foreground)
-          // Push notification is already handled by the message sender
+          // Bildirim fonksiyonunu çağır (Filtreler orada yapılacak)
           showInAppNotification(
-            "💬 Yeni Özel Mesaj",
-            `${senderName} sana mesaj gönderdi`,
-            "/chat"
+            "💬 Yeni Mesaj",
+            `${senderName}: ${msgPreview}`,
+            `/chat?uid=${newMsg.sender_id}`, // Linki kendi yapına göre düzenleyebilirsin
+            newMsg.chat_id,
           );
         },
       )
+      // 2. BİLDİRİMLERİ (Mention, Oyun Daveti vb.) DİNLE
       .on(
         "postgres_changes",
         {
@@ -171,32 +182,20 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
-          // Mention notification
           if (notif.type === "mention") {
             refreshUnreadCounts();
-            showInAppNotification(
-              "📢 Senden Bahsedildi",
-              notif.message,
-              "/chat"
-            );
+            showInAppNotification("📢 Global Sohbet", notif.message, "/chat");
           }
 
-          // Private message notification (from notifications table)
-          if (notif.type === "message") {
-            refreshUnreadCounts();
-            showInAppNotification(
-              "💬 Yeni Özel Mesaj",
-              notif.message,
-              "/chat"
-            );
+          if (notif.type === "game_invite") {
+            showInAppNotification("🎮 Oyun Daveti", notif.message, `/game-join/${notif.related_id}`);
           }
 
-          // Tournament opponent left notification
           if (notif.type === "tournament_opponent_left") {
             toast({
-              title: "🏆 Turnuva Zaferi!",
+              title: "🏆 Hükmen Galibiyet!",
               description: notif.message,
-              duration: 6000,
+              duration: 4000,
             });
           }
         },
@@ -216,14 +215,12 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, profile?.username, navigate, showInAppNotification]);
-
-  const totalNotifications = unreadCount + globalMentionCount;
+  }, [user?.id, showInAppNotification]);
 
   return {
     unreadCount,
     globalMentionCount,
-    totalNotifications,
+    totalNotifications: unreadCount + globalMentionCount,
     markAllAsRead,
     markPrivateMessagesAsRead,
     markGlobalMessagesAsRead,
