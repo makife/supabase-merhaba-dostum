@@ -2,17 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner"; // Eğer hata verirse burayı tekrar use-toast yap
+import { toast } from "@/hooks/use-toast"; // Projende hangisi varsa: "sonner" veya "use-toast"
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
-// "activePrivateChat" importunu kaldırdık çünkü hata veriyordu
 
 export function useChatNotifications() {
   const { user } = useAuth();
   const { profile } = useUser();
   const navigate = useNavigate();
-  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
 
@@ -24,6 +22,7 @@ export function useChatNotifications() {
         .select("*", { count: "exact" })
         .eq("recipient_id", user.id)
         .eq("is_read", false);
+
       return count || 0;
     } catch (error) {
       console.error("Error loading unread messages:", error);
@@ -32,7 +31,7 @@ export function useChatNotifications() {
   };
 
   const loadGlobalMentions = async () => {
-    if (!user?.id) return 0;
+    if (!user?.id || !profile?.username) return 0;
     try {
       const { data } = await supabase
         .from("notifications")
@@ -40,6 +39,7 @@ export function useChatNotifications() {
         .eq("user_id", user.id)
         .eq("type", "mention")
         .eq("is_read", false);
+
       return data?.length || 0;
     } catch (error) {
       console.error("Error loading global mentions:", error);
@@ -55,7 +55,15 @@ export function useChatNotifications() {
       .eq("recipient_id", user.id)
       .eq("is_read", false);
 
-    if (!error) setUnreadCount(0);
+    if (!error) {
+      setUnreadCount(0);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    await markPrivateMessagesAsRead();
+    await markGlobalMessagesAsRead();
+    setGlobalMentionCount(0);
   };
 
   const markGlobalMessagesAsRead = async () => {
@@ -70,11 +78,6 @@ export function useChatNotifications() {
     setGlobalMentionCount(0);
   };
 
-  const markAllAsRead = async () => {
-    await markPrivateMessagesAsRead();
-    await markGlobalMessagesAsRead();
-  };
-
   const refreshUnreadCounts = async () => {
     const privateCount = await loadUnreadMessages();
     const mentionCount = await loadGlobalMentions();
@@ -82,39 +85,37 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   };
 
+  // Uygulama içi bildirim gösterme (Sadece app öndeyse)
   const showInAppNotification = useCallback(
-    (title: string, description: string, navigateTo?: string, relatedChatId?: string) => {
-      // 1. Uygulama arka planda ise bildirim gösterme
+    (title: string, description: string, navigateTo?: string) => {
       if (!getIsAppInForeground()) {
+        console.log("[ChatNotif] App in background, skipping in-app toast");
         return;
       }
 
-      // URL kontrolü ile o anki sohbette miyiz anlamaya çalışalım (Yedek Yöntem)
-      if (relatedChatId && location.pathname.includes("/chat") && location.search.includes(relatedChatId)) {
-        return;
-      }
-
-      toast(title, {
+      toast({
+        title,
         description,
-        duration: 3000,
-        action: navigateTo
-          ? {
-              label: "Görüntüle",
-              onClick: () => navigate(navigateTo),
-            }
-          : undefined,
+        duration: 5000,
+        action: navigateTo ? (
+          <Button variant="outline" size="sm" onClick={() => navigate(navigateTo)}>
+            Görüntüle
+          </Button>
+        ) : undefined,
       });
     },
-    [navigate, location.pathname, location.search],
+    [navigate],
   );
 
+  // --- REAL-TIME LISTENER ---
   useEffect(() => {
     if (!user?.id) return;
 
     refreshUnreadCounts();
 
     const channel = supabase
-      .channel("notifications-global-listener")
+      .channel("notifications-channel")
+      // 1. ÖZEL MESAJLARI DİNLE
       .on(
         "postgres_changes",
         {
@@ -136,20 +137,11 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
-          const msgPreview = newMsg.message
-            ? newMsg.message.length > 30
-              ? newMsg.message.substring(0, 30) + "..."
-              : newMsg.message
-            : "Fotoğraf";
 
-          showInAppNotification(
-            "💬 Yeni Mesaj",
-            `${senderName}: ${msgPreview}`,
-            `/chat?uid=${newMsg.sender_id}`, // Burayı kendi link yapına göre ayarla
-            newMsg.chat_id,
-          );
+          showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
         },
       )
+      // 2. GENEL BİLDİRİMLERİ DİNLE (Notifications Tablosu)
       .on(
         "postgres_changes",
         {
@@ -162,13 +154,39 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
+          // Mention (Etiketlenme)
           if (notif.type === "mention") {
             refreshUnreadCounts();
-            showInAppNotification("📢 Global Sohbet", notif.message, "/chat");
+            showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
           }
 
-          if (notif.type === "game_invite") {
-            showInAppNotification("🎮 Oyun Daveti", notif.message, `/game-join/${notif.related_id}`);
+          // Özel Mesaj (Notifications tablosu üzerinden gelirse)
+          if (notif.type === "message") {
+            refreshUnreadCounts();
+            showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
+          }
+
+          // Rakip Oyundan Ayrıldı
+          if (notif.type === "tournament_opponent_left") {
+            toast({
+              title: "🏆 Hükmen Galibiyet!",
+              description: notif.message,
+              duration: 6000,
+            });
+          }
+
+          // 🏆 TURNUVA SONA ERDİ (Buraya ekledik)
+          if (notif.type === "tournament_end") {
+            toast({
+              title: "🏆 Turnuva Sona Erdi!",
+              description: notif.message,
+              duration: 8000, // Kutlama için biraz uzun kalsın
+              action: (
+                <Button variant="outline" size="sm" onClick={() => navigate(`/tournament-bracket/${notif.related_id}`)}>
+                  Sonuçlar
+                </Button>
+              ),
+            });
           }
         },
       )
@@ -187,12 +205,14 @@ export function useChatNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, showInAppNotification]);
+  }, [user?.id, profile?.username, navigate, showInAppNotification]);
+
+  const totalNotifications = unreadCount + globalMentionCount;
 
   return {
     unreadCount,
     globalMentionCount,
-    totalNotifications: unreadCount + globalMentionCount,
+    totalNotifications,
     markAllAsRead,
     markPrivateMessagesAsRead,
     markGlobalMessagesAsRead,
