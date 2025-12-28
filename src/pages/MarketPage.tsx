@@ -190,6 +190,12 @@ const MarketPage = () => {
     },
   ];
 
+  const isUnlimitedLivesActive = (profile: any) => {
+    if (!profile?.unlimited_lives_until) return false;
+    const expiry = new Date(profile.unlimited_lives_until);
+    return expiry > new Date();
+  };
+
   // --- Aksiyonlar ---
 
   const handleBuyInkPack = async (pack: InkPack) => {
