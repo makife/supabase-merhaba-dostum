@@ -198,7 +198,7 @@ const TournamentBracketPage = () => {
   }, [tournamentId, user, currentTournament, participants]);
 
   // Check and advance round
-  const checkAndAdvance = useCallback(async () => {
+  cconst checkAndAdvance = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament || advancingRef.current) return;
     if (currentTournament.creator_id !== user.id) return;
 
@@ -206,7 +206,7 @@ const TournamentBracketPage = () => {
 
     const { data: roundMatches } = await supabase
       .from("tournament_matches")
-      .select("status")
+      .select("*") // status yerine * çekiyoruz ki winner_id'ye erişelim
       .eq("tournament_id", tournamentId)
       .eq("round", currentRound);
 
@@ -220,12 +220,34 @@ const TournamentBracketPage = () => {
       await advanceToNextRound(tournamentId);
       advancingRef.current = false;
     } else if (allCompleted && currentRound === 3) {
+      // FİNAL BİTTİ - KAZANANI BUL VE BİLDİRİM GÖNDER
+      
+      // 1. Turnuvayı tamamlandı olarak işaretle
       await supabase
         .from("tournaments")
         .update({ status: "completed", finished_at: new Date().toISOString() })
         .eq("id", tournamentId);
+
+      // 2. Final maçını ve kazananı bul
+      const finalMatch = roundMatches[0]; // Final tek maçtır
+      if (finalMatch && finalMatch.winner_id) {
+        
+        // Kazananın ismini bulmak için profile ihtiyacımız olabilir
+        // (State'teki participants array'inden bulabiliriz)
+        const winnerProfile = participants.find(p => p.user_id === finalMatch.winner_id);
+        const winnerName = winnerProfile?.profiles?.username || "Bir Oyuncu";
+
+        // 3. Bildirim Fonksiyonunu Çağır (RPC)
+        await supabase.rpc("notify_tournament_end", {
+          p_tournament_id: tournamentId,
+          p_winner_id: finalMatch.winner_id,
+          p_winner_name: winnerName
+        });
+        
+        console.log("📢 Turnuva sonuç bildirimi gönderildi");
+      }
     }
-  }, [tournamentId, user, currentTournament, advanceToNextRound]);
+  }, [tournamentId, user, currentTournament, advanceToNextRound, participants]);
 
   // ⏰ SÜRESİ DOLAN MAÇLARI OTOMATİK TAMAMLA (Her 5 saniyede kontrol)
   // Oyuncular uygulamayı kill ederse veya bağlantı koparsa maç takılı kalır
