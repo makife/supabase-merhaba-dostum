@@ -389,7 +389,7 @@ const HomePage = () => {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#FFFDF5] text-slate-800 font-sans selection:bg-amber-200 overflow-hidden">
       {/* Light Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-800/40 via-[#1E293B] to-[#0F172A] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-orange-100/40 via-[#FFFDF5] to-[#FFFDF5] pointer-events-none" />
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-purple-500/10 to-transparent pointer-events-none" />
 
       {/* Main Scrollable Area */}
