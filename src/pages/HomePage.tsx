@@ -83,6 +83,7 @@ const HomePage = () => {
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
+  const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [greeting] = useState(() => {
@@ -142,6 +143,31 @@ const HomePage = () => {
     setUnlimitedTimeLeft(result);
   };
 
+  // Premium süre hesaplama (1 saat ve 24 saatlik abonelikler için)
+  const calculatePremiumTimeLeft = () => {
+    if (!profile?.premium_until) {
+      setPremiumTimeLeft("");
+      return;
+    }
+    const now = new Date();
+    const expiry = new Date(profile.premium_until);
+    if (now >= expiry) {
+      setPremiumTimeLeft("");
+      return;
+    }
+    const timeDiff = expiry.getTime() - now.getTime();
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+    let result = "";
+    if (days > 0) result = `${days}g ${hours}s`;
+    else if (hours > 0) result = `${hours}s ${minutes}d`;
+    else result = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    setPremiumTimeLeft(result);
+  };
+
   const calculateTimeUntilNextCredit = () => {
     if (!profile?.last_credit_refresh || isPremium || profile?.game_credits >= 5) {
       setTimeUntilNextCredit("");
@@ -189,6 +215,22 @@ const HomePage = () => {
       return () => clearInterval(interval);
     } else {
       setUnlimitedTimeLeft("");
+    }
+  }, [profile]);
+
+  // Premium süre sayacı effect
+  useEffect(() => {
+    if (profile?.premium_until) {
+      const expiry = new Date(profile.premium_until);
+      if (expiry > new Date()) {
+        calculatePremiumTimeLeft();
+        const interval = setInterval(calculatePremiumTimeLeft, 1000);
+        return () => clearInterval(interval);
+      } else {
+        setPremiumTimeLeft("");
+      }
+    } else {
+      setPremiumTimeLeft("");
     }
   }, [profile]);
 
@@ -412,6 +454,19 @@ const HomePage = () => {
                 />
               </div>
             </div>
+
+            {/* Premium Timer (1 saat / 24 saat abonelik) */}
+            {isPremium && premiumTimeLeft && (
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Premium Üyelik</span>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-0">
+                    <Crown className="w-3 h-3 mr-1" /> Premium
+                  </Badge>
+                  <span className="text-xs text-amber-400 font-medium">{premiumTimeLeft}</span>
+                </div>
+              </div>
+            )}
 
             {/* Credits Bar */}
             {!isPremium && (
