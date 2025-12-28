@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMusic } from "@/contexts/MusicContext";
-import { useGame } from "@/contexts/GameContext";
-import GameModeSelector from "@/components/GameModeSelector";
-import { FloatingMenu } from "@/components/FloatingMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
@@ -15,11 +12,11 @@ import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
-import { Brain, Grid3X3, ChevronRight, Gamepad2 } from "lucide-react";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
-import { useUserRole } from "@/hooks/useUserRole";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
+import GameModeSelector from "@/components/GameModeSelector";
+import { FloatingMenu } from "@/components/FloatingMenu";
 
 import {
   Bot,
@@ -31,29 +28,26 @@ import {
   Crown,
   Zap,
   Gift,
-  Sparkles,
   Infinity,
   Star,
   Flame,
   Play,
+  Gamepad2,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
-// Pozitif selamlama mesajları
+// --- YARDIMCI SABİTLER VE FONKSİYONLAR ---
+
 const greetingMessages = [
-  "Harika görünüyorsun! 🌟",
-  "Bugün şanslı gününüz! 🍀",
-  "Mükemmel bir gün! ✨",
-  "Enerjiniz çok yüksek! ⚡",
-  "Harika bir başlangıç! 🚀",
-  "Bugün kazanma günün! 🏆",
-  "Muhteşem görünüyorsun! 💫",
-  "Kazanmaya hazır mısın? 🎯",
-  "Şampiyon geri döndü! 👑",
+  "Sahne senin! 🌟",
+  "Bugün şanslı günün! 🍀",
+  "Enerjin harika! ⚡",
+  "Rekor kırmaya hazır mısın? 🚀",
+  "Şampiyon geldi! 👑",
 ];
 
-const getRandomGreeting = () => {
-  return greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
-};
+const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
 
 const isGiftPremium = (profile: any) => {
   if (!profile?.premium_until) return false;
@@ -69,39 +63,90 @@ const isUnlimitedLivesActive = (profile: any) => {
   return expiry > new Date();
 };
 
-// VIP türünü belirle: 'yearly' (365+ gün), 'monthly' (30+ gün), 'short' (kısa süreli), null (VIP değil)
 const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   if (!profile?.premium_until) return null;
   const now = new Date();
   const premiumUntil = new Date(profile.premium_until);
   if (premiumUntil <= now) return null;
-
   const daysRemaining = Math.ceil((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-  // 300+ gün kaldıysa yıllık VIP
   if (daysRemaining >= 300) return "yearly";
-  // 25+ gün kaldıysa aylık VIP
   if (daysRemaining >= 25) return "monthly";
-  // Daha kısa süreli (1 saat, 24 saat vb.)
   return "short";
 };
 
+// --- ALT BİLEŞENLER (PERFORMANS VE DÜZEN İÇİN AYRILDI) ---
+
+// 1. İstatistik Kartı (Küçük Widget)
+const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
+  <div className="flex-1 bg-slate-900/50 border border-white/5 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+    <div
+      className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-${colorClass}-500`}
+    />
+    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
+    <span className="text-lg font-bold text-white tracking-tight">{value}</span>
+    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{label}</span>
+  </div>
+);
+
+// 2. Oyun Modu Kartı (Büyük Kartlar)
+const GameModeCard = ({ mode, onClick }: any) => (
+  <div
+    onClick={onClick}
+    className={`relative group cursor-pointer overflow-hidden rounded-3xl p-4 h-32 flex flex-col justify-between transition-all duration-300 active:scale-95 border border-white/10 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
+  >
+    {/* Arkaplan Gradyanı */}
+    <div
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity`}
+    />
+
+    {/* Dekoratif Daireler */}
+    <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+
+    <div className="relative z-10 flex justify-between items-start">
+      <div className="p-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+        <mode.icon className="w-6 h-6 text-white" />
+      </div>
+      {mode.isLive && (
+        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5 animate-pulse">
+          CANLI
+        </Badge>
+      )}
+    </div>
+
+    <div className="relative z-10">
+      <h3 className="text-lg font-bold text-white leading-none mb-1 drop-shadow-md">{mode.title}</h3>
+      <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
+    </div>
+  </div>
+);
+
+// --- ANA COMPONENT ---
+
 const HomePage = () => {
   const { user } = useAuth();
-  const { profile, isPremium, refreshProfile, getTotalCredits, getDisplayCredits } = useUser();
+  const { profile, isPremium, refreshProfile, getTotalCredits } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
   const { jokers } = useJokerInventory();
+
+  // State Yönetimi
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
+
+  // Zamanlayıcı State'leri
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
+
+  // Diğer Hook'lar
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
+  const [showAvatarView, setShowAvatarView] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [greeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem("sessionGreeting");
     if (sessionGreeting) return sessionGreeting;
@@ -109,13 +154,11 @@ const HomePage = () => {
     sessionStorage.setItem("sessionGreeting", newGreeting);
     return newGreeting;
   });
-  const [showAvatarView, setShowAvatarView] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // VIP türünü hesapla
   const vipType = getVipType(profile);
 
-  // Level hesaplama
+  // --- HESAPLAMA FONKSİYONLARI ---
+
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -128,50 +171,37 @@ const HomePage = () => {
       level++;
       currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
     }
-
-    const experience = totalScore - totalExpNeeded;
-    const nextLevelExp = currentLevelExp;
-    return { level, experience, nextLevelExp };
+    return { level, experience: totalScore - totalExpNeeded, nextLevelExp: currentLevelExp };
   };
 
   const levelData = calculateLevel(profile?.total_score || 0);
   const progressPercent = (levelData.experience / levelData.nextLevelExp) * 100;
 
-  // Sınırsız can süre hesaplama
   const calculateUnlimitedTimeLeft = () => {
     if (!profile || !isUnlimitedLivesActive(profile)) {
       setUnlimitedTimeLeft("");
       return;
     }
     const now = new Date();
-    // unlimited_lives_until null kontrolü ile güvenli hale getirelim
     const expiryDateString = (profile as any).unlimited_lives_until;
-    if (!expiryDateString) {
-      setUnlimitedTimeLeft("");
-      return;
-    }
+    if (!expiryDateString) return;
 
     const expiry = new Date(expiryDateString);
     if (now >= expiry) {
       setUnlimitedTimeLeft("");
-      // Süre bittiyse profili yenile ki arayüz normale dönsün
-      if (unlimitedTimeLeft !== "") refreshProfile();
+      refreshProfile();
       return;
     }
 
     const timeDiff = expiry.getTime() - now.getTime();
-
     const totalSeconds = Math.floor(timeDiff / 1000);
     const days = Math.floor(totalSeconds / (3600 * 24));
     const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    // Formatlama: Gün varsa gün göster, yoksa SS:DD:SN
-    if (days > 0) {
-      setUnlimitedTimeLeft(`${days} Gün ${hours} Sa`);
-    } else {
-      // Çift haneli görünüm için padStart kullanıyoruz (09:05:01 gibi)
+    if (days > 0) setUnlimitedTimeLeft(`${days} Gün ${hours} Sa`);
+    else {
       const h = hours.toString().padStart(2, "0");
       const m = minutes.toString().padStart(2, "0");
       const s = seconds.toString().padStart(2, "0");
@@ -179,29 +209,21 @@ const HomePage = () => {
     }
   };
 
-  // Premium süre hesaplama (1 saat ve 24 saatlik abonelikler için)
   const calculatePremiumTimeLeft = () => {
-    if (!profile?.premium_until) {
-      setPremiumTimeLeft("");
-      return;
-    }
+    if (!profile?.premium_until) return setPremiumTimeLeft("");
     const now = new Date();
     const expiry = new Date(profile.premium_until);
-    if (now >= expiry) {
-      setPremiumTimeLeft("");
-      return;
-    }
+    if (now >= expiry) return setPremiumTimeLeft("");
+
     const timeDiff = expiry.getTime() - now.getTime();
     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-    let result = "";
-    if (days > 0) result = `${days}g ${hours}s`;
-    else if (hours > 0) result = `${hours}s ${minutes}d`;
-    else result = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-    setPremiumTimeLeft(result);
+    if (days > 0) setPremiumTimeLeft(`${days} Gün`);
+    else {
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      setPremiumTimeLeft(`${hours}s ${minutes}d`);
+    }
   };
 
   const calculateTimeUntilNextCredit = () => {
@@ -212,10 +234,8 @@ const HomePage = () => {
     const now = new Date();
     const lastRefresh = new Date(profile.last_credit_refresh);
     const nextRefresh = new Date(lastRefresh.getTime() + 72 * 60 * 1000);
-    if (now >= nextRefresh) {
-      setTimeUntilNextCredit("");
-      return;
-    }
+    if (now >= nextRefresh) return setTimeUntilNextCredit("");
+
     const timeDiff = nextRefresh.getTime() - now.getTime();
     const minutes = Math.floor(timeDiff / (1000 * 60));
     const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
@@ -234,39 +254,32 @@ const HomePage = () => {
           last_credit_refresh: new Date().toISOString(),
         })
         .eq("id", user.id);
+
       if (!error) {
         await refreshProfile();
-        toast.success(`🎮 +1 Kredi eklendi! (${Math.min(currentCredits + 1, 5)}/5)`);
+        toast.success(`🎮 +1 Kredi eklendi!`);
         playSound("buttonClick");
       }
     } catch (error) {
-      console.error("Kredi yenileme hatası:", error);
+      console.error(error);
     }
   };
+
+  // --- USE EFFECTS ---
 
   useEffect(() => {
     if (profile && isUnlimitedLivesActive(profile)) {
       calculateUnlimitedTimeLeft();
       const interval = setInterval(calculateUnlimitedTimeLeft, 1000);
       return () => clearInterval(interval);
-    } else {
-      setUnlimitedTimeLeft("");
-    }
+    } else setUnlimitedTimeLeft("");
   }, [profile]);
 
-  // Premium süre sayacı effect
   useEffect(() => {
     if (profile?.premium_until) {
-      const expiry = new Date(profile.premium_until);
-      if (expiry > new Date()) {
-        calculatePremiumTimeLeft();
-        const interval = setInterval(calculatePremiumTimeLeft, 1000);
-        return () => clearInterval(interval);
-      } else {
-        setPremiumTimeLeft("");
-      }
-    } else {
-      setPremiumTimeLeft("");
+      calculatePremiumTimeLeft();
+      const interval = setInterval(calculatePremiumTimeLeft, 60000); // Dakikada bir yeterli
+      return () => clearInterval(interval);
     }
   }, [profile]);
 
@@ -277,8 +290,7 @@ const HomePage = () => {
         calculateTimeUntilNextCredit();
         if (profile?.last_credit_refresh && !isPremium && profile.game_credits < 5) {
           const now = new Date();
-          const lastRefresh = new Date(profile.last_credit_refresh);
-          const nextRefresh = new Date(lastRefresh.getTime() + 72 * 60 * 1000);
+          const nextRefresh = new Date(new Date(profile.last_credit_refresh).getTime() + 72 * 60 * 1000);
           if (now >= nextRefresh) {
             refreshCredits();
             setTimeout(() => refreshProfile(), 500);
@@ -296,373 +308,249 @@ const HomePage = () => {
   useEffect(() => {
     const checkDailyReset = async () => {
       if (!user || !profile) return;
-      const now = new Date();
-      const lastReset = profile.last_daily_reset ? new Date(profile.last_daily_reset) : null;
-      const today = now.toISOString().split("T")[0];
-      if (!lastReset || lastReset.toISOString().split("T")[0] !== today) {
-        await refreshProfile();
-      }
+      const today = new Date().toISOString().split("T")[0];
+      const lastReset = profile.last_daily_reset
+        ? new Date(profile.last_daily_reset).toISOString().split("T")[0]
+        : null;
+      if (lastReset !== today) await refreshProfile();
     };
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  useEffect(() => {
-    const handleStartDemoGame = () => {
-      navigate("/game/vs-computer?type=timed&demo=true");
-    };
-    window.addEventListener("startDemoGame", handleStartDemoGame);
-    return () => window.removeEventListener("startDemoGame", handleStartDemoGame);
-  }, [navigate]);
+  // --- HANDLERS ---
+
+  const handleGameModeClick = (modeId: string) => {
+    playSound("buttonClick");
+    // Premium veya hak kontrolü
+    if (
+      !isPremium &&
+      (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0 &&
+      !isUnlimitedLivesActive(profile)
+    ) {
+      toast.error("Yetersiz oyun hakkı!", { description: "Oyun oynamak için hak satın alın." });
+      navigate("/market");
+      return;
+    }
+    if (modeId === "tournament") navigate("/tournament");
+    else setSelectedMode(modeId);
+  };
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
-    if (roomId === "ai-game") {
-      navigate(`/game/vs-computer?type=${matchmakingGameType}`);
-      return;
-    }
-    navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
+    if (roomId === "ai-game") navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+    else navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
+  // --- KONFIGURASYON ---
   const gameModesConfig = [
+    {
+      id: "random-match",
+      title: "Rastgele Rakip",
+      description: "Hızlı eşleşme",
+      icon: Zap,
+      gradient: "from-violet-600 via-purple-600 to-indigo-600",
+      glowColor: "violet",
+      isLive: true,
+    },
+    {
+      id: "tournament",
+      title: "Turnuva",
+      description: "Büyük ödüller",
+      icon: Trophy,
+      gradient: "from-amber-500 via-orange-600 to-red-600",
+      glowColor: "amber",
+      isLive: false,
+    },
     {
       id: "vs-computer",
       title: "Yapay Zeka",
-      description: "AI ile pratik yap",
+      description: "Pratik yap",
       icon: Bot,
-      gradient: "from-cyan-500 via-blue-600 to-indigo-700",
+      gradient: "from-cyan-500 via-blue-600 to-sky-600",
       glowColor: "cyan",
+      isLive: false,
     },
     {
       id: "private-room",
       title: "Özel Oda",
       description: "Arkadaşınla oyna",
       icon: Users,
-      gradient: "from-emerald-500 via-green-600 to-teal-700",
+      gradient: "from-emerald-500 via-green-600 to-teal-600",
       glowColor: "emerald",
-    },
-    {
-      id: "random-match",
-      title: "Rastgele Rakip",
-      description: "Rastgele oyuncu ile eşleş",
-      icon: Zap,
-      gradient: "from-violet-500 via-purple-600 to-fuchsia-700",
-      glowColor: "violet",
-    },
-    {
-      id: "tournament",
-      title: "Turnuva",
-      description: "8 kişilik turnuvaya katıl",
-      icon: Trophy,
-      gradient: "from-amber-500 via-orange-600 to-red-700",
-      glowColor: "amber",
+      isLive: false,
     },
   ];
 
   const miniGamesConfig = [
-    { id: "wheel", title: "Günlük Çark", icon: "🎡", gradient: "from-yellow-500 to-orange-600", route: "/wheel" },
+    { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
     {
       id: "memory",
       title: "Hafıza",
       icon: "🧠",
-      gradient: "from-purple-500 to-pink-600",
+      color: "purple",
       route: "/memory-game",
       disabled: !canPlayMemory,
       cooldown: timeUntilNextPlay,
     },
-    { id: "neon", title: "Dokunsana", icon: "⚡", gradient: "from-cyan-500 to-blue-600", route: "/neon-blitz" },
-    { id: "morles", title: "Harf Kulesi", icon: "🏗️", gradient: "from-teal-500 to-cyan-600", route: "/morles-game" },
-    {
-      id: "simon",
-      title: "Sıkı Takip",
-      icon: "🎯",
-      gradient: "from-indigo-500 to-purple-600",
-      route: "/grid-simon-says",
-    },
-    { id: "puzzle", title: "Puzzle", icon: "🧩", gradient: "from-blue-500 to-indigo-600", route: "/puzzle-game" },
-    {
-      id: "dino",
-      title: "Reaktör Koşusu",
-      icon: "☢️",
-      gradient: "from-red-500 to-orange-600",
-      route: "/reactor-runner",
-    },
+    { id: "neon", title: "Refleks", icon: "⚡", color: "cyan", route: "/neon-blitz" },
+    { id: "morles", title: "Kule", icon: "🏗️", color: "teal", route: "/morles-game" },
+    { id: "puzzle", title: "Puzzle", icon: "🧩", color: "blue", route: "/puzzle-game" },
   ];
 
-  const handleGameModeClick = (modeId: string) => {
-    playSound("buttonClick");
-    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-      toast.error("Yetersiz oyun hakkı!", { description: "Oyun oynamak için hak satın alın." });
-      return;
-    }
-    if (modeId === "tournament") {
-      navigate("/tournament");
-    } else {
-      setSelectedMode(modeId);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 flex flex-col bg-background game-bg-animated game-hex-pattern overflow-hidden">
-      {/* Main Content - blur when menu is open */}
+    <div className="fixed inset-0 flex flex-col bg-[#0F172A] text-white font-sans selection:bg-indigo-500/30 overflow-hidden">
+      {/* Arkaplan Efektleri (CSS ile performanslı) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-[#0F172A] to-[#0F172A] pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
+
+      {/* Ana İçerik */}
       <div
-        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isMenuOpen ? "blur-md pointer-events-none" : ""}`}
+        className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative z-10 pb-24 transition-all duration-300 ${isMenuOpen ? "blur-sm scale-[0.98]" : ""}`}
       >
-        {/* Header Section */}
-        <div className="flex-shrink-0 p-3 safe-area-top">
+        {/* HEADER */}
+        <div className="px-5 pt-6 pb-2 flex items-center justify-between">
+          {/* Sol: Profil */}
+          <div className="flex items-center gap-3" onClick={() => setShowAvatarView(true)}>
+            <div className="relative">
+              <div
+                className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+              >
+                <Avatar className="w-full h-full border-2 border-[#0F172A]">
+                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
+                  <AvatarFallback className="bg-slate-800 text-xs">USER</AvatarFallback>
+                </Avatar>
+              </div>
+              {isPremium && (
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#0F172A]">
+                  <Crown className="w-2.5 h-2.5 text-white" />
+                </div>
+              )}
+            </div>
+            <div>
+              <h2 className="text-base font-bold leading-tight">{profile?.username || "Misafir"}</h2>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="h-1.5 w-16 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${progressPercent}%` }} />
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold">LVL {levelData.level}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Sağ: Mürekkep */}
           <div
-            className={`rounded-2xl p-4 relative overflow-hidden border transition-all duration-300 ${
-              vipType === "yearly"
-                ? "bg-gradient-to-br from-amber-900/40 via-yellow-800/30 to-orange-900/40 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                : vipType === "monthly"
-                  ? "bg-gradient-to-br from-sky-900/40 via-cyan-800/30 to-blue-900/40 border-sky-400/50 shadow-[0_0_20px_rgba(56,189,248,0.3)]"
-                  : "game-glass-card"
-            }`}
+            onClick={() => {
+              playSound("buttonClick");
+              navigate("/market");
+            }}
+            className="flex items-center gap-2 bg-slate-900/80 border border-slate-700/50 rounded-full pl-1 pr-3 py-1 backdrop-blur-md active:scale-95 transition-transform"
           >
-            {/* VIP Badge Overlay */}
-            {(vipType === "yearly" || vipType === "monthly") && (
-              <div
-                className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${
-                  vipType === "yearly"
-                    ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-amber-950"
-                    : "bg-gradient-to-r from-sky-400 to-cyan-300 text-sky-950"
-                }`}
-              >
-                <Crown className="w-3 h-3" />
-                {vipType === "yearly" ? "GOLD VIP" : "VIP"}
-              </div>
-            )}
-
-            {/* User Info Row */}
-            <div className="flex items-center justify-between mb-4">
-              {/* Avatar & Name */}
-              <div className="flex items-center gap-3">
-                <div className="relative cursor-pointer game-avatar-ring" onClick={() => setShowAvatarView(true)}>
-                  <Avatar
-                    className={`w-14 h-14 border-2 shadow-lg ${
-                      vipType === "yearly"
-                        ? "border-amber-400/70"
-                        : vipType === "monthly"
-                          ? "border-sky-400/70"
-                          : "border-primary/50"
-                    }`}
-                  >
-                    <AvatarImage
-                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
-                      alt="Profile"
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
-                      <User className="w-6 h-6" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {isPremium && (
-                    <div
-                      className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-lg ${
-                        vipType === "yearly"
-                          ? "bg-gradient-to-br from-yellow-400 to-amber-600"
-                          : vipType === "monthly"
-                            ? "bg-gradient-to-br from-sky-400 to-cyan-500"
-                            : "bg-gradient-to-br from-yellow-400 to-amber-600"
-                      }`}
-                    >
-                      <Crown className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-bold game-gradient-text font-bungee tracking-wide">KELİMELE</h1>
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {profile?.username || user?.email?.split("@")[0]}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{greeting}</p>
-                </div>
-              </div>
-
-              {/* Ink Counter */}
-              <div
-                className="flex flex-col items-center cursor-pointer"
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/market");
-                }}
-              >
-                <div className="relative">
-                  <img src="/murekkepikon.png" alt="Mürekkep" className="w-10 h-10 object-contain drop-shadow-lg" />
-                </div>
-                <div className="game-ink-counter bg-gradient-to-r from-primary to-accent px-3 py-0.5 rounded-full mt-1 shadow-lg">
-                  <span className="text-sm font-bold text-primary-foreground">{profile?.ink_count || 0}</span>
-                </div>
-              </div>
+            <div className="w-7 h-7 bg-indigo-500/20 rounded-full flex items-center justify-center">
+              <img src="/murekkepikon.png" alt="ink" className="w-5 h-5 object-contain" />
             </div>
-
-            {/* Level Progress */}
-            <div className="bg-background/30 backdrop-blur-sm rounded-xl p-3 border border-border/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <Star className="w-4 h-4 text-white fill-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">Seviye {levelData.level}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {levelData.experience} / {levelData.nextLevelExp} XP
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-primary">{(profile?.total_score || 0).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Toplam Puan</p>
-                </div>
-              </div>
-
-              <div className="relative h-2 bg-background/50 rounded-full overflow-hidden game-progress-bar">
-                <div
-                  style={{ width: `${progressPercent}%` }}
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 rounded-full transition-all duration-500"
-                />
-              </div>
-            </div>
-
-            {/* Premium Timer (1 saat / 24 saat abonelik) */}
-            {isPremium && premiumTimeLeft && (
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Premium Üyelik</span>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white border-0">
-                    <Crown className="w-3 h-3 mr-1" /> Premium
-                  </Badge>
-                  <span className="text-xs text-amber-400 font-medium">{premiumTimeLeft}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Credits Bar - GÜNCELLENMİŞ VERSİYON */}
-            {!isPremium && (
-              <div className="mt-3 flex items-center justify-between bg-black/5 p-2 rounded-lg border border-black/5">
-                {/* Sol Etiket: Duruma göre değişsin */}
-                <span className="text-xs text-muted-foreground font-medium pl-1">
-                  {isUnlimitedLivesActive(profile) ? "Kalan Süre" : "Kalan Hak"}
-                </span>
-
-                {isUnlimitedLivesActive(profile) ? (
-                  <div className="flex items-center gap-2">
-                    {/* SAYAÇ KUTUSU */}
-                    {unlimitedTimeLeft ? (
-                      <div className="flex items-center gap-1.5 bg-orange-100 border border-orange-200 px-2 py-1 rounded-md shadow-sm transition-all duration-300">
-                        <Clock className="w-3 h-3 text-orange-600 animate-pulse" />
-                        <span className="text-xs font-mono font-bold text-orange-600 tabular-nums leading-none tracking-wide">
-                          {unlimitedTimeLeft}
-                        </span>
-                      </div>
-                    ) : (
-                      // Hesaplama yapılırken boş görünmesin diye gri kutu
-                      <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
-                    )}
-
-                    {/* SINIRSIZ ROZETİ */}
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-sm animate-in fade-in zoom-in duration-300">
-                      <Infinity className="w-3 h-3 mr-1" /> Sınırsız
-                    </Badge>
-                  </div>
-                ) : (
-                  /* NORMAL HAK GÖRÜNÜMÜ */
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const totalCredits = getTotalCredits();
-
-                      if (totalCredits > 5) {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <div key={i} className="w-5 h-2 rounded-full bg-green-500" />
-                              ))}
-                            </div>
-                            <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 text-xs px-2 py-0.5">
-                              +{totalCredits - 5}
-                            </Badge>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="flex gap-1">
-                          {Array.from({ length: 5 }, (_, i) => (
-                            <div
-                              key={i}
-                              className={`w-5 h-2 rounded-full shadow-sm transition-colors duration-300 ${
-                                i < totalCredits
-                                  ? i < 2
-                                    ? "bg-red-500"
-                                    : i < 4
-                                      ? "bg-amber-500"
-                                      : "bg-green-500"
-                                  : "bg-gray-200"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {/* +1 Hak İçin Geri Sayım */}
-                    {timeUntilNextCredit && getTotalCredits() < 5 && (
-                      <div className="flex items-center gap-1 bg-white/50 px-1.5 py-0.5 rounded text-[10px] text-orange-500 font-bold border border-orange-100">
-                        <Clock className="w-3 h-3" />
-                        <span className="tabular-nums">{timeUntilNextCredit}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Jokers */}
-            <div className="mt-3 flex gap-2">
-              {[
-                { img: "/degistirIkon.png", name: "Değiştir", count: jokers.degistir },
-                { img: "/fisildaIkon.png", name: "Fısılda", count: jokers.fisilida },
-                { img: "/senyazIkon.png", name: "Sen Yaz", count: jokers.senYaz },
-              ].map((joker) => (
-                <div
-                  key={joker.name}
-                  className="flex-1 game-joker-card bg-background/30 backdrop-blur-sm rounded-lg p-1 flex items-center justify-center gap-1 border border-border/30"
-                >
-                  <img src={joker.img} alt={joker.name} className="w-8 h-8 object-contain" />
-                  <span className="text-sm font-bold text-foreground">×{joker.count}</span>
-                </div>
-              ))}
+            <span className="text-sm font-bold">{profile?.ink_count || 0}</span>
+            <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
+              <span className="text-[10px] leading-none text-white">+</span>
             </div>
           </div>
         </div>
 
-        {/* Gift Premium Banner */}
-        {isPremium && isGiftPremium(profile) && (
-          <div className="flex-shrink-0 px-3 pb-2">
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                <Gift className="w-5 h-5 text-white" />
+        {/* BİLGİ PANELLERİ (HAK & SÜRE) */}
+        <div className="px-5 mt-2 space-y-2">
+          {/* Premium Süre */}
+          {isPremium && premiumTimeLeft && (
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/20 rounded-xl p-2 px-3">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span className="text-xs text-amber-100 font-medium">Premium</span>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">🎉 1 Hafta Premium Hediye!</p>
-                <p className="text-xs text-muted-foreground">
-                  Bitiş: {profile?.premium_until ? new Date(profile.premium_until).toLocaleDateString("tr-TR") : ""}
+              <span className="text-xs font-mono font-bold text-amber-400">{premiumTimeLeft}</span>
+            </div>
+          )}
+
+          {/* Kalan Hak & Sınırsız Süre */}
+          {(!isPremium || isUnlimitedLivesActive(profile)) && (
+            <div className="flex items-center justify-between bg-slate-800/50 border border-white/5 rounded-xl p-2 px-3 backdrop-blur-sm">
+              <span className="text-xs text-slate-400 font-medium">
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Hak"}
+              </span>
+
+              {isUnlimitedLivesActive(profile) ? (
+                <div className="flex items-center gap-2">
+                  {unlimitedTimeLeft ? (
+                    <div className="flex items-center gap-1.5 bg-indigo-500/20 px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                      <Clock className="w-3 h-3 text-indigo-400 animate-pulse" />
+                      <span className="text-xs font-mono font-bold text-indigo-300 tabular-nums">
+                        {unlimitedTimeLeft}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-5 bg-slate-700/50 rounded animate-pulse" />
+                  )}
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] px-2 py-0.5">
+                    Sınırsız
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <div
+                        key={i}
+                        className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < (profile?.game_credits || 0) ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-slate-700"}`}
+                      />
+                    ))}
+                  </div>
+                  {timeUntilNextCredit && getTotalCredits() < 5 && (
+                    <span className="text-[10px] text-slate-500 font-mono">{timeUntilNextCredit}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* HEDİYE BANNER */}
+        {isPremium && isGiftPremium(profile) && (
+          <div className="px-5 mt-4">
+            <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-purple-900/20">
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
+                <Gift className="w-5 h-5 text-white animate-bounce" />
+              </div>
+              <div className="flex-1 z-10">
+                <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
+                <p className="text-[10px] text-white/80">
+                  Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Mini Games Horizontal Scroll */}
-        <div className="flex-shrink-0 px-3 py-2">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4 text-primary" />
-              Mini Oyunlar
+        {/* OYUN MODLARI (GRID) */}
+        <div className="px-5 mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 text-indigo-400" />
+              Oyun Modları
             </h3>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1" style={{ scrollSnapType: "x mandatory" }}>
+
+          <div className="grid grid-cols-2 gap-3">
+            {gameModesConfig.map((mode) => (
+              <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
+            ))}
+          </div>
+        </div>
+
+        {/* MINI OYUNLAR (YATAY SCROLL) */}
+        <div className="mt-6 pl-5">
+          <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            Mini Oyunlar
+          </h3>
+          <div className="flex gap-3 overflow-x-auto pb-4 pr-5 scrollbar-hide">
             {miniGamesConfig.map((game) => (
               <div
                 key={game.id}
@@ -670,167 +558,102 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate(game.route);
                 }}
-                className={`game-mini-pill flex-shrink-0 bg-gradient-to-br ${game.gradient} rounded-xl p-3 min-w-[100px] cursor-pointer relative overflow-hidden active:scale-95`}
-                style={{ scrollSnapAlign: "start" }}
+                className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
               >
-                <div className="relative z-10">
-                  <span className="text-2xl block mb-1">{game.icon}</span>
-                  <p className="text-xs font-bold text-white truncate">{game.title}</p>
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl shadow-lg relative overflow-hidden group-active:scale-95 transition-transform`}
+                >
+                  <div
+                    className={`absolute inset-0 bg-${game.color}-500/10 opacity-0 group-hover:opacity-100 transition-opacity`}
+                  />
+                  {game.icon}
+                </div>
+                <span className="text-[10px] font-medium text-slate-400 text-center leading-tight">
+                  {game.title}
                   {game.disabled && game.cooldown && (
-                    <p className="text-[10px] text-white/70 mt-0.5">{game.cooldown}</p>
+                    <span className="block text-[9px] text-red-400 mt-0.5">{game.cooldown}</span>
                   )}
-                </div>
-                {game.disabled && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20" />}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Main Game Modes */}
-        <div className="flex-shrink-0 px-3 pt-2">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Flame className="w-4 h-4 text-orange-500" />
-              Oyun Modları
-            </h3>
+        {/* İSTATİSTİKLER (WIDGETS) */}
+        <div className="px-5 mt-2 pb-6">
+          <div className="flex gap-3">
+            <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="indigo" />
+            <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
+            <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
           </div>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-24 scrollbar-hide" data-onboarding="game-modes">
-          <div className="grid grid-cols-2 gap-3">
-            {gameModesConfig.map((mode) => (
-              <div
-                key={mode.id}
-                onClick={() => handleGameModeClick(mode.id)}
-                className={`game-mode-card bg-gradient-to-br ${mode.gradient} rounded-2xl overflow-hidden cursor-pointer aspect-[4/3] active:scale-[0.98]`}
-              >
-                <div className="relative h-full p-4 flex flex-col justify-between z-10">
-                  {/* Icon */}
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                    <mode.icon className="w-6 h-6 text-white" />
-                  </div>
 
-                  {/* Title & Description */}
-                  <div>
-                    <h4 className="text-base font-bold text-white drop-shadow-lg">{mode.title}</h4>
-                    <p className="text-xs text-white/80 mt-0.5">{mode.description}</p>
-                  </div>
-
-                  {/* Play Button */}
-                  <Button
-                    size="sm"
-                    className="game-btn-premium w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm font-semibold"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGameModeClick(mode.id);
-                    }}
-                  >
-                    <Play className="w-4 h-4 mr-1 fill-white" />
-                    Oyna
-                  </Button>
-                </div>
+        {/* JOKER ENVANTERİ (ALT BİLGİ) */}
+        <div className="px-5 mb-6">
+          <div className="bg-slate-900/60 rounded-xl p-3 border border-white/5 flex justify-around">
+            {[
+              { img: "/degistirIkon.png", count: jokers.degistir },
+              { img: "/fisildaIkon.png", count: jokers.fisilida },
+              { img: "/senyazIkon.png", count: jokers.senYaz },
+            ].map((j, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <img src={j.img} className="w-6 h-6 object-contain opacity-80" alt="joker" />
+                <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
               </div>
             ))}
           </div>
-
-          {/* Stats Section */}
-          <div className="mt-4 flex gap-2">
-            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-              <Target className="w-4 h-4 text-primary mx-auto mb-1" />
-              <p className="text-lg font-bold text-foreground">{profile?.daily_games || 0}</p>
-              <p className="text-xs text-muted-foreground">Günlük Oyun</p>
-            </div>
-            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-              <Flame className="w-4 h-4 text-orange-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-foreground">{profile?.win_streak || 0}</p>
-              <p className="text-xs text-muted-foreground">Seri</p>
-            </div>
-            <div className="game-stat-badge flex-1 rounded-xl p-3 text-center">
-              <Trophy className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-foreground">{profile?.wins || 0}</p>
-              <p className="text-xs text-muted-foreground">Zafer</p>
-            </div>
-          </div>
         </div>
-
-        {/* Game Mode Selector Modals */}
-        {selectedMode && selectedMode === "private-room" ? (
-          <PrivateRoomModal
-            onClose={() => setSelectedMode(null)}
-            onStartGame={(nakamaMatchId, gameType) => {
-              setSelectedMode(null);
-              navigate(`/game/random-match?room=${nakamaMatchId}&type=${gameType}`);
-            }}
-          />
-        ) : selectedMode === "random-match" ? (
-          <GameModeSelector
-            mode={selectedMode}
-            onStart={(gameType) => {
-              setSelectedMode(null);
-              setMatchmakingGameType(gameType);
-              setMatchmakingKey(Date.now());
-              setShowMatchmaking(true);
-              setTimeout(() => startSearch(gameType), 100);
-            }}
-            onClose={() => {
-              playSound("buttonClick");
-              setSelectedMode(null);
-            }}
-          />
-        ) : selectedMode === "tournament" ? (
-          <GameModeSelector
-            mode={selectedMode}
-            onStart={(gameType) => {
-              navigate("/tournament", { state: { gameType } });
-              setSelectedMode(null);
-            }}
-            onClose={() => {
-              playSound("buttonClick");
-              setSelectedMode(null);
-            }}
-          />
-        ) : selectedMode ? (
-          <GameModeSelector
-            mode={selectedMode}
-            onStart={(gameType) => {
-              const mode = gameModesConfig.find((m) => m.id === selectedMode);
-              if (mode) {
-                navigate(`/game/${selectedMode}?type=${gameType}`);
-              }
-              setSelectedMode(null);
-            }}
-            onClose={() => {
-              playSound("buttonClick");
-              setSelectedMode(null);
-            }}
-          />
-        ) : null}
-
-        {/* Slot Matchmaking Modal */}
-        {showMatchmaking && (
-          <div className="fixed inset-0 z-[9999] bg-background">
-            <SlotMatchmaking
-              key={`matchmaking-${matchmakingKey}`}
-              onCancel={() => {
-                cancelSearch();
-                setShowMatchmaking(false);
-              }}
-              searchProgress={searchProgress}
-            />
-          </div>
-        )}
       </div>
 
-      {/* Floating Menu - outside blur wrapper */}
-      <div data-onboarding="floating-menu" className="fixed bottom-0 left-0 right-0 z-50 game-floating-menu">
+      {/* --- MODALLAR --- */}
+      {selectedMode && selectedMode === "private-room" ? (
+        <PrivateRoomModal
+          onClose={() => setSelectedMode(null)}
+          onStartGame={(matchId, type) => {
+            setSelectedMode(null);
+            navigate(`/game/random-match?room=${matchId}&type=${type}`);
+          }}
+        />
+      ) : selectedMode ? (
+        <GameModeSelector
+          mode={selectedMode}
+          onStart={(type) => {
+            if (selectedMode === "tournament") navigate("/tournament", { state: { gameType: type } });
+            else if (selectedMode === "random-match") {
+              setMatchmakingGameType(type);
+              setMatchmakingKey(Date.now());
+              setShowMatchmaking(true);
+              setTimeout(() => startSearch(type), 100);
+            } else navigate(`/game/${selectedMode}?type=${type}`);
+            setSelectedMode(null);
+          }}
+          onClose={() => setSelectedMode(null)}
+        />
+      ) : null}
+
+      {showMatchmaking && (
+        <div className="fixed inset-0 z-[9999] bg-[#0F172A]">
+          <SlotMatchmaking
+            key={`matchmaking-${matchmakingKey}`}
+            onCancel={() => {
+              cancelSearch();
+              setShowMatchmaking(false);
+            }}
+            searchProgress={searchProgress}
+          />
+        </div>
+      )}
+
+      {/* FLOATING MENU */}
+      <div className="fixed bottom-0 left-0 right-0 z-50">
         <FloatingMenu onOpenChange={setIsMenuOpen} />
       </div>
 
-      {/* Avatar View Dialog */}
       <AvatarViewDialog
         open={showAvatarView}
         onOpenChange={setShowAvatarView}
         avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
-        username={profile?.username || user?.user_metadata?.username || user?.email?.split("@")[0] || "Oyuncu"}
+        username={profile?.username || "Oyuncu"}
       />
     </div>
   );
