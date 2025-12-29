@@ -19,13 +19,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10,
     },
-    // Daha agresif reconnect ayarları
-    heartbeatIntervalMs: 8000, // 8 saniyede bir heartbeat
+    // Production-level settings
+    heartbeatIntervalMs: 10000, // 10 saniyede bir heartbeat (daha aggressive)
     reconnectAfterMs: (tries: number) => {
-      // Çok hızlı exponential backoff: 300ms, 600ms, 1.2s, max 5s
-      const delay = Math.min(300 * Math.pow(2, tries), 5000);
-      console.log(`[Supabase Realtime] Reconnect denemesi ${tries + 1}, ${delay}ms sonra...`);
-      return delay;
+      // Exponential backoff: 500ms, 1s, 2s, 4s, max 8s
+      return Math.min(500 * Math.pow(2, tries), 8000);
     },
   },
   global: {
@@ -38,27 +36,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Connection health check helper - uses server time RPC for accurate status
 export const checkConnection = async (): Promise<boolean> => {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
     const { error } = await supabase.rpc('get_server_time');
-    clearTimeout(timeoutId);
-    
     return !error;
   } catch (e) {
     return false;
-  }
-};
-
-// Force reconnect helper
-export const forceReconnect = async (): Promise<void> => {
-  console.log('[Supabase] Force reconnect başlatılıyor...');
-  try {
-    await supabase.realtime.disconnect();
-    await new Promise(r => setTimeout(r, 300));
-    supabase.realtime.connect();
-    console.log('[Supabase] Force reconnect tamamlandı');
-  } catch (e) {
-    console.log('[Supabase] Force reconnect hatası:', e);
   }
 };

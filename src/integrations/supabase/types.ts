@@ -1931,14 +1931,6 @@ export type Database = {
           reason: string
         }[]
       }
-      notify_tournament_end: {
-        Args: {
-          p_tournament_id: string
-          p_winner_id: string
-          p_winner_name: string
-        }
-        Returns: undefined
-      }
       recalculate_user_stats: {
         Args: { p_user_id: string }
         Returns: undefined
