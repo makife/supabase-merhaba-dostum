@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Network } from "@capacitor/network";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -23,8 +24,201 @@ interface ConnectionContextType {
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
 
+// Singleton reconnection manager - closure problemini çözer
+class ReconnectionManager {
+  private isReconnecting = false;
+  private reconnectPromise: Promise<boolean> | null = null;
+  private consecutiveFailures = 0;
+  private lastReconnectTime = 0;
+  private channelsRef: Map<string, RealtimeChannel> = new Map();
+  
+  async performHealthCheck(): Promise<boolean> {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const status = await Network.getStatus();
+        if (!status.connected) {
+          console.log("[ReconnectMgr] Ağ yok");
+          return false;
+        }
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const { error } = await supabase.rpc("get_server_time");
+        clearTimeout(timeoutId);
+        
+        if (error) {
+          this.consecutiveFailures++;
+          console.log("[ReconnectMgr] RPC hatası:", error.message);
+          return false;
+        }
+        
+        this.consecutiveFailures = 0;
+        return true;
+      } catch (e) {
+        clearTimeout(timeoutId);
+        this.consecutiveFailures++;
+        return false;
+      }
+    } catch (e) {
+      this.consecutiveFailures++;
+      return false;
+    }
+  }
+
+  async reconnect(force = false, session: any, onStateChange: (state: Partial<ConnectionState>) => void): Promise<boolean> {
+    // Debounce - son 2 saniye içinde reconnect çağrıldıysa atla
+    const now = Date.now();
+    if (!force && now - this.lastReconnectTime < 2000) {
+      console.log("[ReconnectMgr] Debounce - çok yakın zamanda çağrıldı");
+      return false;
+    }
+    
+    // Zaten reconnect yapılıyorsa bekle
+    if (this.isReconnecting && this.reconnectPromise) {
+      console.log("[ReconnectMgr] Zaten reconnect yapılıyor, bekleniyor...");
+      return this.reconnectPromise;
+    }
+
+    this.isReconnecting = true;
+    this.lastReconnectTime = now;
+    onStateChange({ isReconnecting: true });
+
+    this.reconnectPromise = this._doReconnect(force, session, onStateChange);
+    
+    try {
+      return await this.reconnectPromise;
+    } finally {
+      this.isReconnecting = false;
+      this.reconnectPromise = null;
+    }
+  }
+
+  private async _doReconnect(force: boolean, session: any, onStateChange: (state: Partial<ConnectionState>) => void): Promise<boolean> {
+    console.log(`[ReconnectMgr] 🔄 Reconnect başlıyor (force: ${force})`);
+
+    try {
+      // 1. Ağ kontrolü
+      if (Capacitor.isNativePlatform()) {
+        let networkReady = false;
+        for (let i = 0; i < 5; i++) {
+          const status = await Network.getStatus();
+          if (status.connected) {
+            networkReady = true;
+            console.log(`[ReconnectMgr] ✅ Ağ hazır (deneme ${i + 1})`);
+            break;
+          }
+          console.log(`[ReconnectMgr] ⏳ Ağ bekleniyor (${i + 1}/5)...`);
+          await new Promise(r => setTimeout(r, 500));
+        }
+        
+        if (!networkReady) {
+          console.log("[ReconnectMgr] ❌ Ağ bulunamadı");
+          onStateChange({ isReconnecting: false, isConnected: false });
+          return false;
+        }
+      }
+
+      // 2. Mevcut bağlantıyı temizle (force modunda)
+      if (force) {
+        console.log("[ReconnectMgr] 🔌 Eski bağlantı kesiliyor...");
+        try {
+          await supabase.realtime.disconnect();
+        } catch (e) {
+          console.log("[ReconnectMgr] Disconnect hatası (önemli değil):", e);
+        }
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      // 3. Token güncelle
+      if (session?.access_token) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.access_token) {
+            supabase.realtime.setAuth(data.session.access_token);
+            console.log("[ReconnectMgr] 🔑 Token güncellendi");
+          }
+        } catch (e) {
+          console.log("[ReconnectMgr] Token güncelleme hatası:", e);
+        }
+      }
+
+      // 4. Yeniden bağlan
+      console.log("[ReconnectMgr] 🚀 Bağlanılıyor...");
+      supabase.realtime.connect();
+
+      // 5. Bağlantı testi (retry ile)
+      let isHealthy = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await new Promise(r => setTimeout(r, 800));
+        isHealthy = await this.performHealthCheck();
+        if (isHealthy) {
+          console.log(`[ReconnectMgr] ✅ Bağlantı başarılı (deneme ${attempt + 1})`);
+          break;
+        }
+        console.log(`[ReconnectMgr] ⏳ Bağlantı kontrolü başarısız (${attempt + 1}/3)`);
+      }
+
+      // 6. Kanalları yenile
+      if (isHealthy) {
+        for (const [name, channel] of this.channelsRef) {
+          if (channel.state !== "joined") {
+            console.log(`[ReconnectMgr] 📡 Kanal yenileniyor: ${name}`);
+            try {
+              channel.subscribe();
+            } catch (e) {
+              console.log(`[ReconnectMgr] Kanal abone hatası: ${name}`, e);
+            }
+          }
+        }
+      }
+
+      onStateChange({
+        isConnected: isHealthy,
+        isReconnecting: false,
+        lastConnectedAt: isHealthy ? new Date() : undefined,
+        reconnectAttempts: isHealthy ? 0 : undefined,
+      });
+
+      console.log(`[ReconnectMgr] ${isHealthy ? "✅ Başarılı" : "❌ Başarısız"}`);
+      return isHealthy;
+      
+    } catch (e) {
+      console.log("[ReconnectMgr] ❌ Hata:", e);
+      onStateChange({ isReconnecting: false, isConnected: false });
+      return false;
+    }
+  }
+
+  registerChannel(name: string, channel: RealtimeChannel) {
+    this.channelsRef.set(name, channel);
+  }
+
+  unregisterChannel(name: string) {
+    this.channelsRef.delete(name);
+  }
+
+  getChannelsHealth(): Map<string, "healthy" | "unhealthy" | "reconnecting"> {
+    const health = new Map<string, "healthy" | "unhealthy" | "reconnecting">();
+    for (const [name, channel] of this.channelsRef) {
+      if (channel.state === "joined") health.set(name, "healthy");
+      else if (channel.state === "joining") health.set(name, "reconnecting");
+      else health.set(name, "unhealthy");
+    }
+    return health;
+  }
+
+  getConsecutiveFailures() {
+    return this.consecutiveFailures;
+  }
+}
+
+// Singleton instance
+const reconnectionManager = new ReconnectionManager();
+
 export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
-  // 👇 1. DEĞİŞİKLİK: loading bilgisini de aldık ki Auth yüklenmeden bağlanmaya çalışmayalım
   const { session, loading: authLoading } = useAuth();
 
   const [state, setState] = useState<ConnectionState>({
@@ -36,215 +230,160 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
-  const channelsRef = useRef<Map<string, RealtimeChannel>>(new Map());
-  const consecutiveFailures = useRef(0);
   const appStateListenerRef = useRef<any>(null);
+  const networkListenerRef = useRef<any>(null);
+  const sessionRef = useRef(session);
+  const mountedRef = useRef(true);
 
-  // --- SAĞLIK KONTROLÜ ---
-  const performHealthCheck = useCallback(async (): Promise<boolean> => {
-    try {
-      const status = await Network.getStatus();
-      if (!status.connected) return false;
+  // Session'ı ref'te tut - closure problemini önler
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
-      // RPC ile sunucu zamanını çekerek gerçek bağlantıyı test et
-      const { error } = await supabase.rpc("get_server_time");
-      if (error) {
-        consecutiveFailures.current++;
-        return false;
-      }
-      consecutiveFailures.current = 0;
-      return true;
-    } catch (e) {
-      consecutiveFailures.current++;
+  const updateState = useCallback((partial: Partial<ConnectionState>) => {
+    if (!mountedRef.current) return;
+    setState(prev => ({ ...prev, ...partial }));
+  }, []);
+
+  const reconnect = useCallback(async (force = false): Promise<boolean> => {
+    if (authLoading && !sessionRef.current) {
+      console.log("[Connection] Auth yükleniyor, bekleniyor...");
       return false;
     }
-  }, []);
+    return reconnectionManager.reconnect(force, sessionRef.current, updateState);
+  }, [authLoading, updateState]);
 
-  // Kanal Durumlarını Kontrol Et
-  const checkChannelHealth = useCallback(() => {
-    const newHealth = new Map<string, "healthy" | "unhealthy" | "reconnecting">();
-    for (const [name, channel] of channelsRef.current) {
-      if (channel.state === "joined") newHealth.set(name, "healthy");
-      else if (channel.state === "joining") newHealth.set(name, "reconnecting");
-      else newHealth.set(name, "unhealthy");
-    }
-    setState((prev) => ({ ...prev, channelHealth: newHealth }));
-    return newHealth;
-  }, []);
-
-  // --- ANA BAĞLANMA MANTIĞI ---
-  const reconnect = useCallback(
-    async (force = false): Promise<boolean> => {
-      if (state.isReconnecting && !force) return false;
-
-      // Auth yükleniyorsa ve ortada session yoksa bekle (Kill sonrası için kritik)
-      if (authLoading && !session) {
-        console.log("[Connection] Auth yükleniyor, bekleniyor...");
-        return false;
-      }
-
-      setState((prev) => ({ ...prev, isReconnecting: true }));
-      console.log(`[Connection] 🔄 Reconnect: ${force ? "ZORLA" : "Normal"}`);
-
-      try {
-        // 1. TEMİZLİK
-        if (force) {
-          console.log("[Connection] 🔌 Bağlantı temizleniyor...");
-          await supabase.realtime.disconnect();
-          await new Promise((r) => setTimeout(r, 300));
-        }
-
-        // 2. TOKEN GÜNCELLEME
-        // Session varsa, token'ın sokete işlendiğinden emin ol
-        if (session?.access_token) {
-          // Token taze mi diye bak
-          const { data } = await supabase.auth.getSession();
-          if (data.session?.access_token) {
-            supabase.realtime.setAuth(data.session.access_token);
-          }
-        }
-
-        // 3. BAĞLAN
-        console.log("[Connection] 🚀 Bağlanılıyor...");
-        supabase.realtime.connect();
-
-        // 4. KONTROL
-        const isHealthy = await performHealthCheck();
-
-        // 5. KANALLARI KURTAR
-        if (isHealthy) {
-          const health = checkChannelHealth();
-          channelsRef.current.forEach((channel, name) => {
-            // Force durumunda veya kanal kopuksa abone ol
-            if (force || channel.state !== "joined") {
-              console.log(`[Connection] Kanal tazeleniyor: ${name}`);
-              channel.subscribe();
-            }
-          });
-        }
-
-        setState((prev) => ({
-          ...prev,
-          isConnected: isHealthy,
-          isReconnecting: false,
-          lastConnectedAt: isHealthy ? new Date() : prev.lastConnectedAt,
-          reconnectAttempts: isHealthy ? 0 : prev.reconnectAttempts + 1,
-        }));
-
-        return isHealthy;
-      } catch (e) {
-        console.log("[Connection] Hata:", e);
-        setState((prev) => ({ ...prev, isReconnecting: false }));
-        return false;
-      }
-    },
-    [state.isReconnecting, performHealthCheck, checkChannelHealth, session, authLoading],
-  );
-
-  // --- 🔥 1. KORUMA: KILL SONRASI (COLD START) ---
-  // Uygulama ilk açıldığında AppState listener tetiklenmez.
-  // Bu yüzden AuthContext "Yüklendim" dediği an bağlantıyı biz tetikleriz.
+  // Cold start - Auth hazır olduğunda bağlan
   useEffect(() => {
     if (!authLoading && session) {
       console.log("[Connection] ✅ Auth Hazır (Cold Start) -> Bağlanılıyor...");
-      // İlk açılışta temiz bir sayfa için force=true yapılabilir ama genelde normal reconnect yeterlidir.
-      // Garanti olsun diye kısa bir gecikmeyle başlatıyoruz.
-      setTimeout(() => reconnect(), 100);
+      setTimeout(() => reconnect(), 200);
     }
-  }, [authLoading, session]); // Sadece auth durumu değişince çalışır
+  }, [authLoading, session, reconnect]);
 
-  // --- 🔥 2. KORUMA: UYANMA (FOREGROUND) ---
-  // Uygulama arka plandan dönünce çalışır.
+  // Native uygulama state listener - KRITIK DÜZELTME
   useEffect(() => {
-    const initListener = async () => {
-      if (appStateListenerRef.current) await appStateListenerRef.current.remove();
+    if (!Capacitor.isNativePlatform()) return;
 
+    let isInitialized = false;
+
+    const setupListeners = async () => {
+      // Eski listener'ları temizle
+      if (appStateListenerRef.current) {
+        try { await appStateListenerRef.current.remove(); } catch (e) {}
+      }
+      if (networkListenerRef.current) {
+        try { await networkListenerRef.current.remove(); } catch (e) {}
+      }
+
+      // App State Listener
       appStateListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
+        console.log(`📱 [Connection] App State: ${isActive ? "FOREGROUND" : "BACKGROUND"}`);
+        
         if (isActive) {
-          console.log("📱 [Connection] Uygulama UYANDI!");
-
-          // Hemen mevcut bağlantıyı kopar (Eski bağlantıya güvenme)
-          await supabase.realtime.disconnect();
-
-          // SABIRLI BEKLEME DÖNGÜSÜ (10 kere dene)
-          let attempts = 0;
-          const checkNet = async () => {
-            const status = await Network.getStatus();
-            console.log(`📡 Ağ aranıyor (${attempts + 1}/10)...`);
-
-            if (status.connected) {
-              console.log("⚡ Ağ geldi -> Force Reconnect!");
-              reconnect(true);
-            } else if (attempts < 10) {
-              attempts++;
-              setTimeout(checkNet, 500); // 500ms sonra tekrar dene
-            } else {
-              // Son çare, belki ağ vardır ama plugin görememiştir
-              console.log("❌ Zaman aşımı, son şans deneniyor...");
-              reconnect(true);
-            }
-          };
-
-          // İlk denemeyi 500ms sonra yap
-          setTimeout(checkNet, 500);
+          // Ön plana geldi - FORCE reconnect yap
+          console.log("📱 [Connection] 🔄 Foreground - Force Reconnect başlatılıyor...");
+          
+          // Mevcut bağlantıyı kopar ve yeniden bağlan
+          try {
+            await supabase.realtime.disconnect();
+          } catch (e) {}
+          
+          // Kısa bekle ve reconnect
+          await new Promise(r => setTimeout(r, 300));
+          
+          // Reconnect manager'ı kullan
+          await reconnectionManager.reconnect(true, sessionRef.current, updateState);
+          
+          // Heartbeat'i yeniden başlat
+          startHeartbeat();
         } else {
-          console.log("💤 [Connection] Uyku modu.");
+          // Arka plana gitti - heartbeat durdur
+          console.log("💤 [Connection] Uyku modu - Heartbeat durduruluyor");
           stopHeartbeat();
         }
       });
+
+      // Network State Listener
+      networkListenerRef.current = await Network.addListener("networkStatusChange", async (status) => {
+        console.log(`📡 [Connection] Network: ${status.connected ? "CONNECTED" : "DISCONNECTED"}`);
+        
+        if (status.connected) {
+          // Ağ geldi - reconnect
+          console.log("📡 [Connection] Ağ geri geldi - Reconnect...");
+          await new Promise(r => setTimeout(r, 500));
+          await reconnectionManager.reconnect(true, sessionRef.current, updateState);
+        } else {
+          updateState({ isConnected: false });
+        }
+      });
+
+      isInitialized = true;
+      console.log("[Connection] ✅ Native listeners kuruldu");
     };
 
-    initListener();
-    startHeartbeat();
+    setupListeners();
 
     return () => {
-      if (appStateListenerRef.current) appStateListenerRef.current.remove();
-      stopHeartbeat();
+      if (appStateListenerRef.current) {
+        try { appStateListenerRef.current.remove(); } catch (e) {}
+      }
+      if (networkListenerRef.current) {
+        try { networkListenerRef.current.remove(); } catch (e) {}
+      }
     };
-  }, []); // Mount olduğunda sadece 1 kere listener kurulur
+  }, [updateState]);
 
-  // Heartbeat Yönetimi
-  const startHeartbeat = () => {
+  // Heartbeat yönetimi
+  const startHeartbeat = useCallback(() => {
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    
     heartbeatRef.current = setInterval(async () => {
-      // Auth yükleniyorsa kalp atışı yapma
       if (authLoading) return;
 
-      const isHealthy = await performHealthCheck();
-      checkChannelHealth();
+      const isHealthy = await reconnectionManager.performHealthCheck();
+      const channelHealth = reconnectionManager.getChannelsHealth();
 
-      if (!isHealthy && consecutiveFailures.current >= 2) {
-        console.log("[Connection] Kalp atışı zayıf -> Reconnect");
-        reconnect();
+      if (!isHealthy && reconnectionManager.getConsecutiveFailures() >= 2) {
+        console.log("[Connection] 💔 Heartbeat - Bağlantı kopuk, reconnect...");
+        await reconnectionManager.reconnect(false, sessionRef.current, updateState);
       }
 
-      setState((prev) => ({
-        ...prev,
-        isConnected: isHealthy || consecutiveFailures.current < 3,
-      }));
-    }, 10000);
-  };
+      updateState({
+        isConnected: isHealthy || reconnectionManager.getConsecutiveFailures() < 3,
+        channelHealth,
+      });
+    }, 15000); // 15 saniyede bir kontrol
+  }, [authLoading, updateState]);
 
-  const stopHeartbeat = () => {
-    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-  };
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }, []);
 
-  // Helper metodlar
-  const registerChannel = useCallback(
-    (name: string, channel: RealtimeChannel) => {
-      channelsRef.current.set(name, channel);
-      checkChannelHealth();
-    },
-    [checkChannelHealth],
-  );
+  // İlk mount'ta heartbeat başlat
+  useEffect(() => {
+    mountedRef.current = true;
+    startHeartbeat();
+    
+    return () => {
+      mountedRef.current = false;
+      stopHeartbeat();
+    };
+  }, [startHeartbeat, stopHeartbeat]);
 
-  const unregisterChannel = useCallback(
-    (name: string) => {
-      channelsRef.current.delete(name);
-      checkChannelHealth();
-    },
-    [checkChannelHealth],
-  );
+  // Channel registration
+  const registerChannel = useCallback((name: string, channel: RealtimeChannel) => {
+    reconnectionManager.registerChannel(name, channel);
+    updateState({ channelHealth: reconnectionManager.getChannelsHealth() });
+  }, [updateState]);
+
+  const unregisterChannel = useCallback((name: string) => {
+    reconnectionManager.unregisterChannel(name);
+    updateState({ channelHealth: reconnectionManager.getChannelsHealth() });
+  }, [updateState]);
 
   const isHealthy = state.isConnected && !state.isReconnecting;
 
