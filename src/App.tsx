@@ -48,12 +48,12 @@ import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
+import { App as CapApp } from "@capacitor/app";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
-import { useAppState } from "@/hooks/useAppState";
 import { useAppForegroundState } from "@/hooks/useAppForegroundState";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
@@ -485,30 +485,46 @@ const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
 
-  // 1. Hook'u sadece bir referans almak için kullanıyoruz
+  // Immersive bars için - ConnectionProvider içindeki appIsActive'den bağımsız
   const { manualHideBars } = useImmersiveBars();
 
-  // 2. Arka plan/ön plan yönetimi
-  useAppState({
-    onBackground: () => {
-      console.log("📱 Uygulama arka plana gitti");
-    },
-    onForeground: () => {
-      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle komutu veriyoruz.
-      // Bu sayede Android barları geri getirse bile biz onları tekrar "sticky" moduna sokuyoruz.
-      console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
+  // App state için sadece immersive mode (bağlantı yönetimi artık ConnectionProvider'da)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
 
-      // React render döngüsünü bozmamak için küçük bir timeout ile tetikliyoruz
-      setTimeout(() => {
-        manualHideBars();
-      }, 300);
-    },
-    backgroundDelay: 30000,
-    onBackgroundTimeout: () => {
-      console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
-      realtimeManager.forceCleanupAll();
-    },
-  });
+    let listenerHandle: any = null;
+    let backgroundTimer: NodeJS.Timeout | null = null;
+
+    const setup = async () => {
+      listenerHandle = await CapApp.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) {
+          // Foreground - immersive modu yenile
+          console.log("▶️ App.tsx: Foreground - Immersive mode yenileniyor");
+          setTimeout(() => manualHideBars(), 300);
+          
+          // Background timer'ı temizle
+          if (backgroundTimer) {
+            clearTimeout(backgroundTimer);
+            backgroundTimer = null;
+          }
+        } else {
+          // Background - 30 sn sonra realtime temizle
+          console.log("📱 App.tsx: Background");
+          backgroundTimer = setTimeout(() => {
+            console.log("⏹️ 30 saniye arka planda - realtime temizleniyor");
+            realtimeManager.forceCleanupAll();
+          }, 30000);
+        }
+      });
+    };
+
+    setup();
+
+    return () => {
+      if (listenerHandle) listenerHandle.remove();
+      if (backgroundTimer) clearTimeout(backgroundTimer);
+    };
+  }, [manualHideBars]);
 
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
   useEffect(() => {
