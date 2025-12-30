@@ -476,20 +476,54 @@ const TournamentBracketPage = () => {
   }
 
   if (showChampion) {
-    const finalMatch = matches.find((m) => m.round === 3);
-    const championName =
-      finalMatch?.winner_id === finalMatch?.player1_id ? finalMatch?.player1?.username : finalMatch?.player2?.username;
-
     return (
-      <div className="min-h-screen bg-gradient-to-b from-yellow-600 to-orange-700 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Crown className="w-20 h-20 text-yellow-200 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-white mb-2">Şampiyon!</h1>
-          <h2 className="text-2xl text-yellow-200 mb-6">{championName || "Tebrikler"}</h2>
-          <Button onClick={() => navigate("/tournament")} className="bg-blue-600 hover:bg-blue-700">
-            <Trophy className="w-4 h-4 mr-2" />
-            Turnuva Listesi
-          </Button>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+        {/* Arka Plan Görseli (Sabit) */}
+        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
+
+        {/* İçerik Katmanı */}
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full bg-black/20">
+          <AnimatePresence>
+            {wonReward && (
+              <motion.div
+                initial={{ scale: 0, rotate: -20, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                  delay: 0.5, // Arka plan göründükten biraz sonra kart çıksın
+                }}
+                className="relative group"
+              >
+                {/* Parlama Efekti */}
+                <div className="absolute -inset-4 bg-yellow-500/30 rounded-full blur-3xl animate-pulse" />
+
+                {/* Ödül Kartı Görseli */}
+                <img
+                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
+                  className="w-64 sm:w-80 h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                  alt="Kazanılan Ödül"
+                />
+
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 1.2 }}
+                  className="text-center mt-6"
+                >
+                  <Button
+                    onClick={() => navigate("/tournament")}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-8 py-6 rounded-2xl text-xl shadow-lg hover:scale-105 transition-transform"
+                  >
+                    ÖDÜLÜ AL VE DEVAM ET
+                  </Button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Konfeti veya Havai Fişek benzeri ekstra bir efekt buraya div olarak eklenebilir */}
         </div>
       </div>
     );
