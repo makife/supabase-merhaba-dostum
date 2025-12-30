@@ -416,24 +416,45 @@ const TournamentBracketPage = () => {
   }, [matches, user, showChampion, showEliminated, playSpecialSound]);
 
   const giveChampionReward = async () => {
-    if (!user) return;
+    if (!user || !profile) return;
+
+    const rewardPool = [
+      { type: "ink", value: 5, key: "ink" },
+      { type: "joker", item: "degistir", value: 2, key: "degistir" },
+      { type: "joker", item: "senyaz", value: 2, key: "senyaz" },
+      { type: "joker", item: "fisilida", value: 2, key: "fisilda" },
+      { type: "credits", value: 3, key: "credits" },
+      { type: "extra_spin", value: 1, key: "extra_spin" },
+    ];
+
+    const selected = rewardPool[Math.floor(Math.random() * rewardPool.length)];
+    setWonReward(selected); // State'e kaydet ki ekranda resmi çıksın
+
     try {
-      const { data, error } = await (supabase.rpc as any)("give_tournament_champion_reward", {
-        p_user_id: user.id,
-        p_reward_amount: 5,
-      });
+      let updateData: any = {};
 
-      if (error) throw error;
-
-      const result = data as { success: boolean; reward_amount: number; new_ink_count: number };
-      if (result?.success) {
-        toast.success("🎉 Tebrikler Şampiyon!", {
-          description: `${result.reward_amount} damla mürekkep kazandınız! 💧`,
-          duration: 5000,
-        });
+      if (selected.type === "ink") {
+        updateData.ink_count = (profile.ink_count || 0) + selected.value;
+      } else if (selected.type === "credits") {
+        updateData.game_credits = (profile.game_credits || 0) + selected.value;
+      } else if (selected.type === "joker" && selected.item) {
+        const currentInventory = profile.inventory || {};
+        updateData.inventory = {
+          ...currentInventory,
+          [selected.item]: (currentInventory[selected.item] || 0) + selected.value,
+        };
+      } else if (selected.type === "extra_spin") {
+        const today = new Date().toISOString().split("T")[0];
+        await supabase.from("wheel_spins").delete().eq("user_id", user.id).eq("date", today);
       }
+
+      if (selected.type !== "extra_spin") {
+        await supabase.from("profiles").update(updateData).eq("id", user.id);
+      }
+
+      refreshProfile?.();
     } catch (error) {
-      console.error("❌ Şampiyona ödülü verme hatası:", error);
+      console.error("Ödül hatası:", error);
     }
   };
 
