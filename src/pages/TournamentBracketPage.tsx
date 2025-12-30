@@ -19,6 +19,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ const TournamentBracketPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { profile, refreshProfile } = useUser();
   const { playSpecialSound } = useSounds();
 
   const {
@@ -450,11 +452,27 @@ const TournamentBracketPage = () => {
       } else if (selected.type === "credits") {
         updateData.game_credits = (profile.game_credits || 0) + selected.value;
       } else if (selected.type === "joker" && selected.item) {
-        const currentInventory = profile.inventory || {};
-        updateData.inventory = {
-          ...currentInventory,
-          [selected.item]: (currentInventory[selected.item] || 0) + selected.value,
-        };
+        // user_inventory tablosuna upsert yap
+        const { data: existingItem } = await supabase
+          .from("user_inventory")
+          .select("quantity")
+          .eq("user_id", user.id)
+          .eq("item_type", selected.item)
+          .single();
+
+        if (existingItem) {
+          await supabase
+            .from("user_inventory")
+            .update({ quantity: existingItem.quantity + selected.value })
+            .eq("user_id", user.id)
+            .eq("item_type", selected.item);
+        } else {
+          await supabase.from("user_inventory").insert({
+            user_id: user.id,
+            item_type: selected.item,
+            quantity: selected.value,
+          });
+        }
       } else if (selected.type === "extra_spin") {
         const today = new Date().toISOString().split("T")[0];
         await supabase.from("wheel_spins").delete().eq("user_id", user.id).eq("date", today);
