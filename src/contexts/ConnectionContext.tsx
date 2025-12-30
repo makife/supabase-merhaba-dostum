@@ -153,81 +153,125 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [authLoading, session]); // Sadece auth durumu değişince çalışır
 
-  // --- 🔥 2. KORUMA: UYANMA (FOREGROUND) ---
-  // Uygulama arka plandan dönünce çalışır.
+  // --- 🔥 2. KORUMA: UYANMA (FOREGROUND) - HARD RESET YAKLAŞIMI ---
+  // Native'de uygulama arka plandan dönünce MUTLAKA hard reset yap
   useEffect(() => {
     const initListener = async () => {
       if (appStateListenerRef.current) await appStateListenerRef.current.remove();
 
       appStateListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
         if (isActive) {
-          console.log("📱 [Connection] Uygulama UYANDI!");
+          console.log("📱 [Connection] Uygulama UYANDI - HARD RESET BAŞLIYOR!");
 
-          // ÖNEMLİ: Hemen disconnect YAPMA! Önce mevcut bağlantıyı kontrol et.
-          // OS arka planda WebSocket'i öldürmüş olabilir, kontrol edelim.
-          
-          const checkAndReconnect = async () => {
+          // Native'de arka plandan dönünce HER ZAMAN hard reset yap
+          // Hiçbir kontrol yapma, direkt kes ve yeniden bağlan
+          const hardReset = async () => {
             try {
-              // 1. Ağ durumunu kontrol et
+              console.log("🔌 [Connection] HARD RESET: Tüm bağlantılar kesiliyor...");
+              
+              // 1. Heartbeat'i durdur
+              stopHeartbeat();
+              
+              // 2. Realtime'ı tamamen kes - ZORLA
+              try {
+                supabase.realtime.disconnect();
+              } catch (e) {
+                console.log("⚠️ [Connection] Disconnect hatası (görmezden gel):", e);
+              }
+              
+              // 3. Biraz bekle - OS'un temizlik yapması için
+              await new Promise(r => setTimeout(r, 500));
+              
+              // 4. Ağ durumunu kontrol et
               const status = await Network.getStatus();
               console.log(`📡 [Connection] Ağ durumu: ${status.connected ? "Bağlı" : "Bağlı Değil"}`);
               
               if (!status.connected) {
-                console.log("❌ [Connection] Ağ yok, bekleniyor...");
-                // Ağ yoksa 2 saniye sonra tekrar dene
-                setTimeout(checkAndReconnect, 2000);
+                console.log("❌ [Connection] Ağ yok, 3 saniye sonra tekrar denenecek...");
+                setState(prev => ({ ...prev, isConnected: false, isReconnecting: false }));
+                setTimeout(hardReset, 3000);
                 return;
               }
-
-              // 2. Mevcut bağlantı sağlıklı mı kontrol et
-              const isHealthy = await performHealthCheck();
-              console.log(`🏥 [Connection] Sağlık kontrolü: ${isHealthy ? "Sağlıklı" : "Sağlıksız"}`);
-
-              if (isHealthy) {
-                // Bağlantı hala sağlıklı, sadece kanalları kontrol et
-                console.log("✅ [Connection] Bağlantı sağlıklı, kanallar kontrol ediliyor...");
-                checkChannelHealth();
-                
-                // Kopuk kanalları yeniden abone et
-                channelsRef.current.forEach((channel, name) => {
-                  if (channel.state !== "joined") {
-                    console.log(`🔄 [Connection] Kanal yeniden abone ediliyor: ${name}`);
-                    channel.subscribe();
-                  }
-                });
-                
-                setState((prev) => ({
-                  ...prev,
-                  isConnected: true,
-                  lastConnectedAt: new Date(),
-                }));
-                
-                startHeartbeat();
-              } else {
-                // Bağlantı kopuk, yeniden bağlan
-                console.log("⚠️ [Connection] Bağlantı kopuk, yeniden bağlanılıyor...");
-                reconnect(true);
+              
+              // 5. Session'ı tazele
+              console.log("🔑 [Connection] Session tazeleniyor...");
+              const { data: sessionData } = await supabase.auth.getSession();
+              
+              if (sessionData?.session?.access_token) {
+                supabase.realtime.setAuth(sessionData.session.access_token);
+                console.log("✅ [Connection] Token güncellendi");
               }
+              
+              // 6. Yeniden bağlan
+              console.log("🚀 [Connection] Realtime bağlantısı başlatılıyor...");
+              supabase.realtime.connect();
+              
+              // 7. Biraz bekle ve bağlantıyı doğrula
+              await new Promise(r => setTimeout(r, 500));
+              
+              // 8. RPC ile bağlantıyı test et
+              const { error } = await supabase.rpc("get_server_time");
+              
+              if (error) {
+                console.log("⚠️ [Connection] Bağlantı testi başarısız, tekrar deneniyor...");
+                setTimeout(hardReset, 2000);
+                return;
+              }
+              
+              console.log("✅ [Connection] Bağlantı testi BAŞARILI!");
+              
+              // 9. Tüm kanalları yeniden abone et
+              console.log(`📺 [Connection] ${channelsRef.current.size} kanal yeniden abone ediliyor...`);
+              channelsRef.current.forEach((channel, name) => {
+                console.log(`🔄 [Connection] Kanal abone ediliyor: ${name}`);
+                try {
+                  channel.subscribe();
+                } catch (e) {
+                  console.log(`⚠️ [Connection] Kanal abone hatası (${name}):`, e);
+                }
+              });
+              
+              // 10. State'i güncelle
+              setState({
+                isConnected: true,
+                isReconnecting: false,
+                lastConnectedAt: new Date(),
+                reconnectAttempts: 0,
+                channelHealth: new Map(),
+              });
+              
+              // 11. Heartbeat'i başlat
+              startHeartbeat();
+              
+              console.log("🎉 [Connection] HARD RESET TAMAMLANDI!");
+              
             } catch (error) {
-              console.error("❌ [Connection] Kontrol hatası:", error);
-              // Hata durumunda yeniden bağlanmayı dene
-              reconnect(true);
+              console.error("❌ [Connection] Hard reset hatası:", error);
+              setState(prev => ({ ...prev, isConnected: false, isReconnecting: false }));
+              // Hata durumunda 3 saniye sonra tekrar dene
+              setTimeout(hardReset, 3000);
             }
           };
 
-          // Kısa bir gecikme ile kontrol et (OS'un ağ stack'ini hazırlaması için)
-          setTimeout(checkAndReconnect, 300);
+          // Hemen hard reset başlat
+          hardReset();
+          
         } else {
-          console.log("💤 [Connection] Uyku modu - Heartbeat durduruluyor.");
-          // Arka plana alındığında sadece heartbeat'i durdur
-          // disconnect() YAPMA! OS zaten WebSocket'i öldürecek, 
-          // biz sadece bunu kabul ediyoruz.
+          console.log("💤 [Connection] Uyku modu - Bağlantı kesiliyor.");
+          
+          // Arka plana alındığında HER ŞEYİ temizle
           stopHeartbeat();
           
-          // Bağlantı durumunu güncelle ama disconnect çağırma
-          setState((prev) => ({
+          // Bağlantıyı kes - native'de OS zaten kesecek ama biz de keselim
+          try {
+            supabase.realtime.disconnect();
+          } catch (e) {
+            // Görmezden gel
+          }
+          
+          setState(prev => ({
             ...prev,
-            isConnected: false, // Varsayalım ki kopacak
+            isConnected: false,
           }));
         }
       });
