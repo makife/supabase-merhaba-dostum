@@ -555,7 +555,7 @@ const HomePage = () => {
                       </div>
 
                       <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                        + ({totalCredits - 5} Sayfa
+                        + {totalCredits - 5} Sayfa
                       </Badge>
                     </div>
                   ) : (
