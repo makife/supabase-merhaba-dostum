@@ -501,38 +501,82 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* LIVES INFO: Mevcut Yapı */}
-        <div className="flex items-center gap-2">
-          {totalCredits > 5 ? (
-            <div className="flex items-center gap-2">
-              {/* 5 Hakkın tamamını dolu (yeşil) gösteriyoruz */}
-              <div className="flex gap-1">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
-                ))}
+        {/* INFO PANELS (SÜRE & HAK) */}
+
+        <div className="px-5 mt-2 space-y-2">
+          {isPremium && premiumTimeLeft && (
+            // PREMIUM INFO: Border füme (slate-600)
+
+            <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-500" />
+
+                <span className="text-xs text-amber-800 font-medium">Premium</span>
               </div>
 
-              {/* 5'ten fazla olan kısmı matematiksel olarak çıkarıp gösteriyoruz */}
-              <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                + {totalCredits - 5} Sayfa
-              </Badge>
-            </div>
-          ) : (
-            /* 5 ve 5'ten az olduğunda çalışan mevcut bar mantığı */
-            <div className="flex gap-1">
-              {Array.from({ length: 5 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${
-                    i < totalCredits ? "bg-green-500" : "bg-slate-200"
-                  }`}
-                />
-              ))}
+              <span className="text-xs font-mono font-bold text-amber-600">{premiumTimeLeft}</span>
             </div>
           )}
 
-          {timeUntilNextCredit && totalCredits < 5 && (
-            <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">{timeUntilNextCredit}</span>
+          {(!isPremium || isUnlimitedLivesActive(profile)) && (
+            // LIVES INFO: Border füme (slate-600)
+
+            <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
+              <span className="text-xs text-slate-500 font-medium">
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
+              </span>
+
+              {isUnlimitedLivesActive(profile) ? (
+                <div className="flex items-center gap-2">
+                  {unlimitedTimeLeft ? (
+                    <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                      <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
+
+                      <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
+                        {unlimitedTimeLeft}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
+                  )}
+
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
+                    Sınırsız
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {totalCredits > 5 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 opacity-50">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                        ))}
+                      </div>
+
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
+                        + ({totalCredits - 5} Sayfa
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {timeUntilNextCredit && totalCredits < 5 && (
+                    <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                      {timeUntilNextCredit}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
