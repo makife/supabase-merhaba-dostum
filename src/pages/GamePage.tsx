@@ -4924,8 +4924,8 @@ const GamePage = ({
           );
 
           console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
-          setGlobalUsedWords(allWordsSet);
-          setUsedWords(myWordsSet);
+          setGlobalUsedWords(allWordsSet as Set<string>);
+          setUsedWords(myWordsSet as Set<string>);
         }
       } catch (error) {
         console.error("❌ Word sync error:", error);
@@ -5087,8 +5087,8 @@ const GamePage = ({
           roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
         );
 
-        setGlobalUsedWords(allWordsSet);
-        setUsedWords(myWordsSet);
+        setGlobalUsedWords(allWordsSet as Set<string>);
+        setUsedWords(myWordsSet as Set<string>);
       }
     } catch (error) {
       console.error("❌ Word sync error:", error);

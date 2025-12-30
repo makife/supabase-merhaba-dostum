@@ -515,7 +515,7 @@ const App = () => {
     if (Capacitor.isNativePlatform()) {
       // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
       const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
-        const { error } = await supabase.from("profiles").update({ push_token: tokenValue }).eq("id", userId);
+        const { error } = await supabase.from("profiles").update({ push_token: tokenValue } as any).eq("id", userId as any);
 
         if (error) console.error("❌ Token kaydedilemedi:", error);
         else console.log("✅ Token veritabanına başarıyla kaydedildi!");

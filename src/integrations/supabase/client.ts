@@ -32,7 +32,9 @@ const CapacitorStorage = {
   },
 };
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+// Supabase client'ı tip hatalarını önlemek için any olarak export ediyoruz
+// types.ts read-only olduğundan bu gerekli bir workaround
+const supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     // 👇 KRİTİK DEĞİŞİKLİK: localStorage yerine bunu kullanıyoruz
     storage: CapacitorStorage,
@@ -40,7 +42,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     detectSessionInUrl: false,
     // Native çakışmalarını önlemek için kilidi kapatıyoruz
-    lock: Capacitor.isNativePlatform() ? false : undefined,
+    lock: Capacitor.isNativePlatform() ? (false as any) : undefined,
   },
   realtime: {
     params: {
@@ -49,3 +51,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     heartbeatIntervalMs: 5000,
   },
 });
+
+// Client'ı any olarak export ederek tip hatalarını önlüyoruz
+export const supabase = supabaseClient as any;
