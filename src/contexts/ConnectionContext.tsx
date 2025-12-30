@@ -163,33 +163,72 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         if (isActive) {
           console.log("📱 [Connection] Uygulama UYANDI!");
 
-          // Hemen mevcut bağlantıyı kopar (Eski bağlantıya güvenme)
-          await supabase.realtime.disconnect();
+          // ÖNEMLİ: Hemen disconnect YAPMA! Önce mevcut bağlantıyı kontrol et.
+          // OS arka planda WebSocket'i öldürmüş olabilir, kontrol edelim.
+          
+          const checkAndReconnect = async () => {
+            try {
+              // 1. Ağ durumunu kontrol et
+              const status = await Network.getStatus();
+              console.log(`📡 [Connection] Ağ durumu: ${status.connected ? "Bağlı" : "Bağlı Değil"}`);
+              
+              if (!status.connected) {
+                console.log("❌ [Connection] Ağ yok, bekleniyor...");
+                // Ağ yoksa 2 saniye sonra tekrar dene
+                setTimeout(checkAndReconnect, 2000);
+                return;
+              }
 
-          // SABIRLI BEKLEME DÖNGÜSÜ (10 kere dene)
-          let attempts = 0;
-          const checkNet = async () => {
-            const status = await Network.getStatus();
-            console.log(`📡 Ağ aranıyor (${attempts + 1}/10)...`);
+              // 2. Mevcut bağlantı sağlıklı mı kontrol et
+              const isHealthy = await performHealthCheck();
+              console.log(`🏥 [Connection] Sağlık kontrolü: ${isHealthy ? "Sağlıklı" : "Sağlıksız"}`);
 
-            if (status.connected) {
-              console.log("⚡ Ağ geldi -> Force Reconnect!");
-              reconnect(true);
-            } else if (attempts < 10) {
-              attempts++;
-              setTimeout(checkNet, 500); // 500ms sonra tekrar dene
-            } else {
-              // Son çare, belki ağ vardır ama plugin görememiştir
-              console.log("❌ Zaman aşımı, son şans deneniyor...");
+              if (isHealthy) {
+                // Bağlantı hala sağlıklı, sadece kanalları kontrol et
+                console.log("✅ [Connection] Bağlantı sağlıklı, kanallar kontrol ediliyor...");
+                checkChannelHealth();
+                
+                // Kopuk kanalları yeniden abone et
+                channelsRef.current.forEach((channel, name) => {
+                  if (channel.state !== "joined") {
+                    console.log(`🔄 [Connection] Kanal yeniden abone ediliyor: ${name}`);
+                    channel.subscribe();
+                  }
+                });
+                
+                setState((prev) => ({
+                  ...prev,
+                  isConnected: true,
+                  lastConnectedAt: new Date(),
+                }));
+                
+                startHeartbeat();
+              } else {
+                // Bağlantı kopuk, yeniden bağlan
+                console.log("⚠️ [Connection] Bağlantı kopuk, yeniden bağlanılıyor...");
+                reconnect(true);
+              }
+            } catch (error) {
+              console.error("❌ [Connection] Kontrol hatası:", error);
+              // Hata durumunda yeniden bağlanmayı dene
               reconnect(true);
             }
           };
 
-          // İlk denemeyi 500ms sonra yap
-          setTimeout(checkNet, 500);
+          // Kısa bir gecikme ile kontrol et (OS'un ağ stack'ini hazırlaması için)
+          setTimeout(checkAndReconnect, 300);
         } else {
-          console.log("💤 [Connection] Uyku modu.");
+          console.log("💤 [Connection] Uyku modu - Heartbeat durduruluyor.");
+          // Arka plana alındığında sadece heartbeat'i durdur
+          // disconnect() YAPMA! OS zaten WebSocket'i öldürecek, 
+          // biz sadece bunu kabul ediyoruz.
           stopHeartbeat();
+          
+          // Bağlantı durumunu güncelle ama disconnect çağırma
+          setState((prev) => ({
+            ...prev,
+            isConnected: false, // Varsayalım ki kopacak
+          }));
         }
       });
     };

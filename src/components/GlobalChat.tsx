@@ -106,16 +106,16 @@ const fetchReactions = async () => {
     const { data, error } = await supabase
       .from('message_reactions')
       .select('*')
-      .in('message_id', realMessageIds);
+      .in('message_id', realMessageIds as any);
 
     if (error) throw error;
 
     const reactionsByMessage: {[messageId: string]: MessageReaction[]} = {};
-    data?.forEach(reaction => {
+    (data as any[])?.forEach((reaction: any) => {
       if (!reactionsByMessage[reaction.message_id]) {
         reactionsByMessage[reaction.message_id] = [];
       }
-      reactionsByMessage[reaction.message_id].push(reaction);
+      reactionsByMessage[reaction.message_id].push(reaction as MessageReaction);
     });
 
     setMessageReactions(reactionsByMessage);
@@ -140,12 +140,12 @@ const fetchReactions = async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, avatar_url')
-      .in('id', validUserIds);
+      .in('id', validUserIds as any);
 
     if (error) throw error;
 
     const avatarMap: {[userId: string]: string} = {};
-    data?.forEach(profile => {
+    (data as any[])?.forEach((profile: any) => {
       if (profile.avatar_url) {
         avatarMap[profile.id] = profile.avatar_url;
       }
@@ -178,12 +178,12 @@ useEffect(() => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, email, avatar_url')
-        .neq('id', user?.id)
+        .neq('id', user?.id as any)
         .order('username', { ascending: true })
         .limit(50);
 
       if (error) throw error;
-      setAllUsers(data || []);
+      setAllUsers((data || []) as SelectedUser[]);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -342,7 +342,7 @@ const fetchMessages = async () => {
       if (error) throw error;
       
       const reversedData = data ? [...data].reverse() : [];
-      setMessages(reversedData);
+      setMessages(reversedData as ChatMessage[]);
       
       console.log(`✅ Loaded ${reversedData.length} global messages`);
     } catch (error) {

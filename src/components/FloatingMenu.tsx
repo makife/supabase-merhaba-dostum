@@ -29,9 +29,15 @@ import {
 // --- Yardımcı Fonksiyonlar ---
 const isUserBanned = async (userId: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.from("profiles").select("banned_until").eq("id", userId).single();
-    if (error || !data || !data.banned_until) return false;
-    return new Date(data.banned_until) > new Date();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("banned_until")
+      .eq("id", userId as any)
+      .single();
+    if (error || !data) return false;
+    const result = data as { banned_until: string | null };
+    if (!result.banned_until) return false;
+    return new Date(result.banned_until) > new Date();
   } catch (error) {
     console.error("Ban kontrolü hatası:", error);
     return false;
@@ -40,9 +46,15 @@ const isUserBanned = async (userId: string): Promise<boolean> => {
 
 const getBanTimeLeft = async (userId: string): Promise<string> => {
   try {
-    const { data, error } = await supabase.from("profiles").select("banned_until").eq("id", userId).single();
-    if (error || !data || !data.banned_until) return "yok";
-    const banTime = new Date(data.banned_until).getTime();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("banned_until")
+      .eq("id", userId as any)
+      .single();
+    if (error || !data) return "yok";
+    const result = data as { banned_until: string | null };
+    if (!result.banned_until) return "yok";
+    const banTime = new Date(result.banned_until).getTime();
     const now = Date.now();
     const diff = banTime - now;
     if (diff <= 0) return "yok";
@@ -136,10 +148,10 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     try {
       await supabase
         .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", user.id)
-        .eq("type", "mention")
-        .eq("is_read", false);
+        .update({ is_read: true } as any)
+        .eq("user_id", user.id as any)
+        .eq("type", "mention" as any)
+        .eq("is_read", false as any);
     } catch (error) {
       console.error("Error marking notifications as read:", error);
     }
