@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, LogOut, Clock, Crown } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +41,17 @@ const TournamentBracketPage = () => {
   } = useTournament(tournamentId);
 
   const [isLeaving, setIsLeaving] = useState(false);
+
+  const REWARD_IMAGES = {
+    ink: "/murekkepOdul.png",
+    degistir: "/degistirOdul.png",
+    senyaz: "/senyazOdul.png",
+    fisilda: "/fisildaOdul.png",
+    credits: "/ucsayfaOdul.png",
+    extra_spin: "/carkOdul.png",
+  };
+
+  const [wonReward, setWonReward] = useState<any>(null);
 
   // Bracket'ten ayrılma fonksiyonu
   const handleLeaveBracket = async () => {
