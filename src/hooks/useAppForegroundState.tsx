@@ -28,10 +28,8 @@ const updateLastSeen = async () => {
       .from("profiles")
       .update({ last_seen: new Date().toISOString() })
       .eq("id", user.id);
-
-    console.log("[AppState] Updated last_seen");
   } catch (error) {
-    console.error("[AppState] Failed to update last_seen:", error);
+    // Sessizce devam et - bağlantı sorunları olabilir
   }
 };
 
@@ -39,9 +37,14 @@ export function useAppForegroundState() {
   const [isInForeground, setIsInForeground] = useState(true);
   const isNative = Capacitor.isNativePlatform();
   const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     const handleStateChange = (inForeground: boolean) => {
+      if (!isMountedRef.current) return;
+      
       setIsInForeground(inForeground);
       
       // When app comes to foreground, update last_seen immediately
@@ -53,7 +56,7 @@ export function useAppForegroundState() {
     // Subscribe to global state changes
     const unsubscribe = subscribeToForegroundState(handleStateChange);
 
-    // Start periodic last_seen updates (every 20 seconds when in foreground)
+    // Start periodic last_seen updates (every 30 seconds when in foreground)
     const startLastSeenUpdates = () => {
       // Clear any existing interval
       if (lastSeenIntervalRef.current) {
@@ -63,24 +66,25 @@ export function useAppForegroundState() {
       // Initial update
       updateLastSeen();
 
-      // Periodic updates every 20 seconds
+      // Periodic updates every 30 seconds
       lastSeenIntervalRef.current = setInterval(() => {
-        if (getIsAppInForeground()) {
+        if (getIsAppInForeground() && isMountedRef.current) {
           updateLastSeen();
         }
-      }, 20000);
+      }, 30000);
     };
 
     startLastSeenUpdates();
 
-    // Initialize listeners
+    // Initialize listeners - SADECE global state güncellemesi için
+    // NOT: Bağlantı yönetimi ConnectionContext'te yapılıyor!
     const initializeListeners = async () => {
       if (isNative) {
         try {
           const { App } = await import("@capacitor/app");
           
           const listener = await App.addListener("appStateChange", ({ isActive }) => {
-            console.log("[AppState] Native state changed:", isActive ? "foreground" : "background");
+            console.log("[AppForegroundState] Native state:", isActive ? "foreground" : "background");
             setForegroundState(isActive);
           });
 
@@ -88,13 +92,13 @@ export function useAppForegroundState() {
             listener.remove();
           };
         } catch (error) {
-          console.error("[AppState] Error setting up native listener:", error);
+          console.error("[AppForegroundState] Error setting up native listener:", error);
         }
       } else {
         // Web: Use visibility change
         const handleVisibilityChange = () => {
           const isVisible = document.visibilityState === "visible";
-          console.log("[AppState] Web visibility changed:", isVisible ? "visible" : "hidden");
+          console.log("[AppForegroundState] Web visibility:", isVisible ? "visible" : "hidden");
           setForegroundState(isVisible);
         };
 
@@ -111,6 +115,7 @@ export function useAppForegroundState() {
     });
 
     return () => {
+      isMountedRef.current = false;
       unsubscribe();
       cleanup?.();
       if (lastSeenIntervalRef.current) {

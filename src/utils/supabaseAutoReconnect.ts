@@ -42,13 +42,7 @@ class SupabaseAutoReconnect {
       this.isOnline = false;
     });
 
-    // Visibility change handler - reconnect when tab becomes visible
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && this.isOnline) {
-        console.log('[AutoReconnect] Tab became visible, checking connections...');
-        this.checkAndReconnectAll();
-      }
-    });
+    // NOT: visibility change listener kaldırıldı - ConnectionContext yönetiyor
   }
 
   /**

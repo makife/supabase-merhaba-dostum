@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface ConnectionState {
   isConnected: boolean;
@@ -17,6 +16,7 @@ interface ConnectionContextType {
   registerChannel: (name: string, channel: RealtimeChannel) => void;
   unregisterChannel: (name: string) => void;
   isHealthy: boolean;
+  forceReconnect: () => Promise<boolean>;
 }
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -25,8 +25,6 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(undef
 const isNativePlatform = Capacitor.isNativePlatform();
 
 export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
-  const { session, loading: authLoading } = useAuth();
-
   const [state, setState] = useState<ConnectionState>({
     isConnected: true,
     isReconnecting: false,
@@ -34,11 +32,13 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     reconnectAttempts: 0,
   });
 
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const channelsRef = useRef<Map<string, RealtimeChannel>>(new Map());
-  const isHardResettingRef = useRef(false);
+  const isReconnectingRef = useRef(false);
   const appListenerRef = useRef<{ remove: () => void } | null>(null);
   const isMountedRef = useRef(true);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const lastForegroundTimeRef = useRef<number>(0);
 
   // Heartbeat durdur
   const stopHeartbeat = useCallback(() => {
@@ -52,99 +52,113 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const startHeartbeat = useCallback(() => {
     stopHeartbeat();
     heartbeatRef.current = setInterval(async () => {
-      if (!isMountedRef.current || authLoading) return;
+      if (!isMountedRef.current) return;
       
       try {
         const { error } = await supabase.rpc("get_server_time");
         if (error && isMountedRef.current) {
-          console.log("[Connection] ❌ Heartbeat failed");
+          console.log("[Connection] ❌ Heartbeat failed, triggering reconnect...");
+          forceReconnect();
         }
       } catch (e) {
-        console.log("[Connection] ❌ Heartbeat error");
+        console.log("[Connection] ❌ Heartbeat error, triggering reconnect...");
+        forceReconnect();
       }
-    }, 15000);
-  }, [stopHeartbeat, authLoading]);
+    }, 20000);
+  }, [stopHeartbeat]);
 
-  // %100 garantili Hard Reset - Native için
-  const hardResetConnection = useCallback(async (maxRetries = 5): Promise<boolean> => {
-    if (isHardResettingRef.current) {
-      console.log("[Connection] ⚠️ Hard reset zaten çalışıyor, atlanıyor...");
+  // TAMAMEN SIFIRDAN BAĞLANTI KURMA
+  const forceReconnect = useCallback(async (): Promise<boolean> => {
+    // Debounce: Son 2 saniye içinde reconnect olduysa atla
+    const now = Date.now();
+    if (now - lastForegroundTimeRef.current < 2000) {
+      console.log("[Connection] ⏳ Debounce - son reconnect çok yakın, atlanıyor...");
+      return false;
+    }
+    lastForegroundTimeRef.current = now;
+
+    if (isReconnectingRef.current) {
+      console.log("[Connection] ⚠️ Reconnect zaten çalışıyor, atlanıyor...");
       return false;
     }
 
-    isHardResettingRef.current = true;
-    
+    isReconnectingRef.current = true;
+
+    // Pending timeout'ları temizle
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     if (isMountedRef.current) {
       setState(prev => ({ ...prev, isReconnecting: true, isConnected: false }));
     }
 
-    console.log("🔄 [Connection] ===== HARD RESET BAŞLADI =====");
+    console.log("🔄 [Connection] ========== FORCE RECONNECT BAŞLADI ==========");
+    stopHeartbeat();
 
     let success = false;
-    let attempt = 0;
+    const maxAttempts = 7;
 
-    while (!success && attempt < maxRetries && isMountedRef.current) {
-      attempt++;
-      console.log(`🔄 [Connection] Deneme ${attempt}/${maxRetries}...`);
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (!isMountedRef.current) break;
+
+      console.log(`🔄 [Connection] Deneme ${attempt}/${maxAttempts}`);
 
       try {
-        // 1. HEARTBEAT DURDUR
-        stopHeartbeat();
-
-        // 2. TÜM KANALLARI KALDIR
-        console.log("[Connection] 📺 Kanallar kaldırılıyor...");
-        const channels = supabase.getChannels();
-        for (const channel of channels) {
-          try {
-            await supabase.removeChannel(channel);
-          } catch (e) {
-            // Sessizce devam et
+        // ADIM 1: Tüm mevcut kanalları kaldır
+        console.log("[Connection] 1️⃣ Mevcut kanallar kaldırılıyor...");
+        try {
+          const existingChannels = supabase.getChannels();
+          for (const ch of existingChannels) {
+            try {
+              await supabase.removeChannel(ch);
+            } catch (e) {
+              // Sessizce devam
+            }
           }
+        } catch (e) {
+          // Sessizce devam
         }
 
-        // 3. REALTIME BAĞLANTISINI TAMAMEN KES
-        console.log("[Connection] 🔌 Realtime bağlantısı kesiliyor...");
+        // ADIM 2: Realtime bağlantısını kes
+        console.log("[Connection] 2️⃣ Realtime bağlantısı kesiliyor...");
         try {
           (supabase.realtime as any).disconnect();
         } catch (e) {
-          // Sessizce devam et
+          // Sessizce devam
         }
 
-        // 4. BEKLE - Bağlantının tamamen kapanması için
-        const waitTime = Math.min(300 * attempt, 1500);
-        console.log(`[Connection] ⏳ ${waitTime}ms bekleniyor...`);
+        // ADIM 3: Kısa bekleme (bağlantının kapanması için)
+        const waitTime = Math.min(200 + (attempt * 100), 800);
+        console.log(`[Connection] 3️⃣ ${waitTime}ms bekleniyor...`);
         await new Promise(r => setTimeout(r, waitTime));
 
-        // 5. AĞ KONTROLÜ (Native ise)
+        // ADIM 4: Ağ kontrolü (Native platformlarda)
         if (isNativePlatform) {
           try {
             const { Network } = await import("@capacitor/network");
             const status = await Network.getStatus();
-            console.log(`[Connection] 📡 Ağ durumu: ${status.connected ? "Bağlı" : "Bağlı Değil"}`);
+            console.log(`[Connection] 4️⃣ Ağ durumu: ${status.connected ? "BAĞLI ✅" : "BAĞLI DEĞİL ❌"}`);
             
             if (!status.connected) {
-              console.log("[Connection] ❌ Ağ yok, 2 saniye sonra tekrar...");
-              await new Promise(r => setTimeout(r, 2000));
+              console.log("[Connection] ⚠️ Ağ bağlantısı yok, 1.5 saniye sonra tekrar deneniyor...");
+              await new Promise(r => setTimeout(r, 1500));
               continue;
             }
           } catch (e) {
-            console.log("[Connection] ⚠️ Ağ kontrolü atlandı");
+            console.log("[Connection] ⚠️ Ağ kontrolü yapılamadı, devam ediliyor...");
           }
         }
 
-        // 6. SESSION TAZELEMESİ
-        console.log("[Connection] 🔑 Session tazeleniyor...");
+        // ADIM 5: Session'ı tazele
+        console.log("[Connection] 5️⃣ Session tazeleniyor...");
         try {
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            console.log("[Connection] ⚠️ Session hatası:", sessionError.message);
-          }
+          const { data: sessionData } = await supabase.auth.getSession();
           
           if (sessionData?.session?.access_token) {
-            // Token'ı realtime'a set et
             supabase.realtime.setAuth(sessionData.session.access_token);
-            console.log("[Connection] ✅ Token güncellendi");
+            console.log("[Connection] ✅ Token ayarlandı");
           } else {
             // Session yoksa refresh dene
             const { data: refreshData } = await supabase.auth.refreshSession();
@@ -154,36 +168,36 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         } catch (e) {
-          console.log("[Connection] ⚠️ Token güncelleme hatası (devam ediliyor)");
+          console.log("[Connection] ⚠️ Token güncelleme hatası, devam ediliyor...");
         }
 
-        // 7. REALTIME BAĞLAN
-        console.log("[Connection] 🚀 Realtime bağlantısı başlatılıyor...");
+        // ADIM 6: Realtime'ı yeniden bağla
+        console.log("[Connection] 6️⃣ Realtime bağlantısı başlatılıyor...");
         try {
           (supabase.realtime as any).connect();
         } catch (e) {
-          console.log("[Connection] ⚠️ Connect hatası");
+          console.log("[Connection] ⚠️ Connect hatası, devam ediliyor...");
         }
 
-        // 8. BAĞLANTI STABİLİZASYONU İÇİN BEKLE
-        await new Promise(r => setTimeout(r, 800));
+        // ADIM 7: Bağlantının stabil olması için bekle
+        await new Promise(r => setTimeout(r, 600));
 
-        // 9. BAĞLANTI TESTİ - 3 deneme
-        console.log("[Connection] 🧪 Bağlantı test ediliyor...");
+        // ADIM 8: Bağlantı testi (3 deneme)
+        console.log("[Connection] 7️⃣ Bağlantı test ediliyor...");
         let testSuccess = false;
-        
-        for (let testAttempt = 0; testAttempt < 3; testAttempt++) {
+
+        for (let testAttempt = 1; testAttempt <= 3; testAttempt++) {
           try {
             const { data, error } = await supabase.rpc("get_server_time");
             if (!error && data) {
               testSuccess = true;
-              console.log("[Connection] ✅ Bağlantı testi BAŞARILI!");
+              console.log(`[Connection] ✅ Bağlantı testi BAŞARILI! (deneme ${testAttempt})`);
               break;
             }
           } catch (e) {
-            // Devam et
+            // Sessizce devam
           }
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise(r => setTimeout(r, 250));
         }
 
         if (!testSuccess) {
@@ -191,29 +205,31 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           continue;
         }
 
-        // 10. KAYITLI KANALLARI YENİDEN ABONE ET
-        console.log(`[Connection] 📺 ${channelsRef.current.size} kanal yeniden abone ediliyor...`);
-        for (const [name, channel] of channelsRef.current) {
-          try {
-            console.log(`[Connection] 🔄 Kanal: ${name}`);
-            channel.subscribe((status) => {
-              console.log(`[Connection] Kanal ${name} durumu: ${status}`);
-            });
-          } catch (e) {
-            console.log(`[Connection] ⚠️ Kanal abone hatası: ${name}`);
+        // ADIM 9: Kayıtlı kanalları yeniden abone et
+        if (channelsRef.current.size > 0) {
+          console.log(`[Connection] 8️⃣ ${channelsRef.current.size} kanal yeniden abone ediliyor...`);
+          for (const [name, channel] of channelsRef.current) {
+            try {
+              channel.subscribe((status) => {
+                console.log(`[Connection] Kanal "${name}" durumu: ${status}`);
+              });
+            } catch (e) {
+              console.log(`[Connection] ⚠️ Kanal "${name}" abone hatası`);
+            }
           }
         }
 
         // BAŞARILI!
         success = true;
-        console.log("🎉 [Connection] ===== HARD RESET BAŞARILI! =====");
+        console.log("🎉 [Connection] ========== FORCE RECONNECT BAŞARILI! ==========");
+        break;
 
       } catch (error) {
         console.error(`[Connection] ❌ Deneme ${attempt} başarısız:`, error);
         
         // Exponential backoff
-        const backoffTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        console.log(`[Connection] ⏳ ${backoffTime}ms sonra tekrar denenecek...`);
+        const backoffTime = Math.min(500 * Math.pow(1.5, attempt), 4000);
+        console.log(`[Connection] ⏳ ${backoffTime}ms sonra tekrar deneniyor...`);
         await new Promise(r => setTimeout(r, backoffTime));
       }
     }
@@ -224,48 +240,37 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         isConnected: success,
         isReconnecting: false,
         lastConnectedAt: success ? new Date() : null,
-        reconnectAttempts: success ? 0 : attempt,
+        reconnectAttempts: success ? 0 : maxAttempts,
       });
     }
 
     if (success) {
       startHeartbeat();
-    }
-
-    isHardResettingRef.current = false;
-
-    if (!success) {
-      console.log("❌ [Connection] ===== HARD RESET BAŞARISIZ! =====");
-      // 10 saniye sonra tekrar dene
+    } else {
+      console.log("❌ [Connection] ========== FORCE RECONNECT BAŞARISIZ ==========");
+      
+      // 8 saniye sonra otomatik tekrar dene
       if (isMountedRef.current) {
-        setTimeout(() => {
-          if (isMountedRef.current && !isHardResettingRef.current) {
-            console.log("[Connection] 🔄 Otomatik yeniden deneme...");
-            hardResetConnection(3);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            console.log("[Connection] 🔄 Otomatik yeniden deneme başlatılıyor...");
+            isReconnectingRef.current = false;
+            forceReconnect();
           }
-        }, 10000);
+        }, 8000);
       }
     }
 
+    isReconnectingRef.current = false;
     return success;
   }, [stopHeartbeat, startHeartbeat]);
 
-  // Normal reconnect
+  // Normal reconnect (forceReconnect'e yönlendir)
   const reconnect = useCallback(async (force = false): Promise<boolean> => {
-    if (isNativePlatform || force) {
-      return hardResetConnection();
-    }
-    
-    // Web için basit reconnect
-    try {
-      (supabase.realtime as any).connect();
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }, [hardResetConnection]);
+    return forceReconnect();
+  }, [forceReconnect]);
 
-  // Native App State Listener
+  // NATIVE APP STATE LISTENER - TEK MERKEZ
   useEffect(() => {
     if (!isNativePlatform) return;
 
@@ -276,32 +281,34 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         // Eski listener'ı temizle
         if (appListenerRef.current) {
           appListenerRef.current.remove();
+          appListenerRef.current = null;
         }
 
         appListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
-          console.log(`📱 [Connection] App State: ${isActive ? "FOREGROUND" : "BACKGROUND"}`);
+          console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
 
           if (isActive) {
-            // ÖN PLANA GELDİ - %100 HARD RESET
-            console.log("📱 [Connection] Uygulama ön plana geldi - HARD RESET başlatılıyor...");
+            // ÖN PLANA GELDİ
+            console.log("📱 [Connection] Uygulama ön plana geldi - Bağlantı yeniden kuruluyor...");
             
-            // Küçük bir gecikme - UI'ın stabilize olması için
-            await new Promise(r => setTimeout(r, 200));
+            // UI'ın stabilize olması için kısa gecikme
+            await new Promise(r => setTimeout(r, 150));
             
-            // Hard reset başlat
-            hardResetConnection(5);
-            
+            // Force reconnect başlat
+            if (isMountedRef.current) {
+              forceReconnect();
+            }
           } else {
-            // ARKA PLANA GİTTİ - TEMİZLİK YAP
+            // ARKA PLANA GİTTİ
             console.log("📱 [Connection] Uygulama arka plana gitti - Temizlik yapılıyor...");
             
             stopHeartbeat();
             
-            // Bağlantıyı kes
+            // Bağlantıyı kes (enerji tasarrufu için)
             try {
               (supabase.realtime as any).disconnect();
             } catch (e) {
-              // Sessizce devam et
+              // Sessizce devam
             }
             
             if (isMountedRef.current) {
@@ -310,7 +317,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           }
         });
 
-        console.log("[Connection] ✅ Native app state listener kuruldu");
+        console.log("[Connection] ✅ Native app state listener aktif");
       } catch (error) {
         console.error("[Connection] ❌ Native listener kurulamadı:", error);
       }
@@ -324,16 +331,16 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         appListenerRef.current = null;
       }
     };
-  }, [hardResetConnection, stopHeartbeat]);
+  }, [forceReconnect, stopHeartbeat]);
 
-  // Web Visibility Listener
+  // WEB VISIBILITY LISTENER
   useEffect(() => {
     if (isNativePlatform) return;
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "visible") {
-        console.log("[Connection] 🌐 Tab görünür oldu");
-        await hardResetConnection(3);
+        console.log("[Connection] 🌐 Tab görünür oldu - Bağlantı kontrol ediliyor...");
+        await forceReconnect();
       } else {
         console.log("[Connection] 🌐 Tab gizlendi");
         stopHeartbeat();
@@ -344,36 +351,40 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [hardResetConnection, stopHeartbeat]);
+  }, [forceReconnect, stopHeartbeat]);
 
-  // Auth hazır olduğunda bağlan
+  // İLK BAĞLANTI - Component mount olduğunda
   useEffect(() => {
-    if (!authLoading && session) {
-      console.log("[Connection] ✅ Auth hazır - Bağlantı başlatılıyor...");
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          hardResetConnection(3);
-        }
-      }, 100);
-    }
-  }, [authLoading, session, hardResetConnection]);
+    const initConnection = async () => {
+      // Kısa gecikme (auth hazır olması için)
+      await new Promise(r => setTimeout(r, 500));
+      
+      if (isMountedRef.current) {
+        console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
+        forceReconnect();
+      }
+    };
 
-  // Mount/Unmount
-  useEffect(() => {
-    isMountedRef.current = true;
+    initConnection();
+
     return () => {
       isMountedRef.current = false;
       stopHeartbeat();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
-  }, [stopHeartbeat]);
+  }, []);
 
   // Channel kayıt metodları
   const registerChannel = useCallback((name: string, channel: RealtimeChannel) => {
     channelsRef.current.set(name, channel);
+    console.log(`[Connection] 📺 Kanal kaydedildi: ${name}`);
   }, []);
 
   const unregisterChannel = useCallback((name: string) => {
     channelsRef.current.delete(name);
+    console.log(`[Connection] 🗑️ Kanal silindi: ${name}`);
   }, []);
 
   const isHealthy = state.isConnected && !state.isReconnecting;
@@ -386,6 +397,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         registerChannel,
         unregisterChannel,
         isHealthy,
+        forceReconnect,
       }}
     >
       {children}
