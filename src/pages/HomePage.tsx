@@ -367,8 +367,8 @@ const HomePage = () => {
   ];
 
   const miniGamesConfig = [
-    { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
-    { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" },
+    { id: "wheel", title: "Günlük Çark", icon: "🎡", color: "amber", route: "/wheel" },
+    { id: "snake", title: "Harf Yeme", icon: "🐍", color: "green", route: "/snake-game" },
     { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" },
     { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" },
     {
