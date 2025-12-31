@@ -449,36 +449,63 @@ const HomePage = () => {
 
         {/* --- LEVEL VE XP KARTI --- */}
         <div className="px-5 mt-2">
-          {/* LEVEL KARTI: Border füme (slate-600) */}
-          <div className="bg-white border border-slate-600 rounded-xl p-3 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shadow-orange-200">
-                <Star className="w-5 h-5 text-white fill-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-800">Seviye {levelData.level}</span>
-                  <span className="text-[10px] text-slate-400">
-                    ({levelData.experience} / {levelData.nextLevelExp} XP)
-                  </span>
+          {/* Renk Mantığını Belirleyelim */}
+          {(() => {
+            const level = levelData.level;
+            let starGradient = "from-amber-400 to-orange-500"; // Varsayılan (1-9)
+            let shadowColor = "shadow-orange-200";
+
+            if (level >= 70) {
+              starGradient = "from-slate-700 to-black";
+              shadowColor = "shadow-slate-300";
+            } else if (level >= 40) {
+              starGradient = "from-blue-400 to-blue-600";
+              shadowColor = "shadow-blue-200";
+            } else if (level >= 25) {
+              starGradient = "from-emerald-400 to-green-600";
+              shadowColor = "shadow-green-200";
+            } else if (level >= 10) {
+              starGradient = "from-purple-500 to-indigo-600";
+              shadowColor = "shadow-purple-200";
+            }
+
+            return (
+              <div className="bg-white border border-slate-600 rounded-xl p-3 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3">
+                  {/* Dinamik Renkli Yıldız İkon Kutusu */}
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-md ${shadowColor}`}
+                  >
+                    <Star className="w-5 h-5 text-white fill-white" />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-800">Seviye {level}</span>
+                      <span className="text-[10px] text-slate-400">
+                        ({levelData.experience} / {levelData.nextLevelExp} XP)
+                      </span>
+                    </div>
+
+                    {/* Siyah Çerçeveli Seviye Barı */}
+                    <div className="h-2.5 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden border border-black">
+                      <div
+                        className={`h-full bg-gradient-to-r ${starGradient}`} // Bar rengi de yıldızla uyumlu olsun istersen
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* DEĞİŞİKLİK BURADA: border border-black eklendi */}
-                <div className="h-2.5 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden border border-black">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Toplam Puan</span>
+                  <span className="text-sm font-mono font-bold text-amber-600">
+                    {(profile?.total_score || 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Toplam Puan</span>
-              <span className="text-sm font-mono font-bold text-amber-600">
-                {(profile?.total_score || 0).toLocaleString()}
-              </span>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* --- JOKERLER --- */}
