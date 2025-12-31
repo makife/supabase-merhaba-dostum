@@ -7,44 +7,56 @@ interface FinalCountdownProps {
 
 const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownProps) => {
   const lastTickRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const showCountdown = displayTime >= 1 && displayTime <= 9;
 
-  const playPitchSound = (secondsLeft: number) => {
-    try {
-      // Dosya yolu artık direkt kök dizinde: public/beep.mp3
-      const audio = new Audio("/beep.mp3");
-
-      /**
-       * PITCH HESABI:
-       * 9 saniyede hız 1.0 (Normal ses)
-       * 1 saniyeye yaklaştıkça hız 3.0'a çıkar (Çok ince ses)
-       */
-      const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
-
-      // Tarayıcının sesi kalınlaştırmasını (tonu korumasını) engelliyoruz
-      // @ts-ignore
-      audio.preservesPitch = false;
-      // @ts-ignore
-      audio.webkitPreservesPitch = false;
-
-      audio.playbackRate = pitchRate;
-
-      audio.play().catch((err) => {
-        console.warn("Ses çalma hatası (Muhtemelen etkileşim yok):", err);
-      });
-    } catch (error) {
-      console.error("Audio objesi hatası:", error);
+  // Ses üretme fonksiyonu
+  const playCountdownSound = (secondsLeft: number) => {
+    // İlk etkileşimde AudioContext'i başlat
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
+
+    const ctx = audioCtxRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = "sine"; // Saf bir bip sesi için 'sine', daha dijital/retro için 'square'
+
+    // FREKANS HESAPLAMA:
+    // 9 saniyede 440Hz (La notası) ile başlar,
+    // 1 saniyeye yaklaştıkça frekans artar.
+    // Formül: Temel Frekans + (Kalan süre azaldıkça artan değer)
+    const baseFreq = 440;
+    const frequency = baseFreq + (10 - secondsLeft) * 80;
+
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+
+    // SES SEVİYESİ AYARI (Tıklama sesini önlemek için kısa bir fade-out)
+    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.1);
   };
 
   useEffect(() => {
     if (showCountdown && displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
+
+      // Sadece bizim yeni beep sesini çal
       playPitchSound(displayTime);
-      onCountdownTick?.(displayTime);
+
+      // AŞAĞIDAKİ SATIRI YORUMA ALARAK TEST ET:
+      // Eğer bunu kapatınca click sesi kesilirse, bil ki sorun bu dosyada değil,
+      // bu bileşeni çağırdığın yerdeki fonksiyondadır.
+      // onCountdownTick?.(displayTime);
     }
-  }, [displayTime, showCountdown, onCountdownTick]);
+  }, [displayTime, showCountdown]);
 
   if (!showCountdown) return null;
 
@@ -52,10 +64,8 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
     <span
       className="font-mono font-black leading-none text-red-500"
       style={{
-        display: "inline-block",
-        fontFamily: "'Orbitron', sans-serif",
+        fontFamily: "'Orbitron', 'Courier New', monospace",
         fontSize: "7rem",
-        textAlign: "center",
         textShadow: "0 0 30px rgba(239,68,68,0.8), 0 0 60px rgba(239,68,68,0.5)",
       }}
     >
