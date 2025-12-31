@@ -3020,8 +3020,13 @@ const GamePage = ({
   const useFisildaJoker = async () => {
     if (jokers.fisilida <= 0 || isJokerActive) return;
 
+    // ✅ HEMEN FEEDBACK VER
     playSpecialSound("/fisilda.mp3");
+    triggerHapticFeedback?.();
+    playSound("buttonClick");
 
+    // ✅ BUTON ANİMASYONU İÇİN JOKER STATE'İNİ GÜNCELLE
+    setSelectedJoker("fisilida");
     setIsJokerActive(true);
 
     const possibleWords = [
@@ -3090,7 +3095,6 @@ const GamePage = ({
     let validWords = [];
 
     if (wordlistLoaded) {
-      // Wordlist'ten kelimeleri ORİJİNAL HALİYLE al (çevirme yapma!)
       const wordArray = Array.from(wordlist).map((word) => word.toLocaleUpperCase("tr-TR").trim());
       validWords = wordArray.filter((word) => {
         if (usedWords.has(word)) return false;
@@ -3130,11 +3134,10 @@ const GamePage = ({
       // Kelime bulundu
       const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
 
-      // Kelime sırasına göre harfleri bul - HER HARF İÇİN FARKLI POZİSYON
+      // Kelime sırasına göre harfleri bul
       const wordPositions: { row: number; col: number }[] = [];
       const usedPositions: { row: number; col: number }[] = [];
 
-      // ONDALIK için: O-N-D-A-L-I-K sırasıyla (sözlükteki haliyle)
       for (const letter of selectedWord) {
         let letterFound = false;
         for (let row = 0; row < 4; row++) {
@@ -3167,6 +3170,7 @@ const GamePage = ({
       setTimeout(
         () => {
           setIsJokerActive(false);
+          setSelectedJoker(null); // ✅ Buton animasyonunu kapat
         },
         wordPositions.length * 500 + 800,
       );
@@ -3176,11 +3180,13 @@ const GamePage = ({
       if (!jokerUsed) {
         console.error("❌ Fısılda joker kullanılamadı!");
         setIsJokerActive(false);
+        setSelectedJoker(null); // ✅ Hata durumunda da temizle
         return;
       }
     } else {
       // Kelime bulunamadı
       setIsJokerActive(false);
+      setSelectedJoker(null); // ✅ Buton animasyonunu kapat
 
       toast({
         title: "💡 Fısılda Jokeri",
