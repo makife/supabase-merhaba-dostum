@@ -367,8 +367,8 @@ const HomePage = () => {
   ];
 
   const miniGamesConfig = [
-    { id: "wheel", title: "Günlük Çark", icon: "🎡", color: "amber", route: "/wheel" },
-    { id: "snake", title: "Harf Yeme", icon: "🐍", color: "green", route: "/snake-game" },
+    { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
+    { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" },
     { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" },
     { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" },
     {
@@ -462,7 +462,9 @@ const HomePage = () => {
                     ({levelData.experience} / {levelData.nextLevelExp} XP)
                   </span>
                 </div>
-                <div className="h-2 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden">
+
+                {/* DEĞİŞİKLİK BURADA: border border-black eklendi */}
+                <div className="h-2.5 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden border border-black">
                   <div
                     className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
                     style={{ width: `${progressPercent}%` }}
