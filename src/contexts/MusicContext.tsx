@@ -35,7 +35,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Hızlı fade out fonksiyonu (arka plan için)
   const quickFadeOut = () => {
     if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
-    
+
     // Önceki fade'i temizle
     if (backgroundFadeRef.current) {
       clearInterval(backgroundFadeRef.current);
@@ -43,9 +43,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const audio = backgroundMusicRef.current;
     const fadeStep = audio.volume / 10; // 500ms'de 10 adım = 50ms aralık
-    
-    console.log('🎵 Hızlı fade out başlatılıyor...');
-    
+
+    console.log("🎵 Hızlı fade out başlatılıyor...");
+
     backgroundFadeRef.current = setInterval(() => {
       if (audio.volume > fadeStep) {
         audio.volume = Math.max(0, audio.volume - fadeStep);
@@ -56,7 +56,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           clearInterval(backgroundFadeRef.current);
           backgroundFadeRef.current = null;
         }
-        console.log('🎵 Fade out tamamlandı, müzik durdu');
+        console.log("🎵 Fade out tamamlandı, müzik durdu");
       }
     }, 50);
   };
@@ -66,7 +66,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     onBackground: () => {
       // Arka plana gitti - müziği fade out ile durdur
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        console.log('🎵 Arka plan algılandı - fade out başlatılıyor');
+        console.log("🎵 Arka plan algılandı - fade out başlatılıyor");
         wasPlayingBeforeBackgroundRef.current = true;
         quickFadeOut();
       }
@@ -77,9 +77,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearInterval(backgroundFadeRef.current);
         backgroundFadeRef.current = null;
       }
-      
+
       if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
-        console.log('🎵 Müzik ön plan için devam ettiriliyor');
+        console.log("🎵 Müzik ön plan için devam ettiriliyor");
         wasPlayingBeforeBackgroundRef.current = false;
         backgroundMusicRef.current.volume = originalVolumeRef.current;
         backgroundMusicRef.current.play().catch(console.warn);
@@ -90,7 +90,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Native'de ek güvenlik: isActive false olduğunda müziği zorla durdur
   useEffect(() => {
     if (!isActive && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-      console.log('🎵 isActive=false - müzik zorla durduruluyor');
+      console.log("🎵 isActive=false - müzik zorla durduruluyor");
       wasPlayingBeforeBackgroundRef.current = true;
       quickFadeOut();
     }
@@ -105,6 +105,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     "./sounds/default/backround-music4.mp3",
     "./sounds/default/backround-music5.mp3",
     "./sounds/default/backround-music6.mp3",
+    "./sounds/default/backround-music7.mp3", // Yeni
+    "./sounds/default/backround-music8.mp3", // Yeni
+    "./sounds/default/backround-music9.mp3", // Yeni
   ];
 
   // Shuffle function
