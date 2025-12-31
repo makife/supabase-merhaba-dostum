@@ -45,7 +45,7 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
       // NOT: Eğer hala "click" sesi duyuyorsan, aşağıdaki satırı yorum satırı yapıp dene.
       // Sorun büyük ihtimalle bu fonksiyonun çağrıldığı üst dosyada (Parent) gizli.
-      onCountdownTick?.(displayTime);
+      //onCountdownTick?.(displayTime);
     }
   }, [displayTime, showCountdown, onCountdownTick]);
 
