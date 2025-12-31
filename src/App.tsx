@@ -55,7 +55,7 @@ import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { useAppForegroundState } from "@/hooks/useAppForegroundState";
-import { realtimeManager } from "@/utils/realtimeManager";
+// realtimeManager import kaldırıldı - bağlantı yönetimi ConnectionContext'te
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
 import { StatusBar, Style } from "@capacitor/status-bar";
@@ -488,26 +488,20 @@ const App = () => {
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
 
-  // 2. Arka plan/ön plan yönetimi
+  // 2. Arka plan/ön plan yönetimi (SADECE UI için - bağlantı yönetimi ConnectionContext'te)
   useAppState({
     onBackground: () => {
-      console.log("📱 Uygulama arka plana gitti");
+      console.log("📱 Uygulama arka plana gitti (UI)");
     },
     onForeground: () => {
-      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle komutu veriyoruz.
-      // Bu sayede Android barları geri getirse bile biz onları tekrar "sticky" moduna sokuyoruz.
+      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle
       console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
-
-      // React render döngüsünü bozmamak için küçük bir timeout ile tetikliyoruz
       setTimeout(() => {
         manualHideBars();
       }, 300);
     },
-    backgroundDelay: 30000,
-    onBackgroundTimeout: () => {
-      console.log("⏹️ 30 saniye arka planda kaldı - realtime bağlantılar kapatılıyor");
-      realtimeManager.forceCleanupAll();
-    },
+    // NOT: backgroundTimeout ve forceCleanupAll kaldırıldı - 
+    // Bağlantı yönetimi artık tamamen ConnectionContext'te
   });
 
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
