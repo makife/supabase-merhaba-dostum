@@ -12,29 +12,26 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const playPitchSound = (secondsLeft: number) => {
     try {
-      // Dosya adını beep.mp3 yaptık
-      const audio = new Audio("/sounds/beep.mp3");
+      // Dosya yolu artık direkt kök dizinde: public/beep.mp3
+      const audio = new Audio("/beep.mp3");
 
       /**
-       * PITCH HESABI (Daha Agresif):
-       * 9 saniye -> 1.0x (Normal)
-       * 5 saniye -> 2.0x (İnce)
-       * 1 saniye -> 3.0x (Çok Tiz)
+       * PITCH HESABI:
+       * 9 saniyede hız 1.0 (Normal ses)
+       * 1 saniyeye yaklaştıkça hız 3.0'a çıkar (Çok ince ses)
        */
       const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
 
-      // --- PITCH İNCELMESİ İÇİN KRİTİK AYARLAR ---
+      // Tarayıcının sesi kalınlaştırmasını (tonu korumasını) engelliyoruz
       // @ts-ignore
       audio.preservesPitch = false;
       // @ts-ignore
-      audio.webkitPreservesPitch = false; // iOS/Capacitor/Safari için
-      // @ts-ignore
-      audio.mozPreservesPitch = false;
+      audio.webkitPreservesPitch = false;
 
       audio.playbackRate = pitchRate;
 
       audio.play().catch((err) => {
-        console.warn("Ses çalınamadı (Etkileşim eksik):", err);
+        console.warn("Ses çalma hatası (Muhtemelen etkileşim yok):", err);
       });
     } catch (error) {
       console.error("Audio objesi hatası:", error);
