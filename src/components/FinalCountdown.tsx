@@ -10,44 +10,43 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const showCountdown = displayTime >= 1 && displayTime <= 9;
 
-  // 1. FONKSİYON TANIMI (Component içinde olduğundan emin ol)
   const playPitchSound = (secondsLeft: number) => {
     try {
-      // Dosya public klasöründe direkt durmalı: public/beep.mp3
+      console.log(`Ses tetiklendi! Saniye: ${secondsLeft}`); // Konsolda bunu görmelisin
+
       const audio = new Audio("/beep.mp3");
 
-      // PITCH HESABI: 9'dan 1'e gittikçe 1.0'dan 3.0'a çıkar
       const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
 
-      // Pitch inceltme ayarları
       // @ts-ignore
       audio.preservesPitch = false;
       // @ts-ignore
       audio.webkitPreservesPitch = false;
-
       audio.playbackRate = pitchRate;
 
-      audio.play().catch((err) => {
-        console.warn("Ses çalma hatası:", err);
-      });
+      // Sesi çalmayı dene ve hatayı yakala
+      audio
+        .play()
+        .then(() => console.log("Ses başarıyla çalındı"))
+        .catch((err) => {
+          console.error("SES ÇALMA BLOKLANDI! Muhtemelen sayfaya tıklamadın:", err);
+        });
     } catch (error) {
-      console.error("Ses dosyası bulunamadı veya Audio hatası:", error);
+      console.error("Audio objesi oluşturulurken hata:", error);
     }
   };
 
-  // 2. USEEFFECT İÇİNDE ÇAĞRI
   useEffect(() => {
     if (showCountdown && displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
 
-      // Kendi beep sesimizi çalıyoruz
+      // 1. Kendi beep sesimizi çal
       playPitchSound(displayTime);
 
-      // NOT: Eğer hala "click" sesi duyuyorsan, aşağıdaki satırı yorum satırı yapıp dene.
-      // Sorun büyük ihtimalle bu fonksiyonun çağrıldığı üst dosyada (Parent) gizli.
-      //onCountdownTick?.(displayTime);
+      // 2. Click sesini kesmek için burayı kapalı tutmaya devam et
+      // onCountdownTick?.(displayTime);
     }
-  }, [displayTime, showCountdown, onCountdownTick]);
+  }, [displayTime, showCountdown]);
 
   if (!showCountdown) return null;
 
