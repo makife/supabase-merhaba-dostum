@@ -81,6 +81,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   toast.success(notification.message, {
                     duration: 5000,
                     icon: "🏆",
+                    position: "bottom-center",
                   });
                 }
 
@@ -89,6 +90,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   console.log("📢 Mention toast gösteriliyor");
                   toast.info(`📢 ${notification.message}`, {
                     duration: 5000,
+                    position: "bottom-center",
                     action: {
                       label: "Git",
                       onClick: () => navigate("/chat"),
@@ -96,8 +98,8 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   });
                 }
 
-                // Özel mesaj bildirimi - related_id'den userId çıkar
-                if (notification.type === "message" && notification.related_id) {
+                // Özel mesaj bildirimi - "message" VEYA "private_message" type'ı
+                if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
                   const chatId = notification.related_id;
 
                   // Eğer kullanıcı bu chat'i açmışsa toast gösterme
@@ -114,6 +116,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                   console.log("💬 Private message toast gösteriliyor");
                   toast.info(`💬 ${notification.message}`, {
                     duration: 5000,
+                    position: "bottom-center",
                     action: {
                       label: "Git",
                       onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
