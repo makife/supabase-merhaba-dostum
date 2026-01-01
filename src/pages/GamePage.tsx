@@ -46,6 +46,7 @@ import {
   Lightbulb,
   PenTool,
   Loader2,
+  Crown,
 } from "lucide-react";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
@@ -6155,8 +6156,14 @@ const GamePage = ({
     [playSpecialSound],
   );
 
-  // Get opponent info based on game mode with avatar
+  // Get opponent info based on game mode with avatar and premium status
   const getOpponentInfo = () => {
+    // Helper to check if premium
+    const isPremiumActive = (premiumUntil: string | null | undefined) => {
+      if (!premiumUntil) return false;
+      return new Date(premiumUntil) > new Date();
+    };
+
     // Tournament mode için özel opponent isim mantığı
     if (gameMode === "tournament" && tournamentMatch) {
       const opponentId =
@@ -6165,12 +6172,12 @@ const GamePage = ({
       if (!opponentId || String(opponentId).startsWith("bot_")) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
         const botName = generateBotName(seed);
-        return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName) };
+        return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName), isPremium: false };
       }
 
       // Participants yüklenmediyse fallback
       if (!participants || participants.length === 0) {
-        return { name: "Rakip", icon: Trophy, avatar: null };
+        return { name: "Rakip", icon: Trophy, avatar: null, isPremium: false };
       }
 
       const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
@@ -6180,10 +6187,11 @@ const GamePage = ({
           name: realOpponent.profiles?.username || "Rakip",
           icon: Trophy,
           avatar: realOpponent.profiles?.avatar_url || null,
+          isPremium: isPremiumActive((realOpponent as any).profiles?.premium_until),
         };
       }
 
-      return { name: "Turnuva Rakibi", icon: Trophy, avatar: null };
+      return { name: "Turnuva Rakibi", icon: Trophy, avatar: null, isPremium: false };
     }
 
     const realOpponent = participants.find(
@@ -6196,12 +6204,13 @@ const GamePage = ({
         name: (realOpponent as any).profiles?.username || "Oyuncu",
         icon: User,
         avatar: (realOpponent as any).profiles?.avatar_url || null,
+        isPremium: isPremiumActive((realOpponent as any).profiles?.premium_until),
       };
     }
 
     switch (gameMode) {
       case "vs-computer":
-        return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar };
+        return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar, isPremium: false };
       case "random-match":
       case "private-room":
         if (participants.length >= 2) {
@@ -6212,6 +6221,7 @@ const GamePage = ({
               name: (opponent as any).profiles.username,
               icon: User,
               avatar: (opponent as any).profiles?.avatar_url || null,
+              isPremium: isPremiumActive((opponent as any).profiles?.premium_until),
             };
           }
         }
@@ -6220,22 +6230,28 @@ const GamePage = ({
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
           const fallbackOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
-          return { name, icon: User, avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null };
+          return { 
+            name, 
+            icon: User, 
+            avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null,
+            isPremium: isPremiumActive((fallbackOpponent as any)?.profiles?.premium_until),
+          };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
           console.log("📝 State'ten rakip:", opponentName);
+          const stateOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
           return {
             name: opponentName,
             icon: User,
-            avatar:
-              (participants.find((p) => String(p.user_id) !== String(user?.id)) as any)?.profiles?.avatar_url || null,
+            avatar: (stateOpponent as any)?.profiles?.avatar_url || null,
+            isPremium: isPremiumActive((stateOpponent as any)?.profiles?.premium_until),
           };
         }
         console.log("⏳ Henüz rakip yok, aranıyor...");
-        return { name: "Rakip Aranıyor...", icon: User, avatar: null };
+        return { name: "Rakip Aranıyor...", icon: User, avatar: null, isPremium: false };
       default:
-        return { name: "Rakip", icon: User, avatar: null };
+        return { name: "Rakip", icon: User, avatar: null, isPremium: false };
     }
   };
 
@@ -6688,12 +6704,20 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-4 relative">
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
-                      <Avatar className="w-16 h-16 mx-auto mb-2">
-                        <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                        <AvatarFallback>
-                          <User className="w-8 h-8 text-gray-600" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative inline-block">
+                        <Avatar className="w-16 h-16 mx-auto mb-2">
+                          <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
+                          <AvatarFallback>
+                            <User className="w-8 h-8 text-gray-600" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* VIP rozet - kendi kartımız */}
+                        {isPremium && (
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                            <Crown className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
                       <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
                       {gameType === "score" && (
@@ -6712,12 +6736,20 @@ const GamePage = ({
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
                       {/* Normal kart içeriği - her zaman göster */}
-                      <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                        <AvatarImage src={opponent.avatar} alt="Opponent" />
-                        <AvatarFallback>
-                          <opponent.icon className="w-8 h-8 text-gray-600" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative inline-block">
+                        <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                          <AvatarImage src={opponent.avatar} alt="Opponent" />
+                          <AvatarFallback>
+                            <opponent.icon className="w-8 h-8 text-gray-600" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* VIP rozet - rakip kartı */}
+                        {opponent.isPremium && (
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                            <Crown className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
                       <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
                       {gameType === "score" && (
