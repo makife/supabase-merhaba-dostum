@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast"; // Projende hangisi varsa: "sonner" v
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
+import { getActivePrivateChats } from "@/utils/notifications";
 
 export function useChatNotifications() {
   const { user } = useAuth();
@@ -129,6 +130,15 @@ export function useChatNotifications() {
           if (!newMsg) return;
 
           refreshUnreadCounts();
+
+          // 🔴 AKTİF SOHBET KONTROLÜ - Eğer kullanıcı zaten bu sohbetteyse toast gösterme
+          const activeChats = getActivePrivateChats();
+          const isInActiveChat = activeChats.includes(newMsg.chat_id);
+          
+          if (isInActiveChat) {
+            console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor:", newMsg.chat_id);
+            return; // Toast gösterme, sadece unread count güncellendi
+          }
 
           const { data: senderProfile } = await supabase
             .from("profiles")
