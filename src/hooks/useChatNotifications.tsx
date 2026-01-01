@@ -129,16 +129,22 @@ export function useChatNotifications() {
           const newMsg: any = payload.new;
           if (!newMsg) return;
 
+          console.log("📨 [ChatNotif] Yeni özel mesaj alındı:", newMsg.chat_id);
+
           refreshUnreadCounts();
 
           // 🔴 AKTİF SOHBET KONTROLÜ - Eğer kullanıcı zaten bu sohbetteyse toast gösterme
           const activeChats = getActivePrivateChats();
+          console.log("📋 [ChatNotif] Aktif sohbetler:", activeChats, "Gelen mesajın chat_id:", newMsg.chat_id);
+          
           const isInActiveChat = activeChats.includes(newMsg.chat_id);
           
           if (isInActiveChat) {
             console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor:", newMsg.chat_id);
             return; // Toast gösterme, sadece unread count güncellendi
           }
+
+          console.log("🔔 [ChatNotif] Toast gösteriliyor...");
 
           const { data: senderProfile } = await supabase
             .from("profiles")
