@@ -2,14 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { ConnectionRecoveryOverlay } from "@/components/ConnectionRecoveryOverlay";
 
 interface ConnectionState {
   isConnected: boolean;
   isReconnecting: boolean;
   lastConnectedAt: Date | null;
   reconnectAttempts: number;
-  showRecoveryOverlay: boolean; // Manuel overlay göster
 }
 
 interface ConnectionContextType {
@@ -19,7 +17,6 @@ interface ConnectionContextType {
   unregisterChannel: (name: string) => void;
   isHealthy: boolean;
   forceReconnect: () => Promise<boolean>;
-  hideRecoveryOverlay: () => void;
 }
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -36,7 +33,6 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     isReconnecting: false,
     lastConnectedAt: new Date(),
     reconnectAttempts: 0,
-    showRecoveryOverlay: false,
   });
 
   // Eski kanalları değil, kanal oluşturucu fonksiyonlarını saklıyoruz
@@ -229,16 +225,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
 
           if (isActive) {
-            // ÖN PLANA GELDİ - OTOMATİK RECONNECT YAPMA, OVERLAY GÖSTER
-            console.log("📱 [Connection] Uygulama ön plana geldi - OVERLAY GÖSTERİLİYOR...");
-            
-            // UI'ın stabilize olması için kısa gecikme
-            await new Promise(r => setTimeout(r, 300));
-            
-            // Manuel overlay göster
-            if (isMountedRef.current) {
-              setState(prev => ({ ...prev, showRecoveryOverlay: true, isConnected: false }));
-            }
+            // ÖN PLANA GELDİ - DİREKT RELOAD
+            console.log("📱 [Connection] Uygulama ön plana geldi - SAYFA YENİLENİYOR...");
+            window.location.reload();
           } else {
             // ARKA PLANA GİTTİ
             console.log("📱 [Connection] Uygulama arka plana gitti - Temizlik yapılıyor...");
@@ -350,23 +339,6 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     console.log(`[Connection] 🗑️ Kanal silindi: ${name}`);
   }, []);
 
-  // Overlay'ı gizle
-  const hideRecoveryOverlay = useCallback(() => {
-    setState(prev => ({ ...prev, showRecoveryOverlay: false }));
-  }, []);
-
-  // Reconnect başarılı olduğunda çağrılacak
-  const handleReconnectSuccess = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      isConnected: true,
-      showRecoveryOverlay: false,
-      reconnectAttempts: 0,
-      lastConnectedAt: new Date(),
-    }));
-    startHeartbeat();
-  }, [startHeartbeat]);
-
   const isHealthy = state.isConnected && !state.isReconnecting;
 
   return (
@@ -378,12 +350,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         unregisterChannel,
         isHealthy,
         forceReconnect,
-        hideRecoveryOverlay,
       }}
     >
       {children}
-      {/* Manuel bağlantı kurtarma overlay'ı - sadece window.location.reload() */}
-      <ConnectionRecoveryOverlay isVisible={state.showRecoveryOverlay} />
     </ConnectionContext.Provider>
   );
 };
