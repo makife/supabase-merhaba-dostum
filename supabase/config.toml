@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.send-engagement-notifications]
 verify_jwt = false
+
+[functions.send-premium-daily-reminder]
+verify_jwt = false
