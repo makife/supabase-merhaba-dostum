@@ -662,12 +662,12 @@ const MarketPage = () => {
                   {/* Satın Alımları Geri Yükle */}
                   {isNativePlatform && (
                     <Button
-                      variant="ghost"
-                      className="w-full mt-2 text-amber-100 hover:text-white hover:bg-white/10 text-xs"
+                      variant="outline"
+                      className="w-full mt-4 border-2 border-amber-400/60 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 hover:text-white hover:border-amber-400 font-medium py-3"
                       onClick={restoreSubscriptions}
                       disabled={isSubscriptionLoading}
                     >
-                      <RotateCcw className={`w-3 h-3 mr-2 ${isSubscriptionLoading ? "animate-spin" : ""}`} />
+                      <RotateCcw className={`w-4 h-4 mr-2 ${isSubscriptionLoading ? "animate-spin" : ""}`} />
                       Satın Alımları Geri Yükle
                     </Button>
                   )}
