@@ -388,32 +388,57 @@ export const useMobileNotifications = () => {
   };
 
   // Request notification permissions (Butona basınca çalışan)
-  const requestPermissions = async () => {
+  // Returns: true if permission granted, false otherwise
+  const requestPermissions = async (): Promise<boolean> => {
     try {
       console.log("🔔 requestPermissions çağrıldı (Manuel)");
+      console.log("📱 Platform:", isMobile ? "Native" : "Web");
 
       if (isMobile) {
         const PushNotifications = await getPushNotifications();
+        console.log("📱 PushNotifications plugin:", PushNotifications ? "Yüklendi" : "Yüklenemedi");
+        
         if (PushNotifications) {
-          // 1. Önce burada açıkça izin iste (Pencere burada açılacak)
+          // 1. Önce mevcut izin durumunu kontrol et
+          const currentStatus = await PushNotifications.checkPermissions();
+          console.log("📱 Mevcut izin durumu:", currentStatus.receive);
+          
+          // 2. İzin iste (Pencere burada açılacak)
+          console.log("📱 İzin isteniyor...");
           const permission = await PushNotifications.requestPermissions();
+          console.log("📱 İzin sonucu:", permission.receive);
 
           if (permission.receive === "granted") {
-            // 2. İzin verildiyse servisleri başlat
+            // 3. İzin verildiyse servisleri başlat
+            console.log("✅ İzin verildi, servisler başlatılıyor...");
             await initializePushNotifications();
             await initializeLocalNotifications();
             setIsPermissionGranted(true);
+            return true;
+          } else {
+            console.log("❌ İzin reddedildi veya prompt kapatıldı");
+            setIsPermissionGranted(false);
+            return false;
           }
+        } else {
+          console.error("❌ PushNotifications plugin yüklenemedi!");
+          return false;
         }
       } else {
-        // Web mantığı aynı kalabilir
+        // Web mantığı
         if ("Notification" in window) {
+          console.log("🌐 Web bildirim izni isteniyor...");
           const permission = await Notification.requestPermission();
-          setIsPermissionGranted(permission === "granted");
+          console.log("🌐 Web izin sonucu:", permission);
+          const granted = permission === "granted";
+          setIsPermissionGranted(granted);
+          return granted;
         }
+        return false;
       }
     } catch (error) {
-      console.error("Error requesting permissions:", error);
+      console.error("❌ İzin isteme hatası:", error);
+      return false;
     }
   };
 
