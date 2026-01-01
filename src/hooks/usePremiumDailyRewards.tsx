@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'sonner';
+import { useMobileNotifications } from '@/hooks/useMobileNotifications';
 
 export const usePremiumDailyRewards = () => {
   const { user } = useAuth();
   const { profile, isPremium, refreshProfile } = useUser();
+  const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
   const [hasClaimedToday, setHasClaimedToday] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,9 +60,21 @@ export const usePremiumDailyRewards = () => {
       
       if (result.success) {
         setHasClaimedToday(true);
+        
+        // Toast bildirimi
         toast.success('🎁 Günlük VIP Jokerleri Alındı!', {
           description: 'Değiştir, Fısılda ve Sen Yaz jokerleriniz eklendi (+3)'
         });
+        
+        // Push notification gönder
+        if (isPermissionGranted) {
+          showLocalNotification(
+            '🎁 VIP Günlük Hediye!',
+            'Günlük 3x Değiştir, 3x Fısılda, 3x Sen Yaz jokerleriniz eklendi!',
+            { type: 'premium_daily_jokers' }
+          );
+        }
+        
         // Profili yenile
         await refreshProfile(true);
       }
@@ -72,7 +86,7 @@ export const usePremiumDailyRewards = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, hasPremiumSubscription, hasClaimedToday, isLoading, refreshProfile]);
+  }, [user?.id, hasPremiumSubscription, hasClaimedToday, isLoading, refreshProfile, showLocalNotification, isPermissionGranted]);
 
   // Otomatik kontrol ve talep
   useEffect(() => {
