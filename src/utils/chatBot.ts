@@ -120,12 +120,33 @@ const normalizeText = (text: string): string => {
   return normalized;
 };
 
+// Kısa yasaklı kelimeler için beyaz liste (bu kelimelerin içinde geçebilir)
+const SHORT_WORD_WHITELIST: { [key: string]: string[] } = {
+  'am': ['selam', 'tamam', 'adam', 'madam', 'hamam', 'imam', 'meram', 'bayram', 'curam', 'keram', 'salam', 'aman', 'zaman', 'derman', 'ferman', 'yaman', 'canan', 'hamamı', 'imamı', 'selamı'],
+  'it': ['kitap', 'site', 'bitki', 'yitik', 'ziyafet', 'itibar', 'itibaren', 'kritik', 'politik', 'pratik', 'otomatik', 'bitir', 'yitir', 'gitme', 'gitti', 'bitti', 'itti'],
+  'mal': ['normal', 'optimal', 'minimal', 'maksimal', 'animal', 'terminal', 'final', 'orijinal', 'nominal', 'malatya', 'malta'],
+  'got': ['forgot', 'ergot'],
+  'sik': ['klasik', 'müzik', 'fizik', 'basik', 'eksik', 'kesik', 'bisiklet'],
+  'yal': ['yayla', 'yalan', 'yalamak', 'yalı', 'yalın', 'kayal', 'mayal'],
+  'öl': ['ölçü', 'ölçek', 'bölüm', 'bölge', 'bölmek', 'gölge', 'köle', 'döllenme'],
+};
+
 // Kelime sınırları ile kontrol (daha hassas)
 const containsWordBoundary = (text: string, word: string): boolean => {
-  // Önce direkt içerme kontrolü
-  if (text.includes(word)) return true;
+  // Kısa kelimeler için (3 harf veya az) beyaz liste kontrolü
+  if (word.length <= 3) {
+    const whitelist = SHORT_WORD_WHITELIST[word.toLowerCase()];
+    if (whitelist) {
+      // Metin beyaz listedeki kelimelerden birini içeriyorsa, false döndür
+      for (const safeWord of whitelist) {
+        if (text.includes(safeWord.toLowerCase())) {
+          return false;
+        }
+      }
+    }
+  }
   
-  // Kelime sınırı ile kontrol (regex kullanarak)
+  // Kelime sınırı ile kontrol (regex kullanarak) - sadece bağımsız kelime olarak geçiyorsa
   const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(^|[^a-zçğıöşü])${escapedWord}([^a-zçğıöşü]|$)`, 'i');
   return regex.test(text);
