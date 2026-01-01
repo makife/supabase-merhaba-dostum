@@ -122,7 +122,7 @@ const normalizeText = (text: string): string => {
 
 // Kısa yasaklı kelimeler için beyaz liste (bu kelimelerin içinde geçebilir)
 const SHORT_WORD_WHITELIST: { [key: string]: string[] } = {
-  'am': ['selam', 'tamam', 'adam', 'madam', 'hamam', 'imam', 'meram', 'bayram', 'curam', 'keram', 'salam', 'aman', 'zaman', 'derman', 'ferman', 'yaman', 'canan', 'hamamı', 'imamı', 'selamı'],
+  'am': ['selam', 'tamam', 'adam', 'madam', 'hamam', 'imam', 'meram', 'bayram', 'curam', 'keram', 'salam', 'aman', 'zaman', 'derman', 'ferman', 'yaman', 'canan', 'hamamı', 'imamı', 'selamı', 'selamlar', 'salamlar', 'program', 'dram', 'tram', 'kram'],
   'it': ['kitap', 'site', 'bitki', 'yitik', 'ziyafet', 'itibar', 'itibaren', 'kritik', 'politik', 'pratik', 'otomatik', 'bitir', 'yitir', 'gitme', 'gitti', 'bitti', 'itti'],
   'mal': ['normal', 'optimal', 'minimal', 'maksimal', 'animal', 'terminal', 'final', 'orijinal', 'nominal', 'malatya', 'malta'],
   'got': ['forgot', 'ergot'],
@@ -131,19 +131,25 @@ const SHORT_WORD_WHITELIST: { [key: string]: string[] } = {
   'öl': ['ölçü', 'ölçek', 'bölüm', 'bölge', 'bölmek', 'gölge', 'köle', 'döllenme'],
 };
 
+// Beyaz listedeki kelimeleri kontrol et
+const isInWhitelist = (text: string, word: string): boolean => {
+  const whitelist = SHORT_WORD_WHITELIST[word.toLowerCase()];
+  if (!whitelist) return false;
+  
+  const lowerText = text.toLowerCase();
+  for (const safeWord of whitelist) {
+    if (lowerText.includes(safeWord.toLowerCase())) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Kelime sınırları ile kontrol (daha hassas)
 const containsWordBoundary = (text: string, word: string): boolean => {
   // Kısa kelimeler için (3 harf veya az) beyaz liste kontrolü
-  if (word.length <= 3) {
-    const whitelist = SHORT_WORD_WHITELIST[word.toLowerCase()];
-    if (whitelist) {
-      // Metin beyaz listedeki kelimelerden birini içeriyorsa, false döndür
-      for (const safeWord of whitelist) {
-        if (text.includes(safeWord.toLowerCase())) {
-          return false;
-        }
-      }
-    }
+  if (word.length <= 3 && isInWhitelist(text, word)) {
+    return false;
   }
   
   // Kelime sınırı ile kontrol (regex kullanarak) - sadece bağımsız kelime olarak geçiyorsa
@@ -172,10 +178,23 @@ export const containsBannedWords = (message: string): { found: boolean; word?: s
   for (const word of highSeverityWords) {
     const normalizedWord = normalizeText(word);
     
-    // Hem orijinal hem normalized metinde kontrol
-    if (originalLower.includes(word) || normalizedMessage.includes(normalizedWord)) {
-      console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
-      return { found: true, word, severity: 'high' };
+    // Kısa kelimeler için (3 harf veya az) beyaz liste kontrolü - ÖNCE kontrol et
+    if (word.length <= 3 && isInWhitelist(messageWithoutMentions, word)) {
+      continue; // Beyaz listedeyse bu kelimeyi atla
+    }
+    
+    // Kısa kelimeler için kelime sınırı kontrolü yap
+    if (word.length <= 3) {
+      if (containsWordBoundary(originalLower, word) || containsWordBoundary(normalizedMessage, normalizedWord)) {
+        console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
+        return { found: true, word, severity: 'high' };
+      }
+    } else {
+      // Uzun kelimeler için includes yeterli
+      if (originalLower.includes(word) || normalizedMessage.includes(normalizedWord)) {
+        console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
+        return { found: true, word, severity: 'high' };
+      }
     }
   }
   
