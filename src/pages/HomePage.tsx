@@ -389,17 +389,37 @@ const HomePage = () => {
   // Toplam hakkı hesapla (Normal + Bonus)
   const totalCredits = getTotalCredits();
 
+  // Seviyeye göre arka plan rengi
+  const getLevelBackgroundColor = () => {
+    const level = levelData.level;
+    if (level >= 70) return { bg: "#F8F8F8", gradient: "from-slate-100/60" }; // Siyah tema - çok açık gri
+    if (level >= 40) return { bg: "#F0F7FF", gradient: "from-blue-100/60" }; // Mavi tema - çok açık mavi
+    if (level >= 25) return { bg: "#F0FDF4", gradient: "from-emerald-100/60" }; // Yeşil tema - çok açık yeşil
+    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/60" }; // Mor tema - çok açık mor
+    return { bg: "#FFFDF5", gradient: "from-orange-100/40" }; // Turuncu tema (varsayılan) - krem
+  };
+
+  const levelBgColors = getLevelBackgroundColor();
+
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#FFFDF5] text-slate-800 font-sans selection:bg-amber-200 overflow-hidden">
+    <div 
+      className="fixed inset-0 flex flex-col text-slate-800 font-sans selection:bg-amber-200 overflow-hidden transition-colors duration-500"
+      style={{ backgroundColor: levelBgColors.bg }}
+    >
       {/* Light Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-orange-100/40 via-[#FFFDF5] to-[#FFFDF5] pointer-events-none" />
+      <div 
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`} 
+      />
 
       {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
         flex-none ve z-30 kullanarak bu alanı yukarı sabitledik.
         --------------------------------------------------------
       */}
-      <div className="flex-none z-30 bg-[#FFFDF5] pb-2 relative shadow-sm border-b border-slate-200">
+      <div 
+        className="flex-none z-30 pb-2 relative shadow-sm border-b border-slate-200 transition-colors duration-500"
+        style={{ backgroundColor: levelBgColors.bg }}
+      >
         {/* HEADER (Profil & Mürekkep) */}
         <div className="px-5 pt-6 pb-2 flex items-center justify-between">
           {/* Profil */}
