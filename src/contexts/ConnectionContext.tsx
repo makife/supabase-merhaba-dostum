@@ -382,11 +382,8 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-      {/* Manuel bağlantı kurtarma overlay'ı */}
-      <ConnectionRecoveryOverlay
-        isVisible={state.showRecoveryOverlay}
-        onReconnectSuccess={handleReconnectSuccess}
-      />
+      {/* Manuel bağlantı kurtarma overlay'ı - sadece window.location.reload() */}
+      <ConnectionRecoveryOverlay isVisible={state.showRecoveryOverlay} />
     </ConnectionContext.Provider>
   );
 };
