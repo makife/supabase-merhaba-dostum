@@ -756,6 +756,44 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_daily_rewards: {
+        Row: {
+          claimed_at: string
+          degistir_given: number
+          fisilida_given: number
+          id: string
+          reward_date: string
+          senyaz_given: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          degistir_given?: number
+          fisilida_given?: number
+          id?: string
+          reward_date?: string
+          senyaz_given?: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          degistir_given?: number
+          fisilida_given?: number
+          id?: string
+          reward_date?: string
+          senyaz_given?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_daily_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       private_chats: {
         Row: {
           created_at: string | null
@@ -1683,6 +1721,7 @@ export type Database = {
         Args: { p_user_id: string; p_words_count: number }
         Returns: Json[]
       }
+      claim_premium_daily_jokers: { Args: { p_user_id: string }; Returns: Json }
       cleanup_expired_bans: { Args: never; Returns: undefined }
       cleanup_expired_matchmaking_rooms: { Args: never; Returns: undefined }
       cleanup_expired_rematch_requests: { Args: never; Returns: undefined }
