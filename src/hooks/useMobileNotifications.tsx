@@ -360,7 +360,8 @@ export const useMobileNotifications = () => {
   };
 
   // Send push notification via backend
-  const sendPushNotification = async (receiverId: string, title: string, body: string, data?: any) => {
+  // skipIfOnline: true ise, kullanıcı son 30 saniyede aktifse push gönderilmez
+  const sendPushNotification = async (receiverId: string, title: string, body: string, data?: any, skipIfOnline: boolean = true) => {
     try {
       const { data: result, error } = await supabase.functions.invoke("send-push-notification", {
         body: {
@@ -368,20 +369,20 @@ export const useMobileNotifications = () => {
           title,
           body,
           data,
+          skipIfOnline, // Kullanıcı online ise push gönderme
         },
       });
 
       if (error) {
         console.error("Error sending push notification:", error);
-        await showLocalNotification(title, body, data);
+        // Online olmayan kullanıcıya local notification göstermeye gerek yok
         return false;
       }
 
-      console.log("Push notification sent successfully:", result);
+      console.log("Push notification result:", result);
       return true;
     } catch (error) {
       console.error("Error sending push notification:", error);
-      await showLocalNotification(title, body, data);
       return false;
     }
   };
