@@ -14,10 +14,25 @@ interface FCMMessage {
       body: string;
     };
     android?: {
-      priority: string;
+      priority: 'high' | 'normal';
       notification: {
         channel_id: string;
         sound: string;
+        notification_priority: 'PRIORITY_HIGH' | 'PRIORITY_MAX';
+        visibility: 'PUBLIC' | 'PRIVATE';
+        default_sound: boolean;
+        default_vibrate_timings: boolean;
+      };
+    };
+    apns?: {
+      headers?: {
+        'apns-priority': string;
+      };
+      payload: {
+        aps: {
+          sound: string;
+          badge?: number;
+        };
       };
     };
     data?: Record<string, string>;
@@ -181,6 +196,21 @@ serve(async (req) => {
                 notification: {
                   channel_id: 'kelimeci_notifications',
                   sound: 'default',
+                  notification_priority: 'PRIORITY_HIGH',
+                  visibility: 'PUBLIC',
+                  default_sound: true,
+                  default_vibrate_timings: true,
+                },
+              },
+              apns: {
+                headers: {
+                  'apns-priority': '10',
+                },
+                payload: {
+                  aps: {
+                    sound: 'default',
+                    badge: 1,
+                  },
                 },
               },
               data: {
@@ -208,98 +238,107 @@ serve(async (req) => {
       }
     }
 
-    // ========== 2. WHEEL SPIN REMINDERS ==========
-    // Find users who haven't spun the wheel today
-    // Only send between 18:00 - 21:00 local time (evening reminder)
+    // ========== 2. WHEEL SPIN REMINDERS (5 saatte bir) ==========
+    // Her zaman kontrol et - günde birden fazla hatırlatma gönderilebilir (5 saatte bir)
     console.log('🎡 Checking wheel spin reminders...');
 
     const today = new Date().toISOString().split('T')[0];
-    const currentHour = new Date().getUTCHours();
+    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
     
-    // Only send wheel reminders in evening (15:00-18:00 UTC = 18:00-21:00 Turkey time)
-    if (currentHour >= 15 && currentHour <= 18) {
-      // Get users with push tokens
-      const { data: allUsers, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, username, push_token')
-        .not('push_token', 'is', null);
+    // Get users with push tokens who haven't spun today
+    const { data: allUsers, error: usersError } = await supabase
+      .from('profiles')
+      .select('id, username, push_token')
+      .not('push_token', 'is', null);
 
-      if (usersError) {
-        console.error('Users query error:', usersError);
-        results.errors.push(`Users query: ${usersError.message}`);
+    if (usersError) {
+      console.error('Users query error:', usersError);
+      results.errors.push(`Users query: ${usersError.message}`);
+    }
+
+    if (allUsers && allUsers.length > 0) {
+      // Get users who already spun today
+      const { data: todaySpins, error: spinsError } = await supabase
+        .from('wheel_spins')
+        .select('user_id')
+        .eq('date', today);
+
+      if (spinsError) {
+        console.error('Spins query error:', spinsError);
+        results.errors.push(`Spins query: ${spinsError.message}`);
       }
 
-      if (allUsers && allUsers.length > 0) {
-        // Get users who already spun today
-        const { data: todaySpins, error: spinsError } = await supabase
-          .from('wheel_spins')
-          .select('user_id')
-          .eq('date', today);
+      const spunUserIds = new Set((todaySpins || []).map(s => s.user_id));
+      const usersToRemind = allUsers.filter(u => !spunUserIds.has(u.id));
 
-        if (spinsError) {
-          console.error('Spins query error:', spinsError);
-          results.errors.push(`Spins query: ${spinsError.message}`);
-        }
+      console.log(`Found ${usersToRemind.length} users who haven't spun the wheel today`);
 
-        const spunUserIds = new Set((todaySpins || []).map(s => s.user_id));
-        const usersToRemind = allUsers.filter(u => !spunUserIds.has(u.id));
+      // Check if we already sent a reminder in the last 5 hours
+      const { data: recentReminders } = await supabase
+        .from('notifications')
+        .select('user_id')
+        .eq('type', 'wheel_reminder')
+        .gte('created_at', fiveHoursAgo);
 
-        console.log(`Found ${usersToRemind.length} users who haven't spun the wheel today`);
+      const recentlyRemindedUserIds = new Set((recentReminders || []).map(n => n.user_id));
 
-        // Check if we already sent a reminder today (to avoid spam)
-        const { data: todayReminders } = await supabase
-          .from('notifications')
-          .select('user_id')
-          .eq('type', 'wheel_reminder')
-          .gte('created_at', `${today}T00:00:00`);
+      for (const user of usersToRemind) {
+        // Skip if reminded in the last 5 hours
+        if (recentlyRemindedUserIds.has(user.id)) continue;
 
-        const remindedUserIds = new Set((todayReminders || []).map(n => n.user_id));
-
-        for (const user of usersToRemind) {
-          // Skip if already reminded today
-          if (remindedUserIds.has(user.id)) continue;
-
-          if (user.push_token) {
-            const message: FCMMessage = {
-              message: {
-                token: user.push_token,
+        if (user.push_token) {
+          const message: FCMMessage = {
+            message: {
+              token: user.push_token,
+              notification: {
+                title: '🎡 Günlük Çarkını Çevirmeyi Unutma!',
+                body: 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!',
+              },
+              android: {
+                priority: 'high',
                 notification: {
-                  title: '🎡 Günlük Çarkını Çevirmeyi Unutma!',
-                  body: 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!',
-                },
-                android: {
-                  priority: 'high',
-                  notification: {
-                    channel_id: 'kelimeci_notifications',
-                    sound: 'default',
-                  },
-                },
-                data: {
-                  type: 'wheel_reminder',
-                  route: '/wheel',
+                  channel_id: 'kelimeci_notifications',
+                  sound: 'default',
+                  notification_priority: 'PRIORITY_HIGH',
+                  visibility: 'PUBLIC',
+                  default_sound: true,
+                  default_vibrate_timings: true,
                 },
               },
-            };
+              apns: {
+                headers: {
+                  'apns-priority': '10',
+                },
+                payload: {
+                  aps: {
+                    sound: 'default',
+                    badge: 1,
+                  },
+                },
+              },
+              data: {
+                type: 'wheel_reminder',
+                route: '/wheel',
+              },
+            },
+          };
 
-            const sent = await sendFirebaseNotification(message);
-            if (sent) {
-              results.wheelReminders++;
-              console.log(`✅ Wheel reminder sent to ${user.username}`);
+          const sent = await sendFirebaseNotification(message);
+          if (sent) {
+            results.wheelReminders++;
+            console.log(`✅ Wheel reminder sent to ${user.username}`);
 
-              // Log the reminder to prevent spam
-              await supabase
-                .from('notifications')
-                .insert({
-                  user_id: user.id,
-                  type: 'wheel_reminder',
-                  message: 'Günlük çark hatırlatması gönderildi',
-                });
-            }
+            // Log the reminder to prevent spam (5 hour cooldown)
+            await supabase
+              .from('notifications')
+              .insert({
+                user_id: user.id,
+                type: 'wheel_reminder',
+                message: 'Günlük çark hatırlatması gönderildi',
+              });
           }
         }
       }
-    } else {
-      console.log(`Skipping wheel reminders - current UTC hour is ${currentHour}, not in 15-18 range`);
     }
 
     console.log('📊 Scheduled notifications complete:', results);
