@@ -145,36 +145,37 @@ const SettingsPage = () => {
   const handleNotificationChange = async (checked: boolean) => {
     try {
       console.log("🔔 Bildirim değişikliği:", checked);
-      setNotifications(checked);
 
       if (checked) {
         // Mobile veya web bildirim izinlerini iste
         console.log("📱 Platform:", isMobile ? "Mobile" : "Web");
+        console.log("📱 İzin isteniyor...");
 
-        await requestPermissions();
+        // requestPermissions artık boolean döndürüyor
+        const permissionGranted = await requestPermissions();
+        console.log("📱 İzin sonucu:", permissionGranted);
 
-        // İzin verildi mi kontrol et
-        setTimeout(async () => {
-          if (isPermissionGranted) {
-            toast({
-              title: "Bildirimler Aktif",
-              description: "Oyun bildirimleri başarıyla aktif edildi",
-            });
+        if (permissionGranted) {
+          setNotifications(true);
+          toast({
+            title: "Bildirimler Aktif",
+            description: "Oyun bildirimleri başarıyla aktif edildi",
+          });
 
-            // Test bildirimi göster
-            setTimeout(() => {
-              showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
-            }, 1000);
-          } else if (!isMobile && "Notification" in window && Notification.permission === "denied") {
-            toast({
-              title: "İzin Reddedildi",
-              description: "Bildirim izni reddedildi. Tarayıcı ayarlarından izin verebilirsiniz.",
-              variant: "destructive",
-            });
-            setNotifications(false);
-          }
-        }, 500);
+          // Test bildirimi göster
+          setTimeout(() => {
+            showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
+          }, 1000);
+        } else {
+          setNotifications(false);
+          toast({
+            title: "İzin Gerekli",
+            description: "Bildirim izni verilemedi. Lütfen uygulama ayarlarından izin verin.",
+            variant: "destructive",
+          });
+        }
       } else {
+        setNotifications(false);
         // Bildirimleri kapat - push token'ı veritabanından sil
         await disableNotifications();
         toast({
@@ -183,7 +184,7 @@ const SettingsPage = () => {
         });
       }
     } catch (error) {
-      console.error("Bildirim ayarı hatası:", error);
+      console.error("❌ Bildirim ayarı hatası:", error);
       toast({
         title: "Hata",
         description: "Bildirim ayarları güncellenirken bir hata oluştu",
