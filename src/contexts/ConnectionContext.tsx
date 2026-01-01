@@ -2,12 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { ConnectionRecoveryOverlay } from "@/components/ConnectionRecoveryOverlay";
 
 interface ConnectionState {
   isConnected: boolean;
   isReconnecting: boolean;
   lastConnectedAt: Date | null;
   reconnectAttempts: number;
+  showRecoveryOverlay: boolean; // Manuel overlay göster
 }
 
 interface ConnectionContextType {
@@ -17,6 +19,7 @@ interface ConnectionContextType {
   unregisterChannel: (name: string) => void;
   isHealthy: boolean;
   forceReconnect: () => Promise<boolean>;
+  hideRecoveryOverlay: () => void;
 }
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -33,6 +36,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     isReconnecting: false,
     lastConnectedAt: new Date(),
     reconnectAttempts: 0,
+    showRecoveryOverlay: false,
   });
 
   // Eski kanalları değil, kanal oluşturucu fonksiyonlarını saklıyoruz
@@ -183,33 +187,24 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
 
     // Sonuç
     if (isMountedRef.current) {
-      setState({
+      setState(prev => ({
+        ...prev,
         isConnected: success,
         isReconnecting: false,
         lastConnectedAt: success ? new Date() : null,
-        reconnectAttempts: success ? 0 : state.reconnectAttempts + 1,
-      });
+        reconnectAttempts: success ? 0 : prev.reconnectAttempts + 1,
+        showRecoveryOverlay: false, // Başarılıysa overlay'ı kapat
+      }));
     }
 
     if (success) {
       startHeartbeat();
-    } else {
-      console.log("❌ [Connection] Reconnect başarısız, 6 saniye sonra tekrar deneniyor...");
-      
-      if (isMountedRef.current) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (isMountedRef.current) {
-            console.log("[Connection] 🔄 Otomatik yeniden deneme başlatılıyor...");
-            isReconnectingRef.current = false;
-            forceReconnect();
-          }
-        }, 6000);
-      }
     }
+    // ARTIK OTOMATİK RETRY YOK - Manuel overlay gösterilecek
 
     isReconnectingRef.current = false;
     return success;
-  }, [stopHeartbeat, startHeartbeat, state.reconnectAttempts]);
+  }, [stopHeartbeat, startHeartbeat]);
 
   // Normal reconnect (forceReconnect'e yönlendir)
   const reconnect = useCallback(async (force = false): Promise<boolean> => {
@@ -234,15 +229,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
 
           if (isActive) {
-            // ÖN PLANA GELDİ
-            console.log("📱 [Connection] Uygulama ön plana geldi - CLIENT YENİDEN OLUŞTURULUYOR...");
+            // ÖN PLANA GELDİ - OTOMATİK RECONNECT YAPMA, OVERLAY GÖSTER
+            console.log("📱 [Connection] Uygulama ön plana geldi - OVERLAY GÖSTERİLİYOR...");
             
             // UI'ın stabilize olması için kısa gecikme
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 300));
             
-            // Force reconnect başlat - CLIENT YENİDEN OLUŞTURULACAK
+            // Manuel overlay göster
             if (isMountedRef.current) {
-              forceReconnect();
+              setState(prev => ({ ...prev, showRecoveryOverlay: true, isConnected: false }));
             }
           } else {
             // ARKA PLANA GİTTİ
@@ -355,6 +350,23 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     console.log(`[Connection] 🗑️ Kanal silindi: ${name}`);
   }, []);
 
+  // Overlay'ı gizle
+  const hideRecoveryOverlay = useCallback(() => {
+    setState(prev => ({ ...prev, showRecoveryOverlay: false }));
+  }, []);
+
+  // Reconnect başarılı olduğunda çağrılacak
+  const handleReconnectSuccess = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      isConnected: true,
+      showRecoveryOverlay: false,
+      reconnectAttempts: 0,
+      lastConnectedAt: new Date(),
+    }));
+    startHeartbeat();
+  }, [startHeartbeat]);
+
   const isHealthy = state.isConnected && !state.isReconnecting;
 
   return (
@@ -366,9 +378,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         unregisterChannel,
         isHealthy,
         forceReconnect,
+        hideRecoveryOverlay,
       }}
     >
       {children}
+      {/* Manuel bağlantı kurtarma overlay'ı */}
+      <ConnectionRecoveryOverlay
+        isVisible={state.showRecoveryOverlay}
+        onReconnectSuccess={handleReconnectSuccess}
+      />
     </ConnectionContext.Provider>
   );
 };
