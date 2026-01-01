@@ -268,14 +268,13 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                     className="bg-white/5 border-white/10 text-white text-center h-16 text-2xl font-black tracking-[0.3em] rounded-2xl focus-visible:ring-green-500"
                   />
                 </div>
-                <Button
+                <button
                   onClick={handleJoinRoom}
                   disabled={loading || joinCode.length < 3}
-                  variant="ghost"
-                  className="w-full py-7 text-base font-black uppercase tracking-widest !bg-zinc-800 hover:!bg-zinc-700 active:!bg-zinc-600 focus:!bg-zinc-800 focus-visible:!ring-green-500 !text-white rounded-2xl transition-all border-0 disabled:!bg-zinc-800/50 disabled:!text-zinc-500"
+                  className="w-full py-4 text-base font-black uppercase tracking-widest bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-white rounded-2xl transition-colors border-0 disabled:bg-zinc-800/50 disabled:text-zinc-500 disabled:pointer-events-none outline-none"
                 >
                   {loading ? "BAĞLANILIYOR..." : "ODAYA GİRİŞ YAP"}
-                </Button>
+                </button>
               </div>
             )}
 
