@@ -1,5 +1,5 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { getSupabaseClient } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface ChannelInfo {
@@ -8,6 +8,7 @@ interface ChannelInfo {
   lastActivity: number;
   table: string;
   filter?: string;
+  callback?: (payload: any) => void;
 }
 
 class RealtimeManager {
@@ -23,6 +24,77 @@ class RealtimeManager {
 
   constructor() {
     this.startCleanupTimer();
+    this.setupReconnectListener();
+  }
+
+  // Reconnect event'ini dinle ve tüm kanalları yeniden oluştur
+  private setupReconnectListener(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('supabase-reconnected', () => {
+        console.log('🔄 [RealtimeManager] Reconnect algılandı, kanallar yeniden oluşturuluyor...');
+        this.recreateAllChannels();
+      });
+    }
+  }
+
+  // Tüm kanalları yeniden oluştur (reconnect sonrası)
+  private async recreateAllChannels(): Promise<void> {
+    const client = getSupabaseClient();
+    const channelInfos = Array.from(this.channels.entries());
+    
+    // Önce tüm eski kanalları temizle
+    for (const [channelKey, channelInfo] of channelInfos) {
+      try {
+        client.removeChannel(channelInfo.channel);
+      } catch (e) {
+        // Sessizce devam
+      }
+    }
+    
+    // Kısa bekleme
+    await new Promise(r => setTimeout(r, 300));
+    
+    // Şimdi yeniden oluştur
+    for (const [channelKey, oldInfo] of channelInfos) {
+      try {
+        console.log(`🆕 [RealtimeManager] Recreating channel: ${channelKey}`);
+        
+        const channel = client.channel(channelKey);
+        
+        // Postgres changes subscription
+        if (oldInfo.callback) {
+          const changeConfig: any = {
+            event: '*',
+            schema: 'public',
+            table: oldInfo.table
+          };
+          
+          if (oldInfo.filter) {
+            changeConfig.filter = oldInfo.filter;
+          }
+          
+          channel.on('postgres_changes', changeConfig, oldInfo.callback);
+        }
+
+        // Subscribe
+        channel.subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ [RealtimeManager] Channel ${channelKey} re-subscribed`);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error(`❌ [RealtimeManager] Channel ${channelKey} error:`, err);
+          }
+        });
+
+        // Güncelle
+        oldInfo.channel = channel;
+        oldInfo.lastActivity = Date.now();
+        
+      } catch (e) {
+        console.error(`❌ [RealtimeManager] Failed to recreate channel ${channelKey}:`, e);
+      }
+    }
+    
+    console.log(`✅ [RealtimeManager] ${channelInfos.length} kanal yeniden oluşturuldu`);
   }
 
   // Ana subscription metodu
@@ -32,7 +104,7 @@ class RealtimeManager {
     filter?: string,
     callback?: (payload: any) => void
   ): RealtimeChannel | null {
-    
+    const client = getSupabaseClient();
     const channelKey = this.getChannelKey(table, filter);
     const subscriberKey = `${userId}-${Date.now()}`;
 
@@ -58,7 +130,7 @@ class RealtimeManager {
     // Yeni kanal oluştur
     console.log(`🆕 Creating new channel ${channelKey} for user ${userId.slice(-8)}`);
     
-    const channel = supabase.channel(channelKey);
+    const channel = client.channel(channelKey);
     
     // Postgres changes subscription
     if (callback) {
@@ -94,7 +166,8 @@ class RealtimeManager {
       subscribers: new Set([subscriberKey]),
       lastActivity: Date.now(),
       table,
-      filter
+      filter,
+      callback
     };
     
     this.channels.set(channelKey, channelInfo);
@@ -163,7 +236,7 @@ class RealtimeManager {
     if (!channelInfo) return;
 
     try {
-      supabase.removeChannel(channelInfo.channel);
+      getSupabaseClient().removeChannel(channelInfo.channel);
       this.channels.delete(channelKey);
       this.stats.cleanedUpChannels++;
       console.log(`✅ Channel ${channelKey} cleaned up`);
