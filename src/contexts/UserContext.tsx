@@ -427,6 +427,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const refreshOnlineUsers = async () => {
     try {
+      // is_online kontrolü yerine sadece last_seen kontrolü yap
+      // Çünkü is_online her zaman doğru güncellenmeyebilir (mobil uygulamada bağlantı koptuğunda)
       const { data }: any = await supabase
         .from("user_presence" as any)
         .select(
@@ -439,8 +441,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           )
         `,
         )
-        .eq("is_online", true)
-        .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // 45 saniye window
+        .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler = ONLINE
 
       if (data) {
         setOnlineUsers(
@@ -477,6 +478,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // 2. Online Olanları Çek (Listeyi Güncelle)
     const fetchOnlineUsers = async () => {
       try {
+        // is_online kontrolü yerine sadece last_seen kontrolü yap
+        // Çünkü is_online her zaman doğru güncellenmeyebilir (mobil uygulamada bağlantı koptuğunda)
         const { data }: any = await supabase
           .from("user_presence" as any)
           .select(
@@ -489,8 +492,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             )
           `,
           )
-          .eq("is_online", true)
-          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler
+          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler = ONLINE
 
         if (data) {
           // Gelen veriyi formatla
