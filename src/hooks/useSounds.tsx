@@ -5,7 +5,8 @@ import {
   initNativeAudio, 
   playNativeSound, 
   playSpecialNativeSound, 
-  isNativePlatform 
+  isNativePlatform,
+  isNativeAudioReady
 } from "@/services/nativeAudioService";
 
 interface SoundConfig {
@@ -36,11 +37,19 @@ const unlockGlobalAudio = () => {
   if (globalAudioUnlocked) return;
   
   // Native platform için Native Audio kullan
+  // Not: initNativeAudio zaten App.tsx'te await ile çağrılıyor
+  // Burada sadece tetikleme yapmak yeterli, zaten singleton pattern ile çalışıyor
   if (isNativePlatform() && !nativeAudioInitialized) {
-    initNativeAudio().then(() => {
+    // Eğer henüz hazır değilse başlat
+    if (!isNativeAudioReady()) {
+      initNativeAudio().then(() => {
+        nativeAudioInitialized = true;
+        console.log("✅ useSounds: Native Audio initialized");
+      });
+    } else {
       nativeAudioInitialized = true;
-      console.log("✅ useSounds: Native Audio initialized");
-    });
+      console.log("✅ useSounds: Native Audio already ready");
+    }
   }
   
   // AudioContext oluştur ve resume et

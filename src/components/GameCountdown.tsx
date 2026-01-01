@@ -4,7 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { 
   initNativeAudio, 
   playNativeSound, 
-  isNativePlatform 
+  isNativePlatform,
+  isNativeAudioReady
 } from "@/services/nativeAudioService";
 
 interface GameCountdownProps {
@@ -37,10 +38,17 @@ let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 let nativeAudioReady = false;
 
-// Native Audio'yu başlat
+// Native Audio'yu başlat (App.tsx'te zaten başlatılıyor ama yedek olarak)
 const initNativeCountdownAudio = async () => {
   if (!isNativePlatform()) return;
   if (nativeAudioReady) return;
+  
+  // Zaten hazırsa direkt kullan
+  if (isNativeAudioReady()) {
+    nativeAudioReady = true;
+    console.log("✅ GameCountdown: Native Audio zaten hazır");
+    return;
+  }
   
   try {
     await initNativeAudio();

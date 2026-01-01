@@ -103,13 +103,11 @@ const AppRoutes = () => {
     const applyImmersiveMode = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
-          // 🔊 Native Audio'yu başlat
+          // 🔊 Native Audio'yu ÖNCE ve AWAIT ile başlat - kritik!
           if (isNativePlatform()) {
-            initNativeAudio()
-              .then(() => {
-                console.log("✅ App: Native Audio başlatıldı");
-              })
-              .catch(console.warn);
+            console.log("🔊 App: Native Audio başlatılıyor...");
+            await initNativeAudio();
+            console.log("✅ App: Native Audio başlatıldı ve hazır!");
           }
 
           // Status Bar Rengi ve Stili

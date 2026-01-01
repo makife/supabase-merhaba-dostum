@@ -53,6 +53,24 @@ let initialized = false;
 let initPromise: Promise<void> | null = null;
 
 /**
+ * Native Audio hazır olana kadar bekle
+ */
+export const waitForNativeAudio = async (): Promise<boolean> => {
+  if (!isNative) return false;
+  if (initialized) return true;
+  if (initPromise) {
+    await initPromise;
+    return initialized;
+  }
+  return false;
+};
+
+/**
+ * Native Audio başlatıldı mı kontrol et
+ */
+export const isNativeAudioReady = (): boolean => initialized;
+
+/**
  * Native Audio'yu başlat ve tüm sesleri preload et
  */
 export const initNativeAudio = async (): Promise<void> => {
@@ -68,8 +86,8 @@ export const initNativeAudio = async (): Promise<void> => {
     try {
       console.log('🔊 NativeAudio: Başlatılıyor...');
       
-      // Tüm sesleri preload et
-      for (const sound of SOUND_DEFINITIONS) {
+      // Tüm sesleri paralel olarak preload et (daha hızlı)
+      const preloadPromises = SOUND_DEFINITIONS.map(async (sound) => {
         try {
           await NativeAudio.preload({
             assetId: sound.assetId,
@@ -82,10 +100,12 @@ export const initNativeAudio = async (): Promise<void> => {
         } catch (e) {
           console.warn(`⚠️ NativeAudio: ${sound.assetId} yüklenemedi:`, e);
         }
-      }
+      });
+      
+      await Promise.all(preloadPromises);
       
       initialized = true;
-      console.log(`🔊 NativeAudio: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses yüklendi`);
+      console.log(`🔊 NativeAudio: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses yüklendi ✅`);
     } catch (error) {
       console.error('❌ NativeAudio: Başlatma hatası:', error);
     }
@@ -95,10 +115,16 @@ export const initNativeAudio = async (): Promise<void> => {
 };
 
 /**
- * Native ses çal
+ * Native ses çal - Preload tamamlanmamışsa bekle
  */
 export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
   if (!isNative) return false;
+  
+  // Eğer henüz başlatılmadıysa bekle
+  if (!initialized && initPromise) {
+    console.log(`⏳ NativeAudio: ${assetId} için preload bekleniyor...`);
+    await initPromise;
+  }
   
   if (!preloadedSounds.has(assetId)) {
     console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
