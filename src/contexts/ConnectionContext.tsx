@@ -225,6 +225,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
 
           if (isActive) {
+            // Kamera/galeri aktifse reload yapma!
+            const { isCameraActive } = await import("@/utils/cameraState");
+            if (isCameraActive()) {
+              console.log("📷 [Connection] Kamera/Galeri aktif - RELOAD ATLANACAK, bağlantı yenilenecek");
+              // Sadece bağlantıyı yenile, sayfayı reload etme
+              await forceReconnect();
+              return;
+            }
+            
             // ÖN PLANA GELDİ - DİREKT RELOAD
             console.log("📱 [Connection] Uygulama ön plana geldi - SAYFA YENİLENİYOR...");
             window.location.reload();

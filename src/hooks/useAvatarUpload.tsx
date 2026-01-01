@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Camera } from '@capacitor/camera';
 import { CameraResultType, CameraSource } from '@capacitor/camera';
 import imageCompression from 'browser-image-compression';
+import { setCameraActive } from '@/utils/cameraState';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -139,6 +140,9 @@ export const useAvatarUpload = () => {
     }
 
     setUploading(true);
+    // Kamera açılmadan önce korumayı aktifle
+    setCameraActive(true);
+    
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -164,6 +168,8 @@ export const useAvatarUpload = () => {
       }
       return null;
     } finally {
+      // Kısa gecikme ile korumayı kapat (uygulama geri dönmesini bekle)
+      setTimeout(() => setCameraActive(false), 2000);
       setUploading(false);
     }
   };
@@ -175,6 +181,9 @@ export const useAvatarUpload = () => {
     }
 
     setUploading(true);
+    // Galeri açılmadan önce korumayı aktifle
+    setCameraActive(true);
+    
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -200,6 +209,8 @@ export const useAvatarUpload = () => {
       }
       return null;
     } finally {
+      // Kısa gecikme ile korumayı kapat
+      setTimeout(() => setCameraActive(false), 2000);
       setUploading(false);
     }
   };
