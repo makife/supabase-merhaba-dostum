@@ -53,8 +53,8 @@ const MarketPage = () => {
   const { profile, refreshProfile } = useUser();
   const { playSound } = useSounds();
   const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
-  const { isLoading: isSubscriptionLoading, purchaseSubscription } = useNativeSubscriptions();
-  const { isLoading: isRestoreLoading, restorePurchases, purchasePackage } = useNativePurchases();
+  const { isLoading: isSubscriptionLoading, purchaseSubscription, restoreSubscriptions } = useNativeSubscriptions();
+  const { isLoading: isRestoreLoading, purchasePackage } = useNativePurchases();
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -664,10 +664,10 @@ const MarketPage = () => {
                     <Button
                       variant="ghost"
                       className="w-full mt-2 text-amber-100 hover:text-white hover:bg-white/10 text-xs"
-                      onClick={restorePurchases}
-                      disabled={isRestoreLoading}
+                      onClick={restoreSubscriptions}
+                      disabled={isSubscriptionLoading}
                     >
-                      <RotateCcw className={`w-3 h-3 mr-2 ${isRestoreLoading ? "animate-spin" : ""}`} />
+                      <RotateCcw className={`w-3 h-3 mr-2 ${isSubscriptionLoading ? "animate-spin" : ""}`} />
                       Satın Alımları Geri Yükle
                     </Button>
                   )}
