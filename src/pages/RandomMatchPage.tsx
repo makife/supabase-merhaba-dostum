@@ -43,6 +43,7 @@ import {
   Lightbulb,
   PenTool,
   Loader2,
+  Crown,
 } from "lucide-react";
 import { matchBanlist } from "@/utils/matchBanlist";
 
@@ -64,6 +65,7 @@ interface OpponentInfo {
   id: string;
   username: string;
   avatar_url: string | null;
+  isPremium?: boolean;
 }
 
 // ============= CONSTANTS =============
@@ -315,7 +317,7 @@ const RandomMatchPage = () => {
         if (opponentId) {
           const { data: opponentData, error: opponentError } = await supabase
             .from("profiles")
-            .select("id, username, avatar_url")
+            .select("id, username, avatar_url, premium_until")
             .eq("id", opponentId)
             .single();
           
@@ -325,8 +327,9 @@ const RandomMatchPage = () => {
           
           if (opponentData) {
             console.log("✅ Opponent loaded:", opponentData.username, opponentData.id);
-            setOpponent(opponentData);
-            opponentRef.current = opponentData;
+            const isPremiumActive = opponentData.premium_until ? new Date(opponentData.premium_until) > new Date() : false;
+            setOpponent({ ...opponentData, isPremium: isPremiumActive });
+            opponentRef.current = { ...opponentData, isPremium: isPremiumActive };
           } else {
             console.log("⚠️ Opponent data null for id:", opponentId);
           }
@@ -444,7 +447,7 @@ const RandomMatchPage = () => {
                 console.log("👤 Loading opponent from realtime update:", opponentId);
                 const { data: opponentData, error: opponentError } = await getSupabaseClient()
                   .from("profiles")
-                  .select("id, username, avatar_url")
+                  .select("id, username, avatar_url, premium_until")
                   .eq("id", opponentId)
                   .single();
                 
@@ -454,8 +457,9 @@ const RandomMatchPage = () => {
                 
                 if (opponentData) {
                   console.log("✅ Opponent loaded from realtime:", opponentData.username);
-                  setOpponent(opponentData);
-                  opponentRef.current = opponentData;
+                  const isPremiumActive = opponentData.premium_until ? new Date(opponentData.premium_until) > new Date() : false;
+                  setOpponent({ ...opponentData, isPremium: isPremiumActive });
+                  opponentRef.current = { ...opponentData, isPremium: isPremiumActive };
                 }
               }
             }
@@ -1150,10 +1154,18 @@ const RandomMatchPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <Card className="border border-gray-300 shadow-lg">
                 <CardContent className="p-4 text-center">
-                  <Avatar className="w-16 h-16 mx-auto mb-2">
-                    <AvatarImage src={profile?.avatar_url} alt="Profile" />
-                    <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
-                  </Avatar>
+                  <div className="relative inline-block">
+                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                      <AvatarImage src={profile?.avatar_url} alt="Profile" />
+                      <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
+                    </Avatar>
+                    {/* VIP rozet - kendi kartımız */}
+                    {isPremium && (
+                      <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                        <Crown className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
                   <p className="text-sm font-bold">Siz</p>
                   <p className="text-2xl font-bold">{playerScore}</p>
                 </CardContent>
@@ -1161,10 +1173,18 @@ const RandomMatchPage = () => {
 
               <Card className="border border-gray-300 shadow-lg">
                 <CardContent className="p-4 text-center relative">
-                  <Avatar className="w-16 h-16 mx-auto mb-2">
-                    <AvatarImage src={opponent?.avatar_url || ""} alt="Opponent" />
-                    <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
-                  </Avatar>
+                  <div className="relative inline-block">
+                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                      <AvatarImage src={opponent?.avatar_url || ""} alt="Opponent" />
+                      <AvatarFallback><User className="w-8 h-8" /></AvatarFallback>
+                    </Avatar>
+                    {/* VIP rozet - rakip kartı */}
+                    {opponent?.isPremium && (
+                      <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                        <Crown className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
                   <p className="text-sm font-bold">{opponent?.username || "Rakip"}</p>
                   <p className="text-2xl font-bold">{opponentScore}</p>
 

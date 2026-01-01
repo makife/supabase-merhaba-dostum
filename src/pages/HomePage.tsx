@@ -559,16 +559,42 @@ const HomePage = () => {
 
         <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
-            // PREMIUM INFO: Border füme (slate-600)
-
-            <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
+            // VIP HEADER: Yıllık altın, aylık mavi
+            <div className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+              vipType === "yearly" 
+                ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600" 
+                : vipType === "monthly"
+                  ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                  : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
+            }`}>
               <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-500" />
-
-                <span className="text-xs text-amber-800 font-medium">Premium</span>
+                <div className={`p-1.5 rounded-full ${
+                  vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                }`}>
+                  <Crown className={`w-5 h-5 ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
+                  }`} />
+                </div>
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                  }`}>
+                    {vipType === "yearly" ? "⭐ VIP Yazar (Yıllık)" : vipType === "monthly" ? "💎 VIP Yazar (Aylık)" : "VIP Yazar"}
+                  </span>
+                  <span className={`text-[10px] ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
+                  }`}>
+                    Sınırsız hak • Günlük joker • 2x XP
+                  </span>
+                </div>
               </div>
-
-              <span className="text-xs font-mono font-bold text-amber-600">{premiumTimeLeft}</span>
+              <div className={`px-2 py-1 rounded-lg ${
+                vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
+              }`}>
+                <span className={`text-xs font-mono font-bold ${
+                  vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
+                }`}>{premiumTimeLeft}</span>
+              </div>
             </div>
           )}
 
