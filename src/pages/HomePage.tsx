@@ -12,6 +12,7 @@ import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
+import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
@@ -126,7 +127,10 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
-  const { jokers } = useJokerInventory();
+  const { jokers, loadJokers } = useJokerInventory();
+  
+  // Premium kullanıcılar için günlük joker kontrolü
+  usePremiumDailyRewards();
 
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [showMatchmaking, setShowMatchmaking] = useState(false);
