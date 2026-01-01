@@ -49,23 +49,39 @@ export const useNativeSubscriptions = () => {
     }
   ]);
 
-  // Veritabanında abonelik durumunu güncelle
-  const updateSubscriptionInDatabase = useCallback(async (productId: string, isActive: boolean) => {
+  // Veritabanında abonelik durumunu güncelle - Gerçek bitiş tarihi ile
+  const updateSubscriptionInDatabase = useCallback(async (
+    productId: string, 
+    isActive: boolean, 
+    expirationDate?: Date | null
+  ) => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      const subscriptionEnd = new Date();
-      if (productId === SUBSCRIPTION_PRODUCT_IDS.PREMIUM_MONTHLY) {
-        subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
-      } else if (productId === SUBSCRIPTION_PRODUCT_IDS.PREMIUM_YEARLY) {
-        subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+      let subscriptionEnd: Date | null = null;
+      
+      if (isActive) {
+        if (expirationDate) {
+          // RevenueCat'ten gelen gerçek bitiş tarihi
+          subscriptionEnd = expirationDate;
+          console.log('📅 Using real expiration date from RevenueCat:', subscriptionEnd);
+        } else {
+          // Fallback: Hesaplanan tarih
+          subscriptionEnd = new Date();
+          if (productId === SUBSCRIPTION_PRODUCT_IDS.PREMIUM_MONTHLY) {
+            subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
+          } else if (productId === SUBSCRIPTION_PRODUCT_IDS.PREMIUM_YEARLY) {
+            subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+          }
+          console.log('📅 Using calculated expiration date:', subscriptionEnd);
+        }
       }
 
       const { error } = await supabase
         .from('profiles')
         .update({
-          premium_until: isActive ? subscriptionEnd.toISOString() : null,
+          premium_until: subscriptionEnd ? subscriptionEnd.toISOString() : null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.user.id);
@@ -87,14 +103,14 @@ export const useNativeSubscriptions = () => {
           });
       }
 
-      console.log('Subscription updated in database:', { isActive, subscriptionEnd });
+      console.log('✅ Subscription updated in database:', { isActive, subscriptionEnd });
     } catch (error) {
       console.error('Database update failed:', error);
       throw error;
     }
   }, []);
 
-  // Abonelik durumunu kontrol et
+  // Abonelik durumunu kontrol et - RevenueCat'ten gerçek tarihi al ve DB'yi güncelle
   const checkSubscriptionStatus = useCallback(async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -107,15 +123,16 @@ export const useNativeSubscriptions = () => {
         .eq('id', user.user.id)
         .single();
 
+      let dbPremiumUntil: Date | null = null;
       if (profile?.premium_until) {
-        const premiumUntil = new Date(profile.premium_until);
+        dbPremiumUntil = new Date(profile.premium_until);
         const now = new Date();
-        const isActive = premiumUntil > now;
+        const isActive = dbPremiumUntil > now;
         
         setIsSubscribed(isActive);
         if (isActive) {
           setSubscriptionInfo({
-            expiryDate: premiumUntil,
+            expiryDate: dbPremiumUntil,
             isActive: true
           });
         } else {
@@ -126,15 +143,63 @@ export const useNativeSubscriptions = () => {
         setSubscriptionInfo(null);
       }
 
-      // Native platformdaysa RevenueCat'ten de kontrol et
+      // Native platformdaysa RevenueCat'ten gerçek abonelik bilgisini al
       if (Capacitor.isNativePlatform()) {
         try {
           const customerInfo = await Purchases.getCustomerInfo();
           const activeSubscriptions = customerInfo.activeSubscriptions || [];
           
+          console.log('🔍 RevenueCat check - Active subscriptions:', activeSubscriptions);
+          console.log('🔍 RevenueCat entitlements:', customerInfo.entitlements);
+          
           if (activeSubscriptions.length > 0) {
-            setIsSubscribed(true);
-            console.log('Active RevenueCat subscriptions:', activeSubscriptions);
+            // Entitlements'tan gerçek bitiş tarihini al
+            const entitlements = customerInfo.entitlements?.active || {};
+            let latestExpirationDate: Date | null = null;
+            let activeProductId: string | null = null;
+            
+            // Tüm aktif entitlement'ları kontrol et
+            for (const [key, entitlement] of Object.entries(entitlements)) {
+              const ent = entitlement as any;
+              if (ent.expirationDate) {
+                const expDate = new Date(ent.expirationDate);
+                if (!latestExpirationDate || expDate > latestExpirationDate) {
+                  latestExpirationDate = expDate;
+                  activeProductId = ent.productIdentifier || activeSubscriptions[0];
+                }
+                console.log(`📅 Entitlement "${key}" expires: ${expDate.toISOString()}`);
+              }
+            }
+            
+            // DB'deki tarih ile RevenueCat'teki tarihi karşılaştır
+            if (latestExpirationDate) {
+              const shouldUpdateDb = !dbPremiumUntil || 
+                                     latestExpirationDate.getTime() > dbPremiumUntil.getTime() + 60000; // 1 dakika tolerans
+              
+              if (shouldUpdateDb) {
+                console.log('🔄 Subscription renewed! Updating DB with new expiration:', latestExpirationDate);
+                await updateSubscriptionInDatabase(
+                  activeProductId || SUBSCRIPTION_PRODUCT_IDS.PREMIUM_MONTHLY, 
+                  true, 
+                  latestExpirationDate
+                );
+                await refreshProfile();
+              }
+              
+              setIsSubscribed(true);
+              setSubscriptionInfo({
+                expiryDate: latestExpirationDate,
+                isActive: true,
+                productId: activeProductId
+              });
+            } else {
+              // Entitlement'tan tarih alınamadıysa aktif abonelik var demektir
+              setIsSubscribed(true);
+              console.log('⚠️ Active subscription but no expiration date found');
+            }
+          } else if (dbPremiumUntil && dbPremiumUntil > new Date()) {
+            // RevenueCat'te aktif yok ama DB'de var - muhtemelen iptal edilmiş, mevcut süre bitene kadar devam et
+            console.log('ℹ️ No active RevenueCat subscription but DB has valid premium_until');
           }
         } catch (rcError) {
           console.log('RevenueCat check skipped:', rcError);
@@ -143,7 +208,7 @@ export const useNativeSubscriptions = () => {
     } catch (error) {
       console.error('Failed to check subscription status:', error);
     }
-  }, []);
+  }, [updateSubscriptionInDatabase, refreshProfile]);
 
   // RevenueCat offerings'i yükle
   const loadOfferings = useCallback(async () => {
@@ -271,7 +336,7 @@ export const useNativeSubscriptions = () => {
     }
   }, [refreshProfile, toast, updateSubscriptionInDatabase]);
 
-  // Satın alımları geri yükle
+  // Satın alımları geri yükle - Gerçek bitiş tarihi ile
   const restoreSubscriptions = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) {
       toast({
@@ -283,17 +348,42 @@ export const useNativeSubscriptions = () => {
 
     try {
       setIsLoading(true);
-      console.log('Restoring subscriptions...');
+      console.log('🔄 Restoring subscriptions...');
       
       const customerInfo = await Purchases.restorePurchases();
       const activeSubscriptions = customerInfo.activeSubscriptions || [];
+      const entitlements = customerInfo.entitlements?.active || {};
       
       console.log('Restored subscriptions:', activeSubscriptions);
+      console.log('Restored entitlements:', entitlements);
       
       if (activeSubscriptions.length > 0) {
-        // Aktif abonelik bulundu - veritabanını güncelle
+        // Aktif abonelik bulundu - gerçek bitiş tarihi ile veritabanını güncelle
         for (const subId of activeSubscriptions) {
-          await updateSubscriptionInDatabase(subId, true);
+          // Bu subscription için entitlement'tan bitiş tarihini bul
+          let expirationDate: Date | null = null;
+          
+          for (const [key, entitlement] of Object.entries(entitlements)) {
+            const ent = entitlement as any;
+            if (ent.productIdentifier === subId && ent.expirationDate) {
+              expirationDate = new Date(ent.expirationDate);
+              break;
+            }
+          }
+          
+          // Eğer direkt bulunamadıysa, herhangi bir aktif entitlement'tan al
+          if (!expirationDate) {
+            for (const [key, entitlement] of Object.entries(entitlements)) {
+              const ent = entitlement as any;
+              if (ent.expirationDate) {
+                expirationDate = new Date(ent.expirationDate);
+                break;
+              }
+            }
+          }
+          
+          console.log(`📅 Restoring ${subId} with expiration:`, expirationDate);
+          await updateSubscriptionInDatabase(subId, true, expirationDate);
         }
         
         setIsSubscribed(true);
