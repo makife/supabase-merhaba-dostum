@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWordValidation } from "@/hooks/useWordValidation";
 import { useSounds } from "@/hooks/useSounds";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getSupabaseClient } from "@/integrations/supabase/client";
 import { useServerTime } from "@/hooks/useServerTime";
 import GameCountdown from "@/components/GameCountdown";
 import {
@@ -393,122 +393,159 @@ const RandomMatchPage = () => {
     if (!roomId || !user?.id) return;
 
     const myId = user.id;
-    console.log("📡 Setting up realtime subscription for room:", roomId, "myId:", myId);
+    let currentChannel: any = null;
 
-    const channel = supabase.channel(`room-${roomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "game_rooms",
-          filter: `id=eq.${roomId}`,
-        },
-        async (payload) => {
-          const newRoom = payload.new as RoomData;
-          console.log("📡 Room update received:", {
-            status: newRoom.status,
-            p1_id: newRoom.player1_id,
-            p2_id: newRoom.player2_id,
-            p1_score: newRoom.player1_score,
-            p2_score: newRoom.player2_score
-          });
+    const setupChannel = () => {
+      console.log("📡 Setting up realtime subscription for room:", roomId, "myId:", myId);
 
-          setRoom(newRoom);
+      currentChannel = getSupabaseClient().channel(`room-${roomId}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "game_rooms",
+            filter: `id=eq.${roomId}`,
+          },
+          async (payload) => {
+            const newRoom = payload.new as RoomData;
+            console.log("📡 Room update received:", {
+              status: newRoom.status,
+              p1_id: newRoom.player1_id,
+              p2_id: newRoom.player2_id,
+              p1_score: newRoom.player1_score,
+              p2_score: newRoom.player2_score
+            });
 
-          // Determine which player we are - CRITICAL: compare with myId
-          const isPlayer1 = myId === newRoom.player1_id;
-          const isPlayer2 = myId === newRoom.player2_id;
-          
-          console.log("🔍 Player determination - myId:", myId, "isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
+            setRoom(newRoom);
 
-          // Update opponent score only (player score is managed locally)
-          if (isPlayer1) {
-            console.log("📊 I am player1, updating opponent (p2) score to:", newRoom.player2_score);
-            setOpponentScore(newRoom.player2_score || 0);
-          } else if (isPlayer2) {
-            console.log("📊 I am player2, updating opponent (p1) score to:", newRoom.player1_score);
-            setOpponentScore(newRoom.player1_score || 0);
-          } else {
-            console.log("⚠️ I am neither player1 nor player2!");
-          }
+            // Determine which player we are - CRITICAL: compare with myId
+            const isPlayer1 = myId === newRoom.player1_id;
+            const isPlayer2 = myId === newRoom.player2_id;
+            
+            console.log("🔍 Player determination - myId:", myId, "isPlayer1:", isPlayer1, "isPlayer2:", isPlayer2);
 
-          // Load opponent if not loaded yet (may have joined after page load)
-          // Use ref to avoid stale closure
-          if (!opponentRef.current) {
-            const opponentId = isPlayer1 ? newRoom.player2_id : newRoom.player1_id;
-            if (opponentId) {
-              console.log("👤 Loading opponent from realtime update:", opponentId);
-              const { data: opponentData, error: opponentError } = await supabase
-                .from("profiles")
-                .select("id, username, avatar_url")
-                .eq("id", opponentId)
-                .single();
-              
-              if (opponentError) {
-                console.error("❌ Failed to load opponent:", opponentError);
-              }
-              
-              if (opponentData) {
-                console.log("✅ Opponent loaded from realtime:", opponentData.username);
-                setOpponent(opponentData);
-                opponentRef.current = opponentData;
+            // Update opponent score only (player score is managed locally)
+            if (isPlayer1) {
+              console.log("📊 I am player1, updating opponent (p2) score to:", newRoom.player2_score);
+              setOpponentScore(newRoom.player2_score || 0);
+            } else if (isPlayer2) {
+              console.log("📊 I am player2, updating opponent (p1) score to:", newRoom.player1_score);
+              setOpponentScore(newRoom.player1_score || 0);
+            } else {
+              console.log("⚠️ I am neither player1 nor player2!");
+            }
+
+            // Load opponent if not loaded yet (may have joined after page load)
+            // Use ref to avoid stale closure
+            if (!opponentRef.current) {
+              const opponentId = isPlayer1 ? newRoom.player2_id : newRoom.player1_id;
+              if (opponentId) {
+                console.log("👤 Loading opponent from realtime update:", opponentId);
+                const { data: opponentData, error: opponentError } = await getSupabaseClient()
+                  .from("profiles")
+                  .select("id, username, avatar_url")
+                  .eq("id", opponentId)
+                  .single();
+                
+                if (opponentError) {
+                  console.error("❌ Failed to load opponent:", opponentError);
+                }
+                
+                if (opponentData) {
+                  console.log("✅ Opponent loaded from realtime:", opponentData.username);
+                  setOpponent(opponentData);
+                  opponentRef.current = opponentData;
+                }
               }
             }
-          }
 
-          // Countdown başlatma - buffer animasyonu ile
-          if (newRoom.countdown_started_at && !countdownInitiatedRef.current) {
-            console.log("⏱️ Countdown started from realtime - buffer başlıyor");
-            countdownInitiatedRef.current = true;
-            
-            // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
-            const originalStartTime = new Date(newRoom.countdown_started_at).getTime();
-            const adjustedStartTime = new Date(originalStartTime + 5000).toISOString();
-            
-            console.log("⏱️ Realtime countdown timing:", {
-              original: newRoom.countdown_started_at,
-              adjusted: adjustedStartTime,
-              bufferMs: 5000
-            });
-            
-            // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
-            setPreparingOpponent("preparing");
-            
-            setTimeout(() => {
-              if (!isMountedRef.current) return;
-              setPreparingOpponent("ready");
-            }, 3000);
-            
-            setTimeout(() => {
-              if (!isMountedRef.current) return;
-              setPreparingOpponent(null);
-            }, 3500);
-            
-            // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
-            setTimeout(() => {
-              if (!isMountedRef.current) return;
-              console.log("⏱️ Buffer tamamlandı, countdown gösteriliyor");
-              setCountdownServerTime(adjustedStartTime);
-              setShowCountdown(true);
-            }, 5000);
-          }
+            // Countdown başlatma - buffer animasyonu ile
+            if (newRoom.countdown_started_at && !countdownInitiatedRef.current) {
+              console.log("⏱️ Countdown started from realtime - buffer başlıyor");
+              countdownInitiatedRef.current = true;
+              
+              // Calculate ADJUSTED server time: countdown_started_at + 5s buffer = actual countdown start
+              const originalStartTime = new Date(newRoom.countdown_started_at).getTime();
+              const adjustedStartTime = new Date(originalStartTime + 5000).toISOString();
+              
+              console.log("⏱️ Realtime countdown timing:", {
+                original: newRoom.countdown_started_at,
+                adjusted: adjustedStartTime,
+                bufferMs: 5000
+              });
+              
+              // Buffer animasyonu: 3.5s hazırlanıyor, 0.5s hazır, 1s boşluk
+              setPreparingOpponent("preparing");
+              
+              setTimeout(() => {
+                if (!isMountedRef.current) return;
+                setPreparingOpponent("ready");
+              }, 3000);
+              
+              setTimeout(() => {
+                if (!isMountedRef.current) return;
+                setPreparingOpponent(null);
+              }, 3500);
+              
+              // Countdown'u HEMEN göster ama ADJUSTED time ile (5s sonra başlayacak)
+              setTimeout(() => {
+                if (!isMountedRef.current) return;
+                console.log("⏱️ Buffer tamamlandı, countdown gösteriliyor");
+                setCountdownServerTime(adjustedStartTime);
+                setShowCountdown(true);
+              }, 5000);
+            }
 
-          // Game ended
-          if (newRoom.status === "finished" && !gameEnded) {
-            handleGameEnd(newRoom);
+            // Game ended
+            if (newRoom.status === "finished" && !gameEnded) {
+              handleGameEnd(newRoom);
+            }
           }
+        )
+        .subscribe((status) => {
+          console.log("📡 Realtime subscription status:", status);
+        });
+
+      channelRef.current = currentChannel;
+    };
+
+    // İlk setup
+    setupChannel();
+
+    // Reconnect event'ini dinle
+    const handleReconnect = () => {
+      console.log("🔄 [RandomMatchPage] Reconnect algılandı, kanal yeniden kuruluyor...");
+      
+      // Eski kanalı temizle
+      if (currentChannel) {
+        try {
+          getSupabaseClient().removeChannel(currentChannel);
+        } catch (e) {
+          // Sessizce devam
         }
-      )
-      .subscribe((status) => {
-        console.log("📡 Realtime subscription status:", status);
-      });
+      }
+      
+      // Kısa gecikme ile yeniden kur
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setupChannel();
+        }
+      }, 500);
+    };
 
-    channelRef.current = channel;
+    window.addEventListener("supabase-reconnected", handleReconnect);
 
     return () => {
       console.log("📡 Cleaning up realtime subscription");
-      supabase.removeChannel(channel);
+      window.removeEventListener("supabase-reconnected", handleReconnect);
+      if (currentChannel) {
+        try {
+          getSupabaseClient().removeChannel(currentChannel);
+        } catch (e) {
+          // Sessizce devam
+        }
+      }
     };
   }, [roomId, user?.id, gameEnded]);
 
