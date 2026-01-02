@@ -75,22 +75,17 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }, 25000);
   }, [stopHeartbeat]);
 
-  // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR - SÜPER BASİT VERSİYON
+  // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR - SÜPER BASİT VE BLOKLAMA YOK!
   const forceReconnect = useCallback(async (): Promise<boolean> => {
-    console.log("🔄 [Connection] ============ FORCE RECONNECT BAŞLADI ============");
+    console.log("🚀🚀🚀 [Connection] ============ FORCE RECONNECT BAŞLADI ============");
 
-    // EĞER ZATEN RECONNECT YAPILIYORSA BEKLEYELİM AMA BLOKLAMA YAPMAYALIM
+    // ÖNEMLİ: isReconnectingRef kontrolü YAPMA - her zaman reconnect'e izin ver!
+    // Eski reconnect takılmış olabilir, zorla yeniden başlat
     if (isReconnectingRef.current) {
-      console.log("[Connection] ⚠️ Reconnect devam ediyor, bekleyip tekrar denenecek...");
-      // Kısa bekleyip tekrar dene
-      setTimeout(() => {
-        if (isMountedRef.current && !isReconnectingRef.current) {
-          forceReconnect();
-        }
-      }, 1000);
-      return false;
+      console.log("[Connection] ⚠️ Önceki reconnect takılmış, ZORLA sıfırlanıyor!");
     }
 
+    // Her zaman sıfırla ve başla
     isReconnectingRef.current = true;
     stopHeartbeat();
 
