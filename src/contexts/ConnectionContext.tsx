@@ -383,6 +383,13 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         if (connectionSuccess) {
           setState(prev => ({ ...prev, isConnected: true }));
           startHeartbeat();
+          
+          // 🔥 KRİTİK: İlk bağlantı başarılı - kanalların canlanması için event yayınla
+          console.log("[Connection] 🎉 İlk bağlantı başarılı - supabase-reconnected event yayınlanıyor...");
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+            console.log("[Connection] ✅ supabase-reconnected event yayınlandı!");
+          }, 300);
         } else {
           console.log("[Connection] ⚠️ İlk bağlantı başarısız, tam reconnect başlatılıyor...");
           await forceReconnect();
