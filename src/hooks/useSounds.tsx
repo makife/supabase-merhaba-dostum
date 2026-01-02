@@ -256,7 +256,14 @@ export const useSounds = () => {
   }, [soundPack]);
 
   // DÜZELTME: Audio cache update'i stabilize et
+  // ⚠️ Native platformda HTML5 Audio kullanma - NativeAudio zaten çalışıyor
   useEffect(() => {
+    // Native platformda HTML5 Audio pool oluşturma - NativeAudio kullanılacak
+    if (isNativePlatform()) {
+      console.log("🔊 useSounds: Native platform - HTML5 Audio pool atlanıyor, NativeAudio kullanılacak");
+      return;
+    }
+    
     const activePack = getActiveSoundPack();
 
     // Cache'i temizle
@@ -275,7 +282,7 @@ export const useSounds = () => {
       }
     });
     
-    // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo, joker sesleri) - gecikme düzeltmesi
+    // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo, joker sesleri) - WEB ONLY
     try {
       audioCache.current.set('special_yes', createAudioPool('/yes.mp3', 5));
       audioCache.current.set('special_wow', createAudioPool('/wow2.mp3', 5));
@@ -576,18 +583,19 @@ export const useSounds = () => {
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
 
-      // 🎵 Native platform için Native Audio kullan
+      // 🎵 Native platform için Native Audio kullan - FALLBACK YOK
       if (isNativePlatform()) {
         const played = await playSpecialNativeSound(soundFile, volume);
         if (played) {
           console.log(`🔊 useSounds: Native ses çalındı - ${soundFile}`);
-          return;
+        } else {
+          console.warn(`⚠️ useSounds: Native ses çalınamadı - ${soundFile}`);
         }
-        // Native çalamazsa web fallback'e düş
+        return; // Native'de her zaman return et, HTML5 Audio fallback yapma
       }
 
+      // WEB ONLY: Pool'dan ses çal
       try {
-        // ✅ Pool'dan ses çal (gecikme ve yarım çalma sorunu düzeltildi)
         let cacheKey: string | null = null;
         if (soundFile.includes('yes.mp3')) cacheKey = 'special_yes';
         else if (soundFile.includes('wow2.mp3')) cacheKey = 'special_wow';
@@ -615,12 +623,8 @@ export const useSounds = () => {
           }
         }
         
-        // Fallback: pool bulunamazsa eski yöntem
-        // Capacitor için absolute path kullan
-        const basePath = window.location.origin;
-        const fixedPath = soundFile.startsWith('/') ? `${basePath}${soundFile}` : soundFile;
-        
-        const audio = new Audio(fixedPath);
+        // Fallback: pool bulunamazsa eski yöntem (web only)
+        const audio = new Audio(soundFile);
         audio.volume = volume;
         audio.currentTime = 0;
         audio.play().catch((error) => {
