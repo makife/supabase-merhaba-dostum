@@ -77,6 +77,20 @@ const ModeratorPage = () => {
     };
   }, []);
 
+  // Reconnect event listener - arka plandan dönünce verileri yenile
+  useEffect(() => {
+    const handleReconnect = () => {
+      console.log('🔄 [ModeratorPage] Reconnect - veriler yeniden yükleniyor...');
+      fetchReports();
+      fetchBans();
+    };
+
+    window.addEventListener('supabase-reconnected', handleReconnect);
+    return () => {
+      window.removeEventListener('supabase-reconnected', handleReconnect);
+    };
+  }, []);
+
   const fetchReports = async () => {
     try {
       const { data, error } = await supabase

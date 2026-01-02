@@ -212,6 +212,21 @@ const LeaderboardPage = () => {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
+  // Reconnect event listener - arka plandan dönünce verileri yenile
+  useEffect(() => {
+    const handleReconnect = async () => {
+      console.log('🔄 [LeaderboardPage] Reconnect - veriler yeniden yükleniyor...');
+      setLoading(true);
+      await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+      setLoading(false);
+    };
+
+    window.addEventListener('supabase-reconnected', handleReconnect);
+    return () => {
+      window.removeEventListener('supabase-reconnected', handleReconnect);
+    };
+  }, [user]);
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
