@@ -58,6 +58,23 @@ export default function ChatPage() {
     useChatNotifications();
   const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
 
+  // Reconnect event listener - arka plandan dönünce verileri yenile
+  useEffect(() => {
+    const handleReconnect = () => {
+      console.log('🔄 [ChatPage] Reconnect - veriler yeniden yükleniyor...');
+      if (user?.id) {
+        fetchAllUsers();
+        fetchUnreadCounts();
+        refreshUnreadCounts();
+      }
+    };
+
+    window.addEventListener('supabase-reconnected', handleReconnect);
+    return () => {
+      window.removeEventListener('supabase-reconnected', handleReconnect);
+    };
+  }, [user?.id]);
+
   // Yasak kontrolü
   useEffect(() => {
     const checkBanStatus = async () => {
