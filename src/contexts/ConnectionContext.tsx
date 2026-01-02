@@ -2,10 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { 
-  startForegroundServiceStandalone, 
+import {
+  startForegroundServiceStandalone,
   stopForegroundServiceStandalone,
-  updateForegroundNotification 
+  updateForegroundNotification,
 } from "@/hooks/useForegroundService";
 
 interface ConnectionState {
@@ -49,6 +49,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const lastForegroundTimeRef = useRef<number>(0);
+  const foregroundServiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Heartbeat durdur
   const stopHeartbeat = useCallback(() => {
@@ -63,7 +64,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     stopHeartbeat();
     heartbeatRef.current = setInterval(async () => {
       if (!isMountedRef.current) return;
-      
+
       try {
         const { error } = await getSupabaseClient().rpc("get_server_time");
         if (error && isMountedRef.current) {
@@ -101,7 +102,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (isMountedRef.current) {
-      setState(prev => ({ ...prev, isReconnecting: true, isConnected: false }));
+      setState((prev) => ({ ...prev, isReconnecting: true, isConnected: false }));
     }
 
     console.log("🔄 [Connection] ========== CLIENT YENİDEN OLUŞTURULUYOR ==========");
@@ -116,20 +117,20 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           const { Network } = await import("@capacitor/network");
           const status = await Network.getStatus();
           console.log(`[Connection] 📶 Ağ durumu: ${status.connected ? "BAĞLI ✅" : "BAĞLI DEĞİL ❌"}`);
-          
+
           if (!status.connected) {
             console.log("[Connection] ⚠️ Ağ bağlantısı yok, 2 saniye sonra tekrar deneniyor...");
-            await new Promise(r => setTimeout(r, 2000));
-            
+            await new Promise((r) => setTimeout(r, 2000));
+
             // Tekrar kontrol et
             const status2 = await Network.getStatus();
             if (!status2.connected) {
               console.log("[Connection] ❌ Hala ağ yok, reconnect iptal...");
               isReconnectingRef.current = false;
               if (isMountedRef.current) {
-                setState(prev => ({ ...prev, isReconnecting: false }));
+                setState((prev) => ({ ...prev, isReconnecting: false }));
               }
-              
+
               // 5 saniye sonra tekrar dene
               reconnectTimeoutRef.current = setTimeout(() => {
                 if (isMountedRef.current) {
@@ -137,7 +138,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                   forceReconnect();
                 }
               }, 5000);
-              
+
               return false;
             }
           }
@@ -151,12 +152,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       await recreateSupabaseClient();
 
       // 3. Kısa bekleme
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
 
       // 4. Bağlantı testi
       console.log("[Connection] 🧪 Bağlantı test ediliyor...");
       let testSuccess = false;
-      
+
       for (let attempt = 1; attempt <= 5; attempt++) {
         try {
           const { data, error } = await getSupabaseClient().rpc("get_server_time");
@@ -170,26 +171,25 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         } catch (e) {
           console.log(`[Connection] ⚠️ Bağlantı testi exception (deneme ${attempt}):`, e);
         }
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 400));
       }
 
       if (testSuccess) {
         success = true;
         console.log("🎉 [Connection] ========== RECONNECT BAŞARILI! ==========");
-        
+
         // Window event yayınla - diğer component'lar dinleyebilir
         window.dispatchEvent(new CustomEvent("supabase-reconnected"));
       } else {
         console.log("❌ [Connection] Bağlantı testi başarısız");
       }
-
     } catch (error) {
       console.error("[Connection] ❌ Reconnect hatası:", error);
     }
 
     // Sonuç
     if (isMountedRef.current) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isConnected: success,
         isReconnecting: false,
@@ -209,9 +209,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   }, [stopHeartbeat, startHeartbeat]);
 
   // Normal reconnect (forceReconnect'e yönlendir)
-  const reconnect = useCallback(async (force = false): Promise<boolean> => {
-    return forceReconnect();
-  }, [forceReconnect]);
+  const reconnect = useCallback(
+    async (force = false): Promise<boolean> => {
+      return forceReconnect();
+    },
+    [forceReconnect],
+  );
 
   // NATIVE APP STATE LISTENER - TEK MERKEZ
   useEffect(() => {
@@ -228,51 +231,59 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         }
 
         appListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
-          console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
+          console.log(
+            `📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`,
+          );
 
           if (isActive) {
-            // ÖN PLANA GELDİ - Foreground Service'i durdur
+            // 1. ÖN PLANA GELDİ - Mevcut bir timeout varsa temizle
+            if (foregroundServiceTimeoutRef.current) {
+              clearTimeout(foregroundServiceTimeoutRef.current);
+              foregroundServiceTimeoutRef.current = null;
+            }
+
+            // 2. Servisi hemen durdur
             if (isAndroidPlatform) {
               console.log("📱 [Connection] Foreground Service durduruluyor...");
               await stopForegroundServiceStandalone();
             }
-            
-            // Kamera/galeri aktifse reload yapma!
+
+            // ... (Kamera kontrolü ve reload kodların burada kalsın) ...
             const { isCameraActive } = await import("@/utils/cameraState");
             if (isCameraActive()) {
-              console.log("📷 [Connection] Kamera/Galeri aktif - RELOAD ATLANACAK, bağlantı yenilenecek");
-              // Sadece bağlantıyı yenile, sayfayı reload etme
               await forceReconnect();
               return;
             }
-            
-            // ÖN PLANA GELDİ - DİREKT RELOAD
-            console.log("📱 [Connection] Uygulama ön plana geldi - SAYFA YENİLENİYOR...");
             window.location.reload();
           } else {
-            // ARKA PLANA GİTTİ - Foreground Service başlat
-            console.log("📱 [Connection] Uygulama arka plana gitti...");
-            
-            // Android'de Foreground Service başlat
+            // 3. ARKA PLANA GİTTİ - Servisi başlat
             if (isAndroidPlatform) {
               console.log("📱 [Connection] Android - Foreground Service başlatılıyor...");
               const serviceStarted = await startForegroundServiceStandalone({
-                title: "Kelimeci Aktif",
-                body: "🔗 Bağlantı canlı tutulıyor - Oyuna dönmek için dokun",
+                title: "Kelimele Aktif",
+                body: "🔗 Bağlantı korunuyor...",
               });
-              
+
               if (serviceStarted) {
-                console.log("✅ [Connection] Foreground Service başarıyla başlatıldı!");
-              } else {
-                console.log("⚠️ [Connection] Foreground Service başlatılamadı");
+                console.log("✅ [Connection] Servis başladı. 20 saniyelik geri sayım başladı.");
+
+                // ÖNCEKİ TIMEOUT VARSA TEMİZLE (Çakışma olmasın)
+                if (foregroundServiceTimeoutRef.current) {
+                  clearTimeout(foregroundServiceTimeoutRef.current);
+                }
+
+                // 20 SANİYE SONRA OTOMATİK DURDUR
+                foregroundServiceTimeoutRef.current = setTimeout(async () => {
+                  console.log("⏰ [Connection] 20 saniye doldu. Servis otomatik kapatılıyor.");
+                  await stopForegroundServiceStandalone();
+                  foregroundServiceTimeoutRef.current = null;
+                }, 20000); // 20 saniye
               }
             }
-            
-            // Heartbeat durdur (enerji tasarrufu)
+
             stopHeartbeat();
-            
             if (isMountedRef.current) {
-              setState(prev => ({ ...prev, isConnected: false }));
+              setState((prev) => ({ ...prev, isConnected: false }));
             }
           }
         });
@@ -317,26 +328,28 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initConnection = async () => {
       console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
-      
+
       // Native platformda ağ kontrolü yap
       if (isNativePlatform) {
         try {
           const { Network } = await import("@capacitor/network");
           let networkReady = false;
           let retries = 0;
-          
+
           while (!networkReady && retries < 10) {
             const status = await Network.getStatus();
-            console.log(`[Connection] 📶 Ağ durumu kontrol ${retries + 1}: ${status.connected ? "BAĞLI ✅" : "BEKLENİYOR..."}`);
-            
+            console.log(
+              `[Connection] 📶 Ağ durumu kontrol ${retries + 1}: ${status.connected ? "BAĞLI ✅" : "BEKLENİYOR..."}`,
+            );
+
             if (status.connected) {
               networkReady = true;
             } else {
               retries++;
-              await new Promise(r => setTimeout(r, 500));
+              await new Promise((r) => setTimeout(r, 500));
             }
           }
-          
+
           if (!networkReady) {
             console.log("[Connection] ⚠️ Ağ bağlantısı yok, 3 saniye sonra tekrar denenecek...");
             setTimeout(() => {
@@ -350,20 +363,20 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           console.log("[Connection] ⚠️ Ağ kontrolü yapılamadı, devam ediliyor...");
         }
       }
-      
+
       // Kısa gecikme (auth hazır olması için)
-      await new Promise(r => setTimeout(r, 500));
-      
+      await new Promise((r) => setTimeout(r, 500));
+
       if (!isMountedRef.current) return;
-      
+
       // Bağlantı testi - birden fazla deneme
       let connectionSuccess = false;
-      
+
       for (let attempt = 1; attempt <= 5; attempt++) {
         try {
           console.log(`[Connection] 🧪 Bağlantı testi deneme ${attempt}/5...`);
           const { data, error } = await getSupabaseClient().rpc("get_server_time");
-          
+
           if (!error && data) {
             connectionSuccess = true;
             console.log(`[Connection] ✅ İlk bağlantı başarılı! (deneme ${attempt})`);
@@ -374,16 +387,16 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         } catch (e) {
           console.log(`[Connection] ⚠️ Bağlantı testi exception (deneme ${attempt}):`, e);
         }
-        
+
         // Denemeler arası bekleme (artan süre)
-        await new Promise(r => setTimeout(r, 400 * attempt));
+        await new Promise((r) => setTimeout(r, 400 * attempt));
       }
-      
+
       if (isMountedRef.current) {
         if (connectionSuccess) {
-          setState(prev => ({ ...prev, isConnected: true }));
+          setState((prev) => ({ ...prev, isConnected: true }));
           startHeartbeat();
-          
+
           // 🔥 KRİTİK: İlk bağlantı başarılı - kanalların canlanması için event yayınla
           console.log("[Connection] 🎉 İlk bağlantı başarılı - supabase-reconnected event yayınlanıyor...");
           setTimeout(() => {
