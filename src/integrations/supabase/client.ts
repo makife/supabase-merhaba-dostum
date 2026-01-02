@@ -49,7 +49,13 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
       params: {
         eventsPerSecond: 10,
       },
-      heartbeatIntervalMs: 5000,
+      // Daha sık heartbeat - arka planda bağlantıyı canlı tutmak için
+      heartbeatIntervalMs: 3000,
+      // Reconnect ayarları
+      reconnectAfterMs: (tries: number) => {
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
+        return Math.min(1000 * Math.pow(2, tries), 10000);
+      },
     },
   });
 };
