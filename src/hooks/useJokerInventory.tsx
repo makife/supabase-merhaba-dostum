@@ -82,7 +82,7 @@ export const useJokerInventory = () => {
 
     // Veritabanı değişikliklerini dinle
     const channel = supabase
-      .channel("inventory_updates")
+      .channel(`inventory_updates_${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -98,8 +98,16 @@ export const useJokerInventory = () => {
       )
       .subscribe();
 
+    // Supabase reconnect olduğunda joker'ları yeniden yükle
+    const handleReconnect = () => {
+      console.log("🔄 [Joker] Reconnect - jokerler yeniden yükleniyor...");
+      loadJokers();
+    };
+    window.addEventListener("supabase-reconnected", handleReconnect);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener("supabase-reconnected", handleReconnect);
     };
   }, [user, loadJokers]);
 

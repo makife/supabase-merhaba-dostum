@@ -630,8 +630,16 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .subscribe()
     );
 
+    // Supabase reconnect olduğunda turnuvaları yeniden yükle
+    const handleReconnect = () => {
+      console.log("🔄 [Tournament] Reconnect - turnuvalar yeniden yükleniyor...");
+      fetchTournaments();
+    };
+    window.addEventListener("supabase-reconnected", handleReconnect);
+
     return () => {
       autoReconnect.unregisterChannel(channelName);
+      window.removeEventListener("supabase-reconnected", handleReconnect);
     };
   }, [user]);
 

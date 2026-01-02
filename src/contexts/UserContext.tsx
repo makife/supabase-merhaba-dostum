@@ -113,6 +113,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     // Kick an async refresh in the background
     refreshProfile(false);
+
+    // Supabase reconnect olduğunda profili yeniden yükle
+    const handleReconnect = () => {
+      console.log("🔄 [UserContext] Reconnect - profil yeniden yükleniyor...");
+      refreshProfile(true);
+    };
+    window.addEventListener("supabase-reconnected", handleReconnect);
+
+    return () => {
+      window.removeEventListener("supabase-reconnected", handleReconnect);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
