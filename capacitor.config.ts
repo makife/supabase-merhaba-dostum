@@ -15,7 +15,9 @@ const config: CapacitorConfig = {
     windowSoftInputMode: 'adjustResize',
     // Immersive mode flags
     overrideUserAgent: 'ImmersiveApp',
-    backgroundColor: '#000000'
+    backgroundColor: '#000000',
+    // Background running ayarları
+    useLegacyBridge: false,
   },
   ios: {
     contentInset: 'automatic',
