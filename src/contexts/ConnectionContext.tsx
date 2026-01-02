@@ -304,26 +304,76 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   // İLK BAĞLANTI - Component mount olduğunda
   useEffect(() => {
     const initConnection = async () => {
-      // Kısa gecikme (auth hazır olması için)
-      await new Promise(r => setTimeout(r, 800));
+      console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
       
-      if (isMountedRef.current) {
-        console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
-        
-        // Sadece bağlantı testi yap, client zaten oluşturulmuş
+      // Native platformda ağ kontrolü yap
+      if (isNativePlatform) {
         try {
-          const { data, error } = await getSupabaseClient().rpc("get_server_time");
-          if (!error && data) {
-            console.log("[Connection] ✅ İlk bağlantı başarılı");
-            setState(prev => ({ ...prev, isConnected: true }));
-            startHeartbeat();
-          } else {
-            console.log("[Connection] ⚠️ İlk bağlantı hatası, reconnect başlatılıyor...");
-            forceReconnect();
+          const { Network } = await import("@capacitor/network");
+          let networkReady = false;
+          let retries = 0;
+          
+          while (!networkReady && retries < 10) {
+            const status = await Network.getStatus();
+            console.log(`[Connection] 📶 Ağ durumu kontrol ${retries + 1}: ${status.connected ? "BAĞLI ✅" : "BEKLENİYOR..."}`);
+            
+            if (status.connected) {
+              networkReady = true;
+            } else {
+              retries++;
+              await new Promise(r => setTimeout(r, 500));
+            }
+          }
+          
+          if (!networkReady) {
+            console.log("[Connection] ⚠️ Ağ bağlantısı yok, 3 saniye sonra tekrar denenecek...");
+            setTimeout(() => {
+              if (isMountedRef.current) {
+                initConnection();
+              }
+            }, 3000);
+            return;
           }
         } catch (e) {
-          console.log("[Connection] ⚠️ İlk bağlantı exception, reconnect başlatılıyor...");
-          forceReconnect();
+          console.log("[Connection] ⚠️ Ağ kontrolü yapılamadı, devam ediliyor...");
+        }
+      }
+      
+      // Kısa gecikme (auth hazır olması için)
+      await new Promise(r => setTimeout(r, 500));
+      
+      if (!isMountedRef.current) return;
+      
+      // Bağlantı testi - birden fazla deneme
+      let connectionSuccess = false;
+      
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+          console.log(`[Connection] 🧪 Bağlantı testi deneme ${attempt}/5...`);
+          const { data, error } = await getSupabaseClient().rpc("get_server_time");
+          
+          if (!error && data) {
+            connectionSuccess = true;
+            console.log(`[Connection] ✅ İlk bağlantı başarılı! (deneme ${attempt})`);
+            break;
+          } else {
+            console.log(`[Connection] ⚠️ Bağlantı testi hatası (deneme ${attempt}):`, error?.message);
+          }
+        } catch (e) {
+          console.log(`[Connection] ⚠️ Bağlantı testi exception (deneme ${attempt}):`, e);
+        }
+        
+        // Denemeler arası bekleme (artan süre)
+        await new Promise(r => setTimeout(r, 400 * attempt));
+      }
+      
+      if (isMountedRef.current) {
+        if (connectionSuccess) {
+          setState(prev => ({ ...prev, isConnected: true }));
+          startHeartbeat();
+        } else {
+          console.log("[Connection] ⚠️ İlk bağlantı başarısız, tam reconnect başlatılıyor...");
+          await forceReconnect();
         }
       }
     };
