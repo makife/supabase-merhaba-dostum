@@ -238,12 +238,12 @@ serve(async (req) => {
       }
     }
 
-    // ========== 2. WHEEL SPIN REMINDERS (5 saatte bir) ==========
-    // Her zaman kontrol et - günde birden fazla hatırlatma gönderilebilir (5 saatte bir)
-    console.log('🎡 Checking wheel spin reminders...');
+    // ========== 2. WHEEL SPIN REMINDERS (Günde 1 kez) ==========
+    // Kullanıcı çarkı çevirmediyse GÜNDE SADECE 1 KEZ hatırlatma gönder
+    console.log('🎡 Checking wheel spin reminders (daily limit: 1)...');
 
     const today = new Date().toISOString().split('T')[0];
-    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    const todayStart = new Date(today).toISOString(); // Günün başlangıcı
     
     // Get users with push tokens who haven't spun today
     const { data: allUsers, error: usersError } = await supabase
@@ -273,18 +273,21 @@ serve(async (req) => {
 
       console.log(`Found ${usersToRemind.length} users who haven't spun the wheel today`);
 
-      // Check if we already sent a reminder in the last 5 hours
-      const { data: recentReminders } = await supabase
+      // GÜNDE 1 KEZ - Bugün zaten hatırlatma gönderilmiş mi kontrol et
+      const { data: todayReminders } = await supabase
         .from('notifications')
         .select('user_id')
         .eq('type', 'wheel_reminder')
-        .gte('created_at', fiveHoursAgo);
+        .gte('created_at', todayStart);
 
-      const recentlyRemindedUserIds = new Set((recentReminders || []).map(n => n.user_id));
+      const alreadyRemindedTodayUserIds = new Set((todayReminders || []).map(n => n.user_id));
 
       for (const user of usersToRemind) {
-        // Skip if reminded in the last 5 hours
-        if (recentlyRemindedUserIds.has(user.id)) continue;
+        // Bugün zaten hatırlatma gönderildiyse atla
+        if (alreadyRemindedTodayUserIds.has(user.id)) {
+          console.log(`⏭️ Skipping ${user.username} - already reminded today`);
+          continue;
+        }
 
         if (user.push_token) {
           const message: FCMMessage = {
