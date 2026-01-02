@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { 
+  startForegroundServiceStandalone, 
+  stopForegroundServiceStandalone,
+  updateForegroundNotification 
+} from "@/hooks/useForegroundService";
 
 interface ConnectionState {
   isConnected: boolean;
@@ -23,6 +28,7 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(undef
 
 // Native platform kontrolü - component dışında
 const isNativePlatform = Capacitor.isNativePlatform();
+const isAndroidPlatform = Capacitor.getPlatform() === "android";
 
 // Kanal oluşturucu fonksiyonları saklamak için
 type ChannelCreator = () => RealtimeChannel;
@@ -225,6 +231,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           console.log(`📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`);
 
           if (isActive) {
+            // ÖN PLANA GELDİ - Foreground Service'i durdur
+            if (isAndroidPlatform) {
+              console.log("📱 [Connection] Foreground Service durduruluyor...");
+              await stopForegroundServiceStandalone();
+            }
+            
             // Kamera/galeri aktifse reload yapma!
             const { isCameraActive } = await import("@/utils/cameraState");
             if (isCameraActive()) {
@@ -238,26 +250,26 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
             console.log("📱 [Connection] Uygulama ön plana geldi - SAYFA YENİLENİYOR...");
             window.location.reload();
           } else {
-            // ARKA PLANA GİTTİ
-            console.log("📱 [Connection] Uygulama arka plana gitti - Temizlik yapılıyor...");
+            // ARKA PLANA GİTTİ - Foreground Service başlat
+            console.log("📱 [Connection] Uygulama arka plana gitti...");
             
-            stopHeartbeat();
-            
-            // Bağlantıyı kes (enerji tasarrufu için)
-            try {
-              const client = getSupabaseClient();
-              const channels = client.getChannels();
-              for (const ch of channels) {
-                try {
-                  await client.removeChannel(ch);
-                } catch (e) {
-                  // Sessizce devam
-                }
+            // Android'de Foreground Service başlat
+            if (isAndroidPlatform) {
+              console.log("📱 [Connection] Android - Foreground Service başlatılıyor...");
+              const serviceStarted = await startForegroundServiceStandalone({
+                title: "Kelimeci Aktif",
+                body: "🔗 Bağlantı canlı tutulıyor - Oyuna dönmek için dokun",
+              });
+              
+              if (serviceStarted) {
+                console.log("✅ [Connection] Foreground Service başarıyla başlatıldı!");
+              } else {
+                console.log("⚠️ [Connection] Foreground Service başlatılamadı");
               }
-              (client.realtime as any).disconnect();
-            } catch (e) {
-              // Sessizce devam
             }
+            
+            // Heartbeat durdur (enerji tasarrufu)
+            stopHeartbeat();
             
             if (isMountedRef.current) {
               setState(prev => ({ ...prev, isConnected: false }));
