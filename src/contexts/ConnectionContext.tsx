@@ -233,51 +233,61 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           );
 
           if (isActive) {
-            // 1. ÖN PLANA GELDİ - Mevcut bir timeout varsa temizle
+            // ÖN PLANA GELDİ
+            
+            // 1. Önceki timeout'u temizle
             if (foregroundServiceTimeoutRef.current) {
               clearTimeout(foregroundServiceTimeoutRef.current);
               foregroundServiceTimeoutRef.current = null;
+              console.log("🧹 [Connection] Bekleyen timeout temizlendi");
             }
 
-            // 2. Servisi hemen durdur
+            // 2. Foreground Service'i durdur
             if (isAndroidPlatform) {
               console.log("📱 [Connection] Foreground Service durduruluyor...");
               await stopForegroundServiceStandalone();
             }
 
-            // ... (Kamera kontrolü ve reload kodların burada kalsın) ...
-            const { isCameraActive } = await import("@/utils/cameraState");
-            if (isCameraActive()) {
-              await forceReconnect();
-              return;
-            }
-            window.location.reload();
+            // 3. Bağlantıyı yeniden kur (window.location.reload() yerine forceReconnect kullan)
+            // Native'de reload() uygulamayı kill edebiliyor!
+            console.log("🔄 [Connection] forceReconnect başlatılıyor...");
+            await forceReconnect();
+            
           } else {
-            // 3. ARKA PLANA GİTTİ - Servisi başlat
+            // ARKA PLANA GİTTİ
+            
+            // 1. Foreground Service başlat (sadece Android)
             if (isAndroidPlatform) {
-              console.log("📱 [Connection] Android - Foreground Service başlatılıyor...");
-              const serviceStarted = await startForegroundServiceStandalone({
-                title: "Kelimele Aktif",
-                description: "🔗 Bağlantı korunuyor...",
-              });
+              console.log("📱 [Connection] Foreground Service başlatılıyor...");
+              try {
+                const serviceStarted = await startForegroundServiceStandalone({
+                  title: "Kelimele Aktif",
+                  description: "🔗 Bağlantı korunuyor...",
+                });
 
-              if (serviceStarted) {
-                console.log("✅ [Connection] Servis başladı. 20 saniyelik geri sayım başladı.");
+                if (serviceStarted) {
+                  console.log("✅ [Connection] Foreground Service başarıyla başladı");
 
-                // ÖNCEKİ TIMEOUT VARSA TEMİZLE (Çakışma olmasın)
-                if (foregroundServiceTimeoutRef.current) {
-                  clearTimeout(foregroundServiceTimeoutRef.current);
+                  // Önceki timeout varsa temizle
+                  if (foregroundServiceTimeoutRef.current) {
+                    clearTimeout(foregroundServiceTimeoutRef.current);
+                  }
+
+                  // 60 saniye sonra otomatik durdur
+                  foregroundServiceTimeoutRef.current = setTimeout(async () => {
+                    console.log("⏰ [Connection] 60s doldu, servis otomatik kapatılıyor");
+                    await stopForegroundServiceStandalone();
+                    foregroundServiceTimeoutRef.current = null;
+                  }, 60000);
+                } else {
+                  console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
                 }
-
-                // 20 SANİYE SONRA OTOMATİK DURDUR
-                foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                  console.log("⏰ [Connection] 20 saniye doldu. Servis otomatik kapatılıyor.");
-                  await stopForegroundServiceStandalone();
-                  foregroundServiceTimeoutRef.current = null;
-                }, 20000); // 20 saniye
+              } catch (err) {
+                console.error("❌ [Connection] Foreground Service hatası:", err);
               }
             }
 
+            // 2. Heartbeat durdur
             stopHeartbeat();
             if (isMountedRef.current) {
               setState((prev) => ({ ...prev, isConnected: false }));
