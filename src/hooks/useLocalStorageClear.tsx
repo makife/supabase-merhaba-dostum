@@ -14,7 +14,7 @@ export const useLocalStorageClear = () => {
           .from("system_settings")
           .select("value, updated_at")
           .eq("key", "clear_local_storage")
-          .single();
+          .maybeSingle();
 
         if (error) {
           // system_settings tablosu yoksa veya veri yoksa sessizce devam et
