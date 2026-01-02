@@ -74,31 +74,41 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 };
 
-// Client'ı yeniden oluştur - TIMEOUT İLE GÜVENLİ VERSİYON
+// Client'ı yeniden oluşturmadan sadece realtime bağlantısını yenile
+// Bu şekilde tüm referanslar geçerli kalır!
 export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
-  console.log("🔄 [SupabaseClient] ========== HIZLI CLIENT RECREATE ==========");
+  console.log("🔄 [SupabaseClient] ========== REALTIME RECONNECT ==========");
   
   try {
-    // 1. ESKİ KANALLARI TEMİZLE (timeout 2 saniye)
-    console.log("[SupabaseClient] 1️⃣ Eski bağlantılar temizleniyor...");
+    // 1. MEVCUT KANALLARI TEMİZLE
+    console.log("[SupabaseClient] 1️⃣ Kanallar temizleniyor...");
     try {
       const channels = supabaseInstance.getChannels();
+      console.log(`[SupabaseClient] ${channels.length} kanal bulundu`);
       for (const ch of channels) {
-        try { supabaseInstance.removeChannel(ch); } catch {}
+        try { 
+          await supabaseInstance.removeChannel(ch); 
+        } catch {}
       }
-      try { (supabaseInstance.realtime as any).disconnect?.(); } catch {}
+    } catch (e) {
+      console.log("[SupabaseClient] ⚠️ Kanal temizleme hatası:", e);
+    }
+    
+    // 2. REALTIME BAĞLANTISINI KAPAT
+    console.log("[SupabaseClient] 2️⃣ Realtime bağlantısı kapatılıyor...");
+    try { 
+      (supabaseInstance.realtime as any).disconnect?.(); 
     } catch {}
     
-    // 2. YENİ CLIENT OLUŞTUR
-    console.log("[SupabaseClient] 2️⃣ Yeni client oluşturuluyor...");
-    supabaseInstance = createSupabaseClient();
+    // Kısa bekle
+    await new Promise(r => setTimeout(r, 200));
     
-    // 3. SESSION KONTROL - 3 SANİYE TIMEOUT!
-    console.log("[SupabaseClient] 3️⃣ Session kontrol (3s timeout)...");
+    // 3. SESSION TOKEN GÜNCELLE
+    console.log("[SupabaseClient] 3️⃣ Session kontrol (2s timeout)...");
     try {
       const sessionResult = await withTimeout(
         supabaseInstance.auth.getSession(),
-        3000,
+        2000,
         { data: { session: null }, error: null }
       );
       
@@ -106,7 +116,7 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
         supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
         console.log("[SupabaseClient] ✅ Token ayarlandı");
       } else {
-        console.log("[SupabaseClient] ⚠️ Session yok, refresh deneniyor (2s timeout)...");
+        console.log("[SupabaseClient] ⚠️ Session yok, refresh deneniyor...");
         const refreshResult = await withTimeout(
           supabaseInstance.auth.refreshSession(),
           2000,
@@ -116,22 +126,22 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
         if (refreshResult?.data?.session?.access_token) {
           supabaseInstance.realtime.setAuth(refreshResult.data.session.access_token);
           console.log("[SupabaseClient] ✅ Token yenilendi");
-        } else {
-          console.log("[SupabaseClient] ⚠️ Session alınamadı - devam ediliyor");
         }
       }
     } catch (e) {
       console.log("[SupabaseClient] ⚠️ Session hatası:", e);
     }
     
-    // 4. REALTIME BAĞLANTISI
-    console.log("[SupabaseClient] 4️⃣ Realtime başlatılıyor...");
-    try { (supabaseInstance.realtime as any).connect?.(); } catch {}
+    // 4. REALTIME BAĞLANTISINI YENİDEN AÇ
+    console.log("[SupabaseClient] 4️⃣ Realtime yeniden başlatılıyor...");
+    try { 
+      (supabaseInstance.realtime as any).connect?.(); 
+    } catch {}
     
-    console.log("🎉 [SupabaseClient] ========== CLIENT HAZIR ==========");
+    console.log("🎉 [SupabaseClient] ========== RECONNECT TAMAM ==========");
     
   } catch (error) {
-    console.error("[SupabaseClient] ❌ Recreate hatası:", error);
+    console.error("[SupabaseClient] ❌ Reconnect hatası:", error);
   }
   
   return supabaseInstance;

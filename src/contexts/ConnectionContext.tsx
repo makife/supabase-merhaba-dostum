@@ -150,11 +150,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       console.log("🎉 [Connection] ============ RECONNECT BAŞARILI! ============");
       startHeartbeat();
       
-      // Tüm componentlere haber ver
+      // Tüm componentlere haber ver - DATA REFETCH için
+      console.log("[Connection] 📢 supabase-reconnected event yayınlanıyor...");
+      window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+      
+      // 500ms sonra tekrar (geç yüklenen componentler için)
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-        console.log("[Connection] 📢 supabase-reconnected event yayınlandı");
-      }, 100);
+        console.log("[Connection] 📢 supabase-reconnected (2. sinyal) yayınlandı");
+      }, 500);
     } else {
       console.log("❌ [Connection] Reconnect başarısız, 3 saniye sonra tekrar denenecek...");
       
