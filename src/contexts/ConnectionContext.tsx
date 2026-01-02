@@ -231,59 +231,44 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         }
 
         appListenerRef.current = await App.addListener("appStateChange", async ({ isActive }) => {
-          console.log(
-            `📱 [Connection] ============ APP STATE: ${isActive ? "FOREGROUND ▶️" : "BACKGROUND ⏸️"} ============`,
-          );
-
           if (isActive) {
-            // 1. ÖN PLANA GELDİ - Mevcut bir timeout varsa temizle
+            // ÖN PLANA GELDİ - Servisi durdur ve sayacı temizle
             if (foregroundServiceTimeoutRef.current) {
               clearTimeout(foregroundServiceTimeoutRef.current);
               foregroundServiceTimeoutRef.current = null;
             }
 
-            // 2. Servisi hemen durdur
-            if (isAndroidPlatform) {
-              console.log("📱 [Connection] Foreground Service durduruluyor...");
-              await stopForegroundServiceStandalone();
+            try {
+              await ForegroundService.stop();
+              console.log("📱 [Connection] Ücretsiz servis durduruldu.");
+            } catch (e) {
+              console.error("Servis durdurma hatası", e);
             }
 
-            // ... (Kamera kontrolü ve reload kodların burada kalsın) ...
-            const { isCameraActive } = await import("@/utils/cameraState");
-            if (isCameraActive()) {
-              await forceReconnect();
-              return;
-            }
+            // Kamera kontrolü ve reload mantığın burada aynen kalsın
             window.location.reload();
           } else {
-            // 3. ARKA PLANA GİTTİ - Servisi başlat
-            if (isAndroidPlatform) {
-              console.log("📱 [Connection] Android - Foreground Service başlatılıyor...");
-              const serviceStarted = await startForegroundServiceStandalone({
+            // ARKA PLANA GİTTİ - Servisi başlat
+            try {
+              await ForegroundService.start({
                 title: "Kelimele Aktif",
-                body: "🔗 Bağlantı korunuyor...",
+                body: "Bağlantı 20 saniye daha korunacak...",
+                id: 1001,
+                smallIcon: "ic_stat_notification", // Oluşturduğumuz ikon ismi
               });
 
-              if (serviceStarted) {
-                console.log("✅ [Connection] Servis başladı. 20 saniyelik geri sayım başladı.");
+              console.log("✅ [Connection] Ücretsiz servis başladı. 20sn sayacı devrede.");
 
-                // ÖNCEKİ TIMEOUT VARSA TEMİZLE (Çakışma olmasın)
-                if (foregroundServiceTimeoutRef.current) {
-                  clearTimeout(foregroundServiceTimeoutRef.current);
-                }
+              // 20 SANİYE SONRA OTOMATİK DURDUR
+              if (foregroundServiceTimeoutRef.current) clearTimeout(foregroundServiceTimeoutRef.current);
 
-                // 20 SANİYE SONRA OTOMATİK DURDUR
-                foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                  console.log("⏰ [Connection] 20 saniye doldu. Servis otomatik kapatılıyor.");
-                  await stopForegroundServiceStandalone();
-                  foregroundServiceTimeoutRef.current = null;
-                }, 20000); // 20 saniye
-              }
-            }
-
-            stopHeartbeat();
-            if (isMountedRef.current) {
-              setState((prev) => ({ ...prev, isConnected: false }));
+              foregroundServiceTimeoutRef.current = setTimeout(async () => {
+                await ForegroundService.stop();
+                console.log("⏰ [Connection] 20sn doldu, servis kapatıldı.");
+                foregroundServiceTimeoutRef.current = null;
+              }, 20000);
+            } catch (e) {
+              console.error("Ücretsiz servis başlatılamadı", e);
             }
           }
         });
