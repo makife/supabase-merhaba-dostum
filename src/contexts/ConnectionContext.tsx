@@ -75,119 +75,103 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }, 25000);
   }, [stopHeartbeat]);
 
-  // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR
+  // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR - SÜPER BASİT VERSİYON
   const forceReconnect = useCallback(async (): Promise<boolean> => {
-    // Debounce: Son 500ms içinde reconnect olduysa atla (çok kısa)
-    const now = Date.now();
-    if (now - lastForegroundTimeRef.current < 500) {
-      console.log("[Connection] ⏳ Debounce - son reconnect çok yakın, atlanıyor...");
-      return false;
-    }
-    lastForegroundTimeRef.current = now;
+    console.log("🔄 [Connection] ============ FORCE RECONNECT BAŞLADI ============");
 
+    // EĞER ZATEN RECONNECT YAPILIYORSA BEKLEYELİM AMA BLOKLAMA YAPMAYALIM
     if (isReconnectingRef.current) {
-      console.log("[Connection] ⚠️ Reconnect zaten çalışıyor, atlanıyor...");
+      console.log("[Connection] ⚠️ Reconnect devam ediyor, bekleyip tekrar denenecek...");
+      // Kısa bekleyip tekrar dene
+      setTimeout(() => {
+        if (isMountedRef.current && !isReconnectingRef.current) {
+          forceReconnect();
+        }
+      }, 1000);
       return false;
     }
 
     isReconnectingRef.current = true;
-
-    // Pending timeout'ları temizle
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
+    stopHeartbeat();
 
     if (isMountedRef.current) {
       setState((prev) => ({ ...prev, isReconnecting: true, isConnected: false }));
     }
 
-    console.log("🔄 [Connection] ========== HIZLI RECONNECT ==========");
-    stopHeartbeat();
-
     let success = false;
 
     try {
-      // 1. Ağ kontrolü - HIZLI (Native platformlarda)
-      if (isNativePlatform) {
-        try {
-          const { Network } = await import("@capacitor/network");
-          const status = await Network.getStatus();
-          console.log(`[Connection] 📶 Ağ: ${status.connected ? "OK ✅" : "YOK ❌"}`);
-
-          if (!status.connected) {
-            // Ağ yoksa kısa bekle ve tekrar dene
-            await new Promise((r) => setTimeout(r, 500));
-            const status2 = await Network.getStatus();
-            if (!status2.connected) {
-              console.log("[Connection] ❌ Ağ yok, 2s sonra tekrar...");
-              isReconnectingRef.current = false;
-              if (isMountedRef.current) {
-                setState((prev) => ({ ...prev, isReconnecting: false }));
-              }
-              reconnectTimeoutRef.current = setTimeout(() => {
-                if (isMountedRef.current) {
-                  isReconnectingRef.current = false;
-                  forceReconnect();
-                }
-              }, 2000);
-              return false;
-            }
-          }
-        } catch (e) {
-          // Ağ kontrolü başarısız - devam et
-        }
-      }
-
-      // 2. HIZLI CLIENT YENİDEN OLUŞTUR - bekleme yok!
-      console.log("[Connection] 🆕 Client yeniden oluşturuluyor...");
+      // ADIM 1: Client'ı yeniden oluştur
+      console.log("[Connection] 1️⃣ Client yeniden oluşturuluyor...");
       await recreateSupabaseClient();
+      console.log("[Connection] ✅ Client oluşturuldu");
 
-      // 3. ANINDA bağlantı testi - daha az deneme, daha kısa bekleme
-      console.log("[Connection] 🧪 Bağlantı testi...");
-      let testSuccess = false;
+      // ADIM 2: Kısa bekle (client hazır olsun)
+      await new Promise((r) => setTimeout(r, 300));
 
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      // ADIM 3: Bağlantı testi
+      console.log("[Connection] 2️⃣ Bağlantı testi yapılıyor...");
+      
+      for (let i = 1; i <= 5; i++) {
         try {
-          const { data, error } = await getSupabaseClient().rpc("get_server_time");
+          const client = getSupabaseClient();
+          const { data, error } = await client.rpc("get_server_time");
+          
           if (!error && data) {
-            testSuccess = true;
-            console.log(`[Connection] ✅ Bağlantı OK! (${attempt}. deneme)`);
+            success = true;
+            console.log(`[Connection] ✅ Bağlantı BAŞARILI! (${i}. deneme)`);
             break;
+          } else {
+            console.log(`[Connection] ❌ Deneme ${i} başarısız:`, error?.message);
           }
         } catch (e) {
-          // Devam et
+          console.log(`[Connection] ❌ Deneme ${i} exception:`, e);
         }
-        if (attempt < 3) await new Promise((r) => setTimeout(r, 200));
+        
+        // Denemeler arası bekle
+        if (i < 5) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
       }
 
-      if (testSuccess) {
-        success = true;
-        console.log("🎉 [Connection] ========== RECONNECT BAŞARILI! ==========");
-        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-      } else {
-        console.log("❌ [Connection] Bağlantı testi başarısız");
-      }
     } catch (error) {
-      console.error("[Connection] ❌ Reconnect hatası:", error);
+      console.error("[Connection] ❌ Reconnect genel hata:", error);
     }
 
-    // Sonuç
+    // Sonucu kaydet
+    isReconnectingRef.current = false;
+    
     if (isMountedRef.current) {
       setState((prev) => ({
         ...prev,
         isConnected: success,
         isReconnecting: false,
-        lastConnectedAt: success ? new Date() : null,
+        lastConnectedAt: success ? new Date() : prev.lastConnectedAt,
         reconnectAttempts: success ? 0 : prev.reconnectAttempts + 1,
       }));
     }
 
     if (success) {
+      console.log("🎉 [Connection] ============ RECONNECT BAŞARILI! ============");
       startHeartbeat();
+      
+      // Tüm componentlere haber ver
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+        console.log("[Connection] 📢 supabase-reconnected event yayınlandı");
+      }, 100);
+    } else {
+      console.log("❌ [Connection] Reconnect başarısız, 3 saniye sonra tekrar denenecek...");
+      
+      // Başarısızsa otomatik tekrar dene
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          isReconnectingRef.current = false; // Reset flag before retry
+          forceReconnect();
+        }
+      }, 3000);
     }
 
-    isReconnectingRef.current = false;
     return success;
   }, [stopHeartbeat, startHeartbeat]);
 
@@ -219,25 +203,30 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           );
 
           if (isActive) {
-            // ÖN PLANA GELDİ
+            // ÖN PLANA GELDİ - HEPSİNİ SIFIRLA VE YENİDEN BAŞ
+            console.log("🚀 [Connection] ÖN PLANA GELDİ - TAM RECONNECT BAŞLIYOR!");
             
-            // 1. Önceki timeout'u temizle
+            // 1. Reconnect flag'ini zorla sıfırla (takılma durumunu önle)
+            isReconnectingRef.current = false;
+            
+            // 2. Timeout'ları temizle
             if (foregroundServiceTimeoutRef.current) {
               clearTimeout(foregroundServiceTimeoutRef.current);
               foregroundServiceTimeoutRef.current = null;
-              console.log("🧹 [Connection] Bekleyen timeout temizlendi");
+            }
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+              reconnectTimeoutRef.current = null;
             }
 
-            // 2. Foreground Service'i durdur
+            // 3. Foreground Service'i durdur
             if (isAndroidPlatform) {
-              console.log("📱 [Connection] Foreground Service durduruluyor...");
-              await stopForegroundServiceStandalone();
+              stopForegroundServiceStandalone().catch(() => {});
             }
 
-            // 3. Bağlantıyı yeniden kur (window.location.reload() yerine forceReconnect kullan)
-            // Native'de reload() uygulamayı kill edebiliyor!
-            console.log("🔄 [Connection] forceReconnect başlatılıyor...");
-            await forceReconnect();
+            // 4. HEMEN reconnect başlat - hiç bekleme yok!
+            console.log("🔄 [Connection] forceReconnect HEMEN başlatılıyor...");
+            forceReconnect();
             
           } else {
             // ARKA PLANA GİTTİ
