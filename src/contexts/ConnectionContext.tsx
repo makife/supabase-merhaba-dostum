@@ -77,9 +77,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
 
   // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR
   const forceReconnect = useCallback(async (): Promise<boolean> => {
-    // Debounce: Son 3 saniye içinde reconnect olduysa atla
+    // Debounce: Son 500ms içinde reconnect olduysa atla (çok kısa)
     const now = Date.now();
-    if (now - lastForegroundTimeRef.current < 3000) {
+    if (now - lastForegroundTimeRef.current < 500) {
       console.log("[Connection] ⏳ Debounce - son reconnect çok yakın, atlanıyor...");
       return false;
     }
@@ -102,80 +102,68 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
       setState((prev) => ({ ...prev, isReconnecting: true, isConnected: false }));
     }
 
-    console.log("🔄 [Connection] ========== CLIENT YENİDEN OLUŞTURULUYOR ==========");
+    console.log("🔄 [Connection] ========== HIZLI RECONNECT ==========");
     stopHeartbeat();
 
     let success = false;
 
     try {
-      // 1. Ağ kontrolü (Native platformlarda)
+      // 1. Ağ kontrolü - HIZLI (Native platformlarda)
       if (isNativePlatform) {
         try {
           const { Network } = await import("@capacitor/network");
           const status = await Network.getStatus();
-          console.log(`[Connection] 📶 Ağ durumu: ${status.connected ? "BAĞLI ✅" : "BAĞLI DEĞİL ❌"}`);
+          console.log(`[Connection] 📶 Ağ: ${status.connected ? "OK ✅" : "YOK ❌"}`);
 
           if (!status.connected) {
-            console.log("[Connection] ⚠️ Ağ bağlantısı yok, 2 saniye sonra tekrar deneniyor...");
-            await new Promise((r) => setTimeout(r, 2000));
-
-            // Tekrar kontrol et
+            // Ağ yoksa kısa bekle ve tekrar dene
+            await new Promise((r) => setTimeout(r, 500));
             const status2 = await Network.getStatus();
             if (!status2.connected) {
-              console.log("[Connection] ❌ Hala ağ yok, reconnect iptal...");
+              console.log("[Connection] ❌ Ağ yok, 2s sonra tekrar...");
               isReconnectingRef.current = false;
               if (isMountedRef.current) {
                 setState((prev) => ({ ...prev, isReconnecting: false }));
               }
-
-              // 5 saniye sonra tekrar dene
               reconnectTimeoutRef.current = setTimeout(() => {
                 if (isMountedRef.current) {
                   isReconnectingRef.current = false;
                   forceReconnect();
                 }
-              }, 5000);
-
+              }, 2000);
               return false;
             }
           }
         } catch (e) {
-          console.log("[Connection] ⚠️ Ağ kontrolü yapılamadı, devam ediliyor...");
+          // Ağ kontrolü başarısız - devam et
         }
       }
 
-      // 2. SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR
-      console.log("[Connection] 🆕 Supabase client tamamen yeniden oluşturuluyor...");
+      // 2. HIZLI CLIENT YENİDEN OLUŞTUR - bekleme yok!
+      console.log("[Connection] 🆕 Client yeniden oluşturuluyor...");
       await recreateSupabaseClient();
 
-      // 3. Kısa bekleme
-      await new Promise((r) => setTimeout(r, 500));
-
-      // 4. Bağlantı testi
-      console.log("[Connection] 🧪 Bağlantı test ediliyor...");
+      // 3. ANINDA bağlantı testi - daha az deneme, daha kısa bekleme
+      console.log("[Connection] 🧪 Bağlantı testi...");
       let testSuccess = false;
 
-      for (let attempt = 1; attempt <= 5; attempt++) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const { data, error } = await getSupabaseClient().rpc("get_server_time");
           if (!error && data) {
             testSuccess = true;
-            console.log(`[Connection] ✅ Bağlantı testi BAŞARILI! (deneme ${attempt})`);
+            console.log(`[Connection] ✅ Bağlantı OK! (${attempt}. deneme)`);
             break;
-          } else {
-            console.log(`[Connection] ⚠️ Bağlantı testi hatası (deneme ${attempt}):`, error?.message);
           }
         } catch (e) {
-          console.log(`[Connection] ⚠️ Bağlantı testi exception (deneme ${attempt}):`, e);
+          // Devam et
         }
-        await new Promise((r) => setTimeout(r, 400));
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 200));
       }
 
       if (testSuccess) {
         success = true;
         console.log("🎉 [Connection] ========== RECONNECT BAŞARILI! ==========");
-
-        // Window event yayınla - diğer component'lar dinleyebilir
         window.dispatchEvent(new CustomEvent("supabase-reconnected"));
       } else {
         console.log("❌ [Connection] Bağlantı testi başarısız");
@@ -192,14 +180,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         isReconnecting: false,
         lastConnectedAt: success ? new Date() : null,
         reconnectAttempts: success ? 0 : prev.reconnectAttempts + 1,
-        showRecoveryOverlay: false, // Başarılıysa overlay'ı kapat
       }));
     }
 
     if (success) {
       startHeartbeat();
     }
-    // ARTIK OTOMATİK RETRY YOK - Manuel overlay gösterilecek
 
     isReconnectingRef.current = false;
     return success;
