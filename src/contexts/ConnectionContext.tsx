@@ -258,7 +258,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               console.log("📱 [Connection] Android - Foreground Service başlatılıyor...");
               const serviceStarted = await startForegroundServiceStandalone({
                 title: "Kelimele Aktif",
-                body: "🔗 Bağlantı korunuyor...",
+                description: "🔗 Bağlantı korunuyor...",
               });
 
               if (serviceStarted) {
