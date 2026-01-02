@@ -273,12 +273,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 60 saniye sonra otomatik durdur
+                  // 5 dakika sonra otomatik durdur (daha uzun süre)
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 60s doldu, servis otomatik kapatılıyor");
+                    console.log("⏰ [Connection] 5dk doldu, servis otomatik kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 60000);
+                  }, 300000); // 5 dakika
                 } else {
                   console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
                 }
@@ -287,10 +287,23 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               }
             }
 
-            // 2. Heartbeat durdur
-            stopHeartbeat();
-            if (isMountedRef.current) {
-              setState((prev) => ({ ...prev, isConnected: false }));
+            // 2. ARKA PLANDA HEARTBEAT DEVAM ETSİN - bağlantıyı canlı tutmak için
+            // stopHeartbeat(); // KALDIRILDI - arka planda da heartbeat çalışsın
+            console.log("📱 [Connection] Arka planda heartbeat DEVAM EDİYOR");
+            
+            // 3. Realtime bağlantısını zorla canlı tut
+            try {
+              const client = getSupabaseClient();
+              // Ping gönder - bağlantıyı uyanık tut
+              client.rpc("get_server_time").then(({ error }) => {
+                if (error) {
+                  console.log("📱 [Connection] Arka plan ping hatası:", error.message);
+                } else {
+                  console.log("📱 [Connection] Arka plan ping başarılı");
+                }
+              });
+            } catch (e) {
+              console.log("📱 [Connection] Arka plan ping exception:", e);
             }
           }
         });
