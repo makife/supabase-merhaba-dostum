@@ -92,24 +92,44 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
     
     // 4. Mevcut session'ı al ve yeni client'a uygula
     console.log("[SupabaseClient] 3️⃣ Session kontrol ediliyor...");
-    try {
-      const { data: sessionData } = await supabaseInstance.auth.getSession();
-      if (sessionData?.session?.access_token) {
-        supabaseInstance.realtime.setAuth(sessionData.session.access_token);
-        console.log("[SupabaseClient] ✅ Token yeni client'a ayarlandı");
-      } else {
-        // Session yoksa refresh dene
-        console.log("[SupabaseClient] ⚠️ Session yok, refresh deneniyor...");
-        const { data: refreshData, error: refreshError } = await supabaseInstance.auth.refreshSession();
-        if (!refreshError && refreshData?.session?.access_token) {
-          supabaseInstance.realtime.setAuth(refreshData.session.access_token);
-          console.log("[SupabaseClient] ✅ Token yenilendi");
-        } else {
-          console.log("[SupabaseClient] ⚠️ Session refresh başarısız - oturum açık olmayabilir");
+    let sessionRestored = false;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { data: sessionData, error: sessionError } = await supabaseInstance.auth.getSession();
+        
+        if (sessionError) {
+          console.log(`[SupabaseClient] ⚠️ Session alma hatası (deneme ${attempt}):`, sessionError.message);
+          await new Promise(r => setTimeout(r, 300));
+          continue;
         }
+        
+        if (sessionData?.session?.access_token) {
+          supabaseInstance.realtime.setAuth(sessionData.session.access_token);
+          console.log("[SupabaseClient] ✅ Token yeni client'a ayarlandı");
+          sessionRestored = true;
+          break;
+        } else {
+          // Session yoksa refresh dene
+          console.log(`[SupabaseClient] ⚠️ Session yok (deneme ${attempt}), refresh deneniyor...`);
+          const { data: refreshData, error: refreshError } = await supabaseInstance.auth.refreshSession();
+          if (!refreshError && refreshData?.session?.access_token) {
+            supabaseInstance.realtime.setAuth(refreshData.session.access_token);
+            console.log("[SupabaseClient] ✅ Token yenilendi");
+            sessionRestored = true;
+            break;
+          } else if (refreshError) {
+            console.log(`[SupabaseClient] ⚠️ Session refresh hatası:`, refreshError.message);
+          }
+        }
+      } catch (e) {
+        console.log(`[SupabaseClient] ⚠️ Session işleme hatası (deneme ${attempt}):`, e);
       }
-    } catch (e) {
-      console.log("[SupabaseClient] ⚠️ Session işleme hatası:", e);
+      await new Promise(r => setTimeout(r, 400));
+    }
+    
+    if (!sessionRestored) {
+      console.log("[SupabaseClient] ⚠️ Session restore edilemedi - kullanıcı giriş yapmamış olabilir");
     }
     
     // 5. Realtime bağlantısını başlat
@@ -120,23 +140,25 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
       console.log("[SupabaseClient] ⚠️ Connect hatası (önemsiz):", e);
     }
     
-    // 6. Bağlantı testi
+    // 6. Bağlantı testi - daha fazla deneme
     console.log("[SupabaseClient] 5️⃣ Bağlantı test ediliyor...");
     await new Promise(r => setTimeout(r, 400));
     
     let testSuccess = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 5; attempt++) {
       try {
         const { data, error } = await supabaseInstance.rpc("get_server_time");
         if (!error && data) {
           testSuccess = true;
           console.log(`[SupabaseClient] ✅ Bağlantı testi BAŞARILI! (deneme ${attempt})`);
           break;
+        } else {
+          console.log(`[SupabaseClient] ⚠️ Bağlantı testi hatası (deneme ${attempt}):`, error?.message);
         }
       } catch (e) {
-        // Sessizce devam
+        console.log(`[SupabaseClient] ⚠️ Bağlantı testi exception (deneme ${attempt}):`, e);
       }
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 300 * attempt));
     }
     
     if (!testSuccess) {
