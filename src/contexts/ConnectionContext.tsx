@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
-import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
+import { recreateSupabaseClient, getSupabaseClient } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { ForegroundService } from "capacitor-foreground-service";
 import { startForegroundServiceStandalone, stopForegroundServiceStandalone } from "@/hooks/useForegroundService";
 
 interface ConnectionState {
@@ -77,17 +76,23 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
 
   // SUPAbase CLIENT'I TAMAMEN YENİDEN OLUŞTUR
   const forceReconnect = useCallback(async (): Promise<boolean> => {
-    // Debounce: Son 3 saniye içinde reconnect olduysa atla
+    // Debounce: Son 1 saniye içinde reconnect olduysa atla (daha kısa)
     const now = Date.now();
-    if (now - lastForegroundTimeRef.current < 3000) {
+    if (now - lastForegroundTimeRef.current < 1000) {
       console.log("[Connection] ⏳ Debounce - son reconnect çok yakın, atlanıyor...");
-      return false;
+      return true; // false yerine true döndür - bağlantı varsayılan olarak var kabul edilsin
     }
     lastForegroundTimeRef.current = now;
 
     if (isReconnectingRef.current) {
-      console.log("[Connection] ⚠️ Reconnect zaten çalışıyor, atlanıyor...");
-      return false;
+      console.log("[Connection] ⚠️ Reconnect zaten çalışıyor, bekleniyor...");
+      // Reconnect bitene kadar bekle
+      let waitCount = 0;
+      while (isReconnectingRef.current && waitCount < 20) {
+        await new Promise(r => setTimeout(r, 250));
+        waitCount++;
+      }
+      return state.isConnected;
     }
 
     isReconnectingRef.current = true;
@@ -99,10 +104,10 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (isMountedRef.current) {
-      setState((prev) => ({ ...prev, isReconnecting: true, isConnected: false }));
+      setState((prev) => ({ ...prev, isReconnecting: true }));
     }
 
-    console.log("🔄 [Connection] ========== CLIENT YENİDEN OLUŞTURULUYOR ==========");
+    console.log("🔄 [Connection] ========== RECONNECT BAŞLATILIYOR ==========");
     stopHeartbeat();
 
     let success = false;
@@ -234,6 +239,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
 
           if (isActive) {
             // ÖN PLANA GELDİ
+            console.log("▶️ [Connection] Ön plana gelindi, işlemler başlıyor...");
             
             // 1. Önceki timeout'u temizle
             if (foregroundServiceTimeoutRef.current) {
@@ -242,27 +248,41 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               console.log("🧹 [Connection] Bekleyen timeout temizlendi");
             }
 
-            // 2. Foreground Service'i durdur
+            // 2. Foreground Service'i durdur (arka planda başlatıldıysa)
             if (isAndroidPlatform) {
-              console.log("📱 [Connection] Foreground Service durduruluyor...");
-              await stopForegroundServiceStandalone();
+              try {
+                console.log("📱 [Connection] Foreground Service durduruluyor...");
+                await stopForegroundServiceStandalone();
+              } catch (e) {
+                console.log("⚠️ [Connection] Service durdurma hatası (önemsiz):", e);
+              }
             }
 
-            // 3. Bağlantıyı yeniden kur (window.location.reload() yerine forceReconnect kullan)
-            // Native'de reload() uygulamayı kill edebiliyor!
-            console.log("🔄 [Connection] forceReconnect başlatılıyor...");
-            await forceReconnect();
+            // 3. Kısa bekle - sistem stabilize olsun
+            await new Promise(r => setTimeout(r, 300));
+
+            // 4. Bağlantıyı yeniden kur
+            console.log("🔄 [Connection] Bağlantı yenileniyor...");
+            const success = await forceReconnect();
+            console.log(`${success ? "✅" : "❌"} [Connection] Reconnect sonucu: ${success}`);
             
           } else {
             // ARKA PLANA GİTTİ
+            console.log("⏸️ [Connection] Arka plana gidildi, işlemler başlıyor...");
             
-            // 1. Foreground Service başlat (sadece Android)
+            // 1. Heartbeat'i hemen durdur
+            stopHeartbeat();
+            
+            // 2. Foreground Service başlat (sadece Android)
             if (isAndroidPlatform) {
               console.log("📱 [Connection] Foreground Service başlatılıyor...");
               try {
+                // Kısa bekle - state değişimi tamamlansın
+                await new Promise(r => setTimeout(r, 100));
+                
                 const serviceStarted = await startForegroundServiceStandalone({
-                  title: "Kelimele Aktif",
-                  description: "🔗 Bağlantı korunuyor...",
+                  title: "Kelimele",
+                  description: "Oyun bağlantısı korunuyor...",
                 });
 
                 if (serviceStarted) {
@@ -273,12 +293,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 60 saniye sonra otomatik durdur
+                  // 2 dakika sonra otomatik durdur (daha uzun süre)
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 60s doldu, servis otomatik kapatılıyor");
+                    console.log("⏰ [Connection] 2 dakika doldu, servis otomatik kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 60000);
+                  }, 120000);
                 } else {
                   console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
                 }
@@ -287,11 +307,9 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               }
             }
 
-            // 2. Heartbeat durdur
-            stopHeartbeat();
-            if (isMountedRef.current) {
-              setState((prev) => ({ ...prev, isConnected: false }));
-            }
+            // State güncelle - ama bağlantı koptu deme, sadece arka planda olduğumuzu bildir
+            // isConnected: false demek UI'da sorun yaratabilir
+            console.log("📴 [Connection] Arka plan moduna geçildi");
           }
         });
 
