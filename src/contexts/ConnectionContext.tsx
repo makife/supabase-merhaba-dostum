@@ -3,11 +3,7 @@ import { supabase, recreateSupabaseClient, getSupabaseClient } from "@/integrati
 import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { ForegroundService } from "capacitor-foreground-service";
-import {
-  startForegroundServiceStandalone,
-  stopForegroundServiceStandalone,
-  updateForegroundNotification,
-} from "@/hooks/useForegroundService";
+import { startForegroundServiceStandalone, stopForegroundServiceStandalone } from "@/hooks/useForegroundService";
 
 interface ConnectionState {
   isConnected: boolean;
