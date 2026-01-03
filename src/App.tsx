@@ -592,22 +592,46 @@ const App = () => {
         }
       });
 
-      return () => {
-  const cleanup = async () => {
-    try {
-      const reg = await registrationListener;
-      if (reg) reg.remove();
-      const notify = await notificationListener;
-      if (notify) notify.remove();
-      const action = await actionListener;
-      if (action) action.remove();
-    } catch (e) {
-      console.warn("Cleanup listener error:", e);
-    }
-  };
-  cleanup();
-  authListener.subscription.unsubscribe();
-};
+
+    // BURADAN İTİBAREN SİLİP YAPIŞTIRABİLİRSİN
+    return () => {
+      // Auth aboneliğini (Supabase) hemen kapat
+      if (authListener?.subscription) {
+        authListener.subscription.unsubscribe();
+        console.log("🔐 Auth aboneliği temizlendi.");
+      }
+
+      // Capacitor Listener'larını temizle (Hatayı engelleyen asenkron yapı)
+      const performCleanup = async () => {
+        try {
+          // Önce tüm listener handle'larının çözülmesini bekle
+          const [reg, notify, action] = await Promise.all([
+            registrationListener,
+            notificationListener,
+            actionListener
+          ]);
+
+          // Eğer handle varsa sil
+          if (reg) await reg.remove();
+          if (notify) await notify.remove();
+          if (action) await action.remove();
+
+          console.log("✅ Tüm Push listener'lar başarıyla kaldırıldı.");
+        } catch (e) {
+          // Uygulama kapanırken bazen listener bulunamaz, bu normaldir
+          console.warn("⚠️ Temizlik sırasında ufak bir aksama:", e);
+        }
+      };
+
+      performCleanup();
+    };
+    // Parantezlerin kapanış sırası: 
+    // } = cleanup fonksiyonu sonu
+    // ) = return sonu
+    // } = useEffect fonksiyonu sonu
+    // , [] = dependency array
+    // ) = useEffect çağrısı sonu
+  }, []);
 
   // App.tsx içindeki return kısmı
   return (
