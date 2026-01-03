@@ -14,7 +14,7 @@ import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
-
+import NativeRealtime from "@/services/nativeRealtimeService";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -479,13 +479,33 @@ const GlobalRematchDialog = () => {
   );
 };
 
-// Native Realtime Manager - ŞİMDİLİK DEVRE DIŞI (Kotlin plugin entegre edilmedi)
-// ConnectionContext + Supabase JS client kullanılıyor
 const NativeRealtimeManager = () => {
-  // Native plugin çalışmıyor, bu component artık sadece log için
+  const { user } = useAuth();
+
   useEffect(() => {
-    console.log(`[NativeRealtimeManager] ℹ️ Native plugin devre dışı - Supabase JS client kullanılıyor`);
-  }, []);
+    if (Capacitor.isNativePlatform() && user) {
+      const startNativeWS = async () => {
+        try {
+          console.log("🔌 Native WebSocket başlatılıyor...");
+          await NativeRealtime.connect({
+            url: "wss://nnlvtqmuwmrqfinsgvwc.supabase.co/realtime/v1/websocket",
+            apiKey: "SENIN_ANON_KEY_BURAYA",
+            accessToken: (await supabase.auth.getSession()).data.session?.access_token,
+          });
+          console.log("✅ Native WebSocket başarıyla bağlandı!");
+        } catch (e) {
+          console.error("❌ Native WS bağlantı hatası:", e);
+        }
+      };
+
+      startNativeWS();
+
+      // Uygulama kapandığında bağlantıyı kes
+      return () => {
+        NativeRealtime.disconnect();
+      };
+    }
+  }, [user]);
 
   return null;
 };
@@ -509,7 +529,7 @@ const App = () => {
         manualHideBars();
       }, 300);
     },
-    // NOT: backgroundTimeout ve forceCleanupAll kaldırıldı - 
+    // NOT: backgroundTimeout ve forceCleanupAll kaldırıldı -
     // Bağlantı yönetimi artık tamamen ConnectionContext'te
   });
 
@@ -518,7 +538,10 @@ const App = () => {
     if (Capacitor.isNativePlatform()) {
       // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
       const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
-        const { error } = await supabase.from("profiles").update({ push_token: tokenValue } as any).eq("id", userId as any);
+        const { error } = await supabase
+          .from("profiles")
+          .update({ push_token: tokenValue } as any)
+          .eq("id", userId as any);
 
         if (error) console.error("❌ Token kaydedilemedi:", error);
         else console.log("✅ Token veritabanına başarıyla kaydedildi!");
@@ -583,10 +606,31 @@ const App = () => {
       });
 
       return () => {
-        registrationListener.then((listener) => listener.remove());
-        notificationListener.then((listener) => listener.remove());
-        actionListener.then((listener) => listener.remove());
-        authListener.subscription.unsubscribe(); // Auth dinleyicisini de kapat
+        // Async bir temizlik fonksiyonu oluşturuyoruz
+        const cleanupListeners = async () => {
+          try {
+            // Promise'lerin çözülmesini bekleyip sonra siliyoruz
+            const regHandle = await registrationListener;
+            if (regHandle) regHandle.remove();
+
+            const notifyHandle = await notificationListener;
+            if (notifyHandle) notifyHandle.remove();
+
+            const actionHandle = await actionListener;
+            if (actionHandle) actionHandle.remove();
+
+            console.log("✅ Push listener'lar başarıyla temizlendi.");
+          } catch (error) {
+            console.error("❌ Listener temizleme hatası:", error);
+          }
+        };
+
+        cleanupListeners();
+
+        // Auth dinleyicisi Promise döndürmediği için direkt çağırabiliriz
+        if (authListener?.subscription) {
+          authListener.subscription.unsubscribe();
+        }
       };
     }
   }, []);
