@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { ForegroundService } from "capacitor-foreground-service";
 import { startForegroundServiceStandalone, stopForegroundServiceStandalone } from "@/hooks/useForegroundService";
+import { NativeRealtime, isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 
 interface ConnectionState {
   isConnected: boolean;
@@ -19,6 +20,8 @@ interface ConnectionContextType {
   unregisterChannel: (name: string) => void;
   isHealthy: boolean;
   forceReconnect: () => Promise<boolean>;
+  /** Native Realtime kullanılıyor mu? */
+  isUsingNativeRealtime: boolean;
 }
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
@@ -457,6 +460,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const isHealthy = state.isConnected && !state.isReconnecting;
+  const isUsingNativeRealtime = isNativeRealtimeAvailable();
 
   return (
     <ConnectionContext.Provider
@@ -467,6 +471,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         unregisterChannel,
         isHealthy,
         forceReconnect,
+        isUsingNativeRealtime,
       }}
     >
       {children}
