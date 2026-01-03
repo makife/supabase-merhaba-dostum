@@ -14,7 +14,7 @@ import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
-import NativeRealtime from "@/services/nativeRealtimeService";
+import NativeRealtime from "@/plugins/NativeRealtime";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
