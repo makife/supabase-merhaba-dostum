@@ -486,11 +486,11 @@ const NativeRealtimeManager = () => {
   const initialized = useRef(false);
 
   useEffect(() => {
-    // Kullanıcı varsa, yükleme bittiyse ve bu açılışta henüz çalışmadıysa
+    // Sadece bir kez ve kullanıcı varken ateşle
     if (isNative && user && !loading && !initialized.current) {
-      console.log("🚀 [NativeRealtimeManager] İlk ateşleme yapılıyor...");
+      console.log("🚀 [NativeRealtimeManager] Native WebSocket motoru ateşleniyor...");
       connect();
-      initialized.current = true; // Sadece bir kez çalıştır
+      initialized.current = true;
     }
   }, [user, loading, isNative, connect]);
 
@@ -508,16 +508,15 @@ const App = () => {
   useAppState({
     onBackground: () => {
       console.log("📱 Uygulama arka plana gitti (UI)");
+      // NOT: Burada artık setTimeout(disconnect) yapmıyoruz!
+      // Çünkü Native tarafa "saati başlat" sinyali hook üzerinden gitti.
     },
     onForeground: () => {
-      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle
-      console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
+      console.log("▶️ Uygulama ön plana geldi - UI tazeleniyor");
       setTimeout(() => {
         manualHideBars();
       }, 300);
     },
-    // NOT: backgroundTimeout ve forceCleanupAll kaldırıldı -
-    // Bağlantı yönetimi artık tamamen ConnectionContext'te
   });
 
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
