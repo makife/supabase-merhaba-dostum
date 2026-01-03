@@ -15,6 +15,8 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import { ConnectionProvider, useConnection } from "@/contexts/ConnectionContext";
+import { useNativeRealtime } from "@/hooks/useNativeRealtime";
+import { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -479,6 +481,26 @@ const GlobalRematchDialog = () => {
   );
 };
 
+// Native Realtime Manager - Android'de native WebSocket başlatır
+const NativeRealtimeManager = () => {
+  const { isConnected, connectionState, error, connect } = useNativeRealtime({
+    autoConnect: true,
+    onConnectionChange: (connected) => {
+      console.log(`[NativeRealtimeManager] Bağlantı durumu: ${connected ? 'BAĞLI' : 'BAĞLI DEĞİL'}`);
+    }
+  });
+
+  useEffect(() => {
+    console.log(`[NativeRealtimeManager] 🚀 Mount edildi - Native: ${isNativeRealtimeAvailable()}`);
+    console.log(`[NativeRealtimeManager] State: ${connectionState}, Connected: ${isConnected}`);
+    if (error) {
+      console.error(`[NativeRealtimeManager] ❌ Hata:`, error);
+    }
+  }, [connectionState, isConnected, error]);
+
+  return null; // UI yok, sadece bağlantı yönetimi
+};
+
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
@@ -599,6 +621,8 @@ const App = () => {
               {/* 3. KADEME: ConnectionProvider (Bağlantı Yönetimi) 
                   ARTIK BURADA OLMALI çünkü üstteki AuthProvider'a muhtaç! */}
               <ConnectionProvider>
+                {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
+                <NativeRealtimeManager />
                 <ThemeProvider>
                   <MusicProvider>
                     <MatchmakingWrapper>
