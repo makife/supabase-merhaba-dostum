@@ -84,7 +84,7 @@ export interface ConnectionStateEvent {
 
 // Plugin'i kaydet (sadece native platformda)
 const NativeRealtimeImpl = registerPlugin<NativeRealtimePlugin>("NativeRealtime", {
-  web: undefined, // Web'de çalışmaz
+  web: undefined,
 });
 
 /**
@@ -99,8 +99,6 @@ export const NativeRealtime = Capacitor.isNativePlatform() ? NativeRealtimeImpl 
  *
  * Android'de Kotlin WebSocket plugin'i kullanılır.
  */
-export const isNativeRealtimeAvailable = (): boolean => {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
-};
+export const NativeRealtime = (Capacitor.isNativePlatform() ? NativeRealtimeImpl : null) as any;
 
 export default NativeRealtime;
