@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, useRef } fro
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { setCachedSession as setPersistentSession } from "@/utils/persistentState";
 
 interface AuthContextType {
   user: User | null;
@@ -31,9 +32,19 @@ const setCachedData = (user: User | null, session: Session | null) => {
     if (user && session) {
       localStorage.setItem("kelimeci_cached_user", JSON.stringify(user));
       localStorage.setItem("kelimeci_cached_session", JSON.stringify(session));
+      
+      // 🆕 NATIVE STORAGE'A DA KAYDET (Optimistic Auth için)
+      setPersistentSession({
+        userId: user.id,
+        email: user.email || "",
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token || "",
+        expiresAt: (session.expires_at || 0) * 1000, // seconds to ms
+      });
     } else {
       localStorage.removeItem("kelimeci_cached_user");
       localStorage.removeItem("kelimeci_cached_session");
+      setPersistentSession(null);
     }
   } catch (e) {
     console.log(e);
