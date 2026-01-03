@@ -247,12 +247,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 5 dakika sonra otomatik durdur (daha uzun süre)
+                  // 5 dakika sonra otomatik durdur
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
                     console.log("⏰ [Connection] 5dk doldu, servis otomatik kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 300000); // 5 dakika
+                  }, 300000);
                 } else {
                   console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
                 }
@@ -261,23 +261,46 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               }
             }
 
-            // 2. ARKA PLANDA HEARTBEAT DEVAM ETSİN - bağlantıyı canlı tutmak için
-            // stopHeartbeat(); // KALDIRILDI - arka planda da heartbeat çalışsın
-            console.log("📱 [Connection] Arka planda heartbeat DEVAM EDİYOR");
+            // 2. ARKA PLANDA AKTİF KEEP-ALIVE PİNG BAŞLAT
+            // Foreground service varsa bile WebSocket idle kalınca kapanıyor
+            // Bu yüzden her 10 saniyede bir ping atarak bağlantıyı canlı tutuyoruz
+            console.log("📱 [Connection] Arka plan keep-alive ping BAŞLATILIYOR (her 10sn)");
             
-            // 3. Realtime bağlantısını zorla canlı tut
+            // Mevcut heartbeat'i durdur ve daha agresif ping başlat
+            stopHeartbeat();
+            
+            // Arka plan için daha sık ping (10 saniye)
+            heartbeatRef.current = setInterval(async () => {
+              if (!isMountedRef.current) return;
+              
+              try {
+                const client = getSupabaseClient();
+                const startTime = Date.now();
+                const { data, error } = await client.rpc("get_server_time");
+                const latency = Date.now() - startTime;
+                
+                if (error) {
+                  console.log(`📱 [Background Ping] ❌ HATA (${latency}ms):`, error.message);
+                } else {
+                  console.log(`📱 [Background Ping] ✅ OK (${latency}ms) - Bağlantı canlı`);
+                }
+              } catch (e) {
+                console.log("📱 [Background Ping] ❌ Exception:", e);
+              }
+            }, 10000); // Her 10 saniyede bir ping
+            
+            // İlk ping'i hemen at
             try {
               const client = getSupabaseClient();
-              // Ping gönder - bağlantıyı uyanık tut
               client.rpc("get_server_time").then(({ error }) => {
                 if (error) {
-                  console.log("📱 [Connection] Arka plan ping hatası:", error.message);
+                  console.log("📱 [Connection] İlk arka plan ping hatası:", error.message);
                 } else {
-                  console.log("📱 [Connection] Arka plan ping başarılı");
+                  console.log("📱 [Connection] ✅ İlk arka plan ping başarılı");
                 }
               });
             } catch (e) {
-              console.log("📱 [Connection] Arka plan ping exception:", e);
+              console.log("📱 [Connection] İlk ping exception:", e);
             }
           }
         });
