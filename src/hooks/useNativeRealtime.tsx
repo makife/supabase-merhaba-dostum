@@ -7,6 +7,13 @@ import {
   ConnectionStateEvent 
 } from '@/plugins/NativeRealtime';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  startForegroundServiceStandalone, 
+  stopForegroundServiceStandalone 
+} from '@/hooks/useForegroundService';
+
+// Foreground Service maksimum çalışma süresi (ms)
+const FOREGROUND_SERVICE_MAX_DURATION = 60 * 1000; // 1 dakika
 
 const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
@@ -59,6 +66,7 @@ export function useNativeRealtime(options: UseNativeRealtimeOptions = {}) {
   
   const subscriptionsRef = useRef<Map<string, SubscriptionOptions>>(new Map());
   const listenersRef = useRef<{ message?: any; connection?: any }>({});
+  const foregroundTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isNative = isNativeRealtimeAvailable();
 
   // Bağlantı durumu değişikliklerini dinle
@@ -141,6 +149,33 @@ export function useNativeRealtime(options: UseNativeRealtimeOptions = {}) {
   }, [isNative]);
 
   /**
+   * Foreground Service'i başlat ve 1 dakika sonra durdur
+   */
+  const startForegroundWithTimeout = useCallback(async () => {
+    if (!isNative) return;
+
+    console.log('[NativeRealtime] 🔔 Foreground Service başlatılıyor (max 1 dk)...');
+    
+    // Önceki timer'ı temizle
+    if (foregroundTimerRef.current) {
+      clearTimeout(foregroundTimerRef.current);
+    }
+
+    // Foreground service başlat
+    await startForegroundServiceStandalone({
+      title: "Kelimele",
+      description: "🔗 Oyun bağlantısı kuruluyor...",
+    });
+
+    // 1 dakika sonra durdur
+    foregroundTimerRef.current = setTimeout(async () => {
+      console.log('[NativeRealtime] ⏰ 1 dakika doldu, Foreground Service durduruluyor...');
+      await stopForegroundServiceStandalone();
+      foregroundTimerRef.current = null;
+    }, FOREGROUND_SERVICE_MAX_DURATION);
+  }, [isNative]);
+
+  /**
    * Bağlantıyı başlat
    */
   const connect = useCallback(async () => {
@@ -151,6 +186,9 @@ export function useNativeRealtime(options: UseNativeRealtimeOptions = {}) {
 
     try {
       setError(null);
+      
+      // Foreground Service'i başlat (1 dakika timeout ile)
+      await startForegroundWithTimeout();
       
       // Mevcut session'ı al
       const { data: { session } } = await supabase.auth.getSession();
@@ -172,7 +210,7 @@ export function useNativeRealtime(options: UseNativeRealtimeOptions = {}) {
       console.error('[NativeRealtime] ❌ Bağlantı hatası:', e);
       setError(e.message || 'Bağlantı hatası');
     }
-  }, [isNative]);
+  }, [isNative, startForegroundWithTimeout]);
 
   /**
    * Bağlantıyı kapat
@@ -181,12 +219,31 @@ export function useNativeRealtime(options: UseNativeRealtimeOptions = {}) {
     if (!isNative || !NativeRealtime) return;
 
     try {
+      // Timer'ı temizle
+      if (foregroundTimerRef.current) {
+        clearTimeout(foregroundTimerRef.current);
+        foregroundTimerRef.current = null;
+      }
+      
+      // Foreground service'i durdur
+      await stopForegroundServiceStandalone();
+      
+      // WebSocket bağlantısını kapat
       await NativeRealtime.disconnect();
       subscriptionsRef.current.clear();
     } catch (e) {
       console.error('[NativeRealtime] Disconnect hatası:', e);
     }
   }, [isNative]);
+
+  // Component unmount olduğunda timer'ı temizle
+  useEffect(() => {
+    return () => {
+      if (foregroundTimerRef.current) {
+        clearTimeout(foregroundTimerRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Kanala subscribe ol
