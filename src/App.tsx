@@ -64,6 +64,8 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { NavigationBar } from "@ethion/capacitor-navigation-bar";
 import { BackButtonDialog } from "@/hooks/useBackButton";
 import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
+import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
+import { useReconnectionState } from "@/hooks/useReconnectionState";
 
 const queryClient = new QueryClient();
 
@@ -497,6 +499,19 @@ const NativeRealtimeManager = () => {
   return null;
 };
 
+// 🆕 GLOBAL RECONNECTION OVERLAY
+const GlobalReconnectionOverlay = () => {
+  const { isOverlayVisible, status } = useReconnectionState();
+
+  return (
+    <ReconnectingOverlay
+      isVisible={isOverlayVisible}
+      status={status === "disconnected" ? "restoring" : status === "reconnecting" ? "reconnecting" : "connecting"}
+      message={status === "disconnected" ? "Bağlantı geri yükleniyor..." : undefined}
+    />
+  );
+};
+
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
@@ -617,6 +632,8 @@ const App = () => {
             <UserProvider>
               {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
               <NativeRealtimeManager />
+              {/* 🆕 GLOBAL RECONNECTION OVERLAY */}
+              <GlobalReconnectionOverlay />
               <ThemeProvider>
                 <MusicProvider>
                   <MatchmakingWrapper>

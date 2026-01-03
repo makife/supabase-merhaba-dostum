@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+import { setLastChatId, getLastChatId } from "@/utils/persistentState";
+import { registerMessageListener } from "@/hooks/useNativeRealtime";
 
 interface PrivateMessage {
   id: string;
@@ -61,11 +63,37 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
     console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
     setActivePrivateChat(chatId);
+    
+    // 🆕 Native Storage'a kaydet
+    setLastChatId(chatId);
 
     // Component unmount olduğunda temizlik
     return () => {
       console.log("🔴 PrivateChat unmounted - Aktif sohbet kaldırıldı:", chatId);
       removeActivePrivateChat(chatId);
+      setLastChatId(null);
+    };
+  }, [chatId]);
+
+  // 🆕 Native'den gelen mesajları dinle (Channel Buffering)
+  useEffect(() => {
+    if (!chatId) return;
+
+    const unregister = registerMessageListener((topic, payload) => {
+      if (topic.includes("private_messages") && payload?.new?.chat_id === chatId) {
+        console.log("[PrivateChat] 📨 Native'den mesaj geldi:", payload);
+        const newMsg = payload.new as PrivateMessage;
+        
+        // Duplicate kontrolü
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+      }
+    });
+
+    return () => {
+      unregister();
     };
   }, [chatId]);
 

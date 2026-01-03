@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 import { realtimeManager } from "@/utils/realtimeManager";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { Button } from "@/components/ui/button";
+import { setLastRoomId, getLastRoomId } from "@/utils/persistentState";
+import { registerMessageListener } from "@/hooks/useNativeRealtime";
 
 interface GameRoom {
   id: string;
@@ -167,7 +169,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const { refreshProfile, isSystemConnected } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
+  const [currentRoom, setCurrentRoomState] = useState<GameRoom | null>(null);
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [lastOpponent, setLastOpponent] = useState<GameParticipant | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -175,6 +177,113 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const isClosingRoomRef = useRef(false);
   const lastCountdownAtRef = useRef<string | null>(null);
   const sendingRematchRef = useRef(false);
+  const hasRegisteredListenerRef = useRef(false);
+
+  // 🆕 WRAPPER: setCurrentRoom çağrıldığında Native Storage'a da kaydet
+  const setCurrentRoom = useCallback((room: GameRoom | null) => {
+    setCurrentRoomState(room);
+    // Native Storage'a kaydet
+    setLastRoomId(room?.id || null);
+    console.log("[GameContext] 💾 Room ID persisted:", room?.id?.slice(-8) || "null");
+  }, []);
+
+  // 🆕 isSystemConnected true olduğunda room'u geri yükle
+  useEffect(() => {
+    if (!isSystemConnected || !user) return;
+
+    const restoreRoom = async () => {
+      console.log("[GameContext] 🔄 isSystemConnected true, room restore kontrolü...");
+      
+      // Eğer zaten aktif bir room varsa tekrar yükleme
+      if (currentRoom) {
+        console.log("[GameContext] ✓ Zaten aktif room var, skip");
+        return;
+      }
+
+      try {
+        const lastRoomId = await getLastRoomId();
+        if (!lastRoomId) {
+          console.log("[GameContext] 📭 Cached room ID yok");
+          return;
+        }
+
+        console.log("[GameContext] 📖 Cached room ID bulundu:", lastRoomId.slice(-8));
+
+        // Room'u DB'den çek
+        const { data: room, error } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("id", lastRoomId)
+          .single();
+
+        if (error || !room) {
+          console.log("[GameContext] ⚠️ Room artık yok veya hata:", error?.message);
+          await setLastRoomId(null);
+          return;
+        }
+
+        // Eğer room bitmiş veya kapatılmışsa skip
+        if (room.status === "finished" || room.status === "cancelled") {
+          console.log("[GameContext] ⚠️ Room bitmiş/iptal, temizleniyor");
+          await setLastRoomId(null);
+          return;
+        }
+
+        console.log("[GameContext] ✅ Room geri yüklendi:", room.id.slice(-8), room.status);
+        setCurrentRoomState(room as GameRoom);
+
+        // Participants'ları da çek
+        const { data: parts } = await supabase
+          .from("game_participants")
+          .select("*, profiles:user_id(username, avatar_url)")
+          .eq("room_id", room.id);
+
+        if (parts) {
+          setParticipants(dedupeParticipants(parts as GameParticipant[], room.game_mode));
+        }
+      } catch (e) {
+        console.error("[GameContext] Room restore hatası:", e);
+      }
+    };
+
+    restoreRoom();
+  }, [isSystemConnected, user, currentRoom]);
+
+  // 🆕 CHANNEL BUFFERING: Native'den gelen mesajları dinle
+  useEffect(() => {
+    if (hasRegisteredListenerRef.current) return;
+    hasRegisteredListenerRef.current = true;
+
+    const unregister = registerMessageListener((topic, payload) => {
+      // Room update mesajları
+      if (topic.includes("game_rooms") && currentRoom) {
+        console.log("[GameContext] 📨 Native'den room update:", payload);
+        if (payload?.new && payload.new.id === currentRoom.id) {
+          setCurrentRoomState(payload.new as GameRoom);
+        }
+      }
+
+      // Participant update mesajları
+      if (topic.includes("game_participants") && currentRoom) {
+        console.log("[GameContext] 📨 Native'den participant update:", payload);
+        // Participant listesini yenile
+        supabase
+          .from("game_participants")
+          .select("*, profiles:user_id(username, avatar_url)")
+          .eq("room_id", currentRoom.id)
+          .then(({ data }) => {
+            if (data) {
+              setParticipants(dedupeParticipants(data as GameParticipant[], currentRoom.game_mode));
+            }
+          });
+      }
+    });
+
+    return () => {
+      unregister();
+      hasRegisteredListenerRef.current = false;
+    };
+  }, [currentRoom]);
 
   // Generate random grid
   const generateRandomGrid = (): string[][] => {
