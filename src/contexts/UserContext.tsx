@@ -92,39 +92,62 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const lastNotifiedTotalRef = useRef<number>(0);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
-  // 1. NATIVE BAĞLANTIYI DİNLE
+  // 1. NATIVE BAĞLANTIYI DİNLE + JS SDK DURUMUNU İZLE
   useEffect(() => {
-    if (!isNative) return;
+    // Native bağlantı durumu
+    if (isNative && NativeRealtime) {
+      const handleNativeState = (data: { state: string }) => {
+        if (data.state === "connected") {
+          setIsSystemConnected(true);
+          console.log("🌐 [UserContext] Native üzerinden internet canlı.");
+        }
+        // Native koptuğunda JS durumunu kontrol et
+        if (data.state === "disconnected") {
+          // JS SDK bağlıysa hala sistem bağlı
+          const jsConnected = supabase.realtime?.channels?.length > 0;
+          setIsSystemConnected(jsConnected);
+        }
+      };
 
-    const handleNativeState = (data: { state: string }) => {
-      // Native bağlı olduğu sürece sisteme "BAĞLIYIZ" diyoruz
-      if (data.state === "connected") {
+      NativeRealtime.addListener("connectionState", handleNativeState);
+      return () => {
+        NativeRealtime.removeAllListeners();
+      };
+    }
+  }, [isNative]);
+
+  // 2. JS SDK BAĞLANTI DURUMUNU İZLE
+  useEffect(() => {
+    const checkJsConnection = () => {
+      // Supabase JS SDK'nın bağlı kanalları varsa bağlıyız
+      const hasActiveChannels = (supabase.realtime as any)?.accessToken || 
+        (supabase.realtime?.channels?.length ?? 0) > 0;
+      
+      // Native bağlıysa veya JS bağlıysa = sistem bağlı
+      if (hasActiveChannels) {
         setIsSystemConnected(true);
-        console.log("🌐 [UserContext] Native üzerinden internet canlı.");
-      } else if (data.state === "disconnected") {
-        setIsSystemConnected(false);
       }
     };
 
-    NativeRealtime.addListener("connectionState", handleNativeState);
-    return () => {
-      NativeRealtime.removeAllListeners();
-    };
-  }, [isNative]);
+    // İlk kontrol
+    checkJsConnection();
 
-  // 2. KOTLIN SAYAÇ YÖNETİMİ (Kamera açılınca veya arkaya gidince)
-  useAppState({
-    onBackground: () => {
-      console.log("📱 Uygulama arkada. Kotlin 60sn saymaya başladı...");
-      if (isNative) NativeRealtime.startBackgroundTimer();
-    },
-    onForeground: () => {
-      console.log("▶️ Uygulama önde. Kotlin sayacı durduruldu.");
-      if (isNative) NativeRealtime.stopBackgroundTimer();
-      // JS koptuysa bile burada zorla profili bir kez tazele
-      refreshProfile(true);
-    },
-  });
+    // Reconnect event'ini dinle
+    const handleReconnect = () => {
+      console.log("🔄 [UserContext] JS SDK reconnected - isSystemConnected = true");
+      setIsSystemConnected(true);
+    };
+
+    window.addEventListener("supabase-reconnected", handleReconnect);
+    
+    // Periyodik kontrol (30 saniyede bir)
+    const interval = setInterval(checkJsConnection, 30000);
+
+    return () => {
+      window.removeEventListener("supabase-reconnected", handleReconnect);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Hydrate profile from cache immediately on user change to avoid avatar flicker
   useEffect(() => {

@@ -109,48 +109,48 @@ export const useSounds = () => {
       id: "default",
       name: "Varsayılan",
       sounds: {
-        buttonClick: "/sounds/default/button-click.mp3",
-        correctWord: "/sounds/default/correct-word.mp3",
-        wrongWord: "/sounds/default/wrong-word.mp3",
+        buttonClick: "sounds/default/button-click.mp3",
+        correctWord: "sounds/default/correct-word.mp3",
+        wrongWord: "sounds/default/wrong-word.mp3",
         gameWin: "generated", // Generated ses olarak işaretle
         gameLose: "generated",
         timeWarning: "generated",
         letterSelect: "generated",
-        celebration: "/sounds/default/kutlama.mp3",
-        gameLoseSound: "/sounds/default/kaybetme.mp3",
-        tieSound: "/sounds/default/beraberlik.mp3",
+        celebration: "sounds/default/kutlama.mp3",
+        gameLoseSound: "sounds/default/kaybetme.mp3",
+        tieSound: "sounds/default/beraberlik.mp3",
       },
     },
     space: {
       id: "space",
       name: "Uzay",
       sounds: {
-        buttonClick: "/sounds/space/button-click.mp3",
-        correctWord: "/sounds/space/correct-word.mp3",
+        buttonClick: "sounds/space/button-click.mp3",
+        correctWord: "sounds/space/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
         gameLose: "generated",
         timeWarning: "generated",
         letterSelect: "generated",
-        celebration: "/sounds/default/kutlama.mp3",
-        gameLoseSound: "/sounds/default/kaybetme.mp3",
-        tieSound: "/sounds/default/beraberlik.mp3",
+        celebration: "sounds/default/kutlama.mp3",
+        gameLoseSound: "sounds/default/kaybetme.mp3",
+        tieSound: "sounds/default/beraberlik.mp3",
       },
     },
     nature: {
       id: "nature",
       name: "Doğa",
       sounds: {
-        buttonClick: "/sounds/nature/button-click.mp3",
-        correctWord: "/sounds/nature/correct-word.mp3",
+        buttonClick: "sounds/nature/button-click.mp3",
+        correctWord: "sounds/nature/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
         gameLose: "generated",
         timeWarning: "generated",
         letterSelect: "generated",
-        celebration: "/sounds/default/kutlama.mp3",
-        gameLoseSound: "/sounds/default/kaybetme.mp3",
-        tieSound: "/sounds/default/beraberlik.mp3",
+        celebration: "sounds/default/kutlama.mp3",
+        gameLoseSound: "sounds/default/kaybetme.mp3",
+        tieSound: "sounds/default/beraberlik.mp3",
       },
     },
   });
@@ -185,9 +185,10 @@ export const useSounds = () => {
   // DÜZELTME: Audio utility fonksiyonlarını useCallback ile stabilize et
   const createAudioPool = useCallback((soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
     const pool: HTMLAudioElement[] = [];
-    // Capacitor için absolute path kullan
+    // Capacitor için absolute path kullan - başındaki slash'i kaldır
     const basePath = window.location.origin;
-    const fixedPath = soundPath.startsWith('/') ? `${basePath}${soundPath}` : soundPath;
+    const cleanPath = soundPath.startsWith('/') ? soundPath.slice(1) : soundPath;
+    const fixedPath = `${basePath}/${cleanPath}`;
     
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio();
@@ -284,18 +285,18 @@ export const useSounds = () => {
     
     // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo, joker sesleri) - WEB ONLY
     try {
-      audioCache.current.set('special_yes', createAudioPool('/yes.mp3', 5));
-      audioCache.current.set('special_wow', createAudioPool('/wow2.mp3', 5));
-      audioCache.current.set('special_yahoo', createAudioPool('/yahoo.mp3', 5));
-      audioCache.current.set('special_wow1', createAudioPool('/wow1.mp3', 3));
+      audioCache.current.set('special_yes', createAudioPool('yes.mp3', 5));
+      audioCache.current.set('special_wow', createAudioPool('wow2.mp3', 5));
+      audioCache.current.set('special_yahoo', createAudioPool('yahoo.mp3', 5));
+      audioCache.current.set('special_wow1', createAudioPool('wow1.mp3', 3));
       // Joker sesleri
-      audioCache.current.set('joker_degistir', createAudioPool('/degistir.mp3', 3));
-      audioCache.current.set('joker_fisilda', createAudioPool('/fisilda.mp3', 3));
-      audioCache.current.set('joker_senyaz', createAudioPool('/senyaz.mp3', 3));
+      audioCache.current.set('joker_degistir', createAudioPool('degistir.mp3', 3));
+      audioCache.current.set('joker_fisilda', createAudioPool('fisilda.mp3', 3));
+      audioCache.current.set('joker_senyaz', createAudioPool('senyaz.mp3', 3));
       // Sampiyon sesi
-      audioCache.current.set('special_sampiyon', createAudioPool('/sampiyon.mp3', 2));
+      audioCache.current.set('special_sampiyon', createAudioPool('sampiyon.mp3', 2));
       // Çark sesi
-      audioCache.current.set('special_cark', createAudioPool('/carkSesi.mp3', 2));
+      audioCache.current.set('special_cark', createAudioPool('carkSesi.mp3', 2));
     } catch (error) {
       console.warn('Failed to load special sound pools:', error);
     }

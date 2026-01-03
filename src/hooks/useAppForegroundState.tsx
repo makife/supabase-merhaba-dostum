@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
+import { NativeRealtime, isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -77,8 +78,10 @@ export function useAppForegroundState() {
     startLastSeenUpdates();
 
     // Initialize listeners - SADECE global state güncellemesi için
-    // NOT: Bağlantı yönetimi ConnectionContext'te yapılıyor!
+    // + Kotlin Sayaç Yönetimi (startBackgroundTimer / stopBackgroundTimer)
     const initializeListeners = async () => {
+      const isNativeRealtime = isNativeRealtimeAvailable();
+
       if (isNative) {
         try {
           const { App } = await import("@capacitor/app");
@@ -86,6 +89,19 @@ export function useAppForegroundState() {
           const listener = await App.addListener("appStateChange", ({ isActive }) => {
             console.log("[AppForegroundState] Native state:", isActive ? "foreground" : "background");
             setForegroundState(isActive);
+
+            // 🔥 KOTLIN SAYAÇ YÖNETİMİ
+            if (isNativeRealtime && NativeRealtime) {
+              if (isActive) {
+                // Ön plana geldi - sayacı durdur
+                console.log("▶️ [AppForegroundState] Kotlin sayacı durduruldu.");
+                NativeRealtime.stopBackgroundTimer();
+              } else {
+                // Arka plana gitti - 60 saniyelik sayacı başlat
+                console.log("📱 [AppForegroundState] Kotlin 60sn sayacı başladı...");
+                NativeRealtime.startBackgroundTimer();
+              }
+            }
           });
 
           return () => {
