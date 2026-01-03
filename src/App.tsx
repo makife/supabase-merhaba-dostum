@@ -14,7 +14,7 @@ import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
-import { ConnectionProvider, useConnection } from "@/contexts/ConnectionContext";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -607,30 +607,26 @@ const App = () => {
           <AuthProvider>
             {/* 2. KADEME: UserProvider (Profil Verisi) */}
             <UserProvider>
-              {/* 3. KADEME: ConnectionProvider (Bağlantı Yönetimi) 
-                  ARTIK BURADA OLMALI çünkü üstteki AuthProvider'a muhtaç! */}
-              <ConnectionProvider>
-                {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
-                <NativeRealtimeManager />
-                <ThemeProvider>
-                  <MusicProvider>
-                    <MatchmakingWrapper>
-                      <GameProvider>
-                        <RematchProvider>
-                          <GlobalRematchDialog />
-                          <BackButtonDialog />
-                          <RoomAutoNavigator />
-                          <TournamentProvider>
-                            <NotificationProvider>
-                              <AppRoutes />
-                            </NotificationProvider>
-                          </TournamentProvider>
-                        </RematchProvider>
-                      </GameProvider>
-                    </MatchmakingWrapper>
-                  </MusicProvider>
-                </ThemeProvider>
-              </ConnectionProvider>
+              {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
+              <NativeRealtimeManager />
+              <ThemeProvider>
+                <MusicProvider>
+                  <MatchmakingWrapper>
+                    <GameProvider>
+                      <RematchProvider>
+                        <GlobalRematchDialog />
+                        <BackButtonDialog />
+                        <RoomAutoNavigator />
+                        <TournamentProvider>
+                          <NotificationProvider>
+                            <AppRoutes />
+                          </NotificationProvider>
+                        </TournamentProvider>
+                      </RematchProvider>
+                    </GameProvider>
+                  </MatchmakingWrapper>
+                </MusicProvider>
+              </ThemeProvider>
             </UserProvider>
           </AuthProvider>
         </BrowserRouter>
