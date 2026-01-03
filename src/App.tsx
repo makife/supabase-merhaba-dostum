@@ -480,32 +480,18 @@ const GlobalRematchDialog = () => {
 };
 
 const NativeRealtimeManager = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const { connect, isNative } = useNativeRealtime();
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform() && user) {
-      const startNativeWS = async () => {
-        try {
-          console.log("🔌 Native WebSocket başlatılıyor...");
-          await NativeRealtime.connect({
-            url: "wss://nnlvtqmuwmrqfinsgvwc.supabase.co/realtime/v1/websocket",
-            apiKey: "SENIN_ANON_KEY_BURAYA",
-            accessToken: (await supabase.auth.getSession()).data.session?.access_token,
-          });
-          console.log("✅ Native WebSocket başarıyla bağlandı!");
-        } catch (e) {
-          console.error("❌ Native WS bağlantı hatası:", e);
-        }
-      };
-
-      startNativeWS();
-
-      // Uygulama kapandığında bağlantıyı kes
-      return () => {
-        NativeRealtime.disconnect();
-      };
+    // Kullanıcı varsa, yükleme bittiyse ve bu açılışta henüz çalışmadıysa
+    if (isNative && user && !loading && !initialized.current) {
+      console.log("🚀 [NativeRealtimeManager] İlk ateşleme yapılıyor...");
+      connect();
+      initialized.current = true; // Sadece bir kez çalıştır
     }
-  }, [user]);
+  }, [user, loading, isNative, connect]);
 
   return null;
 };
