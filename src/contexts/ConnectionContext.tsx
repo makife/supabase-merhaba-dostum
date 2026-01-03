@@ -269,17 +269,18 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
             
           } else {
             // ARKA PLANA GİTTİ
-            // ÖNEMLİ: Burada HİÇBİR ŞEY YAPMA! Bağlantıyı kesme, durdurma, değiştirme!
-            // Sadece Foreground Service başlat ve bağlantının kendi haline bırak
-            
             console.log("📱 [Connection] ============ ARKA PLANA GEÇİŞ ============");
-            console.log("📱 [Connection] ⚠️ Bağlantı KORUNUYOR - hiçbir şey kapatılmıyor!");
             
-            // SADECE Foreground Service başlat (Android için)
+            // Native Realtime kullanılıyorsa, o kendi FS'ini yönetiyor - burada bir şey yapma
+            if (isNativeRealtimeAvailable()) {
+              console.log("📱 [Connection] Native Realtime aktif - FS yönetimi ona bırakıldı");
+              return;
+            }
+            
+            // Eski web-based realtime için FS başlat (fallback)
+            console.log("📱 [Connection] Web Realtime - FS başlatılıyor (fallback)");
+            
             if (isAndroidPlatform) {
-              // SENKRON bir şekilde - await KULLANMA!
-              // Await kullanırsan Android uygulama arka plana geçmeden önce bekler
-              // ve bu sırada bağlantı kopabilir
               startForegroundServiceStandalone({
                 title: "Kelimele Aktif",
                 description: "🔗 Bağlantı korunuyor...",
@@ -287,31 +288,21 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                 if (serviceStarted) {
                   console.log("✅ [Connection] Foreground Service başladı");
                   
-                  // Önceki timeout varsa temizle
                   if (foregroundServiceTimeoutRef.current) {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 10 dakika sonra otomatik durdur
+                  // 1 dakika sonra otomatik durdur (native ile aynı)
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 10dk doldu, servis kapatılıyor");
+                    console.log("⏰ [Connection] 1dk doldu, servis kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 600000); // 10 dakika
-                } else {
-                  console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
+                  }, 60000); // 1 dakika
                 }
               }).catch(err => {
                 console.error("❌ [Connection] Foreground Service hatası:", err);
               });
             }
-            
-            // ❌ HİÇBİR ŞEY DAHA YAPMA!
-            // - stopHeartbeat() ÇAĞIRMA
-            // - ping atma
-            // - bağlantı testi yapma
-            // - realtime'ı disconnect etme
-            // Bağlantı zaten açık, kendi haline bırak!
             
             console.log("📱 [Connection] Heartbeat ve bağlantı OLDUĞU GİBİ KALIYOR");
           }
