@@ -593,34 +593,21 @@ const App = () => {
       });
 
       return () => {
-        // Async bir temizlik fonksiyonu oluşturuyoruz
-        const cleanupListeners = async () => {
-          try {
-            // Promise'lerin çözülmesini bekleyip sonra siliyoruz
-            const regHandle = await registrationListener;
-            if (regHandle) regHandle.remove();
-
-            const notifyHandle = await notificationListener;
-            if (notifyHandle) notifyHandle.remove();
-
-            const actionHandle = await actionListener;
-            if (actionHandle) actionHandle.remove();
-
-            console.log("✅ Push listener'lar başarıyla temizlendi.");
-          } catch (error) {
-            console.error("❌ Listener temizleme hatası:", error);
-          }
-        };
-
-        cleanupListeners();
-
-        // Auth dinleyicisi Promise döndürmediği için direkt çağırabiliriz
-        if (authListener?.subscription) {
-          authListener.subscription.unsubscribe();
-        }
-      };
+  const cleanup = async () => {
+    try {
+      const reg = await registrationListener;
+      if (reg) reg.remove();
+      const notify = await notificationListener;
+      if (notify) notify.remove();
+      const action = await actionListener;
+      if (action) action.remove();
+    } catch (e) {
+      console.warn("Cleanup listener error:", e);
     }
-  }, []);
+  };
+  cleanup();
+  authListener.subscription.unsubscribe();
+};
 
   // App.tsx içindeki return kısmı
   return (
