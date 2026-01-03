@@ -101,11 +101,8 @@ export const NativeRealtime = Capacitor.isNativePlatform() ? NativeRealtimeImpl 
 /**
  * Native Realtime kullanılabilir mi?
  * 
- * ŞİMDİLİK DEVRE DIŞI - Kotlin plugin henüz Android projesine entegre edilmedi.
- * Supabase JS client + Foreground Service kullanılıyor.
+ * Android'de Kotlin WebSocket plugin'i kullanılır.
  */
 export const isNativeRealtimeAvailable = (): boolean => {
-  // Native plugin henüz çalışmıyor, false döndür
-  return false;
-  // return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 };

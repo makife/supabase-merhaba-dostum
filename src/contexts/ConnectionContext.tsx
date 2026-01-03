@@ -286,12 +286,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 5 dakika sonra otomatik durdur (oyun süresi için yeterli)
+                  // 1 dakika sonra otomatik durdur
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 5dk doldu, servis kapatılıyor");
+                    console.log("⏰ [Connection] 1dk doldu, servis kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 5 * 60 * 1000); // 5 dakika
+                  }, 60 * 1000); // 1 dakika
                 }
               }).catch(err => {
                 console.error("❌ [Connection] Foreground Service hatası:", err);
