@@ -521,9 +521,9 @@ const App = () => {
   });
 
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
+  // 👇 PUSH NOTIFICATION ENTEGRASYONU (DÜZELTİLMİŞ)
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
       const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
         const { error } = await supabase
           .from("profiles")
@@ -550,88 +550,55 @@ const App = () => {
 
       initPush();
 
-      // 1. Token Gelince Çalışan Listener
       const registrationListener = PushNotifications.addListener("registration", async (token) => {
         console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
-
-        // Token'ı her ihtimale karşı telefona kaydet (Kullanıcı yoksa bile elimizde olsun)
         localStorage.setItem("temp_push_token", token.value);
-
-        // Eğer şu an açık bir oturum varsa hemen kaydet
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (user) {
-          await saveTokenToSupabase(user.id, token.value);
-        } else {
-          console.log("⚠️ Kullanıcı henüz giriş yapmamış, token hafızaya alındı.");
-        }
+        if (user) await saveTokenToSupabase(user.id, token.value);
       });
 
-      // 2. Kullanıcı Giriş Yapınca Çalışan Dinleyici (YENİ EKLENEN KISIM)
       const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          console.log("👤 Kullanıcı giriş yaptı, token kontrol ediliyor...");
-          // Hafızada bekleyen token var mı?
           const storedToken = localStorage.getItem("temp_push_token");
-          if (storedToken) {
-            console.log("📦 Hafızadaki token bulundu, veritabanına yazılıyor...");
-            await saveTokenToSupabase(session.user.id, storedToken);
+          if (storedToken) await saveTokenToSupabase(session.user.id, storedToken);
+        }
+      });
+
+      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (n) => {
+        console.log("🔔 Bildirim geldi:", n);
+      });
+
+      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (n) => {
+        const data = n.notification.data;
+        if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
+      });
+
+      // BURASI KRİTİK: TÜM PARANTEZLER VE CLEANUP BURADA
+      return () => {
+        if (authListener?.subscription) {
+          authListener.subscription.unsubscribe();
+        }
+
+        const cleanup = async () => {
+          try {
+            const [reg, notify, action] = await Promise.all([
+              registrationListener,
+              notificationListener,
+              actionListener,
+            ]);
+            if (reg) reg.remove();
+            if (notify) notify.remove();
+            if (action) action.remove();
+          } catch (e) {
+            console.warn("Cleanup error:", e);
           }
-        }
-      });
-
-      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (notification) => {
-        console.log("🔔 Bildirim geldi:", notification);
-      });
-
-      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-        const data = notification.notification.data;
-        if (data?.roomCode) {
-          window.location.href = `/game?room=${data.roomCode}`;
-        }
-      });
-
-
-    // BURADAN İTİBAREN SİLİP YAPIŞTIRABİLİRSİN
-    return () => {
-      // Auth aboneliğini (Supabase) hemen kapat
-      if (authListener?.subscription) {
-        authListener.subscription.unsubscribe();
-        console.log("🔐 Auth aboneliği temizlendi.");
-      }
-
-      // Capacitor Listener'larını temizle (Hatayı engelleyen asenkron yapı)
-      const performCleanup = async () => {
-        try {
-          // Önce tüm listener handle'larının çözülmesini bekle
-          const [reg, notify, action] = await Promise.all([
-            registrationListener,
-            notificationListener,
-            actionListener
-          ]);
-
-          // Eğer handle varsa sil
-          if (reg) await reg.remove();
-          if (notify) await notify.remove();
-          if (action) await action.remove();
-
-          console.log("✅ Tüm Push listener'lar başarıyla kaldırıldı.");
-        } catch (e) {
-          // Uygulama kapanırken bazen listener bulunamaz, bu normaldir
-          console.warn("⚠️ Temizlik sırasında ufak bir aksama:", e);
-        }
+        };
+        cleanup();
       };
-
-      performCleanup();
-    };
-    // Parantezlerin kapanış sırası: 
-    // } = cleanup fonksiyonu sonu
-    // ) = return sonu
-    // } = useEffect fonksiyonu sonu
-    // , [] = dependency array
-    // ) = useEffect çağrısı sonu
-  }, []);
+    }
+  }, []); // useEffect burada düzgünce kapanıyor
 
   // App.tsx içindeki return kısmı
   return (
