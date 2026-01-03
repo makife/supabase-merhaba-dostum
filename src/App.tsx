@@ -1,5 +1,5 @@
 // App.tsx - Main Application Component
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import NativeRealtime from "@/plugins/NativeRealtime";
+import { useNativeRealtime } from "@/hooks/useNativeRealtime";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
