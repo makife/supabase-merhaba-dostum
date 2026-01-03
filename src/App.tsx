@@ -15,8 +15,6 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import { ConnectionProvider, useConnection } from "@/contexts/ConnectionContext";
-import { useNativeRealtime } from "@/hooks/useNativeRealtime";
-import { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -481,24 +479,15 @@ const GlobalRematchDialog = () => {
   );
 };
 
-// Native Realtime Manager - Android'de native WebSocket başlatır
+// Native Realtime Manager - ŞİMDİLİK DEVRE DIŞI (Kotlin plugin entegre edilmedi)
+// ConnectionContext + Supabase JS client kullanılıyor
 const NativeRealtimeManager = () => {
-  const { isConnected, connectionState, error, connect } = useNativeRealtime({
-    autoConnect: true,
-    onConnectionChange: (connected) => {
-      console.log(`[NativeRealtimeManager] Bağlantı durumu: ${connected ? 'BAĞLI' : 'BAĞLI DEĞİL'}`);
-    }
-  });
-
+  // Native plugin çalışmıyor, bu component artık sadece log için
   useEffect(() => {
-    console.log(`[NativeRealtimeManager] 🚀 Mount edildi - Native: ${isNativeRealtimeAvailable()}`);
-    console.log(`[NativeRealtimeManager] State: ${connectionState}, Connected: ${isConnected}`);
-    if (error) {
-      console.error(`[NativeRealtimeManager] ❌ Hata:`, error);
-    }
-  }, [connectionState, isConnected, error]);
+    console.log(`[NativeRealtimeManager] ℹ️ Native plugin devre dışı - Supabase JS client kullanılıyor`);
+  }, []);
 
-  return null; // UI yok, sadece bağlantı yönetimi
+  return null;
 };
 
 const App = () => {

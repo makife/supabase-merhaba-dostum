@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { ForegroundService } from "capacitor-foreground-service";
 import { startForegroundServiceStandalone, stopForegroundServiceStandalone } from "@/hooks/useForegroundService";
-import { NativeRealtime, isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
+// NativeRealtime şimdilik devre dışı - Kotlin plugin entegre edilmedi
 
 interface ConnectionState {
   isConnected: boolean;
@@ -185,15 +185,11 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     [forceReconnect],
   );
 
-  // NATIVE APP STATE LISTENER - SADECE WEB VEYA NATIVE REALTIME YOKSA
+  // NATIVE APP STATE LISTENER
   useEffect(() => {
-    // Native Realtime varsa, bu listener'a gerek yok - o kendi yönetiyor
-    if (isNativeRealtimeAvailable()) {
-      console.log("[Connection] ⚠️ Native Realtime aktif - ConnectionContext listener'ları DEVRE DIŞI");
-      return;
-    }
-    
     if (!isNativePlatform) return;
+    
+    console.log("[Connection] 📱 Native app state listener başlatılıyor...");
 
     const setupNativeListener = async () => {
       try {
@@ -277,15 +273,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
             // ARKA PLANA GİTTİ
             console.log("📱 [Connection] ============ ARKA PLANA GEÇİŞ ============");
             
-            // Native Realtime kullanılıyorsa, o kendi FS'ini yönetiyor - burada bir şey yapma
-            if (isNativeRealtimeAvailable()) {
-              console.log("📱 [Connection] Native Realtime aktif - FS yönetimi ona bırakıldı");
-              return;
-            }
-            
-            // Eski web-based realtime için FS başlat (fallback)
-            console.log("📱 [Connection] Web Realtime - FS başlatılıyor (fallback)");
-            
+            // Foreground Service başlat - bağlantıyı korumak için
             if (isAndroidPlatform) {
               startForegroundServiceStandalone({
                 title: "Kelimele Aktif",
@@ -298,12 +286,12 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
                     clearTimeout(foregroundServiceTimeoutRef.current);
                   }
 
-                  // 1 dakika sonra otomatik durdur (native ile aynı)
+                  // 5 dakika sonra otomatik durdur (oyun süresi için yeterli)
                   foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 1dk doldu, servis kapatılıyor");
+                    console.log("⏰ [Connection] 5dk doldu, servis kapatılıyor");
                     await stopForegroundServiceStandalone();
                     foregroundServiceTimeoutRef.current = null;
-                  }, 60000); // 1 dakika
+                  }, 5 * 60 * 1000); // 5 dakika
                 }
               }).catch(err => {
                 console.error("❌ [Connection] Foreground Service hatası:", err);
@@ -351,15 +339,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   }, [forceReconnect, stopHeartbeat]);
 
   // İLK BAĞLANTI - Component mount olduğunda
-  // Native Realtime varsa bu gereksiz - o kendi bağlantısını yönetiyor
   useEffect(() => {
-    // Native Realtime aktifse, sadece basit state set et
-    if (isNativeRealtimeAvailable()) {
-      console.log("[Connection] ⚠️ Native Realtime aktif - ConnectionContext init ATLANIYOR");
-      setState(prev => ({ ...prev, isConnected: true }));
-      return;
-    }
-    
     const initConnection = async () => {
       console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
 
@@ -465,7 +445,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const isHealthy = state.isConnected && !state.isReconnecting;
-  const isUsingNativeRealtime = isNativeRealtimeAvailable();
+  const isUsingNativeRealtime = false; // Şimdilik devre dışı
 
   return (
     <ConnectionContext.Provider
