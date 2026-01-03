@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,7 +50,7 @@ const MarketPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { profile, refreshProfile } = useUser();
+  const { profile, refreshProfile, isSystemConnected } = useUser();
   const { playSound } = useSounds();
   const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription, restoreSubscriptions } = useNativeSubscriptions();
@@ -195,6 +195,19 @@ const MarketPage = () => {
     const expiry = new Date(profile.unlimited_lives_until);
     return expiry > new Date();
   };
+
+  // isSystemConnected değiştiğinde profil yenile (NativeRealtime bağlantısı dahil)
+  const hasRefreshedRef = useRef(false);
+  useEffect(() => {
+    if (isSystemConnected && user && !hasRefreshedRef.current) {
+      console.log('🔄 [MarketPage] isSystemConnected true - profil yeniden yükleniyor...');
+      hasRefreshedRef.current = true;
+      refreshProfile();
+    }
+    if (!isSystemConnected) {
+      hasRefreshedRef.current = false;
+    }
+  }, [isSystemConnected, user]);
 
   // --- Aksiyonlar ---
 
