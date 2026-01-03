@@ -123,7 +123,7 @@ const GameModeCard = ({ mode, onClick }: any) => (
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { profile, isPremium, refreshProfile, getTotalCredits } = useUser();
+  const { profile, isPremium, refreshProfile, getTotalCredits, isSystemConnected } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
@@ -309,6 +309,15 @@ const HomePage = () => {
     };
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
+
+  // isSystemConnected değiştiğinde verileri yenile (NativeRealtime bağlantısı dahil)
+  useEffect(() => {
+    if (isSystemConnected && user) {
+      console.log('🔄 [HomePage] isSystemConnected true - profil ve jokerler yeniden yükleniyor...');
+      refreshProfile();
+      loadJokers();
+    }
+  }, [isSystemConnected, user]);
 
   const handleGameModeClick = (modeId: string) => {
     playSound("buttonClick");
