@@ -722,6 +722,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         updateCredits,
         addBonusCredits,
         consumeCredit,
+        isSystemConnected,
         checkAndRefreshCredits,
         getTotalCredits,
         getDisplayCredits,
