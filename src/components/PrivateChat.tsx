@@ -40,10 +40,9 @@ interface PrivateChatProps {
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
-  const { profile } = useUser();
+  const { profile, isSystemConnected, loading: userLoading } = useUser(); // Hepsini tek seferde alıyoruz
   const { playSound } = useSounds();
   const { sendMessageNotification } = useMobileNotifications();
-  const { profile, isSystemConnected } = useUser();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
