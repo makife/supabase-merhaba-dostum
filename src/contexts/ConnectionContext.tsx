@@ -185,8 +185,14 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
     [forceReconnect],
   );
 
-  // NATIVE APP STATE LISTENER - TEK MERKEZ
+  // NATIVE APP STATE LISTENER - SADECE WEB VEYA NATIVE REALTIME YOKSA
   useEffect(() => {
+    // Native Realtime varsa, bu listener'a gerek yok - o kendi yönetiyor
+    if (isNativeRealtimeAvailable()) {
+      console.log("[Connection] ⚠️ Native Realtime aktif - ConnectionContext listener'ları DEVRE DIŞI");
+      return;
+    }
+    
     if (!isNativePlatform) return;
 
     const setupNativeListener = async () => {
@@ -345,7 +351,15 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   }, [forceReconnect, stopHeartbeat]);
 
   // İLK BAĞLANTI - Component mount olduğunda
+  // Native Realtime varsa bu gereksiz - o kendi bağlantısını yönetiyor
   useEffect(() => {
+    // Native Realtime aktifse, sadece basit state set et
+    if (isNativeRealtimeAvailable()) {
+      console.log("[Connection] ⚠️ Native Realtime aktif - ConnectionContext init ATLANIYOR");
+      setState(prev => ({ ...prev, isConnected: true }));
+      return;
+    }
+    
     const initConnection = async () => {
       console.log("[Connection] 🚀 İlk bağlantı başlatılıyor...");
 
