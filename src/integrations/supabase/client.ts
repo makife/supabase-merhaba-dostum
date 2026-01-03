@@ -74,37 +74,14 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 };
 
-// Client'ı yeniden oluşturmadan sadece realtime bağlantısını yenile
-// Bu şekilde tüm referanslar geçerli kalır!
+// Sadece realtime bağlantısını yenile - MEVCUT BAĞLANTIYI KESME!
+// Bu fonksiyon sadece bağlantı gerçekten koptuysa çağrılmalı
 export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
-  console.log("🔄 [SupabaseClient] ========== REALTIME RECONNECT ==========");
+  console.log("🔄 [SupabaseClient] ========== SOFT RECONNECT ==========");
   
   try {
-    // 1. MEVCUT KANALLARI TEMİZLE
-    console.log("[SupabaseClient] 1️⃣ Kanallar temizleniyor...");
-    try {
-      const channels = supabaseInstance.getChannels();
-      console.log(`[SupabaseClient] ${channels.length} kanal bulundu`);
-      for (const ch of channels) {
-        try { 
-          await supabaseInstance.removeChannel(ch); 
-        } catch {}
-      }
-    } catch (e) {
-      console.log("[SupabaseClient] ⚠️ Kanal temizleme hatası:", e);
-    }
-    
-    // 2. REALTIME BAĞLANTISINI KAPAT
-    console.log("[SupabaseClient] 2️⃣ Realtime bağlantısı kapatılıyor...");
-    try { 
-      (supabaseInstance.realtime as any).disconnect?.(); 
-    } catch {}
-    
-    // Kısa bekle
-    await new Promise(r => setTimeout(r, 200));
-    
-    // 3. SESSION TOKEN GÜNCELLE
-    console.log("[SupabaseClient] 3️⃣ Session kontrol (2s timeout)...");
+    // 1. SESSION TOKEN GÜNCELLE (bağlantıyı kesmeden)
+    console.log("[SupabaseClient] 1️⃣ Session kontrol (2s timeout)...");
     try {
       const sessionResult = await withTimeout(
         supabaseInstance.auth.getSession(),
@@ -132,16 +109,80 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
       console.log("[SupabaseClient] ⚠️ Session hatası:", e);
     }
     
-    // 4. REALTIME BAĞLANTISINI YENİDEN AÇ
-    console.log("[SupabaseClient] 4️⃣ Realtime yeniden başlatılıyor...");
+    // 2. REALTIME DURUMUNU KONTROL ET
+    const realtimeState = (supabaseInstance.realtime as any).connectionState?.();
+    console.log("[SupabaseClient] 2️⃣ Realtime durumu:", realtimeState);
+    
+    // 3. SADECE bağlantı kapalıysa yeniden bağlan
+    if (realtimeState !== 'open' && realtimeState !== 'connecting') {
+      console.log("[SupabaseClient] 3️⃣ Bağlantı kapalı, yeniden bağlanılıyor...");
+      try { 
+        (supabaseInstance.realtime as any).connect?.(); 
+      } catch {}
+    } else {
+      console.log("[SupabaseClient] 3️⃣ Bağlantı zaten açık, dokunulmuyor");
+    }
+    
+    console.log("🎉 [SupabaseClient] ========== SOFT RECONNECT TAMAM ==========");
+    
+  } catch (error) {
+    console.error("[SupabaseClient] ❌ Reconnect hatası:", error);
+  }
+  
+  return supabaseInstance;
+};
+
+// Tam reconnect - sadece gerçekten gerektiğinde kullan (bağlantı tamamen öldüyse)
+export const hardReconnect = async (): Promise<SupabaseClient<Database>> => {
+  console.log("💥 [SupabaseClient] ========== HARD RECONNECT ==========");
+  
+  try {
+    // 1. TÜM KANALLARI TEMİZLE
+    console.log("[SupabaseClient] 1️⃣ Kanallar temizleniyor...");
+    try {
+      const channels = supabaseInstance.getChannels();
+      console.log(`[SupabaseClient] ${channels.length} kanal bulundu`);
+      for (const ch of channels) {
+        try { 
+          await supabaseInstance.removeChannel(ch); 
+        } catch {}
+      }
+    } catch (e) {
+      console.log("[SupabaseClient] ⚠️ Kanal temizleme hatası:", e);
+    }
+    
+    // 2. REALTIME BAĞLANTISINI KAPAT
+    console.log("[SupabaseClient] 2️⃣ Realtime kapatılıyor...");
+    try { 
+      (supabaseInstance.realtime as any).disconnect?.(); 
+    } catch {}
+    
+    await new Promise(r => setTimeout(r, 300));
+    
+    // 3. SESSION TOKEN GÜNCELLE
+    console.log("[SupabaseClient] 3️⃣ Session güncelleniyor...");
+    try {
+      const sessionResult = await withTimeout(
+        supabaseInstance.auth.getSession(),
+        2000,
+        { data: { session: null }, error: null }
+      );
+      
+      if (sessionResult?.data?.session?.access_token) {
+        supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
+      }
+    } catch {}
+    
+    // 4. YENİDEN BAĞLAN
+    console.log("[SupabaseClient] 4️⃣ Yeniden bağlanılıyor...");
     try { 
       (supabaseInstance.realtime as any).connect?.(); 
     } catch {}
     
-    console.log("🎉 [SupabaseClient] ========== RECONNECT TAMAM ==========");
+    console.log("🎉 [SupabaseClient] ========== HARD RECONNECT TAMAM ==========");
     
   } catch (error) {
-    console.error("[SupabaseClient] ❌ Reconnect hatası:", error);
+    console.error("[SupabaseClient] ❌ Hard reconnect hatası:", error);
   }
   
   return supabaseInstance;
