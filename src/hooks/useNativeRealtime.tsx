@@ -1,6 +1,6 @@
 import { useRef, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
-import NativeRealtime from "@/services/nativeRealtimeService";
+import NativeRealtime from "@/plugins/NativeRealtime";
 import { useAppState } from "@/hooks/useAppState";
 import { supabase } from "@/integrations/supabase/client";
 
