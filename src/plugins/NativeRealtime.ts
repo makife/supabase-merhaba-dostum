@@ -1,8 +1,8 @@
-import { registerPlugin, PluginListenerHandle, Capacitor } from '@capacitor/core';
+import { registerPlugin, PluginListenerHandle, Capacitor } from "@capacitor/core";
 
 /**
  * Native Realtime Plugin Interface
- * 
+ *
  * Android tarafında Kotlin ile yazılmış WebSocket service'i ile iletişim kurar.
  * WebView'den bağımsız çalışır, arka planda bile bağlantı kopmaz.
  */
@@ -10,10 +10,10 @@ export interface NativeRealtimePlugin {
   /**
    * WebSocket bağlantısını başlat
    */
-  connect(options: { 
-    url: string; 
-    apiKey: string; 
-    accessToken?: string 
+  connect(options: {
+    url: string;
+    apiKey: string;
+    accessToken?: string;
   }): Promise<{ success: boolean; message?: string }>;
 
   /**
@@ -24,12 +24,12 @@ export interface NativeRealtimePlugin {
   /**
    * Kanala subscribe ol
    */
-  subscribe(options: { 
-    topic: string; 
-    event?: string; 
-    schema?: string; 
-    table?: string; 
-    filter?: string 
+  subscribe(options: {
+    topic: string;
+    event?: string;
+    schema?: string;
+    table?: string;
+    filter?: string;
   }): Promise<{ success: boolean; topic: string }>;
 
   /**
@@ -40,11 +40,7 @@ export interface NativeRealtimePlugin {
   /**
    * Broadcast mesaj gönder
    */
-  broadcast(options: { 
-    topic: string; 
-    event: string; 
-    payload: string 
-  }): Promise<{ success: boolean }>;
+  broadcast(options: { topic: string; event: string; payload: string }): Promise<{ success: boolean }>;
 
   /**
    * Bağlantı durumunu kontrol et
@@ -60,13 +56,13 @@ export interface NativeRealtimePlugin {
    * Event listener ekle
    */
   addListener(
-    eventName: 'realtimeMessage',
-    listenerFunc: (data: RealtimeMessageEvent) => void
+    eventName: "realtimeMessage",
+    listenerFunc: (data: RealtimeMessageEvent) => void,
   ): Promise<PluginListenerHandle>;
 
   addListener(
-    eventName: 'connectionState',
-    listenerFunc: (data: ConnectionStateEvent) => void
+    eventName: "connectionState",
+    listenerFunc: (data: ConnectionStateEvent) => void,
   ): Promise<PluginListenerHandle>;
 
   /**
@@ -82,27 +78,29 @@ export interface RealtimeMessageEvent {
 }
 
 export interface ConnectionStateEvent {
-  state: 'connecting' | 'connected' | 'disconnected';
+  state: "connecting" | "connected" | "disconnected";
   reason?: string;
 }
 
 // Plugin'i kaydet (sadece native platformda)
-const NativeRealtimeImpl = registerPlugin<NativeRealtimePlugin>('NativeRealtime', {
+const NativeRealtimeImpl = registerPlugin<NativeRealtimePlugin>("NativeRealtime", {
   web: undefined, // Web'de çalışmaz
 });
 
 /**
  * Native Realtime Plugin
- * 
+ *
  * Sadece Android'de çalışır. Web'de null döner.
  */
 export const NativeRealtime = Capacitor.isNativePlatform() ? NativeRealtimeImpl : null;
 
 /**
  * Native Realtime kullanılabilir mi?
- * 
+ *
  * Android'de Kotlin WebSocket plugin'i kullanılır.
  */
 export const isNativeRealtimeAvailable = (): boolean => {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 };
+
+export default NativeRealtime;
