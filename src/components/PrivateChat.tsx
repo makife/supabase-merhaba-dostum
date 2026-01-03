@@ -40,9 +40,10 @@ interface PrivateChatProps {
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
-  const { profile, isSystemConnected } = useUser();
+  const { profile } = useUser();
   const { playSound } = useSounds();
   const { sendMessageNotification } = useMobileNotifications();
+  const { profile, isSystemConnected } = useUser();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -141,14 +142,6 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   };
 
-  // isSystemConnected değiştiğinde mesajları yenile
-  useEffect(() => {
-    if (isSystemConnected && chatId && user?.id) {
-      console.log('🔄 [PrivateChat] isSystemConnected true - mesajlar yeniden yükleniyor...');
-      fetchMessages();
-    }
-  }, [isSystemConnected, chatId, user?.id]);
-
   // TEK BİR REAL-TIME SUBSCRIPTION
   useEffect(() => {
     if (!chatId || !user?.id) return;
@@ -224,8 +217,9 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
         if (status === "SUBSCRIBED") {
           console.log("✅ Private chat subscription active");
-        } else if (status === "CHANNEL_ERROR") {
-          console.error("❌ Private channel error detected");
+        } else if (status === "CLOSED" && isSystemConnected) {
+          // İŞTE KRİTİK NOKTA: JS kapandı ama Native bağlıysa kullanıcıya hissettirme!
+          console.log("🤫 JS kanalı kapandı ama Native (Kotlin) hala bağlı. UI korunuyor.");
         }
       });
 
