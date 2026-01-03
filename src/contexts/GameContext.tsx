@@ -164,7 +164,7 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (..
 
 export const GameProvider = ({ children }: GameProviderProps) => {
   const { user } = useAuth();
-  const { refreshProfile } = useUser();
+  const { refreshProfile, isSystemConnected } = useUser();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentRoom, setCurrentRoom] = useState<GameRoom | null>(null);
@@ -2450,6 +2450,43 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   useEffect(() => {
     cleanupOldRooms();
   }, [cleanupOldRooms]);
+
+  // isSystemConnected değiştiğinde mevcut oda ve katılımcı verilerini yenile
+  useEffect(() => {
+    if (!isSystemConnected || !currentRoom?.id || !user?.id) return;
+
+    console.log('🔄 [GameContext] isSystemConnected true - oda ve katılımcılar yeniden yükleniyor...');
+
+    // Mevcut odayı yeniden fetch et
+    (async () => {
+      try {
+        const { data: roomData } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("id", currentRoom.id)
+          .maybeSingle();
+
+        if (roomData) {
+          setCurrentRoom(roomData as GameRoom);
+        }
+
+        // Katılımcıları yeniden fetch et
+        const { data: parts } = await supabase
+          .from("game_participants")
+          .select("*, profiles:user_id(id, username, avatar_url)")
+          .eq("room_id", currentRoom.id);
+
+        if (parts) {
+          const deduped = dedupeParticipants(parts as any, roomData?.game_mode);
+          setParticipants(deduped);
+        }
+
+        console.log('✅ [GameContext] Oda ve katılımcılar yenilendi');
+      } catch (error) {
+        console.error('❌ [GameContext] Yenileme hatası:', error);
+      }
+    })();
+  }, [isSystemConnected, currentRoom?.id, user?.id]);
 
   return (
     <GameContext.Provider
