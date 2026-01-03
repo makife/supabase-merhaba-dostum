@@ -202,13 +202,10 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
           );
 
           if (isActive) {
-            // ÖN PLANA GELDİ - HEPSİNİ SIFIRLA VE YENİDEN BAŞ
-            console.log("🚀 [Connection] ÖN PLANA GELDİ - TAM RECONNECT BAŞLIYOR!");
+            // ÖN PLANA GELDİ
+            console.log("🚀 [Connection] ============ ÖN PLANA GELDİ ============");
             
-            // 1. Reconnect flag'ini zorla sıfırla (takılma durumunu önle)
-            isReconnectingRef.current = false;
-            
-            // 2. Timeout'ları temizle
+            // 1. Timeout'ları temizle
             if (foregroundServiceTimeoutRef.current) {
               clearTimeout(foregroundServiceTimeoutRef.current);
               foregroundServiceTimeoutRef.current = null;
@@ -218,90 +215,102 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
               reconnectTimeoutRef.current = null;
             }
 
-            // 3. Foreground Service'i durdur
+            // 2. Foreground Service'i durdur
             if (isAndroidPlatform) {
               stopForegroundServiceStandalone().catch(() => {});
             }
 
-            // 4. HEMEN reconnect başlat - hiç bekleme yok!
-            console.log("🔄 [Connection] forceReconnect HEMEN başlatılıyor...");
-            forceReconnect();
+            // 3. ÖNCE BAĞLANTIYI TEST ET - kopmuşsa reconnect yap
+            console.log("🔍 [Connection] Bağlantı test ediliyor...");
             
-          } else {
-            // ARKA PLANA GİTTİ
-            
-            // 1. Foreground Service başlat (sadece Android)
-            if (isAndroidPlatform) {
-              console.log("📱 [Connection] Foreground Service başlatılıyor...");
-              try {
-                const serviceStarted = await startForegroundServiceStandalone({
-                  title: "Kelimele Aktif",
-                  description: "🔗 Bağlantı korunuyor...",
-                });
-
-                if (serviceStarted) {
-                  console.log("✅ [Connection] Foreground Service başarıyla başladı");
-
-                  // Önceki timeout varsa temizle
-                  if (foregroundServiceTimeoutRef.current) {
-                    clearTimeout(foregroundServiceTimeoutRef.current);
-                  }
-
-                  // 5 dakika sonra otomatik durdur
-                  foregroundServiceTimeoutRef.current = setTimeout(async () => {
-                    console.log("⏰ [Connection] 5dk doldu, servis otomatik kapatılıyor");
-                    await stopForegroundServiceStandalone();
-                    foregroundServiceTimeoutRef.current = null;
-                  }, 300000);
-                } else {
-                  console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
-                }
-              } catch (err) {
-                console.error("❌ [Connection] Foreground Service hatası:", err);
-              }
-            }
-
-            // 2. ARKA PLANDA AKTİF KEEP-ALIVE PİNG BAŞLAT
-            // Foreground service varsa bile WebSocket idle kalınca kapanıyor
-            // Bu yüzden her 10 saniyede bir ping atarak bağlantıyı canlı tutuyoruz
-            console.log("📱 [Connection] Arka plan keep-alive ping BAŞLATILIYOR (her 10sn)");
-            
-            // Mevcut heartbeat'i durdur ve daha agresif ping başlat
-            stopHeartbeat();
-            
-            // Arka plan için daha sık ping (10 saniye)
-            heartbeatRef.current = setInterval(async () => {
-              if (!isMountedRef.current) return;
-              
+            const testConnection = async () => {
               try {
                 const client = getSupabaseClient();
                 const startTime = Date.now();
                 const { data, error } = await client.rpc("get_server_time");
                 const latency = Date.now() - startTime;
                 
-                if (error) {
-                  console.log(`📱 [Background Ping] ❌ HATA (${latency}ms):`, error.message);
+                if (!error && data) {
+                  // ✅ BAĞLANTI SAĞLAM - reconnect'e gerek yok!
+                  console.log(`✅ [Connection] Bağlantı SAĞLAM! (${latency}ms) - Reconnect ATLANIYOR`);
+                  
+                  // Sadece state güncelle ve event yayınla
+                  if (isMountedRef.current) {
+                    setState(prev => ({ ...prev, isConnected: true, isReconnecting: false }));
+                  }
+                  
+                  // Componentlere veri yenilemesi için haber ver
+                  window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+                  }, 500);
+                  
+                  // Heartbeat'i yeniden başlat
+                  startHeartbeat();
+                  
                 } else {
-                  console.log(`📱 [Background Ping] ✅ OK (${latency}ms) - Bağlantı canlı`);
+                  // ❌ BAĞLANTI KOPMUŞ - tam reconnect yap
+                  console.log(`❌ [Connection] Bağlantı KOPMUŞ (hata: ${error?.message}) - Reconnect başlatılıyor...`);
+                  isReconnectingRef.current = false; // Flag'i sıfırla
+                  forceReconnect();
                 }
               } catch (e) {
-                console.log("📱 [Background Ping] ❌ Exception:", e);
+                console.log("❌ [Connection] Bağlantı testi exception:", e);
+                isReconnectingRef.current = false;
+                forceReconnect();
               }
-            }, 10000); // Her 10 saniyede bir ping
+            };
             
-            // İlk ping'i hemen at
-            try {
-              const client = getSupabaseClient();
-              client.rpc("get_server_time").then(({ error }) => {
-                if (error) {
-                  console.log("📱 [Connection] İlk arka plan ping hatası:", error.message);
+            // Kısa gecikme ile test et (Android'in kendini toplaması için)
+            setTimeout(testConnection, 200);
+            
+          } else {
+            // ARKA PLANA GİTTİ
+            // ÖNEMLİ: Burada HİÇBİR ŞEY YAPMA! Bağlantıyı kesme, durdurma, değiştirme!
+            // Sadece Foreground Service başlat ve bağlantının kendi haline bırak
+            
+            console.log("📱 [Connection] ============ ARKA PLANA GEÇİŞ ============");
+            console.log("📱 [Connection] ⚠️ Bağlantı KORUNUYOR - hiçbir şey kapatılmıyor!");
+            
+            // SADECE Foreground Service başlat (Android için)
+            if (isAndroidPlatform) {
+              // SENKRON bir şekilde - await KULLANMA!
+              // Await kullanırsan Android uygulama arka plana geçmeden önce bekler
+              // ve bu sırada bağlantı kopabilir
+              startForegroundServiceStandalone({
+                title: "Kelimele Aktif",
+                description: "🔗 Bağlantı korunuyor...",
+              }).then(serviceStarted => {
+                if (serviceStarted) {
+                  console.log("✅ [Connection] Foreground Service başladı");
+                  
+                  // Önceki timeout varsa temizle
+                  if (foregroundServiceTimeoutRef.current) {
+                    clearTimeout(foregroundServiceTimeoutRef.current);
+                  }
+
+                  // 10 dakika sonra otomatik durdur
+                  foregroundServiceTimeoutRef.current = setTimeout(async () => {
+                    console.log("⏰ [Connection] 10dk doldu, servis kapatılıyor");
+                    await stopForegroundServiceStandalone();
+                    foregroundServiceTimeoutRef.current = null;
+                  }, 600000); // 10 dakika
                 } else {
-                  console.log("📱 [Connection] ✅ İlk arka plan ping başarılı");
+                  console.warn("⚠️ [Connection] Foreground Service başlatılamadı");
                 }
+              }).catch(err => {
+                console.error("❌ [Connection] Foreground Service hatası:", err);
               });
-            } catch (e) {
-              console.log("📱 [Connection] İlk ping exception:", e);
             }
+            
+            // ❌ HİÇBİR ŞEY DAHA YAPMA!
+            // - stopHeartbeat() ÇAĞIRMA
+            // - ping atma
+            // - bağlantı testi yapma
+            // - realtime'ı disconnect etme
+            // Bağlantı zaten açık, kendi haline bırak!
+            
+            console.log("📱 [Connection] Heartbeat ve bağlantı OLDUĞU GİBİ KALIYOR");
           }
         });
 
@@ -319,7 +328,7 @@ export const ConnectionProvider = ({ children }: { children: ReactNode }) => {
         appListenerRef.current = null;
       }
     };
-  }, [forceReconnect, stopHeartbeat]);
+  }, [forceReconnect]);
 
   // WEB VISIBILITY LISTENER
   useEffect(() => {
