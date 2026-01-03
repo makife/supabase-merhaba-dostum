@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,9 @@ import {
 
 const ProfilePage = () => {
   const { user } = useAuth();
-  const { profile } = useUser();
+  const { profile, isSystemConnected } = useUser();
   const navigate = useNavigate();
+  const hasRefreshedRef = useRef(false);
   const location = useLocation();
   const { jokers } = useJokerInventory();
   const { uploadFromCamera, uploadFromGallery, uploadGameAvatar, deleteAvatar, uploading } = useAvatarUpload();
@@ -444,6 +446,52 @@ const ProfilePage = () => {
   useEffect(() => {
     fetchBadges();
   }, [viewedUserId]);
+
+  // isSystemConnected değiştiğinde verileri yenile (NativeRealtime bağlantısı dahil)
+  useEffect(() => {
+    if (isSystemConnected && viewedUserId && !hasRefreshedRef.current) {
+      console.log('🔄 [ProfilePage] isSystemConnected true - profil verileri yeniden yükleniyor...');
+      hasRefreshedRef.current = true;
+      
+      // Profile verilerini yeniden yükle
+      const refreshProfile = async () => {
+        const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle();
+        
+        if (data) {
+          const levelData = calculateLevel(data.total_score || 0);
+          const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
+
+          setViewedProfile({ avatar_url: data.avatar_url });
+          
+          setProfileData((prev) => ({
+            ...prev,
+            username: username,
+            totalGames: data.total_games || 0,
+            wins: data.wins || 0,
+            losses: data.losses || 0,
+            totalScore: data.total_score || 0,
+            winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
+            longestWord: data.longest_word || "",
+            longestWordLength: data.longest_word_length || 0,
+            currentStreak: data.win_streak || 0,
+            level: levelData.level,
+            experience: levelData.experience,
+            nextLevelExp: levelData.nextLevelExp,
+            premiumUntil: data.premium_until,
+            averageScore: data.average_score || 0,
+          }));
+        }
+      };
+      
+      refreshProfile();
+      fetchBadges();
+    }
+    
+    // Bağlantı koptuğunda flag'i resetle
+    if (!isSystemConnected) {
+      hasRefreshedRef.current = false;
+    }
+  }, [isSystemConnected, viewedUserId]);
 
   const handleEditToggle = () => {
     if (isEditing) {

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -44,6 +45,7 @@ interface UserStats {
 const LeaderboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isSystemConnected } = useUser();
   const { toast } = useToast();
   const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderboardEntry[]>([]);
   const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderboardEntry[]>([]);
@@ -226,6 +228,14 @@ const LeaderboardPage = () => {
       window.removeEventListener('supabase-reconnected', handleReconnect);
     };
   }, [user]);
+
+  // isSystemConnected değiştiğinde verileri yenile (NativeRealtime bağlantısı dahil)
+  useEffect(() => {
+    if (isSystemConnected) {
+      console.log('🔄 [LeaderboardPage] isSystemConnected true - veriler yeniden yükleniyor...');
+      Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+    }
+  }, [isSystemConnected]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
