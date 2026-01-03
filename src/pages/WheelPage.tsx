@@ -32,7 +32,7 @@ const WHEEL_COLORS = {
 
 const WheelPage = () => {
   const { user } = useAuth();
-  const { profile, refreshProfile } = useUser();
+  const { profile, refreshProfile, isSystemConnected } = useUser();
   const { updateInventory } = useUserPurchases();
   const { playSpecialSound } = useSounds();
   const navigate = useNavigate();
@@ -78,6 +78,14 @@ const WheelPage = () => {
       checkDailySpinAvailability();
     }
   }, [user]);
+
+  // isSystemConnected değiştiğinde verileri yenile
+  useEffect(() => {
+    if (isSystemConnected && user) {
+      console.log('🔄 [WheelPage] isSystemConnected true - çark durumu yeniden yükleniyor...');
+      checkDailySpinAvailability();
+    }
+  }, [isSystemConnected, user]);
 
   const checkDailySpinAvailability = async () => {
     if (!user) return;
