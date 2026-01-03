@@ -1,3 +1,5 @@
+import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
+import { useAppState } from "@/hooks/useAppState";
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +62,7 @@ interface UserContextType {
   onlineUsers: OnlineUser[];
   isUserOnline: (userId: string) => boolean;
   refreshOnlineUsers: () => Promise<void>;
+  isSystemConnected: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -78,6 +81,8 @@ interface UserProviderProps {
 
 export const UserProvider = ({ children }: UserProviderProps) => {
   const { user } = useAuth();
+  const [isSystemConnected, setIsSystemConnected] = useState(true);
+  const isNative = isNativeRealtimeAvailable();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -86,6 +91,40 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const isRefreshingCreditsRef = useRef(false);
   const lastNotifiedTotalRef = useRef<number>(0);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
+
+  // 1. NATIVE BAĞLANTIYI DİNLE
+  useEffect(() => {
+    if (!isNative) return;
+
+    const handleNativeState = (data: { state: string }) => {
+      // Native bağlı olduğu sürece sisteme "BAĞLIYIZ" diyoruz
+      if (data.state === "connected") {
+        setIsSystemConnected(true);
+        console.log("🌐 [UserContext] Native üzerinden internet canlı.");
+      } else if (data.state === "disconnected") {
+        setIsSystemConnected(false);
+      }
+    };
+
+    NativeRealtime.addListener("connectionState", handleNativeState);
+    return () => {
+      NativeRealtime.removeAllListeners();
+    };
+  }, [isNative]);
+
+  // 2. KOTLIN SAYAÇ YÖNETİMİ (Kamera açılınca veya arkaya gidince)
+  useAppState({
+    onBackground: () => {
+      console.log("📱 Uygulama arkada. Kotlin 60sn saymaya başladı...");
+      if (isNative) NativeRealtime.startBackgroundTimer();
+    },
+    onForeground: () => {
+      console.log("▶️ Uygulama önde. Kotlin sayacı durduruldu.");
+      if (isNative) NativeRealtime.stopBackgroundTimer();
+      // JS koptuysa bile burada zorla profili bir kez tazele
+      refreshProfile(true);
+    },
+  });
 
   // Hydrate profile from cache immediately on user change to avoid avatar flicker
   useEffect(() => {
@@ -260,15 +299,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         game_credits: newBase,
         bonus_credits: newTotalBonus,
       };
-      
+
       if (newBase >= 5) {
         updateData.last_credit_refresh = null;
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id);
 
       if (error) throw error;
 
@@ -356,17 +392,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   // Check both premium_until and unlimited_lives_until for premium/unlimited status
   const isPremium = (() => {
     const now = new Date();
-    
+
     // Check permanent premium subscription
     if (profile?.premium_until && new Date(profile.premium_until) > now) {
       return true;
     }
-    
+
     // Check temporary unlimited lives (1 hour or 24 hour packages from market)
     if (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now) {
       return true;
     }
-    
+
     return false;
   })();
 
@@ -409,10 +445,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         updateData.last_credit_refresh = new Date().toISOString();
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id);
 
       if (error) throw error;
 
