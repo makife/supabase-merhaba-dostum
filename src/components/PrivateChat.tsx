@@ -40,7 +40,7 @@ interface PrivateChatProps {
 
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
-  const { profile } = useUser();
+  const { profile, isSystemConnected } = useUser();
   const { playSound } = useSounds();
   const { sendMessageNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
@@ -140,6 +140,14 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       console.error("Error in markMessagesAsRead:", error);
     }
   };
+
+  // isSystemConnected değiştiğinde mesajları yenile
+  useEffect(() => {
+    if (isSystemConnected && chatId && user?.id) {
+      console.log('🔄 [PrivateChat] isSystemConnected true - mesajlar yeniden yükleniyor...');
+      fetchMessages();
+    }
+  }, [isSystemConnected, chatId, user?.id]);
 
   // TEK BİR REAL-TIME SUBSCRIPTION
   useEffect(() => {

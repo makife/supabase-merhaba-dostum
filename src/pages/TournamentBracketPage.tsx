@@ -29,7 +29,7 @@ const TournamentBracketPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { profile, refreshProfile } = useUser();
+  const { profile, refreshProfile, isSystemConnected } = useUser();
   const { playSpecialSound } = useSounds();
 
   const {
@@ -126,6 +126,14 @@ const TournamentBracketPage = () => {
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
+
+  // isSystemConnected değiştiğinde verileri yenile
+  useEffect(() => {
+    if (isSystemConnected && tournamentId) {
+      console.log('🔄 [TournamentBracketPage] isSystemConnected true - turnuva detayları yeniden yükleniyor...');
+      fetchTournamentDetails(tournamentId);
+    }
+  }, [isSystemConnected, tournamentId]);
 
   useEffect(() => {
     if (currentTournament?.current_round) {

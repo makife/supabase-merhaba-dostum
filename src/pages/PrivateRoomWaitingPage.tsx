@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSounds } from "@/hooks/useSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 
 const PrivateRoomWaitingPage = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,8 @@ const PrivateRoomWaitingPage = () => {
   const { toast } = useToast();
   const { playSound } = useSounds();
   const { user } = useAuth();
+  const { isSystemConnected } = useUser();
+  const hasRefreshedRef = useRef(false);
 
   const roomCode = searchParams.get("code");
   const roomId = searchParams.get("roomId");
@@ -141,6 +144,34 @@ const PrivateRoomWaitingPage = () => {
       channel.unsubscribe();
     };
   }, [roomCode, roomId, gameType, user, navigate, navigated]);
+
+  // isSystemConnected değiştiğinde katılımcıları kontrol et
+  useEffect(() => {
+    if (isSystemConnected && roomId && !navigated && !hasRefreshedRef.current) {
+      console.log('🔄 [PrivateRoomWaitingPage] isSystemConnected true - katılımcılar kontrol ediliyor...');
+      hasRefreshedRef.current = true;
+      // Katılımcı kontrolü için mevcut checkAndNavigate mantığını tetikle
+      (async () => {
+        const { data: parts } = await supabase
+          .from("game_participants")
+          .select("*")
+          .eq("room_id", roomId);
+        if (parts && parts.length >= 2 && !navigated) {
+          const { data: room } = await supabase
+            .from("game_rooms")
+            .select("game_mode, game_type_new")
+            .eq("id", roomId)
+            .single();
+          const type = room?.game_type_new || (room?.game_mode?.includes('score') ? 'score' : 'timed');
+          const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+          navigate(`${basePath}?room=${roomId}&type=${type}`);
+        }
+      })();
+    }
+    if (!isSystemConnected) {
+      hasRefreshedRef.current = false;
+    }
+  }, [isSystemConnected, roomId, navigated, navigate]);
 
   const copyRoomCode = async () => {
     if (roomCode) {
