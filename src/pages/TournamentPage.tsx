@@ -12,11 +12,20 @@ import { toast } from "sonner";
 const TournamentPage = () => {
   const navigate = useNavigate();
   const { tournaments, loading, createTournament, joinTournament, fetchTournaments, hasLeftTournament } = useTournamentContext();
-  const { profile, isPremium } = useUser();
+  const { profile, isPremium, isSystemConnected } = useUser();
 
+  // isSystemConnected ile bağlantı durumunu kontrol et
+  // JS kopsa bile Native bağlıysa sayfa çalışmaya devam eder
   useEffect(() => {
     fetchTournaments();
   }, []);
+
+  // Bağlantı geri geldiğinde turnuvaları yenile
+  useEffect(() => {
+    if (isSystemConnected) {
+      fetchTournaments();
+    }
+  }, [isSystemConnected]);
 
   const handleCreateTournament = async () => {
     // Kredi kontrolü - minimum 3 hak gerekli

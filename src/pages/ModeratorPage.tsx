@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ interface UserBan {
 
 const ModeratorPage = () => {
   const { user } = useAuth();
+  const { isSystemConnected } = useUser();
   const navigate = useNavigate();
   const [reports, setReports] = useState<MessageReport[]>([]);
   const [bans, setBans] = useState<UserBan[]>([]);
@@ -77,7 +79,7 @@ const ModeratorPage = () => {
     };
   }, []);
 
-  // Reconnect event listener - arka plandan dönünce verileri yenile
+  // Reconnect event listener + isSystemConnected ile arka plandan dönünce verileri yenile
   useEffect(() => {
     const handleReconnect = () => {
       console.log('🔄 [ModeratorPage] Reconnect - veriler yeniden yükleniyor...');
@@ -86,10 +88,17 @@ const ModeratorPage = () => {
     };
 
     window.addEventListener('supabase-reconnected', handleReconnect);
+
+    // isSystemConnected true olduğunda verileri yenile (JS kopsa bile Native bağlıysa)
+    if (isSystemConnected) {
+      fetchReports();
+      fetchBans();
+    }
+
     return () => {
       window.removeEventListener('supabase-reconnected', handleReconnect);
     };
-  }, []);
+  }, [isSystemConnected]);
 
   const fetchReports = async () => {
     try {

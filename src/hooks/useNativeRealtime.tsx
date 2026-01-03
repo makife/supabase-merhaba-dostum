@@ -72,23 +72,25 @@ export function useNativeRealtime() {
     }
   }, [isNative]);
 
-  // 3. ARKA PLAN YÖNETİMİ (1 DAKİKA KURALI)
+  // 3. ARKA PLAN YÖNETİMİ - Artık useAppForegroundState tarafından yönetiliyor
+  // Kotlin sayaç (startBackgroundTimer/stopBackgroundTimer) useAppForegroundState içinde çağrılıyor
+  // Bu hook sadece JS tarafında 1 dakika sonra disconnect yapıyor
   useAppState({
     onBackground: () => {
-      console.log("📱 Arka plana geçildi. 60 saniyelik geri sayım başladı...");
-      // 1 dakika sonra fişi çeken sayaç
+      console.log("📱 [useNativeRealtime] Arka plana geçildi. JS tarafında 60sn sayaç başladı...");
+      // 1 dakika sonra JS tarafında disconnect (Kotlin kendi sayacıyla zaten yönetiyor)
       foregroundTimerRef.current = setTimeout(async () => {
-        console.log("⏰ 1 dakika doldu. Arka planda pil tüketmemek için bağlantı kesiliyor.");
+        console.log("⏰ [useNativeRealtime] 1 dakika doldu. JS tarafında bağlantı kesiliyor.");
         await NativeRealtime?.disconnect();
         foregroundTimerRef.current = null;
       }, BACKGROUND_LIMIT);
     },
     onForeground: () => {
-      // Eğer 1 dakika dolmadan geri gelirse sayacı iptal et
+      // Eğer 1 dakika dolmadan geri gelirse JS sayacını iptal et
       if (foregroundTimerRef.current) {
         clearTimeout(foregroundTimerRef.current);
         foregroundTimerRef.current = null;
-        console.log("▶️ Oyuncu geri geldi, sayaç durduruldu. Bağlantı devam ediyor.");
+        console.log("▶️ [useNativeRealtime] Oyuncu geri geldi, JS sayacı durduruldu.");
       }
     },
   });

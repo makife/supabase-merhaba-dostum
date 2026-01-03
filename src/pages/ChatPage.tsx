@@ -44,7 +44,7 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { profile, onlineUsers, isUserOnline } = useUser();
+  const { profile, onlineUsers, isUserOnline, isSystemConnected } = useUser();
 
   const { playSound } = useSounds();
   const [viewMode, setViewMode] = useState<ViewMode>("global");
@@ -59,6 +59,7 @@ export default function ChatPage() {
   const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
 
   // Reconnect event listener - arka plandan dönünce verileri yenile
+  // isSystemConnected ile bağlantı durumunu kontrol et (JS kopsa bile Native bağlıysa çalışır)
   useEffect(() => {
     const handleReconnect = () => {
       console.log('🔄 [ChatPage] Reconnect - veriler yeniden yükleniyor...');
@@ -70,10 +71,17 @@ export default function ChatPage() {
     };
 
     window.addEventListener('supabase-reconnected', handleReconnect);
+    
+    // isSystemConnected true olduğunda da verileri yenile
+    if (isSystemConnected && user?.id) {
+      fetchAllUsers();
+      fetchUnreadCounts();
+    }
+
     return () => {
       window.removeEventListener('supabase-reconnected', handleReconnect);
     };
-  }, [user?.id]);
+  }, [user?.id, isSystemConnected]);
 
   // Yasak kontrolü
   useEffect(() => {
