@@ -2495,23 +2495,24 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     console.log("🔧 Real-time subscriptions active (RealtimeManager + Presence)");
 
-    // Cleanup
+    // ⚠️ CLEANUP DEVRE DIŞI - Bu cleanup bağlantıyı öldürüyordu!
+    // Kanallar açık kalacak, bağlantı korunacak
     return () => {
-      console.log("🔌 Cleaning up real-time subscriptions for room:", subscriptionRoomId.slice(-8));
+      console.log("🔌 ⚠️ Real-time cleanup ATLANYOR (bağlantı koruması) - room:", subscriptionRoomId.slice(-8));
       // Reset countdown guard for next room/game
       lastCountdownAtRef.current = null;
 
-      // Presence untrack & cleanup
-      presenceChannel.untrack();
-      supabase.removeChannel(presenceChannel);
+      // ❌ DEVRE DIŞI: Presence untrack & cleanup - bağlantıyı öldürüyordu
+      // presenceChannel.untrack();
+      // supabase.removeChannel(presenceChannel);
 
-      // RealtimeManager cleanup
-      if (participantsChannel) {
-        realtimeManager.unsubscribe(`game_participants-room_id=eq.${subscriptionRoomId}`, user.id);
-      }
-      if (roomChannel) {
-        realtimeManager.unsubscribe(`game_rooms-id=eq.${subscriptionRoomId}`, user.id);
-      }
+      // ❌ DEVRE DIŞI: RealtimeManager cleanup - bağlantıyı öldürüyordu  
+      // if (participantsChannel) {
+      //   realtimeManager.unsubscribe(`game_participants-room_id=eq.${subscriptionRoomId}`, user.id);
+      // }
+      // if (roomChannel) {
+      //   realtimeManager.unsubscribe(`game_rooms-id=eq.${subscriptionRoomId}`, user.id);
+      // }
 
       // Clear timers
       pendingTimers.forEach((t) => clearTimeout(t));

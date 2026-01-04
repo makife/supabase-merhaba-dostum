@@ -250,9 +250,10 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         }
       });
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🧹 Cleaning up private real-time channel");
-      supabase.removeChannel(channel);
+      console.log("⚠️ [PrivateChat] Cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
   }, [chatId, user?.id]);
 

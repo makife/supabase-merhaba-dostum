@@ -37,64 +37,12 @@ class RealtimeManager {
     }
   }
 
-  // Tüm kanalları yeniden oluştur (reconnect sonrası)
+  // ⚠️ DEVRE DIŞI: Bu fonksiyon removeChannel çağırıyor ve bağlantıyı öldürüyordu
+  // Artık hiçbir şey yapmıyor - sadece log atıyor
   private async recreateAllChannels(): Promise<void> {
-    const client = getSupabaseClient();
-    const channelInfos = Array.from(this.channels.entries());
-    
-    // Önce tüm eski kanalları temizle
-    for (const [channelKey, channelInfo] of channelInfos) {
-      try {
-        client.removeChannel(channelInfo.channel);
-      } catch (e) {
-        // Sessizce devam
-      }
-    }
-    
-    // Kısa bekleme
-    await new Promise(r => setTimeout(r, 300));
-    
-    // Şimdi yeniden oluştur
-    for (const [channelKey, oldInfo] of channelInfos) {
-      try {
-        console.log(`🆕 [RealtimeManager] Recreating channel: ${channelKey}`);
-        
-        const channel = client.channel(channelKey);
-        
-        // Postgres changes subscription
-        if (oldInfo.callback) {
-          const changeConfig: any = {
-            event: '*',
-            schema: 'public',
-            table: oldInfo.table
-          };
-          
-          if (oldInfo.filter) {
-            changeConfig.filter = oldInfo.filter;
-          }
-          
-          channel.on('postgres_changes', changeConfig, oldInfo.callback);
-        }
-
-        // Subscribe
-        channel.subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`✅ [RealtimeManager] Channel ${channelKey} re-subscribed`);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error(`❌ [RealtimeManager] Channel ${channelKey} error:`, err);
-          }
-        });
-
-        // Güncelle
-        oldInfo.channel = channel;
-        oldInfo.lastActivity = Date.now();
-        
-      } catch (e) {
-        console.error(`❌ [RealtimeManager] Failed to recreate channel ${channelKey}:`, e);
-      }
-    }
-    
-    console.log(`✅ [RealtimeManager] ${channelInfos.length} kanal yeniden oluşturuldu`);
+    console.log('⚠️ [RealtimeManager] recreateAllChannels DEVRE DIŞI - bağlantı koruması aktif');
+    // Eski kanalları temizleme ve yeniden oluşturma devre dışı
+    // Bağlantı kendi kendine toparlanacak
   }
 
   // Ana subscription metodu
@@ -148,15 +96,19 @@ class RealtimeManager {
     }
 
     // Subscribe ve error handling
+    // ⚠️ HATA DURUMUNDA KANAL'I KAPATMIYORUZ - sadece log atıyoruz
+    // Cleanup bağlantıyı öldürüyordu!
     channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         console.log(`✅ Channel ${channelKey} subscribed successfully`);
       } else if (status === 'CHANNEL_ERROR') {
         console.error(`❌ Channel ${channelKey} error:`, err);
-        this.forceCleanupChannel(channelKey);
+        // ❌ DEVRE DIŞI: this.forceCleanupChannel(channelKey);
+        console.log(`⚠️ [RealtimeManager] Kanal hatası, cleanup ATLANYOR (bağlantı koruması)`);
       } else if (status === 'TIMED_OUT') {
         console.warn(`⏰ Channel ${channelKey} timed out`);
-        this.forceCleanupChannel(channelKey);
+        // ❌ DEVRE DIŞI: this.forceCleanupChannel(channelKey);
+        console.log(`⚠️ [RealtimeManager] Timeout, cleanup ATLANYOR (bağlantı koruması)`);
       }
     });
 
@@ -177,39 +129,20 @@ class RealtimeManager {
     return channel;
   }
 
-  // Subscription'ı kapat
+  // ⚠️ DEVRE DIŞI: Subscription'ı kapat - bu bağlantıyı öldürüyordu
   unsubscribe(channelKey: string, userId: string): void {
-    const channelInfo = this.channels.get(channelKey);
-    if (!channelInfo) return;
-
-    // Subscriber'ı kaldır
-    const subscriberKeys = Array.from(channelInfo.subscribers);
-    const userSubscribers = subscriberKeys.filter(key => key.startsWith(userId));
-    
-    userSubscribers.forEach(key => {
-      channelInfo.subscribers.delete(key);
-    });
-
-    this.removeUserChannel(userId, channelKey);
-
-    // Hiç subscriber kalmadıysa kanalı kapat
-    if (channelInfo.subscribers.size === 0) {
-      this.cleanupChannel(channelKey);
-    }
+    console.log(`⚠️ [RealtimeManager] unsubscribe DEVRE DIŞI: ${channelKey} (bağlantı koruması)`);
+    // ❌ DEVRE DIŞI - Kanal kapatma bağlantıyı öldürüyordu
+    // const channelInfo = this.channels.get(channelKey);
+    // if (!channelInfo) return;
+    // ...
+    // this.cleanupChannel(channelKey);
   }
 
-  // User'ın tüm subscription'larını kapat
+  // ⚠️ DEVRE DIŞI: User'ın tüm subscription'larını kapat - bu bağlantıyı öldürüyordu
   unsubscribeAll(userId: string): void {
-    const userChannelKeys = this.userChannels.get(userId);
-    if (!userChannelKeys) return;
-
-    console.log(`🧹 Cleaning up all channels for user ${userId.slice(-8)}`);
-    
-    Array.from(userChannelKeys).forEach(channelKey => {
-      this.unsubscribe(channelKey, userId);
-    });
-    
-    this.userChannels.delete(userId);
+    console.log(`⚠️ [RealtimeManager] unsubscribeAll DEVRE DIŞI: ${userId?.slice(-8)} (bağlantı koruması)`);
+    // ❌ DEVRE DIŞI - Tüm kanalları kapatma bağlantıyı öldürüyordu
   }
 
   // ⚠️ DEVRE DIŞI: Otomatik temizlik bağlantıyı öldürüyordu

@@ -438,8 +438,10 @@ const ProfilePage = () => {
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      supabase.removeChannel(channel);
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("⚠️ [ProfilePage] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [user, isOwnProfile]);
 

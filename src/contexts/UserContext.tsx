@@ -697,11 +697,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    // ⚠️ CLEANUP DEVRE DIŞI - UserContext unmount olmamalı, ama olursa bağlantı korunsun
     return () => {
       clearInterval(heartbeatInterval);
-      clearInterval(pollingInterval); // Polling'i temizle
-      supabase.removeChannel(channel);
-      // setUserOffline(); // Sayfa yenilenirken offline yapma, heartbeat timeout halletsin (Tercihen)
+      clearInterval(pollingInterval);
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel); - bağlantıyı öldürüyordu
+      console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
@@ -834,9 +835,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🔌 Cleaning up profile subscription");
-      supabase.removeChannel(channel);
+      console.log("⚠️ [UserContext] Profile cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user]);

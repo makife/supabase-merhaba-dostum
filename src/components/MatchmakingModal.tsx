@@ -88,9 +88,10 @@ const MatchmakingModal = ({ onClose, onMatchFound, gameType }: MatchmakingModalP
       })
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log('🧹 Real-time matchmaking dinleyicisi temizleniyor...');
-      supabase.removeChannel(channel);
+      console.log("⚠️ [MatchmakingModal] Cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
   }, [currentRoom, searchStatus, user, playSound, toast, onMatchFound]);
 

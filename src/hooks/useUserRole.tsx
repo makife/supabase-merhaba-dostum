@@ -62,8 +62,10 @@ export function useUserRole() {
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      supabase.removeChannel(channel);
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("⚠️ [useUserRole] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [user?.id]);
 

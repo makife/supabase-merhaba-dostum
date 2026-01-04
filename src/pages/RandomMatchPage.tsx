@@ -225,13 +225,13 @@ const RandomMatchPage = () => {
   }, []);
 
   // ============= CLEANUP =============
+  // ⚠️ DEVRE DIŞI - Bağlantı koruması
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channelRef.current);
+      console.log("⚠️ [RandomMatchPage] Main cleanup ATLANYOR (bağlantı koruması)");
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -518,38 +518,36 @@ const RandomMatchPage = () => {
     setupChannel();
 
     // Reconnect event'ini dinle
+    // ⚠️ DEVRE DIŞI: removeChannel çağrıları - bağlantı koruması
     const handleReconnect = () => {
-      console.log("🔄 [RandomMatchPage] Reconnect algılandı, kanal yeniden kuruluyor...");
+      console.log("🔄 [RandomMatchPage] Reconnect algılandı - removeChannel ATLANYOR (bağlantı koruması)");
       
-      // Eski kanalı temizle
-      if (currentChannel) {
+      // ❌ DEVRE DIŞI: removeChannel çağrısı
+      // if (currentChannel) {
+      //   try {
+      //     getSupabaseClient().removeChannel(currentChannel);
+      //   } catch (e) {}
+      // }
+      
+      // Sadece resubscribe dene (yeni kanal oluşturma)
+      if (currentChannel && currentChannel.state !== 'joined') {
         try {
-          getSupabaseClient().removeChannel(currentChannel);
-        } catch (e) {
-          // Sessizce devam
-        }
+          currentChannel.subscribe();
+        } catch (e) {}
       }
-      
-      // Kısa gecikme ile yeniden kur
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          setupChannel();
-        }
-      }, 500);
     };
 
     window.addEventListener("supabase-reconnected", handleReconnect);
 
     return () => {
-      console.log("📡 Cleaning up realtime subscription");
+      console.log("📡 ⚠️ Realtime cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("supabase-reconnected", handleReconnect);
-      if (currentChannel) {
-        try {
-          getSupabaseClient().removeChannel(currentChannel);
-        } catch (e) {
-          // Sessizce devam
-        }
-      }
+      // ❌ DEVRE DIŞI: removeChannel
+      // if (currentChannel) {
+      //   try {
+      //     getSupabaseClient().removeChannel(currentChannel);
+      //   } catch (e) {}
+      // }
     };
   }, [roomId, user?.id, gameEnded]);
 
