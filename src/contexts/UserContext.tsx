@@ -150,32 +150,50 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, [isNative]);
 
-  // 2. JS SDK BAĞLANTI DURUMUNU İZLE - daha verimli yöntem
+  // 2. JS SDK BAĞLANTI DURUMUNU İZLE - HTTP + Realtime hybrid
   useEffect(() => {
-    // 🔧 İYİLEŞTİRME: Realtime bağlantı durumunu dinle
-    const checkConnection = () => {
+    // 🔧 KRİTİK DÜZELTME: isSystemConnected'ı sadece Realtime'a bağlama
+    // HTTP istekleri Realtime'dan bağımsız çalışıyor!
+    // Native'de Realtime kapalı ama HTTP çalışıyor
+    
+    const checkConnection = async () => {
       try {
+        // 1. Önce navigator.onLine kontrolü (hızlı)
+        if (!navigator.onLine) {
+          setIsSystemConnected(false);
+          return;
+        }
+
+        // 2. Native'de her zaman true varsay (HTTP çalışıyor)
+        const isNative = typeof (window as any).Capacitor !== "undefined" 
+          && (window as any).Capacitor?.isNativePlatform?.();
+        
+        if (isNative) {
+          // Native'de sadece online/offline'a bak
+          setIsSystemConnected(navigator.onLine);
+          return;
+        }
+        
+        // 3. Web'de Realtime durumunu da kontrol et
         const state = (supabase.realtime as any).connectionState?.();
         const isConnected = state === "open" || state === "connecting";
         
-        // Kanalların durumunu da kontrol et
         const channels = supabase.getChannels();
         const hasActiveChannel = channels.some(
           (ch) => ch.state === "joined" || ch.state === "joining"
         );
         
-        // Bağlantı açık VE en az bir aktif kanal varsa bağlıyız
         const isReallyConnected = isConnected && (channels.length === 0 || hasActiveChannel);
         
-        // Sadece durum değiştiyse güncelle
         setIsSystemConnected((prev) => {
           if (isReallyConnected !== prev) {
-            console.log(`[UserContext] 🔌 Bağlantı durumu: ${state}, channels: ${channels.length}, active: ${hasActiveChannel} -> ${isReallyConnected}`);
+            console.log(`[UserContext] 🔌 Web bağlantı: ${state}, channels: ${channels.length} -> ${isReallyConnected}`);
           }
           return isReallyConnected;
         });
       } catch (e) {
-        // Sessizce devam
+        // Online varsay
+        setIsSystemConnected(navigator.onLine);
       }
     };
 
@@ -184,16 +202,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     // Reconnect event'ini dinle
     const handleReconnect = () => {
-      console.log("🔄 [UserContext] JS SDK reconnected - isSystemConnected = true, profil yeniden yükleniyor...");
+      console.log("🔄 [UserContext] Reconnected - profil yeniden yükleniyor...");
       setIsSystemConnected(true);
-      // Profili de yenile
       refreshProfile(true);
     };
 
     // Online/offline event'leri dinle
     const handleOnline = () => {
-      console.log("🌐 [UserContext] Network online");
-      setTimeout(checkConnection, 1000);
+      console.log("🌐 [UserContext] Network online - profil yeniden yükleniyor...");
+      setIsSystemConnected(true);
+      // Hemen profili yenile
+      refreshProfile(true);
     };
 
     const handleOffline = () => {
@@ -201,25 +220,37 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // Visibility change - sayfa görünür olduğunda kontrol et
+    // Visibility change - sayfa görünür olduğunda kontrol et VE profili yenile
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        setTimeout(checkConnection, 500);
+        console.log("👁️ [UserContext] Sayfa görünür - profil yeniden yükleniyor...");
+        setIsSystemConnected(navigator.onLine);
+        // Her görünür olduğunda profili zorla yenile
+        refreshProfile(true);
       }
+    };
+
+    // App foreground event (native)
+    const handleForeground = () => {
+      console.log("📱 [UserContext] App foreground - profil yeniden yükleniyor...");
+      setIsSystemConnected(true);
+      refreshProfile(true);
     };
 
     window.addEventListener("supabase-reconnected", handleReconnect);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+    window.addEventListener("appForeground", handleForeground);
     document.addEventListener("visibilitychange", handleVisibility);
     
-    // Periyodik kontrol - her 10 saniyede bir (daha agresif)
-    const interval = setInterval(checkConnection, 10000);
+    // Periyodik kontrol - her 30 saniyede bir (daha az agresif)
+    const interval = setInterval(checkConnection, 30000);
 
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("appForeground", handleForeground);
       document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
     };
@@ -272,14 +303,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return;
     }
 
+    // 🔧 DÜZELTME: Cache süresini kısalt (30 saniye) ve daha agresif yenile
+    const CACHE_DURATION = 30000; // 30 saniye
+
     // Check cache first if not forcing refresh
     if (!forceRefresh) {
       const cachedProfile = localStorage.getItem("cached_profile");
       if (cachedProfile) {
         try {
           const parsed = JSON.parse(cachedProfile);
-          if (parsed.id === user.id && parsed.timestamp > Date.now() - 300000) {
-            // 5 min cache
+          if (parsed.id === user.id && parsed.timestamp > Date.now() - CACHE_DURATION) {
+            console.log("[UserContext] ✅ Cache'den yüklendi (kalan:", Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000), "sn)");
             setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             setLoading(false);
             return;
@@ -291,13 +325,41 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
 
     setLoading(true);
+    console.log("[UserContext] 🔄 Profil Supabase'den çekiliyor...", forceRefresh ? "(FORCE)" : "");
+    
     try {
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      // 🔧 DÜZELTME: Timeout ekle (5 saniye)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      clearTimeout(timeoutId);
 
-      if (!error && data) {
+      if (error) {
+        console.error("[UserContext] ❌ Profil çekme hatası:", error.message);
+        // Hata olsa bile cache'i göster (varsa)
+        const cachedProfile = localStorage.getItem("cached_profile");
+        if (cachedProfile) {
+          try {
+            const parsed = JSON.parse(cachedProfile);
+            if (parsed.id === user.id) {
+              console.log("[UserContext] ⚠️ Hata - Cache'den fallback yükleniyor");
+              setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+            }
+          } catch {}
+        }
+        return;
+      }
+      
+      if (data) {
         // Check if daily reset is needed
         await checkAndResetDailyStats(data);
-        console.log("Profile refreshed:", data);
+        console.log("[UserContext] ✅ Profil yüklendi:", data.username);
 
         const profileData = {
           ...data,
@@ -316,8 +378,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           }),
         );
       }
-    } catch (error) {
-      console.error("Error loading profile:", error);
+    } catch (error: any) {
+      console.error("[UserContext] ❌ Profile fetch exception:", error?.message || error);
     } finally {
       setLoading(false);
     }

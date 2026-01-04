@@ -310,8 +310,13 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // isSystemConnected değiştiğinde veya sayfa görünür olduğunda verileri yenile
+  // 🔧 DÜZELTME: Sayfa her mount olduğunda VE görünür olduğunda verileri yenile
   useEffect(() => {
+    // Sayfa ilk yüklendiğinde her zaman verileri zorla yenile
+    console.log('🏠 [HomePage] Mount - veriler zorla yenileniyor...');
+    refreshProfile(true);
+    loadJokers();
+    
     // Reconnect event handler
     const handleReconnect = () => {
       console.log('🔄 [HomePage] Supabase reconnected - tüm veriler yeniden yükleniyor...');
@@ -319,31 +324,35 @@ const HomePage = () => {
       loadJokers();
     };
 
-    // Visibility change handler - sayfa görünür olduğunda verileri kontrol et
+    // Visibility change handler - sayfa görünür olduğunda verileri yenile
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && user) {
-        console.log('👁️ [HomePage] Sayfa görünür - veriler kontrol ediliyor...');
-        refreshProfile();
+        console.log('👁️ [HomePage] Sayfa görünür - veriler zorla yenileniyor...');
+        refreshProfile(true);
         loadJokers();
       }
     };
 
-    // İlk yükleme
-    if (isSystemConnected && user) {
-      console.log('🔄 [HomePage] isSystemConnected true - profil ve jokerler yeniden yükleniyor...');
-      refreshProfile();
-      loadJokers();
-    }
+    // App foreground event (native)
+    const handleForeground = () => {
+      if (user) {
+        console.log('📱 [HomePage] App foreground - veriler zorla yenileniyor...');
+        refreshProfile(true);
+        loadJokers();
+      }
+    };
 
     // Event listeners
     window.addEventListener("supabase-reconnected", handleReconnect);
+    window.addEventListener("appForeground", handleForeground);
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
+      window.removeEventListener("appForeground", handleForeground);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [isSystemConnected, user]);
+  }, [user]);
 
   const handleGameModeClick = (modeId: string) => {
     playSound("buttonClick");
