@@ -86,17 +86,11 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     },
   });
 
-  // 🔧 KRİTİK: Native'de Supabase Realtime'ı HEMEN DURDUR
+  // 🔧 Native'de sadece log - disconnect() ÇAĞIRMIYORUZ
+  // reconnectAfterMs zaten 999999999 olduğu için JS Realtime hiç bağlanmayacak
   if (isNativePlatform) {
-    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime DEVRE DIŞI BIRAKILIYOR");
-    
-    // Realtime bağlantısını durdur (hiç başlatma)
-    try {
-      (client.realtime as any).disconnect?.();
-      console.log("[SupabaseClient] ✅ JS Realtime kapatıldı - Kotlin WebSocket aktif");
-    } catch (e) {
-      console.log("[SupabaseClient] JS Realtime zaten kapalı");
-    }
+    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime pasif (Kotlin WebSocket aktif)");
+    // ❌ disconnect() ÇAĞIRMIYORUZ - gereksiz ve tehlikeli olabilir
   } else {
     // Sadece WEB'de realtime kontrol mekanizması
     if (typeof document !== "undefined") {
