@@ -12,10 +12,6 @@ export interface NativeRealtimePlugin {
 
   disconnect(): Promise<{ success: boolean }>;
 
-  // 👇 KOTLIN SAYAÇ METOTLARI
-  startBackgroundTimer(): Promise<void>;
-  stopBackgroundTimer(): Promise<void>;
-
   subscribe(options: {
     topic: string;
     event?: string;
