@@ -17,30 +17,53 @@ const KEYS = {
 };
 
 // Generic get/set with fallback for web
+// 🔧 KRİTİK: Hem localStorage hem Preferences kullan (sync + kalıcı)
 const isNative = Capacitor.isNativePlatform();
 
 async function setItem(key: string, value: string): Promise<void> {
+  // Her zaman localStorage'a yaz (sync erişim için)
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    // localStorage doluysa sessizce devam et
+  }
+  
   if (isNative) {
     await Preferences.set({ key, value });
-  } else {
-    localStorage.setItem(key, value);
   }
 }
 
 async function getItem(key: string): Promise<string | null> {
+  // Önce localStorage'dan dene (sync, hızlı)
+  const localValue = localStorage.getItem(key);
+  if (localValue) {
+    return localValue;
+  }
+  
+  // Native'de Preferences'dan da kontrol et
   if (isNative) {
     const { value } = await Preferences.get({ key });
+    
+    // Preferences'da varsa localStorage'a da kopyala
+    if (value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        // localStorage doluysa sessizce devam et
+      }
+    }
+    
     return value;
-  } else {
-    return localStorage.getItem(key);
   }
+  
+  return null;
 }
 
 async function removeItem(key: string): Promise<void> {
+  localStorage.removeItem(key);
+  
   if (isNative) {
     await Preferences.remove({ key });
-  } else {
-    localStorage.removeItem(key);
   }
 }
 

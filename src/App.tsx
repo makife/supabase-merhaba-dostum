@@ -68,6 +68,7 @@ import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
 import { useReconnectionState } from "@/hooks/useReconnectionState";
 import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
+import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -513,6 +514,12 @@ const GlobalReconnectionOverlay = () => {
   );
 };
 
+// 🆕 Session Recovery Component - Native'de session kaybolmasını önler
+const SessionRecoveryManager = () => {
+  useSessionRecovery();
+  return null;
+};
+
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
@@ -641,6 +648,8 @@ const App = () => {
         >
           {/* 1. KADEME: AuthProvider (En Dışta - Kimlik Yönetimi) */}
           <AuthProvider>
+            {/* 🆕 Session Recovery - Native'de arka plandan gelince session'ı kurtarır */}
+            <SessionRecoveryManager />
             {/* 2. KADEME: UserProvider (Profil Verisi) */}
             <UserProvider>
               {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
