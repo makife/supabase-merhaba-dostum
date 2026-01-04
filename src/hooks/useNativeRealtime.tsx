@@ -113,6 +113,7 @@ export function useNativeRealtime() {
   }, [isNative]);
 
   // 🆕 3. AGGRESSIVE RE-SUBSCRIPTION: Ön plana çıkınca zorla yeniden bağlan
+  // ⚠️ KRİTİK: Native'de JS Supabase Realtime KULLANILMIYOR - sadece Kotlin WebSocket!
   const forceResubscribe = useCallback(async () => {
     if (isReconnectingRef.current) {
       console.log("[NativeRealtime] ⏸️ Zaten yeniden bağlanıyor, skip...");
@@ -123,34 +124,54 @@ export function useNativeRealtime() {
     console.log("[NativeRealtime] 🔄 Aggressive re-subscription başlıyor...");
 
     try {
-      // 🔧 KRİTİK: ÖNCELİKLE JS SDK bağlantısını kontrol et ve yeniden bağlan
-      const realtimeState = (supabase.realtime as any).connectionState?.();
-      console.log("[NativeRealtime] 📡 JS SDK Realtime state:", realtimeState);
-      
-      if (realtimeState !== "open" && realtimeState !== "connecting") {
-        console.log("[NativeRealtime] 🔌 JS SDK bağlantısı kopuk, yeniden bağlanıyor...");
+      // 🔧 KRİTİK: Native'de JS SDK Realtime KULLANMIYORUZ - Kotlin yönetiyor
+      // Sadece Kotlin bağlantısını kontrol et ve yeniden bağlan
+      if (isNative && NativeRealtime) {
+        console.log("[NativeRealtime] 📡 Kotlin WebSocket kontrol ediliyor...");
         
-        // Token yenile
+        // Kotlin bağlantı durumunu kontrol et
         try {
-          const { data } = await supabase.auth.getSession();
-          if (data?.session?.access_token) {
-            supabase.realtime.setAuth(data.session.access_token);
-            console.log("[NativeRealtime] ✅ Token ayarlandı");
+          const stateResult = await NativeRealtime.getConnectionState();
+          console.log("[NativeRealtime] 📡 Kotlin state:", stateResult.state);
+          
+          if (stateResult.state !== "connected") {
+            console.log("[NativeRealtime] 🔌 Kotlin bağlantısı kopuk, yeniden bağlanıyor...");
+            
+            // Token al
+            const { data } = await supabase.auth.getSession();
+            const wsUrl = SUPABASE_URL.replace("https://", "wss://") + "/realtime/v1/websocket";
+            
+            await NativeRealtime.connect({
+              url: wsUrl,
+              apiKey: SUPABASE_ANON_KEY,
+              accessToken: data?.session?.access_token || "",
+            });
+            
+            console.log("[NativeRealtime] ✅ Kotlin reconnect çağrıldı");
+            
+            // Biraz bekle
+            await new Promise((r) => setTimeout(r, 500));
           }
         } catch (e) {
-          console.log("[NativeRealtime] ⚠️ Token yenileme atlandı:", e);
+          console.log("[NativeRealtime] ⚠️ Kotlin state kontrolü hatası:", e);
         }
         
-        // Bağlan
-        try {
-          (supabase.realtime as any).connect?.();
-          console.log("[NativeRealtime] ✅ Connect çağrıldı");
-        } catch (e) {
-          console.log("[NativeRealtime] ⚠️ Connect hatası:", e);
-        }
-        
-        // Biraz bekle
-        await new Promise((r) => setTimeout(r, 500));
+        // Aktif subscription'ları yeniden subscribe et
+        console.log("[NativeRealtime] 📋 Aktif subscription sayısı:", subscriptionsRef.current.size);
+        subscriptionsRef.current.forEach(async (sub, key) => {
+          console.log("[NativeRealtime] 🔄 Re-subscribing:", key);
+          try {
+            await NativeRealtime.subscribe({
+              topic: sub.topic,
+              event: sub.event || "*",
+              schema: sub.schema || "public",
+              table: sub.table,
+              filter: sub.filter,
+            });
+          } catch (e) {
+            console.log("[NativeRealtime] ⚠️ Re-subscribe hatası:", key, e);
+          }
+        });
       }
 
       // Native Storage'dan son aktif kanalları oku
@@ -161,41 +182,6 @@ export function useNativeRealtime() {
       ]);
 
       console.log("[NativeRealtime] 📖 Cached IDs:", { lastRoomId, lastChatId, lastMatchId });
-
-      // Supabase realtime bağlantısını kontrol et
-      const channels = supabase.getChannels();
-      const closedChannels = channels.filter(
-        (ch) => ch.state === "closed" || ch.state === "errored"
-      );
-
-      if (closedChannels.length > 0) {
-        console.log("[NativeRealtime] ⚠️ Kapalı kanallar bulundu:", closedChannels.length);
-
-        // Her kapalı kanalı zorla yeniden aç
-        for (const channel of closedChannels) {
-          console.log("[NativeRealtime] 🔄 Force subscribing:", channel.topic);
-          channel.subscribe();
-        }
-      }
-
-      // Eğer aktif room varsa ve kanalı yoksa, yeni kanal oluştur
-      if (lastRoomId) {
-        const roomChannelExists = channels.some((ch) => ch.topic.includes(lastRoomId));
-        if (!roomChannelExists) {
-          console.log("[NativeRealtime] 🆕 Room kanalı yok, oluşturuluyor:", lastRoomId);
-          const roomChannel = supabase
-            .channel(`room-recovery-${lastRoomId}`)
-            .on(
-              "postgres_changes",
-              { event: "*", schema: "public", table: "game_rooms", filter: `id=eq.${lastRoomId}` },
-              (payload) => {
-                console.log("[NativeRealtime] 🎮 Room update (recovery):", payload);
-                messageListeners.forEach((l) => l(`room:${lastRoomId}`, payload));
-              }
-            )
-            .subscribe();
-        }
-      }
 
       // 🆕 4. CHANNEL BUFFERING: Arka planda biriken mesajları enjekte et
       const bufferedMessages = await getBufferedMessages();
@@ -215,7 +201,7 @@ export function useNativeRealtime() {
     } finally {
       isReconnectingRef.current = false;
     }
-  }, []);
+  }, [isNative]);
 
   // 5. ARKA PLAN YÖNETİMİ
   // ⚠️ KRİTİK: Native bağlantıyı ASLA kesme! Kotlin WebSocket arka planda çalışmaya devam eder.

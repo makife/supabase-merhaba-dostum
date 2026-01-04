@@ -18,48 +18,13 @@ const setForegroundState = (inForeground: boolean) => {
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
 
-  // 🔧 KRİTİK: Ön plana geldiğinde HEMEN bağlantıyı kontrol et ve yeniden bağlan
+  // 🔧 KRİTİK: Native'de JS Supabase Realtime KULLANILMIYOR
+  // Kotlin WebSocket arka planda çalışmaya devam ediyor
+  // Bu yüzden burada reconnect yapmaya GEREK YOK
   if (inForeground && wasInBackground && Capacitor.isNativePlatform()) {
-    console.log("[AppForegroundState] 📱 Ön plana gelindi - AGRESIF reconnect başlatılıyor...");
-    
-    // Hemen reconnect dene
-    setTimeout(async () => {
-      try {
-        const client = getSupabaseClient();
-        const state = (client.realtime as any).connectionState?.();
-        console.log("[AppForegroundState] Realtime state:", state);
-        
-        if (state !== "open" && state !== "connecting") {
-          console.log("[AppForegroundState] 🔄 Bağlantı kopuk, yeniden bağlanıyor...");
-          
-          // Token yenile
-          const { data } = await client.auth.getSession();
-          if (data?.session?.access_token) {
-            client.realtime.setAuth(data.session.access_token);
-          }
-          
-          // Bağlan
-          (client.realtime as any).connect?.();
-          
-          // Event dispatch et
-          window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-        }
-      } catch (e) {
-        console.error("[AppForegroundState] Reconnect hatası:", e);
-      }
-    }, 100);
-    
-    // 500ms sonra tekrar kontrol et
-    setTimeout(async () => {
-      try {
-        const client = getSupabaseClient();
-        const state = (client.realtime as any).connectionState?.();
-        if (state !== "open") {
-          console.log("[AppForegroundState] 🔄 İkinci reconnect denemesi...");
-          (client.realtime as any).connect?.();
-        }
-      } catch (e) {}
-    }, 500);
+    console.log("[AppForegroundState] 📱 Ön plana gelindi - Kotlin WebSocket zaten aktif, JS reconnect ATLANIYОР");
+    // Sadece event dispatch et - useNativeRealtime dinliyor
+    window.dispatchEvent(new CustomEvent("supabase-reconnected"));
   }
 };
 

@@ -36,40 +36,47 @@ const CapacitorStorage = {
 const createSupabaseClient = (): SupabaseClient<Database> => {
   console.log("[SupabaseClient] 🆕 Yeni Supabase client oluşturuluyor...");
   
+  const isNativePlatform = Capacitor.isNativePlatform();
+  
+  // 🔧 KRİTİK: Native'de Realtime DEVRE DIŞI - Kotlin WebSocket kullanılacak
+  // WebView'deki WebSocket arka plana geçince ölüyor, bu yüzden native'de hiç açmıyoruz
+  const realtimeConfig = isNativePlatform ? {
+    // Native'de Supabase Realtime'ı TAMAMEN DEVRE DIŞI birak
+    // Kotlin NativeRealtimePlugin bağlantıyı yönetiyor
+    params: {
+      eventsPerSecond: 0, // Hiç event gönderme
+    },
+    // Bağlantıyı hemen kes ve yeniden bağlanma
+    reconnectAfterMs: () => {
+      console.log("[SupabaseClient] 🚫 Native'de JS Realtime DEVRE DIŞI - Kotlin kullanılıyor");
+      return 999999999; // Asla reconnect etme
+    },
+  } : {
+    // Web'de normal realtime
+    params: {
+      eventsPerSecond: 10,
+    },
+    heartbeatIntervalMs: 15000,
+    reconnectAfterMs: (tries: number) => {
+      const delay = Math.min(1000 * Math.pow(2, tries), 30000);
+      console.log(`[SupabaseClient] 🔄 Web reconnect attempt ${tries + 1}, waiting ${delay}ms`);
+      return delay;
+    },
+  };
+  
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: CapacitorStorage,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      // Native çakışmalarını önlemek için kilidi kapatıyoruz
-      lock: Capacitor.isNativePlatform() ? (false as any) : undefined,
+      lock: isNativePlatform ? (false as any) : undefined,
     },
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
-      // 🔧 KRİTİK: Daha kısa heartbeat - bağlantı kopmasını hemen algıla
-      heartbeatIntervalMs: 5000, // 5 saniye - hızlı tespit
-      // 🔧 KRİTİK: Çok agresif reconnect - hemen yeniden bağlan
-      reconnectAfterMs: (tries: number) => {
-        // Native'de çok hızlı reconnect - 500ms, 1s, 2s, max 5s
-        if (Capacitor.isNativePlatform()) {
-          const delay = Math.min(500 * Math.pow(2, tries), 5000);
-          console.log(`[SupabaseClient] 🔄 Native reconnect attempt ${tries + 1}, waiting ${delay}ms`);
-          return delay;
-        }
-        // Web'de normal backoff
-        const delay = Math.min(1000 * Math.pow(2, tries), 30000);
-        console.log(`[SupabaseClient] 🔄 Reconnect attempt ${tries + 1}, waiting ${delay}ms`);
-        return delay;
-      },
-    },
-    // 🔧 İYİLEŞTİRME: Global fetch timeout
+    realtime: realtimeConfig,
     global: {
       fetch: (url, options) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 saniye timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         return fetch(url, {
           ...options,
@@ -79,26 +86,33 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     },
   });
 
-  // 🔧 KRİTİK: Native'de visibility change'i IGNORE et
-  // Android WebView arka plana geçince WebSocket'i kapatmaya çalışabilir
-  // Bunu engelleyemeyiz ama en azından hızlı reconnect yapabiliriz
-  if (Capacitor.isNativePlatform() && typeof document !== "undefined") {
-    // Supabase'in kendi disconnect mantığını override etmek için
-    // realtime connection state'ini izle
-    const checkAndReconnect = async () => {
-      try {
-        const state = (client.realtime as any).connectionState?.();
-        if (state !== "open" && state !== "connecting") {
-          console.log("[SupabaseClient] 🔄 Native bağlantı kopuk, yeniden bağlanıyor...");
-          (client.realtime as any).connect?.();
+  // 🔧 KRİTİK: Native'de Supabase Realtime'ı HEMEN DURDUR
+  if (isNativePlatform) {
+    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime DEVRE DIŞI BIRAKILIYOR");
+    
+    // Realtime bağlantısını durdur (hiç başlatma)
+    try {
+      (client.realtime as any).disconnect?.();
+      console.log("[SupabaseClient] ✅ JS Realtime kapatıldı - Kotlin WebSocket aktif");
+    } catch (e) {
+      console.log("[SupabaseClient] JS Realtime zaten kapalı");
+    }
+  } else {
+    // Sadece WEB'de realtime kontrol mekanizması
+    if (typeof document !== "undefined") {
+      const checkAndReconnect = async () => {
+        try {
+          const state = (client.realtime as any).connectionState?.();
+          if (state !== "open" && state !== "connecting") {
+            console.log("[SupabaseClient] 🔄 Web bağlantı kopuk, yeniden bağlanıyor...");
+            (client.realtime as any).connect?.();
+          }
+        } catch (e) {
+          // Sessizce devam
         }
-      } catch (e) {
-        // Sessizce devam
-      }
-    };
-
-    // Her 3 saniyede bir bağlantıyı kontrol et (native'de agresif)
-    setInterval(checkAndReconnect, 3000);
+      };
+      setInterval(checkAndReconnect, 10000); // Web'de 10 saniyede bir kontrol
+    }
   }
 
   return client;
