@@ -52,6 +52,7 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGlobalResync } from "@/hooks/useGlobalResync";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -1140,6 +1141,109 @@ const GamePage = ({
 
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
+
+  // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
+  const handleGameResync = useCallback(async () => {
+    // Oyun bittiyse resync gereksiz
+    if (gameEndedRef.current) {
+      console.log("🔄 [GamePage] Oyun bitti, resync atlanıyor");
+      return;
+    }
+    
+    console.log("🔄 [GamePage] Bağlantı geri geldi - veri senkronizasyonu başlıyor...");
+    
+    try {
+      // 1. TURNUVA MODU SYNC
+      if (gameMode === "tournament" && tournamentMatch?.id) {
+        const { data: matchData, error } = await supabase
+          .from("tournament_matches")
+          .select("*")
+          .eq("id", tournamentMatch.id)
+          .single();
+        
+        if (!error && matchData) {
+          console.log("✅ [GamePage Resync] Turnuva maçı güncellendi:", matchData.status);
+          
+          // Skorları güncelle
+          const isPlayer1 = String(matchData.player1_id) === String(user?.id);
+          if (isPlayer1) {
+            setOpponentScore(matchData.player2_score || 0);
+          } else {
+            setOpponentScore(matchData.player1_score || 0);
+          }
+          
+          // Maç tamamlandıysa UI'ı güncelle
+          if (matchData.status === "completed" && matchData.winner_id) {
+            const iWon = matchData.winner_id === user?.id;
+            setWinner(iWon ? "player" : "opponent");
+            setGameEnded(true);
+            setShowResults(true);
+          }
+        }
+        return;
+      }
+      
+      // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
+      if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
+        const { data: roomData, error: roomError } = await supabase
+          .from("game_rooms")
+          .select("*")
+          .eq("id", currentRoom.id)
+          .single();
+        
+        if (!roomError && roomData) {
+          console.log("✅ [GamePage Resync] Oda verisi güncellendi - status:", roomData.status);
+          
+          // Skorları güncelle
+          const isPlayer1 = roomData.player1_id === user?.id;
+          if (isPlayer1) {
+            setOpponentScore(roomData.player2_score || 0);
+          } else {
+            setOpponentScore(roomData.player1_score || 0);
+          }
+          
+          // Oda bittiyse UI'ı güncelle
+          if (roomData.status === "finished" && roomData.winner_id) {
+            const iWon = roomData.winner_id === user?.id;
+            setWinner(iWon ? "player" : "opponent");
+            setGameEnded(true);
+            setShowResults(true);
+          }
+          
+          // Grid sync (joker koruması yoksa)
+          if (!gridSyncPaused && roomData.current_grid && Array.isArray(roomData.current_grid)) {
+            const flat = roomData.current_grid as string[];
+            const grid: string[][] = [];
+            for (let i = 0; i < 4; i++) {
+              grid.push(flat.slice(i * 4, (i + 1) * 4));
+            }
+            setGameGrid(grid);
+            console.log("✅ [GamePage Resync] Grid senkronize edildi");
+          }
+        }
+      }
+      
+      // 3. Server time sync yeniden kalibre et
+      try {
+        const newOffset = await calculateServerOffset();
+        setServerTimeOffset(newOffset);
+        console.log("✅ [GamePage Resync] Server time re-synced, offset:", newOffset);
+      } catch (e) {
+        console.warn("⚠️ [GamePage Resync] Server time sync hatası:", e);
+      }
+      
+    } catch (err) {
+      console.error("❌ [GamePage Resync] Hata:", err);
+    }
+  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused]);
+
+  // Priority: true - GamePage en kritik sayfa!
+  useGlobalResync({
+    onResync: handleGameResync,
+    isActive: !gameEndedRef.current && (gameMode === "tournament" || gameMode === "random-match" || gameMode === "private-room"),
+    isPriority: true,
+    pageName: 'GamePage'
+  });
 
   // 🔒 Server time sync için state ve ref'ler
   const serverTimeReadyRef = useRef(false);
