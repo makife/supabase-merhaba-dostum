@@ -89,6 +89,19 @@ export const initNativeAudio = async (): Promise<void> => {
       // Tüm sesleri paralel olarak preload et (daha hızlı)
       const preloadPromises = SOUND_DEFINITIONS.map(async (sound) => {
         try {
+          // Eğer zaten preload edilmişse atla
+          if (preloadedSounds.has(sound.assetId)) {
+            console.log(`✅ NativeAudio: ${sound.assetId} zaten yüklü`);
+            return;
+          }
+          
+          // Önce unload dene (varsa temizle) - "already exists" hatasını önler
+          try {
+            await NativeAudio.unload({ assetId: sound.assetId });
+          } catch {
+            // Asset yoksa hata verir, ignore et
+          }
+          
           await NativeAudio.preload({
             assetId: sound.assetId,
             assetPath: sound.assetPath,
@@ -97,15 +110,21 @@ export const initNativeAudio = async (): Promise<void> => {
           });
           preloadedSounds.add(sound.assetId);
           console.log(`✅ NativeAudio: ${sound.assetId} yüklendi`);
-        } catch (e) {
-          console.warn(`⚠️ NativeAudio: ${sound.assetId} yüklenemedi:`, e);
+        } catch (e: any) {
+          // "already exists" hatası - aslında yüklü demek
+          if (e?.message?.includes('already exists')) {
+            preloadedSounds.add(sound.assetId);
+            console.log(`✅ NativeAudio: ${sound.assetId} zaten mevcut`);
+          } else {
+            console.warn(`⚠️ NativeAudio: ${sound.assetId} yüklenemedi:`, e);
+          }
         }
       });
       
       await Promise.all(preloadPromises);
       
       initialized = true;
-      console.log(`🔊 NativeAudio: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses yüklendi ✅`);
+      console.log(`🔊 NativeAudio: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses hazır ✅`);
     } catch (error) {
       console.error('❌ NativeAudio: Başlatma hatası:', error);
     }
