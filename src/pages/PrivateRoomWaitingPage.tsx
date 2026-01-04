@@ -139,9 +139,11 @@ const PrivateRoomWaitingPage = () => {
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       unsubscribed = true;
-      channel.unsubscribe();
+      console.log("⚠️ [PrivateRoomWaitingPage] Cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: channel.unsubscribe();
     };
   }, [roomCode, roomId, gameType, user, navigate, navigated]);
 
