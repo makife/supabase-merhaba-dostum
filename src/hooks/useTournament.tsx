@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 
 export const useTournament = (tournamentId?: string) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const context = useTournamentContext();
+  const { serverNow, offset } = useServerTimeContext();
 
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCreator, setIsCreator] = useState(false);
@@ -31,7 +33,7 @@ export const useTournament = (tournamentId?: string) => {
     lastCreatorIdRef.current = currentCreatorId;
   }, [context.currentTournament?.creator_id]);
 
-  // Countdown timer
+  // Countdown timer - Server time kullanarak
   useEffect(() => {
     if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") {
       setTimeLeft(0);
@@ -46,7 +48,8 @@ export const useTournament = (tournamentId?: string) => {
     const creatorId = context.currentTournament.creator_id;
 
     const tick = () => {
-      const now = Date.now();
+      // Server time kullanarak doğru kalan süreyi hesapla
+      const now = serverNow();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(remaining);
 
@@ -66,7 +69,7 @@ export const useTournament = (tournamentId?: string) => {
         intervalRef.current = null;
       }
     };
-  }, [context.currentTournament?.expires_at, context.currentTournament?.status, context.currentTournament?.creator_id, user?.id]);
+  }, [context.currentTournament?.expires_at, context.currentTournament?.status, context.currentTournament?.creator_id, user?.id, serverNow, offset]);
 
   // Handle countdown end
   const handleCountdownEnd = useCallback(async () => {

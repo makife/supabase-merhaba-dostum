@@ -24,6 +24,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -32,6 +33,7 @@ const TournamentBracketPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile, isSystemConnected } = useUser();
   const { playSpecialSound } = useSounds();
+  const { serverNow, offset } = useServerTimeContext();
 
   const {
     currentTournament,
@@ -330,7 +332,8 @@ const TournamentBracketPage = () => {
     const targetTime = new Date(currentTournament.next_round_starts_at).getTime();
 
     const tick = () => {
-      const now = Date.now();
+      // Server time kullanarak doğru kalan süreyi hesapla
+      const now = serverNow();
       const remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
       setCountdown(remaining);
 
@@ -352,7 +355,7 @@ const TournamentBracketPage = () => {
         countdownRef.current = null;
       }
     };
-  }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
+  }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches, serverNow, offset]);
 
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
 
