@@ -157,10 +157,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // 🆕 NATIVE: Arka plandan gelince session'ı yeniden kontrol et
+    // 🆕 Arka plandan gelince session'ı yeniden kontrol et (HEM NATIVE HEM WEB)
     const handleForeground = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      
       console.log("[AuthContext] 📱 Foreground - session kontrol ediliyor...");
       
       try {
@@ -168,7 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (currentSession?.access_token) {
-          console.log("[AuthContext] ✅ Session mevcut");
+          console.log("[AuthContext] ✅ Session mevcut:", currentSession.user?.email);
           if (currentSession.access_token !== session?.access_token) {
             setSession(currentSession);
             setUser(currentSession.user);
@@ -180,9 +178,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Session yoksa, storage'dan restore dene
         console.log("[AuthContext] ⚠️ Session yok, storage'dan restore deneniyor...");
         
-        const { value: storedSession } = await Preferences.get({ 
-          key: "sb-nnlvtqmuwmrqfinsgvwc-auth-token" 
-        });
+        const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
+        let storedSession: string | null = null;
+
+        // localStorage'dan dene
+        try {
+          storedSession = localStorage.getItem(storedSessionKey);
+        } catch (e) {}
+
+        // Native ise Preferences'dan da dene
+        if (!storedSession && Capacitor.isNativePlatform()) {
+          try {
+            const { value } = await Preferences.get({ key: storedSessionKey });
+            storedSession = value;
+          } catch (e) {}
+        }
 
         if (storedSession) {
           const parsed = JSON.parse(storedSession);
@@ -201,6 +211,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.error("[AuthContext] ❌ Refresh başarısız:", error?.message);
             }
           }
+        } else {
+          console.log("[AuthContext] ❌ Storage'da session bulunamadı");
         }
       } catch (e) {
         console.error("[AuthContext] ❌ Foreground session check hatası:", e);

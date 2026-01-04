@@ -1,24 +1,20 @@
 import { useEffect, useRef } from "react";
-import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
-import { Preferences } from "@capacitor/preferences";
 
 /**
  * 🔧 Session Recovery Hook
- * Native'de arka plandan gelince session'ın kaybolması sorununu çözer
- * Supabase client'ın storage problemi nedeniyle session'ı manuel olarak restore eder
+ * Arka plandan gelince session'ın kaybolması sorununu çözer
+ * Hem native hem web için çalışır
  */
 export function useSessionRecovery() {
   const isRecoveringRef = useRef(false);
   const lastRecoveryRef = useRef(0);
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
     const recoverSession = async () => {
-      // Rate limit: 5 saniyede bir
+      // Rate limit: 3 saniyede bir
       const now = Date.now();
-      if (now - lastRecoveryRef.current < 5000) return;
+      if (now - lastRecoveryRef.current < 3000) return;
       if (isRecoveringRef.current) return;
       
       isRecoveringRef.current = true;
@@ -27,26 +23,38 @@ export function useSessionRecovery() {
       try {
         console.log("[SessionRecovery] 🔄 Session kontrol başlıyor...");
 
-        // 1. Önce mevcut session'ı kontrol et (timeout ile)
-        const timeoutPromise = new Promise<null>((resolve) => 
-          setTimeout(() => resolve(null), 2000)
-        );
-        
-        const sessionPromise = supabase.auth.getSession().then(r => r.data?.session);
-        const currentSession = await Promise.race([sessionPromise, timeoutPromise]);
+        // 1. Mevcut session'ı kontrol et
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
 
         if (currentSession?.access_token) {
-          console.log("[SessionRecovery] ✅ Session zaten mevcut");
+          console.log("[SessionRecovery] ✅ Session mevcut:", currentSession.user?.email);
           isRecoveringRef.current = false;
           return;
         }
 
-        console.log("[SessionRecovery] ⚠️ Session yok veya timeout, storage'dan restore deneniyor...");
+        console.log("[SessionRecovery] ⚠️ Session yok, storage'dan restore deneniyor...");
 
-        // 2. Capacitor Preferences'dan session'ı oku
-        const { value: storedSession } = await Preferences.get({ 
-          key: "sb-nnlvtqmuwmrqfinsgvwc-auth-token" 
-        });
+        // 2. localStorage'dan session oku
+        const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
+        let storedSession: string | null = null;
+
+        // Önce localStorage'dan dene
+        try {
+          storedSession = localStorage.getItem(storedSessionKey);
+        } catch (e) {
+          console.log("[SessionRecovery] localStorage okunamadı");
+        }
+
+        // Native ise Preferences'dan da dene
+        if (!storedSession) {
+          try {
+            const { Preferences } = await import("@capacitor/preferences");
+            const { value } = await Preferences.get({ key: storedSessionKey });
+            storedSession = value;
+          } catch (e) {
+            console.log("[SessionRecovery] Preferences okunamadı");
+          }
+        }
 
         if (!storedSession) {
           console.log("[SessionRecovery] ❌ Storage'da session yok");
@@ -56,46 +64,38 @@ export function useSessionRecovery() {
 
         const parsed = JSON.parse(storedSession);
         
-        if (!parsed?.access_token || !parsed?.refresh_token) {
-          console.log("[SessionRecovery] ❌ Storage'daki session eksik");
+        if (!parsed?.refresh_token) {
+          console.log("[SessionRecovery] ❌ Refresh token yok");
           isRecoveringRef.current = false;
           return;
         }
 
-        // 3. Token'ın süresi dolmuş mu kontrol et
-        const expiresAt = parsed.expires_at || 0;
-        const now2 = Math.floor(Date.now() / 1000);
-        const isExpired = expiresAt < now2 + 60; // 60 sn güvenlik payı
+        console.log("[SessionRecovery] 🔄 Refresh token bulundu, session yenileniyor...");
+        
+        // 3. Refresh token ile yeni session al
+        const { data, error } = await supabase.auth.refreshSession({
+          refresh_token: parsed.refresh_token
+        });
 
-        if (isExpired) {
-          console.log("[SessionRecovery] ⚠️ Token süresi dolmuş, refresh deneniyor...");
+        if (error || !data.session) {
+          console.error("[SessionRecovery] ❌ Refresh başarısız:", error?.message);
           
-          // Refresh token ile yeni session al
-          const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: parsed.refresh_token
-          });
-
-          if (error || !data.session) {
-            console.error("[SessionRecovery] ❌ Refresh başarısız:", error?.message);
-            // Refresh başarısız - kullanıcı yeniden giriş yapmalı
-          } else {
-            console.log("[SessionRecovery] ✅ Session refresh edildi!");
-            // Session otomatik olarak set edildi
+          // Son çare: setSession dene
+          if (parsed.access_token) {
+            console.log("[SessionRecovery] 🔄 setSession deneniyor...");
+            const { error: setError } = await supabase.auth.setSession({
+              access_token: parsed.access_token,
+              refresh_token: parsed.refresh_token
+            });
+            
+            if (setError) {
+              console.error("[SessionRecovery] ❌ setSession hatası:", setError.message);
+            } else {
+              console.log("[SessionRecovery] ✅ setSession başarılı!");
+            }
           }
         } else {
-          console.log("[SessionRecovery] ✅ Token hala geçerli, setSession yapılıyor...");
-          
-          // Token geçerli - direkt set et
-          const { error } = await supabase.auth.setSession({
-            access_token: parsed.access_token,
-            refresh_token: parsed.refresh_token
-          });
-
-          if (error) {
-            console.error("[SessionRecovery] ❌ setSession hatası:", error.message);
-          } else {
-            console.log("[SessionRecovery] ✅ Session restore edildi!");
-          }
+          console.log("[SessionRecovery] ✅ Session refresh edildi:", data.session.user?.email);
         }
 
       } catch (e) {
@@ -124,15 +124,18 @@ export function useSessionRecovery() {
     
     const setupNativeListener = async () => {
       try {
-        const { App } = await import("@capacitor/app");
-        const listener = await App.addListener("appStateChange", ({ isActive }) => {
-          if (isActive) {
-            handleForeground();
-          }
-        });
-        appStateCleanup = () => listener.remove();
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor.isNativePlatform()) {
+          const { App } = await import("@capacitor/app");
+          const listener = await App.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) {
+              handleForeground();
+            }
+          });
+          appStateCleanup = () => listener.remove();
+        }
       } catch (e) {
-        console.error("[SessionRecovery] Native listener hatası:", e);
+        console.log("[SessionRecovery] Native listener hatası:", e);
       }
     };
 
