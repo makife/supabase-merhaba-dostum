@@ -46,6 +46,7 @@ import {
   Crown,
 } from "lucide-react";
 import { matchBanlist } from "@/utils/matchBanlist";
+import { useGlobalResync } from "@/hooks/useGlobalResync";
 
 // ============= TYPES =============
 interface RoomData {
@@ -199,6 +200,73 @@ const RandomMatchPage = () => {
 
   // Derived state
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
+
+  // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda ve skor senkronizasyonu =============
+  const handleMatchResync = useCallback(async () => {
+    if (!roomId || !user?.id || gameEnded) return;
+    
+    console.log("🔄 [RandomMatchPage] Bağlantı geri geldi - oda verisi senkronize ediliyor...");
+    
+    try {
+      // Room verisini yeniden çek
+      const { data: roomData, error: roomError } = await supabase
+        .from("game_rooms")
+        .select("*")
+        .eq("id", roomId)
+        .single();
+      
+      if (roomError || !roomData) {
+        console.log("❌ [Resync] Oda bulunamadı");
+        return;
+      }
+      
+      setRoom(roomData as RoomData);
+      
+      // Skorları güncelle
+      const myId = user.id;
+      const isPlayer1 = roomData.player1_id === myId;
+      
+      if (isPlayer1) {
+        setOpponentScore(roomData.player2_score || 0);
+      } else {
+        setOpponentScore(roomData.player1_score || 0);
+      }
+      
+      console.log("✅ [Resync] Oda verisi senkronize edildi - skorlar:", {
+        p1: roomData.player1_score,
+        p2: roomData.player2_score
+      });
+      
+      // Opponent bilgisi yoksa yükle
+      if (!opponentRef.current) {
+        const opponentId = isPlayer1 ? roomData.player2_id : roomData.player1_id;
+        if (opponentId) {
+          const { data: opponentData } = await supabase
+            .from("profiles")
+            .select("id, username, avatar_url, premium_until")
+            .eq("id", opponentId)
+            .single();
+          
+          if (opponentData) {
+            const isPremiumActive = opponentData.premium_until ? new Date(opponentData.premium_until) > new Date() : false;
+            setOpponent({ ...opponentData, isPremium: isPremiumActive });
+            opponentRef.current = { ...opponentData, isPremium: isPremiumActive };
+            console.log("✅ [Resync] Opponent yüklendi:", opponentData.username);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("❌ [Resync] Hata:", err);
+    }
+  }, [roomId, user?.id, gameEnded]);
+
+  // Priority: true - Oyun sayfası kritik
+  useGlobalResync({
+    onResync: handleMatchResync,
+    isActive: !gameEnded && !!roomId,
+    isPriority: true,
+    pageName: 'RandomMatchPage'
+  });
 
   // ============= LOAD WORDLIST =============
   useEffect(() => {
