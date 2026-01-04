@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,7 @@ import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/ut
 import { useUserBlocking } from '@/hooks/useUserBlocking';
 import { useNavigate } from 'react-router-dom';
 import { autoReconnect } from '@/utils/supabaseAutoReconnect';
+import { usePageResync } from '@/hooks/useGlobalResync';
 
 
 interface ChatMessage {
@@ -81,6 +82,16 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     username: string;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const handleGlobalChatResync = useCallback(async () => {
+    if (isOpen && user?.id) {
+      await fetchMessages();
+      refreshOnlineUsers();
+    }
+  }, [isOpen, user?.id, refreshOnlineUsers]);
+
+  usePageResync(handleGlobalChatResync, 'GlobalChat', true);
   
 
   // Scroll to bottom when new messages arrive
@@ -91,7 +102,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
 
 // GlobalChat.tsx - fetchReactions fonksiyonu
 const fetchReactions = async () => {
