@@ -116,21 +116,28 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }, [isNative]);
 
-  // 2. JS SDK BAĞLANTI DURUMUNU İZLE
+  // 2. JS SDK BAĞLANTI DURUMUNU İZLE - daha verimli yöntem
   useEffect(() => {
-    const checkJsConnection = () => {
-      // Supabase JS SDK'nın bağlı kanalları varsa bağlıyız
-      const hasActiveChannels = (supabase.realtime as any)?.accessToken || 
-        (supabase.realtime?.channels?.length ?? 0) > 0;
-      
-      // Native bağlıysa veya JS bağlıysa = sistem bağlı
-      if (hasActiveChannels) {
-        setIsSystemConnected(true);
+    // 🔧 İYİLEŞTİRME: Realtime bağlantı durumunu dinle
+    const checkConnection = () => {
+      try {
+        const state = (supabase.realtime as any).connectionState?.();
+        const isConnected = state === "open" || state === "connecting";
+        
+        // Sadece durum değiştiyse güncelle
+        setIsSystemConnected((prev) => {
+          if (isConnected !== prev) {
+            console.log(`[UserContext] 🔌 Bağlantı durumu: ${state} -> ${isConnected}`);
+          }
+          return isConnected;
+        });
+      } catch (e) {
+        // Sessizce devam
       }
     };
 
     // İlk kontrol
-    checkJsConnection();
+    checkConnection();
 
     // Reconnect event'ini dinle
     const handleReconnect = () => {
@@ -138,13 +145,37 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(true);
     };
 
+    // Online/offline event'leri dinle
+    const handleOnline = () => {
+      console.log("🌐 [UserContext] Network online");
+      setTimeout(checkConnection, 1000);
+    };
+
+    const handleOffline = () => {
+      console.log("📴 [UserContext] Network offline");
+      setIsSystemConnected(false);
+    };
+
+    // Visibility change - sayfa görünür olduğunda kontrol et
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setTimeout(checkConnection, 500);
+      }
+    };
+
     window.addEventListener("supabase-reconnected", handleReconnect);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    document.addEventListener("visibilitychange", handleVisibility);
     
-    // Periyodik kontrol (30 saniyede bir)
-    const interval = setInterval(checkJsConnection, 30000);
+    // Periyodik kontrol (60 saniyede bir - 30'dan artırıldı)
+    const interval = setInterval(checkConnection, 60000);
 
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
     };
   }, []);
