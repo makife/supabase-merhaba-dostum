@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { Capacitor } from "@capacitor/core";
 import { isNativeRealtimeAvailable, NativeRealtime } from "@/plugins/NativeRealtime";
+import { onConnectionStateChange, forceRecovery, getConnectionState } from "@/utils/supabaseConnectionManager";
 
 type ConnectionStatus = "connected" | "connecting" | "reconnecting" | "disconnected";
 
@@ -41,6 +42,7 @@ export function useReconnectionState() {
   const { isSystemConnected } = useUser();
   const isNative = Capacitor.isNativePlatform();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const overlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Subscribe to global state changes
   useEffect(() => {
@@ -51,51 +53,58 @@ export function useReconnectionState() {
     };
   }, []);
 
-  // Monitor Supabase realtime connection
+  // 🆕 ConnectionManager state değişikliklerini dinle
   useEffect(() => {
-    const checkConnection = () => {
-      const channels = supabase.getChannels();
-      const hasActiveChannel = channels.some(
-        (ch) => ch.state === "joined" || ch.state === "joining"
-      );
-      const hasClosedChannel = channels.some(
-        (ch) => ch.state === "closed" || ch.state === "errored"
-      );
+    const unsubscribe = onConnectionStateChange((managerState) => {
+      console.log("[ReconnectionState] 📡 Manager state:", managerState);
 
-      if (hasClosedChannel && !hasActiveChannel) {
-        console.log("[ReconnectionState] ⚠️ Kapalı kanal tespit edildi");
-        updateGlobalState({
-          status: "reconnecting",
-          isOverlayVisible: true,
-          reconnectAttempts: globalState.reconnectAttempts + 1,
-        });
-      } else if (hasActiveChannel) {
-        if (globalState.status !== "connected") {
-          console.log("[ReconnectionState] ✅ Bağlantı geri geldi");
+      if (managerState === "healthy") {
+        // Overlay'i hemen kapatma, biraz bekle
+        if (overlayTimeoutRef.current) {
+          clearTimeout(overlayTimeoutRef.current);
+        }
+        overlayTimeoutRef.current = setTimeout(() => {
           updateGlobalState({
             status: "connected",
             isOverlayVisible: false,
             lastConnectedAt: Date.now(),
             reconnectAttempts: 0,
           });
-        }
+        }, 1000);
+      } else if (managerState === "recovering") {
+        updateGlobalState({
+          status: "reconnecting",
+          isOverlayVisible: true,
+        });
+      } else if (managerState === "disconnected") {
+        updateGlobalState({
+          status: "disconnected",
+          isOverlayVisible: true,
+          reconnectAttempts: globalState.reconnectAttempts + 1,
+        });
+      } else if (managerState === "degraded") {
+        // Degraded durumunda overlay gösterme, sadece status güncelle
+        updateGlobalState({
+          status: "connecting",
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (overlayTimeoutRef.current) {
+        clearTimeout(overlayTimeoutRef.current);
       }
     };
-
-    // Her 3 saniyede kontrol et
-    const interval = setInterval(checkConnection, 3000);
-    checkConnection(); // İlk kontrol
-
-    return () => clearInterval(interval);
   }, []);
 
-  // isSystemConnected değişimlerini izle
+  // isSystemConnected değişimlerini izle (Native için)
   useEffect(() => {
     if (isSystemConnected) {
       // Native bağlantı sağlandı
       if (globalState.status === "disconnected" || globalState.status === "reconnecting") {
         console.log("[ReconnectionState] 📱 Native bağlantı sağlandı, overlay kapatılacak");
-        
+
         // 2 saniye bekle, Supabase'in de bağlanmasını bekle
         reconnectTimeoutRef.current = setTimeout(() => {
           updateGlobalState({
@@ -131,31 +140,33 @@ export function useReconnectionState() {
     });
 
     try {
-      // Supabase realtime'ı yeniden bağla
-      const channels = supabase.getChannels();
-      for (const channel of channels) {
-        if (channel.state === "closed" || channel.state === "errored") {
-          channel.subscribe();
-        }
-      }
+      // 🆕 ConnectionManager üzerinden kurtarma yap
+      const recovered = await forceRecovery();
 
-      // Native Realtime varsa onu da tetikle
-      if (isNativeRealtimeAvailable() && NativeRealtime) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await NativeRealtime.setAccessToken({ token: session.access_token });
+      if (recovered) {
+        console.log("[ReconnectionState] ✅ Kurtarma başarılı");
+        // Manager state callback'i overlay'i kapatacak
+      } else {
+        // Native Realtime varsa onu da tetikle
+        if (isNativeRealtimeAvailable() && NativeRealtime) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            await NativeRealtime.setAccessToken({ token: session.access_token });
+          }
         }
-      }
 
-      // 3 saniye sonra overlay'i kapat
-      setTimeout(() => {
-        updateGlobalState({
-          status: "connected",
-          isOverlayVisible: false,
-          lastConnectedAt: Date.now(),
-          reconnectAttempts: 0,
-        });
-      }, 3000);
+        // 3 saniye sonra overlay'i kapat
+        setTimeout(() => {
+          updateGlobalState({
+            status: "connected",
+            isOverlayVisible: false,
+            lastConnectedAt: Date.now(),
+            reconnectAttempts: 0,
+          });
+        }, 3000);
+      }
     } catch (e) {
       console.error("[ReconnectionState] Force reconnect hatası:", e);
       updateGlobalState({

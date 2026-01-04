@@ -67,6 +67,7 @@ import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService
 import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
 import { useReconnectionState } from "@/hooks/useReconnectionState";
 import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
+import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -519,13 +520,15 @@ const App = () => {
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
 
-  // 🆕 ConnectionHealthMonitor'ü başlat
+  // 🆕 ConnectionHealthMonitor + SupabaseConnectionManager başlat
   useEffect(() => {
-    console.log("[App] 🏥 ConnectionHealthMonitor başlatılıyor...");
+    console.log("[App] 🏥 Bağlantı yöneticileri başlatılıyor...");
     connectionHealthMonitor.start();
+    startConnectionMonitor();
 
     return () => {
       connectionHealthMonitor.stop();
+      stopConnectionMonitor();
     };
   }, []);
 

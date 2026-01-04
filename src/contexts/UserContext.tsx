@@ -156,12 +156,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         const state = (supabase.realtime as any).connectionState?.();
         const isConnected = state === "open" || state === "connecting";
         
+        // Kanalların durumunu da kontrol et
+        const channels = supabase.getChannels();
+        const hasActiveChannel = channels.some(
+          (ch) => ch.state === "joined" || ch.state === "joining"
+        );
+        
+        // Bağlantı açık VE en az bir aktif kanal varsa bağlıyız
+        const isReallyConnected = isConnected && (channels.length === 0 || hasActiveChannel);
+        
         // Sadece durum değiştiyse güncelle
         setIsSystemConnected((prev) => {
-          if (isConnected !== prev) {
-            console.log(`[UserContext] 🔌 Bağlantı durumu: ${state} -> ${isConnected}`);
+          if (isReallyConnected !== prev) {
+            console.log(`[UserContext] 🔌 Bağlantı durumu: ${state}, channels: ${channels.length}, active: ${hasActiveChannel} -> ${isReallyConnected}`);
           }
-          return isConnected;
+          return isReallyConnected;
         });
       } catch (e) {
         // Sessizce devam
@@ -173,8 +182,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     // Reconnect event'ini dinle
     const handleReconnect = () => {
-      console.log("🔄 [UserContext] JS SDK reconnected - isSystemConnected = true");
+      console.log("🔄 [UserContext] JS SDK reconnected - isSystemConnected = true, profil yeniden yükleniyor...");
       setIsSystemConnected(true);
+      // Profili de yenile
+      refreshProfile(true);
     };
 
     // Online/offline event'leri dinle
@@ -200,8 +211,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     window.addEventListener("offline", handleOffline);
     document.addEventListener("visibilitychange", handleVisibility);
     
-    // Periyodik kontrol (60 saniyede bir - 30'dan artırıldı)
-    const interval = setInterval(checkConnection, 60000);
+    // Periyodik kontrol - her 10 saniyede bir (daha agresif)
+    const interval = setInterval(checkConnection, 10000);
 
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
@@ -791,11 +802,42 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           );
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Profile] 📡 Channel status: ${status}`);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.log("[Profile] ⚠️ Channel error, profil yeniden yüklenecek...");
+          setTimeout(() => {
+            refreshProfile(true);
+          }, 3000);
+        }
+      });
+
+    // Visibility change - sayfa görünür olduğunda profili yeniden yükle
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[Profile] 👁️ Sayfa görünür, profil kontrol ediliyor...");
+        // Cache'deki profil 30 saniyeden eski ise yeniden yükle
+        const cached = localStorage.getItem("cached_profile");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.timestamp > 30000) {
+              refreshProfile(true);
+            }
+          } catch (e) {
+            refreshProfile(true);
+          }
+        } else {
+          refreshProfile(true);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       console.log("🔌 Cleaning up profile subscription");
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user]);
 
