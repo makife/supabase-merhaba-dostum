@@ -101,15 +101,41 @@ class SupabaseAutoReconnect {
     };
   }
 
-  // ⚠️ DEVRE DIŞI: silentReconnect - removeChannel çağırıyor ve bağlantıyı öldürüyordu
+  // Hatalı kanalları tamamen yeniden oluştur
   private async silentReconnect(channelName: string) {
-    console.log(`[AutoReconnect] ⚠️ silentReconnect DEVRE DIŞI: ${channelName} (bağlantı koruması)`);
-    
     const entry = this.channels.get(channelName);
-    if (!entry) return;
+    if (!entry || entry.reconnecting) return;
     
-    // Sadece kanal state'ini kontrol et ve subscribe çağır (removeChannel YOK)
-    if (entry.channel.state !== 'joined' && entry.channel.state !== 'joining') {
+    const state = entry.channel.state;
+    
+    // Kanal "errored" veya "closed" ise tamamen yeniden oluştur
+    if (state === 'errored' || state === 'closed') {
+      console.log(`[AutoReconnect] 🔄 Kanal yeniden oluşturuluyor: ${channelName} (state: ${state})`);
+      entry.reconnecting = true;
+      
+      try {
+        // Önce eski kanalı temizle
+        try {
+          supabase.removeChannel(entry.channel);
+        } catch (e) {
+          // Ignore removal errors
+        }
+        
+        // Yeni kanal oluştur
+        const newChannel = entry.setupFn();
+        entry.channel = newChannel;
+        entry.retryCount = 0;
+        entry.reconnecting = false;
+        
+        console.log(`[AutoReconnect] ✅ Kanal yeniden oluşturuldu: ${channelName}`);
+      } catch (e) {
+        console.log(`[AutoReconnect] ❌ Kanal oluşturma hatası: ${channelName}`, e);
+        entry.reconnecting = false;
+        entry.retryCount++;
+      }
+    } 
+    // Kanal "leaving" veya başka durumda ise sadece resubscribe dene
+    else if (state !== 'joined' && state !== 'joining') {
       try {
         entry.channel.subscribe();
         console.log(`[AutoReconnect] ✅ Kanal resubscribe denendi: ${channelName}`);
@@ -162,21 +188,16 @@ class SupabaseAutoReconnect {
     }
   }
 
-  // ⚠️ DEVRE DIŞI: unregisterChannel - removeChannel çağırıyor
+  // Kanal kaydını sil (sadece Map'ten, removeChannel yapma - başka yerde kullanılabilir)
   unregisterChannel(channelName: string) {
-    console.log(`[AutoReconnect] ⚠️ unregisterChannel DEVRE DIŞI: ${channelName} (bağlantı koruması)`);
-    // ❌ DEVRE DIŞI: removeChannel - bağlantıyı öldürüyordu
-    // const entry = this.channels.get(channelName);
-    // if (entry) {
-    //   supabase.removeChannel(entry.channel);
-    //   this.channels.delete(channelName);
-    // }
-
     const interval = this.heartbeatIntervals.get(channelName);
     if (interval) {
       clearInterval(interval);
       this.heartbeatIntervals.delete(channelName);
     }
+    
+    // Map'ten sil ki yeniden register edilebilsin
+    this.channels.delete(channelName);
   }
 
   /**
