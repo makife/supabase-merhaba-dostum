@@ -13,6 +13,7 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
+import { ServerTimeProvider } from "@/contexts/ServerTimeContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import NativeRealtime from "@/plugins/NativeRealtime";
 import { useNativeRealtime } from "@/hooks/useNativeRealtime";
@@ -664,11 +665,13 @@ const App = () => {
                         <GlobalRematchDialog />
                         <BackButtonDialog />
                         <RoomAutoNavigator />
-                        <TournamentProvider>
-                          <NotificationProvider>
-                            <AppRoutes />
-                          </NotificationProvider>
-                        </TournamentProvider>
+                        <ServerTimeProvider>
+                          <TournamentProvider>
+                            <NotificationProvider>
+                              <AppRoutes />
+                            </NotificationProvider>
+                          </TournamentProvider>
+                        </ServerTimeProvider>
                       </RematchProvider>
                     </GameProvider>
                   </MatchmakingWrapper>
