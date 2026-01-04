@@ -7,86 +7,54 @@ const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
 
-// 🔧 KRİTİK: Native Storage Adaptörü - KALICI Session için
-// Supabase client async storage destekler, bu yüzden Capacitor Preferences'ı
-// birincil storage olarak kullanabiliriz
-const CapacitorStorage = {
+const isNative = Capacitor.isNativePlatform();
+
+// 🔧 NATIVE: Sadece Capacitor Preferences (kalıcı, arka plan dayanıklı)
+const NativeStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    const isAuthKey = key.includes("auth-token");
-    
     try {
-      // 🔧 1. ÖNCELİK: NATIVE PREFERENCES (kalıcı, arka plan dayanıklı)
-      // Capacitor.isNativePlatform() yerine try-catch ile kontrol
-      // çünkü localhost'ta bile native olabilir
-      try {
-        const { value } = await Preferences.get({ key });
-        if (value) {
-          if (isAuthKey) console.log("[Storage] ✅ Preferences'dan okundu");
-          // localStorage'a da sync et (hızlı erişim için)
-          try { localStorage.setItem(key, value); } catch {}
-          return value;
-        }
-      } catch (prefError) {
-        // Preferences çalışmıyorsa (web) devam et
-        if (isAuthKey) console.log("[Storage] ℹ️ Preferences erişilemedi, localStorage deneniyor");
-      }
-      
-      // 🔧 2. FALLBACK: localStorage
-      const localValue = localStorage.getItem(key);
-      if (localValue) {
-        if (isAuthKey) console.log("[Storage] ✅ localStorage'dan okundu");
-        // Preferences'a da sync et (kalıcılık için)
-        try { await Preferences.set({ key, value: localValue }); } catch {}
-        return localValue;
-      }
-      
-      if (isAuthKey) console.log("[Storage] ❌ Session hiçbir yerde bulunamadı");
-      return null;
+      const { value } = await Preferences.get({ key });
+      return value;
     } catch (e) {
-      console.error("[CapacitorStorage] getItem error:", e);
-      // Son çare: localStorage
-      return localStorage.getItem(key);
+      console.error("[NativeStorage] getItem error:", e);
+      return null;
     }
   },
   
   setItem: async (key: string, value: string): Promise<void> => {
-    const isAuthKey = key.includes("auth-token");
-    
     try {
-      // 🔧 HER İKİSİNE DE YAZ (paralel)
-      const promises: Promise<any>[] = [];
-      
-      // 1. Preferences (birincil, kalıcı)
-      promises.push(
-        Preferences.set({ key, value }).catch(e => {
-          if (isAuthKey) console.log("[Storage] ⚠️ Preferences yazılamadı");
-        })
-      );
-      
-      // 2. localStorage (yedek, hızlı)
-      try {
-        localStorage.setItem(key, value);
-      } catch {}
-      
-      await Promise.all(promises);
-      if (isAuthKey) console.log("[Storage] ✅ Session kaydedildi (hem Preferences hem localStorage)");
+      await Preferences.set({ key, value });
     } catch (e) {
-      console.error("[CapacitorStorage] setItem error:", e);
+      console.error("[NativeStorage] setItem error:", e);
     }
   },
   
   removeItem: async (key: string): Promise<void> => {
     try {
-      // Her ikisinden de sil
-      await Promise.all([
-        Preferences.remove({ key }).catch(() => {}),
-        Promise.resolve(localStorage.removeItem(key))
-      ]);
+      await Preferences.remove({ key });
     } catch (e) {
-      console.error("[CapacitorStorage] removeItem error:", e);
+      console.error("[NativeStorage] removeItem error:", e);
     }
   },
 };
+
+// 🔧 WEB: Sadece localStorage (standart)
+const WebStorage = {
+  getItem: (key: string): string | null => {
+    return localStorage.getItem(key);
+  },
+  
+  setItem: (key: string, value: string): void => {
+    localStorage.setItem(key, value);
+  },
+  
+  removeItem: (key: string): void => {
+    localStorage.removeItem(key);
+  },
+};
+
+// Platform'a göre storage seç
+const StorageAdapter = isNative ? NativeStorage : WebStorage;
 
 // Supabase client oluşturma fonksiyonu
 const createSupabaseClient = (): SupabaseClient<Database> => {
@@ -122,7 +90,7 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
   
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: CapacitorStorage,
+      storage: StorageAdapter,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
