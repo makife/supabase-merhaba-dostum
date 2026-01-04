@@ -126,14 +126,14 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 };
 
-// Sadece realtime bağlantısını yenile - MEVCUT BAĞLANTIYI KESME!
-// Bu fonksiyon sadece bağlantı gerçekten koptuysa çağrılmalı
+// Sadece realtime bağlantısını kontrol et - TOKEN REFRESH YAPMA!
+// Supabase client zaten autoRefreshToken: true ile token'ı yönetiyor
 export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
   console.log("🔄 [SupabaseClient] ========== SOFT RECONNECT ==========");
   
   try {
-    // 1. SESSION TOKEN GÜNCELLE (bağlantıyı kesmeden)
-    console.log("[SupabaseClient] 1️⃣ Session kontrol (2s timeout)...");
+    // 1. SADECE mevcut session'ı OKU (refresh YAPMA!)
+    console.log("[SupabaseClient] 1️⃣ Session kontrol...");
     try {
       const sessionResult = await withTimeout(
         supabaseInstance.auth.getSession(),
@@ -142,37 +142,28 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
       );
       
       if (sessionResult?.data?.session?.access_token) {
+        // Sadece token'ı realtime'a set et, refresh YAPMA
         supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
-        console.log("[SupabaseClient] ✅ Token ayarlandı");
+        console.log("[SupabaseClient] ✅ Mevcut token kullanıldı");
       } else {
-        console.log("[SupabaseClient] ⚠️ Session yok, refresh deneniyor...");
-        const refreshResult = await withTimeout(
-          supabaseInstance.auth.refreshSession(),
-          2000,
-          { data: { session: null, user: null }, error: null }
-        );
-        
-        if (refreshResult?.data?.session?.access_token) {
-          supabaseInstance.realtime.setAuth(refreshResult.data.session.access_token);
-          console.log("[SupabaseClient] ✅ Token yenilendi");
-        }
+        console.log("[SupabaseClient] ⚠️ Session yok - Supabase otomatik yenileyecek");
+        // ❌ MANUEL REFRESH YAPMA - Supabase client autoRefreshToken ile hallediyor
       }
     } catch (e) {
-      console.log("[SupabaseClient] ⚠️ Session hatası:", e);
+      console.log("[SupabaseClient] ⚠️ Session okuma hatası:", e);
     }
     
-    // 2. REALTIME DURUMUNU KONTROL ET
-    const realtimeState = (supabaseInstance.realtime as any).connectionState?.();
-    console.log("[SupabaseClient] 2️⃣ Realtime durumu:", realtimeState);
-    
-    // 3. SADECE bağlantı kapalıysa yeniden bağlan
-    if (realtimeState !== 'open' && realtimeState !== 'connecting') {
-      console.log("[SupabaseClient] 3️⃣ Bağlantı kapalı, yeniden bağlanılıyor...");
-      try { 
-        (supabaseInstance.realtime as any).connect?.(); 
-      } catch {}
-    } else {
-      console.log("[SupabaseClient] 3️⃣ Bağlantı zaten açık, dokunulmuyor");
+    // 2. REALTIME DURUMUNU KONTROL ET (sadece web'de)
+    if (!Capacitor.isNativePlatform()) {
+      const realtimeState = (supabaseInstance.realtime as any).connectionState?.();
+      console.log("[SupabaseClient] 2️⃣ Realtime durumu:", realtimeState);
+      
+      if (realtimeState !== 'open' && realtimeState !== 'connecting') {
+        console.log("[SupabaseClient] 3️⃣ Bağlantı kapalı, yeniden bağlanılıyor...");
+        try { 
+          (supabaseInstance.realtime as any).connect?.(); 
+        } catch {}
+      }
     }
     
     console.log("🎉 [SupabaseClient] ========== SOFT RECONNECT TAMAM ==========");
@@ -184,13 +175,10 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
   return supabaseInstance;
 };
 
-// ⚠️ KRİTİK: hardReconnect DEVRE DIŞI - bu fonksiyon disconnect() çağırıyor ve tüm bağlantıyı öldürüyordu
-// Artık sadece soft reconnect kullanıyoruz
+// ⚠️ DEVRE DIŞI
 export const hardReconnect = async (): Promise<SupabaseClient<Database>> => {
-  console.log("⚠️ [SupabaseClient] hardReconnect DEVRE DIŞI - soft reconnect kullanılıyor");
-  
-  // Hard reconnect yerine soft reconnect yap
-  return recreateSupabaseClient();
+  console.log("⚠️ [SupabaseClient] hardReconnect DEVRE DIŞI");
+  return supabaseInstance;
 };
 
 // Client getter (her zaman güncel instance'ı döndürür)
@@ -198,46 +186,19 @@ export const getSupabaseClient = (): SupabaseClient<Database> => {
   return supabaseInstance;
 };
 
-// 🆕 Proaktif token yenileme - session expire olmadan önce yenile
+// 🚫 DEVRE DIŞI: Proaktif token yenileme - Supabase client zaten autoRefreshToken: true ile yapıyor
+// Manuel refresh = race condition = "Invalid Refresh Token" hatası
 let tokenRefreshInterval: NodeJS.Timeout | null = null;
 
 export const startProactiveTokenRefresh = (): void => {
-  if (tokenRefreshInterval) return;
-  
-  console.log("[SupabaseClient] 🔐 Proaktif token yenileme başlatıldı");
-  
-  tokenRefreshInterval = setInterval(async () => {
-    try {
-      const { data: sessionData } = await supabaseInstance.auth.getSession();
-      const session = sessionData?.session;
-      
-      if (!session) return;
-      
-      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
-      const now = Date.now();
-      const timeUntilExpiry = expiresAt - now;
-      
-      // 5 dakikadan az kaldıysa yenile
-      if (timeUntilExpiry > 0 && timeUntilExpiry < 5 * 60 * 1000) {
-        console.log("[SupabaseClient] 🔄 Token süresi dolmak üzere, yenileniyor...");
-        const { data, error } = await supabaseInstance.auth.refreshSession();
-        
-        if (!error && data.session) {
-          supabaseInstance.realtime.setAuth(data.session.access_token);
-          console.log("[SupabaseClient] ✅ Token proaktif olarak yenilendi");
-        }
-      }
-    } catch (e) {
-      console.error("[SupabaseClient] Token yenileme hatası:", e);
-    }
-  }, 60000); // Her 1 dakikada bir kontrol et
+  // ❌ DEVRE DIŞI - Supabase autoRefreshToken zaten yapıyor
+  console.log("[SupabaseClient] 🔐 Proaktif token yenileme DEVRE DIŞI (Supabase autoRefresh aktif)");
 };
 
 export const stopProactiveTokenRefresh = (): void => {
   if (tokenRefreshInterval) {
     clearInterval(tokenRefreshInterval);
     tokenRefreshInterval = null;
-    console.log("[SupabaseClient] 🔐 Proaktif token yenileme durduruldu");
   }
 };
 
