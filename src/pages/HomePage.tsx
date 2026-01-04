@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -15,6 +15,7 @@ import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
@@ -123,11 +124,20 @@ const GameModeCard = ({ mode, onClick }: any) => (
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { profile, isPremium, refreshProfile, getTotalCredits, isSystemConnected } = useUser();
+  const { profile, isPremium, refreshProfile, getTotalCredits } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
   const { jokers, loadJokers } = useJokerInventory();
+  
+  // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil ve joker verilerini otomatik tazele
+  const handleHomeResync = useCallback(() => {
+    console.log('🔄 [HomePage] Resync triggered - veriler yeniden yükleniyor...');
+    refreshProfile();
+    loadJokers();
+  }, [refreshProfile, loadJokers]);
+  
+  usePageResync(handleHomeResync, 'HomePage', false);
   
   // Premium kullanıcılar için günlük joker kontrolü
   usePremiumDailyRewards();

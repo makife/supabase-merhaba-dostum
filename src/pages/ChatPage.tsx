@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { SwipeToDeleteCard } from "@/components/SwipeToDeleteCard";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -58,30 +59,18 @@ export default function ChatPage() {
     useChatNotifications();
   const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
 
-  // Reconnect event listener - arka plandan dönünce verileri yenile
-  // isSystemConnected ile bağlantı durumunu kontrol et (JS kopsa bile Native bağlıysa çalışır)
-  useEffect(() => {
-    const handleReconnect = () => {
-      console.log('🔄 [ChatPage] Reconnect - veriler yeniden yükleniyor...');
-      if (user?.id) {
-        fetchAllUsers();
-        fetchUnreadCounts();
-        refreshUnreadCounts();
-      }
-    };
-
-    window.addEventListener('supabase-reconnected', handleReconnect);
-    
-    // isSystemConnected true olduğunda da verileri yenile
-    if (isSystemConnected && user?.id) {
+  // 🔄 Global Resync Hook - bağlantı geri geldiğinde otomatik veri tazeleme
+  const handleChatResync = useCallback(() => {
+    if (user?.id) {
+      console.log('🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...');
       fetchAllUsers();
       fetchUnreadCounts();
+      refreshUnreadCounts();
     }
+  }, [user?.id]);
 
-    return () => {
-      window.removeEventListener('supabase-reconnected', handleReconnect);
-    };
-  }, [user?.id, isSystemConnected]);
+  // PrivateChat kritik sayfa - öncelikli resync
+  usePageResync(handleChatResync, 'ChatPage', true);
 
   // Yasak kontrolü
   useEffect(() => {
