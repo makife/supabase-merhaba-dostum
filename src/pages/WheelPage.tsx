@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageResync } from "@/hooks/useGlobalResync";
 
 // GÜNCELLEME: 'ink' tipi eklendi
 interface WheelReward {
@@ -32,7 +33,7 @@ const WHEEL_COLORS = {
 
 const WheelPage = () => {
   const { user } = useAuth();
-  const { profile, refreshProfile, isSystemConnected } = useUser();
+  const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
   const { playSpecialSound } = useSounds();
   const navigate = useNavigate();
@@ -73,19 +74,18 @@ const WheelPage = () => {
     [],
   );
 
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const handleWheelResync = useCallback(async () => {
+    await checkDailySpinAvailability();
+  }, [user]);
+
+  usePageResync(handleWheelResync, 'WheelPage', false);
+
   useEffect(() => {
     if (user) {
       checkDailySpinAvailability();
     }
   }, [user]);
-
-  // isSystemConnected değiştiğinde verileri yenile
-  useEffect(() => {
-    if (isSystemConnected && user) {
-      console.log('🔄 [WheelPage] isSystemConnected true - çark durumu yeniden yükleniyor...');
-      checkDailySpinAvailability();
-    }
-  }, [isSystemConnected, user]);
 
   const checkDailySpinAvailability = async () => {
     if (!user) return;
