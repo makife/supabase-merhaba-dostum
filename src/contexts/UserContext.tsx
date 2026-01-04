@@ -143,8 +143,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // Bağlantıyı başlat
     initNativeConnection();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Native bağlantı koruması
     return () => {
-      NativeRealtime.removeAllListeners();
+      console.log("⚠️ [UserContext] Cleanup ATLANYOR (bağlantı koruması) - removeAllListeners çağrılmadı");
+      // ❌ DEVRE DIŞI: NativeRealtime.removeAllListeners();
     };
   }, [isNative]);
 

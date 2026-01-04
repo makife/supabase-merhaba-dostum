@@ -83,8 +83,11 @@ export function useNativeRealtime() {
     };
 
     setupListeners();
+    // ⚠️ CLEANUP DEVRE DIŞI - Native bağlantı koruması
+    // removeAllListeners() tüm native listener'ları kaldırıyor ve bağlantı kopuyordu
     return () => {
-      NativeRealtime.removeAllListeners();
+      console.log("⚠️ [useNativeRealtime] Cleanup ATLANYOR (bağlantı koruması) - removeAllListeners çağrılmadı");
+      // ❌ DEVRE DIŞI: NativeRealtime.removeAllListeners();
     };
   }, [isNative]);
 
@@ -208,14 +211,17 @@ export function useNativeRealtime() {
   });
 
   // 6. Diğer yardımcı fonksiyonlar
+  // ⚠️ Subscribe fonksiyonu - unsubscribe DEVRE DIŞI
   const subscribe = useCallback(
     (options: any) => {
       const key = `${options.topic}:${options.table}`;
       subscriptionsRef.current.set(key, options);
       if (isNative) NativeRealtime?.subscribe(options);
+      // ⚠️ CLEANUP DEVRE DIŞI - unsubscribe bağlantıyı öldürüyordu
       return () => {
-        subscriptionsRef.current.delete(key);
-        if (isNative) NativeRealtime?.unsubscribe({ topic: options.topic });
+        console.log(`⚠️ [useNativeRealtime] Unsubscribe ATLANYOR: ${options.topic} (bağlantı koruması)`);
+        // subscriptionsRef.current.delete(key); // Map'ten de silmeyelim - referans kaybolmasın
+        // ❌ DEVRE DIŞI: if (isNative) NativeRealtime?.unsubscribe({ topic: options.topic });
       };
     },
     [isNative],
