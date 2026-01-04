@@ -23,6 +23,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
+import { usePageResync } from "@/hooks/useGlobalResync";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -117,6 +118,15 @@ const TournamentBracketPage = () => {
   const matchesStartedRef = useRef<string | null>(null);
   const advancingRef = useRef(false);
 
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const handleBracketResync = useCallback(async () => {
+    if (tournamentId) {
+      await fetchTournamentDetails(tournamentId);
+    }
+  }, [tournamentId, fetchTournamentDetails]);
+
+  usePageResync(handleBracketResync, 'TournamentBracketPage', true);
+
   useEffect(() => {
     if (tournamentId) {
       setInitialLoading(true);
@@ -126,14 +136,6 @@ const TournamentBracketPage = () => {
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
-
-  // isSystemConnected değiştiğinde verileri yenile
-  useEffect(() => {
-    if (isSystemConnected && tournamentId) {
-      console.log('🔄 [TournamentBracketPage] isSystemConnected true - turnuva detayları yeniden yükleniyor...');
-      fetchTournamentDetails(tournamentId);
-    }
-  }, [isSystemConnected, tournamentId]);
 
   useEffect(() => {
     if (currentTournament?.current_round) {
