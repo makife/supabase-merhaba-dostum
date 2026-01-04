@@ -92,28 +92,60 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const lastNotifiedTotalRef = useRef<number>(0);
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
-  // 1. NATIVE BAĞLANTIYI DİNLE + JS SDK DURUMUNU İZLE
+  // 1. NATIVE BAĞLANTIYI BAŞLAT + DİNLE
   useEffect(() => {
-    // Native bağlantı durumu
-    if (isNative && NativeRealtime) {
-      const handleNativeState = (data: { state: string }) => {
-        if (data.state === "connected") {
-          setIsSystemConnected(true);
-          console.log("🌐 [UserContext] Native üzerinden internet canlı.");
-        }
-        // Native koptuğunda JS durumunu kontrol et
-        if (data.state === "disconnected") {
-          // JS SDK bağlıysa hala sistem bağlı
-          const jsConnected = supabase.realtime?.channels?.length > 0;
-          setIsSystemConnected(jsConnected);
-        }
-      };
+    if (!isNative || !NativeRealtime) return;
 
-      NativeRealtime.addListener("connectionState", handleNativeState);
-      return () => {
-        NativeRealtime.removeAllListeners();
-      };
-    }
+    const initNativeConnection = async () => {
+      try {
+        // Önce mevcut durumu kontrol et
+        const state = await NativeRealtime.getConnectionState();
+        console.log("[UserContext] 🔍 Native mevcut durum:", state);
+
+        // Eğer bağlı değilse, bağlantıyı başlat
+        if (!state.isConnected) {
+          console.log("[UserContext] 🚀 Native bağlantı başlatılıyor...");
+          
+          const { data: { session } } = await supabase.auth.getSession();
+          const wsUrl = "wss://nnlvtqmuwmrqfinsgvwc.supabase.co/realtime/v1/websocket";
+          const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
+
+          await NativeRealtime.connect({
+            url: wsUrl,
+            apiKey: apiKey,
+            accessToken: session?.access_token || "",
+          });
+
+          console.log("[UserContext] ✅ Native bağlantı başlatıldı!");
+        } else {
+          console.log("[UserContext] ✅ Native zaten bağlı.");
+          setIsSystemConnected(true);
+        }
+      } catch (e) {
+        console.error("[UserContext] ❌ Native bağlantı hatası:", e);
+      }
+    };
+
+    // Native state listener
+    const handleNativeState = (data: { state: string }) => {
+      console.log("[UserContext] 🔌 Native state:", data.state);
+      if (data.state === "connected") {
+        setIsSystemConnected(true);
+      } else if (data.state === "disconnected") {
+        // JS SDK bağlıysa hala sistem bağlı
+        const jsConnected = supabase.realtime?.channels?.length > 0;
+        setIsSystemConnected(jsConnected);
+      }
+    };
+
+    NativeRealtime.addListener("connectionState", handleNativeState);
+
+    // Bağlantıyı başlat
+    initNativeConnection();
+
+    return () => {
+      NativeRealtime.removeAllListeners();
+    };
   }, [isNative]);
 
   // 2. JS SDK BAĞLANTI DURUMUNU İZLE - daha verimli yöntem
