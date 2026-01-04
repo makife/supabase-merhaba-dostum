@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft } from 'lucide-react';
+import { usePageResync } from '@/hooks/useGlobalResync';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,14 @@ const ModeratorPage = () => {
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [banDuration, setBanDuration] = useState<string>("48");
 
+  // Ana resync fonksiyonu
+  const handleModeratorResync = useCallback(async () => {
+    await Promise.all([fetchReports(), fetchBans()]);
+  }, []);
+
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  usePageResync(handleModeratorResync, 'ModeratorPage', true);
+
   useEffect(() => {
     fetchReports();
     fetchBans();
@@ -80,27 +89,6 @@ const ModeratorPage = () => {
       // ❌ DEVRE DIŞI: supabase.removeChannel(reportChannel);
     };
   }, []);
-
-  // Reconnect event listener + isSystemConnected ile arka plandan dönünce verileri yenile
-  useEffect(() => {
-    const handleReconnect = () => {
-      console.log('🔄 [ModeratorPage] Reconnect - veriler yeniden yükleniyor...');
-      fetchReports();
-      fetchBans();
-    };
-
-    window.addEventListener('supabase-reconnected', handleReconnect);
-
-    // isSystemConnected true olduğunda verileri yenile (JS kopsa bile Native bağlıysa)
-    if (isSystemConnected) {
-      fetchReports();
-      fetchBans();
-    }
-
-    return () => {
-      window.removeEventListener('supabase-reconnected', handleReconnect);
-    };
-  }, [isSystemConnected]);
 
   const fetchReports = async () => {
     try {
