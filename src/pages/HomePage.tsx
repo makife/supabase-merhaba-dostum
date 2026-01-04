@@ -310,13 +310,39 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // isSystemConnected değiştiğinde verileri yenile (NativeRealtime bağlantısı dahil)
+  // isSystemConnected değiştiğinde veya sayfa görünür olduğunda verileri yenile
   useEffect(() => {
+    // Reconnect event handler
+    const handleReconnect = () => {
+      console.log('🔄 [HomePage] Supabase reconnected - tüm veriler yeniden yükleniyor...');
+      refreshProfile(true);
+      loadJokers();
+    };
+
+    // Visibility change handler - sayfa görünür olduğunda verileri kontrol et
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && user) {
+        console.log('👁️ [HomePage] Sayfa görünür - veriler kontrol ediliyor...');
+        refreshProfile();
+        loadJokers();
+      }
+    };
+
+    // İlk yükleme
     if (isSystemConnected && user) {
       console.log('🔄 [HomePage] isSystemConnected true - profil ve jokerler yeniden yükleniyor...');
       refreshProfile();
       loadJokers();
     }
+
+    // Event listeners
+    window.addEventListener("supabase-reconnected", handleReconnect);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("supabase-reconnected", handleReconnect);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [isSystemConnected, user]);
 
   const handleGameModeClick = (modeId: string) => {

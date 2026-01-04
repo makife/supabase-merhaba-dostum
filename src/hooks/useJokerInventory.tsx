@@ -96,7 +96,15 @@ export const useJokerInventory = () => {
           loadJokers();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[Joker] 📡 Channel status: ${status}`);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.log("[Joker] ⚠️ Channel error, 3 saniye sonra yeniden denenecek...");
+          setTimeout(() => {
+            loadJokers();
+          }, 3000);
+        }
+      });
 
     // Supabase reconnect olduğunda joker'ları yeniden yükle
     const handleReconnect = () => {
@@ -105,9 +113,26 @@ export const useJokerInventory = () => {
     };
     window.addEventListener("supabase-reconnected", handleReconnect);
 
+    // Visibility change - sayfa görünür olduğunda kontrol et
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[Joker] 👁️ Sayfa görünür, jokerler yeniden yükleniyor...");
+        loadJokers();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // 🆕 Fallback polling - realtime çalışmasa bile 15 saniyede bir kontrol et
+    const pollingInterval = setInterval(() => {
+      console.log("[Joker] ⏱️ Polling - jokerler kontrol ediliyor...");
+      loadJokers();
+    }, 15000);
+
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener("supabase-reconnected", handleReconnect);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(pollingInterval);
     };
   }, [user, loadJokers]);
 

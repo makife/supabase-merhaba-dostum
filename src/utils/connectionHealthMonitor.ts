@@ -8,6 +8,7 @@
  * 4. Duplicate kanallar - Aynı kaynağa birden fazla kanal önleme
  */
 
+import React from "react";
 import { getSupabaseClient } from "@/integrations/supabase/client";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -500,6 +501,3 @@ declare global {
 if (typeof window !== "undefined") {
   window.connectionHealthMonitor = connectionHealthMonitor;
 }
-
-// React import for hooks
-import React from "react";
