@@ -123,6 +123,36 @@ export function useNativeRealtime() {
     console.log("[NativeRealtime] 🔄 Aggressive re-subscription başlıyor...");
 
     try {
+      // 🔧 KRİTİK: ÖNCELİKLE JS SDK bağlantısını kontrol et ve yeniden bağlan
+      const realtimeState = (supabase.realtime as any).connectionState?.();
+      console.log("[NativeRealtime] 📡 JS SDK Realtime state:", realtimeState);
+      
+      if (realtimeState !== "open" && realtimeState !== "connecting") {
+        console.log("[NativeRealtime] 🔌 JS SDK bağlantısı kopuk, yeniden bağlanıyor...");
+        
+        // Token yenile
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data?.session?.access_token) {
+            supabase.realtime.setAuth(data.session.access_token);
+            console.log("[NativeRealtime] ✅ Token ayarlandı");
+          }
+        } catch (e) {
+          console.log("[NativeRealtime] ⚠️ Token yenileme atlandı:", e);
+        }
+        
+        // Bağlan
+        try {
+          (supabase.realtime as any).connect?.();
+          console.log("[NativeRealtime] ✅ Connect çağrıldı");
+        } catch (e) {
+          console.log("[NativeRealtime] ⚠️ Connect hatası:", e);
+        }
+        
+        // Biraz bekle
+        await new Promise((r) => setTimeout(r, 500));
+      }
+
       // Native Storage'dan son aktif kanalları oku
       const [lastRoomId, lastChatId, lastMatchId] = await Promise.all([
         getLastRoomId(),
