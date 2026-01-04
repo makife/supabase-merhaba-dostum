@@ -41,10 +41,14 @@ class RealtimeWebSocketService : Service() {
         private const val TAG = "RealtimeWSService"
         private const val NOTIFICATION_CHANNEL_ID = "realtime_connection"
         private const val NOTIFICATION_ID = 1001
-        private const val HEARTBEAT_INTERVAL_MS = 25000L // 25 saniye
-        private const val HEARTBEAT_TIMEOUT_MS = 35000L // 35 saniye cevap gelmezse kopuk say
+        // 🔧 DÜZELTME: Heartbeat interval artırıldı (sunucu gecikmeleri için)
+        private const val HEARTBEAT_INTERVAL_MS = 30000L // 30 saniye (Supabase default)
+        // 🔧 DÜZELTME: Timeout BÜYÜK ÖLÇÜDE artırıldı - 2 heartbeat kaçırılabilir
+        private const val HEARTBEAT_TIMEOUT_MS = 90000L // 90 saniye (3x heartbeat)
         private const val RECONNECT_BASE_DELAY_MS = 1000L
         private const val RECONNECT_MAX_DELAY_MS = 30000L
+        // Minimum bağlı kalma süresi - bu süreden önce disconnect sayılmaz
+        private const val MIN_CONNECTED_TIME_MS = 10000L // 10 saniye
     }
 
     // Binder
@@ -78,6 +82,8 @@ class RealtimeWebSocketService : Service() {
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var lastHeartbeatAck = System.currentTimeMillis()
     private var pendingHeartbeatRef: String? = null
+    private var connectionStartTime = 0L // Ne zaman bağlandığımızı takip et
+    private var consecutiveHeartbeatFailures = 0 // Ardışık başarısız heartbeat sayısı
 
     // Wake Lock - CPU'yu uyutma
     private var wakeLock: PowerManager.WakeLock? = null
@@ -106,11 +112,12 @@ class RealtimeWebSocketService : Service() {
         createNotificationChannel()
         
         // OkHttp client oluştur
+        // 🔧 DÜZELTME: Ping interval artırıldı, çakışma önlendi
         okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS) // Artırıldı
             .readTimeout(0, TimeUnit.SECONDS) // WebSocket için sonsuz
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .pingInterval(20, TimeUnit.SECONDS) // OkHttp ping
+            .writeTimeout(60, TimeUnit.SECONDS) // Artırıldı
+            .pingInterval(0, TimeUnit.SECONDS) // OkHttp ping DEVRE DIŞI - kendi heartbeat'imizi kullanıyoruz
             .retryOnConnectionFailure(true)
             .build()
 
@@ -330,8 +337,10 @@ class RealtimeWebSocketService : Service() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(TAG, "✅ WebSocket AÇILDI")
                 
-                // DÜZELTME: Heartbeat ACK zamanını resetle
+                // DÜZELTME: Heartbeat ACK zamanını ve bağlantı başlangıç zamanını resetle
                 lastHeartbeatAck = System.currentTimeMillis()
+                connectionStartTime = System.currentTimeMillis()
+                consecutiveHeartbeatFailures = 0
                 
                 updateConnectionState("connected", null)
                 updateNotification("Bağlı")
@@ -403,7 +412,8 @@ class RealtimeWebSocketService : Service() {
         if (topic == "phoenix" && ref == pendingHeartbeatRef) {
             lastHeartbeatAck = System.currentTimeMillis()
             pendingHeartbeatRef = null
-            Log.d(TAG, "💚 Heartbeat ACK alındı")
+            consecutiveHeartbeatFailures = 0 // ACK geldi, sıfırla
+            Log.d(TAG, "💚 Heartbeat ACK alındı (failures reset)")
             return
         }
         
@@ -504,17 +514,37 @@ class RealtimeWebSocketService : Service() {
         heartbeatRunnable = object : Runnable {
             override fun run() {
                 if (connectionState == "connected") {
-                    // DÜZELTME: Heartbeat ACK timeout kontrolü
-                    val timeSinceLastAck = System.currentTimeMillis() - lastHeartbeatAck
+                    val now = System.currentTimeMillis()
+                    val timeSinceLastAck = now - lastHeartbeatAck
+                    val timeSinceConnection = now - connectionStartTime
                     
-                    if (timeSinceLastAck > HEARTBEAT_TIMEOUT_MS) {
-                        Log.w(TAG, "⚠️ Heartbeat ACK timeout (${timeSinceLastAck}ms) - bağlantı kopuk, yeniden bağlanılıyor...")
-                        handler.post {
-                            webSocket?.cancel() // Force close
-                            webSocket = null
-                            handleDisconnect("Heartbeat timeout")
-                        }
+                    // 🔧 DÜZELTME: Minimum bağlantı süresi kontrolü
+                    // Yeni bağlandıysak timeout kontrolü yapma
+                    if (timeSinceConnection < MIN_CONNECTED_TIME_MS) {
+                        Log.d(TAG, "⏳ Yeni bağlantı, timeout kontrolü atlanıyor (${timeSinceConnection}ms)")
+                        sendHeartbeat()
+                        handler.postDelayed(this, HEARTBEAT_INTERVAL_MS)
                         return
+                    }
+                    
+                    // 🔧 DÜZELTME: Heartbeat ACK timeout kontrolü - DAHA TOLERANSLI
+                    if (timeSinceLastAck > HEARTBEAT_TIMEOUT_MS) {
+                        consecutiveHeartbeatFailures++
+                        Log.w(TAG, "⚠️ Heartbeat ACK timeout (${timeSinceLastAck}ms) - failures: $consecutiveHeartbeatFailures")
+                        
+                        // 🔧 DÜZELTME: Sadece 3 ardışık başarısızlık sonrası disconnect
+                        if (consecutiveHeartbeatFailures >= 3) {
+                            Log.e(TAG, "❌ 3 ardışık heartbeat başarısız, yeniden bağlanılıyor...")
+                            handler.post {
+                                webSocket?.cancel() // Force close
+                                webSocket = null
+                                handleDisconnect("Heartbeat timeout (3 failures)")
+                            }
+                            return
+                        }
+                    } else {
+                        // ACK geldi, failure sayacını sıfırla
+                        consecutiveHeartbeatFailures = 0
                     }
                     
                     sendHeartbeat()
