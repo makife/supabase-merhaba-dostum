@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import {
   ArrowLeft,
   Trophy,
@@ -45,7 +46,6 @@ interface UserStats {
 const LeaderboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSystemConnected } = useUser();
   const { toast } = useToast();
   const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderboardEntry[]>([]);
   const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderboardEntry[]>([]);
@@ -183,10 +183,18 @@ const LeaderboardPage = () => {
     }
   };
 
+  // Ana resync fonksiyonu
+  const handleLeaderboardResync = useCallback(async () => {
+    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+  }, []);
+
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  usePageResync(handleLeaderboardResync, 'LeaderboardPage', false);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+      await handleLeaderboardResync();
       setLoading(false);
     };
 
@@ -207,35 +215,12 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+        await handleLeaderboardResync();
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
-
-  // Reconnect event listener - arka plandan dönünce verileri yenile
-  useEffect(() => {
-    const handleReconnect = async () => {
-      console.log('🔄 [LeaderboardPage] Reconnect - veriler yeniden yükleniyor...');
-      setLoading(true);
-      await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
-      setLoading(false);
-    };
-
-    window.addEventListener('supabase-reconnected', handleReconnect);
-    return () => {
-      window.removeEventListener('supabase-reconnected', handleReconnect);
-    };
-  }, [user]);
-
-  // isSystemConnected değiştiğinde verileri yenile (NativeRealtime bağlantısı dahil)
-  useEffect(() => {
-    if (isSystemConnected) {
-      console.log('🔄 [LeaderboardPage] isSystemConnected true - veriler yeniden yükleniyor...');
-      Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
-    }
-  }, [isSystemConnected]);
+  }, [handleLeaderboardResync]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

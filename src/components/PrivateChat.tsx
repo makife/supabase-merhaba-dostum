@@ -1,10 +1,11 @@
 // PrivateChat.tsx - Real-time düzeltmeleri
 import { setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
 import { useUser } from "@/contexts/UserContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -56,6 +57,13 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { refreshUnreadCounts } = useChatNotifications();
+
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const handlePrivateChatResync = useCallback(async () => {
+    await fetchMessages();
+  }, [chatId]);
+
+  usePageResync(handlePrivateChatResync, `PrivateChat-${chatId?.slice(-8)}`, true);
 
   // 🔴🟢 AKTİF SOHBET TAKİBİ - Component mount/unmount
   useEffect(() => {
