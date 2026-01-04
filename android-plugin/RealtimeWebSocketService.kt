@@ -1,11 +1,16 @@
-package com.example.kelimeci.plugins
+package com.ergan.kelimele.plugins
 
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -20,10 +25,15 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Realtime WebSocket Service
+ * Realtime WebSocket Service - DÜZELTILMIŞ VERSIYON
  * 
  * Foreground Service olarak çalışır, arka planda bile WebSocket bağlantısını canlı tutar.
  * Supabase Realtime (Phoenix Channels) protokolünü native olarak implement eder.
+ * 
+ * DÜZELTMELER:
+ * 1. Wake Lock sonsuz (timeout yok)
+ * 2. Heartbeat ACK kontrolü - sunucu cevap vermezse bağlantı kopuk sayılır
+ * 3. Network listener - bağlantı kesildiğinde anında tespit
  */
 class RealtimeWebSocketService : Service() {
 
@@ -32,6 +42,7 @@ class RealtimeWebSocketService : Service() {
         private const val NOTIFICATION_CHANNEL_ID = "realtime_connection"
         private const val NOTIFICATION_ID = 1001
         private const val HEARTBEAT_INTERVAL_MS = 25000L // 25 saniye
+        private const val HEARTBEAT_TIMEOUT_MS = 35000L // 35 saniye cevap gelmezse kopuk say
         private const val RECONNECT_BASE_DELAY_MS = 1000L
         private const val RECONNECT_MAX_DELAY_MS = 30000L
     }
@@ -62,12 +73,21 @@ class RealtimeWebSocketService : Service() {
     private var messageCallback: ((String, String, String) -> Unit)? = null
     private var connectionCallback: ((String, String?) -> Unit)? = null
 
-    // Heartbeat
+    // Heartbeat - DÜZELTME: ACK kontrolü eklendi
     private var heartbeatRunnable: Runnable? = null
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var lastHeartbeatAck = System.currentTimeMillis()
+    private var pendingHeartbeatRef: String? = null
 
     // Wake Lock - CPU'yu uyutma
     private var wakeLock: PowerManager.WakeLock? = null
+
+    // Network Listener - DÜZELTME: Bağlantı kesildiğinde anında tespit
+    private var connectivityManager: ConnectivityManager? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
+    // Disconnect timer
+    private var disconnectRunnable: Runnable? = null
 
     data class ChannelSubscription(
         val topic: String,
@@ -94,12 +114,15 @@ class RealtimeWebSocketService : Service() {
             .retryOnConnectionFailure(true)
             .build()
 
-        // Wake Lock al - arka planda CPU'yu uyutma
+        // DÜZELTME: Wake Lock SONSUZ - timeout yok
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "Kelimeci:RealtimeWakeLock"
         )
+
+        // DÜZELTME: Network listener kaydet
+        registerNetworkListener()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -127,15 +150,85 @@ class RealtimeWebSocketService : Service() {
         return binder
     }
 
+    fun startDisconnectTimer() {
+        stopDisconnectTimer()
+        disconnectRunnable = Runnable {
+            Log.d(TAG, "⏰ 1 dakika doldu, servis kendi kendini kapatıyor.")
+            stopSelf()
+        }
+        handler.postDelayed(disconnectRunnable!!, 60000) // 1 dakika
+    }
+
+    fun stopDisconnectTimer() {
+        disconnectRunnable?.let { handler.removeCallbacks(it) }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "💀 Service onDestroy")
         
         stopHeartbeat()
         disconnect()
+        unregisterNetworkListener()
         
         wakeLock?.let {
             if (it.isHeld) it.release()
+        }
+    }
+
+    // ================= NETWORK LISTENER (DÜZELTME) =================
+
+    private fun registerNetworkListener() {
+        try {
+            connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            
+            networkCallback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    Log.d(TAG, "📶 Network bağlantısı geri geldi!")
+                    handler.post {
+                        if (connectionState == "disconnected" && wsUrl.isNotEmpty()) {
+                            Log.d(TAG, "🔄 Network geldi, yeniden bağlanılıyor...")
+                            reconnectAttempts = 0 // Reset attempts
+                            connect()
+                        }
+                    }
+                }
+
+                override fun onLost(network: Network) {
+                    Log.w(TAG, "📵 Network bağlantısı kesildi!")
+                    handler.post {
+                        handleDisconnect("Network lost")
+                    }
+                }
+
+                override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                    val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    val hasValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                    Log.d(TAG, "📡 Network değişti - Internet: $hasInternet, Validated: $hasValidated")
+                }
+            }
+
+            val networkRequest = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+
+            connectivityManager?.registerNetworkCallback(networkRequest, networkCallback!!)
+            Log.d(TAG, "✅ Network listener kaydedildi")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Network listener kaydedilemedi: ${e.message}")
+        }
+    }
+
+    private fun unregisterNetworkListener() {
+        try {
+            networkCallback?.let {
+                connectivityManager?.unregisterNetworkCallback(it)
+            }
+            networkCallback = null
+            connectivityManager = null
+            Log.d(TAG, "✅ Network listener kaldırıldı")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Network listener kaldırılamadı: ${e.message}")
         }
     }
 
@@ -201,12 +294,19 @@ class RealtimeWebSocketService : Service() {
 
     private fun connect() {
         if (webSocket != null) {
-            Log.d(TAG, "⚠️ Zaten bağlı")
+            Log.d(TAG, "⚠️ Zaten bağlı veya bağlanıyor")
             return
         }
 
-        // Wake lock al
-        wakeLock?.acquire(10 * 60 * 1000L) // 10 dakika
+        // DÜZELTME: Wake lock SONSUZ al (timeout yok)
+        try {
+            if (wakeLock?.isHeld == false) {
+                wakeLock?.acquire()
+                Log.d(TAG, "🔋 Wake lock alındı (sonsuz)")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "⚠️ Wake lock alınamadı: ${e.message}")
+        }
 
         updateConnectionState("connecting", null)
         updateNotification("Bağlanıyor...")
@@ -229,6 +329,9 @@ class RealtimeWebSocketService : Service() {
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(TAG, "✅ WebSocket AÇILDI")
+                
+                // DÜZELTME: Heartbeat ACK zamanını resetle
+                lastHeartbeatAck = System.currentTimeMillis()
                 
                 updateConnectionState("connected", null)
                 updateNotification("Bağlı")
@@ -295,6 +398,14 @@ class RealtimeWebSocketService : Service() {
 
     private fun handlePhxReply(topic: String, payload: JSONObject, ref: String?) {
         val status = payload.optString("status", "error")
+        
+        // DÜZELTME: Heartbeat ACK kontrolü
+        if (topic == "phoenix" && ref == pendingHeartbeatRef) {
+            lastHeartbeatAck = System.currentTimeMillis()
+            pendingHeartbeatRef = null
+            Log.d(TAG, "💚 Heartbeat ACK alındı")
+            return
+        }
         
         if (status == "ok") {
             subscriptions[topic]?.let { sub ->
@@ -383,12 +494,29 @@ class RealtimeWebSocketService : Service() {
         webSocket?.send(message.toString())
     }
 
+    // DÜZELTME: Heartbeat ACK timeout kontrolü eklendi
     private fun startHeartbeat() {
         stopHeartbeat()
+        
+        // İlk heartbeat ACK zamanını şimdiye ayarla
+        lastHeartbeatAck = System.currentTimeMillis()
 
         heartbeatRunnable = object : Runnable {
             override fun run() {
                 if (connectionState == "connected") {
+                    // DÜZELTME: Heartbeat ACK timeout kontrolü
+                    val timeSinceLastAck = System.currentTimeMillis() - lastHeartbeatAck
+                    
+                    if (timeSinceLastAck > HEARTBEAT_TIMEOUT_MS) {
+                        Log.w(TAG, "⚠️ Heartbeat ACK timeout (${timeSinceLastAck}ms) - bağlantı kopuk, yeniden bağlanılıyor...")
+                        handler.post {
+                            webSocket?.cancel() // Force close
+                            webSocket = null
+                            handleDisconnect("Heartbeat timeout")
+                        }
+                        return
+                    }
+                    
                     sendHeartbeat()
                     handler.postDelayed(this, HEARTBEAT_INTERVAL_MS)
                 }
@@ -401,22 +529,32 @@ class RealtimeWebSocketService : Service() {
     private fun stopHeartbeat() {
         heartbeatRunnable?.let { handler.removeCallbacks(it) }
         heartbeatRunnable = null
+        pendingHeartbeatRef = null
     }
 
     private fun sendHeartbeat() {
+        val ref = getNextRef()
+        pendingHeartbeatRef = ref
+        
         val message = JSONArray().apply {
             put(JSONObject.NULL)
-            put(getNextRef())
+            put(ref)
             put("phoenix")
             put("heartbeat")
             put(JSONObject())
         }
 
-        Log.d(TAG, "💓 Heartbeat gönderiliyor...")
-        webSocket?.send(message.toString())
+        Log.d(TAG, "💓 Heartbeat gönderiliyor (ref: $ref)...")
+        val sent = webSocket?.send(message.toString()) ?: false
+        
+        if (!sent) {
+            Log.w(TAG, "⚠️ Heartbeat gönderilemedi - bağlantı kopuk olabilir")
+        }
     }
 
     private fun handleDisconnect(reason: String) {
+        val wasConnected = connectionState == "connected"
+        
         webSocket = null
         stopHeartbeat()
         
@@ -425,8 +563,12 @@ class RealtimeWebSocketService : Service() {
         updateConnectionState("disconnected", reason)
         updateNotification("Bağlantı kesildi")
 
-        // Otomatik yeniden bağlan
-        scheduleReconnect()
+        // Sadece önceden bağlıysak yeniden bağlan
+        if (wasConnected || reconnectAttempts < 10) {
+            scheduleReconnect()
+        } else {
+            Log.w(TAG, "⚠️ Çok fazla reconnect denemesi, durduruluyor")
+        }
     }
 
     private fun scheduleReconnect() {
@@ -442,7 +584,7 @@ class RealtimeWebSocketService : Service() {
         updateNotification("Yeniden bağlanıyor... ($reconnectAttempts)")
 
         handler.postDelayed({
-            if (connectionState == "disconnected") {
+            if (connectionState == "disconnected" && wsUrl.isNotEmpty()) {
                 connect()
             }
         }, delay)
