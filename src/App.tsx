@@ -66,7 +66,7 @@ import { BackButtonDialog } from "@/hooks/useBackButton";
 import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
 import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
 import { useReconnectionState } from "@/hooks/useReconnectionState";
-
+import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -518,6 +518,16 @@ const App = () => {
 
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
+
+  // 🆕 ConnectionHealthMonitor'ü başlat
+  useEffect(() => {
+    console.log("[App] 🏥 ConnectionHealthMonitor başlatılıyor...");
+    connectionHealthMonitor.start();
+
+    return () => {
+      connectionHealthMonitor.stop();
+    };
+  }, []);
 
   // 2. Arka plan/ön plan yönetimi (SADECE UI için - bağlantı yönetimi ConnectionContext'te)
   useAppState({

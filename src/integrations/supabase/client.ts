@@ -49,12 +49,26 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
       params: {
         eventsPerSecond: 10,
       },
-      // Daha sık heartbeat - arka planda bağlantıyı canlı tutmak için
-      heartbeatIntervalMs: 3000,
-      // Reconnect ayarları
+      // 🔧 İYİLEŞTİRME: Daha uzun heartbeat - sürekli ping atma
+      heartbeatIntervalMs: 15000, // 15 saniye (3'ten 15'e çıkarıldı)
+      // 🔧 İYİLEŞTİRME: Daha akıllı reconnect
       reconnectAfterMs: (tries: number) => {
-        // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
-        return Math.min(1000 * Math.pow(2, tries), 10000);
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+        const delay = Math.min(1000 * Math.pow(2, tries), 30000);
+        console.log(`[SupabaseClient] 🔄 Reconnect attempt ${tries + 1}, waiting ${delay}ms`);
+        return delay;
+      },
+    },
+    // 🔧 İYİLEŞTİRME: Global fetch timeout
+    global: {
+      fetch: (url, options) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 saniye timeout
+        
+        return fetch(url, {
+          ...options,
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId));
       },
     },
   });
@@ -193,9 +207,84 @@ export const getSupabaseClient = (): SupabaseClient<Database> => {
   return supabaseInstance;
 };
 
+// 🆕 Proaktif token yenileme - session expire olmadan önce yenile
+let tokenRefreshInterval: NodeJS.Timeout | null = null;
+
+export const startProactiveTokenRefresh = (): void => {
+  if (tokenRefreshInterval) return;
+  
+  console.log("[SupabaseClient] 🔐 Proaktif token yenileme başlatıldı");
+  
+  tokenRefreshInterval = setInterval(async () => {
+    try {
+      const { data: sessionData } = await supabaseInstance.auth.getSession();
+      const session = sessionData?.session;
+      
+      if (!session) return;
+      
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      const now = Date.now();
+      const timeUntilExpiry = expiresAt - now;
+      
+      // 5 dakikadan az kaldıysa yenile
+      if (timeUntilExpiry > 0 && timeUntilExpiry < 5 * 60 * 1000) {
+        console.log("[SupabaseClient] 🔄 Token süresi dolmak üzere, yenileniyor...");
+        const { data, error } = await supabaseInstance.auth.refreshSession();
+        
+        if (!error && data.session) {
+          supabaseInstance.realtime.setAuth(data.session.access_token);
+          console.log("[SupabaseClient] ✅ Token proaktif olarak yenilendi");
+        }
+      }
+    } catch (e) {
+      console.error("[SupabaseClient] Token yenileme hatası:", e);
+    }
+  }, 60000); // Her 1 dakikada bir kontrol et
+};
+
+export const stopProactiveTokenRefresh = (): void => {
+  if (tokenRefreshInterval) {
+    clearInterval(tokenRefreshInterval);
+    tokenRefreshInterval = null;
+    console.log("[SupabaseClient] 🔐 Proaktif token yenileme durduruldu");
+  }
+};
+
+// 🆕 Bağlantı durumunu al
+export const getRealtimeConnectionState = (): string => {
+  try {
+    const state = (supabaseInstance.realtime as any).connectionState?.();
+    return state || "unknown";
+  } catch {
+    return "unknown";
+  }
+};
+
+// 🆕 Aktif kanal sayısını al
+export const getActiveChannelCount = (): number => {
+  try {
+    return supabaseInstance.getChannels().length;
+  } catch {
+    return 0;
+  }
+};
+
 // Geriye dönük uyumluluk için - ana export
 export const supabase = new Proxy({} as SupabaseClient<Database>, {
   get: (_, prop) => {
     return (supabaseInstance as any)[prop];
   },
 });
+
+// 🆕 Otomatik başlat (client yüklendiğinde)
+if (typeof window !== "undefined") {
+  // Sayfa yüklendiğinde proaktif yenileme başlat
+  window.addEventListener("load", () => {
+    startProactiveTokenRefresh();
+  });
+  
+  // Sayfa kapatıldığında durdur
+  window.addEventListener("beforeunload", () => {
+    stopProactiveTokenRefresh();
+  });
+}
