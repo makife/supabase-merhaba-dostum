@@ -13,37 +13,18 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
   return () => listeners.delete(callback);
 };
 
-const setForegroundState = async (inForeground: boolean) => {
+const setForegroundState = (inForeground: boolean) => {
   const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
 
-  // 🔧 KRİTİK: Ön plana gelince önce TOKEN REFRESH yap
+  // 🔧 Ön plana gelince sadece event dispatch et
+  // Token refresh YAPMA - Supabase client otomatik yapıyor
+  // Manuel refresh = race condition = "Token Not Found" hatası
   if (inForeground && wasInBackground) {
-    console.log("[AppForegroundState] 📱 Ön plana gelindi - token refresh deneniyor...");
-    
-    try {
-      // Önce mevcut session'ı kontrol et
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Token varsa refresh dene (sessizce)
-        const { data: refreshData, error } = await supabase.auth.refreshSession();
-        if (refreshData?.session) {
-          console.log("[AppForegroundState] ✅ Token başarıyla yenilendi");
-        } else if (error) {
-          console.log("[AppForegroundState] ⚠️ Token refresh başarısız:", error.message);
-          // Hata olsa bile uygulamayı çökertme
-        }
-      }
-    } catch (e) {
-      console.log("[AppForegroundState] ⚠️ Token refresh hatası (devam ediliyor):", e);
-    }
-    
-    // Native'de Kotlin WebSocket zaten aktif, JS reconnect event dispatch et
-    if (Capacitor.isNativePlatform()) {
-      window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-    }
+    console.log("[AppForegroundState] 📱 Ön plana gelindi");
+    // Native/Web fark etmez, sadece UI'ı bilgilendir
+    window.dispatchEvent(new CustomEvent("supabase-reconnected"));
   }
 };
 
