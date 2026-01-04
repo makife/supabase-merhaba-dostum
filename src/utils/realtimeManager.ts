@@ -167,18 +167,20 @@ class RealtimeManager {
     // }
   }
 
+  // ⚠️ DEVRE DIŞI - Bağlantı koruması: Channel cleanup kaldırıldı
   private cleanupChannel(channelKey: string): void {
-    const channelInfo = this.channels.get(channelKey);
-    if (!channelInfo) return;
+    console.log(`⚠️ [RealtimeManager] cleanupChannel ATLANYOR: ${channelKey} (bağlantı koruması)`);
+    // const channelInfo = this.channels.get(channelKey);
+    // if (!channelInfo) return;
 
-    try {
-      getSupabaseClient().removeChannel(channelInfo.channel);
-      this.channels.delete(channelKey);
-      this.stats.cleanedUpChannels++;
-      console.log(`✅ Channel ${channelKey} cleaned up`);
-    } catch (error) {
-      console.error(`❌ Error cleaning up channel ${channelKey}:`, error);
-    }
+    // try {
+    //   getSupabaseClient().removeChannel(channelInfo.channel);
+    //   this.channels.delete(channelKey);
+    //   this.stats.cleanedUpChannels++;
+    //   console.log(`✅ Channel ${channelKey} cleaned up`);
+    // } catch (error) {
+    //   console.error(`❌ Error cleaning up channel ${channelKey}:`, error);
+    // }
 
     // User mapping'lerden de kaldır
     for (const [userId, channelKeys] of this.userChannels) {
