@@ -22,7 +22,6 @@ import {
 const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
-const BACKGROUND_LIMIT = 60 * 1000; // 1 Dakika
 
 // Global listener registry - sayfalar buraya callback ekler
 type MessageListener = (topic: string, payload: any) => void;
@@ -186,25 +185,23 @@ export function useNativeRealtime() {
   }, []);
 
   // 5. ARKA PLAN YÖNETİMİ
+  // ⚠️ KRİTİK: Native bağlantıyı ASLA kesme! Kotlin WebSocket arka planda çalışmaya devam eder.
   useAppState({
     onBackground: () => {
-      console.log("📱 [useNativeRealtime] Arka plana geçildi. JS tarafında 60sn sayaç başladı...");
-      // 1 dakika sonra JS tarafında disconnect
-      foregroundTimerRef.current = setTimeout(async () => {
-        console.log("⏰ [useNativeRealtime] 1 dakika doldu. JS tarafında bağlantı kesiliyor.");
-        await NativeRealtime?.disconnect();
-        foregroundTimerRef.current = null;
-      }, BACKGROUND_LIMIT);
+      console.log("📱 [useNativeRealtime] Arka plana geçildi. Native bağlantı KORUNUYOR.");
+      // Native bağlantıyı KESMİYORUZ - Kotlin Foreground Service devam ediyor
+      // Sadece log tutuyoruz
     },
     onForeground: async () => {
-      // Eğer 1 dakika dolmadan geri gelirse JS sayacını iptal et
+      console.log("▶️ [useNativeRealtime] Ön plana gelindi.");
+      
+      // Eğer eski bir timer varsa temizle (artık kullanılmıyor ama güvenlik için)
       if (foregroundTimerRef.current) {
         clearTimeout(foregroundTimerRef.current);
         foregroundTimerRef.current = null;
-        console.log("▶️ [useNativeRealtime] Oyuncu geri geldi, JS sayacı durduruldu.");
       }
 
-      // 🆕 AGGRESSIVE RE-SUBSCRIPTION: Zorla yeniden bağlan
+      // 🆕 AGGRESSIVE RE-SUBSCRIPTION: JS kanallarını zorla yeniden bağla
       console.log("▶️ [useNativeRealtime] Foreground - aggressive re-subscription tetikleniyor...");
       await forceResubscribe();
     },
