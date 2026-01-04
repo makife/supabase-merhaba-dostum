@@ -97,59 +97,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // 3. Supabase ile Gerçek Kontrol (Her durumda çalışır)
+      // 3. Supabase ile Gerçek Kontrol
       try {
         const {
           data: { session: currentSession },
           error,
         } = await supabase.auth.getSession();
 
-        // Eğer getSession bozuk döndüyse veya token yoksa
-        if (!currentSession || error) {
-          // Eğer elimizde taze bir cache vardıysa onu koru, yoksa null
-          if (cachedSession && !isTokenExpired(cachedSession)) {
-            console.log("⚠️ Network hatası ama cache taze, devam ediliyor.");
-          } else {
-            // Cache de yok veya bayatsa, refreshSession dene
-            console.log("🔄 Oturum kurtarılmaya çalışılıyor (Refresh)...");
-            try {
-              const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-              if (refreshData?.session) {
-                console.log("✅ Token başarıyla kurtarıldı!");
-                if (mounted.current) {
-                  setSession(refreshData.session);
-                  setUser(refreshData.session.user);
-                  setCachedData(refreshData.session.user, refreshData.session);
-                }
-              } else if (refreshError?.message?.includes("Refresh Token")) {
-                // 🆕 Refresh token tamamen geçersiz - UYGULAMAYI ÇÖKERTME
-                // Sadece cache'i temizle, kullanıcı auth sayfasına yönlendirilecek
-                console.log("⚠️ Refresh token geçersiz - yeniden giriş gerekli (ÇÖKERTME YOK)");
-                if (mounted.current) {
-                  setSession(null);
-                  setUser(null);
-                  // Cache'i TEMİZLEME - kullanıcı giriş yaparken temizlenecek
-                  // Bu sayede arka planda token expire olsa bile uygulama çökmez
-                }
-              } else {
-                console.log("❌ Kurtarılamadı, giriş sayfasına yönlendirilecek.");
-                if (mounted.current) {
-                  setSession(null);
-                  setUser(null);
-                  setCachedData(null, null);
-                }
-              }
-            } catch (refreshErr) {
-              // Refresh hatası - uygulamayı çökertme
-              console.log("⚠️ Refresh hatası (ağ sorunu olabilir):", refreshErr);
-              // Mevcut cache'i koru, kullanıcı tekrar deneyebilir
-            }
-          }
-        } else {
-          // getSession başarılı döndüyse her şey yolundadır
+        if (currentSession) {
+          // Session var - kullan
           if (mounted.current) {
-            // Eğer cache'den yüklediğimizle aynısı geldiyse gereksiz render yapma
             if (currentSession.access_token !== session?.access_token) {
               console.log("✅ Sunucudan güncel oturum alındı.");
               setSession(currentSession);
@@ -157,11 +114,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setCachedData(currentSession.user, currentSession);
             }
           }
+        } else if (cachedSession && !isTokenExpired(cachedSession)) {
+          // getSession başarısız ama cache taze - cache'i kullan
+          console.log("⚠️ Network hatası ama cache taze, devam ediliyor.");
+        } else {
+          // Session yok ve cache de yok/bayat - giriş gerekli
+          console.log("❌ Oturum yok, giriş sayfasına yönlendirilecek.");
+          if (mounted.current) {
+            setSession(null);
+            setUser(null);
+            setCachedData(null, null);
+          }
         }
       } catch (e) {
         console.error("Auth Init Error:", e);
-        // 🆕 Genel hata - uygulamayı çökertme
-        console.log("⚠️ Auth init hatası - mevcut durum korunuyor");
+        // Hata durumunda cache'i koru
       } finally {
         if (mounted.current) setLoading(false);
       }
