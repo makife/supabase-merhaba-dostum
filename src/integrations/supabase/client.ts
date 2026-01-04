@@ -36,7 +36,7 @@ const CapacitorStorage = {
 const createSupabaseClient = (): SupabaseClient<Database> => {
   console.log("[SupabaseClient] 🆕 Yeni Supabase client oluşturuluyor...");
   
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: CapacitorStorage,
       persistSession: true,
@@ -49,11 +49,17 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
       params: {
         eventsPerSecond: 10,
       },
-      // 🔧 İYİLEŞTİRME: Daha uzun heartbeat - sürekli ping atma
-      heartbeatIntervalMs: 15000, // 15 saniye (3'ten 15'e çıkarıldı)
-      // 🔧 İYİLEŞTİRME: Daha akıllı reconnect
+      // 🔧 KRİTİK: Daha kısa heartbeat - bağlantı kopmasını hemen algıla
+      heartbeatIntervalMs: 5000, // 5 saniye - hızlı tespit
+      // 🔧 KRİTİK: Çok agresif reconnect - hemen yeniden bağlan
       reconnectAfterMs: (tries: number) => {
-        // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+        // Native'de çok hızlı reconnect - 500ms, 1s, 2s, max 5s
+        if (Capacitor.isNativePlatform()) {
+          const delay = Math.min(500 * Math.pow(2, tries), 5000);
+          console.log(`[SupabaseClient] 🔄 Native reconnect attempt ${tries + 1}, waiting ${delay}ms`);
+          return delay;
+        }
+        // Web'de normal backoff
         const delay = Math.min(1000 * Math.pow(2, tries), 30000);
         console.log(`[SupabaseClient] 🔄 Reconnect attempt ${tries + 1}, waiting ${delay}ms`);
         return delay;
@@ -72,6 +78,30 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
       },
     },
   });
+
+  // 🔧 KRİTİK: Native'de visibility change'i IGNORE et
+  // Android WebView arka plana geçince WebSocket'i kapatmaya çalışabilir
+  // Bunu engelleyemeyiz ama en azından hızlı reconnect yapabiliriz
+  if (Capacitor.isNativePlatform() && typeof document !== "undefined") {
+    // Supabase'in kendi disconnect mantığını override etmek için
+    // realtime connection state'ini izle
+    const checkAndReconnect = async () => {
+      try {
+        const state = (client.realtime as any).connectionState?.();
+        if (state !== "open" && state !== "connecting") {
+          console.log("[SupabaseClient] 🔄 Native bağlantı kopuk, yeniden bağlanıyor...");
+          (client.realtime as any).connect?.();
+        }
+      } catch (e) {
+        // Sessizce devam
+      }
+    };
+
+    // Her 3 saniyede bir bağlantıyı kontrol et (native'de agresif)
+    setInterval(checkAndReconnect, 3000);
+  }
+
+  return client;
 };
 
 // Global client instance

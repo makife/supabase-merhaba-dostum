@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getSupabaseClient } from "@/integrations/supabase/client";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -14,8 +14,53 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
 };
 
 const setForegroundState = (inForeground: boolean) => {
+  const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
+
+  // 🔧 KRİTİK: Ön plana geldiğinde HEMEN bağlantıyı kontrol et ve yeniden bağlan
+  if (inForeground && wasInBackground && Capacitor.isNativePlatform()) {
+    console.log("[AppForegroundState] 📱 Ön plana gelindi - AGRESIF reconnect başlatılıyor...");
+    
+    // Hemen reconnect dene
+    setTimeout(async () => {
+      try {
+        const client = getSupabaseClient();
+        const state = (client.realtime as any).connectionState?.();
+        console.log("[AppForegroundState] Realtime state:", state);
+        
+        if (state !== "open" && state !== "connecting") {
+          console.log("[AppForegroundState] 🔄 Bağlantı kopuk, yeniden bağlanıyor...");
+          
+          // Token yenile
+          const { data } = await client.auth.getSession();
+          if (data?.session?.access_token) {
+            client.realtime.setAuth(data.session.access_token);
+          }
+          
+          // Bağlan
+          (client.realtime as any).connect?.();
+          
+          // Event dispatch et
+          window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+        }
+      } catch (e) {
+        console.error("[AppForegroundState] Reconnect hatası:", e);
+      }
+    }, 100);
+    
+    // 500ms sonra tekrar kontrol et
+    setTimeout(async () => {
+      try {
+        const client = getSupabaseClient();
+        const state = (client.realtime as any).connectionState?.();
+        if (state !== "open") {
+          console.log("[AppForegroundState] 🔄 İkinci reconnect denemesi...");
+          (client.realtime as any).connect?.();
+        }
+      } catch (e) {}
+    }, 500);
+  }
 };
 
 // Update last_seen in database to track user activity
