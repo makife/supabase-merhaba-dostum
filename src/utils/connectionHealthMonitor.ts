@@ -258,18 +258,17 @@ class ConnectionHealthMonitor {
       }))
       .sort((a, b) => a.createdAt - b.createdAt);
 
-    // Fazla olanları kapat
-    const toRemove = sortedByAge.slice(0, channels.length - maxChannels);
-
-    toRemove.forEach(({ channel }) => {
-      console.log(`[HealthMonitor] 🗑️ Fazla kanal kapatılıyor: ${channel.topic}`);
-      try {
-        supabase.removeChannel(channel);
-        this.channelStats.delete(channel.topic);
-      } catch (e) {
-        console.error(`[HealthMonitor] Kanal kapatma hatası: ${channel.topic}`, e);
-      }
-    });
+    // ⚠️ DEVRE DIŞI: Fazla kanalları kapatma - bu bağlantıyı öldürüyordu
+    console.log(`[HealthMonitor] ⚠️ Kanal limiti kontrolü DEVRE DIŞI (bağlantı koruması)`);
+    // toRemove.forEach(({ channel }) => {
+    //   console.log(`[HealthMonitor] 🗑️ Fazla kanal kapatılıyor: ${channel.topic}`);
+    //   try {
+    //     supabase.removeChannel(channel);
+    //     this.channelStats.delete(channel.topic);
+    //   } catch (e) {
+    //     console.error(`[HealthMonitor] Kanal kapatma hatası: ${channel.topic}`, e);
+    //   }
+    // });
   }
 
   /**
@@ -285,21 +284,20 @@ class ConnectionHealthMonitor {
     this.reconnectAttempts++;
     const supabase = getSupabaseClient();
 
-    console.log(`[HealthMonitor] 🔄 Otomatik kurtarma denemesi ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-
-    // 1. Sorunlu kanalları kapat
-    const channels = supabase.getChannels();
-    for (const channel of channels) {
-      if (problematicChannels.includes(channel.topic)) {
-        try {
-          console.log(`[HealthMonitor] Sorunlu kanal kapatılıyor: ${channel.topic}`);
-          supabase.removeChannel(channel);
-          this.channelStats.delete(channel.topic);
-        } catch (e) {
-          // Sessizce devam
-        }
-      }
-    }
+    // ⚠️ DEVRE DIŞI: Sorunlu kanalları kapatma - bu bağlantıyı öldürüyordu
+    console.log(`[HealthMonitor] ⚠️ Sorunlu kanal temizliği DEVRE DIŞI (bağlantı koruması)`);
+    // const channels = supabase.getChannels();
+    // for (const channel of channels) {
+    //   if (problematicChannels.includes(channel.topic)) {
+    //     try {
+    //       console.log(`[HealthMonitor] Sorunlu kanal kapatılıyor: ${channel.topic}`);
+    //       supabase.removeChannel(channel);
+    //       this.channelStats.delete(channel.topic);
+    //     } catch (e) {
+    //       // Sessizce devam
+    //     }
+    //   }
+    // }
 
     // 2. Realtime bağlantısı kopuksa yeniden bağlan
     const realtimeState = this.getRealtimeState();
@@ -393,46 +391,28 @@ class ConnectionHealthMonitor {
     }
   }
 
-  /**
-   * Manuel zorla yeniden bağlanma
-   */
+  // ⚠️ DEVRE DIŞI: Zorla yeniden bağlanma - bu disconnect çağırıyor ve bağlantıyı öldürüyordu
   async forceReconnect(): Promise<void> {
-    console.log("[HealthMonitor] 💪 Zorla yeniden bağlanma başlatılıyor...");
-    this.reconnectAttempts = 0;
+    console.log("[HealthMonitor] ⚠️ forceReconnect DEVRE DIŞI (bağlantı koruması)");
     
+    // Sadece token yenileme ve connect çağır - disconnect ve removeChannel YOK
     const supabase = getSupabaseClient();
     
-    // 1. Tüm kanalları temizle
-    const channels = supabase.getChannels();
-    for (const channel of channels) {
-      try {
-        supabase.removeChannel(channel);
-      } catch (e) {
-        // Sessizce devam
-      }
-    }
-    
-    this.channelStats.clear();
-    
-    // 2. Realtime bağlantısını yeniden başlat
-    try {
-      (supabase.realtime as any).disconnect?.();
-    } catch (e) {}
-    
-    await new Promise((r) => setTimeout(r, 500));
-    
-    // 3. Token yenile
+    // Token yenile
     await this.checkAndRefreshToken();
     
-    // 4. Yeniden bağlan
-    try {
-      (supabase.realtime as any).connect?.();
-    } catch (e) {}
+    // Bağlantı kapalıysa aç
+    const realtimeState = this.getRealtimeState();
+    if (realtimeState !== "open" && realtimeState !== "connecting") {
+      try {
+        (supabase.realtime as any).connect?.();
+      } catch (e) {}
+    }
     
-    // 5. Event dispatch
+    // Event dispatch
     window.dispatchEvent(new CustomEvent("supabase-reconnected"));
     
-    console.log("[HealthMonitor] ✅ Zorla yeniden bağlanma tamamlandı");
+    console.log("[HealthMonitor] ✅ Soft reconnect tamamlandı (disconnect yok)");
   }
 
   /**

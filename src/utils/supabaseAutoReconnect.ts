@@ -101,53 +101,21 @@ class SupabaseAutoReconnect {
     };
   }
 
+  // ⚠️ DEVRE DIŞI: silentReconnect - removeChannel çağırıyor ve bağlantıyı öldürüyordu
   private async silentReconnect(channelName: string) {
+    console.log(`[AutoReconnect] ⚠️ silentReconnect DEVRE DIŞI: ${channelName} (bağlantı koruması)`);
+    
     const entry = this.channels.get(channelName);
-    if (!entry || entry.reconnecting) return;
-
-    if (entry.retryCount >= this.config.maxRetries) {
-      console.log(`[AutoReconnect] Max retries reached for ${channelName}, giving up`);
-      return;
-    }
-
-    entry.reconnecting = true;
-    entry.retryCount++;
-
-    // Calculate exponential backoff delay
-    const delay = Math.min(
-      this.config.baseDelay * Math.pow(2, entry.retryCount - 1),
-      this.config.maxDelay
-    );
-
-    console.log(`[AutoReconnect] Reconnecting ${channelName} in ${delay}ms (attempt ${entry.retryCount}/${this.config.maxRetries})`);
-
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    if (!this.isOnline) {
-      console.log(`[AutoReconnect] Network offline, skipping reconnect for ${channelName}`);
-      entry.reconnecting = false;
-      return;
-    }
-
-    try {
-      // Unsubscribe old channel silently
-      await supabase.removeChannel(entry.channel);
-      
-      // Create new channel with same setup
-      const newChannel = entry.setupFn();
-      entry.channel = newChannel;
-      entry.reconnecting = false;
-      
-      // Re-setup monitoring
-      this.setupChannelMonitoring(channelName);
-      
-      console.log(`[AutoReconnect] Successfully reconnected ${channelName}`);
-    } catch (error) {
-      console.error(`[AutoReconnect] Failed to reconnect ${channelName}:`, error);
-      entry.reconnecting = false;
-      
-      // Try again
-      this.silentReconnect(channelName);
+    if (!entry) return;
+    
+    // Sadece kanal state'ini kontrol et ve subscribe çağır (removeChannel YOK)
+    if (entry.channel.state !== 'joined' && entry.channel.state !== 'joining') {
+      try {
+        entry.channel.subscribe();
+        console.log(`[AutoReconnect] ✅ Kanal resubscribe denendi: ${channelName}`);
+      } catch (e) {
+        console.log(`[AutoReconnect] ⚠️ Resubscribe hatası: ${channelName}`, e);
+      }
     }
   }
 
@@ -194,15 +162,15 @@ class SupabaseAutoReconnect {
     }
   }
 
-  /**
-   * Unregister a channel
-   */
+  // ⚠️ DEVRE DIŞI: unregisterChannel - removeChannel çağırıyor
   unregisterChannel(channelName: string) {
-    const entry = this.channels.get(channelName);
-    if (entry) {
-      supabase.removeChannel(entry.channel);
-      this.channels.delete(channelName);
-    }
+    console.log(`[AutoReconnect] ⚠️ unregisterChannel DEVRE DIŞI: ${channelName} (bağlantı koruması)`);
+    // ❌ DEVRE DIŞI: removeChannel - bağlantıyı öldürüyordu
+    // const entry = this.channels.get(channelName);
+    // if (entry) {
+    //   supabase.removeChannel(entry.channel);
+    //   this.channels.delete(channelName);
+    // }
 
     const interval = this.heartbeatIntervals.get(channelName);
     if (interval) {

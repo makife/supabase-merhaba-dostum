@@ -1574,8 +1574,9 @@ const GamePage = ({
             // Opponent ID'yi kaydet (ceza için)
             savedOpponentIdRef.current = opponentId;
 
-            // Subscription'ı kapat
-            supabase.removeChannel(channel);
+            // ❌ DEVRE DIŞI: Subscription'ı kapat - bağlantı koruması
+            // supabase.removeChannel(channel);
+            console.log("⚠️ [GamePage] Disconnect handler - removeChannel ATLANYOR (bağlantı koruması)");
 
             // Disconnect event'i dispatch et
             window.dispatchEvent(
@@ -1594,9 +1595,10 @@ const GamePage = ({
         console.log("📡 Disconnect channel status:", status);
       });
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🔌 Disconnect subscription temizleniyor:", shortId(capturedRoomId));
-      supabase.removeChannel(channel);
+      console.log("⚠️ [GamePage] Disconnect subscription cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
   }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
 
@@ -1779,15 +1781,15 @@ const GamePage = ({
       setGameEnded(false);
       leaveRoom();
 
-      // ⚠️ KRİTİK: Tüm real-time subscriptionları kapat
-      console.log("📡 Unsubscribing from all channels for completed tournament match");
-      const channels = supabase.getChannels();
-      channels.forEach((channel) => {
-        if (channel.topic.includes(tournamentMatch.id)) {
-          console.log("🔌 Unsubscribing from channel:", channel.topic);
-          supabase.removeChannel(channel);
-        }
-      });
+      // ⚠️ KRİTİK: DEVRE DIŞI - Bağlantı koruması
+      console.log("⚠️ [GamePage] Tournament channel cleanup ATLANYOR (bağlantı koruması)");
+      // const channels = supabase.getChannels();
+      // channels.forEach((channel) => {
+      //   if (channel.topic.includes(tournamentMatch.id)) {
+      //     console.log("🔌 Unsubscribing from channel:", channel.topic);
+      //     supabase.removeChannel(channel);
+      //   }
+      // });
 
       // ⏳ KRİTİK: Winner_id propagation için bekle
       console.log("⏳ Waiting for winner_id to propagate in database...");
@@ -3670,8 +3672,9 @@ const GamePage = ({
                   queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
                   queryClient.invalidateQueries({ queryKey: ["active_match"] });
 
-                  // Listener kapat
-                  supabase.removeChannel(statusChannel);
+                  // ❌ DEVRE DIŞI: Listener kapat - bağlantı koruması
+                  // supabase.removeChannel(statusChannel);
+                  console.log("⚠️ [GamePage] Status channel cleanup ATLANYOR (bağlantı koruması)");
 
                   // Toast göster
                   toast({
@@ -4278,9 +4281,10 @@ const GamePage = ({
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🔌 Turnuva maçı subscription temizleniyor");
-      supabase.removeChannel(channel);
+      console.log("⚠️ [GamePage] Turnuva maçı subscription cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
     // ⚠️ DİKKAT: gameStarted ve showCountdown dependency'ye eklendi
     // Oyun başladığında countdown tekrar başlamaması için gerekli
@@ -4370,9 +4374,10 @@ const GamePage = ({
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🔌 Game room countdown subscription temizleniyor");
-      supabase.removeChannel(channel);
+      console.log("⚠️ [GamePage] Game room countdown cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
   }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
 
@@ -4635,9 +4640,11 @@ const GamePage = ({
               timerRef.current = null;
             }
 
+            // ⚠️ DEVRE DIŞI: removeChannel - bağlantı koruması
             if (syncInterval) {
               if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
-                supabase.removeChannel(syncInterval as any);
+                // ❌ DEVRE DIŞI: supabase.removeChannel(syncInterval as any);
+                console.log("⚠️ [GamePage] Sync interval removeChannel ATLANYOR (bağlantı koruması)");
               } else {
                 clearInterval(syncInterval as any);
               }
@@ -4671,11 +4678,11 @@ const GamePage = ({
         timerRef.current = null;
         console.log("✅ Timer cleared in cleanup");
       }
+      // ⚠️ DEVRE DIŞI: removeChannel - bağlantı koruması
       if (syncInterval) {
-        // Realtime channel'ı kapat
         if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
-          supabase.removeChannel(syncInterval as any);
-          console.log("✅ Sync channel unsubscribed in cleanup");
+          // ❌ DEVRE DIŞI: supabase.removeChannel(syncInterval as any);
+          console.log("⚠️ [GamePage] Timer cleanup removeChannel ATLANYOR (bağlantı koruması)");
         } else {
           clearInterval(syncInterval);
         }
@@ -4967,10 +4974,11 @@ const GamePage = ({
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("📱 Mobile word sync cleanup");
-      supabase.removeChannel(wordChannel);
+      console.log("⚠️ [GamePage] Mobile word sync cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(wordChannel);
     };
   }, [currentRoom?.id, user?.id, gameMode]);
 
@@ -5024,9 +5032,10 @@ const GamePage = ({
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("🏆 Turnuva real-time temizliği");
-      supabase.removeChannel(tournamentChannel);
+      console.log("⚠️ [GamePage] Turnuva real-time cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(tournamentChannel);
     };
   }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
 
@@ -5064,10 +5073,11 @@ const GamePage = ({
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("📱 Mobile word sync cleanup");
-      supabase.removeChannel(wordChannel);
+      console.log("⚠️ [GamePage] Mobile word sync cleanup 2 ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(wordChannel);
     };
   }, [currentRoom?.id, user?.id]);
 

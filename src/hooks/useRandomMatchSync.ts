@@ -352,13 +352,11 @@ export function useRandomMatchSync(options: UseRandomMatchSyncOptions = {}) {
     }
   }, [serverTimeReady, initializeMatch]);
 
-  // Cleanup
+  // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
   useEffect(() => {
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channelRef.current);
+      console.log("⚠️ [useRandomMatchSync] Cleanup ATLANYOR (bağlantı koruması)");
       
       if (state.roomId) {
         matchBanlist.add(state.roomId);
@@ -367,11 +365,10 @@ export function useRandomMatchSync(options: UseRandomMatchSyncOptions = {}) {
   }, [state.roomId]);
 
   // Oyundan çık
+  // ⚠️ removeChannel DEVRE DIŞI - Bağlantı koruması
   const exitMatch = useCallback(async () => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    // ❌ DEVRE DIŞI: supabase.removeChannel(channelRef.current);
+    console.log("⚠️ [useRandomMatchSync] exitMatch - removeChannel ATLANYOR (bağlantı koruması)");
     
     await leaveRoom();
     

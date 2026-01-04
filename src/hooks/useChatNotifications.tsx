@@ -218,8 +218,10 @@ export function useChatNotifications() {
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      supabase.removeChannel(channel);
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("⚠️ [useChatNotifications] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [user?.id, profile?.username, navigate, showInAppNotification]);
 

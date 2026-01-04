@@ -128,8 +128,10 @@ export const useJokerInventory = () => {
       loadJokers();
     }, 15000);
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      supabase.removeChannel(channel);
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel); - bağlantıyı öldürüyordu
+      console.log("⚠️ [Joker] Cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("supabase-reconnected", handleReconnect);
       document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(pollingInterval);
