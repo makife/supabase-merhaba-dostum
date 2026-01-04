@@ -7,71 +7,81 @@ const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
 
-// Native cihazlar için özel depolama adaptörü
-// 🔧 KRİTİK: Hem async hem sync erişim için fallback mekanizması
+// 🔧 KRİTİK: Native Storage Adaptörü - KALICI Session için
+// Supabase client async storage destekler, bu yüzden Capacitor Preferences'ı
+// birincil storage olarak kullanabiliriz
 const CapacitorStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    const isNative = Capacitor.isNativePlatform();
     const isAuthKey = key.includes("auth-token");
     
     try {
-      // 🔧 Her zaman önce localStorage'dan dene (sync, hızlı)
+      // 🔧 1. ÖNCELİK: NATIVE PREFERENCES (kalıcı, arka plan dayanıklı)
+      // Capacitor.isNativePlatform() yerine try-catch ile kontrol
+      // çünkü localhost'ta bile native olabilir
+      try {
+        const { value } = await Preferences.get({ key });
+        if (value) {
+          if (isAuthKey) console.log("[Storage] ✅ Preferences'dan okundu");
+          // localStorage'a da sync et (hızlı erişim için)
+          try { localStorage.setItem(key, value); } catch {}
+          return value;
+        }
+      } catch (prefError) {
+        // Preferences çalışmıyorsa (web) devam et
+        if (isAuthKey) console.log("[Storage] ℹ️ Preferences erişilemedi, localStorage deneniyor");
+      }
+      
+      // 🔧 2. FALLBACK: localStorage
       const localValue = localStorage.getItem(key);
       if (localValue) {
-        if (isAuthKey) console.log("[Storage] ✅ localStorage'dan okundu:", key.slice(-20));
+        if (isAuthKey) console.log("[Storage] ✅ localStorage'dan okundu");
+        // Preferences'a da sync et (kalıcılık için)
+        try { await Preferences.set({ key, value: localValue }); } catch {}
         return localValue;
       }
       
-      // Native'de Preferences'dan da dene
-      if (isNative) {
-        if (isAuthKey) console.log("[Storage] 🔄 Preferences'dan okunuyor:", key.slice(-20));
-        const { value } = await Preferences.get({ key });
-        
-        // Preferences'da varsa localStorage'a da kopyala (sync erişim için)
-        if (value) {
-          if (isAuthKey) console.log("[Storage] ✅ Preferences'da bulundu, localStorage'a kopyalanıyor");
-          try {
-            localStorage.setItem(key, value);
-          } catch (e) {
-            // localStorage doluysa sessizce devam et
-          }
-          return value;
-        }
-        
-        if (isAuthKey) console.log("[Storage] ❌ Preferences'da da yok");
-      }
-      
-      if (isAuthKey) console.log("[Storage] ❌ Session bulunamadı (isNative:", isNative, ")");
+      if (isAuthKey) console.log("[Storage] ❌ Session hiçbir yerde bulunamadı");
       return null;
     } catch (e) {
       console.error("[CapacitorStorage] getItem error:", e);
+      // Son çare: localStorage
       return localStorage.getItem(key);
     }
   },
+  
   setItem: async (key: string, value: string): Promise<void> => {
+    const isAuthKey = key.includes("auth-token");
+    
     try {
-      // Her zaman localStorage'a yaz (sync erişim için)
+      // 🔧 HER İKİSİNE DE YAZ (paralel)
+      const promises: Promise<any>[] = [];
+      
+      // 1. Preferences (birincil, kalıcı)
+      promises.push(
+        Preferences.set({ key, value }).catch(e => {
+          if (isAuthKey) console.log("[Storage] ⚠️ Preferences yazılamadı");
+        })
+      );
+      
+      // 2. localStorage (yedek, hızlı)
       try {
         localStorage.setItem(key, value);
-      } catch (e) {
-        // localStorage doluysa sessizce devam et
-      }
+      } catch {}
       
-      if (Capacitor.isNativePlatform()) {
-        // Preferences'a da yaz (kalıcılık için)
-        await Preferences.set({ key, value });
-      }
+      await Promise.all(promises);
+      if (isAuthKey) console.log("[Storage] ✅ Session kaydedildi (hem Preferences hem localStorage)");
     } catch (e) {
       console.error("[CapacitorStorage] setItem error:", e);
     }
   },
+  
   removeItem: async (key: string): Promise<void> => {
     try {
-      localStorage.removeItem(key);
-      
-      if (Capacitor.isNativePlatform()) {
-        await Preferences.remove({ key });
-      }
+      // Her ikisinden de sil
+      await Promise.all([
+        Preferences.remove({ key }).catch(() => {}),
+        Promise.resolve(localStorage.removeItem(key))
+      ]);
     } catch (e) {
       console.error("[CapacitorStorage] removeItem error:", e);
     }
