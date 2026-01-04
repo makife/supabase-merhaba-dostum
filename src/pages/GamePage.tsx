@@ -30,7 +30,8 @@ import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useNativeGameplay } from "@/hooks/useNativeGameplay";
 import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
+import { calculateServerOffset } from "@/utils/serverTimeSync";
+import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import {
@@ -183,7 +184,11 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
+  
+  // 🔄 Server Time Context - Tüm uygulama genelinde senkronize offset
+  const { offset: contextOffset, serverNow, isReady: contextServerTimeReady, triggerResync } = useServerTimeContext();
+  // Geriye uyumluluk için local state'i context'ten al
+  const serverTimeOffset = contextOffset;
 
   const addCleanup = useCallback((cleanupFn: () => void) => {
     cleanupRef.current.push(cleanupFn);
@@ -1223,11 +1228,10 @@ const GamePage = ({
         }
       }
       
-      // 3. Server time sync yeniden kalibre et
+      // 3. Server time sync yeniden kalibre et (Context üzerinden otomatik yapılıyor)
       try {
-        const newOffset = await calculateServerOffset();
-        setServerTimeOffset(newOffset);
-        console.log("✅ [GamePage Resync] Server time re-synced, offset:", newOffset);
+        await triggerResync();
+        console.log("✅ [GamePage Resync] Server time re-synced via context");
       } catch (e) {
         console.warn("⚠️ [GamePage Resync] Server time sync hatası:", e);
       }
@@ -1235,7 +1239,7 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused]);
+  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync]);
 
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
@@ -1245,49 +1249,28 @@ const GamePage = ({
     pageName: 'GamePage'
   });
 
-  // 🔒 Server time sync için state ve ref'ler
+  // 🔒 Server time sync için state ve ref'ler - Context'ten geliyor
   const serverTimeReadyRef = useRef(false);
   const [serverTimeReady, setServerTimeReady] = useState(false);
 
-  // Server time offset'i fetch et - Seviye 1 & 2 optimizasyonlu
+  // Server time context'ten ready durumunu al
   useEffect(() => {
-    const initializeServerSync = async () => {
-      try {
-        // Seviye 1: Multiple samples + RTT compensation
-        const offset = await calculateServerOffset();
-        setServerTimeOffset(offset);
-        serverTimeReadyRef.current = true;
-        setServerTimeReady(true);
-        console.log("⏰ Server time offset initialized:", offset, "ms");
-      } catch (err) {
-        console.error("Server time sync error:", err);
-        // Fallback: Hata durumunda da devam et
-        serverTimeReadyRef.current = true;
-        setServerTimeReady(true);
-      }
-    };
+    if (contextServerTimeReady) {
+      serverTimeReadyRef.current = true;
+      setServerTimeReady(true);
+      console.log("⏰ Server time ready from context, offset:", contextOffset, "ms");
+    }
+  }, [contextServerTimeReady, contextOffset]);
 
-    initializeServerSync();
-  }, []);
-
-  // Seviye 2: Drift detection (her 30 saniyede kontrol)
+  // Context offset değiştiğinde (foreground/reconnect sonrası) log
   useEffect(() => {
-    if (!gameStarted) return;
-
-    const driftInterval = startDriftMonitoring(
-      () => serverTimeOffset,
-      (newOffset, drift) => {
-        setServerTimeOffset(newOffset);
-        console.log(`🔄 Clock re-synced due to drift: ${drift}ms`);
-      },
-      30000, // 30 saniye
-    );
-
+    const unsubscribe = subscribeToOffsetChange((newOffset) => {
+      console.log(`🔄 [GamePage] Server time offset updated: ${newOffset}ms`);
+    });
     return () => {
-      clearInterval(driftInterval);
-      console.log("🔄 Drift monitoring stopped");
+      unsubscribe();
     };
-  }, [gameStarted, toast]); // serverTimeOffset'i dependency'den çıkardık (callback içinde güncel değer okunuyor)
+  }, []);
 
   // Rakip ayrıldığında işlem yap
   useEffect(() => {
