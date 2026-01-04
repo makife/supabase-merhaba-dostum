@@ -3,6 +3,8 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { setCachedSession as setPersistentSession } from "@/utils/persistentState";
+import { Capacitor } from "@capacitor/core";
+import { Preferences } from "@capacitor/preferences";
 
 interface AuthContextType {
   user: User | null;
@@ -155,9 +157,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // 🆕 NATIVE: Arka plandan gelince session'ı yeniden kontrol et
+    const handleForeground = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      
+      console.log("[AuthContext] 📱 Foreground - session kontrol ediliyor...");
+      
+      try {
+        // Önce mevcut session'ı kontrol et
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession?.access_token) {
+          console.log("[AuthContext] ✅ Session mevcut");
+          if (currentSession.access_token !== session?.access_token) {
+            setSession(currentSession);
+            setUser(currentSession.user);
+            setCachedData(currentSession.user, currentSession);
+          }
+          return;
+        }
+
+        // Session yoksa, storage'dan restore dene
+        console.log("[AuthContext] ⚠️ Session yok, storage'dan restore deneniyor...");
+        
+        const { value: storedSession } = await Preferences.get({ 
+          key: "sb-nnlvtqmuwmrqfinsgvwc-auth-token" 
+        });
+
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          if (parsed?.refresh_token) {
+            console.log("[AuthContext] 🔄 Refresh token ile session yenileniyor...");
+            const { data, error } = await supabase.auth.refreshSession({
+              refresh_token: parsed.refresh_token
+            });
+            
+            if (!error && data.session) {
+              console.log("[AuthContext] ✅ Session restore edildi!");
+              setSession(data.session);
+              setUser(data.session.user);
+              setCachedData(data.session.user, data.session);
+            } else {
+              console.error("[AuthContext] ❌ Refresh başarısız:", error?.message);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[AuthContext] ❌ Foreground session check hatası:", e);
+      }
+    };
+
+    // Visibility change listener
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        handleForeground();
+      }
+    };
+
+    // Native app state listener
+    let appStateCleanup: (() => void) | undefined;
+    
+    if (Capacitor.isNativePlatform()) {
+      import("@capacitor/app").then(({ App }) => {
+        App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) {
+            handleForeground();
+          }
+        }).then(listener => {
+          appStateCleanup = () => listener.remove();
+        });
+      });
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("appForeground", handleForeground);
+
     return () => {
       mounted.current = false;
       subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("appForeground", handleForeground);
+      appStateCleanup?.();
     };
   }, []);
 

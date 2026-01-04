@@ -8,26 +8,63 @@ const SUPABASE_PUBLISHABLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
 
 // Native cihazlar için özel depolama adaptörü
+// 🔧 KRİTİK: Hem async hem sync erişim için fallback mekanizması
 const CapacitorStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (Capacitor.isNativePlatform()) {
-      const { value } = await Preferences.get({ key });
-      return value;
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Önce localStorage'dan dene (sync, hızlı)
+        const localValue = localStorage.getItem(key);
+        if (localValue) {
+          return localValue;
+        }
+        
+        // Sonra Preferences'dan (async, kalıcı)
+        const { value } = await Preferences.get({ key });
+        
+        // Preferences'da varsa localStorage'a da kopyala (sync erişim için)
+        if (value) {
+          try {
+            localStorage.setItem(key, value);
+          } catch (e) {
+            // localStorage doluysa sessizce devam et
+          }
+        }
+        
+        return value;
+      }
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.error("[CapacitorStorage] getItem error:", e);
+      return localStorage.getItem(key);
     }
-    return localStorage.getItem(key);
   },
   setItem: async (key: string, value: string): Promise<void> => {
-    if (Capacitor.isNativePlatform()) {
-      await Preferences.set({ key, value });
-    } else {
-      localStorage.setItem(key, value);
+    try {
+      // Her zaman localStorage'a yaz (sync erişim için)
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        // localStorage doluysa sessizce devam et
+      }
+      
+      if (Capacitor.isNativePlatform()) {
+        // Preferences'a da yaz (kalıcılık için)
+        await Preferences.set({ key, value });
+      }
+    } catch (e) {
+      console.error("[CapacitorStorage] setItem error:", e);
     }
   },
   removeItem: async (key: string): Promise<void> => {
-    if (Capacitor.isNativePlatform()) {
-      await Preferences.remove({ key });
-    } else {
+    try {
       localStorage.removeItem(key);
+      
+      if (Capacitor.isNativePlatform()) {
+        await Preferences.remove({ key });
+      }
+    } catch (e) {
+      console.error("[CapacitorStorage] removeItem error:", e);
     }
   },
 };
