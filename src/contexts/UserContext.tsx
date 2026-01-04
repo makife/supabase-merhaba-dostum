@@ -280,8 +280,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     }
 
-    // Kick an async refresh in the background
-    refreshProfile(false);
+    // 🔧 DÜZELTME: Her zaman zorla yenile (cache'e güvenme ilk yüklemede)
+    console.log("[UserContext] 🚀 User değişti, profil zorla yenileniyor...");
+    refreshProfile(true);
 
     // Supabase reconnect olduğunda profili yeniden yükle
     const handleReconnect = () => {
@@ -312,11 +313,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       if (cachedProfile) {
         try {
           const parsed = JSON.parse(cachedProfile);
-          if (parsed.id === user.id && parsed.timestamp > Date.now() - CACHE_DURATION) {
+          // 🔧 KRİTİK: Cache'deki verilerin geçerli olup olmadığını kontrol et
+          const isValidCache = parsed.id === user.id && 
+            parsed.timestamp > Date.now() - CACHE_DURATION &&
+            parsed.data?.username && // username olmalı
+            typeof parsed.data?.total_score === 'number'; // total_score olmalı
+          
+          if (isValidCache) {
             console.log("[UserContext] ✅ Cache'den yüklendi (kalan:", Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000), "sn)");
             setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             setLoading(false);
             return;
+          } else {
+            console.log("[UserContext] ⚠️ Cache geçersiz veya eksik, API'den çekilecek");
           }
         } catch (e) {
           console.error("Cache parse error:", e);
