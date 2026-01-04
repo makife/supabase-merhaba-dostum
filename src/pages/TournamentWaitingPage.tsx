@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Users, Bot, User, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const TournamentWaitingPage = () => {
@@ -23,6 +24,16 @@ const TournamentWaitingPage = () => {
     leaveTournament,
     joinTournament,
   } = useTournament(tournamentId);
+
+  // 🔄 Global Resync Hook - bağlantı geri geldiğinde turnuva detaylarını otomatik tazele
+  const handleResync = useCallback(() => {
+    if (tournamentId) {
+      console.log('🔄 [TournamentWaitingPage] Resync triggered');
+      fetchTournamentDetails(tournamentId);
+    }
+  }, [tournamentId, fetchTournamentDetails]);
+  
+  usePageResync(handleResync, 'TournamentWaitingPage', true);
 
   useEffect(() => {
     if (tournamentId) {

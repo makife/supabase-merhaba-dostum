@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,25 +7,21 @@ import { TournamentCard } from "@/components/TournamentCard";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 import { useUser } from "@/contexts/UserContext";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { toast } from "sonner";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
   const { tournaments, loading, createTournament, joinTournament, fetchTournaments, hasLeftTournament } = useTournamentContext();
-  const { profile, isPremium, isSystemConnected } = useUser();
+  const { profile, isPremium } = useUser();
 
-  // isSystemConnected ile bağlantı durumunu kontrol et
-  // JS kopsa bile Native bağlıysa sayfa çalışmaya devam eder
+  // İlk yükleme
   useEffect(() => {
     fetchTournaments();
   }, []);
 
-  // Bağlantı geri geldiğinde turnuvaları yenile
-  useEffect(() => {
-    if (isSystemConnected) {
-      fetchTournaments();
-    }
-  }, [isSystemConnected]);
+  // 🔄 Global Resync Hook - bağlantı geri geldiğinde turnuvaları otomatik tazele
+  usePageResync(fetchTournaments, 'TournamentPage', true);
 
   const handleCreateTournament = async () => {
     // Kredi kontrolü - minimum 3 hak gerekli

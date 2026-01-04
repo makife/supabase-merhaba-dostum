@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useAdMob } from "@/hooks/useAdMob";
 import { useNativeSubscriptions } from "@/hooks/useNativeSubscriptions";
 import { useNativePurchases } from "@/hooks/useNativePurchases";
+import { usePageResync } from "@/hooks/useGlobalResync";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
@@ -50,11 +51,14 @@ const MarketPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { profile, refreshProfile, isSystemConnected } = useUser();
+  const { profile, refreshProfile } = useUser();
   const { playSound } = useSounds();
   const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription, restoreSubscriptions } = useNativeSubscriptions();
   const { isLoading: isRestoreLoading, purchasePackage } = useNativePurchases();
+
+  // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil verilerini otomatik tazele
+  usePageResync(refreshProfile, 'MarketPage', false);
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -196,18 +200,7 @@ const MarketPage = () => {
     return expiry > new Date();
   };
 
-  // isSystemConnected değiştiğinde profil yenile (NativeRealtime bağlantısı dahil)
-  const hasRefreshedRef = useRef(false);
-  useEffect(() => {
-    if (isSystemConnected && user && !hasRefreshedRef.current) {
-      console.log('🔄 [MarketPage] isSystemConnected true - profil yeniden yükleniyor...');
-      hasRefreshedRef.current = true;
-      refreshProfile();
-    }
-    if (!isSystemConnected) {
-      hasRefreshedRef.current = false;
-    }
-  }, [isSystemConnected, user]);
+  // Not: isSystemConnected artık usePageResync hook'u tarafından yönetiliyor (satır 61)
 
   // --- Aksiyonlar ---
 
