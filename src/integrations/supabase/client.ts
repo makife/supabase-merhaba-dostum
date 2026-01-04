@@ -146,60 +146,13 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
   return supabaseInstance;
 };
 
-// Tam reconnect - sadece gerçekten gerektiğinde kullan (bağlantı tamamen öldüyse)
+// ⚠️ KRİTİK: hardReconnect DEVRE DIŞI - bu fonksiyon disconnect() çağırıyor ve tüm bağlantıyı öldürüyordu
+// Artık sadece soft reconnect kullanıyoruz
 export const hardReconnect = async (): Promise<SupabaseClient<Database>> => {
-  console.log("💥 [SupabaseClient] ========== HARD RECONNECT ==========");
+  console.log("⚠️ [SupabaseClient] hardReconnect DEVRE DIŞI - soft reconnect kullanılıyor");
   
-  try {
-    // 1. TÜM KANALLARI TEMİZLE
-    console.log("[SupabaseClient] 1️⃣ Kanallar temizleniyor...");
-    try {
-      const channels = supabaseInstance.getChannels();
-      console.log(`[SupabaseClient] ${channels.length} kanal bulundu`);
-      for (const ch of channels) {
-        try { 
-          await supabaseInstance.removeChannel(ch); 
-        } catch {}
-      }
-    } catch (e) {
-      console.log("[SupabaseClient] ⚠️ Kanal temizleme hatası:", e);
-    }
-    
-    // 2. REALTIME BAĞLANTISINI KAPAT
-    console.log("[SupabaseClient] 2️⃣ Realtime kapatılıyor...");
-    try { 
-      (supabaseInstance.realtime as any).disconnect?.(); 
-    } catch {}
-    
-    await new Promise(r => setTimeout(r, 300));
-    
-    // 3. SESSION TOKEN GÜNCELLE
-    console.log("[SupabaseClient] 3️⃣ Session güncelleniyor...");
-    try {
-      const sessionResult = await withTimeout(
-        supabaseInstance.auth.getSession(),
-        2000,
-        { data: { session: null }, error: null }
-      );
-      
-      if (sessionResult?.data?.session?.access_token) {
-        supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
-      }
-    } catch {}
-    
-    // 4. YENİDEN BAĞLAN
-    console.log("[SupabaseClient] 4️⃣ Yeniden bağlanılıyor...");
-    try { 
-      (supabaseInstance.realtime as any).connect?.(); 
-    } catch {}
-    
-    console.log("🎉 [SupabaseClient] ========== HARD RECONNECT TAMAM ==========");
-    
-  } catch (error) {
-    console.error("[SupabaseClient] ❌ Hard reconnect hatası:", error);
-  }
-  
-  return supabaseInstance;
+  // Hard reconnect yerine soft reconnect yap
+  return recreateSupabaseClient();
 };
 
 // Client getter (her zaman güncel instance'ı döndürür)
