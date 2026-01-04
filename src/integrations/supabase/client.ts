@@ -11,29 +11,38 @@ const SUPABASE_PUBLISHABLE_KEY =
 // 🔧 KRİTİK: Hem async hem sync erişim için fallback mekanizması
 const CapacitorStorage = {
   getItem: async (key: string): Promise<string | null> => {
+    const isNative = Capacitor.isNativePlatform();
+    const isAuthKey = key.includes("auth-token");
+    
     try {
-      if (Capacitor.isNativePlatform()) {
-        // Önce localStorage'dan dene (sync, hızlı)
-        const localValue = localStorage.getItem(key);
-        if (localValue) {
-          return localValue;
-        }
-        
-        // Sonra Preferences'dan (async, kalıcı)
+      // 🔧 Her zaman önce localStorage'dan dene (sync, hızlı)
+      const localValue = localStorage.getItem(key);
+      if (localValue) {
+        if (isAuthKey) console.log("[Storage] ✅ localStorage'dan okundu:", key.slice(-20));
+        return localValue;
+      }
+      
+      // Native'de Preferences'dan da dene
+      if (isNative) {
+        if (isAuthKey) console.log("[Storage] 🔄 Preferences'dan okunuyor:", key.slice(-20));
         const { value } = await Preferences.get({ key });
         
         // Preferences'da varsa localStorage'a da kopyala (sync erişim için)
         if (value) {
+          if (isAuthKey) console.log("[Storage] ✅ Preferences'da bulundu, localStorage'a kopyalanıyor");
           try {
             localStorage.setItem(key, value);
           } catch (e) {
             // localStorage doluysa sessizce devam et
           }
+          return value;
         }
         
-        return value;
+        if (isAuthKey) console.log("[Storage] ❌ Preferences'da da yok");
       }
-      return localStorage.getItem(key);
+      
+      if (isAuthKey) console.log("[Storage] ❌ Session bulunamadı (isNative:", isNative, ")");
+      return null;
     } catch (e) {
       console.error("[CapacitorStorage] getItem error:", e);
       return localStorage.getItem(key);
