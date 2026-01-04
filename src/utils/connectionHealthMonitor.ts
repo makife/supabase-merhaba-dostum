@@ -183,7 +183,8 @@ class ConnectionHealthMonitor {
   }
 
   /**
-   * Token yenileme kontrolü
+   * Token kontrolü - REFRESH YAPMA, sadece kontrol et
+   * Supabase client autoRefreshToken: true ile token'ı otomatik yönetiyor
    */
   private async checkAndRefreshToken(): Promise<void> {
     const supabase = getSupabaseClient();
@@ -197,25 +198,13 @@ class ConnectionHealthMonitor {
         return;
       }
 
-      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
-      const now = Date.now();
-      const timeUntilExpiry = expiresAt - now;
-
-      // 10 dakikadan az kaldıysa yenile
-      if (timeUntilExpiry < 10 * 60 * 1000 && timeUntilExpiry > 0) {
-        console.log("[HealthMonitor] 🔄 Token süresi dolmak üzere, yenileniyor...");
-        
-        const { data, error } = await supabase.auth.refreshSession();
-        
-        if (error) {
-          console.error("[HealthMonitor] ❌ Token yenileme hatası:", error);
-        } else if (data.session) {
-          console.log("[HealthMonitor] ✅ Token başarıyla yenilendi");
-          
-          // Realtime bağlantısına yeni token'ı ver
-          supabase.realtime.setAuth(data.session.access_token);
-        }
+      // Sadece token'ı realtime'a set et - REFRESH YAPMA
+      if (session.access_token) {
+        supabase.realtime.setAuth(session.access_token);
       }
+      
+      // ❌ REFRESH YAPMA - Supabase autoRefreshToken zaten yapıyor
+      // Manuel refresh = race condition = "Invalid Refresh Token" hatası
     } catch (e) {
       console.error("[HealthMonitor] Token kontrolü hatası:", e);
     }
