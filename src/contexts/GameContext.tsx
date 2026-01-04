@@ -795,8 +795,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             console.warn("Katılımcı ekleme sırasında uyarı:", e);
           }
 
-          // Realtime temizliği
-          realtimeManager.forceCleanupAll();
+          // ⚠️ DEVRE DIŞI: Realtime temizliği bağlantıyı öldürüyordu
+          // realtimeManager.forceCleanupAll();
+          console.log("🛡️ forceCleanupAll atlandı - bağlantı koruması");
 
           // Bekleme sayfasına yönlendir
           const type = roomRow.game_mode?.includes("score") ? "score" : "timed";
@@ -2544,14 +2545,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // 🔥 ŞİMDİLİK DEVRE DIŞI - beforeunload listener'ı kaldır
     // window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Cleanup on component unmount
+    // ⚠️ KRİTİK: GameContext App-level'da sarılı, unmount OLMAMALI
+    // Bu cleanup'ı DEVRE DIŞI bırakıyoruz çünkü tüm bağlantıları öldürüyor
     return () => {
-      console.log("🧹 GameContext unmounting - cleaning all real-time subscriptions");
-
-      // RealtimeManager'daki user'ın tüm subscription'larını temizle
-      if (user?.id) {
-        realtimeManager.unsubscribeAll(user.id);
-      }
+      console.log("🧹 GameContext cleanup - KANALLARA DOKUNMUYORUZ (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: realtimeManager.unsubscribeAll(user.id);
+      // Bu satır tüm Supabase kanallarını kapatıyordu ve bağlantı kopuyordu
     };
   }, [currentRoom?.id, user?.id]);
 

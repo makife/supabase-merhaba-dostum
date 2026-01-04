@@ -212,23 +212,26 @@ class RealtimeManager {
     this.userChannels.delete(userId);
   }
 
-  // Otomatik temizlik
+  // ⚠️ DEVRE DIŞI: Otomatik temizlik bağlantıyı öldürüyordu
   private startCleanupTimer(): void {
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupInactiveChannels();
-    }, 30 * 1000); // 30 saniyede bir
+    // ❌ DEVRE DIŞI - Bu kanalları otomatik kapatıyordu ve bağlantı kopuyordu
+    // this.cleanupInterval = setInterval(() => {
+    //   this.cleanupInactiveChannels();
+    // }, 30 * 1000);
+    console.log("[RealtimeManager] ⚠️ Auto-cleanup DEVRE DIŞI - bağlantı koruması aktif");
   }
 
   private cleanupInactiveChannels(): void {
-    const now = Date.now();
-    const inactiveThreshold = 5 * 60 * 1000; // 5 dakika
-    
-    for (const [channelKey, channelInfo] of this.channels) {
-      if (now - channelInfo.lastActivity > inactiveThreshold) {
-        console.log(`🗑️ Cleaning up inactive channel: ${channelKey}`);
-        this.cleanupChannel(channelKey);
-      }
-    }
+    // ❌ DEVRE DIŞI - Bu fonksiyon bağlantıyı öldürüyordu
+    console.log("[RealtimeManager] ⚠️ cleanupInactiveChannels DEVRE DIŞI");
+    // const now = Date.now();
+    // const inactiveThreshold = 5 * 60 * 1000; // 5 dakika
+    // for (const [channelKey, channelInfo] of this.channels) {
+    //   if (now - channelInfo.lastActivity > inactiveThreshold) {
+    //     console.log(`🗑️ Cleaning up inactive channel: ${channelKey}`);
+    //     this.cleanupChannel(channelKey);
+    //   }
+    // }
   }
 
   private cleanupChannel(channelKey: string): void {
@@ -296,25 +299,25 @@ class RealtimeManager {
     };
   }
 
-  // Manual cleanup
+  // ⚠️ DEVRE DIŞI: Manual cleanup bağlantıyı öldürüyordu
   forceCleanupAll(): void {
-    console.log('🧹 Force cleaning up ALL channels...');
-    
-    for (const [channelKey] of this.channels) {
-      this.cleanupChannel(channelKey);
-    }
-    
-    this.userChannels.clear();
-    this.channels.clear();
+    console.log('⚠️ [RealtimeManager] forceCleanupAll DEVRE DIŞI - bağlantı koruması aktif');
+    // ❌ DEVRE DIŞI - Bu tüm kanalları kapatıyordu
+    // for (const [channelKey] of this.channels) {
+    //   this.cleanupChannel(channelKey);
+    // }
+    // this.userChannels.clear();
+    // this.channels.clear();
   }
 
-  // Component unmount'da çağrılacak
+  // ⚠️ DEVRE DIŞI: Component unmount'da çağrılıyordu ve bağlantıyı öldürüyordu
   destroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = null;
-    }
-    this.forceCleanupAll();
+    console.log('⚠️ [RealtimeManager] destroy DEVRE DIŞI - bağlantı koruması aktif');
+    // if (this.cleanupInterval) {
+    //   clearInterval(this.cleanupInterval);
+    //   this.cleanupInterval = null;
+    // }
+    // this.forceCleanupAll();
   }
 }
 
@@ -335,19 +338,22 @@ export const useOptimizedSubscription = (
     
     const channel = realtimeManager.subscribe(table, userId, filter, callback);
     
+    // ⚠️ CLEANUP'I DEVRE DIŞI BIRAKIYORUZ - bağlantı koruması
     return () => {
-      if (channel) {
-        realtimeManager.unsubscribe(channelKey, userId);
-      }
+      // ❌ DEVRE DIŞI: Bu satır kanalları kapatıyordu
+      // if (channel) {
+      //   realtimeManager.unsubscribe(channelKey, userId);
+      // }
+      console.log(`[useOptimizedSubscription] 🛡️ Cleanup atlandı: ${channelKey} (bağlantı koruması)`);
     };
   }, [table, userId, filter, channelKey]);
   
-  // Component unmount'da user'ın tüm subscription'larını temizle
-  React.useEffect(() => {
-    return () => {
-      realtimeManager.unsubscribeAll(userId);
-    };
-  }, [userId]);
+  // ⚠️ DEVRE DIŞI: Bu satır TÜM kanalları kapatıyordu
+  // React.useEffect(() => {
+  //   return () => {
+  //     realtimeManager.unsubscribeAll(userId);
+  //   };
+  // }, [userId]);
 };
 
 // Performance monitoring hook
