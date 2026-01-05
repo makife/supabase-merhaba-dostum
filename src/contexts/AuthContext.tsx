@@ -182,6 +182,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
     
+    // 🆕 ProtectedRoute'a recovery başladığını bildir
+    window.dispatchEvent(new CustomEvent('auth-recovery-start'));
+    
     // 🔧 FAILSAFE: 6 saniye sonra kilidi zorla aç (timeout 5s + 1s margin)
     if (recoveryTimeoutRef.current) {
       clearTimeout(recoveryTimeoutRef.current);
@@ -278,8 +281,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             } else if (!refreshResult) {
               console.log("[AuthContext] ⚠️ refreshSession timeout - optimistic auth ile devam");
               await applyOptimisticAuth();
-            } else {
-              console.error("[AuthContext] ❌ Refresh başarısız:", refreshResult.error?.message);
+            } else if (refreshResult.error) {
+              // 🆕 AUTH RECOVERY ROBUSTNESS: Invalid Refresh Token için retry logic
+              const errorMessage = refreshResult.error?.message || '';
+              const isInvalidToken = errorMessage.toLowerCase().includes('invalid') || 
+                                     errorMessage.toLowerCase().includes('expired') ||
+                                     errorMessage.toLowerCase().includes('refresh');
+              
+              if (isInvalidToken) {
+                console.log("[AuthContext] ⚠️ Invalid token hatası - 3sn daha storage'a güveniyoruz");
+                // Anında logout yapma! Storage'daki session'ı 3 saniye daha geçerli say
+                const hasOptimistic = await applyOptimisticAuth();
+                if (hasOptimistic) {
+                  // 3 saniye sonra tekrar dene
+                  setTimeout(async () => {
+                    console.log("[AuthContext] 🔄 Invalid token retry...");
+                    const retryResult = await withAuthTimeout(
+                      supabase.auth.refreshSession({ refresh_token: parsed.refresh_token }),
+                      AUTH_TIMEOUT_MS
+                    );
+                    if (retryResult && !retryResult.error && retryResult.data?.session) {
+                      console.log("[AuthContext] ✅ Retry başarılı!");
+                      if (mounted.current) {
+                        setSession(retryResult.data.session);
+                        setUser(retryResult.data.session.user);
+                        setCachedData(retryResult.data.session.user, retryResult.data.session);
+                      }
+                    } else {
+                      console.log("[AuthContext] ❌ Retry de başarısız, logout");
+                    }
+                  }, 3000);
+                }
+              } else {
+                console.error("[AuthContext] ❌ Refresh başarısız:", errorMessage);
+              }
             }
           }
         } catch (parseError) {
@@ -295,6 +330,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isRecoveringRef.current = false;
       if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
       if (mounted.current) setLoading(false);
+      
+      // 🆕 ProtectedRoute'a recovery bittiğini bildir
+      window.dispatchEvent(new CustomEvent('auth-recovery-end'));
     }
   }, [applyOptimisticAuth]);
 
