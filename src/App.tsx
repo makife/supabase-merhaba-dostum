@@ -50,8 +50,9 @@ import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
+import { SafeStatusBar, SafeNavigationBar, SafePushNotifications } from "@/utils/safePluginWrapper";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
@@ -60,9 +61,7 @@ import { useAppForegroundState } from "@/hooks/useAppForegroundState";
 // realtimeManager import kaldırıldı - bağlantı yönetimi ConnectionContext'te
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
-import { StatusBar, Style } from "@capacitor/status-bar";
-// @ts-ignore - Third-party plugin
-import { NavigationBar } from "@ethion/capacitor-navigation-bar";
+// StatusBar ve NavigationBar import'ları kaldırıldı - SafePluginWrapper kullanılıyor
 import { BackButtonDialog } from "@/hooks/useBackButton";
 import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
 import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
@@ -107,29 +106,29 @@ const AppRoutes = () => {
 
   useEffect(() => {
     const applyImmersiveMode = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          // 🔊 Native Audio'yu ÖNCE ve AWAIT ile başlat - kritik!
-          if (isNativePlatform()) {
-            console.log("🔊 App: Native Audio başlatılıyor...");
-            await initNativeAudio();
-            console.log("✅ App: Native Audio başlatıldı ve hazır!");
-          }
-
-          // Status Bar Rengi ve Stili
-          await StatusBar.setStyle({ style: Style.Dark }); // Style.Dark = Yazılar BEYAZ (iOS/Android farkı kafa karıştırır, Android'de Dark stil light content demektir genelde)
-          await StatusBar.setBackgroundColor({ color: "#000000" });
-          await StatusBar.setOverlaysWebView({ overlay: true });
-
-          // Nav Bar Rengi
-          await NavigationBar.setColor({ color: "#000000", darkButtons: false }); // darkButtons: false = İkonlar BEYAZ
-
-          // Gizle
-          await StatusBar.hide();
-          await NavigationBar.hide();
-        } catch (e) {
-          console.log("Status bar error:", e);
+      if (!Capacitor.isNativePlatform()) return;
+      
+      try {
+        // 🔊 Native Audio'yu ÖNCE ve AWAIT ile başlat - kritik!
+        if (isNativePlatform()) {
+          console.log("🔊 App: Native Audio başlatılıyor...");
+          await initNativeAudio();
+          console.log("✅ App: Native Audio başlatıldı ve hazır!");
         }
+      } catch (e) {
+        console.log("[App] Native Audio init hatası tolere edildi:", e);
+      }
+
+      // Status Bar ve Nav Bar - Safe wrapper kullanır
+      try {
+        await SafeStatusBar.setStyle({ style: "Dark" });
+        await SafeStatusBar.setBackgroundColor({ color: "#000000" });
+        await SafeStatusBar.setOverlaysWebView({ overlay: true });
+        await SafeNavigationBar.setColor({ color: "#000000", darkButtons: false });
+        await SafeStatusBar.hide();
+        await SafeNavigationBar.hide();
+      } catch (e) {
+        console.log("[App] Immersive mode hatası tolere edildi:", e);
       }
     };
 
@@ -147,34 +146,39 @@ const AppRoutes = () => {
   }, [user, loading]);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const initPush = async () => {
-        try {
-          let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === "prompt") {
-            permStatus = await PushNotifications.requestPermissions();
-          }
-          if (permStatus.receive === "granted") {
-            // 👇 KRİTİK NOKTA: SESLİ KANAL OLUŞTURMA
-            await PushNotifications.createChannel({
-              id: "kelimeci_alerts_v2",
-              name: "Oyun Bildirimleri",
-              description: "Oyun davetleri ve sıra bildirimleri",
-              importance: 5,
-              visibility: 1,
-              sound: "default",
-              vibration: true,
-              lights: true,
-            });
-            await PushNotifications.register();
-          }
-        } catch (e) {
-          console.error("Push başlatma hatası:", e);
+    if (!Capacitor.isNativePlatform()) return;
+    
+    const initPush = async () => {
+      try {
+        const permStatus = await SafePushNotifications.checkPermissions();
+        if (!permStatus) return;
+        
+        let finalStatus = permStatus;
+        if (permStatus.receive === "prompt") {
+          const reqResult = await SafePushNotifications.requestPermissions();
+          if (reqResult) finalStatus = reqResult;
         }
-      };
+        
+        if (finalStatus.receive === "granted") {
+          // 👇 KRİTİK NOKTA: SESLİ KANAL OLUŞTURMA
+          await SafePushNotifications.createChannel({
+            id: "kelimeci_alerts_v2",
+            name: "Oyun Bildirimleri",
+            description: "Oyun davetleri ve sıra bildirimleri",
+            importance: 5,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          });
+          await SafePushNotifications.register();
+        }
+      } catch (e) {
+        console.log("[App] Push başlatma hatası tolere edildi:", e);
+      }
+    };
 
-      initPush();
-    }
+    initPush();
   }, []);
 
   if (loading || customLoading) {
@@ -555,11 +559,12 @@ const App = () => {
     },
   });
 
-  // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
-  // 👇 PUSH NOTIFICATION ENTEGRASYONU (DÜZELTİLMİŞ)
+  // 👇 PUSH NOTIFICATION ENTEGRASYONU (SAFE WRAPPER İLE)
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
+      try {
         const { error } = await supabase
           .from("profiles")
           .update({ push_token: tokenValue } as any)
@@ -567,121 +572,138 @@ const App = () => {
 
         if (error) console.error("❌ Token kaydedilemedi:", error);
         else console.log("✅ Token veritabanına başarıyla kaydedildi!");
-      };
+      } catch (e) {
+        console.log("[App] Token kaydetme hatası:", e);
+      }
+    };
 
-      const initPush = async () => {
-        try {
-          let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === "prompt") {
-            permStatus = await PushNotifications.requestPermissions();
-          }
-          if (permStatus.receive === "granted") {
-            await PushNotifications.register();
-          }
-        } catch (e) {
-          console.error("Push başlatma hatası:", e);
+    const initPush = async () => {
+      try {
+        const permStatus = await SafePushNotifications.checkPermissions();
+        if (!permStatus) return;
+        
+        let finalStatus = permStatus;
+        if (permStatus.receive === "prompt") {
+          const reqResult = await SafePushNotifications.requestPermissions();
+          if (reqResult) finalStatus = reqResult;
         }
-      };
-
-      initPush();
-
-      const registrationListener = PushNotifications.addListener("registration", async (token) => {
-        console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
-        localStorage.setItem("temp_push_token", token.value);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) await saveTokenToSupabase(user.id, token.value);
-      });
-
-      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          const storedToken = localStorage.getItem("temp_push_token");
-          if (storedToken) await saveTokenToSupabase(session.user.id, storedToken);
+        
+        if (finalStatus.receive === "granted") {
+          await SafePushNotifications.register();
         }
-      });
+      } catch (e) {
+        console.log("[App] Push başlatma hatası tolere edildi:", e);
+      }
+    };
 
-      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (n) => {
-        console.log("🔔 Bildirim geldi:", n);
-      });
+    initPush();
 
-      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (n) => {
-        const data = n.notification.data;
-        if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
-      });
+    // Listener'ları async/await ile güvenli şekilde kaydet
+    let registrationHandle: { remove: () => void } | null = null;
+    let notificationHandle: { remove: () => void } | null = null;
+    let actionHandle: { remove: () => void } | null = null;
 
-      // BURASI KRİTİK: TÜM PARANTEZLER VE CLEANUP BURADA
-      return () => {
-        if (authListener?.subscription) {
-          authListener.subscription.unsubscribe();
-        }
-
-        const cleanup = async () => {
+    const setupListeners = async () => {
+      try {
+        registrationHandle = await SafePushNotifications.addListener("registration", async (token: any) => {
+          console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
+          localStorage.setItem("temp_push_token", token.value);
           try {
-            const [reg, notify, action] = await Promise.all([
-              registrationListener,
-              notificationListener,
-              actionListener,
-            ]);
-            if (reg) reg.remove();
-            if (notify) notify.remove();
-            if (action) action.remove();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await saveTokenToSupabase(user.id, token.value);
           } catch (e) {
-            console.warn("Cleanup error:", e);
+            console.log("[App] Token kaydetme hatası:", e);
           }
-        };
-        cleanup();
-      };
-    }
-  }, []); // useEffect burada düzgünce kapanıyor
+        });
+
+        notificationHandle = await SafePushNotifications.addListener("pushNotificationReceived", (n: any) => {
+          console.log("🔔 Bildirim geldi:", n);
+        });
+
+        actionHandle = await SafePushNotifications.addListener("pushNotificationActionPerformed", (n: any) => {
+          const data = n.notification?.data;
+          if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
+        });
+      } catch (e) {
+        console.log("[App] Push listener kurulumu hatası:", e);
+      }
+    };
+
+    setupListeners();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const storedToken = localStorage.getItem("temp_push_token");
+        if (storedToken) await saveTokenToSupabase(session.user.id, storedToken);
+      }
+    });
+
+    // Cleanup - safe
+    return () => {
+      if (authListener?.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+      
+      // Handle'ları temizle
+      try {
+        if (registrationHandle) registrationHandle.remove();
+        if (notificationHandle) notificationHandle.remove();
+        if (actionHandle) actionHandle.remove();
+      } catch (e) {
+        console.log("[App] Push cleanup hatası:", e);
+      }
+    };
+  }, []);
 
   // App.tsx içindeki return kısmı
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          {/* 1. KADEME: AuthProvider (En Dışta - Kimlik Yönetimi) */}
-          <AuthProvider>
-            {/* 🆕 Session Recovery - Native'de arka plandan gelince session'ı kurtarır */}
-            <SessionRecoveryManager />
-            {/* 2. KADEME: UserProvider (Profil Verisi) */}
-            <UserProvider>
-              {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
-              <NativeRealtimeManager />
-              {/* 🆕 GLOBAL RECONNECTION OVERLAY */}
-              <GlobalReconnectionOverlay />
-              <ThemeProvider>
-                <MusicProvider>
-                  <MatchmakingWrapper>
-                    <GameProvider>
-                      <RematchProvider>
-                        <GlobalRematchDialog />
-                        <BackButtonDialog />
-                        <RoomAutoNavigator />
-                        <ServerTimeProvider>
-                          <TournamentProvider>
-                            <NotificationProvider>
-                              <AppRoutes />
-                            </NotificationProvider>
-                          </TournamentProvider>
-                        </ServerTimeProvider>
-                      </RematchProvider>
-                    </GameProvider>
-                  </MatchmakingWrapper>
-                </MusicProvider>
-              </ThemeProvider>
-            </UserProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            {/* 1. KADEME: AuthProvider (En Dışta - Kimlik Yönetimi) */}
+            <AuthProvider>
+              {/* 🆕 Session Recovery - Native'de arka plandan gelince session'ı kurtarır */}
+              <SessionRecoveryManager />
+              {/* 2. KADEME: UserProvider (Profil Verisi) */}
+              <UserProvider>
+                {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
+                <NativeRealtimeManager />
+                {/* 🆕 GLOBAL RECONNECTION OVERLAY */}
+                <GlobalReconnectionOverlay />
+                <ThemeProvider>
+                  <MusicProvider>
+                    <MatchmakingWrapper>
+                      <GameProvider>
+                        <RematchProvider>
+                          <GlobalRematchDialog />
+                          <BackButtonDialog />
+                          <RoomAutoNavigator />
+                          <ServerTimeProvider>
+                            <TournamentProvider>
+                              <NotificationProvider>
+                                <AppRoutes />
+                              </NotificationProvider>
+                            </TournamentProvider>
+                          </ServerTimeProvider>
+                        </RematchProvider>
+                      </GameProvider>
+                    </MatchmakingWrapper>
+                  </MusicProvider>
+                </ThemeProvider>
+              </UserProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
