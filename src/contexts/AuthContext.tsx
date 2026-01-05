@@ -68,7 +68,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isRecoveringRef = useRef(false);
   const lastSignOutEventRef = useRef<number>(0);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Recovery failsafe
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const optimisticAuthAppliedRef = useRef(false); // 🆕 Optimistic auth uygulandı mı?
 
   // Token'ın süresi dolmuş mu kontrol eden fonksiyon
   const isTokenExpired = (session: Session) => {
@@ -77,7 +78,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return session.expires_at < now + 60;
   };
 
-  // 🔧 FORCE SESSION RECOVERY - Foreground'da çağrılacak
+  // 🆕 OPTIMISTIC AUTH: Storage'dan anında session al, ağ bekleme
+  const applyOptimisticAuth = useCallback(async (): Promise<boolean> => {
+    if (optimisticAuthAppliedRef.current) return false;
+    
+    console.log("[AuthContext] ⚡ Optimistic Auth: Storage'dan anında yükleniyor...");
+    
+    const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
+    let storedSession: string | null = null;
+
+    // 1. Önce Preferences'dan dene (native storage, daha güvenilir)
+    try {
+      const { value } = await Preferences.get({ key: storedSessionKey });
+      storedSession = value;
+    } catch (e) {}
+
+    // 2. Yoksa localStorage'dan dene
+    if (!storedSession) {
+      try {
+        storedSession = localStorage.getItem(storedSessionKey);
+      } catch (e) {}
+    }
+
+    if (storedSession) {
+      try {
+        const parsed = JSON.parse(storedSession);
+        const expiresAt = parsed?.expires_at;
+        const nowSec = Math.floor(Date.now() / 1000);
+        
+        // Token hala geçerli mi?
+        if (expiresAt && expiresAt > nowSec) {
+          console.log("[AuthContext] ⚡ Optimistic Auth: Geçerli session bulundu!");
+          
+          // User bilgisini construct et
+          const optimisticUser: User = {
+            id: parsed.user?.id || '',
+            email: parsed.user?.email || '',
+            aud: parsed.user?.aud || 'authenticated',
+            role: parsed.user?.role || 'authenticated',
+            app_metadata: parsed.user?.app_metadata || {},
+            user_metadata: parsed.user?.user_metadata || {},
+            created_at: parsed.user?.created_at || '',
+          } as User;
+          
+          const optimisticSession: Session = {
+            access_token: parsed.access_token || '',
+            refresh_token: parsed.refresh_token || '',
+            expires_at: parsed.expires_at,
+            expires_in: parsed.expires_in || 3600,
+            token_type: parsed.token_type || 'bearer',
+            user: optimisticUser,
+          };
+          
+          if (mounted.current) {
+            setUser(optimisticUser);
+            setSession(optimisticSession);
+            setLoading(false);
+            optimisticAuthAppliedRef.current = true;
+          }
+          
+          return true;
+        }
+      } catch (e) {
+        console.log("[AuthContext] ⚠️ Optimistic Auth parse hatası");
+      }
+    }
+    
+    return false;
+  }, []);
+
+  // 🔧 FORCE SESSION RECOVERY - Foreground'da çağrılacak (arka planda)
   const forceRecoverSession = useCallback(async () => {
     if (isRecoveringRef.current) {
       console.log("[AuthContext] ⏳ Recovery zaten devam ediyor, atlanıyor...");
@@ -87,18 +157,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
     
-    // 🔧 FAILSAFE: 10 saniye sonra kilidi zorla aç
+    // 🔧 FAILSAFE: 5 saniye sonra kilidi zorla aç (eskisi 10s)
     if (recoveryTimeoutRef.current) {
       clearTimeout(recoveryTimeoutRef.current);
     }
     recoveryTimeoutRef.current = setTimeout(() => {
       if (isRecoveringRef.current) {
-        console.log("[AuthContext] ⚠️ Recovery failsafe: 10s timeout, kilit açılıyor");
+        console.log("[AuthContext] ⚠️ Recovery failsafe: 5s timeout, kilit açılıyor");
         isRecoveringRef.current = false;
+        if (mounted.current) setLoading(false);
       }
-    }, 10000);
+    }, 5000);
     
     try {
+      // 🔧 Network warm-up: 500ms bekle (Android WebView ağ ısınması)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // 1. Önce getSession dene (storage'dan okur)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
@@ -121,7 +195,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
       let storedSession: string | null = null;
 
-      // Önce Preferences'dan dene (native storage, daha güvenilir)
       try {
         const { value } = await Preferences.get({ key: storedSessionKey });
         storedSession = value;
@@ -130,7 +203,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("[AuthContext] ℹ️ Preferences okunamadı");
       }
 
-      // Yoksa localStorage'dan dene
       if (!storedSession) {
         try {
           storedSession = localStorage.getItem(storedSessionKey);
@@ -170,6 +242,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       isRecoveringRef.current = false;
       if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
+      if (mounted.current) setLoading(false);
     }
   }, []);
 
@@ -186,8 +259,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     mounted.current = true;
+    optimisticAuthAppliedRef.current = false;
 
-    // FAILSAFE: Maksimum 10 saniyede loading false olsun
+    // 🔧 FAILSAFE: Maksimum 5 saniyede loading false olsun (eskisi 10s)
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
@@ -196,12 +270,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("[AuthContext] ⚠️ Failsafe: Loading timeout, forcing false");
         setLoading(false);
       }
-    }, 10000);
+    }, 5000);
 
     const initAuth = async () => {
       console.log("🔒 Auth Check Başlıyor...");
 
-      // 1. Önce Cache'e Bak
+      // 🆕 1. OPTIMISTIC AUTH: Storage'dan anında yükle (ağ bekleme!)
+      const optimisticSuccess = await applyOptimisticAuth();
+      
+      if (optimisticSuccess) {
+        console.log("[AuthContext] ⚡ Optimistic Auth başarılı - UI hemen açılıyor");
+        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+        
+        // Arka planda gerçek session'ı doğrula (bloklamadan)
+        setTimeout(() => {
+          forceRecoverSession();
+        }, 1000);
+        return;
+      }
+
+      // 2. Optimistic başarısız - eski cache'e bak
       const cachedSession = getCachedSession();
 
       if (cachedSession) {
@@ -218,11 +306,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // 2. Supabase ile Gerçek Kontrol
+      // 3. Supabase ile Gerçek Kontrol (arka planda)
       try {
         await Promise.race([
           forceRecoverSession(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
         ]);
       } catch (e) {
         console.warn("[AuthContext] ⚠️ Session recovery timeout veya hata:", e);

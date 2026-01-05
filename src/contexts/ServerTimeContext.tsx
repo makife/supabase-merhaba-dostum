@@ -57,27 +57,59 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
   const isSyncingRef = useRef(false);
   const lastSyncAtRef = useRef<number | null>(null);
   const isConnectedRef = useRef(true);
+  
+  // 🆕 AbortController ref - her uyanışta mevcut sync'i iptal etmek için
+  const syncAbortControllerRef = useRef<AbortController | null>(null);
+
+  // 🔧 FAILSAFE: Sync kilidini zorla aç
+  const forceUnlockSync = useCallback(() => {
+    if (isSyncingRef.current) {
+      console.log("[ServerTime] ⚠️ FAILSAFE: Sync kilidi zorla açılıyor");
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  }, []);
+
+  // 🆕 Mevcut sync'i iptal et
+  const abortCurrentSync = useCallback(() => {
+    if (syncAbortControllerRef.current) {
+      console.log("[ServerTime] 🛑 Mevcut sync iptal ediliyor...");
+      syncAbortControllerRef.current.abort();
+      syncAbortControllerRef.current = null;
+    }
+    // Kilidi de aç
+    forceUnlockSync();
+  }, [forceUnlockSync]);
 
   // Server time offset hesapla - multiple samples + best RTT selection
-  const calculateOffset = useCallback(async (): Promise<number> => {
-    // Eğer zaten sync yapılıyorsa bekle
-    if (isSyncingRef.current) {
+  const calculateOffset = useCallback(async (forceReset: boolean = false): Promise<number> => {
+    // 🆕 Force reset: mevcut sync'i iptal et ve temiz başla
+    if (forceReset) {
+      abortCurrentSync();
+    }
+    
+    // Eğer zaten sync yapılıyorsa ve force değilse bekle
+    if (isSyncingRef.current && !forceReset) {
       console.log("[ServerTime] ⏳ Sync zaten devam ediyor, atlanıyor...");
       return offsetRef.current;
     }
 
     // Son sync 5 saniyeden yeniyse atla (çok sık resync önleme)
     const now = Date.now();
-    if (lastSyncAtRef.current && (now - lastSyncAtRef.current) < 5000) {
+    if (!forceReset && lastSyncAtRef.current && (now - lastSyncAtRef.current) < 5000) {
       console.log("[ServerTime] ⏳ Son sync çok yeni, atlanıyor...");
       return offsetRef.current;
     }
+
+    // Yeni AbortController oluştur
+    const abortController = new AbortController();
+    syncAbortControllerRef.current = abortController;
 
     isSyncingRef.current = true;
     setIsSyncing(true);
 
     const samples: TimeSample[] = [];
-    const SYNC_TIMEOUT = 8000; // 8 saniye toplam timeout
+    const SYNC_TIMEOUT = 3000; // 🔧 3 saniyeye düşürüldü (eski: 8s)
     
     try {
       // Timeout promise
@@ -85,9 +117,21 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
         setTimeout(() => reject(new Error('Sync timeout')), SYNC_TIMEOUT);
       });
       
+      // Abort promise
+      const abortPromise = new Promise<never>((_, reject) => {
+        abortController.signal.addEventListener('abort', () => {
+          reject(new Error('Sync aborted'));
+        });
+      });
+      
       // Sync işlemi
       const syncPromise = (async () => {
         for (let i = 0; i < 3; i++) {
+          // Abort edildi mi kontrol et
+          if (abortController.signal.aborted) {
+            throw new Error('Sync aborted');
+          }
+          
           const t0 = Date.now();
           
           try {
@@ -108,10 +152,9 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
             
             console.log(`[ServerTime] 📊 Sample ${i + 1}: offset=${calculatedOffset}ms, RTT=${rtt}ms`);
             
-            // Son sample hariç 50ms bekle
-            if (i < 2) {
-              await new Promise(resolve => setTimeout(resolve, 50));
-            }
+            // Bir sample yeterli - hızlı devam et
+            if (samples.length >= 1) break;
+            
           } catch (err) {
             console.error("[ServerTime] Sample fetch error:", err);
           }
@@ -119,20 +162,26 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
         return samples;
       })();
 
-      // Race: sync vs timeout
-      await Promise.race([syncPromise, timeoutPromise]);
+      // Race: sync vs timeout vs abort
+      await Promise.race([syncPromise, timeoutPromise, abortPromise]);
       
-    } catch (err) {
-      console.warn("[ServerTime] ⚠️ Sync error or timeout:", err);
+    } catch (err: any) {
+      console.warn("[ServerTime] ⚠️ Sync error or timeout:", err?.message);
+      
+      // 🔧 FAILSAFE: Hata olsa bile son başarılı offset'i kullan ve devam et
+      if (offsetRef.current !== 0) {
+        console.log("[ServerTime] 🔧 Failsafe: Son başarılı offset kullanılıyor:", offsetRef.current);
+      }
     } finally {
       // CRITICAL: Her durumda syncing flag'ini temizle
       isSyncingRef.current = false;
       setIsSyncing(false);
+      syncAbortControllerRef.current = null;
     }
     
     if (samples.length === 0) {
       console.warn("[ServerTime] ⚠️ No valid samples, keeping current offset:", offsetRef.current);
-      // Yine de lastSyncAt güncelle ki sürekli retry yapmasın
+      // 🔧 FAILSAFE: Sample yoksa bile ready yap - bloklama
       lastSyncAtRef.current = Date.now();
       setLastSyncAt(Date.now());
       setIsReady(true);
@@ -165,7 +214,7 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     notifyOffsetChange(newOffset);
     
     return newOffset;
-  }, []);
+  }, [abortCurrentSync]);
 
   // Sunucu zamanını al (her zaman güncel)
   const serverNow = useCallback((): number => {
@@ -175,24 +224,29 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
   // Manuel resync trigger
   const triggerResync = useCallback(async (): Promise<number> => {
     console.log("[ServerTime] 🔄 Manual resync triggered");
-    return calculateOffset();
+    return calculateOffset(true); // Force reset
   }, [calculateOffset]);
 
   // İlk sync
   useEffect(() => {
     console.log("[ServerTime] 🚀 Initial sync starting...");
-    calculateOffset();
+    calculateOffset(false);
   }, [calculateOffset]);
 
   // Foreground state değişikliğini dinle
   useEffect(() => {
-    const handleForegroundChange = (inForeground: boolean) => {
-      if (inForeground && isConnectedRef.current) {
+    const handleForegroundChange = async (inForeground: boolean) => {
+      if (inForeground) {
         console.log("[ServerTime] 📱 App returned to foreground, recalibrating...");
-        // Biraz bekle - bağlantının stabil olması için
-        setTimeout(() => {
-          calculateOffset();
-        }, 500);
+        
+        // 🔧 1. Mevcut sync'i iptal et (temiz başlangıç)
+        abortCurrentSync();
+        
+        // 🔧 2. Network warm-up: 500ms bekle (Android WebView ağ ısınması)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 🔧 3. Yeni sync başlat (force reset ile)
+        calculateOffset(true);
       }
     };
 
@@ -200,7 +254,7 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     return () => {
       unsubscribe();
     };
-  }, [calculateOffset]);
+  }, [calculateOffset, abortCurrentSync]);
 
   // Network bağlantı değişikliğini dinle
   useEffect(() => {
