@@ -1,15 +1,28 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { CapacitorForegroundService } from "capacitor-foreground-service";
 
 let isForegroundServiceRunning = false;
+let autoStopTimer: NodeJS.Timeout | null = null;
+
+// 🆕 Maksimum foreground service çalışma süresi: 60 saniye
+const MAX_FOREGROUND_SERVICE_DURATION_MS = 60000;
 
 interface ForegroundServiceConfig {
   title: string;
   description: string;
   notificationId?: number;
   icon?: string;
+  maxDurationMs?: number; // 🆕 Opsiyonel max süre
 }
+
+// 🆕 Timer'ı temizle
+const clearAutoStopTimer = () => {
+  if (autoStopTimer) {
+    clearTimeout(autoStopTimer);
+    autoStopTimer = null;
+  }
+};
 
 export const useForegroundService = () => {
   const isNative = Capacitor.isNativePlatform();
@@ -30,6 +43,15 @@ export const useForegroundService = () => {
 
         isForegroundServiceRunning = true;
         console.log("[ForegroundService] Başlatıldı");
+
+        // 🆕 AUTO-STOP: Max süre sonunda otomatik durdur
+        const maxDuration = config?.maxDurationMs || MAX_FOREGROUND_SERVICE_DURATION_MS;
+        clearAutoStopTimer();
+        autoStopTimer = setTimeout(async () => {
+          console.log(`[ForegroundService] ⏰ ${maxDuration}ms doldu, otomatik durduruluyor...`);
+          await stopForegroundServiceStandalone();
+        }, maxDuration);
+
         return true;
       } catch (error) {
         console.error("[ForegroundService] Başlatma hatası:", error);
@@ -41,6 +63,8 @@ export const useForegroundService = () => {
 
   const stopForegroundService = useCallback(async () => {
     if (!isNative || !isAndroid || !isForegroundServiceRunning) return;
+
+    clearAutoStopTimer();
 
     try {
       await CapacitorForegroundService.stopService();
@@ -73,6 +97,15 @@ export const startForegroundServiceStandalone = async (config?: Partial<Foregrou
     });
     isForegroundServiceRunning = true;
     console.log("[ForegroundService] Standalone başlatıldı");
+
+    // 🆕 AUTO-STOP: Max süre sonunda otomatik durdur
+    const maxDuration = config?.maxDurationMs || MAX_FOREGROUND_SERVICE_DURATION_MS;
+    clearAutoStopTimer();
+    autoStopTimer = setTimeout(async () => {
+      console.log(`[ForegroundService] ⏰ ${maxDuration}ms doldu, otomatik durduruluyor...`);
+      await stopForegroundServiceStandalone();
+    }, maxDuration);
+
     return true;
   } catch (error) {
     console.error("[ForegroundService] Standalone başlatma hatası:", error);
@@ -83,6 +116,8 @@ export const startForegroundServiceStandalone = async (config?: Partial<Foregrou
 export const stopForegroundServiceStandalone = async (): Promise<void> => {
   if (!isForegroundServiceRunning) return;
   
+  clearAutoStopTimer();
+  
   try {
     await CapacitorForegroundService.stopService();
     isForegroundServiceRunning = false;
@@ -91,3 +126,6 @@ export const stopForegroundServiceStandalone = async (): Promise<void> => {
     console.error("[ForegroundService] Standalone durdurma hatası:", error);
   }
 };
+
+// 🆕 Foreground service durumu kontrolü
+export const isForegroundServiceActive = (): boolean => isForegroundServiceRunning;

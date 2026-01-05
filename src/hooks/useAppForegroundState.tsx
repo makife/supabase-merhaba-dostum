@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { supabase, getSupabaseClient } from "@/integrations/supabase/client";
+import { 
+  startForegroundServiceStandalone, 
+  stopForegroundServiceStandalone,
+  isForegroundServiceActive 
+} from "@/hooks/useForegroundService";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -13,10 +18,27 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
   return () => listeners.delete(callback);
 };
 
-const setForegroundState = (inForeground: boolean) => {
+const setForegroundState = async (inForeground: boolean) => {
   const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
+
+  // 🆕 FOREGROUND SERVICE YÖNETİMİ
+  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
+    if (inForeground) {
+      // 📱 ÖN PLANA GELDİ: Foreground service'i DURDUR
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS durduruluyor");
+      await stopForegroundServiceStandalone();
+    } else {
+      // 🔙 ARKA PLANA GEÇTİ: Foreground service'i BAŞLAT (max 60 saniye)
+      console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s)");
+      await startForegroundServiceStandalone({
+        title: "Kelimele",
+        description: "🎮 Oyun bağlantısı korunuyor...",
+        maxDurationMs: 60000, // 60 saniye max
+      });
+    }
+  }
 
   // 🔧 Ön plana gelince sadece event dispatch et
   // Token refresh YAPMA - Supabase client otomatik yapıyor

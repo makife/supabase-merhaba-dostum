@@ -67,11 +67,16 @@ const GameGrid = memo<GameGridProps>(({
               key={`${rowIndex}-${colIndex}`}
               variant="outline"
               onTouchStart={(e) => {
-                // Native mobile: Haptic feedback simulation
-                e.preventDefault();
+                // 🛡️ Native mobile: Status bar açılmasını engelle
+                e.stopPropagation();
+                // Haptic feedback simulation
                 if (letter && 'vibrate' in navigator) {
                   navigator.vibrate(50);
                 }
+              }}
+              onTouchMove={(e) => {
+                // 🛡️ Swipe gesture'ı engelle (status bar açılmasını önler)
+                e.stopPropagation();
               }}
               onClick={() => !disabled && onLetterClick(rowIndex, colIndex, letter)}
               className={buttonClass}
