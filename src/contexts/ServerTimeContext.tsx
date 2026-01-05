@@ -77,42 +77,66 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     setIsSyncing(true);
 
     const samples: TimeSample[] = [];
+    const SYNC_TIMEOUT = 8000; // 8 saniye toplam timeout
     
-    for (let i = 0; i < 3; i++) {
-      const t0 = Date.now();
+    try {
+      // Timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Sync timeout')), SYNC_TIMEOUT);
+      });
       
-      try {
-        const { data: serverTime, error } = await supabase.rpc("get_server_time");
-        
-        if (error || !serverTime) {
-          console.error("[ServerTime] Fetch error:", error);
-          continue;
+      // Sync işlemi
+      const syncPromise = (async () => {
+        for (let i = 0; i < 3; i++) {
+          const t0 = Date.now();
+          
+          try {
+            const { data: serverTime, error } = await supabase.rpc("get_server_time");
+            
+            if (error || !serverTime) {
+              console.error("[ServerTime] Fetch error:", error);
+              continue;
+            }
+            
+            const t3 = Date.now();
+            const rtt = t3 - t0;
+            
+            // RTT kompansasyonlu offset: server time - client time - (rtt/2)
+            const calculatedOffset = new Date(serverTime as string).getTime() - t0 - (rtt / 2);
+            
+            samples.push({ offset: calculatedOffset, rtt });
+            
+            console.log(`[ServerTime] 📊 Sample ${i + 1}: offset=${calculatedOffset}ms, RTT=${rtt}ms`);
+            
+            // Son sample hariç 50ms bekle
+            if (i < 2) {
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+          } catch (err) {
+            console.error("[ServerTime] Sample fetch error:", err);
+          }
         }
-        
-        const t3 = Date.now();
-        const rtt = t3 - t0;
-        
-        // RTT kompansasyonlu offset: server time - client time - (rtt/2)
-        const calculatedOffset = new Date(serverTime as string).getTime() - t0 - (rtt / 2);
-        
-        samples.push({ offset: calculatedOffset, rtt });
-        
-        console.log(`[ServerTime] 📊 Sample ${i + 1}: offset=${calculatedOffset}ms, RTT=${rtt}ms`);
-        
-        // Son sample hariç 50ms bekle
-        if (i < 2) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      } catch (err) {
-        console.error("[ServerTime] Sample fetch error:", err);
-      }
-    }
+        return samples;
+      })();
 
-    isSyncingRef.current = false;
-    setIsSyncing(false);
+      // Race: sync vs timeout
+      await Promise.race([syncPromise, timeoutPromise]);
+      
+    } catch (err) {
+      console.warn("[ServerTime] ⚠️ Sync error or timeout:", err);
+    } finally {
+      // CRITICAL: Her durumda syncing flag'ini temizle
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
     
     if (samples.length === 0) {
       console.warn("[ServerTime] ⚠️ No valid samples, keeping current offset:", offsetRef.current);
+      // Yine de lastSyncAt güncelle ki sürekli retry yapmasın
+      lastSyncAtRef.current = Date.now();
+      setLastSyncAt(Date.now());
+      setIsReady(true);
+      globalIsReady = true;
       return offsetRef.current;
     }
     
