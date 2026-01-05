@@ -460,16 +460,29 @@ const RandomMatchPage = () => {
   }, [roomId, user?.id, navigate, toast]);
 
   // ============= REALTIME SUBSCRIPTION =============
+  // 🆕 Ref ile kanal oluşturma zamanını takip et - gereksiz yeniden oluşturmayı önle
+  const channelCreatedRef = useRef(false);
+  const channelIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!roomId || !user?.id) return;
+    
+    // 🛡️ Kanal zaten oluşturulduysa tekrar oluşturma
+    if (channelCreatedRef.current && channelIdRef.current === roomId) {
+      console.log("📡 [RandomMatchPage] Kanal zaten mevcut, skip...");
+      return;
+    }
 
     const myId = user.id;
     let currentChannel: any = null;
 
     const setupChannel = () => {
       console.log("📡 Setting up realtime subscription for room:", roomId, "myId:", myId);
+      
+      // 🆕 Sabit kanal adı kullan (Date.now() kullanma!)
+      const channelName = `room-${roomId}`;
 
-      currentChannel = getSupabaseClient().channel(`room-${roomId}-${Date.now()}`)
+      currentChannel = getSupabaseClient().channel(channelName)
         .on(
           "postgres_changes",
           {
@@ -570,13 +583,21 @@ const RandomMatchPage = () => {
             }
 
             // Game ended
-            if (newRoom.status === "finished" && !gameEnded) {
-              handleGameEnd(newRoom);
+            if (newRoom.status === "finished") {
+              // 🆕 gameEnded ref kullanarak closure sorununu önle
+              if (!gameEndedRef.current) {
+                gameEndedRef.current = true;
+                handleGameEnd(newRoom);
+              }
             }
           }
         )
         .subscribe((status) => {
           console.log("📡 Realtime subscription status:", status);
+          if (status === 'SUBSCRIBED') {
+            channelCreatedRef.current = true;
+            channelIdRef.current = roomId;
+          }
         });
 
       channelRef.current = currentChannel;
@@ -588,14 +609,7 @@ const RandomMatchPage = () => {
     // Reconnect event'ini dinle
     // ⚠️ DEVRE DIŞI: removeChannel çağrıları - bağlantı koruması
     const handleReconnect = () => {
-      console.log("🔄 [RandomMatchPage] Reconnect algılandı - removeChannel ATLANYOR (bağlantı koruması)");
-      
-      // ❌ DEVRE DIŞI: removeChannel çağrısı
-      // if (currentChannel) {
-      //   try {
-      //     getSupabaseClient().removeChannel(currentChannel);
-      //   } catch (e) {}
-      // }
+      console.log("🔄 [RandomMatchPage] Reconnect algılandı - resubscribe deneniyor");
       
       // Sadece resubscribe dene (yeni kanal oluşturma)
       if (currentChannel && currentChannel.state !== 'joined') {
@@ -617,7 +631,13 @@ const RandomMatchPage = () => {
       //   } catch (e) {}
       // }
     };
-  }, [roomId, user?.id, gameEnded]);
+  }, [roomId, user?.id]); // 🆕 gameEnded kaldırıldı - closure sorunu yaratıyordu
+  
+  // 🆕 gameEnded ref - closure sorununu önlemek için
+  const gameEndedRef = useRef(false);
+  useEffect(() => {
+    gameEndedRef.current = gameEnded;
+  }, [gameEnded]);
 
   // ============= GAME HANDLERS =============
   const handleTimeUp = useCallback(async () => {
@@ -737,9 +757,11 @@ const RandomMatchPage = () => {
   }, [room, serverTimeOffset]);
 
   const handleGameEnd = useCallback((roomData: RoomData) => {
-    if (gameEnded) return;
+    // 🆕 Ref kullan - closure sorunu önle
+    if (gameEndedRef.current) return;
 
     setGameEnded(true);
+    gameEndedRef.current = true;
 
     const myScore = user?.id === roomData.player1_id ? roomData.player1_score : roomData.player2_score;
     const theirScore = user?.id === roomData.player1_id ? roomData.player2_score : roomData.player1_score;
@@ -756,7 +778,7 @@ const RandomMatchPage = () => {
     }
 
     setShowResults(true);
-  }, [user, gameEnded, playCelebrationSound, playGameLoseSound, playTieSound]);
+  }, [user, playCelebrationSound, playGameLoseSound, playTieSound]); // 🆕 gameEnded kaldırıldı
 
   // ============= WORD SUBMISSION =============
   const submitWord = useCallback(async () => {

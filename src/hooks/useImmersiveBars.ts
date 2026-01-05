@@ -105,25 +105,33 @@ export function useImmersiveBars() {
       scheduleHide();
     };
 
-    // Swipe gesture detection için touch events
+    // 🛡️ Swipe gesture detection - DAHA KATKI EŞİKLER
     let touchStartY = 0;
+    let touchStartX = 0;
     
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
     };
     
     const handleTouchEnd = (e: TouchEvent) => {
       const touchEndY = e.changedTouches[0].clientY;
+      const touchEndX = e.changedTouches[0].clientX;
       const deltaY = touchEndY - touchStartY;
+      const deltaX = Math.abs(touchEndX - touchStartX);
       const screenHeight = window.innerHeight;
       
-      // Ekranın alt %20'sinden yukarı kaydırma algıla
-      if (touchStartY > screenHeight * 0.8 && deltaY < -30) {
+      // 🛡️ Eğer oyun alanında tıklama ise (X ekseni hareketi az), status bar açma
+      // Sadece gerçek swipe gesture'ları için aç (dikey hareket > 50px VE yatay hareket < 30px)
+      if (deltaX > 30) return; // Yatay hareket varsa status bar açma
+      
+      // Ekranın alt %10'undan yukarı kaydırma algıla (daha küçük alan)
+      if (touchStartY > screenHeight * 0.9 && deltaY < -50) {
         handleUserInteraction();
       }
       
-      // Ekranın üst %20'sinden aşağı kaydırma algıla
-      if (touchStartY < screenHeight * 0.2 && deltaY > 30) {
+      // Ekranın üst %10'undan aşağı kaydırma algıla (daha küçük alan)
+      if (touchStartY < screenHeight * 0.1 && deltaY > 50) {
         handleUserInteraction();
       }
     };
