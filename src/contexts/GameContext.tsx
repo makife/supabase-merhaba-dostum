@@ -1610,6 +1610,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         });
       }
 
+      // 🔧 SAFE ROOM EXIT: room_id kontrolü
+      if (!currentRoom?.id) {
+        console.warn("⚠️ [leaveRoom] room_id undefined, participant silme atlanıyor");
+        return;
+      }
+
       // Participant'ı sil
       const { error: deleteError } = await supabase
         .from("game_participants")

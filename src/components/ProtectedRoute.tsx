@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { Navigate, useLocation } from "react-router-dom";
-import { ReactNode, useEffect, useState, useRef } from "react";
+import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
 import { getCachedSession } from "@/utils/persistentState";
 import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
 
@@ -22,6 +22,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   
   const hasCheckedCacheRef = useRef(false);
   const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isRecoveringRef = useRef(false); // 🆕 Auth recovery durumunu takip et
 
   // 🔧 User geldiğinde TÜM bekleme state'lerini temizle
   useEffect(() => {
@@ -71,13 +72,23 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
     }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
-    // 🔧 3 saniye boyunca hiçbir şey olmazsa güvenli redirect (5s -> 3s)
+    // 🔧 6 saniye boyunca hiçbir şey olmazsa güvenli redirect (3s -> 6s)
+    // 🛡️ isRecoveringRef true ise redirect YAPMA!
     redirectTimeoutRef.current = setTimeout(() => {
-      if (!user && !optimisticAuth) {
-        console.log("⏰ [ProtectedRoute] 3sn zaman aşımı, /auth'a yönlendiriliyor...");
+      if (!user && !optimisticAuth && !isRecoveringRef.current) {
+        console.log("⏰ [ProtectedRoute] 6sn zaman aşımı, /auth'a yönlendiriliyor...");
         setGiveUpAndRedirect(true);
+      } else if (isRecoveringRef.current) {
+        console.log("⏳ [ProtectedRoute] Recovery devam ediyor, redirect ertelendi");
+        // Recovery devam ediyorsa 3 saniye daha bekle
+        setTimeout(() => {
+          if (!user && !optimisticAuth && !isRecoveringRef.current) {
+            console.log("⏰ [ProtectedRoute] Ek 3sn sonra hala user yok, /auth'a yönlendiriliyor...");
+            setGiveUpAndRedirect(true);
+          }
+        }, 3000);
       }
-    }, 3000);
+    }, 6000);
 
     return () => {
       clearTimeout(timeout);
@@ -96,6 +107,47 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       setShowReconnectOverlay(false);
     }
   }, [user, optimisticAuth]);
+
+  // 🆕 Auth recovery event'lerini dinle
+  useEffect(() => {
+    const handleRecoveryStart = () => {
+      console.log("[ProtectedRoute] 🔄 Auth recovery başladı");
+      isRecoveringRef.current = true;
+    };
+    
+    const handleRecoveryEnd = () => {
+      console.log("[ProtectedRoute] ✅ Auth recovery bitti");
+      isRecoveringRef.current = false;
+    };
+    
+    window.addEventListener('auth-recovery-start', handleRecoveryStart);
+    window.addEventListener('auth-recovery-end', handleRecoveryEnd);
+    
+    return () => {
+      window.removeEventListener('auth-recovery-start', handleRecoveryStart);
+      window.removeEventListener('auth-recovery-end', handleRecoveryEnd);
+    };
+  }, []);
+
+  // 🆕 OPTIMISTIC UI: İlk mount'ta hemen storage kontrol et
+  useEffect(() => {
+    const checkStorageImmediately = async () => {
+      try {
+        const cachedSession = await getCachedSession();
+        if (cachedSession && cachedSession.expiresAt > Date.now()) {
+          console.log("⚡ [ProtectedRoute] İlk mount - cached session bulundu, ANINDA optimistic");
+          setOptimisticAuth(true);
+        }
+      } catch (e) {
+        // Sessiz hata
+      }
+    };
+    
+    // Sadece user yoksa kontrol et
+    if (!user) {
+      checkStorageImmediately();
+    }
+  }, []); // Sadece mount'ta çalış
 
   // 🔧 1. USER VARSA - HEMEN children göster (en öncelikli)
   if (user) {
