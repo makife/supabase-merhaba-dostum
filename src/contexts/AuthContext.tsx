@@ -458,62 +458,92 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else if (event === "SIGNED_OUT") {
-        // 🔧 SILENT REFRESH KORUMASI: 
-        // Arka planda internet kesilip geldiğinde Supabase yanlışlıkla SIGNED_OUT fırlatabilir
-        // Bu durumda storage'da hala geçerli session var mı kontrol et
+        // 🛡️ MİSAFİR KORUMASI - SIGNED_OUT için maksimum zırh
+        // Kill/restart/network drop sonrasında Supabase yanlışlıkla SIGNED_OUT fırlatabilir
+        // Bu durumda ASLA state temizleme, ASLA /auth'a yönlendirme!
+        
         const now = Date.now();
         const timeSinceLastSignOut = now - lastSignOutEventRef.current;
         lastSignOutEventRef.current = now;
         
-        // 2 saniye içinde tekrar SIGNED_OUT gelirse spam, ignore et
+        // 2 saniye içinde tekrar SIGNED_OUT gelirse spam, kesin ignore et
         if (timeSinceLastSignOut < 2000) {
-          console.log("[AuthContext] ⚠️ SIGNED_OUT spam tespit edildi, ignore ediliyor");
+          console.log("[AuthContext] 🛡️ SIGNED_OUT spam tespit edildi, IGNORE");
           return;
         }
         
-        // 🔧 SILENT REFRESH KORUMASI: Storage'da hala geçerli session var mı kontrol et
-        console.log("[AuthContext] ⚠️ SIGNED_OUT geldi, storage kontrol ediliyor...");
+        console.log("[AuthContext] ⚠️ SIGNED_OUT eventi geldi - storage kontrol ediliyor...");
         
-        try {
-          let storedSession: string | null = null;
-          
-          // Önce yeni key, sonra eski key dene
+        // 🔧 ASYNC STORAGE KONTROL: Her iki storage'ı da kontrol et
+        const checkStorageForValidSession = async (): Promise<boolean> => {
           try {
-            const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
-            storedSession = value;
-          } catch {}
-          
-          if (!storedSession) {
+            let storedSession: string | null = null;
+            
+            // 1. Preferences (Native Storage) - Yeni key
             try {
-              const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+              const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
               storedSession = value;
             } catch {}
-          }
-          
-          if (!storedSession) {
-            storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-          }
-          
-          if (storedSession) {
-            const parsed = JSON.parse(storedSession);
-            const expiresAt = parsed?.expires_at;
-            const nowSec = Math.floor(Date.now() / 1000);
             
-            // 🔧 Token hala geçerli mi? (en az 60 saniye kaldıysa)
-            if (expiresAt && expiresAt > (nowSec + 60)) {
-              console.log("[AuthContext] 🛡️ Storage'da geçerli session var, SIGNED_OUT IGNORE ediliyor!");
-              console.log("[AuthContext] 🔄 Session recovery başlatılıyor...");
-              // SIGNED_OUT'u ignore et ve session'ı recover et
-              setTimeout(() => forceRecoverSession(), 500);
-              return;
+            // 2. Preferences - Eski key fallback
+            if (!storedSession) {
+              try {
+                const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+                storedSession = value;
+              } catch {}
             }
+            
+            // 3. localStorage fallback
+            if (!storedSession) {
+              try {
+                storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+              } catch {}
+            }
+            
+            if (storedSession) {
+              const parsed = JSON.parse(storedSession);
+              const expiresAt = parsed?.expires_at;
+              const nowSec = Math.floor(Date.now() / 1000);
+              
+              // 🛡️ Token expired olmadıysa (0 saniye bile kaldıysa) geçerli say!
+              // Supabase bazen refresh sırasında SIGNED_OUT fırlatıyor
+              if (expiresAt && expiresAt > nowSec) {
+                console.log("[AuthContext] 🛡️ Storage'da geçerli token VAR! expires_at:", expiresAt, "now:", nowSec);
+                console.log("[AuthContext] 🛡️ SIGNED_OUT eventi TAMAMEN IGNORE ediliyor!");
+                return true;
+              } else {
+                console.log("[AuthContext] ⏰ Token süresi dolmuş, expires_at:", expiresAt, "now:", nowSec);
+              }
+            }
+          } catch (e) {
+            console.log("[AuthContext] Storage kontrol hatası:", e);
           }
-        } catch (e) {
-          console.log("[AuthContext] Storage kontrol hatası:", e);
+          return false;
+        };
+        
+        // 🛡️ KORUMA KATMANI: Storage'da geçerli session varsa
+        const hasValidSession = await checkStorageForValidSession();
+        
+        if (hasValidSession) {
+          // ❌ STATE TEMİZLEME! ❌ /AUTH'A YÖNLENDİRME!
+          // Sadece sessizce session'ı tazele
+          console.log("[AuthContext] 🔄 forceRecoverSession ile sessiz tazeleme başlatılıyor...");
+          
+          // isRecoveringRef'i set et ki ProtectedRoute da bekleme moduna geçsin
+          isRecoveringRef.current = true;
+          window.dispatchEvent(new CustomEvent('auth-recovery-start'));
+          
+          // 500ms sonra recovery başlat (bridge stabilize olsun)
+          setTimeout(() => {
+            forceRecoverSession();
+          }, 500);
+          
+          // BU EVENT'İ TAMAMEN IGNORE ET - return ile çık
+          return;
         }
         
-        // Gerçekten çıkış yapılmış - state'i temizle
-        console.log("👋 Gerçek çıkış - state temizleniyor");
+        // 🔧 GERÇEK ÇIKIŞ: Storage'da hiç geçerli session yok
+        console.log("👋 Gerçek çıkış tespit edildi - state temizleniyor");
         if (mounted.current) {
           setSession(null);
           setUser(null);
