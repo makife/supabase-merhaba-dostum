@@ -94,6 +94,7 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      storageKey: 'kelimele-auth-token', // 🔧 Özel key - varsayılanla karışıklık önlenir
       lock: isNativePlatform ? (false as any) : undefined,
     },
     realtime: realtimeConfig,
