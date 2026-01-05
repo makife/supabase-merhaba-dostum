@@ -99,16 +99,14 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     realtime: realtimeConfig,
     global: {
       fetch: async (url, options?: RequestInit) => {
-        // 🔧 Mevcut signal varsa onu kullan, yoksa timeout signal oluştur
-        // 60 saniye timeout (30 çok kısa, AbortError'lara neden oluyor)
-        const TIMEOUT_MS = 60000;
+        // 🔧 KRİTİK FIX: Supabase'in internal abort signal'ini TAMAMEN DEVRE DIŞI birak
+        // "signal is aborted without reason" hatasının sebebi Supabase'in agresif abort'u
+        // Biz sadece kendi uzun timeout'umuzu kullanacağız (90 saniye)
+        const TIMEOUT_MS = 90000;
         
-        // Eğer zaten bir signal varsa (Supabase internal), onu kullan
-        if (options?.signal) {
-          return fetch(url, options);
-        }
+        // Supabase signal'ini IGNORE et - kendi timeout'umuzu kullan
+        const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
-        // Yoksa kendi timeout'umuzu ekle
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
           console.warn(`[Supabase] ⏱️ Fetch timeout (${TIMEOUT_MS}ms): ${url}`);
@@ -117,10 +115,18 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         
         try {
           const response = await fetch(url, {
-            ...options,
+            ...optionsWithoutSignal,
             signal: controller.signal,
           });
           return response;
+        } catch (error: any) {
+          // AbortError olursa sessizce handle et, diğerlerini fırlat
+          if (error?.name === 'AbortError') {
+            console.warn(`[Supabase] ⚠️ Request aborted: ${url}`);
+            // Boş bir response döndür - uygulama çökmesini engelle
+            throw new Error('Request timeout - please try again');
+          }
+          throw error;
         } finally {
           clearTimeout(timeoutId);
         }
