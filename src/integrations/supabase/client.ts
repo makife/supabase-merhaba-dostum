@@ -99,10 +99,10 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     realtime: realtimeConfig,
     global: {
       fetch: async (url, options?: RequestInit) => {
-        // 🔧 KRİTİK FIX: Supabase'in internal abort signal'ini TAMAMEN DEVRE DIŞI birak
-        // "signal is aborted without reason" hatasının sebebi Supabase'in agresif abort'u
-        // Biz sadece kendi uzun timeout'umuzu kullanacağız (90 saniye)
-        const TIMEOUT_MS = 90000;
+        // 🔧 AGGRESSIVE TIMEOUT: Native'de 5 saniye, Web'de 15 saniye
+        // Uzun timeout JS thread'ini kilitliyor - hızlı fail, hızlı retry
+        const isNativePlatform = Capacitor.isNativePlatform();
+        const TIMEOUT_MS = isNativePlatform ? 5000 : 15000;
         
         // Supabase signal'ini IGNORE et - kendi timeout'umuzu kullan
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
@@ -122,9 +122,9 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         } catch (error: any) {
           // AbortError olursa sessizce handle et, diğerlerini fırlat
           if (error?.name === 'AbortError') {
-            console.warn(`[Supabase] ⚠️ Request aborted: ${url}`);
-            // Boş bir response döndür - uygulama çökmesini engelle
-            throw new Error('Request timeout - please try again');
+            console.warn(`[Supabase] ⚠️ Request aborted (${isNativePlatform ? 'native' : 'web'}): ${url}`);
+            // Retry yapılabilir hata fırlat
+            throw new Error(`Request timeout after ${TIMEOUT_MS}ms - please try again`);
           }
           throw error;
         } finally {
