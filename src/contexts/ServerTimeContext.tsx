@@ -166,12 +166,13 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
       await Promise.race([syncPromise, timeoutPromise, abortPromise]);
       
     } catch (err: any) {
-      console.warn("[ServerTime] ⚠️ Sync error or timeout:", err?.message);
-      
-      // 🔧 FAILSAFE: Hata olsa bile son başarılı offset'i kullan ve devam et
-      if (offsetRef.current !== 0) {
-        console.log("[ServerTime] 🔧 Failsafe: Son başarılı offset kullanılıyor:", offsetRef.current);
+      // 🔧 QUIET FAILSAFE: Konsola fazla log basma, sessizce devam et
+      // Debug için sadece geliştirme ortamında log
+      if (process.env.NODE_ENV === 'development') {
+        console.debug("[ServerTime] Sync issue:", err?.message);
       }
+      
+      // Son başarılı offset'i kullan ve devam et (sessizce)
     } finally {
       // CRITICAL: Her durumda syncing flag'ini temizle
       isSyncingRef.current = false;
@@ -180,14 +181,12 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     }
     
     if (samples.length === 0) {
-      console.warn("[ServerTime] ⚠️ No valid samples, forcing ready with cached offset:", offsetRef.current);
-      // 🔧 FAILSAFE: Sample yoksa bile ANINDA ready yap - ASLA bloklama
+      // 🔧 QUIET FAILSAFE: Sessizce cache offset kullan, UI bekletme
       lastSyncAtRef.current = Date.now();
       setLastSyncAt(Date.now());
       
-      // 🆕 KRITIK: isReady'yi anında true yap, UI bekletme
+      // isReady'yi anında true yap
       if (!globalIsReady) {
-        console.log("[ServerTime] 🔧 Forcing isReady=true (failsafe)");
         setIsReady(true);
         globalIsReady = true;
       }
@@ -199,13 +198,14 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     const bestSample = samples.sort((a, b) => a.rtt - b.rtt)[0];
     const newOffset = bestSample.offset;
     
-    // Offset değişimi log
-    const drift = Math.abs(newOffset - offsetRef.current);
-    if (drift > 100) {
-      console.log(`[ServerTime] ⚠️ Significant drift detected: ${drift}ms`);
+    // 🔧 QUIET: Sadece development'ta log bas
+    if (process.env.NODE_ENV === 'development') {
+      const drift = Math.abs(newOffset - offsetRef.current);
+      if (drift > 100) {
+        console.debug(`[ServerTime] Drift: ${drift}ms`);
+      }
+      console.debug(`[ServerTime] Synced: offset=${newOffset}ms, RTT=${bestSample.rtt}ms`);
     }
-    
-    console.log(`[ServerTime] ✅ Best sample: offset=${newOffset}ms, RTT=${bestSample.rtt}ms`);
     
     // State ve ref'leri güncelle
     offsetRef.current = newOffset;

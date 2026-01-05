@@ -158,12 +158,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   }, []);
 
-  // 🔧 Timeout helper - Auth çağrılarını sarmala
-  const withAuthTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+  // 🔧 Timeout helper - Auth çağrılarını sarmala (5 saniye - Android uyanış için daha toleranslı)
+  const AUTH_TIMEOUT_MS = 5000;
+  
+  const withAuthTimeout = <T,>(promise: Promise<T>, ms: number = AUTH_TIMEOUT_MS): Promise<T | null> => {
     return Promise.race([
       promise,
       new Promise<null>((resolve) => setTimeout(() => {
-        console.log(`[AuthContext] ⏱️ ${ms}ms auth timeout aşıldı!`);
+        // 🔧 Sessiz timeout - sadece debug için log (üretimde kaldırılabilir)
+        console.debug(`[AuthContext] ⏱️ ${ms}ms auth timeout`);
         resolve(null);
       }, ms))
     ]);
@@ -179,23 +182,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
     
-    // 🔧 FAILSAFE: 3 saniye sonra kilidi zorla aç
+    // 🔧 FAILSAFE: 6 saniye sonra kilidi zorla aç (timeout 5s + 1s margin)
     if (recoveryTimeoutRef.current) {
       clearTimeout(recoveryTimeoutRef.current);
     }
     recoveryTimeoutRef.current = setTimeout(() => {
       if (isRecoveringRef.current) {
-        console.log("[AuthContext] ⚠️ Recovery failsafe: 3s timeout, kilit açılıyor");
+        console.debug("[AuthContext] Recovery failsafe: 6s timeout, kilit açılıyor");
         isRecoveringRef.current = false;
         if (mounted.current) setLoading(false);
       }
-    }, 3000);
+    }, 6000);
     
     try {
-      // 🔧 1. getSession WITH TIMEOUT (2 saniye) - uzun süren istekler iptal
+      // 🔧 1. getSession WITH TIMEOUT (5 saniye - Android için toleranslı)
       const sessionResult = await withAuthTimeout(
         supabase.auth.getSession(),
-        2000
+        AUTH_TIMEOUT_MS
       );
       
       if (sessionResult?.data?.session?.access_token) {
@@ -258,10 +261,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (parsed?.refresh_token) {
             console.log("[AuthContext] 🔄 Refresh token ile session yenileniyor...");
             
-            // 🔧 refreshSession WITH TIMEOUT (2 saniye)
+            // 🔧 refreshSession WITH TIMEOUT (5 saniye - Android için toleranslı)
             const refreshResult = await withAuthTimeout(
               supabase.auth.refreshSession({ refresh_token: parsed.refresh_token }),
-              2000
+              AUTH_TIMEOUT_MS
             );
             
             if (refreshResult && !refreshResult.error && refreshResult.data?.session) {
