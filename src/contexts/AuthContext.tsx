@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const optimisticAuthAppliedRef = useRef(false); // 🆕 Optimistic auth uygulandı mı?
+  const intentionalLogoutRef = useRef(false); // 🆕 Kullanıcı bilerek çıkış mı yapıyor?
 
   // Token'ın süresi dolmuş mu kontrol eden fonksiyon
   const isTokenExpired = (session: Session) => {
@@ -458,6 +459,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else if (event === "SIGNED_OUT") {
+        // 🛡️ KULLANICI BİLEREK ÇIKIŞ YAPTI MI?
+        // Eğer intentionalLogoutRef true ise, koruma mekanizmasını ATLA!
+        if (intentionalLogoutRef.current) {
+          console.log("[AuthContext] ✅ Kullanıcı bilerek çıkış yaptı - koruma devre dışı");
+          intentionalLogoutRef.current = false; // Reset flag
+          // State zaten signOut fonksiyonunda temizleniyor, burada bir şey yapma
+          return;
+        }
+        
         // 🛡️ MİSAFİR KORUMASI - SIGNED_OUT için maksimum zırh
         // Kill/restart/network drop sonrasında Supabase yanlışlıkla SIGNED_OUT fırlatabilir
         // Bu durumda ASLA state temizleme, ASLA /auth'a yönlendirme!
@@ -585,12 +595,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    setLoading(true); // Çıkış yaparken loading göster ki UI saçmalamasın
-    await supabase.auth.signOut();
+    console.log("[AuthContext] 🚪 Kullanıcı çıkış yapıyor...");
+    
+    // 🆕 ÖNCE storage'ı temizle - böylece SIGNED_OUT event'i geldiğinde
+    // koruma mekanizması "geçerli token var" diye ignore etmesin
+    setCachedData(null, null);
+    
+    // 🆕 Intentional logout flag'ini set et
+    intentionalLogoutRef.current = true;
+    
+    setLoading(true);
+    
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("[AuthContext] signOut hatası:", e);
+    }
+    
+    // State'i temizle (SIGNED_OUT event'inden bağımsız)
     setSession(null);
     setUser(null);
-    setCachedData(null, null);
     setLoading(false);
+    
     toast({ title: "Çıkış Yapıldı" });
   };
 
