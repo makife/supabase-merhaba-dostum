@@ -5,11 +5,13 @@
  * şekilde yönetir. Aynı anda çok fazla istek Bridge'i tıkar.
  * 
  * Timeline:
- * T+0ms:    UI hazırlığı (immersive bars)
+ * T+0ms:    UI hazırlığı (immersive bars) + Bridge Kickstart Ping
  * T+400ms:  Auth/Session recovery
  * T+1000ms: ServerTime sync
  * T+1800ms: Global veri tazeleme
  */
+
+import { supabase } from "@/integrations/supabase/client";
 
 // Global AbortController - tüm zombi istekleri temizlemek için
 let globalForegroundAbortController: AbortController | null = null;
@@ -57,6 +59,28 @@ export function getForegroundAbortSignal(): AbortSignal | undefined {
 }
 
 /**
+ * 🆕 BRIDGE KICKSTART: Android'in uyuyan network soketlerini uyandır
+ * Küçük bir ping atarak ağ bağlantısını zorla aktifleştir
+ */
+async function bridgeKickstartPing(): Promise<void> {
+  console.log("[ForegroundOrchestrator] 📡 Bridge Kickstart Ping gönderiliyor...");
+  
+  try {
+    // Çok basit ve hızlı bir RPC çağrısı - sadece network'ü uyandırmak için
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s max
+    
+    await supabase.rpc("get_server_time");
+    
+    clearTimeout(timeoutId);
+    console.log("[ForegroundOrchestrator] ✅ Bridge Kickstart başarılı - network aktif");
+  } catch (e: any) {
+    // Hata olsa bile sorun değil - amaç sadece network'ü uyandırmak
+    console.log("[ForegroundOrchestrator] ⚠️ Bridge Kickstart ping hata (beklenen):", e?.message);
+  }
+}
+
+/**
  * Kademeli foreground uyanışını başlat
  */
 export function startForegroundOrchestration(callbacks: OrchestrationCallbacks): void {
@@ -71,10 +95,13 @@ export function startForegroundOrchestration(callbacks: OrchestrationCallbacks):
   // Yeni AbortController oluştur
   globalForegroundAbortController = new AbortController();
   
-  // T+0ms: UI hazırlığı
+  // T+0ms: UI hazırlığı + Bridge Kickstart Ping (async, bloklama yok)
   const t0 = setTimeout(() => {
-    console.log("[ForegroundOrchestrator] T+0ms: UI hazırlığı");
+    console.log("[ForegroundOrchestrator] T+0ms: UI hazırlığı + Bridge Kickstart");
     callbacks.onUIReady?.();
+    
+    // 🆕 Bridge Kickstart: Network soketlerini uyandır (async)
+    bridgeKickstartPing();
   }, 0);
   orchestratorTimeouts.push(t0);
   
