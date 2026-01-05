@@ -100,6 +100,20 @@ export const SafeNavigationBar = {
       // Plugin yüklü değilse sessizce geç
     }
   },
+
+  // 🔥 EKSİK OLAN VE HATAYA SEBEP OLAN METOD BURASI:
+  async setBehavior(options: { behavior: string }): Promise<void> {
+    try {
+      const { NavigationBar } = await import("@ethion/capacitor-navigation-bar");
+      const nav = NavigationBar as any;
+      // Eğer plugin içinde setBehavior metodu varsa güvenli şekilde çağır
+      if (nav?.setBehavior) {
+        await safePluginCall("NavigationBar", "setBehavior", () => nav.setBehavior(options));
+      }
+    } catch {
+      // Metod yoksa veya hata verirse sessizce devam et
+    }
+  },
 };
 
 /**
