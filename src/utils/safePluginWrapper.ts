@@ -1,6 +1,7 @@
 /**
  * Safe Plugin Wrapper - Capacitor plugin çağrılarını güvenli hale getirir
- * Tüm plugin çağrıları try-catch ile sarmalanır ve platform kontrolü yapılır
+ * Tüm plugin çağrıları try-catch ile sarmalanır ve platform kontrolü yapılır.
+ * Özellikle Android bridge üzerindeki .then() hatalarını önlemek için optimize edilmiştir.
  */
 
 import { Capacitor } from "@capacitor/core";
@@ -13,7 +14,7 @@ export async function safePluginCall<T>(
   pluginName: string,
   methodName: string,
   fn: () => Promise<T>,
-  fallbackValue?: T
+  fallbackValue?: T,
 ): Promise<T | undefined> {
   // Platform kontrolü
   if (!Capacitor.isNativePlatform()) {
@@ -23,8 +24,8 @@ export async function safePluginCall<T>(
   try {
     return await fn();
   } catch (error) {
-    // "not implemented" hataları için sessizce devam et
     const errorMessage = String(error);
+    // "not implemented" veya "not available" hataları için sessizce devam et
     if (
       errorMessage.includes("not implemented") ||
       errorMessage.includes("not available") ||
@@ -75,7 +76,6 @@ export const SafeStatusBar = {
 export const SafeNavigationBar = {
   async hide(): Promise<void> {
     try {
-      // @ts-ignore
       const { NavigationBar } = await import("@ethion/capacitor-navigation-bar");
       await safePluginCall("NavigationBar", "hide", () => NavigationBar.hide());
     } catch {
@@ -85,7 +85,6 @@ export const SafeNavigationBar = {
 
   async show(): Promise<void> {
     try {
-      // @ts-ignore
       const { NavigationBar } = await import("@ethion/capacitor-navigation-bar");
       await safePluginCall("NavigationBar", "show", () => NavigationBar.show());
     } catch {
@@ -95,22 +94,8 @@ export const SafeNavigationBar = {
 
   async setColor(options: { color: string; darkButtons: boolean }): Promise<void> {
     try {
-      // @ts-ignore
       const { NavigationBar } = await import("@ethion/capacitor-navigation-bar");
       await safePluginCall("NavigationBar", "setColor", () => NavigationBar.setColor(options));
-    } catch {
-      // Plugin yüklü değilse sessizce geç
-    }
-  },
-
-  async setBehavior(options: { behavior: string }): Promise<void> {
-    try {
-      // @ts-ignore
-      const { NavigationBar } = await import("@ethion/capacitor-navigation-bar");
-      const nav = NavigationBar as any;
-      if (nav?.setBehavior) {
-        await safePluginCall("NavigationBar", "setBehavior", () => nav.setBehavior(options));
-      }
     } catch {
       // Plugin yüklü değilse sessizce geç
     }
@@ -118,16 +103,17 @@ export const SafeNavigationBar = {
 };
 
 /**
- * PushNotifications için güvenli wrapper
+ * PushNotifications için güvenli wrapper - ANDROID .then() HATASI ÇÖZÜLMÜŞ HALİ
  */
 export const SafePushNotifications = {
   async checkPermissions(): Promise<{ receive: string } | null> {
     try {
       const { PushNotifications } = await import("@capacitor/push-notifications");
-      return await safePluginCall("PushNotifications", "checkPermissions", 
-        () => PushNotifications.checkPermissions(), 
-        { receive: "denied" }
-      ) || null;
+      return (
+        (await safePluginCall("PushNotifications", "checkPermissions", () => PushNotifications.checkPermissions(), {
+          receive: "denied",
+        })) || null
+      );
     } catch {
       return null;
     }
@@ -136,10 +122,11 @@ export const SafePushNotifications = {
   async requestPermissions(): Promise<{ receive: string } | null> {
     try {
       const { PushNotifications } = await import("@capacitor/push-notifications");
-      return await safePluginCall("PushNotifications", "requestPermissions", 
-        () => PushNotifications.requestPermissions(), 
-        { receive: "denied" }
-      ) || null;
+      return (
+        (await safePluginCall("PushNotifications", "requestPermissions", () => PushNotifications.requestPermissions(), {
+          receive: "denied",
+        })) || null
+      );
     } catch {
       return null;
     }
@@ -148,9 +135,10 @@ export const SafePushNotifications = {
   async register(): Promise<void> {
     try {
       const { PushNotifications } = await import("@capacitor/push-notifications");
+      // Kayıt işlemi async bir komuttur, bu yüzden await kullanılabilir
       await safePluginCall("PushNotifications", "register", () => PushNotifications.register());
     } catch {
-      // Plugin yüklü değilse sessizce geç
+      console.log("[SafePushNotifications] Register call failed");
     }
   },
 
@@ -159,17 +147,28 @@ export const SafePushNotifications = {
       const { PushNotifications } = await import("@capacitor/push-notifications");
       await safePluginCall("PushNotifications", "createChannel", () => PushNotifications.createChannel(options));
     } catch {
-      // Plugin yüklü değilse sessizce geç
+      // Sessizce geç
     }
   },
 
+  /**
+   * 🔥 KRİTİK DÜZELTME: addListener asla await ile bekletilmemeli!
+   * Android bridge üzerinde .then() hatasını bu şekilde önlüyoruz.
+   */
   async addListener(eventName: string, callback: (data: any) => void): Promise<{ remove: () => void } | null> {
+    if (!Capacitor.isNativePlatform()) return null;
+
     try {
       const { PushNotifications } = await import("@capacitor/push-notifications");
-      const handle = await PushNotifications.addListener(eventName as any, callback);
+
+      // Android bridge'de .then() hatası almamak için fonksiyonu direkt çağırıyoruz,
+      // sonucunu (handle) Promise olarak beklemiyoruz.
+      const handle = (PushNotifications as any).addListener(eventName, callback);
+
+      console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
       return handle;
     } catch (error) {
-      console.log(`[SafePushNotifications] addListener(${eventName}) not available`);
+      console.log(`[SafePushNotifications] addListener(${eventName}) failed silently:`, error);
       return null;
     }
   },
