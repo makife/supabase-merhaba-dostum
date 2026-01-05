@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const mounted = useRef(true);
   const isRecoveringRef = useRef(false);
   const lastSignOutEventRef = useRef<number>(0);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Token'ın süresi dolmuş mu kontrol eden fonksiyon
   const isTokenExpired = (session: Session) => {
@@ -172,6 +173,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     mounted.current = true;
 
+    // FAILSAFE: Maksimum 10 saniyede loading false olsun
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (mounted.current && loading) {
+        console.log("[AuthContext] ⚠️ Failsafe: Loading timeout, forcing false");
+        setLoading(false);
+      }
+    }, 10000);
+
     const initAuth = async () => {
       console.log("🔒 Auth Check Başlıyor...");
 
@@ -187,12 +199,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSession(cachedSession);
             setUser(cachedSession.user);
             setLoading(false);
+            if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
           }
         }
       }
 
       // 2. Supabase ile Gerçek Kontrol
-      await forceRecoverSession();
+      try {
+        await Promise.race([
+          forceRecoverSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
+        ]);
+      } catch (e) {
+        console.warn("[AuthContext] ⚠️ Session recovery timeout veya hata:", e);
+      }
+      
+      // Her durumda loading'i kapat
+      if (mounted.current) {
+        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+        setLoading(false);
+      }
     };
 
     initAuth();
@@ -272,6 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted.current = false;
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       subscription.unsubscribe();
     };
   }, [forceRecoverSession]);

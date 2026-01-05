@@ -25,28 +25,36 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   ];
 
   useEffect(() => {
-    // İpuçları yükle ve countdown görsellerini preload et
+    // İpuçları yükle ve countdown görsellerini preload et (timeout ile)
     const loadAssets = async () => {
+      const ASSET_TIMEOUT = 5000; // 5 saniye timeout
+      
       try {
-        // Countdown görsellerini paralel olarak yükle
-        const countdownPromise = ensureImagesLoaded();
+        // Countdown görsellerini paralel olarak yükle - timeout ile
+        const countdownPromise = Promise.race([
+          ensureImagesLoaded(),
+          new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT))
+        ]);
         
-        // İpuçlarını yükle
-        const tipsPromise = fetch('/ipucu.txt').then(async (response) => {
-          if (response.ok) {
-            const text = await response.text();
-            const tipsArray = text.split('\n').filter(line => line.trim() !== '');
-            setTips(tipsArray);
-            setCurrentTip(tipsArray[Math.floor(Math.random() * tipsArray.length)]);
-          }
-        }).catch((error) => {
-          console.warn('İpucu dosyası okunamadı:', error);
-          setCurrentTip(tips[0]);
-        });
+        // İpuçlarını yükle - timeout ile
+        const tipsPromise = Promise.race([
+          fetch('/ipucu.txt').then(async (response) => {
+            if (response.ok) {
+              const text = await response.text();
+              const tipsArray = text.split('\n').filter(line => line.trim() !== '');
+              setTips(tipsArray);
+              setCurrentTip(tipsArray[Math.floor(Math.random() * tipsArray.length)]);
+            }
+          }).catch((error) => {
+            console.warn('İpucu dosyası okunamadı:', error);
+            setCurrentTip(tips[0]);
+          }),
+          new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT))
+        ]);
 
-        // Her ikisini de bekle
+        // Her ikisini de bekle (timeout varsa devam et)
         await Promise.all([countdownPromise, tipsPromise]);
-        console.log('✅ LoadingScreen: All assets preloaded');
+        console.log('✅ LoadingScreen: All assets preloaded (or timeout)');
       } catch (error) {
         console.warn('Asset yükleme hatası:', error);
       }
@@ -63,6 +71,14 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   useEffect(() => {
     // Mounted olana kadar timer'ları başlatma
     if (!mounted) return;
+
+    // FAILSAFE: Maksimum 15 saniyede loading bitsin
+    const failsafeTimer = setTimeout(() => {
+      console.log('⚠️ LoadingScreen: Failsafe timeout - forcing complete');
+      if (onLoadingComplete) {
+        onLoadingComplete();
+      }
+    }, 15000);
 
     // Ergan görselini 3 saniye göster
     const erganTimer = setTimeout(() => {
@@ -93,6 +109,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
               // 1 saniye daha bekle, sonra callback çağır
               setTimeout(() => {
                 console.log('Loading completed, calling callback...');
+                clearTimeout(failsafeTimer); // Failsafe'i iptal et
                 if (onLoadingComplete) {
                   onLoadingComplete();
                 }
@@ -106,6 +123,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     }, 3500);
 
     return () => {
+      clearTimeout(failsafeTimer);
       clearTimeout(erganTimer);
       clearTimeout(loadingTimer);
     };
