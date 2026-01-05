@@ -147,6 +147,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   }, []);
 
+  // 🔧 Timeout helper - Auth çağrılarını sarmala
+  const withAuthTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+    return Promise.race([
+      promise,
+      new Promise<null>((resolve) => setTimeout(() => {
+        console.log(`[AuthContext] ⏱️ ${ms}ms auth timeout aşıldı!`);
+        resolve(null);
+      }, ms))
+    ]);
+  };
+
   // 🔧 FORCE SESSION RECOVERY - Foreground'da çağrılacak (arka planda)
   const forceRecoverSession = useCallback(async () => {
     if (isRecoveringRef.current) {
@@ -157,26 +168,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
     
-    // 🔧 FAILSAFE: 5 saniye sonra kilidi zorla aç (eskisi 10s)
+    // 🔧 FAILSAFE: 3 saniye sonra kilidi zorla aç
     if (recoveryTimeoutRef.current) {
       clearTimeout(recoveryTimeoutRef.current);
     }
     recoveryTimeoutRef.current = setTimeout(() => {
       if (isRecoveringRef.current) {
-        console.log("[AuthContext] ⚠️ Recovery failsafe: 5s timeout, kilit açılıyor");
+        console.log("[AuthContext] ⚠️ Recovery failsafe: 3s timeout, kilit açılıyor");
         isRecoveringRef.current = false;
         if (mounted.current) setLoading(false);
       }
-    }, 5000);
+    }, 3000);
     
     try {
-      // 🔧 Network warm-up: 500ms bekle (Android WebView ağ ısınması)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 🔧 1. getSession WITH TIMEOUT (2 saniye) - uzun süren istekler iptal
+      const sessionResult = await withAuthTimeout(
+        supabase.auth.getSession(),
+        2000
+      );
       
-      // 1. Önce getSession dene (storage'dan okur)
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (currentSession?.access_token) {
+      if (sessionResult?.data?.session?.access_token) {
+        const currentSession = sessionResult.data.session;
         console.log("[AuthContext] ✅ Session mevcut:", currentSession.user?.email);
         if (mounted.current) {
           setSession(currentSession);
@@ -187,6 +199,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isRecoveringRef.current = false;
         if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
         return;
+      }
+      
+      // 🔧 getSession timeout veya null - optimistic auth'a güven
+      if (!sessionResult) {
+        console.log("[AuthContext] ⚠️ getSession timeout - optimistic auth ile devam");
+        const hasOptimistic = await applyOptimisticAuth();
+        if (hasOptimistic) {
+          isRecoveringRef.current = false;
+          if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
+          return;
+        }
       }
 
       // 2. Session null ise, Preferences'dan manuel oku ve refreshSession dene
@@ -215,20 +238,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsed = JSON.parse(storedSession);
           if (parsed?.refresh_token) {
             console.log("[AuthContext] 🔄 Refresh token ile session yenileniyor...");
-            const { data, error } = await supabase.auth.refreshSession({
-              refresh_token: parsed.refresh_token
-            });
             
-            if (!error && data.session) {
+            // 🔧 refreshSession WITH TIMEOUT (2 saniye)
+            const refreshResult = await withAuthTimeout(
+              supabase.auth.refreshSession({ refresh_token: parsed.refresh_token }),
+              2000
+            );
+            
+            if (refreshResult && !refreshResult.error && refreshResult.data?.session) {
               console.log("[AuthContext] ✅ Session başarıyla restore edildi!");
               if (mounted.current) {
-                setSession(data.session);
-                setUser(data.session.user);
-                setCachedData(data.session.user, data.session);
+                setSession(refreshResult.data.session);
+                setUser(refreshResult.data.session.user);
+                setCachedData(refreshResult.data.session.user, refreshResult.data.session);
                 setLoading(false);
               }
+            } else if (!refreshResult) {
+              console.log("[AuthContext] ⚠️ refreshSession timeout - optimistic auth ile devam");
+              await applyOptimisticAuth();
             } else {
-              console.error("[AuthContext] ❌ Refresh başarısız:", error?.message);
+              console.error("[AuthContext] ❌ Refresh başarısız:", refreshResult.error?.message);
             }
           }
         } catch (parseError) {
@@ -240,11 +269,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error("[AuthContext] ❌ Force recovery hatası:", e);
     } finally {
+      // 🔧 LOCK CLEAR: Her durumda kilidi mutlaka temizle
       isRecoveringRef.current = false;
       if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
       if (mounted.current) setLoading(false);
     }
-  }, []);
+  }, [applyOptimisticAuth]);
 
   // 🔧 useAppState ile foreground dinle
   useAppState({
