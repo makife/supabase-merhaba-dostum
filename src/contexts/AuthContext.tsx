@@ -249,13 +249,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🔧 useAppState ile foreground dinle
   useAppState({
     onForeground: () => {
-      console.log("[AuthContext] 📱 App ön plana geldi - session kontrol ediliyor");
-      forceRecoverSession();
+      console.log("[AuthContext] 📱 App ön plana geldi - orchestrator bekliyor...");
+      // NOT: Artık burada direkt forceRecoverSession çağırmıyoruz
+      // Orchestrator T+400ms'de app-auth-recovery event'i gönderecek
     },
     onBackground: () => {
       console.log("[AuthContext] 📱 App arka plana gitti");
     }
   });
+
+  // 🆕 Orchestrator event'ini dinle
+  useEffect(() => {
+    const handleAuthRecovery = () => {
+      console.log("[AuthContext] 🔄 Orchestrator triggered auth recovery");
+      forceRecoverSession();
+    };
+    
+    const handleForceRestore = () => {
+      console.log("[AuthContext] 🔧 Force restore triggered");
+      // Bridge health fail durumunda agresif recovery
+      isRecoveringRef.current = false; // Kilidi aç
+      applyOptimisticAuth().then(() => {
+        setTimeout(() => forceRecoverSession(), 500);
+      });
+    };
+    
+    window.addEventListener('app-auth-recovery', handleAuthRecovery);
+    window.addEventListener('app-force-restore', handleForceRestore);
+    
+    return () => {
+      window.removeEventListener('app-auth-recovery', handleAuthRecovery);
+      window.removeEventListener('app-force-restore', handleForceRestore);
+    };
+  }, [forceRecoverSession, applyOptimisticAuth]);
 
   useEffect(() => {
     mounted.current = true;
