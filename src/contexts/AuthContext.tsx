@@ -68,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isRecoveringRef = useRef(false);
   const lastSignOutEventRef = useRef<number>(0);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Recovery failsafe
 
   // Token'ın süresi dolmuş mu kontrol eden fonksiyon
   const isTokenExpired = (session: Session) => {
@@ -86,6 +87,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
     
+    // 🔧 FAILSAFE: 10 saniye sonra kilidi zorla aç
+    if (recoveryTimeoutRef.current) {
+      clearTimeout(recoveryTimeoutRef.current);
+    }
+    recoveryTimeoutRef.current = setTimeout(() => {
+      if (isRecoveringRef.current) {
+        console.log("[AuthContext] ⚠️ Recovery failsafe: 10s timeout, kilit açılıyor");
+        isRecoveringRef.current = false;
+      }
+    }, 10000);
+    
     try {
       // 1. Önce getSession dene (storage'dan okur)
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -99,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }
         isRecoveringRef.current = false;
+        if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
         return;
       }
 
@@ -156,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("[AuthContext] ❌ Force recovery hatası:", e);
     } finally {
       isRecoveringRef.current = false;
+      if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
     }
   }, []);
 
@@ -299,6 +313,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted.current = false;
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
       subscription.unsubscribe();
     };
   }, [forceRecoverSession]);

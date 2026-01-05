@@ -1,8 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
-import { StatusBar, Style } from "@capacitor/status-bar";
-// @ts-ignore - Third-party plugin tip desteği eksik olabilir
-import { NavigationBar } from "@ethion/capacitor-navigation-bar";
+import { SafeStatusBar, SafeNavigationBar } from "@/utils/safePluginWrapper";
 
 const HIDE_DELAY_MS = 3000; // 3 saniye sonra gizle
 const BLACK_HEX = "#000000";
@@ -13,60 +11,47 @@ const BLACK_HEX = "#000000";
  * - Uygulama açıldığında status bar ve navigation bar gizli
  * - Parmak kaydırıldığında siyah zemin + beyaz font ile görünür
  * - 3 saniye sonra otomatik gizlenir
+ * - TÜM PLUGIN ÇAĞRILARI TRY-CATCH İLE SARMALANMIŞ
  */
 export function useImmersiveBars() {
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
 
-  // Barları gizle
+  // Barları gizle - Safe wrapper kullanır
   const hideBars = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
     
     try {
-      // Status bar gizle
-      await StatusBar.hide();
+      await SafeStatusBar.hide();
       
-      // Navigation bar gizle (sadece Android)
       if (Capacitor.getPlatform() === "android") {
-        const Nav = NavigationBar as any;
-        if (Nav?.hide) {
-          await Nav.hide();
-        }
+        await SafeNavigationBar.hide();
       }
     } catch (error) {
-      console.warn("Barları gizleme hatası:", error);
+      console.log("[ImmersiveBars] hideBars hatası tolere edildi:", error);
     }
   }, []);
 
-  // Barları göster (siyah zemin, beyaz font)
+  // Barları göster (siyah zemin, beyaz font) - Safe wrapper kullanır
   const showBars = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
     
     try {
-      // Status bar: siyah zemin, beyaz ikonlar
-      await StatusBar.setBackgroundColor({ color: BLACK_HEX });
-      await StatusBar.setStyle({ style: Style.Dark }); // Dark = beyaz ikonlar
-      await StatusBar.show();
+      await SafeStatusBar.setBackgroundColor({ color: BLACK_HEX });
+      await SafeStatusBar.setStyle({ style: "Dark" });
+      await SafeStatusBar.show();
       
-      // Navigation bar (sadece Android)
       if (Capacitor.getPlatform() === "android") {
-        const Nav = NavigationBar as any;
-        // Siyah zemin, beyaz butonlar (darkButtons: false = beyaz)
-        if (Nav?.setColor) {
-          await Nav.setColor({ color: BLACK_HEX, darkButtons: false });
-        }
-        if (Nav?.show) {
-          await Nav.show();
-        }
+        await SafeNavigationBar.setColor({ color: BLACK_HEX, darkButtons: false });
+        await SafeNavigationBar.show();
       }
     } catch (error) {
-      console.warn("Barları gösterme hatası:", error);
+      console.log("[ImmersiveBars] showBars hatası tolere edildi:", error);
     }
   }, []);
 
   // 3 saniye sonra otomatik gizle
   const scheduleHide = useCallback(() => {
-    // Önceki timeout'u temizle
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
     }
@@ -76,31 +61,20 @@ export function useImmersiveBars() {
     }, HIDE_DELAY_MS);
   }, [hideBars]);
 
-  // Immersive mode kurulumu
+  // Immersive mode kurulumu - Safe wrapper kullanır
   const setupImmersiveMode = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return;
     
-    const Nav = NavigationBar as any;
-    
     try {
-      // 1. Status bar overlay mode (içerik barın altına geçer)
-      await StatusBar.setOverlaysWebView({ overlay: true });
-      await StatusBar.setBackgroundColor({ color: BLACK_HEX });
-      await StatusBar.setStyle({ style: Style.Dark });
+      // 1. Status bar overlay mode
+      await SafeStatusBar.setOverlaysWebView({ overlay: true });
+      await SafeStatusBar.setBackgroundColor({ color: BLACK_HEX });
+      await SafeStatusBar.setStyle({ style: "Dark" });
       
       // 2. Android Navigation Bar ayarları
       if (Capacitor.getPlatform() === "android") {
-        // Renk ayarı: siyah zemin, beyaz butonlar
-        if (Nav?.setColor) {
-          await Nav.setColor({ color: BLACK_HEX, darkButtons: false });
-        }
-        
-        // Immersive Sticky Modu - kritik ayar
-        // Bu mod sayesinde kullanıcı kaydırdığında barlar gelir
-        // ve sistem otomatik gizler
-        if (Nav?.setBehavior) {
-          await Nav.setBehavior({ behavior: "immersive-sticky" });
-        }
+        await SafeNavigationBar.setColor({ color: BLACK_HEX, darkButtons: false });
+        await SafeNavigationBar.setBehavior({ behavior: "immersive-sticky" });
       }
       
       // 3. İlk başta barları gizle
@@ -108,7 +82,9 @@ export function useImmersiveBars() {
       
       isInitializedRef.current = true;
     } catch (error) {
-      console.warn("Immersive mode kurulum hatası:", error);
+      console.log("[ImmersiveBars] setupImmersiveMode hatası tolere edildi:", error);
+      // Hata olsa bile initialized say ki tekrar denemesin
+      isInitializedRef.current = true;
     }
   }, [hideBars]);
 
