@@ -78,25 +78,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return session.expires_at < now + 60;
   };
 
+  // 🔧 CUSTOM STORAGE KEY - client.ts ile aynı olmalı
+  const CUSTOM_STORAGE_KEY = "kelimele-auth-token";
+  const LEGACY_STORAGE_KEY = "sb-nnlvtqmuwmrqfinsgvwc-auth-token"; // Eski key fallback
+
   // 🆕 OPTIMISTIC AUTH: Storage'dan anında session al, ağ bekleme
   const applyOptimisticAuth = useCallback(async (): Promise<boolean> => {
     if (optimisticAuthAppliedRef.current) return false;
     
     console.log("[AuthContext] ⚡ Optimistic Auth: Storage'dan anında yükleniyor...");
     
-    const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
     let storedSession: string | null = null;
 
-    // 1. Önce Preferences'dan dene (native storage, daha güvenilir)
+    // 1. Önce Preferences'dan dene (native storage, daha güvenilir) - önce yeni key
     try {
-      const { value } = await Preferences.get({ key: storedSessionKey });
+      const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
       storedSession = value;
     } catch (e) {}
+    
+    // 1b. Eski key fallback
+    if (!storedSession) {
+      try {
+        const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+        storedSession = value;
+      } catch (e) {}
+    }
 
     // 2. Yoksa localStorage'dan dene
     if (!storedSession) {
       try {
-        storedSession = localStorage.getItem(storedSessionKey);
+        storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       } catch (e) {}
     }
 
@@ -215,20 +226,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 2. Session null ise, Preferences'dan manuel oku ve refreshSession dene
       console.log("[AuthContext] ⚠️ getSession null, Preferences'dan manuel restore...");
       
-      const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
       let storedSession: string | null = null;
 
+      // Önce yeni key, sonra eski key dene
       try {
-        const { value } = await Preferences.get({ key: storedSessionKey });
+        const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
         storedSession = value;
-        if (value) console.log("[AuthContext] ✅ Preferences'da session bulundu");
+        if (value) console.log("[AuthContext] ✅ Preferences'da session bulundu (yeni key)");
       } catch (e) {
         console.log("[AuthContext] ℹ️ Preferences okunamadı");
+      }
+      
+      if (!storedSession) {
+        try {
+          const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+          storedSession = value;
+          if (value) console.log("[AuthContext] ✅ Preferences'da session bulundu (eski key)");
+        } catch (e) {}
       }
 
       if (!storedSession) {
         try {
-          storedSession = localStorage.getItem(storedSessionKey);
+          storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
           if (storedSession) console.log("[AuthContext] ✅ localStorage'da session bulundu");
         } catch (e) {}
       }
@@ -411,20 +430,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
-        // Storage'da hala geçerli session var mı kontrol et
+        // 🔧 SILENT REFRESH KORUMASI: Storage'da hala geçerli session var mı kontrol et
         console.log("[AuthContext] ⚠️ SIGNED_OUT geldi, storage kontrol ediliyor...");
         
         try {
-          const storedSessionKey = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
           let storedSession: string | null = null;
           
+          // Önce yeni key, sonra eski key dene
           try {
-            const { value } = await Preferences.get({ key: storedSessionKey });
+            const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
             storedSession = value;
           } catch {}
           
           if (!storedSession) {
-            storedSession = localStorage.getItem(storedSessionKey);
+            try {
+              const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
+              storedSession = value;
+            } catch {}
+          }
+          
+          if (!storedSession) {
+            storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
           }
           
           if (storedSession) {
@@ -432,8 +458,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const expiresAt = parsed?.expires_at;
             const nowSec = Math.floor(Date.now() / 1000);
             
-            if (expiresAt && expiresAt > nowSec) {
-              console.log("[AuthContext] 🛡️ Storage'da geçerli session var, SIGNED_OUT ignore ediliyor!");
+            // 🔧 Token hala geçerli mi? (en az 60 saniye kaldıysa)
+            if (expiresAt && expiresAt > (nowSec + 60)) {
+              console.log("[AuthContext] 🛡️ Storage'da geçerli session var, SIGNED_OUT IGNORE ediliyor!");
               console.log("[AuthContext] 🔄 Session recovery başlatılıyor...");
               // SIGNED_OUT'u ignore et ve session'ı recover et
               setTimeout(() => forceRecoverSession(), 500);

@@ -134,19 +134,57 @@ export const initNativeAudio = async (): Promise<void> => {
 };
 
 /**
- * Native ses çal - Preload tamamlanmamışsa bekle
+ * HTML5 Audio fallback - Native ses yüklenemediğinde
+ */
+const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => {
+  try {
+    // public/ prefix'ini kaldır
+    const webPath = assetPath.replace('public/', '/');
+    const audio = new Audio(webPath);
+    audio.volume = volume;
+    audio.play().catch(e => {
+      console.log(`⚠️ HTML5 Audio fallback başarısız (beklenen):`, e);
+    });
+    return true;
+  } catch (e) {
+    console.log(`⚠️ HTML5 Audio fallback oluşturulamadı:`, e);
+    return false;
+  }
+};
+
+/**
+ * Native ses çal - Preload tamamlanmamışsa bekle, hata durumunda HTML5 fallback
  */
 export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
-  if (!isNative) return false;
-  
-  // Eğer henüz başlatılmadıysa bekle
-  if (!initialized && initPromise) {
-    console.log(`⏳ NativeAudio: ${assetId} için preload bekleniyor...`);
-    await initPromise;
+  // 🔧 AUDIO FAILSAFE: Web ortamında direkt HTML5 kullan
+  if (!isNative) {
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (soundDef) {
+      return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
+    }
+    return false;
   }
   
+  // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
+  if (!initialized && initPromise) {
+    console.log(`⏳ NativeAudio: ${assetId} için preload bekleniyor...`);
+    try {
+      await Promise.race([
+        initPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Preload timeout')), 2000))
+      ]);
+    } catch (e) {
+      console.log(`⚠️ NativeAudio: Preload timeout - HTML5 fallback denenecek`);
+    }
+  }
+  
+  // 🔧 AUDIO FAILSAFE: Ses preload edilmemişse HTML5 fallback
   if (!preloadedSounds.has(assetId)) {
-    console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
+    console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş - HTML5 fallback`);
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (soundDef) {
+      return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
+    }
     return false;
   }
 
@@ -167,8 +205,13 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     await NativeAudio.play({ assetId });
     console.log(`🔊 NativeAudio: ${assetId} çalındı`);
     return true;
-  } catch (error) {
-    console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
+  } catch (error: any) {
+    // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
+    console.error(`❌ NativeAudio: ${assetId} çalınamadı, HTML5 fallback:`, error);
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (soundDef) {
+      return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
+    }
     return false;
   }
 };
