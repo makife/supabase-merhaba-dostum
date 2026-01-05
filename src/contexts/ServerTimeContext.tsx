@@ -109,7 +109,7 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     setIsSyncing(true);
 
     const samples: TimeSample[] = [];
-    const SYNC_TIMEOUT = 3000; // 🔧 3 saniyeye düşürüldü (eski: 8s)
+    const SYNC_TIMEOUT = 2000; // 🔧 2 saniyeye düşürüldü - failsafe için
     
     try {
       // Timeout promise
@@ -180,12 +180,18 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     }
     
     if (samples.length === 0) {
-      console.warn("[ServerTime] ⚠️ No valid samples, keeping current offset:", offsetRef.current);
-      // 🔧 FAILSAFE: Sample yoksa bile ready yap - bloklama
+      console.warn("[ServerTime] ⚠️ No valid samples, forcing ready with cached offset:", offsetRef.current);
+      // 🔧 FAILSAFE: Sample yoksa bile ANINDA ready yap - ASLA bloklama
       lastSyncAtRef.current = Date.now();
       setLastSyncAt(Date.now());
-      setIsReady(true);
-      globalIsReady = true;
+      
+      // 🆕 KRITIK: isReady'yi anında true yap, UI bekletme
+      if (!globalIsReady) {
+        console.log("[ServerTime] 🔧 Forcing isReady=true (failsafe)");
+        setIsReady(true);
+        globalIsReady = true;
+      }
+      
       return offsetRef.current;
     }
     
@@ -237,22 +243,27 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const handleForegroundChange = async (inForeground: boolean) => {
       if (inForeground) {
-        console.log("[ServerTime] 📱 App returned to foreground, recalibrating...");
-        
-        // 🔧 1. Mevcut sync'i iptal et (temiz başlangıç)
-        abortCurrentSync();
-        
-        // 🔧 2. Network warm-up: 500ms bekle (Android WebView ağ ısınması)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // 🔧 3. Yeni sync başlat (force reset ile)
-        calculateOffset(true);
+        console.log("[ServerTime] 📱 App returned to foreground - orchestrator bekliyor...");
+        // NOT: Artık burada direkt sync yapmıyoruz, orchestrator T+1000ms'de yapacak
       }
     };
+
+    // 🆕 Orchestrator event'ini dinle
+    const handleTimeSync = async () => {
+      console.log("[ServerTime] 🔄 Orchestrator triggered time sync");
+      // Mevcut sync'i iptal et ve yeni başlat
+      abortCurrentSync();
+      // 🔧 Network warm-up: 300ms bekle (Android WebView ağ ısınması)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      calculateOffset(true);
+    };
+    
+    window.addEventListener('app-time-sync', handleTimeSync);
 
     const unsubscribe = subscribeToForegroundState(handleForegroundChange);
     return () => {
       unsubscribe();
+      window.removeEventListener('app-time-sync', handleTimeSync);
     };
   }, [calculateOffset, abortCurrentSync]);
 

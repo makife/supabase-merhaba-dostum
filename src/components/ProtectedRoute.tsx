@@ -49,35 +49,35 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       timeout = setTimeout(() => setShowLoadingLonger(false), 300);
     }
 
-    // 🆕 OPTİMİSTİC AUTH: 2 saniye içinde user gelmezse cached session'a bak
+    // 🆕 AGRESİF OPTİMİSTİC AUTH: 800ms içinde user gelmezse cached session'a bak
     optimisticTimeout = setTimeout(async () => {
       if (!user && !hasCheckedCacheRef.current) {
         hasCheckedCacheRef.current = true;
-        console.log("⏰ [ProtectedRoute] 2sn doldu, optimistic auth kontrolü...");
+        console.log("⏰ [ProtectedRoute] 800ms doldu, agresif optimistic auth kontrolü...");
         
         try {
           const cachedSession = await getCachedSession();
           if (cachedSession && cachedSession.expiresAt > Date.now()) {
-            console.log("✅ [ProtectedRoute] Cached session bulundu, optimistic auth aktif");
+            console.log("✅ [ProtectedRoute] Cached session bulundu, ANINDA optimistic auth aktif");
             setOptimisticAuth(true);
             setShowReconnectOverlay(true);
             
-            // 8 saniye sonra overlay'i kapat
-            setTimeout(() => setShowReconnectOverlay(false), 8000);
+            // 5 saniye sonra overlay'i kapat (daha hızlı)
+            setTimeout(() => setShowReconnectOverlay(false), 5000);
           }
         } catch (e) {
           console.error("[ProtectedRoute] Cache kontrol hatası:", e);
         }
       }
-    }, 2000);
+    }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
-    // 🔧 5 saniye boyunca hiçbir şey olmazsa güvenli redirect
+    // 🔧 3 saniye boyunca hiçbir şey olmazsa güvenli redirect (5s -> 3s)
     redirectTimeoutRef.current = setTimeout(() => {
       if (!user && !optimisticAuth) {
-        console.log("⏰ [ProtectedRoute] 5sn zaman aşımı, /auth'a yönlendiriliyor...");
+        console.log("⏰ [ProtectedRoute] 3sn zaman aşımı, /auth'a yönlendiriliyor...");
         setGiveUpAndRedirect(true);
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
       clearTimeout(timeout);
