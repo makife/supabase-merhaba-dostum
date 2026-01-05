@@ -98,14 +98,32 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     },
     realtime: realtimeConfig,
     global: {
-      fetch: (url, options) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+      fetch: async (url, options?: RequestInit) => {
+        // 🔧 Mevcut signal varsa onu kullan, yoksa timeout signal oluştur
+        // 60 saniye timeout (30 çok kısa, AbortError'lara neden oluyor)
+        const TIMEOUT_MS = 60000;
         
-        return fetch(url, {
-          ...options,
-          signal: controller.signal,
-        }).finally(() => clearTimeout(timeoutId));
+        // Eğer zaten bir signal varsa (Supabase internal), onu kullan
+        if (options?.signal) {
+          return fetch(url, options);
+        }
+        
+        // Yoksa kendi timeout'umuzu ekle
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.warn(`[Supabase] ⏱️ Fetch timeout (${TIMEOUT_MS}ms): ${url}`);
+          controller.abort();
+        }, TIMEOUT_MS);
+        
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          return response;
+        } finally {
+          clearTimeout(timeoutId);
+        }
       },
     },
   });
