@@ -92,7 +92,9 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     auth: {
       storage: StorageAdapter,
       persistSession: true,
-      autoRefreshToken: true,
+      // 🔧 KRİTİK: autoRefreshToken DEVRE DIŞI - Token yenileme yetkisi AuthContext'te!
+      // Bu sayede race condition ("400 Bad Request") hataları önlenir
+      autoRefreshToken: false,
       detectSessionInUrl: false,
       storageKey: 'kelimele-auth-token', // 🔧 Özel key - varsayılanla karışıklık önlenir
       lock: isNativePlatform ? (false as any) : undefined,
@@ -100,10 +102,10 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     realtime: realtimeConfig,
     global: {
       fetch: async (url, options?: RequestInit) => {
-        // 🔧 AGGRESSIVE TIMEOUT: Native'de 5 saniye, Web'de 15 saniye
-        // Uzun timeout JS thread'ini kilitliyor - hızlı fail, hızlı retry
+        // 🔧 AGGRESSIVE TIMEOUT: Native'de 12 saniye (uyanış için), Web'de 15 saniye
+        // 12 saniye = Android bridge trafiği için güvenli süre
         const isNativePlatform = Capacitor.isNativePlatform();
-        const TIMEOUT_MS = isNativePlatform ? 5000 : 15000;
+        const TIMEOUT_MS = isNativePlatform ? 12000 : 15000;
         
         // Supabase signal'ini IGNORE et - kendi timeout'umuzu kullan
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};

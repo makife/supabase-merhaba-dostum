@@ -73,18 +73,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
     // 🔧 12 saniye boyunca hiçbir şey olmazsa güvenli redirect (6s -> 12s)
-    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 20 saniye bekle.
+    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 25 saniye bekle.
     // 🆕 KRİTİK: 12sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
     redirectTimeoutRef.current = setTimeout(() => {
-      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE (max 15sn daha)
+      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE (max 25sn daha)
       if (isRecoveringRef.current) {
         console.log("⏳ [ProtectedRoute] 12sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
-        console.log("⏳ [ProtectedRoute] Max 15sn daha LoadingScreen'de tutulacak (Misafir yok!)");
+        console.log("⏳ [ProtectedRoute] Max 25sn daha LoadingScreen'de tutulacak (Misafir yok!)");
         
-        // 🆕 Recovery bitene kadar veya max 15sn boyunca bekle
+        // 🆕 Recovery bitene kadar veya max 25sn boyunca bekle
         // Bu süre boyunca ASLA redirect yapma, ASLA 'Misafir' olarak içeri sokma
         let waitedMs = 0;
-        const maxWaitMs = 15000; // Max ek bekleme - 15sn (toplam 12 + 15 = 27sn)
+        const maxWaitMs = 25000; // Max ek bekleme - 25sn (toplam 12 + 25 = 37sn)
         
         const recoveryCheckInterval = setInterval(() => {
           waitedMs += 1000;
@@ -101,7 +101,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           } else if (waitedMs >= maxWaitMs) {
             // Max bekleme doldu - AMA HALA REDIRECT YAPMA!
             clearInterval(recoveryCheckInterval);
-            console.log("⚠️ [ProtectedRoute] 15sn ek bekleme doldu, recovery hala devam - LoadingScreen'de KALACAK");
+            console.log("⚠️ [ProtectedRoute] 25sn ek bekleme doldu, recovery hala devam - LoadingScreen'de KALACAK");
             // 🛡️ KRİTİK: setGiveUpAndRedirect(true) YAPMA!
             // Kullanıcı LoadingScreen'de kalacak, Misafir olarak içeri alınmayacak
           }
