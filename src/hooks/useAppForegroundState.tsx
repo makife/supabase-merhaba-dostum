@@ -1,21 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-
 import { Capacitor } from "@capacitor/core";
-
 import { supabase, getSupabaseClient } from "@/integrations/supabase/client";
-
 import {
   startForegroundServiceStandalone,
   stopForegroundServiceStandalone,
   isForegroundServiceActive,
 } from "@/hooks/useForegroundService";
+import { updateForegroundTime, getColdStartTime } from "@/utils/coldStartTime";
 
-// 🆕 COLD START TIME TRACKING - 'Misafir' zırhı uygulamanın ilk açılışında da çalışsın!
-
-(window as any).__appForegroundTime = Date.now();
+// 🔥 COLD START TIME zaten coldStartTime.ts'de set ediliyor (main.tsx'te ilk import)
+// Burada tekrar set etmiyoruz - çakışma ve timing sorunlarını önler
 
 // Global app foreground state - accessible from anywhere
-
 let isAppInForeground = true;
 
 const listeners: Set<(inForeground: boolean) => void> = new Set();
@@ -39,67 +35,46 @@ const setForegroundState = async (inForeground: boolean) => {
 
   listeners.forEach((cb) => cb(inForeground));
 
-  // 🆕 FOREGROUND SERVICE YÖNETİMİ - ABSOLUTE TOGGLE
-
+  // 🆕 FOREGROUND SERVICE YÖNETİMİ - DOĞRU MANTIK
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     if (inForeground) {
-      // 📱 ÖN PLANA GELDİ: __appForegroundTime'ı EN BAŞTA güncelle!
+      // 📱 ÖN PLANA GELDİ
+      // 1. İLK ÖNCE: __appForegroundTime'ı güncelle (AuthContext koruması için KRİTİK!)
+      updateForegroundTime();
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - foreground time güncellendi");
 
-      // Bu timestamp AuthContext'teki isFreshWake kontrolü için kritik
-
-      (window as any).__appForegroundTime = Date.now();
-
-      console.log("[AppForegroundState] 📱 Ön plana gelindi - __appForegroundTime güncellendi");
-
-      // FS Kill-Switch: 3.5sn sonra servisi zorla durdur (Bridge trafiği rahatlasın)
-
-      console.log("[AppForegroundState] 📱 FS 3.5sn sonra FORCE STOP planlandı");
-
+      // 2. FS DURDUR: 2 saniye sonra (Bridge rahatlasın)
       hasStartedFSThisBackground = false; // Reset flag
-
+      
       setTimeout(() => {
-        console.log("[AppForegroundState] 📱 FS FORCE STOP şimdi!");
-
+        console.log("[AppForegroundState] 📱 FS STOP (ön planda ihtiyaç yok)");
         stopForegroundServiceStandalone().catch((e) =>
           console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e),
         );
-      }, 3500); // 🔧 3500ms = Android bridge trafiği için güvenli süre
+      }, 2000);
+      
     } else {
-      // 🔙 ARKA PLANA GEÇTİ: Servisi SADECE BİR KEZ başlat
-
+      // 🔙 ARKA PLANA GEÇTİ: Servisi başlat (bağlantıyı koru)
       if (!hasStartedFSThisBackground) {
         hasStartedFSThisBackground = true;
-
-        console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s, tek sefer)");
+        console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s)");
 
         startForegroundServiceStandalone({
           title: "Kelimele",
-
           description: "🎮 Oyun bağlantısı korunuyor...",
-
-          maxDurationMs: 60000, // 60 saniye max
+          maxDurationMs: 60000,
         }).catch((e) => console.log("[AppForegroundState] FS başlatma hatası tolere edildi:", e));
       } else {
-        console.log("[AppForegroundState] 🔙 FS zaten bu arka plan oturumunda başlatıldı, atlanıyor");
+        console.log("[AppForegroundState] 🔙 FS zaten başlatıldı, atlanıyor");
       }
     }
   }
 
-  // 🔧 Ön plana gelince sadece event dispatch et
-
-  // Token refresh YAPMA - Supabase client otomatik yapıyor
-
-  // Manuel refresh = race condition = "Token Not Found" hatası
-
+  // 🔧 Ön plana gelince event dispatch et
   if (inForeground && wasInBackground) {
-    console.log("[AppForegroundState] 📱 Ön plana gelindi");
-
-    // 🆕 AuthContext'in kullanacağı timestamp'i set et
-
-    (window as any).__appForegroundTime = Date.now();
-
-    // Native/Web fark etmez, sadece UI'ı bilgilendir
-
+    console.log("[AppForegroundState] 📱 Ön plana gelindi (from background)");
+    
+    // Native/Web fark etmez, UI'ı bilgilendir
     window.dispatchEvent(new CustomEvent("supabase-reconnected"));
   }
 };

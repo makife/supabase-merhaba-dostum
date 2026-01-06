@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { setCachedSession as setPersistentSession } from "@/utils/persistentState";
 import { Preferences } from "@capacitor/preferences";
 import { useAppState } from "@/hooks/useAppState";
-
+import { isFreshWake, getColdStartTime } from "@/utils/coldStartTime";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -576,12 +576,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 🆕 FOREGROUND ZAMANI KONTROLÜ - EXTREME ZIRH: 20 SANİYE
         // Uygulama uyanalı 20 saniyeden az olduysa, expired token bile olsa KOŞULSUZ ignore et
         // ASLA setUser(null) YAPMA! ASLA /auth'a yönlendirme!
-        const appWakeTime = (window as any).__appForegroundTime || 0;
-        const timeSinceWake = Date.now() - appWakeTime;
-        const isFreshWake = timeSinceWake < 20000; // 20 saniyeden az - MAXIMUM koruma
+        // 🔥 KRİTİK: Artık merkezi isFreshWake fonksiyonunu kullanıyoruz (cold start'ı da kapsar!)
+        const isAppFreshWake = isFreshWake(20000); // 20 saniyeden az
         
-        if (isFreshWake) {
+        if (isAppFreshWake) {
+          const coldStart = getColdStartTime();
+          const foregroundTime = (window as any).__appForegroundTime || coldStart;
+          const timeSinceWake = Date.now() - foregroundTime;
+          
           console.log("[AuthContext] 🛡️ ZIRH AKTİF: Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn < 20sn)");
+          console.log("[AuthContext] 🛡️ Cold start time:", coldStart, "Foreground time:", foregroundTime);
           console.log("[AuthContext] 🛡️ SIGNED_OUT KOŞULSUZ IGNORE! setUser(null) ASLA YAPILMAYACAK!");
           console.log("[AuthContext] 🔄 Token expired bile olsa sadece forceRecoverSession çağrılıyor...");
           
