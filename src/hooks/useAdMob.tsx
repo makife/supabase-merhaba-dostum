@@ -63,38 +63,61 @@ export const useAdMob = () => {
 
     if (isLovableEnv) {
       console.log("AdMob not available in Lovable.dev environment");
-      toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
+      toast({
+        title: "Bilgi",
+        description: "Reklamlar sadece mobil uygulamada çalışır",
+      });
       return;
     }
 
     setIsAdLoading(true);
+
     try {
       const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) {
-        console.log("Capacitor not available");
-        return;
-      }
+      if (!capacitorModule) return;
 
       const { Capacitor } = capacitorModule;
 
       if (!Capacitor.isNativePlatform()) {
-        toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
+        toast({
+          title: "Bilgi",
+          description: "Reklamlar sadece mobil uygulamada çalışır",
+        });
         return;
       }
 
       const admobModule = await importModule("@capacitor-community/admob");
-      if (!admobModule) {
-        console.log("AdMob module not available");
-        return;
-      }
+      if (!admobModule) return;
 
       const isIOS = Capacitor.getPlatform() === "ios";
-      const adId = isIOS
-        ? "ca-app-pub-4768026665961339/6383991586" // iOS kodun varsa buraya (yoksa kalsın)
-        : "ca-app-pub-4768026665961339/4806604463";
-      await admobModule.AdMob.prepareRewardVideoAd({ adId, isTesting: false });
-      setIsAdReady(true);
-      console.log("Rewarded ad loaded successfully");
+
+      // 🎯 Gerçek reklam ID'leri
+      const REAL_AD_ID = isIOS ? "ca-app-pub-4768026665961339/6383991586" : "ca-app-pub-4768026665961339/4806604463";
+
+      // 🧪 Google test rewarded ad ID
+      const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
+
+      try {
+        // 🔥 Önce gerçek reklamı dene
+        await admobModule.AdMob.prepareRewardVideoAd({
+          adId: REAL_AD_ID,
+          isTesting: false,
+        });
+
+        console.log("Real rewarded ad loaded");
+        setIsAdReady(true);
+      } catch (realAdError) {
+        console.warn("Real ad failed, loading test ad...", realAdError);
+
+        // 🧪 Gerçek reklam gelmezse test reklamı yükle
+        await admobModule.AdMob.prepareRewardVideoAd({
+          adId: TEST_AD_ID,
+          isTesting: true,
+        });
+
+        console.log("Test rewarded ad loaded");
+        setIsAdReady(true);
+      }
     } catch (error) {
       console.error("Failed to load rewarded ad:", error);
       toast({
