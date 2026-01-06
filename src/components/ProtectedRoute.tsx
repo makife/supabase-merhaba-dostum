@@ -76,15 +76,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 20 saniye bekle.
     // 🆕 KRİTİK: 12sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
     redirectTimeoutRef.current = setTimeout(() => {
-      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE
+      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE (max 15sn daha)
       if (isRecoveringRef.current) {
         console.log("⏳ [ProtectedRoute] 12sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
-        console.log("⏳ [ProtectedRoute] Max 20sn boyunca LoadingScreen'de tutulacak (Misafir yok!)");
+        console.log("⏳ [ProtectedRoute] Max 15sn daha LoadingScreen'de tutulacak (Misafir yok!)");
         
-        // 🆕 Recovery bitene kadar veya max 20sn boyunca bekle
+        // 🆕 Recovery bitene kadar veya max 15sn boyunca bekle
         // Bu süre boyunca ASLA redirect yapma, ASLA 'Misafir' olarak içeri sokma
         let waitedMs = 0;
-        const maxWaitMs = 20000; // Toplam max bekleme - 20sn
+        const maxWaitMs = 15000; // Max ek bekleme - 15sn (toplam 12 + 15 = 27sn)
         
         const recoveryCheckInterval = setInterval(() => {
           waitedMs += 1000;
@@ -94,18 +94,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             clearInterval(recoveryCheckInterval);
             console.log("✅ [ProtectedRoute] Recovery bitti (" + waitedMs + "ms sonra)");
             
-            // User geldi mi kontrol et
-            if (!optimisticAuth) {
-              console.log("⚠️ [ProtectedRoute] Recovery bitti, optimistic auth yok, biraz daha bekle...");
-              // 2 saniye daha bekle - user state'i güncellensin
-              setTimeout(() => {
-                // Sessizce bekle
-              }, 2000);
-            }
+            // User geldi mi kontrol et - 1sn bekle state güncellensin
+            setTimeout(() => {
+              // Sessizce bekle - user state'i güncellenecek ve useEffect tetiklenecek
+            }, 1000);
           } else if (waitedMs >= maxWaitMs) {
             // Max bekleme doldu - AMA HALA REDIRECT YAPMA!
             clearInterval(recoveryCheckInterval);
-            console.log("⚠️ [ProtectedRoute] 20sn doldu, recovery hala devam ediyor - LoadingScreen'de kalınacak");
+            console.log("⚠️ [ProtectedRoute] 15sn ek bekleme doldu, recovery hala devam - LoadingScreen'de KALACAK");
             // 🛡️ KRİTİK: setGiveUpAndRedirect(true) YAPMA!
             // Kullanıcı LoadingScreen'de kalacak, Misafir olarak içeri alınmayacak
           }

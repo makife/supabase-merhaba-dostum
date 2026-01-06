@@ -641,12 +641,8 @@ const App = () => {
       registrationHandle = SafePushNotifications.addListener("registration", (token: any) => {
         console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
         localStorage.setItem("temp_push_token", token.value);
-        // 🔧 Async işlemi fire-and-forget - try-catch içinde
-        try {
-          supabase.auth.getUser().then(({ data }) => {
-            if (data?.user) saveTokenToSupabase(data.user.id, token.value);
-          });
-        } catch {}
+        // 🔧 HAYATİ: supabase.auth.getUser().then() KALDIRILDI!
+        // Token zaten localStorage'a kaydedildi, SIGNED_IN event'inde yakalanacak
       });
     } catch {}
 
