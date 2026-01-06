@@ -32,8 +32,8 @@ const setForegroundState = async (inForeground: boolean) => {
   // 🆕 FOREGROUND SERVICE YÖNETİMİ - ABSOLUTE TOGGLE
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     if (inForeground) {
-      // 📱 ÖN PLANA GELDİ: 2500ms sonra FS zorla durdur (Bridge rahatlasın)
-      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS 2.5sn sonra FORCE STOP");
+      // 📱 ÖN PLANA GELDİ: 3500ms sonra FS zorla durdur (Bridge rahatlasın)
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS 3.5sn sonra FORCE STOP");
       hasStartedFSThisBackground = false; // Reset flag
       
       setTimeout(() => {
@@ -41,7 +41,7 @@ const setForegroundState = async (inForeground: boolean) => {
         stopForegroundServiceStandalone().catch(e => 
           console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e)
         );
-      }, 2500); // 🔧 2000ms -> 2500ms (Bridge trafiği rahatladıktan sonra kapat)
+      }, 3500); // 🔧 2500ms -> 3500ms (Android bridge trafiği için güvenli süre)
     } else {
       // 🔙 ARKA PLANA GEÇTİ: Servisi SADECE BİR KEZ başlat
       if (!hasStartedFSThisBackground) {
