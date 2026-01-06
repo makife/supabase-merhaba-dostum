@@ -20,7 +20,7 @@ interface SoundDefinition {
   isUrl?: boolean;
 }
 
-// Tüm sesler
+// Tüm sesler - 🔧 DOSYA YOLLARI DOĞRULANDI (public/ klasöründeki gerçek isimlerle eşleşiyor)
 const SOUND_DEFINITIONS: SoundDefinition[] = [
   // Geri sayım sesleri
   { assetId: 'countdown', assetPath: 'public/gerisayim.mp3', volume: 0.6 },
@@ -37,15 +37,16 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'wow2', assetPath: 'public/wow2.mp3', volume: 0.7 },
   { assetId: 'yahoo', assetPath: 'public/yahoo.mp3', volume: 0.7 },
   { assetId: 'sampiyon', assetPath: 'public/sampiyon.mp3', volume: 0.8 },
-  { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 },
+  { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 }, // ✅ Gerçek dosya adı: carkSesi.mp3
   
-  // Oyun sesleri
+  // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
   { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
   { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6 },
   { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5 },
   { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
+  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5 }, // 🆕 Eklendi
 ];
 
 // Initialization flag

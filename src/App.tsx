@@ -630,38 +630,32 @@ const App = () => {
 
     initPush();
 
-    // Listener'ları async/await ile güvenli şekilde kaydet
+    // 🔧 FIRE-AND-FORGET: Listener'ları async/await OLMADAN kur
+    // SafePushNotifications.addListener zaten sync bir fake handle döndürüyor
     let registrationHandle: { remove: () => void } | null = null;
     let notificationHandle: { remove: () => void } | null = null;
     let actionHandle: { remove: () => void } | null = null;
 
-    const setupListeners = async () => {
-      try {
-        registrationHandle = await SafePushNotifications.addListener("registration", async (token: any) => {
-          console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
-          localStorage.setItem("temp_push_token", token.value);
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) await saveTokenToSupabase(user.id, token.value);
-          } catch (e) {
-            console.log("[App] Token kaydetme hatası:", e);
-          }
-        });
+    // 🆕 SYNC olarak listener'ları kur - ASLA await KULLANMA!
+    registrationHandle = SafePushNotifications.addListener("registration", (token: any) => {
+      console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
+      localStorage.setItem("temp_push_token", token.value);
+      // 🔧 Async işlemi içeride fire-and-forget yap
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          saveTokenToSupabase(data.user.id, token.value);
+        }
+      }).catch(() => {});
+    });
 
-        notificationHandle = await SafePushNotifications.addListener("pushNotificationReceived", (n: any) => {
-          console.log("🔔 Bildirim geldi:", n);
-        });
+    notificationHandle = SafePushNotifications.addListener("pushNotificationReceived", (n: any) => {
+      console.log("🔔 Bildirim geldi:", n);
+    });
 
-        actionHandle = await SafePushNotifications.addListener("pushNotificationActionPerformed", (n: any) => {
-          const data = n.notification?.data;
-          if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
-        });
-      } catch (e) {
-        console.log("[App] Push listener kurulumu hatası:", e);
-      }
-    };
-
-    setupListeners();
+    actionHandle = SafePushNotifications.addListener("pushNotificationActionPerformed", (n: any) => {
+      const data = n.notification?.data;
+      if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
+    });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
