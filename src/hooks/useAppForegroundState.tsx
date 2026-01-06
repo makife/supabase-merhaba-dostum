@@ -7,6 +7,9 @@ import {
   isForegroundServiceActive 
 } from "@/hooks/useForegroundService";
 
+// 🆕 COLD START TIME TRACKING - 'Misafir' zırhı uygulamanın ilk açılışında da çalışsın!
+(window as any).__appForegroundTime = Date.now();
+
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
 const listeners: Set<(inForeground: boolean) => void> = new Set();
@@ -29,8 +32,8 @@ const setForegroundState = async (inForeground: boolean) => {
   // 🆕 FOREGROUND SERVICE YÖNETİMİ - ABSOLUTE TOGGLE
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     if (inForeground) {
-      // 📱 ÖN PLANA GELDİ: 2000ms sonra FS zorla durdur (Bridge rahatlasın)
-      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS 2sn sonra FORCE STOP");
+      // 📱 ÖN PLANA GELDİ: 2500ms sonra FS zorla durdur (Bridge rahatlasın)
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS 2.5sn sonra FORCE STOP");
       hasStartedFSThisBackground = false; // Reset flag
       
       setTimeout(() => {
@@ -38,7 +41,7 @@ const setForegroundState = async (inForeground: boolean) => {
         stopForegroundServiceStandalone().catch(e => 
           console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e)
         );
-      }, 2000); // 🔧 1000ms -> 2000ms (Bridge daha fazla rahatlasın)
+      }, 2500); // 🔧 2000ms -> 2500ms (Bridge trafiği rahatladıktan sonra kapat)
     } else {
       // 🔙 ARKA PLANA GEÇTİ: Servisi SADECE BİR KEZ başlat
       if (!hasStartedFSThisBackground) {
