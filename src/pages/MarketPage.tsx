@@ -361,7 +361,13 @@ const MarketPage = () => {
     }
 
     try {
+      // 🔧 Önce reklamı yükle
       await loadRewardedAd();
+      
+      // 🔧 Kısa gecikme - state güncellemesi için bekle
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 🔧 Reklamı göster
       await showRewardedAd();
 
       if (storedDate !== today) {
@@ -371,7 +377,7 @@ const MarketPage = () => {
         localStorage.setItem("adCount", (storedCount + 1).toString());
       }
     } catch (e) {
-      console.error(e);
+      console.error("Reklam hatası:", e);
       toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
     }
   };

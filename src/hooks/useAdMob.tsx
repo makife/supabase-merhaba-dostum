@@ -171,14 +171,8 @@ export const useAdMob = () => {
 
   // Show rewarded ad
   const showRewardedAd = useCallback(async () => {
-    if (!isAdReady) {
-      toast({
-        title: "Reklam Hazır Değil",
-        description: "Reklam henüz yüklenmedi. Lütfen bekleyin.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // 🔧 isAdReady kontrolünü kaldırdık - loadRewardedAd zaten yükleme yapıyor
+    // Eğer reklam yüklenmemişse AdMob plugin kendi hatasını verecek
 
     if (isLovableEnv) {
       console.log("AdMob not available in Lovable.dev environment");
