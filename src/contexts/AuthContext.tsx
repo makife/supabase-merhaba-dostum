@@ -79,9 +79,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return session.expires_at < now + 60;
   };
 
-  // 🔧 CUSTOM STORAGE KEY - client.ts ile aynı olmalı
+  // 🔧 CUSTOM STORAGE KEY - client.ts ile %100 AYNI OLMALI!
+  // client.ts: storageKey: 'kelimele-auth-token'
   const CUSTOM_STORAGE_KEY = "kelimele-auth-token";
   const LEGACY_STORAGE_KEY = "sb-nnlvtqmuwmrqfinsgvwc-auth-token"; // Eski key fallback
+  
+  // 🆕 Session'ı Preferences'a manuel kaydet (giriş anında çağrılacak)
+  const saveSessionToPreferences = async (session: Session) => {
+    if (!session) return;
+    
+    try {
+      const sessionData = JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+        expires_in: session.expires_in,
+        token_type: session.token_type,
+        user: session.user,
+      });
+      
+      // Preferences'a kaydet (native storage)
+      await Preferences.set({ key: CUSTOM_STORAGE_KEY, value: sessionData });
+      console.log("[AuthContext] ✅ Session Preferences'a kaydedildi");
+      
+      // localStorage'a da kaydet (fallback)
+      localStorage.setItem(CUSTOM_STORAGE_KEY, sessionData);
+    } catch (e) {
+      console.error("[AuthContext] ❌ Session kaydetme hatası:", e);
+    }
+  };
 
   // 🆕 OPTIMISTIC AUTH: Storage'dan anında session al, ağ bekleme
   const applyOptimisticAuth = useCallback(async (): Promise<boolean> => {
@@ -599,6 +625,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(data.session);
       setUser(data.session.user);
       setCachedData(data.session.user, data.session);
+      
+      // 🆕 Session'ı Preferences'a da kaydet (native storage persistence)
+      await saveSessionToPreferences(data.session);
     }
     setLoading(false);
     return { error };

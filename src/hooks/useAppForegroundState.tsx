@@ -18,30 +18,41 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
   return () => listeners.delete(callback);
 };
 
+// 🆕 Arka plana geçiş sayacı - sadece 1 kez start et
+let hasStartedFSThisBackground = false;
+
 const setForegroundState = async (inForeground: boolean) => {
   const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
 
-  // 🆕 FOREGROUND SERVICE YÖNETİMİ - SADECE ARKA PLANDA ÇALIŞIR
+  // 🆕 FOREGROUND SERVICE YÖNETİMİ - ABSOLUTE TOGGLE
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     if (inForeground) {
-      // 📱 ÖN PLANA GELDİ: Foreground service'i ANINDA DURDUR
-      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS ANINDA durduruluyor");
-      // Await ile anında durdur, bekleme
-      stopForegroundServiceStandalone().catch(e => 
-        console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e)
-      );
+      // 📱 ÖN PLANA GELDİ: 500ms sonra FS durdur (Bridge rahatlasın)
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS 500ms sonra durduruluyor");
+      hasStartedFSThisBackground = false; // Reset flag
+      
+      setTimeout(() => {
+        stopForegroundServiceStandalone().catch(e => 
+          console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e)
+        );
+      }, 500);
     } else {
-      // 🔙 ARKA PLANA GEÇTİ: Foreground service'i BAŞLAT (max 60 saniye)
-      console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s)");
-      startForegroundServiceStandalone({
-        title: "Kelimele",
-        description: "🎮 Oyun bağlantısı korunuyor...",
-        maxDurationMs: 60000, // 60 saniye max
-      }).catch(e => 
-        console.log("[AppForegroundState] FS başlatma hatası tolere edildi:", e)
-      );
+      // 🔙 ARKA PLANA GEÇTİ: Servisi SADECE BİR KEZ başlat
+      if (!hasStartedFSThisBackground) {
+        hasStartedFSThisBackground = true;
+        console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s, tek sefer)");
+        startForegroundServiceStandalone({
+          title: "Kelimele",
+          description: "🎮 Oyun bağlantısı korunuyor...",
+          maxDurationMs: 60000, // 60 saniye max
+        }).catch(e => 
+          console.log("[AppForegroundState] FS başlatma hatası tolere edildi:", e)
+        );
+      } else {
+        console.log("[AppForegroundState] 🔙 FS zaten bu arka plan oturumunda başlatıldı, atlanıyor");
+      }
     }
   }
 
