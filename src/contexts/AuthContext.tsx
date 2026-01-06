@@ -573,23 +573,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         console.log("[AuthContext] ⚠️ SIGNED_OUT eventi geldi - storage kontrol ediliyor...");
         
-        // 🆕 FOREGROUND ZAMANI KONTROLÜ - EXTREME: 20 SANİYE
+        // 🆕 FOREGROUND ZAMANI KONTROLÜ - EXTREME ZIRH: 20 SANİYE
         // Uygulama uyanalı 20 saniyeden az olduysa, expired token bile olsa KOŞULSUZ ignore et
+        // ASLA setUser(null) YAPMA! ASLA /auth'a yönlendirme!
         const appWakeTime = (window as any).__appForegroundTime || 0;
         const timeSinceWake = Date.now() - appWakeTime;
         const isFreshWake = timeSinceWake < 20000; // 20 saniyeden az - MAXIMUM koruma
         
         if (isFreshWake) {
-          console.log("[AuthContext] 🛡️ EXTREME: Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn < 20sn), SIGNED_OUT KOŞULSUZ IGNORE!");
-          console.log("[AuthContext] 🔄 Token expired bile olsa forceRecoverSession beklenecek...");
+          console.log("[AuthContext] 🛡️ ZIRH AKTİF: Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn < 20sn)");
+          console.log("[AuthContext] 🛡️ SIGNED_OUT KOŞULSUZ IGNORE! setUser(null) ASLA YAPILMAYACAK!");
+          console.log("[AuthContext] 🔄 Token expired bile olsa sadece forceRecoverSession çağrılıyor...");
           
+          // 🛡️ State'e DOKUNMA! Sadece recovery başlat
           isRecoveringRef.current = true;
           window.dispatchEvent(new CustomEvent('auth-recovery-start'));
           
+          // Sadece forceRecoverSession çağır ve bekle - BAŞKA HİÇBİR ŞEY YAPMA!
           setTimeout(() => {
             forceRecoverSession();
           }, 500);
           
+          // 🛡️ KOŞULSUZ RETURN - aşağıdaki hiçbir kod çalışmayacak!
           return;
         }
         

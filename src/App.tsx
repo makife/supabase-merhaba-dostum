@@ -640,9 +640,12 @@ const App = () => {
     try {
       registrationHandle = SafePushNotifications.addListener("registration", (token: any) => {
         console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
-        localStorage.setItem("temp_push_token", token.value);
-        // 🔧 HAYATİ: supabase.auth.getUser().then() KALDIRILDI!
-        // Token zaten localStorage'a kaydedildi, SIGNED_IN event'inde yakalanacak
+        // 🆕 NATIVE STORAGE ZORUNLULUĞU: localStorage yerine Preferences kullan!
+        import("@capacitor/preferences").then(({ Preferences }) => {
+          Preferences.set({ key: 'temp_push_token', value: token.value }).catch(() => {});
+        }).catch(() => {});
+        // Fallback olarak localStorage'a da kaydet
+        try { localStorage.setItem("temp_push_token", token.value); } catch {}
       });
     } catch {}
 

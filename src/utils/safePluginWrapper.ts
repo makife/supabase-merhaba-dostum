@@ -166,41 +166,45 @@ export const SafePushNotifications = {
   },
 
   /**
-   * 🔥 KRİTİK DÜZELTME: addListener asla await ile bekletilmemeli!
-   * Android bridge üzerinde .then() hatasını bu şekilde önlüyoruz.
+   * 🔥 KRİTİK DÜZELTME: addListener Promise döndürmez, await barındırmaz!
+   * Android bridge üzerinde .then() hatasını setTimeout ile proxy yaparak önlüyoruz.
    * 
-   * 🆕 Uncaught (in promise) hatasını önlemek için:
-   * - Sonucu ASLA await etme
-   * - Handler'ı direkt döndür
-   * - Try-catch içinde SYNC olarak çağır
+   * 🆕 PROXY PATTERN: Plugin hazır olana kadar setTimeout ile bekle
+   * - Promise YOK
+   * - await YOK
+   * - .then() YOK (dış çağrıda)
    */
   addListener(eventName: string, callback: (data: any) => void): { remove: () => void } | null {
     if (!Capacitor.isNativePlatform()) return null;
 
-    try {
-      // 🔥 SYNC import yapamıyoruz, bu yüzden fire-and-forget pattern
-      import("@capacitor/push-notifications").then(({ PushNotifications }) => {
-        try {
-          // Direkt çağır, await ETME, .then() KULLANMA
-          (PushNotifications as any).addListener(eventName, callback);
-          console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
-        } catch (innerError) {
-          // İç hataları sessizce yut
-          console.log(`[SafePushNotifications] Inner addListener error:`, innerError);
-        }
-      }).catch(() => {
-        // Import hatası - sessizce geç
-      });
-      
-      // 🆕 Fake remove fonksiyonu döndür (gerçek handle async olduğu için)
-      return { 
-        remove: () => {
-          console.log(`[SafePushNotifications] Remove called for: ${eventName}`);
-        } 
-      };
-    } catch (error) {
-      console.log(`[SafePushNotifications] addListener(${eventName}) failed silently:`, error);
-      return null;
-    }
+    // 🆕 PROXY: setTimeout ile plugin hazır olana kadar bekle
+    // Bu sayede Android bridge stabilize olduktan sonra listener eklenir
+    setTimeout(() => {
+      try {
+        // Dynamic import - .then() içeride kalıyor, dışarıya Promise çıkmıyor
+        import("@capacitor/push-notifications").then(({ PushNotifications }) => {
+          try {
+            // Direkt çağır, sonucu tutma, await ETME
+            (PushNotifications as any).addListener(eventName, callback);
+            console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
+          } catch (innerError) {
+            // İç hataları sessizce yut
+            console.log(`[SafePushNotifications] Inner addListener error:`, innerError);
+          }
+        }).catch(() => {
+          // Import hatası - sessizce geç
+        });
+      } catch (outerError) {
+        // Dış hata - sessizce geç
+        console.log(`[SafePushNotifications] Outer error:`, outerError);
+      }
+    }, 100); // 100ms gecikme - bridge stabilizasyonu için
+    
+    // 🆕 Fake remove fonksiyonu döndür (gerçek handle async olduğu için)
+    return { 
+      remove: () => {
+        console.log(`[SafePushNotifications] Remove called for: ${eventName}`);
+      } 
+    };
   },
 };
