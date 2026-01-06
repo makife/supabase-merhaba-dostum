@@ -185,8 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return false;
   }, []);
 
-  // 🔧 Timeout helper - Auth çağrılarını sarmala (5 saniye - Android uyanış için daha toleranslı)
-  const AUTH_TIMEOUT_MS = 5000;
+  // 🔧 Timeout helper - Auth çağrılarını sarmala (10 saniye - Android uyanış için çok daha toleranslı)
+  const AUTH_TIMEOUT_MS = 10000;
   
   const withAuthTimeout = <T,>(promise: Promise<T>, ms: number = AUTH_TIMEOUT_MS): Promise<T | null> => {
     return Promise.race([
@@ -404,16 +404,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     mounted.current = true;
     optimisticAuthAppliedRef.current = false;
 
-    // 🔧 FAILSAFE: Maksimum 5 saniyede loading false olsun (eskisi 10s)
+    // 🔧 FAILSAFE: Maksimum 12 saniyede loading false olsun (Android için daha toleranslı)
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     loadingTimeoutRef.current = setTimeout(() => {
       if (mounted.current && loading) {
-        console.log("[AuthContext] ⚠️ Failsafe: Loading timeout, forcing false");
+        console.log("[AuthContext] ⚠️ Failsafe: Loading timeout (12s), forcing false");
         setLoading(false);
       }
-    }, 5000);
+    }, 12000);
 
     const initAuth = async () => {
       console.log("🔒 Auth Check Başlıyor...");
