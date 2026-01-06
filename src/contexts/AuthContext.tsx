@@ -418,7 +418,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       console.log("🔒 Auth Check Başlıyor...");
 
-      // 🆕 1. OPTIMISTIC AUTH: Storage'dan anında yükle (ağ bekleme!)
+      // 🆕 1. NATIVE STORAGE ÖNCELİĞİ: Supabase getSession'dan ÖNCE Preferences oku!
+      // Bu sayede Android kill sonrası anında auth state geri gelir
+      console.log("[AuthContext] ⚡ Native Storage öncelikli okuma başlıyor...");
+      
+      let nativeSessionFound = false;
+      
+      try {
+        // Önce Preferences'dan (native storage) oku
+        const { value: prefSession } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
+        
+        if (prefSession) {
+          const parsed = JSON.parse(prefSession);
+          const expiresAt = parsed?.expires_at;
+          const nowSec = Math.floor(Date.now() / 1000);
+          
+          if (expiresAt && expiresAt > nowSec && parsed.user?.id) {
+            console.log("[AuthContext] ⚡ Native Storage'da geçerli session bulundu - ANINDA yükleniyor!");
+            
+            const nativeUser: User = {
+              id: parsed.user?.id || '',
+              email: parsed.user?.email || '',
+              aud: parsed.user?.aud || 'authenticated',
+              role: parsed.user?.role || 'authenticated',
+              app_metadata: parsed.user?.app_metadata || {},
+              user_metadata: parsed.user?.user_metadata || {},
+              created_at: parsed.user?.created_at || '',
+            } as User;
+            
+            const nativeSession: Session = {
+              access_token: parsed.access_token || '',
+              refresh_token: parsed.refresh_token || '',
+              expires_at: parsed.expires_at,
+              expires_in: parsed.expires_in || 3600,
+              token_type: parsed.token_type || 'bearer',
+              user: nativeUser,
+            };
+            
+            if (mounted.current) {
+              setUser(nativeUser);
+              setSession(nativeSession);
+              setLoading(false);
+              nativeSessionFound = true;
+              optimisticAuthAppliedRef.current = true;
+            }
+            
+            if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+            
+            console.log("[AuthContext] ✅ Native Storage'dan UI anında açıldı! Arka planda doğrulama yapılacak.");
+          }
+        }
+      } catch (e) {
+        console.log("[AuthContext] ⚠️ Native Storage okuma hatası, devam ediliyor:", e);
+      }
+      
+      // 🆕 2. Native'den bulunduysa, arka planda sessiz doğrulama yap
+      if (nativeSessionFound) {
+        setTimeout(() => {
+          console.log("[AuthContext] 🔄 Arka plan doğrulaması başlıyor...");
+          forceRecoverSession();
+        }, 1500);
+        return;
+      }
+
+      // 3. Native'de yoksa, eski Optimistic Auth flow'a devam et
       const optimisticSuccess = await applyOptimisticAuth();
       
       if (optimisticSuccess) {
@@ -510,15 +573,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         console.log("[AuthContext] ⚠️ SIGNED_OUT eventi geldi - storage kontrol ediliyor...");
         
-        // 🆕 FOREGROUND ZAMANI KONTROLÜ
-        // Uygulama uyanalı 10 saniyeden az olduysa, expired token bile olsa ignore et
+        // 🆕 FOREGROUND ZAMANI KONTROLÜ - EXTREME: 15 SANİYE
+        // Uygulama uyanalı 15 saniyeden az olduysa, expired token bile olsa KOŞULSUZ ignore et
         const appWakeTime = (window as any).__appForegroundTime || 0;
         const timeSinceWake = Date.now() - appWakeTime;
-        const isFreshWake = timeSinceWake < 10000; // 10 saniyeden az
+        const isFreshWake = timeSinceWake < 15000; // 15 saniyeden az - EXTREME koruma
         
         if (isFreshWake) {
-          console.log("[AuthContext] 🛡️ Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn), SIGNED_OUT IGNORE!");
-          console.log("[AuthContext] 🔄 forceRecoverSession ile sessiz tazeleme başlatılıyor...");
+          console.log("[AuthContext] 🛡️ EXTREME: Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn < 15sn), SIGNED_OUT KOŞULSUZ IGNORE!");
+          console.log("[AuthContext] 🔄 Token expired bile olsa forceRecoverSession beklenecek...");
           
           isRecoveringRef.current = true;
           window.dispatchEvent(new CustomEvent('auth-recovery-start'));

@@ -73,18 +73,18 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
     // 🔧 6 saniye boyunca hiçbir şey olmazsa güvenli redirect (3s -> 6s)
-    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 15 saniye bekle.
+    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 20 saniye bekle.
     // 🆕 KRİTİK: 6sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
     redirectTimeoutRef.current = setTimeout(() => {
       // 🛡️ ÖNCE RECOVERY KONTROLÜ - 6sn dolsa bile recovery varsa BEKLE
       if (isRecoveringRef.current) {
         console.log("⏳ [ProtectedRoute] 6sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
-        console.log("⏳ [ProtectedRoute] Max 15sn boyunca LoadingScreen'de tutulacak (Misafir yok!)");
+        console.log("⏳ [ProtectedRoute] Max 20sn boyunca LoadingScreen'de tutulacak (Misafir yok!)");
         
-        // 🆕 Recovery bitene kadar veya max 15sn boyunca bekle
+        // 🆕 Recovery bitene kadar veya max 20sn boyunca bekle
         // Bu süre boyunca ASLA redirect yapma, ASLA 'Misafir' olarak içeri sokma
         let waitedMs = 0;
-        const maxWaitMs = 15000; // Toplam max bekleme
+        const maxWaitMs = 20000; // Toplam max bekleme - 15sn -> 20sn
         
         const recoveryCheckInterval = setInterval(() => {
           waitedMs += 1000;
@@ -108,7 +108,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           } else if (waitedMs >= maxWaitMs) {
             // Max bekleme doldu - AMA HALA REDIRECT YAPMA!
             clearInterval(recoveryCheckInterval);
-            console.log("⚠️ [ProtectedRoute] 15sn doldu, recovery hala devam ediyor - LoadingScreen'de kalınacak");
+            console.log("⚠️ [ProtectedRoute] 20sn doldu, recovery hala devam ediyor - LoadingScreen'de kalınacak");
             // 🛡️ KRİTİK: setGiveUpAndRedirect(true) YAPMA!
             // Kullanıcı LoadingScreen'de kalacak, Misafir olarak içeri alınmayacak
           }
