@@ -484,6 +484,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         console.log("[AuthContext] ⚠️ SIGNED_OUT eventi geldi - storage kontrol ediliyor...");
         
+        // 🆕 FOREGROUND ZAMANI KONTROLÜ
+        // Uygulama uyanalı 10 saniyeden az olduysa, expired token bile olsa ignore et
+        const appWakeTime = (window as any).__appForegroundTime || 0;
+        const timeSinceWake = Date.now() - appWakeTime;
+        const isFreshWake = timeSinceWake < 10000; // 10 saniyeden az
+        
+        if (isFreshWake) {
+          console.log("[AuthContext] 🛡️ Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn), SIGNED_OUT IGNORE!");
+          console.log("[AuthContext] 🔄 forceRecoverSession ile sessiz tazeleme başlatılıyor...");
+          
+          isRecoveringRef.current = true;
+          window.dispatchEvent(new CustomEvent('auth-recovery-start'));
+          
+          setTimeout(() => {
+            forceRecoverSession();
+          }, 500);
+          
+          return;
+        }
+        
         // 🔧 ASYNC STORAGE KONTROL: Her iki storage'ı da kontrol et
         const checkStorageForValidSession = async (): Promise<boolean> => {
           try {

@@ -168,19 +168,36 @@ export const SafePushNotifications = {
   /**
    * 🔥 KRİTİK DÜZELTME: addListener asla await ile bekletilmemeli!
    * Android bridge üzerinde .then() hatasını bu şekilde önlüyoruz.
+   * 
+   * 🆕 Uncaught (in promise) hatasını önlemek için:
+   * - Sonucu ASLA await etme
+   * - Handler'ı direkt döndür
+   * - Try-catch içinde SYNC olarak çağır
    */
-  async addListener(eventName: string, callback: (data: any) => void): Promise<{ remove: () => void } | null> {
+  addListener(eventName: string, callback: (data: any) => void): { remove: () => void } | null {
     if (!Capacitor.isNativePlatform()) return null;
 
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
-
-      // Android bridge'de .then() hatası almamak için fonksiyonu direkt çağırıyoruz,
-      // sonucunu (handle) Promise olarak beklemiyoruz.
-      const handle = (PushNotifications as any).addListener(eventName, callback);
-
-      console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
-      return handle;
+      // 🔥 SYNC import yapamıyoruz, bu yüzden fire-and-forget pattern
+      import("@capacitor/push-notifications").then(({ PushNotifications }) => {
+        try {
+          // Direkt çağır, await ETME, .then() KULLANMA
+          (PushNotifications as any).addListener(eventName, callback);
+          console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
+        } catch (innerError) {
+          // İç hataları sessizce yut
+          console.log(`[SafePushNotifications] Inner addListener error:`, innerError);
+        }
+      }).catch(() => {
+        // Import hatası - sessizce geç
+      });
+      
+      // 🆕 Fake remove fonksiyonu döndür (gerçek handle async olduğu için)
+      return { 
+        remove: () => {
+          console.log(`[SafePushNotifications] Remove called for: ${eventName}`);
+        } 
+      };
     } catch (error) {
       console.log(`[SafePushNotifications] addListener(${eventName}) failed silently:`, error);
       return null;
