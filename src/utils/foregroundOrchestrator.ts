@@ -95,13 +95,8 @@ export async function startForegroundOrchestration(callbacks: OrchestrationCallb
   // Yeni AbortController oluştur
   globalForegroundAbortController = new AbortController();
   
-  // 🔧 STAGGERED WAKE-UP: Auth recovery öncesi autoRefresh'i durdur
-  try {
-    await supabase.auth.stopAutoRefresh();
-    console.log("[ForegroundOrchestrator] 🛑 AutoRefresh durduruldu");
-  } catch (e) {
-    console.log("[ForegroundOrchestrator] ⚠️ stopAutoRefresh hatası (beklenen):", e);
-  }
+  // 🔧 NOT: autoRefreshToken artık TRUE - stopAutoRefresh çağırmıyoruz!
+  // Supabase kendi token refresh'ini yönetsin
   
   // T+0ms: UI hazırlığı + Bridge Kickstart Ping (async, bloklama yok)
   const t0 = setTimeout(() => {
@@ -119,17 +114,6 @@ export async function startForegroundOrchestration(callbacks: OrchestrationCallb
     callbacks.onAuthRecovery?.();
   }, 400);
   orchestratorTimeouts.push(t400);
-  
-  // T+800ms: AutoRefresh'i tekrar başlat (recovery sonrası)
-  const t800 = setTimeout(async () => {
-    try {
-      await supabase.auth.startAutoRefresh();
-      console.log("[ForegroundOrchestrator] ✅ AutoRefresh tekrar başlatıldı");
-    } catch (e) {
-      console.log("[ForegroundOrchestrator] ⚠️ startAutoRefresh hatası:", e);
-    }
-  }, 800);
-  orchestratorTimeouts.push(t800);
   
   // T+1000ms: ServerTime sync
   const t1000 = setTimeout(() => {

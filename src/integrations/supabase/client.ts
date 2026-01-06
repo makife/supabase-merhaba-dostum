@@ -92,9 +92,10 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     auth: {
       storage: StorageAdapter,
       persistSession: true,
-      // 🔧 KRİTİK: autoRefreshToken DEVRE DIŞI - Token yenileme yetkisi AuthContext'te!
-      // Bu sayede race condition ("400 Bad Request") hataları önlenir
-      autoRefreshToken: false,
+      // 🔧 KRİTİK: autoRefreshToken AÇIK - Supabase token'ı otomatik yenilesin!
+      // Arka planda token süresi dolarsa, foreground'a gelince refresh yapabilsin
+      // Race condition riskini AuthContext'teki "fresh wake" koruması engelliyor
+      autoRefreshToken: true,
       detectSessionInUrl: false,
       storageKey: 'kelimele-auth-token', // 🔧 Özel key - varsayılanla karışıklık önlenir
       lock: isNativePlatform ? (false as any) : undefined,

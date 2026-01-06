@@ -1,4 +1,8 @@
 import React from 'react'
+// 🔥 COLD START TIME - TÜM MODÜLLERDEN ÖNCE IMPORT ET!
+// Bu sayede uygulama kill/restart sonrasında bile doğru timestamp olur
+import '@/utils/coldStartTime';
+
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
