@@ -73,20 +73,34 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
     // 🔧 6 saniye boyunca hiçbir şey olmazsa güvenli redirect (3s -> 6s)
-    // 🛡️ isRecoveringRef true ise redirect YAPMA!
+    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 15 saniye bekle.
     redirectTimeoutRef.current = setTimeout(() => {
       if (!user && !optimisticAuth && !isRecoveringRef.current) {
         console.log("⏰ [ProtectedRoute] 6sn zaman aşımı, /auth'a yönlendiriliyor...");
         setGiveUpAndRedirect(true);
       } else if (isRecoveringRef.current) {
-        console.log("⏳ [ProtectedRoute] Recovery devam ediyor, redirect ertelendi");
-        // Recovery devam ediyorsa 3 saniye daha bekle
+        console.log("⏳ [ProtectedRoute] Recovery devam ediyor, redirect ertelendi (max 15sn beklenecek)");
+        // 🆕 Recovery devam ediyorsa 9 saniye DAHA bekle (toplam 15sn)
+        // Bu süre içinde ASLA redirect yapma, LoadingScreen'de tut
+        const recoveryCheckInterval = setInterval(() => {
+          if (!isRecoveringRef.current) {
+            clearInterval(recoveryCheckInterval);
+            // Recovery bitti, user var mı kontrol et
+            if (!user && !optimisticAuth) {
+              console.log("⏰ [ProtectedRoute] Recovery bitti ama user yok, /auth'a yönlendiriliyor...");
+              setGiveUpAndRedirect(true);
+            }
+          }
+        }, 1000);
+        
+        // 9 saniye sonra interval'i temizle (toplam 15sn)
         setTimeout(() => {
-          if (!user && !optimisticAuth && !isRecoveringRef.current) {
-            console.log("⏰ [ProtectedRoute] Ek 3sn sonra hala user yok, /auth'a yönlendiriliyor...");
+          clearInterval(recoveryCheckInterval);
+          if (!user && !optimisticAuth) {
+            console.log("⏰ [ProtectedRoute] 15sn max bekleme doldu, /auth'a yönlendiriliyor...");
             setGiveUpAndRedirect(true);
           }
-        }, 3000);
+        }, 9000);
       }
     }, 6000);
 

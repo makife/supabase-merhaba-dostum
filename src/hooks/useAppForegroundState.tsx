@@ -23,20 +23,25 @@ const setForegroundState = async (inForeground: boolean) => {
   isAppInForeground = inForeground;
   listeners.forEach(cb => cb(inForeground));
 
-  // 🆕 FOREGROUND SERVICE YÖNETİMİ
+  // 🆕 FOREGROUND SERVICE YÖNETİMİ - SADECE ARKA PLANDA ÇALIŞIR
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
     if (inForeground) {
-      // 📱 ÖN PLANA GELDİ: Foreground service'i DURDUR
-      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS durduruluyor");
-      await stopForegroundServiceStandalone();
+      // 📱 ÖN PLANA GELDİ: Foreground service'i ANINDA DURDUR
+      console.log("[AppForegroundState] 📱 Ön plana gelindi - FS ANINDA durduruluyor");
+      // Await ile anında durdur, bekleme
+      stopForegroundServiceStandalone().catch(e => 
+        console.log("[AppForegroundState] FS durdurma hatası tolere edildi:", e)
+      );
     } else {
       // 🔙 ARKA PLANA GEÇTİ: Foreground service'i BAŞLAT (max 60 saniye)
       console.log("[AppForegroundState] 🔙 Arka plana geçildi - FS başlatılıyor (max 60s)");
-      await startForegroundServiceStandalone({
+      startForegroundServiceStandalone({
         title: "Kelimele",
         description: "🎮 Oyun bağlantısı korunuyor...",
         maxDurationMs: 60000, // 60 saniye max
-      });
+      }).catch(e => 
+        console.log("[AppForegroundState] FS başlatma hatası tolere edildi:", e)
+      );
     }
   }
 
@@ -45,6 +50,10 @@ const setForegroundState = async (inForeground: boolean) => {
   // Manuel refresh = race condition = "Token Not Found" hatası
   if (inForeground && wasInBackground) {
     console.log("[AppForegroundState] 📱 Ön plana gelindi");
+    
+    // 🆕 AuthContext'in kullanacağı timestamp'i set et
+    (window as any).__appForegroundTime = Date.now();
+    
     // Native/Web fark etmez, sadece UI'ı bilgilendir
     window.dispatchEvent(new CustomEvent("supabase-reconnected"));
   }

@@ -98,6 +98,17 @@ export function useImmersiveBars() {
     const handleUserInteraction = () => {
       if (!isInitializedRef.current) return;
       
+      // 🛡️ OYUN SAYFASINDA İSEK SWIPE İLE BAR AÇMA!
+      const currentPath = window.location.pathname;
+      const isGamePage = currentPath.includes('/game') || 
+                         currentPath.includes('/random-match') ||
+                         currentPath.includes('/tournament');
+      
+      if (isGamePage) {
+        console.log("[ImmersiveBars] Oyun sayfasında, swipe ile bar açılmayacak");
+        return;
+      }
+      
       // Barları göster
       showBars();
       
@@ -105,7 +116,7 @@ export function useImmersiveBars() {
       scheduleHide();
     };
 
-    // 🛡️ Swipe gesture detection - DAHA KATKI EŞİKLER
+    // 🛡️ Swipe gesture detection - ÇOK KATKI EŞİKLER (deltaY: 100px)
     let touchStartY = 0;
     let touchStartX = 0;
     
@@ -122,16 +133,16 @@ export function useImmersiveBars() {
       const screenHeight = window.innerHeight;
       
       // 🛡️ Eğer oyun alanında tıklama ise (X ekseni hareketi az), status bar açma
-      // Sadece gerçek swipe gesture'ları için aç (dikey hareket > 50px VE yatay hareket < 30px)
-      if (deltaX > 30) return; // Yatay hareket varsa status bar açma
+      // Sadece gerçek swipe gesture'ları için aç (dikey hareket > 100px VE yatay hareket < 20px)
+      if (deltaX > 20) return; // Yatay hareket varsa status bar açma
       
-      // Ekranın alt %10'undan yukarı kaydırma algıla (daha küçük alan)
-      if (touchStartY > screenHeight * 0.9 && deltaY < -50) {
+      // Ekranın alt %5'inden yukarı kaydırma algıla (çok küçük alan)
+      if (touchStartY > screenHeight * 0.95 && deltaY < -100) {
         handleUserInteraction();
       }
       
-      // Ekranın üst %10'undan aşağı kaydırma algıla (daha küçük alan)
-      if (touchStartY < screenHeight * 0.1 && deltaY > 50) {
+      // Ekranın üst %5'inden aşağı kaydırma algıla (çok küçük alan)
+      if (touchStartY < screenHeight * 0.05 && deltaY > 100) {
         handleUserInteraction();
       }
     };
