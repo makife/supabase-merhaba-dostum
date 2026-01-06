@@ -72,19 +72,19 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
     }, 800); // 🔧 2000ms -> 800ms (daha agresif)
 
-    // 🔧 6 saniye boyunca hiçbir şey olmazsa güvenli redirect (3s -> 6s)
+    // 🔧 12 saniye boyunca hiçbir şey olmazsa güvenli redirect (6s -> 12s)
     // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 20 saniye bekle.
-    // 🆕 KRİTİK: 6sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
+    // 🆕 KRİTİK: 12sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
     redirectTimeoutRef.current = setTimeout(() => {
-      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 6sn dolsa bile recovery varsa BEKLE
+      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE
       if (isRecoveringRef.current) {
-        console.log("⏳ [ProtectedRoute] 6sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
+        console.log("⏳ [ProtectedRoute] 12sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
         console.log("⏳ [ProtectedRoute] Max 20sn boyunca LoadingScreen'de tutulacak (Misafir yok!)");
         
         // 🆕 Recovery bitene kadar veya max 20sn boyunca bekle
         // Bu süre boyunca ASLA redirect yapma, ASLA 'Misafir' olarak içeri sokma
         let waitedMs = 0;
-        const maxWaitMs = 20000; // Toplam max bekleme - 15sn -> 20sn
+        const maxWaitMs = 20000; // Toplam max bekleme - 20sn
         
         const recoveryCheckInterval = setInterval(() => {
           waitedMs += 1000;
@@ -95,14 +95,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
             console.log("✅ [ProtectedRoute] Recovery bitti (" + waitedMs + "ms sonra)");
             
             // User geldi mi kontrol et
-            // NOT: Bu closure user'ı yakalıyor, güncel değeri alamayabiliriz
-            // Bu yüzden sadece optimisticAuth kontrolü yap
             if (!optimisticAuth) {
               console.log("⚠️ [ProtectedRoute] Recovery bitti, optimistic auth yok, biraz daha bekle...");
               // 2 saniye daha bekle - user state'i güncellensin
               setTimeout(() => {
-                // Bu noktada component re-render olmuş olmalı
-                // giveUpAndRedirect true yapmak yerine sessizce bekle
+                // Sessizce bekle
               }, 2000);
             }
           } else if (waitedMs >= maxWaitMs) {
@@ -119,10 +116,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       
       // Recovery yok ve user/optimisticAuth da yok - artık redirect yapılabilir
       if (!user && !optimisticAuth) {
-        console.log("⏰ [ProtectedRoute] 6sn zaman aşımı, recovery yok, /auth'a yönlendiriliyor...");
+        console.log("⏰ [ProtectedRoute] 12sn zaman aşımı, recovery yok, /auth'a yönlendiriliyor...");
         setGiveUpAndRedirect(true);
       }
-    }, 6000);
+    }, 12000);
 
     return () => {
       clearTimeout(timeout);
