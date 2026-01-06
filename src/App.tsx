@@ -637,14 +637,18 @@ const App = () => {
     let actionHandle: { remove: () => void } | null = null;
 
     // 🆕 SYNC olarak listener'ları kur - await/.then() YOK!
+    // 🔧 KRİTİK: Bridge çökmesini önlemek için tamamen senkron, ateşle-unut modda
     try {
       registrationHandle = SafePushNotifications.addListener("registration", (token: any) => {
         console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
-        // 🆕 NATIVE STORAGE ZORUNLULUĞU: localStorage yerine Preferences kullan!
-        import("@capacitor/preferences").then(({ Preferences }) => {
-          Preferences.set({ key: 'temp_push_token', value: token.value }).catch(() => {});
-        }).catch(() => {});
-        // Fallback olarak localStorage'a da kaydet
+        // 🆕 NATIVE STORAGE ZORUNLULUĞU: Preferences (native storage) öncelikli!
+        // setTimeout ile bridge trafiği rahatladıktan sonra kaydet
+        setTimeout(() => {
+          import("@capacitor/preferences").then(({ Preferences }) => {
+            Preferences.set({ key: 'temp_push_token', value: token.value }).catch(() => {});
+          }).catch(() => {});
+        }, 100);
+        // Fallback olarak localStorage'a da kaydet (sync, hemen)
         try { localStorage.setItem("temp_push_token", token.value); } catch {}
       });
     } catch {}
