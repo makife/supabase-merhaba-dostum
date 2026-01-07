@@ -12,6 +12,9 @@ export interface NativeRealtimePlugin {
 
   disconnect(): Promise<{ success: boolean }>;
 
+  enterForegroundMode(): Promise<void>;
+  enterBackgroundMode(): Promise<void>;
+
   subscribe(options: {
     topic: string;
     event?: string;
