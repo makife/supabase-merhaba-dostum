@@ -4,21 +4,44 @@ import { isFreshWake, getColdStartTime, updateForegroundTime } from "@/utils/col
 import { Capacitor } from "@capacitor/core";
 
 /**
- * 🔧 Session Recovery Hook - GÜÇLENDİRİLMİŞ VERSİYON
+ * 🔧 Session Recovery Hook - GÜÇLENDİRİLMİŞ VERSİYON v2
  * 
  * Arka plandan gelince veya kill sonrası session'ın kaybolmasını önler.
- * Cold start ve foreground geçişlerinde koordineli çalışır.
- * 
- * ⚠️ NOT: Bu hook useAppForegroundState ile AYNI appStateChange'i dinlemiyor!
- * useAppForegroundState zaten global listener kuruyor, biz sadece event'leri dinliyoruz.
+ * Invalid Refresh Token durumunda storage'ı temizler.
  */
 
 // Storage key'leri
 const CUSTOM_KEY = "kelimele-auth-token";
 const LEGACY_KEY = "sb-nnlvtqmuwmrqfinsgvwc-auth-token";
 
-// Daha uzun timeout - Android uyanışı için (10 saniye)
-const SESSION_TIMEOUT_MS = 10000;
+// Daha uzun timeout - Android uyanışı için (15 saniye)
+const SESSION_TIMEOUT_MS = 15000;
+
+// Geçersiz session'ı temizle
+const clearInvalidSession = async () => {
+  console.log("[SessionRecovery] 🗑️ Geçersiz session temizleniyor...");
+  
+  try {
+    // localStorage temizle
+    localStorage.removeItem(CUSTOM_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+    
+    // Native Preferences temizle
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Preferences } = await import("@capacitor/preferences");
+        await Preferences.remove({ key: CUSTOM_KEY });
+        await Preferences.remove({ key: LEGACY_KEY });
+      } catch (e) {
+        console.log("[SessionRecovery] Preferences temizleme hatası:", e);
+      }
+    }
+    
+    console.log("[SessionRecovery] ✅ Geçersiz session temizlendi");
+  } catch (e) {
+    console.error("[SessionRecovery] Session temizleme hatası:", e);
+  }
+};
 
 export function useSessionRecovery() {
   const isRecoveringRef = useRef(false);
@@ -26,9 +49,9 @@ export function useSessionRecovery() {
 
   useEffect(() => {
     const recoverSession = async () => {
-      // Rate limit: 3 saniyede bir (daha toleranslı)
+      // Rate limit: 5 saniyede bir (daha toleranslı)
       const now = Date.now();
-      if (now - lastRecoveryRef.current < 3000) {
+      if (now - lastRecoveryRef.current < 5000) {
         console.log("[SessionRecovery] ⏳ Rate limit aktif, atlanıyor");
         return;
       }
@@ -44,7 +67,7 @@ export function useSessionRecovery() {
         console.log("[SessionRecovery] 🔄 Session kontrol başlıyor...");
         console.log("[SessionRecovery] Cold start:", getColdStartTime(), "isFreshWake:", isFreshWake(20000));
 
-        // 1. Mevcut session'ı kontrol et - DAHA UZUN TIMEOUT (10 saniye)
+        // 1. Mevcut session'ı kontrol et
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<null>((resolve) => 
           setTimeout(() => resolve(null), SESSION_TIMEOUT_MS)
@@ -103,7 +126,15 @@ export function useSessionRecovery() {
           return;
         }
 
-        const parsed = JSON.parse(storedSession);
+        let parsed;
+        try {
+          parsed = JSON.parse(storedSession);
+        } catch (e) {
+          console.log("[SessionRecovery] ❌ Session parse hatası, temizleniyor...");
+          await clearInvalidSession();
+          isRecoveringRef.current = false;
+          return;
+        }
         
         // Token süresi kontrolü
         const nowSec = Math.floor(Date.now() / 1000);
@@ -113,7 +144,8 @@ export function useSessionRecovery() {
         console.log(`[SessionRecovery] Token durumu: ${isExpired ? '⚠️ EXPIRED' : '✅ VALID'} (expires: ${expiresAt}, now: ${nowSec})`);
 
         if (!parsed?.refresh_token) {
-          console.log("[SessionRecovery] ❌ Refresh token yok");
+          console.log("[SessionRecovery] ❌ Refresh token yok, session temizleniyor...");
+          await clearInvalidSession();
           isRecoveringRef.current = false;
           return;
         }
@@ -131,10 +163,32 @@ export function useSessionRecovery() {
         if (refreshResult && 'data' in refreshResult) {
           const { data, error: refreshError } = refreshResult;
           
-          if (refreshError || !data.session) {
-            console.error("[SessionRecovery] ❌ Refresh başarısız:", refreshError?.message);
+          if (refreshError) {
+            const errorMessage = refreshError.message || '';
+            console.error("[SessionRecovery] ❌ Refresh başarısız:", errorMessage);
             
-            // Son çare: setSession dene (token expired değilse işe yarayabilir)
+            // 🆕 Invalid Refresh Token hatası - session'ı tamamen temizle
+            if (
+              errorMessage.toLowerCase().includes('invalid') ||
+              errorMessage.toLowerCase().includes('not found') ||
+              errorMessage.toLowerCase().includes('expired') ||
+              errorMessage.toLowerCase().includes('revoked')
+            ) {
+              console.log("[SessionRecovery] 🗑️ Invalid token tespit edildi, session temizleniyor...");
+              await clearInvalidSession();
+              
+              // Supabase client'ı da temizle
+              try {
+                await supabase.auth.signOut({ scope: 'local' });
+              } catch (e) {
+                // Sessizce geç
+              }
+              
+              isRecoveringRef.current = false;
+              return;
+            }
+            
+            // Token expired değilse setSession dene
             if (!isExpired && parsed.access_token) {
               console.log("[SessionRecovery] 🔄 Token hala geçerli, setSession deneniyor...");
               const { error: setError } = await supabase.auth.setSession({
@@ -144,15 +198,19 @@ export function useSessionRecovery() {
               
               if (setError) {
                 console.error("[SessionRecovery] ❌ setSession hatası:", setError.message);
+                // setSession de başarısız olduysa session'ı temizle
+                if (setError.message.toLowerCase().includes('invalid')) {
+                  await clearInvalidSession();
+                }
               } else {
                 console.log("[SessionRecovery] ✅ setSession başarılı!");
               }
             }
-          } else {
+          } else if (data?.session) {
             console.log("[SessionRecovery] ✅ Session refresh edildi:", data.session.user?.email);
           }
         } else {
-          console.log("[SessionRecovery] ⚠️ Refresh timeout (10s)");
+          console.log("[SessionRecovery] ⚠️ Refresh timeout (15s)");
         }
 
       } catch (e) {
