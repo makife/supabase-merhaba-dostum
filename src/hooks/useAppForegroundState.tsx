@@ -2,10 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  startForegroundServiceStandalone,
-  stopForegroundServiceStandalone,
-} from "@/hooks/useForegroundService";
 import { updateForegroundTime } from "@/utils/coldStartTime";
 
 // Global app foreground state - accessible from anywhere
@@ -19,60 +15,37 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
   return () => listeners.delete(callback);
 };
 
-// 🆕 Arka plana geçiş sayacı - sadece 1 kez start et
-let hasStartedFSThisBackground = false;
-
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
-const handleForegroundStateChange = async (inForeground: boolean) => {
+// ÖNEMLİ: Bu fonksiyon ÇOK HAFİF olmalı - hiçbir native plugin çağrısı YAPMA!
+const handleForegroundStateChange = (inForeground: boolean) => {
   const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
 
-  // Tüm listener'ları bilgilendir
-  listeners.forEach((cb) => cb(inForeground));
-
   console.log(`[AppForegroundState] 📱 State: ${inForeground ? 'FOREGROUND' : 'BACKGROUND'}`);
 
-  // 🆕 FOREGROUND SERVICE YÖNETİMİ - SADECE ANDROID
-  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") {
-    if (inForeground) {
-      // 📱 ÖN PLANA GELDİ
-      // 1. İLK ÖNCE: __appForegroundTime'ı güncelle (AuthContext koruması için KRİTİK!)
-      updateForegroundTime();
-      console.log("[AppForegroundState] ✅ Foreground time güncellendi");
-
-      // 2. FS DURDUR: 3.5 saniye sonra (Bridge rahatlasın)
-      hasStartedFSThisBackground = false; // Reset flag
-      
-      setTimeout(() => {
-        console.log("[AppForegroundState] 🛑 FS STOP komutu (ön planda ihtiyaç yok)");
-        stopForegroundServiceStandalone()
-          .then(() => console.log("[AppForegroundState] ✅ FS başarıyla durduruldu"))
-          .catch((e) => console.log("[AppForegroundState] ⚠️ FS durdurma hatası (tolere):", e));
-      }, 3500);
-      
-    } else {
-      // 🔙 ARKA PLANA GEÇTİ: Servisi başlat (bağlantıyı koru)
-      if (!hasStartedFSThisBackground) {
-        hasStartedFSThisBackground = true;
-        console.log("[AppForegroundState] 🚀 FS START komutu (arka plan - max 60s)");
-
-        startForegroundServiceStandalone({
-          title: "Kelimele",
-          description: "🎮 Oyun bağlantısı korunuyor...",
-          maxDurationMs: 60000,
-        })
-          .then((started) => console.log(`[AppForegroundState] ${started ? '✅ FS başlatıldı' : '⚠️ FS başlatılamadı'}`))
-          .catch((e) => console.log("[AppForegroundState] ⚠️ FS başlatma hatası (tolere):", e));
-      } else {
-        console.log("[AppForegroundState] ⏭️ FS zaten başlatıldı, atlanıyor");
-      }
+  // Tüm listener'ları bilgilendir - SENKRON ve HAFİF
+  listeners.forEach((cb) => {
+    try {
+      cb(inForeground);
+    } catch (e) {
+      console.warn("[AppForegroundState] Listener error:", e);
     }
+  });
+
+  // 📱 ÖN PLANA GELDİ
+  if (inForeground) {
+    // __appForegroundTime'ı güncelle (AuthContext koruması için KRİTİK!)
+    updateForegroundTime();
+    console.log("[AppForegroundState] ✅ Foreground time güncellendi");
   }
 
-  // 🔧 Ön plana gelince event dispatch et
+  // 🔧 Ön plana gelince event dispatch et - arka plandayken geliyorsa
   if (inForeground && wasInBackground) {
     console.log("[AppForegroundState] 🔔 supabase-reconnected event dispatch");
-    window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+    // Küçük delay ile dispatch et - UI stabilize olsun
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+    }, 100);
   }
 };
 
@@ -102,6 +75,8 @@ const initGlobalListener = () => {
     console.log("[AppForegroundState] 🔧 Native global listener kuruluyor...");
     
     App.addListener("appStateChange", ({ isActive }) => {
+      // 🔥 KRİTİK: Bu callback ÇOK HAFİF olmalı!
+      // Sadece state güncelle, HİÇBİR ağır işlem yapma!
       console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
       handleForegroundStateChange(isActive);
     }).then(() => {
