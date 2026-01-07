@@ -406,64 +406,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       console.log("🔒 Auth Başlatılıyor...");
 
-      // 1. Önce "Servis Yöneticisini" temizle (Uygulama yeni açıldı, servis durmalı)
-      // BackgroundServiceManager.init(); // (Adım 1'deki dosyayı import etmeyi unutma)
-
-      // 2. NATIVE STORAGE - EN KRİTİK ADIM
-      // Supabase'i beklemeden, direkt diskten token var mı diye bakıyoruz.
-      // Bu sayede "Guest" olarak açılma ihtimalini yok ediyoruz.
-      let recoveredSession = null;
+      // 1. NATIVE STORAGE OKUMA (ÖNCELİKLİ)
+      let restored = false;
 
       try {
-        // Native Preferences'dan oku
         const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
         if (value) {
           const parsed = JSON.parse(value);
-          // Basit bir geçerlilik kontrolü
-          if (parsed?.access_token && parsed?.expires_at > Date.now() / 1000) {
-            console.log("[AuthContext] ✅ Native Storage'dan Session Bulundu!");
-            recoveredSession = parsed;
+          // Token süresi kontrolü (Opsiyonel ama iyi olur)
+          const now = Math.floor(Date.now() / 1000);
+
+          if (parsed?.access_token && (!parsed.expires_at || parsed.expires_at > now)) {
+            console.log("[AuthContext] ✅ Native Storage'dan geçerli session bulundu!");
+
+            // Session ve User'ı state'e at
+            const user = parsed.user;
+            const session = {
+              access_token: parsed.access_token,
+              refresh_token: parsed.refresh_token,
+              expires_at: parsed.expires_at,
+              user: user,
+              token_type: "bearer",
+            } as Session;
+
+            // State güncelle
+            if (mounted.current) {
+              setUser(user);
+              setSession(session);
+
+              // Supabase client'a token'ı elle ver
+              supabase.auth.setSession(session);
+
+              restored = true;
+            }
+          } else {
+            console.log("[AuthContext] ⚠️ Storage'daki token'ın süresi dolmuş.");
           }
         }
       } catch (e) {
         console.error("Storage okuma hatası:", e);
       }
 
-      // 3. Eğer diski okuduk ve session varsa, UI'ı hemen aç (Optimistic UI)
-      if (recoveredSession && mounted.current) {
-        // User objesini yapılandır
-        const restoredUser = recoveredSession.user;
-        const restoredSession = {
-          access_token: recoveredSession.access_token,
-          refresh_token: recoveredSession.refresh_token,
-          expires_at: recoveredSession.expires_at,
-          user: restoredUser,
-          token_type: "bearer",
-        } as Session;
-
-        setUser(restoredUser);
-        setSession(restoredSession);
-
-        // Supabase client'a da bu token'ı zorla ver ki sonraki istekler patlamasın
-        supabase.auth.setSession(restoredSession);
-
-        setLoading(false); // <--- KİLİDİ BURADA AÇIYORUZ
-        console.log("🚀 UI Native Cache ile açıldı (Network beklenmedi)");
+      // 2. Eğer Native'den kurtardıysak, loading'i kapat ve çık (HIZLI AÇILIŞ)
+      if (restored && mounted.current) {
+        setLoading(false);
+        // Arka planda yine de bir kontrol et (silent check)
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session && mounted.current) {
+            setSession(data.session);
+            setUser(data.session.user);
+            saveSessionToPreferences(data.session);
+          }
+        });
+        return;
       }
 
-      // 4. Şimdi arkada sakince Supabase ile gerçek kontrolü yap
-      // Eğer token geçersizse Supabase zaten SIGNED_OUT fırlatacak, onu aşağıda yakalayacağız.
-      // Amaç: Kullanıcıya beyaz ekran veya login ekranı göstermeden önce elimizdekini kullanmak.
-
+      // 3. Native'de bulamadıysak Supabase'e sor (YAVAŞ AÇILIŞ - Mecburiyetten)
+      console.log("[AuthContext] ☁️ Supabase'den session isteniyor...");
       const { data, error } = await supabase.auth.getSession();
-      if (!recoveredSession && mounted.current) {
-        // Eğer diskte yoksa ve Supabase'den geldiyse
+
+      if (mounted.current) {
         if (data.session) {
           setSession(data.session);
           setUser(data.session.user);
-          // Native'e kaydetmeyi unutma
           saveSessionToPreferences(data.session);
         }
+        // Her halükarda artık loading bitti
         setLoading(false);
       }
     };
