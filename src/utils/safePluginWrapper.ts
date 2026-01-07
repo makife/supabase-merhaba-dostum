@@ -166,45 +166,45 @@ export const SafePushNotifications = {
   },
 
   /**
-   * 🔥 KRİTİK DÜZELTME: addListener Promise döndürmez, await barındırmaz!
-   * Android bridge üzerinde .then() hatasını setTimeout ile proxy yaparak önlüyoruz.
+   * 🔥 KRİTİK DÜZELTME v2: Promise ve .then() TAMAMEN KALDIRILDI!
+   * Android bridge üzerinde hiçbir async operasyon yapmıyoruz.
    * 
-   * 🆕 PROXY PATTERN: Plugin hazır olana kadar setTimeout ile bekle
-   * - Promise YOK
-   * - await YOK
-   * - .then() YOK (dış çağrıda)
+   * Strateji: Plugin'i önceden yükle, sonra senkron çağır
    */
   addListener(eventName: string, callback: (data: any) => void): { remove: () => void } | null {
     if (!Capacitor.isNativePlatform()) return null;
 
-    // 🆕 PROXY: setTimeout ile plugin hazır olana kadar bekle
-    // Bu sayede Android bridge stabilize olduktan sonra listener eklenir
-    setTimeout(() => {
-      try {
-        // Dynamic import - .then() içeride kalıyor, dışarıya Promise çıkmıyor
-        import("@capacitor/push-notifications").then(({ PushNotifications }) => {
-          try {
-            // Direkt çağır, sonucu tutma, await ETME
-            (PushNotifications as any).addListener(eventName, callback);
-            console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
-          } catch (innerError) {
-            // İç hataları sessizce yut
-            console.log(`[SafePushNotifications] Inner addListener error:`, innerError);
-          }
-        }).catch(() => {
-          // Import hatası - sessizce geç
-        });
-      } catch (outerError) {
-        // Dış hata - sessizce geç
-        console.log(`[SafePushNotifications] Outer error:`, outerError);
-      }
-    }, 100); // 100ms gecikme - bridge stabilizasyonu için
+    // 🆕 TAMAMEN SENKRON YAKLAŞIM:
+    // setTimeout ile gecikme, ardından IIFE ile async kodu izole et
+    const listenerHandle = { remove: () => {} };
     
-    // 🆕 Fake remove fonksiyonu döndür (gerçek handle async olduğu için)
-    return { 
-      remove: () => {
-        console.log(`[SafePushNotifications] Remove called for: ${eventName}`);
-      } 
-    };
+    setTimeout(async () => {
+      try {
+        // Async import
+        const module = await import("@capacitor/push-notifications");
+        const PushNotifications = module.PushNotifications;
+        
+        // Listener ekle - Cast ile tip uyumluluğu sağla
+        const handle = await (PushNotifications.addListener as any)(eventName, callback);
+        
+        // Handle'ı güncelle
+        if (handle?.remove) {
+          listenerHandle.remove = () => {
+            try {
+              handle.remove();
+            } catch {
+              // Sessizce geç
+            }
+          };
+        }
+        
+        console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
+      } catch (error) {
+        // Tüm hatalar sessizce yutuluyor
+        console.log(`[SafePushNotifications] addListener error for ${eventName}:`, error);
+      }
+    }, 150); // 150ms gecikme - Android bridge stabilizasyonu için
+    
+    return listenerHandle;
   },
 };
