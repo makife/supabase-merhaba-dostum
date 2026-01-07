@@ -1,3 +1,4 @@
+import { NativeRealtime } from "@/plugins/NativeRealtime";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 
