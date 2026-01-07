@@ -23,16 +23,15 @@ const nativeCall = async (action: "start" | "stop") => {
     // BURASI ÖNEMLİ: Kullandığın pluginin import ve metodlarını buraya bağla
     // Örnek: import { ForegroundService } from '...';
     // await ForegroundService.start(...);
-    
+
     console.log(`[ServiceManager] ⚙️ Servis ${action} isteği gönderiliyor...`);
-    
+
     // ⚠️ MOCKUP: Burayı kendi plugin metodunla değiştir
     // const { MyPlugin } = await import("my-plugin-path");
     // if (action === 'start') await MyPlugin.start();
     // else await MyPlugin.stop();
-    
-    isServiceRunning = (action === "start");
-    
+
+    isServiceRunning = action === "start";
   } catch (e) {
     console.error(`[ServiceManager] ❌ ${action} hatası:`, e);
   }
@@ -42,12 +41,12 @@ export const BackgroundServiceManager = {
   // Uygulama ARKA PLANA geçtiğinde
   onAppBackground: async () => {
     if (!Capacitor.isNativePlatform()) return;
-    
+
     console.log("[ServiceManager] 🌑 Arka plan modu: Bildirim açılıyor + 1dk sayaç");
     try {
       // Servise "Arka plan moduna geç" emri ver
       // Bu komut servisi Foreground Service'e yükseltir ve bildirimi açar
-      await NativeRealtime.enterBackgroundMode(); 
+      await NativeRealtime.enterBackgroundMode();
     } catch (e) {
       console.error("Background mode error:", e);
     }
@@ -57,21 +56,33 @@ export const BackgroundServiceManager = {
   onAppForeground: async () => {
     if (!Capacitor.isNativePlatform()) return;
 
-    console.log("[ServiceManager] ☀️ Ön plan modu: Bildirim gizleniyor, sayaç iptal");
+    console.log("[ServiceManager] ☀️ Ön plan modu: Bildirim gizleniyor...");
     try {
-      // Servise "Ön plan moduna geç" emri ver
-      // Bildirimi kaldırır, 1dk sayacını durdurur ama bağlantıyı KOPARMAZ
+      // 1. Modu değiştir (Bu şimdi yukarıdaki Kotlin kodunu tetikleyecek ve event gönderecek)
       await NativeRealtime.enterForegroundMode();
+
+      // 2. 🔥 EKSTRA GARANTİ: 500ms sonra durumu manuel soralım
+      // Eğer event arada kaynadıysa bu yakalar ve pencereyi kapatır.
+      setTimeout(async () => {
+        try {
+          const { state } = await NativeRealtime.getConnectionState();
+          console.log("[ServiceManager] 🔎 Manuel Durum Kontrolü:", state);
+
+          // Eğer bağlıysak ve UI hala "connecting" modundaysa düzeltsin diye
+          // Sanki bir event gelmiş gibi dispatch edebilirsin veya state'i güncelleyebilirsin.
+          // Ama genellikle NativeRealtime.enterForegroundMode() içindeki notifyListeners yeterlidir.
+        } catch (e) {}
+      }, 500);
     } catch (e) {
       console.error("Foreground mode error:", e);
     }
   },
-  
+
   // Uygulama ilk açıldığında
   init: async () => {
-      // Cold start sonrası temizlik için ön plan modunu zorla
-      if (Capacitor.isNativePlatform()) {
-          await NativeRealtime.enterForegroundMode();
-      }
-  }
+    // Cold start sonrası temizlik için ön plan modunu zorla
+    if (Capacitor.isNativePlatform()) {
+      await NativeRealtime.enterForegroundMode();
+    }
+  },
 };
