@@ -34,7 +34,7 @@ const setCachedData = (user: User | null, session: Session | null) => {
     if (user && session) {
       localStorage.setItem("kelimeci_cached_user", JSON.stringify(user));
       localStorage.setItem("kelimeci_cached_session", JSON.stringify(session));
-      
+
       // 🆕 NATIVE STORAGE'A DA KAYDET (Optimistic Auth için)
       setPersistentSession({
         userId: user.id,
@@ -83,11 +83,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // client.ts: storageKey: 'kelimele-auth-token'
   const CUSTOM_STORAGE_KEY = "kelimele-auth-token";
   const LEGACY_STORAGE_KEY = "sb-nnlvtqmuwmrqfinsgvwc-auth-token"; // Eski key fallback
-  
+
   // 🆕 Session'ı Preferences'a manuel kaydet (giriş anında çağrılacak)
   const saveSessionToPreferences = async (session: Session) => {
     if (!session) return;
-    
+
     try {
       const sessionData = JSON.stringify({
         access_token: session.access_token,
@@ -97,11 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token_type: session.token_type,
         user: session.user,
       });
-      
+
       // Preferences'a kaydet (native storage)
       await Preferences.set({ key: CUSTOM_STORAGE_KEY, value: sessionData });
       console.log("[AuthContext] ✅ Session Preferences'a kaydedildi");
-      
+
       // localStorage'a da kaydet (fallback)
       localStorage.setItem(CUSTOM_STORAGE_KEY, sessionData);
     } catch (e) {
@@ -112,9 +112,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🆕 OPTIMISTIC AUTH: Storage'dan anında session al, ağ bekleme
   const applyOptimisticAuth = useCallback(async (): Promise<boolean> => {
     if (optimisticAuthAppliedRef.current) return false;
-    
+
     console.log("[AuthContext] ⚡ Optimistic Auth: Storage'dan anında yükleniyor...");
-    
+
     let storedSession: string | null = null;
 
     // 1. Önce Preferences'dan dene (native storage, daha güvenilir) - önce yeni key
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
       storedSession = value;
     } catch (e) {}
-    
+
     // 1b. Eski key fallback
     if (!storedSession) {
       try {
@@ -143,59 +143,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const parsed = JSON.parse(storedSession);
         const expiresAt = parsed?.expires_at;
         const nowSec = Math.floor(Date.now() / 1000);
-        
+
         // Token hala geçerli mi?
         if (expiresAt && expiresAt > nowSec) {
           console.log("[AuthContext] ⚡ Optimistic Auth: Geçerli session bulundu!");
-          
+
           // User bilgisini construct et
           const optimisticUser: User = {
-            id: parsed.user?.id || '',
-            email: parsed.user?.email || '',
-            aud: parsed.user?.aud || 'authenticated',
-            role: parsed.user?.role || 'authenticated',
+            id: parsed.user?.id || "",
+            email: parsed.user?.email || "",
+            aud: parsed.user?.aud || "authenticated",
+            role: parsed.user?.role || "authenticated",
             app_metadata: parsed.user?.app_metadata || {},
             user_metadata: parsed.user?.user_metadata || {},
-            created_at: parsed.user?.created_at || '',
+            created_at: parsed.user?.created_at || "",
           } as User;
-          
+
           const optimisticSession: Session = {
-            access_token: parsed.access_token || '',
-            refresh_token: parsed.refresh_token || '',
+            access_token: parsed.access_token || "",
+            refresh_token: parsed.refresh_token || "",
             expires_at: parsed.expires_at,
             expires_in: parsed.expires_in || 3600,
-            token_type: parsed.token_type || 'bearer',
+            token_type: parsed.token_type || "bearer",
             user: optimisticUser,
           };
-          
+
           if (mounted.current) {
             setUser(optimisticUser);
             setSession(optimisticSession);
             setLoading(false);
             optimisticAuthAppliedRef.current = true;
           }
-          
+
           return true;
         }
       } catch (e) {
         console.log("[AuthContext] ⚠️ Optimistic Auth parse hatası");
       }
     }
-    
+
     return false;
   }, []);
 
   // 🔧 Timeout helper - Auth çağrılarını sarmala (10 saniye - Android uyanış için çok daha toleranslı)
   const AUTH_TIMEOUT_MS = 10000;
-  
+
   const withAuthTimeout = <T,>(promise: Promise<T>, ms: number = AUTH_TIMEOUT_MS): Promise<T | null> => {
     return Promise.race([
       promise,
-      new Promise<null>((resolve) => setTimeout(() => {
-        // 🔧 Sessiz timeout - sadece debug için log (üretimde kaldırılabilir)
-        console.debug(`[AuthContext] ⏱️ ${ms}ms auth timeout`);
-        resolve(null);
-      }, ms))
+      new Promise<null>((resolve) =>
+        setTimeout(() => {
+          // 🔧 Sessiz timeout - sadece debug için log (üretimde kaldırılabilir)
+          console.debug(`[AuthContext] ⏱️ ${ms}ms auth timeout`);
+          resolve(null);
+        }, ms),
+      ),
     ]);
   };
 
@@ -205,13 +207,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("[AuthContext] ⏳ Recovery zaten devam ediyor, atlanıyor...");
       return;
     }
-    
+
     isRecoveringRef.current = true;
     console.log("[AuthContext] 🔄 FORCE Session Recovery başlıyor...");
-    
+
     // 🆕 ProtectedRoute'a recovery başladığını bildir
-    window.dispatchEvent(new CustomEvent('auth-recovery-start'));
-    
+    window.dispatchEvent(new CustomEvent("auth-recovery-start"));
+
     // 🔧 FAILSAFE: 6 saniye sonra kilidi zorla aç (timeout 5s + 1s margin)
     if (recoveryTimeoutRef.current) {
       clearTimeout(recoveryTimeoutRef.current);
@@ -223,14 +225,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mounted.current) setLoading(false);
       }
     }, 6000);
-    
+
     try {
       // 🔧 1. getSession WITH TIMEOUT (5 saniye - Android için toleranslı)
-      const sessionResult = await withAuthTimeout(
-        supabase.auth.getSession(),
-        AUTH_TIMEOUT_MS
-      );
-      
+      const sessionResult = await withAuthTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS);
+
       if (sessionResult?.data?.session?.access_token) {
         const currentSession = sessionResult.data.session;
         console.log("[AuthContext] ✅ Session mevcut:", currentSession.user?.email);
@@ -244,7 +243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
         return;
       }
-      
+
       // 🔧 getSession timeout veya null - optimistic auth'a güven
       if (!sessionResult) {
         console.log("[AuthContext] ⚠️ getSession timeout - optimistic auth ile devam");
@@ -258,7 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 2. Session null ise, Preferences'dan manuel oku ve refreshSession dene
       console.log("[AuthContext] ⚠️ getSession null, Preferences'dan manuel restore...");
-      
+
       let storedSession: string | null = null;
 
       // Önce yeni key, sonra eski key dene
@@ -269,7 +268,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (e) {
         console.log("[AuthContext] ℹ️ Preferences okunamadı");
       }
-      
+
       if (!storedSession) {
         try {
           const { value } = await Preferences.get({ key: LEGACY_STORAGE_KEY });
@@ -290,13 +289,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsed = JSON.parse(storedSession);
           if (parsed?.refresh_token) {
             console.log("[AuthContext] 🔄 Refresh token ile session yenileniyor...");
-            
+
             // 🔧 refreshSession WITH TIMEOUT (5 saniye - Android için toleranslı)
             const refreshResult = await withAuthTimeout(
               supabase.auth.refreshSession({ refresh_token: parsed.refresh_token }),
-              AUTH_TIMEOUT_MS
+              AUTH_TIMEOUT_MS,
             );
-            
+
             if (refreshResult && !refreshResult.error && refreshResult.data?.session) {
               console.log("[AuthContext] ✅ Session başarıyla restore edildi!");
               if (mounted.current) {
@@ -310,11 +309,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               await applyOptimisticAuth();
             } else if (refreshResult.error) {
               // 🆕 AUTH RECOVERY ROBUSTNESS: Invalid Refresh Token için retry logic
-              const errorMessage = refreshResult.error?.message || '';
-              const isInvalidToken = errorMessage.toLowerCase().includes('invalid') || 
-                                     errorMessage.toLowerCase().includes('expired') ||
-                                     errorMessage.toLowerCase().includes('refresh');
-              
+              const errorMessage = refreshResult.error?.message || "";
+              const isInvalidToken =
+                errorMessage.toLowerCase().includes("invalid") ||
+                errorMessage.toLowerCase().includes("expired") ||
+                errorMessage.toLowerCase().includes("refresh");
+
               if (isInvalidToken) {
                 console.log("[AuthContext] ⚠️ Invalid token hatası - 3sn daha storage'a güveniyoruz");
                 // Anında logout yapma! Storage'daki session'ı 3 saniye daha geçerli say
@@ -325,7 +325,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     console.log("[AuthContext] 🔄 Invalid token retry...");
                     const retryResult = await withAuthTimeout(
                       supabase.auth.refreshSession({ refresh_token: parsed.refresh_token }),
-                      AUTH_TIMEOUT_MS
+                      AUTH_TIMEOUT_MS,
                     );
                     if (retryResult && !retryResult.error && retryResult.data?.session) {
                       console.log("[AuthContext] ✅ Retry başarılı!");
@@ -357,9 +357,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isRecoveringRef.current = false;
       if (recoveryTimeoutRef.current) clearTimeout(recoveryTimeoutRef.current);
       if (mounted.current) setLoading(false);
-      
+
       // 🆕 ProtectedRoute'a recovery bittiğini bildir
-      window.dispatchEvent(new CustomEvent('auth-recovery-end'));
+      window.dispatchEvent(new CustomEvent("auth-recovery-end"));
     }
   }, [applyOptimisticAuth]);
 
@@ -372,7 +372,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
     onBackground: () => {
       console.log("[AuthContext] 📱 App arka plana gitti");
-    }
+    },
   });
 
   // 🆕 Orchestrator event'ini dinle
@@ -381,7 +381,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("[AuthContext] 🔄 Orchestrator triggered auth recovery");
       forceRecoverSession();
     };
-    
+
     const handleForceRestore = () => {
       console.log("[AuthContext] 🔧 Force restore triggered");
       // Bridge health fail durumunda agresif recovery
@@ -390,141 +390,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(() => forceRecoverSession(), 500);
       });
     };
-    
-    window.addEventListener('app-auth-recovery', handleAuthRecovery);
-    window.addEventListener('app-force-restore', handleForceRestore);
-    
+
+    window.addEventListener("app-auth-recovery", handleAuthRecovery);
+    window.addEventListener("app-force-restore", handleForceRestore);
+
     return () => {
-      window.removeEventListener('app-auth-recovery', handleAuthRecovery);
-      window.removeEventListener('app-force-restore', handleForceRestore);
+      window.removeEventListener("app-auth-recovery", handleAuthRecovery);
+      window.removeEventListener("app-force-restore", handleForceRestore);
     };
   }, [forceRecoverSession, applyOptimisticAuth]);
 
   useEffect(() => {
     mounted.current = true;
-    optimisticAuthAppliedRef.current = false;
-
-    // 🔧 FAILSAFE: Maksimum 12 saniyede loading false olsun (Android için daha toleranslı)
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (mounted.current && loading) {
-        console.log("[AuthContext] ⚠️ Failsafe: Loading timeout (12s), forcing false");
-        setLoading(false);
-      }
-    }, 12000);
 
     const initAuth = async () => {
-      console.log("🔒 Auth Check Başlıyor...");
+      console.log("🔒 Auth Başlatılıyor...");
 
-      // 🆕 1. NATIVE STORAGE ÖNCELİĞİ: Supabase getSession'dan ÖNCE Preferences oku!
-      // Bu sayede Android kill sonrası anında auth state geri gelir
-      console.log("[AuthContext] ⚡ Native Storage öncelikli okuma başlıyor...");
-      
-      let nativeSessionFound = false;
-      
+      // 1. Önce "Servis Yöneticisini" temizle (Uygulama yeni açıldı, servis durmalı)
+      // BackgroundServiceManager.init(); // (Adım 1'deki dosyayı import etmeyi unutma)
+
+      // 2. NATIVE STORAGE - EN KRİTİK ADIM
+      // Supabase'i beklemeden, direkt diskten token var mı diye bakıyoruz.
+      // Bu sayede "Guest" olarak açılma ihtimalini yok ediyoruz.
+      let recoveredSession = null;
+
       try {
-        // Önce Preferences'dan (native storage) oku
-        const { value: prefSession } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
-        
-        if (prefSession) {
-          const parsed = JSON.parse(prefSession);
-          const expiresAt = parsed?.expires_at;
-          const nowSec = Math.floor(Date.now() / 1000);
-          
-          if (expiresAt && expiresAt > nowSec && parsed.user?.id) {
-            console.log("[AuthContext] ⚡ Native Storage'da geçerli session bulundu - ANINDA yükleniyor!");
-            
-            const nativeUser: User = {
-              id: parsed.user?.id || '',
-              email: parsed.user?.email || '',
-              aud: parsed.user?.aud || 'authenticated',
-              role: parsed.user?.role || 'authenticated',
-              app_metadata: parsed.user?.app_metadata || {},
-              user_metadata: parsed.user?.user_metadata || {},
-              created_at: parsed.user?.created_at || '',
-            } as User;
-            
-            const nativeSession: Session = {
-              access_token: parsed.access_token || '',
-              refresh_token: parsed.refresh_token || '',
-              expires_at: parsed.expires_at,
-              expires_in: parsed.expires_in || 3600,
-              token_type: parsed.token_type || 'bearer',
-              user: nativeUser,
-            };
-            
-            if (mounted.current) {
-              setUser(nativeUser);
-              setSession(nativeSession);
-              setLoading(false);
-              nativeSessionFound = true;
-              optimisticAuthAppliedRef.current = true;
-            }
-            
-            if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-            
-            console.log("[AuthContext] ✅ Native Storage'dan UI anında açıldı! Arka planda doğrulama yapılacak.");
+        // Native Preferences'dan oku
+        const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
+        if (value) {
+          const parsed = JSON.parse(value);
+          // Basit bir geçerlilik kontrolü
+          if (parsed?.access_token && parsed?.expires_at > Date.now() / 1000) {
+            console.log("[AuthContext] ✅ Native Storage'dan Session Bulundu!");
+            recoveredSession = parsed;
           }
         }
       } catch (e) {
-        console.log("[AuthContext] ⚠️ Native Storage okuma hatası, devam ediliyor:", e);
-      }
-      
-      // 🆕 2. Native'den bulunduysa, arka planda sessiz doğrulama yap
-      if (nativeSessionFound) {
-        setTimeout(() => {
-          console.log("[AuthContext] 🔄 Arka plan doğrulaması başlıyor...");
-          forceRecoverSession();
-        }, 1500);
-        return;
+        console.error("Storage okuma hatası:", e);
       }
 
-      // 3. Native'de yoksa, eski Optimistic Auth flow'a devam et
-      const optimisticSuccess = await applyOptimisticAuth();
-      
-      if (optimisticSuccess) {
-        console.log("[AuthContext] ⚡ Optimistic Auth başarılı - UI hemen açılıyor");
-        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-        
-        // Arka planda gerçek session'ı doğrula (bloklamadan)
-        setTimeout(() => {
-          forceRecoverSession();
-        }, 1000);
-        return;
+      // 3. Eğer diski okuduk ve session varsa, UI'ı hemen aç (Optimistic UI)
+      if (recoveredSession && mounted.current) {
+        // User objesini yapılandır
+        const restoredUser = recoveredSession.user;
+        const restoredSession = {
+          access_token: recoveredSession.access_token,
+          refresh_token: recoveredSession.refresh_token,
+          expires_at: recoveredSession.expires_at,
+          user: restoredUser,
+          token_type: "bearer",
+        } as Session;
+
+        setUser(restoredUser);
+        setSession(restoredSession);
+
+        // Supabase client'a da bu token'ı zorla ver ki sonraki istekler patlamasın
+        supabase.auth.setSession(restoredSession);
+
+        setLoading(false); // <--- KİLİDİ BURADA AÇIYORUZ
+        console.log("🚀 UI Native Cache ile açıldı (Network beklenmedi)");
       }
 
-      // 2. Optimistic başarısız - eski cache'e bak
-      const cachedSession = getCachedSession();
+      // 4. Şimdi arkada sakince Supabase ile gerçek kontrolü yap
+      // Eğer token geçersizse Supabase zaten SIGNED_OUT fırlatacak, onu aşağıda yakalayacağız.
+      // Amaç: Kullanıcıya beyaz ekran veya login ekranı göstermeden önce elimizdekini kullanmak.
 
-      if (cachedSession) {
-        if (isTokenExpired(cachedSession)) {
-          console.log("⚠️ Cache bulundu ama SÜRESİ DOLMUŞ. Yenisi isteniyor...");
-        } else {
-          console.log("✅ Cache geçerli, hemen içeri alınıyor.");
-          if (mounted.current) {
-            setSession(cachedSession);
-            setUser(cachedSession.user);
-            setLoading(false);
-            if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-          }
+      const { data, error } = await supabase.auth.getSession();
+      if (!recoveredSession && mounted.current) {
+        // Eğer diskte yoksa ve Supabase'den geldiyse
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          // Native'e kaydetmeyi unutma
+          saveSessionToPreferences(data.session);
         }
-      }
-
-      // 3. Supabase ile Gerçek Kontrol (arka planda)
-      try {
-        await Promise.race([
-          forceRecoverSession(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
-        ]);
-      } catch (e) {
-        console.warn("[AuthContext] ⚠️ Session recovery timeout veya hata:", e);
-      }
-      
-      // Her durumda loading'i kapat
-      if (mounted.current) {
-        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
         setLoading(false);
       }
     };
@@ -536,7 +475,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log(`[AuthContext] 🔔 Auth event: ${event}`);
-      
+
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
         if (newSession) {
           console.log(`🔐 Token Yenilendi (${event})`);
@@ -556,63 +495,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // State zaten signOut fonksiyonunda temizleniyor, burada bir şey yapma
           return;
         }
-        
+
         // 🛡️ MİSAFİR KORUMASI - SIGNED_OUT için maksimum zırh
         // Kill/restart/network drop sonrasında Supabase yanlışlıkla SIGNED_OUT fırlatabilir
         // Bu durumda ASLA state temizleme, ASLA /auth'a yönlendirme!
-        
+
         const now = Date.now();
         const timeSinceLastSignOut = now - lastSignOutEventRef.current;
         lastSignOutEventRef.current = now;
-        
+
         // 2 saniye içinde tekrar SIGNED_OUT gelirse spam, kesin ignore et
         if (timeSinceLastSignOut < 2000) {
           console.log("[AuthContext] 🛡️ SIGNED_OUT spam tespit edildi, IGNORE");
           return;
         }
-        
+
         console.log("[AuthContext] ⚠️ SIGNED_OUT eventi geldi - storage kontrol ediliyor...");
-        
+
         // 🆕 FOREGROUND ZAMANI KONTROLÜ - EXTREME ZIRH: 20 SANİYE
         // Uygulama uyanalı 20 saniyeden az olduysa, expired token bile olsa KOŞULSUZ ignore et
         // ASLA setUser(null) YAPMA! ASLA /auth'a yönlendirme!
         // 🔥 KRİTİK: Artık merkezi isFreshWake fonksiyonunu kullanıyoruz (cold start'ı da kapsar!)
         const isAppFreshWake = isFreshWake(20000); // 20 saniyeden az
-        
+
         if (isAppFreshWake) {
           const coldStart = getColdStartTime();
           const foregroundTime = (window as any).__appForegroundTime || coldStart;
           const timeSinceWake = Date.now() - foregroundTime;
-          
-          console.log("[AuthContext] 🛡️ ZIRH AKTİF: Uygulama yeni uyandı (" + Math.round(timeSinceWake/1000) + "sn < 20sn)");
+
+          console.log(
+            "[AuthContext] 🛡️ ZIRH AKTİF: Uygulama yeni uyandı (" + Math.round(timeSinceWake / 1000) + "sn < 20sn)",
+          );
           console.log("[AuthContext] 🛡️ Cold start time:", coldStart, "Foreground time:", foregroundTime);
           console.log("[AuthContext] 🛡️ SIGNED_OUT KOŞULSUZ IGNORE! setUser(null) ASLA YAPILMAYACAK!");
           console.log("[AuthContext] 🔄 Token expired bile olsa sadece forceRecoverSession çağrılıyor...");
-          
+
           // 🛡️ State'e DOKUNMA! Sadece recovery başlat
           isRecoveringRef.current = true;
-          window.dispatchEvent(new CustomEvent('auth-recovery-start'));
-          
+          window.dispatchEvent(new CustomEvent("auth-recovery-start"));
+
           // Sadece forceRecoverSession çağır ve bekle - BAŞKA HİÇBİR ŞEY YAPMA!
           setTimeout(() => {
             forceRecoverSession();
           }, 500);
-          
+
           // 🛡️ KOŞULSUZ RETURN - aşağıdaki hiçbir kod çalışmayacak!
           return;
         }
-        
+
         // 🔧 ASYNC STORAGE KONTROL: Her iki storage'ı da kontrol et
         const checkStorageForValidSession = async (): Promise<boolean> => {
           try {
             let storedSession: string | null = null;
-            
+
             // 1. Preferences (Native Storage) - Yeni key
             try {
               const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
               storedSession = value;
             } catch {}
-            
+
             // 2. Preferences - Eski key fallback
             if (!storedSession) {
               try {
@@ -620,19 +561,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 storedSession = value;
               } catch {}
             }
-            
+
             // 3. localStorage fallback
             if (!storedSession) {
               try {
                 storedSession = localStorage.getItem(CUSTOM_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
               } catch {}
             }
-            
+
             if (storedSession) {
               const parsed = JSON.parse(storedSession);
               const expiresAt = parsed?.expires_at;
               const nowSec = Math.floor(Date.now() / 1000);
-              
+
               // 🛡️ Token expired olmadıysa (0 saniye bile kaldıysa) geçerli say!
               // Supabase bazen refresh sırasında SIGNED_OUT fırlatıyor
               if (expiresAt && expiresAt > nowSec) {
@@ -648,28 +589,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           return false;
         };
-        
+
         // 🛡️ KORUMA KATMANI: Storage'da geçerli session varsa
         const hasValidSession = await checkStorageForValidSession();
-        
+
         if (hasValidSession) {
           // ❌ STATE TEMİZLEME! ❌ /AUTH'A YÖNLENDİRME!
           // Sadece sessizce session'ı tazele
           console.log("[AuthContext] 🔄 forceRecoverSession ile sessiz tazeleme başlatılıyor...");
-          
+
           // isRecoveringRef'i set et ki ProtectedRoute da bekleme moduna geçsin
           isRecoveringRef.current = true;
-          window.dispatchEvent(new CustomEvent('auth-recovery-start'));
-          
+          window.dispatchEvent(new CustomEvent("auth-recovery-start"));
+
           // 500ms sonra recovery başlat (bridge stabilize olsun)
           setTimeout(() => {
             forceRecoverSession();
           }, 500);
-          
+
           // BU EVENT'İ TAMAMEN IGNORE ET - return ile çık
           return;
         }
-        
+
         // 🔧 GERÇEK ÇIKIŞ: Storage'da hiç geçerli session yok
         console.log("👋 Gerçek çıkış tespit edildi - state temizleniyor");
         if (mounted.current) {
@@ -697,7 +638,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(data.session);
       setUser(data.session.user);
       setCachedData(data.session.user, data.session);
-      
+
       // 🆕 Session'ı Preferences'a da kaydet (native storage persistence)
       await saveSessionToPreferences(data.session);
     }
@@ -717,27 +658,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     console.log("[AuthContext] 🚪 Kullanıcı çıkış yapıyor...");
-    
+
     // 🆕 ÖNCE storage'ı temizle - böylece SIGNED_OUT event'i geldiğinde
     // koruma mekanizması "geçerli token var" diye ignore etmesin
     setCachedData(null, null);
-    
+
     // 🆕 Intentional logout flag'ini set et
     intentionalLogoutRef.current = true;
-    
+
     setLoading(true);
-    
+
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.error("[AuthContext] signOut hatası:", e);
     }
-    
+
     // State'i temizle (SIGNED_OUT event'inden bağımsız)
     setSession(null);
     setUser(null);
     setLoading(false);
-    
+
     toast({ title: "Çıkış Yapıldı" });
   };
 
