@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { subscribeToForegroundState, getIsAppInForeground } from "@/hooks/useAppForegroundState";
 
 interface UseAppStateOptions {
   onBackground?: () => void;
@@ -26,7 +26,7 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
   const backgroundTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutFiredRef = useRef(false);
   const backgroundStartRef = useRef<number | null>(null);
-  const isMountedRef = useRef(true); // Component mount durumunu takip et
+  const isMountedRef = useRef(true);
 
   const clearBackgroundTimer = useCallback(() => {
     if (backgroundTimerRef.current) {
@@ -92,7 +92,7 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
         backgroundStartRef.current = now;
         onBackground?.();
         
-        // Web için setTimeout
+        // Web için setTimeout (native'de çalışmaz ama zararsız)
         if (backgroundDelay > 0 && onBackgroundTimeout && !timeoutFiredRef.current) {
           clearBackgroundTimer();
           backgroundTimerRef.current = setTimeout(() => {
@@ -105,34 +105,15 @@ export const useAppState = (options: UseAppStateOptions = {}) => {
       }
     };
 
-    if (!isNative) {
-      // Web için visibilitychange
-      const handleVisibilityChange = () => handleStateChange(!document.hidden);
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-      return () => {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-        clearBackgroundTimer();
-      };
-    } else {
-      // Native için Capacitor App listener
-      let listenerHandle: { remove: () => void } | null = null;
-      
-      App.addListener("appStateChange", (state) => {
-        handleStateChange(state.isActive);
-      }).then((handle) => {
-        listenerHandle = handle;
-      }).catch((err) => {
-        console.warn("App state listener error:", err);
-      });
+    // 🔥 KRİTİK: Global listener'ı kullan - AYRI appStateChange listener KURMA!
+    // Bu sayede Android'de multiple listener çakışması OLMAZ!
+    const unsubscribe = subscribeToForegroundState(handleStateChange);
 
-      return () => {
-        clearBackgroundTimer();
-        if (listenerHandle) {
-          listenerHandle.remove();
-        }
-      };
-    }
-  }, [onBackground, onForeground, onBackgroundTimeout, backgroundDelay, isNative, clearBackgroundTimer]);
+    return () => {
+      clearBackgroundTimer();
+      unsubscribe();
+    };
+  }, [onBackground, onForeground, onBackgroundTimeout, backgroundDelay, clearBackgroundTimer]);
 
   const getBackgroundDuration = useCallback(() => {
     if (!backgroundStartTime || isActive) return 0;

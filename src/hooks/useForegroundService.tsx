@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
-import { CapacitorForegroundService } from "capacitor-foreground-service";
 
 // 🔧 GLOBAL STATE - Module scope'da, tüm instance'lar paylaşıyor
 let isForegroundServiceRunning = false;
 let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 🔧 Lazy import - sadece gerektiğinde yükle
+let CapacitorForegroundService: any = null;
+
+const loadForegroundServicePlugin = async (): Promise<boolean> => {
+  if (CapacitorForegroundService) return true;
+  
+  try {
+    const module = await import("capacitor-foreground-service");
+    CapacitorForegroundService = module.CapacitorForegroundService;
+    return true;
+  } catch (error) {
+    console.warn("[ForegroundService] Plugin yüklenemedi:", error);
+    return false;
+  }
+};
 
 // 🆕 Maksimum foreground service çalışma süresi: 60 saniye
 const MAX_FOREGROUND_SERVICE_DURATION_MS = 60000;
@@ -27,7 +42,7 @@ const clearAutoStopTimer = () => {
 
 // 🔧 DEBUG: FS durumunu logla
 const logFSState = (action: string) => {
-  console.log(`[ForegroundService] ${action} | running=${isForegroundServiceRunning} | timer=${autoStopTimer !== null}`);
+  console.log(`[ForegroundService] ${action} | running=${isForegroundServiceRunning}`);
 };
 
 export const useForegroundService = () => {
@@ -37,12 +52,16 @@ export const useForegroundService = () => {
   const startForegroundService = useCallback(
     async (config?: Partial<ForegroundServiceConfig>) => {
       if (!isNative || !isAndroid) {
-        console.log("[ForegroundService] ⏭️ Native değil, atlanıyor");
         return false;
       }
       if (isForegroundServiceRunning) {
-        console.log("[ForegroundService] ⏭️ Zaten çalışıyor, tekrar başlatılmıyor");
         return true;
+      }
+
+      const loaded = await loadForegroundServicePlugin();
+      if (!loaded || !CapacitorForegroundService) {
+        console.warn("[ForegroundService] Plugin mevcut değil");
+        return false;
       }
 
       try {
@@ -62,13 +81,13 @@ export const useForegroundService = () => {
         const maxDuration = config?.maxDurationMs || MAX_FOREGROUND_SERVICE_DURATION_MS;
         clearAutoStopTimer();
         autoStopTimer = setTimeout(async () => {
-          console.log(`[ForegroundService] ⏰ ${maxDuration}ms doldu, otomatik durduruluyor...`);
+          console.log(`[ForegroundService] ⏰ ${maxDuration}ms doldu, durduruluyor...`);
           await stopForegroundServiceStandalone();
         }, maxDuration);
 
         return true;
       } catch (error) {
-        console.error("[ForegroundService] ❌ Başlatma hatası:", error);
+        console.warn("[ForegroundService] Başlatma hatası (tolere):", error);
         return false;
       }
     },
@@ -77,23 +96,9 @@ export const useForegroundService = () => {
 
   const stopForegroundService = useCallback(async () => {
     if (!isNative || !isAndroid) return;
-    if (!isForegroundServiceRunning) {
-      console.log("[ForegroundService] ⏭️ Zaten durdurulmuş, atlanıyor");
-      return;
-    }
+    if (!isForegroundServiceRunning) return;
 
-    clearAutoStopTimer();
-
-    try {
-      logFSState("⏹️ DURDURULUYOR");
-      await CapacitorForegroundService.stopService();
-      isForegroundServiceRunning = false;
-      logFSState("✅ DURDURULDU");
-    } catch (error) {
-      console.error("[ForegroundService] ❌ Durdurma hatası:", error);
-      // Hata olsa bile state'i güncelle
-      isForegroundServiceRunning = false;
-    }
+    await stopForegroundServiceStandalone();
   }, [isNative, isAndroid]);
 
   return {
@@ -105,19 +110,25 @@ export const useForegroundService = () => {
 };
 
 // --- Standalone Fonksiyonlar (hook dışından çağrılabilir) ---
+// 🔥 KRİTİK: Bu fonksiyonlar ASYNC ve HATA-TOLERANSLI olmalı!
 
 export const startForegroundServiceStandalone = async (config?: Partial<ForegroundServiceConfig>): Promise<boolean> => {
   const isNative = Capacitor.isNativePlatform();
   const isAndroid = Capacitor.getPlatform() === "android";
   
   if (!isNative || !isAndroid) {
-    console.log("[ForegroundService] ⏭️ Standalone: Native değil, atlanıyor");
     return false;
   }
   
   if (isForegroundServiceRunning) {
-    console.log("[ForegroundService] ⏭️ Standalone: Zaten çalışıyor");
     return true;
+  }
+
+  // 🔧 Lazy load plugin
+  const loaded = await loadForegroundServicePlugin();
+  if (!loaded || !CapacitorForegroundService) {
+    console.warn("[ForegroundService] Standalone: Plugin mevcut değil");
+    return false;
   }
 
   try {
@@ -137,24 +148,30 @@ export const startForegroundServiceStandalone = async (config?: Partial<Foregrou
     const maxDuration = config?.maxDurationMs || MAX_FOREGROUND_SERVICE_DURATION_MS;
     clearAutoStopTimer();
     autoStopTimer = setTimeout(async () => {
-      console.log(`[ForegroundService] ⏰ Standalone ${maxDuration}ms doldu, otomatik durduruluyor...`);
+      console.log(`[ForegroundService] ⏰ Standalone ${maxDuration}ms doldu, durduruluyor...`);
       await stopForegroundServiceStandalone();
     }, maxDuration);
 
     return true;
   } catch (error) {
-    console.error("[ForegroundService] ❌ Standalone başlatma hatası:", error);
+    console.warn("[ForegroundService] Standalone başlatma hatası (tolere):", error);
     return false;
   }
 };
 
 export const stopForegroundServiceStandalone = async (): Promise<void> => {
   if (!isForegroundServiceRunning) {
-    console.log("[ForegroundService] ⏭️ Standalone: Zaten durdurulmuş");
     return;
   }
   
   clearAutoStopTimer();
+
+  // 🔧 Lazy load plugin
+  const loaded = await loadForegroundServicePlugin();
+  if (!loaded || !CapacitorForegroundService) {
+    isForegroundServiceRunning = false;
+    return;
+  }
   
   try {
     logFSState("⏹️ STANDALONE DURDURULUYOR");
@@ -162,7 +179,7 @@ export const stopForegroundServiceStandalone = async (): Promise<void> => {
     isForegroundServiceRunning = false;
     logFSState("✅ STANDALONE DURDURULDU");
   } catch (error) {
-    console.error("[ForegroundService] ❌ Standalone durdurma hatası:", error);
+    console.warn("[ForegroundService] Standalone durdurma hatası (tolere):", error);
     // Hata olsa bile state'i güncelle
     isForegroundServiceRunning = false;
   }
