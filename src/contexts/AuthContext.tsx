@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { setCachedSession as setPersistentSession } from "@/utils/persistentState";
 import { Preferences } from "@capacitor/preferences";
+import { Capacitor } from "@capacitor/core";
+import { NativeRealtime } from "@/plugins/NativeRealtime";
 import { useAppState } from "@/hooks/useAppState";
 import { isFreshWake, getColdStartTime } from "@/utils/coldStartTime";
 interface AuthContextType {
@@ -16,6 +18,9 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
+const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // LocalStorage Yardımcıları
@@ -449,73 +454,93 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       console.log("🔒 Auth Başlatılıyor...");
 
-      // 1. NATIVE STORAGE OKUMA (ÖNCELİKLİ)
-      let restored = false;
+      let recoveredSession = null;
 
+      // 1. ADIM: Native Storage'dan (Disk) Session Oku
       try {
-        const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
+        // Önce 'kelimele-auth-token' (CUSTOM_KEY) dene
+        const { value } = await Preferences.get({ key: "kelimele-auth-token" });
         if (value) {
           const parsed = JSON.parse(value);
-          // Token süresi kontrolü (Opsiyonel ama iyi olur)
-          const now = Math.floor(Date.now() / 1000);
-
-          if (parsed?.access_token && (!parsed.expires_at || parsed.expires_at > now)) {
-            console.log("[AuthContext] ✅ Native Storage'dan geçerli session bulundu!");
-
-            // Session ve User'ı state'e at
-            const user = parsed.user;
-            const session = {
-              access_token: parsed.access_token,
-              refresh_token: parsed.refresh_token,
-              expires_at: parsed.expires_at,
-              user: user,
-              token_type: "bearer",
-            } as Session;
-
-            // State güncelle
-            if (mounted.current) {
-              setUser(user);
-              setSession(session);
-
-              // Supabase client'a token'ı elle ver
-              supabase.auth.setSession(session);
-
-              restored = true;
-            }
-          } else {
-            console.log("[AuthContext] ⚠️ Storage'daki token'ın süresi dolmuş.");
+          // Token var mı ve süresi dolmamış mı kontrol et
+          if (parsed?.access_token && (!parsed.expires_at || parsed.expires_at > Date.now() / 1000)) {
+            console.log("[AuthContext] ✅ Native Storage'dan Session Bulundu!");
+            recoveredSession = parsed;
           }
         }
       } catch (e) {
-        console.error("Storage okuma hatası:", e);
+        console.error("[AuthContext] Storage okuma hatası:", e);
       }
 
-      // 2. Eğer Native'den kurtardıysak, loading'i kapat ve çık (HIZLI AÇILIŞ)
-      if (restored && mounted.current) {
+      // 2. ADIM: Eğer diskte oturum bulduysak, UI'ı HEMEN aç
+      if (recoveredSession && mounted.current) {
+        const restoredUser = recoveredSession.user;
+        const restoredSession = {
+          access_token: recoveredSession.access_token,
+          refresh_token: recoveredSession.refresh_token,
+          expires_at: recoveredSession.expires_at,
+          user: restoredUser,
+          token_type: "bearer",
+        } as Session;
+
+        // State'leri güncelle
+        setUser(restoredUser);
+        setSession(restoredSession);
+
+        // Supabase client'a bu token'ı ver (Network istekleri için)
+        supabase.auth.setSession(restoredSession);
+
+        // 🔥🔥🔥 KRİTİK NOKTA: Native Servisi Yeniden Başlat 🔥🔥🔥
+        // Uygulama kill edilip açıldıysa servis ölüdür. Burada manuel başlatıyoruz.
+        if (Capacitor.isNativePlatform()) {
+          console.log("🔌 Kill sonrası Native Service yeniden başlatılıyor...");
+
+          NativeRealtime.connect({
+            url: SUPABASE_URL,
+            apiKey: SUPABASE_ANON_KEY,
+            accessToken: recoveredSession.access_token,
+          })
+            .then(() => {
+              console.log("✅ Native Service başarıyla bağlandı");
+              // Servis bağlandıktan sonra Foreground moda (bildirimsiz) al
+              // Çünkü şu an uygulama açık ve ön planda
+              NativeRealtime.enterForegroundMode();
+            })
+            .catch((err) => {
+              console.error("❌ Native Service başlatılamadı:", err);
+            });
+        }
+
+        // Loading'i kapat, kullanıcı içeri girsin
         setLoading(false);
-        // Arka planda yine de bir kontrol et (silent check)
-        supabase.auth.getSession().then(({ data }) => {
-          if (data.session && mounted.current) {
-            setSession(data.session);
-            setUser(data.session.user);
-            saveSessionToPreferences(data.session);
-          }
-        });
-        return;
+        console.log("🚀 UI Native Cache ile anında açıldı");
       }
 
-      // 3. Native'de bulamadıysak Supabase'e sor (YAVAŞ AÇILIŞ - Mecburiyetten)
-      console.log("[AuthContext] ☁️ Supabase'den session isteniyor...");
-      const { data, error } = await supabase.auth.getSession();
+      // 3. ADIM: Arka planda Supabase ile gerçek kontrolü yap
+      // Diskteki veri bayat olabilir, sunucudan teyit alıyoruz.
+      const { data } = await supabase.auth.getSession();
 
       if (mounted.current) {
         if (data.session) {
+          // Sunucudan taze bilgi geldiyse güncelle
           setSession(data.session);
           setUser(data.session.user);
-          saveSessionToPreferences(data.session);
+
+          // Native Storage'a da kaydet (Bir sonraki açılış için)
+          const sessionData = JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+            user: data.session.user,
+          });
+          Preferences.set({ key: "kelimele-auth-token", value: sessionData });
+
+          // Eğer diskten okuyamadıysak ama sunucudan geldiyse loading'i şimdi kapat
+          if (!recoveredSession) setLoading(false);
+        } else if (!recoveredSession) {
+          // Ne diskte var ne sunucuda -> Gerçekten çıkış yapılmış
+          setLoading(false);
         }
-        // Her halükarda artık loading bitti
-        setLoading(false);
       }
     };
 
