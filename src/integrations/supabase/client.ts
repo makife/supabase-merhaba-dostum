@@ -49,14 +49,18 @@ export const saveSessionToStorage = async (session: Session | null): Promise<voi
  * Session'ı Preferences'tan oku
  */
 export const loadSessionFromStorage = async (): Promise<Session | null> => {
+  console.log("[Storage] 🔍 Session yükleme başlıyor...");
+  
   try {
     const { value } = await Preferences.get({ key: SESSION_STORAGE_KEY });
+    console.log("[Storage] 🔍 Preferences.get sonucu:", value ? "VAR" : "YOK");
     
     if (!value) {
       // Eski key'leri kontrol et (migration)
       const oldKeys = ["kelimele-auth-token-v2", "kelimele-auth-token", "sb-nnlvtqmuwmrqfinsgvwc-auth-token"];
       
       for (const oldKey of oldKeys) {
+        console.log("[Storage] 🔍 Eski key kontrol:", oldKey);
         const { value: oldValue } = await Preferences.get({ key: oldKey });
         if (oldValue) {
           console.log("[Storage] 🔄 Eski key'den migration:", oldKey);
@@ -78,7 +82,7 @@ export const loadSessionFromStorage = async (): Promise<Session | null> => {
         }
       }
       
-      console.log("[Storage] ⚠️ Storage'da session yok");
+      console.log("[Storage] ⚠️ Hiçbir key'de session yok!");
       return null;
     }
     
