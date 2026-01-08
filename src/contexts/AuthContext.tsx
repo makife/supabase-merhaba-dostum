@@ -65,9 +65,28 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // 🔥 SENKRON İLK YÜKLEME: localStorage'dan HEMEN session al (siyah ekran yok!)
+  const getInitialState = () => {
+    try {
+      const stored = localStorage.getItem('kelimele-auth-token');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.access_token && parsed?.user) {
+          console.log("[AuthContext] ⚡ SENKRON: localStorage'dan user bulundu!");
+          return { user: parsed.user, session: parsed as any, loading: false };
+        }
+      }
+    } catch (e) {
+      console.warn("[AuthContext] localStorage parse hatası:", e);
+    }
+    return { user: null, session: null, loading: true };
+  };
+  
+  const initialState = getInitialState();
+  
+  const [user, setUser] = useState<User | null>(initialState.user);
+  const [session, setSession] = useState<Session | null>(initialState.session);
+  const [loading, setLoading] = useState(initialState.loading);
   const { toast } = useToast();
   const mounted = useRef(true);
   const isRecoveringRef = useRef(false);
@@ -76,6 +95,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const recoveryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const optimisticAuthAppliedRef = useRef(false); // 🆕 Optimistic auth uygulandı mı?
   const intentionalLogoutRef = useRef(false); // 🆕 Kullanıcı bilerek çıkış mı yapıyor?
+  
+  // 🔥 FAILSAFE: 5 saniye sonra loading zorla kapat (siyah ekran önleme)
+  useEffect(() => {
+    const failsafeTimeout = setTimeout(() => {
+      if (loading && mounted.current) {
+        console.warn("[AuthContext] ⚠️ FAILSAFE: 5s timeout, loading zorla kapatılıyor");
+        setLoading(false);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(failsafeTimeout);
+  }, []);
 
   // Token'ın süresi dolmuş mu kontrol eden fonksiyon
   const isTokenExpired = (session: Session) => {
@@ -400,10 +431,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mounted.current) setLoading(true);
 
         try {
-          // 1. Native Storage'dan oku
-          const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
-          if (value) {
-            const parsed = JSON.parse(value);
+          // 1. ÖNCE localStorage'dan oku (SENKRON, HybridStorage ile senkronize)
+          let storedValue = localStorage.getItem(CUSTOM_STORAGE_KEY);
+          
+          // localStorage boşsa Preferences'tan doldur
+          if (!storedValue) {
+            const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
+            if (value) {
+              storedValue = value;
+              localStorage.setItem(CUSTOM_STORAGE_KEY, value); // Senkronize et
+            }
+          }
+          
+          if (storedValue) {
+            const parsed = JSON.parse(storedValue);
             if (parsed?.access_token) {
               // 2. State'i hemen güncelle
               const restoredUser = parsed.user;
@@ -468,15 +509,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       let recoveredSession = null;
 
-      // 1. ADIM: Native Storage'dan (Disk) Session Oku
+      // 1. ADIM: SENKRON localStorage'dan Session Oku (HybridStorage ile senkronize)
+      // Bu sayede cold start'ta bile session ANINDA gelir
       try {
-        // Önce 'kelimele-auth-token' (CUSTOM_KEY) dene
-        const { value } = await Preferences.get({ key: "kelimele-auth-token" });
-        if (value) {
-          const parsed = JSON.parse(value);
+        // Önce localStorage'dan dene (SENKRON - hızlı)
+        let storedValue = localStorage.getItem("kelimele-auth-token");
+        
+        // localStorage boşsa Preferences'tan doldur (cold start fallback)
+        if (!storedValue) {
+          console.log("[AuthContext] ℹ️ localStorage boş, Preferences kontrol ediliyor...");
+          const { value } = await Preferences.get({ key: "kelimele-auth-token" });
+          if (value) {
+            storedValue = value;
+            // localStorage'a da kaydet (HybridStorage sync)
+            localStorage.setItem("kelimele-auth-token", value);
+            console.log("[AuthContext] 🔄 Preferences → localStorage senkronize edildi");
+          }
+        }
+        
+        if (storedValue) {
+          const parsed = JSON.parse(storedValue);
           // Token var mı ve süresi dolmamış mı kontrol et
           if (parsed?.access_token && (!parsed.expires_at || parsed.expires_at > Date.now() / 1000)) {
-            console.log("[AuthContext] ✅ Native Storage'dan Session Bulundu!");
+            console.log("[AuthContext] ✅ Storage'dan Session Bulundu!");
             recoveredSession = parsed;
           }
         }

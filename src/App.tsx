@@ -523,10 +523,10 @@ const GlobalReconnectionOverlay = () => {
   );
 };
 
-// 🆕 Session Recovery Component - AuthContext kendi recovery'sini yapıyor
-// Bu component artık pasif - sadece placeholder olarak duruyor
+// 🆕 Session Recovery Component - HybridStorage ile çalışan versiyon
+// AuthContext + useSessionRecovery birlikte daha güçlü
 const SessionRecoveryManager = () => {
-  // useSessionRecovery(); // Devre dışı - AuthContext handles this
+  useSessionRecovery(); // 🔥 YENİDEN AKTİF - HybridStorage ile uyumlu
   return null;
 };
 

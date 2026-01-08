@@ -91,32 +91,36 @@ export function useSessionRecovery() {
           console.log("[SessionRecovery] ⚠️ Session yok veya timeout, storage'dan restore deneniyor...");
         }
 
-        // 2. Storage'dan session al
+        // 2. Storage'dan session al - ÖNCE localStorage (HybridStorage ile senkronize)
         let storedSession: string | null = null;
 
-        // Önce Preferences'dan (native storage) dene
-        if (Capacitor.isNativePlatform()) {
+        // Önce localStorage'dan dene (SENKRON - cold start'ta bile çalışır)
+        try {
+          storedSession = localStorage.getItem(CUSTOM_KEY) || localStorage.getItem(LEGACY_KEY);
+          if (storedSession) console.log("[SessionRecovery] ✅ localStorage'da session bulundu");
+        } catch (e) {
+          console.log("[SessionRecovery] ℹ️ localStorage okunamadı");
+        }
+
+        // localStorage boşsa Preferences'tan doldur ve senkronize et
+        if (!storedSession && Capacitor.isNativePlatform()) {
           try {
             const { Preferences } = await import("@capacitor/preferences");
             const { value } = await Preferences.get({ key: CUSTOM_KEY });
             storedSession = value;
+            
             if (!storedSession) {
               const legacy = await Preferences.get({ key: LEGACY_KEY });
               storedSession = legacy.value;
             }
-            if (storedSession) console.log("[SessionRecovery] ✅ Preferences'da session bulundu");
+            
+            if (storedSession) {
+              console.log("[SessionRecovery] ✅ Preferences'da session bulundu, localStorage'a senkronize ediliyor...");
+              // HybridStorage sync: Preferences → localStorage
+              localStorage.setItem(CUSTOM_KEY, storedSession);
+            }
           } catch (e) {
             console.log("[SessionRecovery] ℹ️ Preferences okunamadı");
-          }
-        }
-
-        // Yoksa localStorage'dan dene
-        if (!storedSession) {
-          try {
-            storedSession = localStorage.getItem(CUSTOM_KEY) || localStorage.getItem(LEGACY_KEY);
-            if (storedSession) console.log("[SessionRecovery] ✅ localStorage'da session bulundu");
-          } catch (e) {
-            console.log("[SessionRecovery] ℹ️ localStorage okunamadı");
           }
         }
 
