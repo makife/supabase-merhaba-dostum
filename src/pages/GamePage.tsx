@@ -4424,15 +4424,33 @@ const GamePage = ({
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
+  // 🔒 Ref kullanarak closure sorununu önle
+  const countdownChannelRef = useRef<any>(null);
+  
   useEffect(() => {
     if (gameMode === "tournament" || gameMode === "vs-computer") return;
     if (!currentRoom || !user) return;
-    if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
+    
+    // 🔒 OYUN BAŞLADIYSA SUBSCRIPTION'I KAPAT VE ÇIKIŞ YAP
+    if (gameStarted) {
+      if (countdownChannelRef.current) {
+        console.log("🛑 Oyun başladı, countdown subscription kapatılıyor");
+        supabase.removeChannel(countdownChannelRef.current);
+        countdownChannelRef.current = null;
+      }
+      return;
+    }
+    
+    // Countdown zaten gösteriliyorsa yeni subscription açma
+    if (showCountdown) return;
+    
+    // Zaten subscription varsa tekrar açma
+    if (countdownChannelRef.current) return;
 
     console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
 
     const channel = supabase
-      .channel(`game-room-countdown-${currentRoom.id}`)
+      .channel(`game-room-countdown-${currentRoom.id}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -4442,6 +4460,12 @@ const GamePage = ({
           filter: `id=eq.${currentRoom.id}`,
         },
         (payload) => {
+          // 🔒 CALLBACK İÇİNDE REF KULLAN - closure sorunu yok!
+          if (gameStartedRef.current || countdownInitiatedRef.current) {
+            console.log("⚠️ Countdown zaten aktif veya oyun başladı - event ignored");
+            return;
+          }
+          
           console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
 
@@ -4456,15 +4480,27 @@ const GamePage = ({
 
             // Buffer animasyonlarını göster (skipBuffer = false)
             initiateCountdown(adjustedTime, false);
+            
+            // 🔒 Subscription'ı hemen kapat - artık countdown tetiklendi
+            if (countdownChannelRef.current) {
+              console.log("✅ Countdown tetiklendi, subscription kapatılıyor");
+              supabase.removeChannel(countdownChannelRef.current);
+              countdownChannelRef.current = null;
+            }
           }
         },
       )
       .subscribe();
+    
+    countdownChannelRef.current = channel;
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [GamePage] Game room countdown cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      // 🔒 Sadece oyun başladığında veya component unmount olduğunda temizle
+      if (countdownChannelRef.current && gameStartedRef.current) {
+        console.log("🧹 Countdown subscription temizleniyor (oyun başladı)");
+        supabase.removeChannel(countdownChannelRef.current);
+        countdownChannelRef.current = null;
+      }
     };
   }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
 
