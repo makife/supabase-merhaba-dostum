@@ -1,37 +1,27 @@
 import { useEffect, useRef } from "react";
-import { supabase, loadSessionFromStorage, saveSessionToStorage, clearSessionStorage } from "@/integrations/supabase/client";
-import { isFreshWake, getColdStartTime, updateForegroundTime } from "@/utils/coldStartTime";
+import { supabase, loadSessionFromStorage, saveSessionToStorage } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 
 /**
- * 🔧 Session Recovery Hook - V3 (SADECE Preferences Kullanan)
- * 
- * Arka plandan gelince veya kill sonrası session'ın kaybolmasını önler.
- * localStorage KULLANMAZ - sadece Preferences (Native Storage)
+ * 🔧 Session Recovery Hook - V4
+ * Arka plandan gelince session'ı korur
+ * TEK KAYNAK: client.ts storage fonksiyonları
  */
 
-const SESSION_TIMEOUT_MS = 10000;
-
 export function useSessionRecovery() {
-  const isRecoveringRef = useRef(false);
   const lastRecoveryRef = useRef(0);
+  const isRecoveringRef = useRef(false);
 
   useEffect(() => {
-    // Native değilse bu hook'a gerek yok
     if (!Capacitor.isNativePlatform()) {
-      console.log("[SessionRecovery] ℹ️ Web platformu, recovery hook devre dışı");
       return;
     }
 
     const recoverSession = async () => {
-      // Rate limit: 5 saniyede bir
       const now = Date.now();
-      if (now - lastRecoveryRef.current < 5000) {
-        console.log("[SessionRecovery] ⏳ Rate limit aktif");
-        return;
-      }
-      if (isRecoveringRef.current) {
-        console.log("[SessionRecovery] ⏳ Recovery devam ediyor");
+      
+      // Rate limit: 10 saniyede bir
+      if (now - lastRecoveryRef.current < 10000 || isRecoveringRef.current) {
         return;
       }
       
@@ -39,78 +29,37 @@ export function useSessionRecovery() {
       lastRecoveryRef.current = now;
 
       try {
-        console.log("[SessionRecovery] 🔄 Session kontrol...");
-        console.log("[SessionRecovery] isFreshWake:", isFreshWake(20000));
+        console.log("[SessionRecovery] 🔄 Kontrol...");
 
-        // 1. Supabase'den mevcut session kontrol
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<null>((resolve) => 
-          setTimeout(() => resolve(null), SESSION_TIMEOUT_MS)
-        );
-        
-        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        // Supabase'den mevcut session
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (result && 'data' in result && result.data?.session?.access_token) {
-          console.log("[SessionRecovery] ✅ Session mevcut");
+        if (session?.access_token) {
+          console.log("[SessionRecovery] ✅ Session aktif");
           isRecoveringRef.current = false;
           return;
         }
 
-        console.log("[SessionRecovery] ⚠️ Session yok, storage'dan restore...");
+        // Storage'dan yükle
+        const stored = await loadSessionFromStorage();
 
-        // 2. Preferences'tan session yükle
-        const storedSession = await loadSessionFromStorage();
-
-        if (!storedSession || !storedSession.refresh_token) {
-          console.log("[SessionRecovery] ❌ Storage'da geçerli session yok");
+        if (!stored?.refresh_token) {
+          console.log("[SessionRecovery] ⚠️ Storage'da session yok");
           isRecoveringRef.current = false;
           return;
         }
 
-        // 3. Refresh token ile yenile
         console.log("[SessionRecovery] 🔄 Token refresh...");
         
-        const refreshPromise = supabase.auth.refreshSession({ 
-          refresh_token: storedSession.refresh_token 
+        const { data, error } = await supabase.auth.refreshSession({
+          refresh_token: stored.refresh_token,
         });
-        
-        const refreshResult = await Promise.race([refreshPromise, timeoutPromise]);
 
-        if (refreshResult && 'data' in refreshResult) {
-          const { data, error } = refreshResult;
-          
-          if (error) {
-            const msg = error.message?.toLowerCase() || '';
-            console.error("[SessionRecovery] ❌ Refresh hatası:", error.message);
-            
-            // Invalid token - storage temizle
-            if (msg.includes('invalid') || msg.includes('expired') || msg.includes('revoked')) {
-              console.log("[SessionRecovery] 🗑️ Invalid token, storage temizleniyor");
-              await clearSessionStorage();
-            }
-          } else if (data?.session) {
-            console.log("[SessionRecovery] ✅ Session yenilendi!");
-            await saveSessionToStorage(data.session);
-          }
-        } else {
-          console.log("[SessionRecovery] ⚠️ Refresh timeout");
-          
-          // Timeout oldu ama token hala geçerli olabilir - setSession dene
-          const nowSec = Math.floor(Date.now() / 1000);
-          if (storedSession.expires_at && storedSession.expires_at > nowSec) {
-            console.log("[SessionRecovery] 🔄 Token geçerli, setSession...");
-            
-            const { error } = await supabase.auth.setSession({
-              access_token: storedSession.access_token,
-              refresh_token: storedSession.refresh_token,
-            });
-            
-            if (error) {
-              console.error("[SessionRecovery] setSession hatası:", error.message);
-            } else {
-              console.log("[SessionRecovery] ✅ setSession başarılı");
-            }
-          }
+        if (error) {
+          console.log("[SessionRecovery] ⚠️ Refresh hatası:", error.message);
+        } else if (data?.session) {
+          console.log("[SessionRecovery] ✅ Session yenilendi!");
+          await saveSessionToStorage(data.session);
         }
 
       } catch (e) {
@@ -120,33 +69,25 @@ export function useSessionRecovery() {
       }
     };
 
-    // Event handlers
+    // Visibility change
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        console.log("[SessionRecovery] 👁️ Visible");
-        updateForegroundTime();
         recoverSession();
       }
     };
 
-    const handleReconnect = () => {
-      console.log("[SessionRecovery] 🔔 Reconnect event");
-      recoverSession();
-    };
+    // Custom events
+    const handleReconnect = () => recoverSession();
 
-    // Listeners
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("supabase-reconnected", handleReconnect);
-    window.addEventListener("app-auth-recovery", handleReconnect);
 
-    // Cold start recovery
-    console.log("[SessionRecovery] 🚀 Cold start recovery");
+    // İlk çalıştırma
     recoverSession();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("supabase-reconnected", handleReconnect);
-      window.removeEventListener("app-auth-recovery", handleReconnect);
     };
   }, []);
 }

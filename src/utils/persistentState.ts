@@ -117,33 +117,18 @@ export async function getLastTournamentId(): Promise<string | null> {
 }
 
 // ==================== CACHED SESSION ====================
-interface CachedSession {
-  userId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
+// 🔥 DEPRECATED - Artık client.ts'deki loadSessionFromStorage kullanılıyor
+// Bu fonksiyonlar geriye uyumluluk için kalıyor ama client.ts'e yönlendiriyor
+
+export async function setCachedSession(_session: any): Promise<void> {
+  // NOOP - client.ts saveSessionToStorage kullan
+  console.log("[PersistentState] ⚠️ setCachedSession DEPRECATED");
 }
 
-export async function setCachedSession(session: CachedSession | null): Promise<void> {
-  console.log("[PersistentState] 💾 Setting cached session:", session?.userId?.slice(-8));
-  if (session) {
-    await setItem(KEYS.CACHED_SESSION, JSON.stringify(session));
-  } else {
-    await removeItem(KEYS.CACHED_SESSION);
-  }
-}
-
-export async function getCachedSession(): Promise<CachedSession | null> {
-  try {
-    const value = await getItem(KEYS.CACHED_SESSION);
-    if (!value) return null;
-    const session = JSON.parse(value) as CachedSession;
-    console.log("[PersistentState] 📖 Read cached session:", session?.userId?.slice(-8));
-    return session;
-  } catch {
-    return null;
-  }
+export async function getCachedSession(): Promise<any> {
+  // NOOP - client.ts loadSessionFromStorage kullan
+  console.log("[PersistentState] ⚠️ getCachedSession DEPRECATED");
+  return null;
 }
 
 // ==================== BUFFERED MESSAGES ====================

@@ -9,17 +9,15 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const isNative = Capacitor.isNativePlatform();
 
-// 🔧 STORAGE KEY - tek bir key kullan
-export const SESSION_STORAGE_KEY = "kelimele-auth-token-v2";
+// 🔧 TEK STORAGE KEY - HER YERDE BU KULLANILACAK
+export const SESSION_STORAGE_KEY = "kelimele-session-v3";
 
 // ============================================================
-// 🔥 NATIVE STORAGE ONLY - localStorage KULLANMA!
-// Android WebView localStorage'ı temizleyebilir
-// Supabase persistSession: false ile session'ı biz yönetiyoruz
+// 🔥 SESSION STORAGE - TEK KAYNAK TEK DOĞRULUK
 // ============================================================
 
 /**
- * Session'ı Preferences'a kaydet (ASYNC)
+ * Session'ı Preferences'a kaydet
  */
 export const saveSessionToStorage = async (session: Session | null): Promise<void> => {
   if (!session) {
@@ -36,6 +34,8 @@ export const saveSessionToStorage = async (session: Session | null): Promise<voi
       expires_in: session.expires_in,
       token_type: session.token_type,
       user: session.user,
+      // 🔥 Kayıt zamanı - debug için
+      saved_at: Date.now(),
     });
     
     await Preferences.set({ key: SESSION_STORAGE_KEY, value: data });
@@ -46,27 +46,43 @@ export const saveSessionToStorage = async (session: Session | null): Promise<voi
 };
 
 /**
- * Session'ı Preferences'tan oku (ASYNC)
+ * Session'ı Preferences'tan oku
  */
 export const loadSessionFromStorage = async (): Promise<Session | null> => {
   try {
     const { value } = await Preferences.get({ key: SESSION_STORAGE_KEY });
     
     if (!value) {
+      // Eski key'leri kontrol et (migration)
+      const oldKeys = ["kelimele-auth-token-v2", "kelimele-auth-token", "sb-nnlvtqmuwmrqfinsgvwc-auth-token"];
+      
+      for (const oldKey of oldKeys) {
+        const { value: oldValue } = await Preferences.get({ key: oldKey });
+        if (oldValue) {
+          console.log("[Storage] 🔄 Eski key'den migration:", oldKey);
+          const parsed = JSON.parse(oldValue);
+          
+          // Yeni key'e kaydet
+          await Preferences.set({ key: SESSION_STORAGE_KEY, value: oldValue });
+          // Eski key'i sil
+          await Preferences.remove({ key: oldKey });
+          
+          return {
+            access_token: parsed.access_token,
+            refresh_token: parsed.refresh_token,
+            expires_at: parsed.expires_at,
+            expires_in: parsed.expires_in || 3600,
+            token_type: parsed.token_type || "bearer",
+            user: parsed.user,
+          } as Session;
+        }
+      }
+      
       console.log("[Storage] ⚠️ Storage'da session yok");
       return null;
     }
     
     const parsed = JSON.parse(value);
-    
-    // Token geçerli mi kontrol et (1 dakika tolerans)
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (parsed.expires_at && parsed.expires_at < nowSec - 60) {
-      console.log("[Storage] ⏰ Token süresi dolmuş, refresh gerekli");
-      // Süresi dolmuş ama refresh_token varsa session'ı yine de dön
-      // refreshSession ile yenilenecek
-    }
-    
     console.log("[Storage] ✅ Session yüklendi:", parsed.user?.email?.slice(0, 10) + "...");
     
     return {
@@ -84,52 +100,50 @@ export const loadSessionFromStorage = async (): Promise<Session | null> => {
 };
 
 /**
- * Storage'ı temizle
+ * Storage'ı tamamen temizle
  */
 export const clearSessionStorage = async (): Promise<void> => {
-  await Preferences.remove({ key: SESSION_STORAGE_KEY });
-  // Eski key'leri de temizle (migration)
-  await Preferences.remove({ key: "kelimele-auth-token" });
-  await Preferences.remove({ key: "sb-nnlvtqmuwmrqfinsgvwc-auth-token" });
+  const allKeys = [
+    SESSION_STORAGE_KEY,
+    "kelimele-auth-token-v2",
+    "kelimele-auth-token",
+    "sb-nnlvtqmuwmrqfinsgvwc-auth-token",
+    "persistent_cached_session", // Eski ProtectedRoute cache'i
+  ];
+  
+  for (const key of allKeys) {
+    await Preferences.remove({ key });
+  }
+  
   console.log("[Storage] 🗑️ Tüm session storage temizlendi");
 };
 
-// Supabase client oluşturma fonksiyonu
+// ============================================================
+// 🔥 SUPABASE CLIENT
+// ============================================================
+
 const createSupabaseClient = (): SupabaseClient<Database> => {
   console.log("[SupabaseClient] 🆕 Yeni Supabase client oluşturuluyor...");
   
   const isNativePlatform = Capacitor.isNativePlatform();
   
-  // 🔧 KRİTİK: Native'de Realtime DEVRE DIŞI - Kotlin WebSocket kullanılacak
+  // Native'de Realtime DEVRE DIŞI - Kotlin WebSocket kullanılacak
   const realtimeConfig = isNativePlatform ? {
-    params: {
-      eventsPerSecond: 0,
-    },
-    reconnectAfterMs: () => {
-      console.log("[SupabaseClient] 🚫 Native'de JS Realtime DEVRE DIŞI - Kotlin kullanılıyor");
-      return 999999999;
-    },
+    params: { eventsPerSecond: 0 },
+    reconnectAfterMs: () => 999999999,
   } : {
-    params: {
-      eventsPerSecond: 10,
-    },
+    params: { eventsPerSecond: 10 },
     heartbeatIntervalMs: 15000,
-    reconnectAfterMs: (tries: number) => {
-      const delay = Math.min(1000 * Math.pow(2, tries), 30000);
-      console.log(`[SupabaseClient] 🔄 Web reconnect attempt ${tries + 1}, waiting ${delay}ms`);
-      return delay;
-    },
+    reconnectAfterMs: (tries: number) => Math.min(1000 * Math.pow(2, tries), 30000),
   };
   
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      // 🔥🔥🔥 KRİTİK: Native'de persistSession FALSE!
+      // 🔥🔥🔥 NATIVE'DE persistSession: FALSE
       // Session'ı biz Preferences ile yönetiyoruz
-      // Supabase'in async-uyumsuz localStorage denemesini engelliyor
       persistSession: !isNativePlatform,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      // Web'de localStorage kullan (normal davranış)
       storage: isNativePlatform ? undefined : localStorage,
     },
     realtime: realtimeConfig,
@@ -146,15 +160,11 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         }, TIMEOUT_MS);
         
         try {
-          const response = await fetch(url, {
-            ...optionsWithoutSignal,
-            signal: controller.signal,
-          });
+          const response = await fetch(url, { ...optionsWithoutSignal, signal: controller.signal });
           return response;
         } catch (error: any) {
           if (error?.name === 'AbortError') {
-            console.warn(`[Supabase] ⚠️ Request aborted: ${url}`);
-            throw new Error(`Request timeout after ${TIMEOUT_MS}ms - please try again`);
+            throw new Error(`Request timeout after ${TIMEOUT_MS}ms`);
           }
           throw error;
         } finally {
@@ -165,22 +175,18 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
   });
 
   if (isNativePlatform) {
-    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime pasif, persistSession: false");
+    console.log("[SupabaseClient] 🚫 Native platform - persistSession: false, JS Realtime pasif");
   } else {
-    // Sadece WEB'de realtime kontrol mekanizması
+    // Web'de realtime kontrol
     if (typeof document !== "undefined") {
-      const checkAndReconnect = async () => {
+      setInterval(() => {
         try {
           const state = (client.realtime as any).connectionState?.();
           if (state !== "open" && state !== "connecting") {
-            console.log("[SupabaseClient] 🔄 Web bağlantı kopuk, yeniden bağlanıyor...");
             (client.realtime as any).connect?.();
           }
-        } catch (e) {
-          // Sessizce devam
-        }
-      };
-      setInterval(checkAndReconnect, 10000);
+        } catch {}
+      }, 10000);
     }
   }
 
@@ -190,69 +196,28 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
 // Global client instance
 let supabaseInstance: SupabaseClient<Database> = createSupabaseClient();
 
-// Timeout helper
-const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => {
-      console.log(`[SupabaseClient] ⏱️ ${ms}ms timeout aşıldı!`);
-      resolve(fallback);
-    }, ms))
-  ]);
-};
-
-// Soft reconnect - session refresh
+// Helper functions
 export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
-  console.log("🔄 [SupabaseClient] ========== SOFT RECONNECT ==========");
+  console.log("🔄 [SupabaseClient] Soft reconnect...");
   
   try {
-    const sessionResult = await withTimeout(
-      supabaseInstance.auth.getSession(),
-      2000,
-      { data: { session: null }, error: null }
-    );
-    
-    if (sessionResult?.data?.session?.access_token) {
-      supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
-      console.log("[SupabaseClient] ✅ Token realtime'a set edildi");
+    const { data: { session } } = await supabaseInstance.auth.getSession();
+    if (session?.access_token) {
+      supabaseInstance.realtime.setAuth(session.access_token);
     }
-    
-    if (!Capacitor.isNativePlatform()) {
-      const realtimeState = (supabaseInstance.realtime as any).connectionState?.();
-      if (realtimeState !== 'open' && realtimeState !== 'connecting') {
-        try { 
-          (supabaseInstance.realtime as any).connect?.(); 
-        } catch {}
-      }
-    }
-    
-  } catch (error) {
-    console.error("[SupabaseClient] ❌ Reconnect hatası:", error);
-  }
+  } catch {}
   
   return supabaseInstance;
 };
 
-export const hardReconnect = async (): Promise<SupabaseClient<Database>> => {
-  console.log("⚠️ [SupabaseClient] hardReconnect DEVRE DIŞI");
-  return supabaseInstance;
-};
-
-export const getSupabaseClient = (): SupabaseClient<Database> => {
-  return supabaseInstance;
-};
-
-// Proaktif token yenileme DEVRE DIŞI
-export const startProactiveTokenRefresh = (): void => {
-  console.log("[SupabaseClient] 🔐 Proaktif token yenileme DEVRE DIŞI");
-};
-
+export const hardReconnect = async (): Promise<SupabaseClient<Database>> => supabaseInstance;
+export const getSupabaseClient = (): SupabaseClient<Database> => supabaseInstance;
+export const startProactiveTokenRefresh = (): void => {};
 export const stopProactiveTokenRefresh = (): void => {};
 
 export const getRealtimeConnectionState = (): string => {
   try {
-    const state = (supabaseInstance.realtime as any).connectionState?.();
-    return state || "unknown";
+    return (supabaseInstance.realtime as any).connectionState?.() || "unknown";
   } catch {
     return "unknown";
   }
@@ -266,9 +231,7 @@ export const getActiveChannelCount = (): number => {
   }
 };
 
-// Geriye dönük uyumluluk için - ana export
+// Ana export
 export const supabase = new Proxy({} as SupabaseClient<Database>, {
-  get: (_, prop) => {
-    return (supabaseInstance as any)[prop];
-  },
+  get: (_, prop) => (supabaseInstance as any)[prop],
 });
