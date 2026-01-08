@@ -1,6 +1,8 @@
 // AuthPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Preferences } from "@capacitor/preferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,15 +29,26 @@ const AuthPage = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
-  // 🔧 Email'i localStorage'dan yükle
-  const [signInData, setSignInData] = useState(() => {
-    const savedEmail = localStorage.getItem('kelimele-saved-email') || '';
-    const savedPassword = localStorage.getItem('kelimele-saved-password') || '';
-    return {
-      email: savedEmail,
-      password: savedPassword,
-    };
+  // 🔧 Email'i Preferences'dan yükle
+  const [signInData, setSignInData] = useState({
+    email: "",
+    password: "",
   });
+
+  // İlk yüklemede kayıtlı bilgileri al
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      const { value: savedEmail } = await Preferences.get({ key: 'kelimele-saved-email' });
+      const { value: savedPassword } = await Preferences.get({ key: 'kelimele-saved-password' });
+      if (savedEmail || savedPassword) {
+        setSignInData({
+          email: savedEmail || '',
+          password: savedPassword || '',
+        });
+      }
+    };
+    loadSavedCredentials();
+  }, []);
 
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -47,9 +60,9 @@ const AuthPage = () => {
     e.preventDefault();
     setLoading(true);
     
-    // 🔧 Giriş bilgilerini kaydet
-    localStorage.setItem('kelimele-saved-email', signInData.email);
-    localStorage.setItem('kelimele-saved-password', signInData.password);
+    // 🔧 Giriş bilgilerini Preferences'a kaydet
+    await Preferences.set({ key: 'kelimele-saved-email', value: signInData.email });
+    await Preferences.set({ key: 'kelimele-saved-password', value: signInData.password });
     
     await signIn(signInData.email, signInData.password);
     setLoading(false);
