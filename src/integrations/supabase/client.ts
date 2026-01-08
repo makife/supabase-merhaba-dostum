@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient, Session } from "@supabase/supabase-js";
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
 import type { Database } from "./types";
@@ -9,104 +9,90 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const isNative = Capacitor.isNativePlatform();
 
-// 🔧 HYBRID STORAGE: Native'de localStorage + Preferences senkron!
-// Supabase client senkron storage bekliyor, async Preferences = session kaybı
-// Çözüm: localStorage'a HEMEN yaz, Preferences'a arka planda senkronize et
-const HybridNativeStorage = {
-  getItem: (key: string): string | null => {
-    // 🔥 SENKRON: localStorage'dan anında oku (cold start için)
-    try {
-      const value = localStorage.getItem(key);
-      if (value) {
-        console.log(`[HybridStorage] ✅ getItem(${key.substring(0, 20)}...) → localStorage`);
-        return value;
-      }
-    } catch (e) {
-      console.warn("[HybridStorage] localStorage okuma hatası:", e);
-    }
-    
-    // localStorage boşsa null dön (Preferences async olduğu için bekleyemeyiz)
-    console.log(`[HybridStorage] ⚠️ getItem(${key.substring(0, 20)}...) → null (localStorage boş)`);
-    return null;
-  },
-  
-  setItem: (key: string, value: string): void => {
-    // 🔥 SENKRON: localStorage'a HEMEN yaz
-    try {
-      localStorage.setItem(key, value);
-      console.log(`[HybridStorage] ✅ setItem(${key.substring(0, 20)}...) → localStorage`);
-    } catch (e) {
-      console.warn("[HybridStorage] localStorage yazma hatası:", e);
-    }
-    
-    // 🔄 ASYNC: Preferences'a da yaz (kill sonrası için yedek)
-    Preferences.set({ key, value })
-      .then(() => console.log(`[HybridStorage] 💾 setItem → Preferences senkronize edildi`))
-      .catch((e) => console.warn("[HybridStorage] Preferences yazma hatası:", e));
-  },
-  
-  removeItem: (key: string): void => {
-    // 🔥 SENKRON: localStorage'dan HEMEN sil
-    try {
-      localStorage.removeItem(key);
-      console.log(`[HybridStorage] 🗑️ removeItem(${key.substring(0, 20)}...) → localStorage`);
-    } catch (e) {
-      console.warn("[HybridStorage] localStorage silme hatası:", e);
-    }
-    
-    // 🔄 ASYNC: Preferences'dan da sil
-    Preferences.remove({ key })
-      .then(() => console.log(`[HybridStorage] 🗑️ removeItem → Preferences senkronize edildi`))
-      .catch((e) => console.warn("[HybridStorage] Preferences silme hatası:", e));
-  },
-};
+// 🔧 STORAGE KEY - tek bir key kullan
+export const SESSION_STORAGE_KEY = "kelimele-auth-token-v2";
 
-// 🔧 WEB: Sadece localStorage (standart)
-const WebStorage = {
-  getItem: (key: string): string | null => {
-    return localStorage.getItem(key);
-  },
-  
-  setItem: (key: string, value: string): void => {
-    localStorage.setItem(key, value);
-  },
-  
-  removeItem: (key: string): void => {
-    localStorage.removeItem(key);
-  },
-};
+// ============================================================
+// 🔥 NATIVE STORAGE ONLY - localStorage KULLANMA!
+// Android WebView localStorage'ı temizleyebilir
+// Supabase persistSession: false ile session'ı biz yönetiyoruz
+// ============================================================
 
-// 🆕 Cold Start Sync: App açıldığında Preferences → localStorage senkronize et
-const syncPreferencesToLocalStorage = async () => {
-  if (!isNative) return;
+/**
+ * Session'ı Preferences'a kaydet (ASYNC)
+ */
+export const saveSessionToStorage = async (session: Session | null): Promise<void> => {
+  if (!session) {
+    console.log("[Storage] 🗑️ Session siliniyor...");
+    await Preferences.remove({ key: SESSION_STORAGE_KEY });
+    return;
+  }
   
-  const keys = ['kelimele-auth-token', 'sb-nnlvtqmuwmrqfinsgvwc-auth-token'];
-  
-  for (const key of keys) {
-    try {
-      const localValue = localStorage.getItem(key);
-      
-      // localStorage boşsa Preferences'tan doldur
-      if (!localValue) {
-        const { value } = await Preferences.get({ key });
-        if (value) {
-          localStorage.setItem(key, value);
-          console.log(`[HybridStorage] 🔄 Cold start sync: ${key.substring(0, 20)}... → localStorage`);
-        }
-      }
-    } catch (e) {
-      console.warn(`[HybridStorage] Sync hatası (${key}):`, e);
-    }
+  try {
+    const data = JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
+      expires_in: session.expires_in,
+      token_type: session.token_type,
+      user: session.user,
+    });
+    
+    await Preferences.set({ key: SESSION_STORAGE_KEY, value: data });
+    console.log("[Storage] ✅ Session kaydedildi:", session.user?.email?.slice(0, 10) + "...");
+  } catch (e) {
+    console.error("[Storage] ❌ Session kaydetme hatası:", e);
   }
 };
 
-// 🔥 Cold start'ta HEMEN senkronize et (async ama beklemeyiz)
-if (isNative && typeof window !== 'undefined') {
-  syncPreferencesToLocalStorage();
-}
+/**
+ * Session'ı Preferences'tan oku (ASYNC)
+ */
+export const loadSessionFromStorage = async (): Promise<Session | null> => {
+  try {
+    const { value } = await Preferences.get({ key: SESSION_STORAGE_KEY });
+    
+    if (!value) {
+      console.log("[Storage] ⚠️ Storage'da session yok");
+      return null;
+    }
+    
+    const parsed = JSON.parse(value);
+    
+    // Token geçerli mi kontrol et (1 dakika tolerans)
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (parsed.expires_at && parsed.expires_at < nowSec - 60) {
+      console.log("[Storage] ⏰ Token süresi dolmuş, refresh gerekli");
+      // Süresi dolmuş ama refresh_token varsa session'ı yine de dön
+      // refreshSession ile yenilenecek
+    }
+    
+    console.log("[Storage] ✅ Session yüklendi:", parsed.user?.email?.slice(0, 10) + "...");
+    
+    return {
+      access_token: parsed.access_token,
+      refresh_token: parsed.refresh_token,
+      expires_at: parsed.expires_at,
+      expires_in: parsed.expires_in || 3600,
+      token_type: parsed.token_type || "bearer",
+      user: parsed.user,
+    } as Session;
+  } catch (e) {
+    console.error("[Storage] ❌ Session okuma hatası:", e);
+    return null;
+  }
+};
 
-// Platform'a göre storage seç
-const StorageAdapter = isNative ? HybridNativeStorage : WebStorage;
+/**
+ * Storage'ı temizle
+ */
+export const clearSessionStorage = async (): Promise<void> => {
+  await Preferences.remove({ key: SESSION_STORAGE_KEY });
+  // Eski key'leri de temizle (migration)
+  await Preferences.remove({ key: "kelimele-auth-token" });
+  await Preferences.remove({ key: "sb-nnlvtqmuwmrqfinsgvwc-auth-token" });
+  console.log("[Storage] 🗑️ Tüm session storage temizlendi");
+};
 
 // Supabase client oluşturma fonksiyonu
 const createSupabaseClient = (): SupabaseClient<Database> => {
@@ -115,20 +101,15 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
   const isNativePlatform = Capacitor.isNativePlatform();
   
   // 🔧 KRİTİK: Native'de Realtime DEVRE DIŞI - Kotlin WebSocket kullanılacak
-  // WebView'deki WebSocket arka plana geçince ölüyor, bu yüzden native'de hiç açmıyoruz
   const realtimeConfig = isNativePlatform ? {
-    // Native'de Supabase Realtime'ı TAMAMEN DEVRE DIŞI birak
-    // Kotlin NativeRealtimePlugin bağlantıyı yönetiyor
     params: {
-      eventsPerSecond: 0, // Hiç event gönderme
+      eventsPerSecond: 0,
     },
-    // Bağlantıyı hemen kes ve yeniden bağlanma
     reconnectAfterMs: () => {
       console.log("[SupabaseClient] 🚫 Native'de JS Realtime DEVRE DIŞI - Kotlin kullanılıyor");
-      return 999999999; // Asla reconnect etme
+      return 999999999;
     },
   } : {
-    // Web'de normal realtime
     params: {
       eventsPerSecond: 10,
     },
@@ -142,25 +123,20 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
   
   const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: StorageAdapter,
-      persistSession: true,
-      // 🔧 KRİTİK: autoRefreshToken AÇIK - Supabase token'ı otomatik yenilesin!
-      // Arka planda token süresi dolarsa, foreground'a gelince refresh yapabilsin
-      // Race condition riskini AuthContext'teki "fresh wake" koruması engelliyor
+      // 🔥🔥🔥 KRİTİK: Native'de persistSession FALSE!
+      // Session'ı biz Preferences ile yönetiyoruz
+      // Supabase'in async-uyumsuz localStorage denemesini engelliyor
+      persistSession: !isNativePlatform,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      storageKey: 'kelimele-auth-token', // 🔧 Özel key - varsayılanla karışıklık önlenir
-      lock: isNativePlatform ? (false as any) : undefined,
+      // Web'de localStorage kullan (normal davranış)
+      storage: isNativePlatform ? undefined : localStorage,
     },
     realtime: realtimeConfig,
     global: {
       fetch: async (url, options?: RequestInit) => {
-        // 🔧 AGGRESSIVE TIMEOUT: Native'de 12 saniye (uyanış için), Web'de 15 saniye
-        // 12 saniye = Android bridge trafiği için güvenli süre
-        const isNativePlatform = Capacitor.isNativePlatform();
         const TIMEOUT_MS = isNativePlatform ? 12000 : 15000;
         
-        // Supabase signal'ini IGNORE et - kendi timeout'umuzu kullan
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
         const controller = new AbortController();
@@ -176,10 +152,8 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
           });
           return response;
         } catch (error: any) {
-          // AbortError olursa sessizce handle et, diğerlerini fırlat
           if (error?.name === 'AbortError') {
-            console.warn(`[Supabase] ⚠️ Request aborted (${isNativePlatform ? 'native' : 'web'}): ${url}`);
-            // Retry yapılabilir hata fırlat
+            console.warn(`[Supabase] ⚠️ Request aborted: ${url}`);
             throw new Error(`Request timeout after ${TIMEOUT_MS}ms - please try again`);
           }
           throw error;
@@ -190,11 +164,8 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     },
   });
 
-  // 🔧 Native'de sadece log - disconnect() ÇAĞIRMIYORUZ
-  // reconnectAfterMs zaten 999999999 olduğu için JS Realtime hiç bağlanmayacak
   if (isNativePlatform) {
-    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime pasif (Kotlin WebSocket aktif)");
-    // ❌ disconnect() ÇAĞIRMIYORUZ - gereksiz ve tehlikeli olabilir
+    console.log("[SupabaseClient] 🚫 Native platform - JS Realtime pasif, persistSession: false");
   } else {
     // Sadece WEB'de realtime kontrol mekanizması
     if (typeof document !== "undefined") {
@@ -209,7 +180,7 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
           // Sessizce devam
         }
       };
-      setInterval(checkAndReconnect, 10000); // Web'de 10 saniyede bir kontrol
+      setInterval(checkAndReconnect, 10000);
     }
   }
 
@@ -219,7 +190,7 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
 // Global client instance
 let supabaseInstance: SupabaseClient<Database> = createSupabaseClient();
 
-// Timeout helper - native'de getSession asılı kalabiliyor
+// Timeout helper
 const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
   return Promise.race([
     promise,
@@ -230,47 +201,30 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 };
 
-// Sadece realtime bağlantısını kontrol et - TOKEN REFRESH YAPMA!
-// Supabase client zaten autoRefreshToken: true ile token'ı yönetiyor
+// Soft reconnect - session refresh
 export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
   console.log("🔄 [SupabaseClient] ========== SOFT RECONNECT ==========");
   
   try {
-    // 1. SADECE mevcut session'ı OKU (refresh YAPMA!)
-    console.log("[SupabaseClient] 1️⃣ Session kontrol...");
-    try {
-      const sessionResult = await withTimeout(
-        supabaseInstance.auth.getSession(),
-        2000,
-        { data: { session: null }, error: null }
-      );
-      
-      if (sessionResult?.data?.session?.access_token) {
-        // Sadece token'ı realtime'a set et, refresh YAPMA
-        supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
-        console.log("[SupabaseClient] ✅ Mevcut token kullanıldı");
-      } else {
-        console.log("[SupabaseClient] ⚠️ Session yok - Supabase otomatik yenileyecek");
-        // ❌ MANUEL REFRESH YAPMA - Supabase client autoRefreshToken ile hallediyor
-      }
-    } catch (e) {
-      console.log("[SupabaseClient] ⚠️ Session okuma hatası:", e);
+    const sessionResult = await withTimeout(
+      supabaseInstance.auth.getSession(),
+      2000,
+      { data: { session: null }, error: null }
+    );
+    
+    if (sessionResult?.data?.session?.access_token) {
+      supabaseInstance.realtime.setAuth(sessionResult.data.session.access_token);
+      console.log("[SupabaseClient] ✅ Token realtime'a set edildi");
     }
     
-    // 2. REALTIME DURUMUNU KONTROL ET (sadece web'de)
     if (!Capacitor.isNativePlatform()) {
       const realtimeState = (supabaseInstance.realtime as any).connectionState?.();
-      console.log("[SupabaseClient] 2️⃣ Realtime durumu:", realtimeState);
-      
       if (realtimeState !== 'open' && realtimeState !== 'connecting') {
-        console.log("[SupabaseClient] 3️⃣ Bağlantı kapalı, yeniden bağlanılıyor...");
         try { 
           (supabaseInstance.realtime as any).connect?.(); 
         } catch {}
       }
     }
-    
-    console.log("🎉 [SupabaseClient] ========== SOFT RECONNECT TAMAM ==========");
     
   } catch (error) {
     console.error("[SupabaseClient] ❌ Reconnect hatası:", error);
@@ -279,34 +233,22 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
   return supabaseInstance;
 };
 
-// ⚠️ DEVRE DIŞI
 export const hardReconnect = async (): Promise<SupabaseClient<Database>> => {
   console.log("⚠️ [SupabaseClient] hardReconnect DEVRE DIŞI");
   return supabaseInstance;
 };
 
-// Client getter (her zaman güncel instance'ı döndürür)
 export const getSupabaseClient = (): SupabaseClient<Database> => {
   return supabaseInstance;
 };
 
-// 🚫 DEVRE DIŞI: Proaktif token yenileme - Supabase client zaten autoRefreshToken: true ile yapıyor
-// Manuel refresh = race condition = "Invalid Refresh Token" hatası
-let tokenRefreshInterval: NodeJS.Timeout | null = null;
-
+// Proaktif token yenileme DEVRE DIŞI
 export const startProactiveTokenRefresh = (): void => {
-  // ❌ DEVRE DIŞI - Supabase autoRefreshToken zaten yapıyor
-  console.log("[SupabaseClient] 🔐 Proaktif token yenileme DEVRE DIŞI (Supabase autoRefresh aktif)");
+  console.log("[SupabaseClient] 🔐 Proaktif token yenileme DEVRE DIŞI");
 };
 
-export const stopProactiveTokenRefresh = (): void => {
-  if (tokenRefreshInterval) {
-    clearInterval(tokenRefreshInterval);
-    tokenRefreshInterval = null;
-  }
-};
+export const stopProactiveTokenRefresh = (): void => {};
 
-// 🆕 Bağlantı durumunu al
 export const getRealtimeConnectionState = (): string => {
   try {
     const state = (supabaseInstance.realtime as any).connectionState?.();
@@ -316,7 +258,6 @@ export const getRealtimeConnectionState = (): string => {
   }
 };
 
-// 🆕 Aktif kanal sayısını al
 export const getActiveChannelCount = (): number => {
   try {
     return supabaseInstance.getChannels().length;
@@ -331,16 +272,3 @@ export const supabase = new Proxy({} as SupabaseClient<Database>, {
     return (supabaseInstance as any)[prop];
   },
 });
-
-// 🆕 Otomatik başlat (client yüklendiğinde)
-if (typeof window !== "undefined") {
-  // Sayfa yüklendiğinde proaktif yenileme başlat
-  window.addEventListener("load", () => {
-    startProactiveTokenRefresh();
-  });
-  
-  // Sayfa kapatıldığında durdur
-  window.addEventListener("beforeunload", () => {
-    stopProactiveTokenRefresh();
-  });
-}
