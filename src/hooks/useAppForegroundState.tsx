@@ -24,19 +24,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
 
   console.log(`[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"}`);
 
-  // 🔥 YENİ EKLENEN KISIM: Servis Yönetimi
-  if (inForeground) {
-    // Ön plana geldi -> Servisi durdur
-    BackgroundServiceManager.onAppForeground();
-
-    // __appForegroundTime'ı güncelle
-    updateForegroundTime();
-  } else {
-    // Arka plana geçti -> Servisi başlat (ve 1dk sayacı kur)
-    BackgroundServiceManager.onAppBackground();
-  }
-
-  // Tüm listener'ları bilgilendir
+  // 🔥 KRİTİK: Tüm listener'ları ÖNCE bilgilendir (senkron)
   listeners.forEach((cb) => {
     try {
       cb(inForeground);
@@ -45,12 +33,27 @@ const handleForegroundStateChange = (inForeground: boolean) => {
     }
   });
 
-  // Reconnect logic (senin mevcut kodun)
-  if (inForeground && wasInBackground) {
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-    }, 100);
-  }
+  // 🔥 KRİTİK: Native plugin çağrıları ve diğer async işlemler DEFER edilmeli!
+  // setTimeout(0) ile event loop'un sonraki tick'ine atıyoruz
+  // Bu sayede appStateChange callback'i hemen tamamlanıyor ve bridge bloke olmuyor
+  setTimeout(() => {
+    if (inForeground) {
+      // Ön plana geldi
+      updateForegroundTime();
+      
+      // 🔥 Service manager çağrısı DEFER edildi
+      BackgroundServiceManager.onAppForeground();
+      
+      // Reconnect event'i
+      if (wasInBackground) {
+        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+      }
+    } else {
+      // Arka plana geçti
+      // 🔥 Service manager çağrısı DEFER edildi
+      BackgroundServiceManager.onAppBackground();
+    }
+  }, 0);
 };
 
 // Update last_seen in database to track user activity
@@ -119,8 +122,9 @@ export function useAppForegroundState() {
       setIsInForeground(inForeground);
 
       // When app comes to foreground, update last_seen immediately
+      // 🔥 DEFER: setTimeout ile async işlemi defer et
       if (inForeground) {
-        updateLastSeen();
+        setTimeout(() => updateLastSeen(), 0);
       }
     };
 

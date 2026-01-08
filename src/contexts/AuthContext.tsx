@@ -369,54 +369,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [applyOptimisticAuth]);
 
   // 🔥 YENİ EKLENEN KISIM: Arka plandan dönüşte oturumu kurtarma
+  // 🔥 KRİTİK: Callback'ler SENKRON olmalı, async işlemler setTimeout ile DEFER edilmeli!
   useAppState({
-    onForeground: async () => {
-      console.log("[AuthContext] ☀️ Uygulama ön plana geldi - Oturum kontrol ediliyor...");
-
-      // Eğer zaten oturum varsa ve user null değilse bir şey yapma (ya da sadece refresh dene)
-      if (session && user) {
-        console.log("[AuthContext] ✅ Oturum zaten aktif, devam ediliyor.");
-        // Arkaplanda token süresi dolmuş olabilir, sessizce yenilemeyi dene
-        supabase.auth.getSession().then(({ data }) => {
-          if (data.session) {
-            setSession(data.session);
-            saveSessionToPreferences(data.session);
+    onForeground: () => {
+      console.log("[AuthContext] ☀️ Uygulama ön plana geldi");
+      
+      // 🔥 KRİTİK: Tüm async işlemleri setTimeout(0) ile defer et!
+      // Bu sayede appStateChange callback'i hemen tamamlanır, bridge bloke olmaz
+      setTimeout(async () => {
+        console.log("[AuthContext] 🔄 Session kontrol başlıyor (deferred)...");
+        
+        // Eğer zaten oturum varsa ve user null değilse bir şey yapma
+        if (session && user) {
+          console.log("[AuthContext] ✅ Oturum zaten aktif, devam ediliyor.");
+          // Arkaplanda token süresi dolmuş olabilir, sessizce yenilemeyi dene
+          try {
+            const { data } = await supabase.auth.getSession();
+            if (data.session && mounted.current) {
+              setSession(data.session);
+              saveSessionToPreferences(data.session);
+            }
+          } catch (e) {
+            console.log("[AuthContext] ⚠️ Session refresh hatası (sessiz):", e);
           }
-        });
-        return;
-      }
-
-      // Eğer USER NULL ise (Misafir görünüyorsa), hemen storage'dan kurtarmayı dene!
-      console.log("[AuthContext] ⚠️ Kullanıcı NULL görünüyor! Storage'dan kurtarılıyor...");
-      setLoading(true); // Kısa süreli loading göster
-
-      try {
-        // 1. Native Storage'dan oku
-        const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
-        if (value) {
-          const parsed = JSON.parse(value);
-          if (parsed?.access_token) {
-            // 2. State'i hemen güncelle
-            const restoredUser = parsed.user;
-            const restoredSession = {
-              access_token: parsed.access_token,
-              refresh_token: parsed.refresh_token,
-              expires_at: parsed.expires_at,
-              user: restoredUser,
-              token_type: "bearer",
-            } as Session;
-
-            setUser(restoredUser);
-            setSession(restoredSession);
-            supabase.auth.setSession(restoredSession);
-            console.log("[AuthContext] ♻️ Arka plan dönüşü oturum kurtarıldı!");
-          }
+          return;
         }
-      } catch (e) {
-        console.error("Recovery error:", e);
-      } finally {
-        setLoading(false);
-      }
+
+        // Eğer USER NULL ise (Misafir görünüyorsa), storage'dan kurtarmayı dene!
+        console.log("[AuthContext] ⚠️ Kullanıcı NULL görünüyor! Storage'dan kurtarılıyor...");
+        if (mounted.current) setLoading(true);
+
+        try {
+          // 1. Native Storage'dan oku
+          const { value } = await Preferences.get({ key: CUSTOM_STORAGE_KEY });
+          if (value) {
+            const parsed = JSON.parse(value);
+            if (parsed?.access_token) {
+              // 2. State'i hemen güncelle
+              const restoredUser = parsed.user;
+              const restoredSession = {
+                access_token: parsed.access_token,
+                refresh_token: parsed.refresh_token,
+                expires_at: parsed.expires_at,
+                user: restoredUser,
+                token_type: "bearer",
+              } as Session;
+
+              if (mounted.current) {
+                setUser(restoredUser);
+                setSession(restoredSession);
+              }
+              await supabase.auth.setSession(restoredSession);
+              console.log("[AuthContext] ♻️ Arka plan dönüşü oturum kurtarıldı!");
+            }
+          }
+        } catch (e) {
+          console.error("Recovery error:", e);
+        } finally {
+          if (mounted.current) setLoading(false);
+        }
+      }, 0);
     },
     onBackground: () => {
       console.log("[AuthContext] 🌑 Uygulama arka plana geçti");
