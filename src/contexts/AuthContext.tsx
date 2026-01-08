@@ -6,6 +6,7 @@ import { Capacitor } from "@capacitor/core";
 import { NativeRealtime } from "@/plugins/NativeRealtime";
 import { useAppState } from "@/hooks/useAppState";
 import { isFreshWake } from "@/utils/coldStartTime";
+import { setCachedSession } from "@/utils/persistentState";
 
 interface AuthContextType {
   user: User | null;
@@ -51,77 +52,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ]);
   };
 
-  // 🔥 NATIVE SESSION RESTORE - Preferences'tan session yükle ve Supabase'e set et
-  const restoreSessionFromStorage = useCallback(async (): Promise<boolean> => {
+  // 🔥 NATIVE SESSION RESTORE - Preferences'tan session yükle ve HEMEN UI'ı aç
+  const restoreSessionFromStorage = useCallback(async (): Promise<Session | null> => {
     console.log("[AuthContext] 🔄 Storage'dan session restore ediliyor...");
     
     try {
       const storedSession = await loadSessionFromStorage();
       
-      if (!storedSession || !storedSession.refresh_token) {
+      if (!storedSession || !storedSession.refresh_token || !storedSession.user) {
         console.log("[AuthContext] ⚠️ Storage'da geçerli session yok");
-        return false;
+        return null;
       }
       
-      console.log("[AuthContext] ✅ Storage'da session bulundu, Supabase'e set ediliyor...");
+      console.log("[AuthContext] ✅ Storage'da session bulundu:", storedSession.user.email);
       
-      // 1. Önce UI'ı hemen aç (optimistic)
+      // 🔥 KRITIK: HEMEN UI'ı aç - token validation'ı BEKLEME!
       if (mounted.current) {
         setUser(storedSession.user);
-        setSession(storedSession);
+        setSession(storedSession as Session);
         setLoading(false);
+        
+        // ProtectedRoute için de cache güncelle
+        await setCachedSession({
+          userId: storedSession.user.id,
+          email: storedSession.user.email || '',
+          accessToken: storedSession.access_token,
+          refreshToken: storedSession.refresh_token,
+          expiresAt: (storedSession.expires_at || 0) * 1000,
+        });
       }
       
-      // 2. Supabase'e session'ı set et (token refresh için gerekli)
-      const { data, error } = await supabase.auth.setSession({
-        access_token: storedSession.access_token,
-        refresh_token: storedSession.refresh_token,
-      });
-      
-      if (error) {
-        console.log("[AuthContext] ⚠️ setSession hatası, refresh denenecek:", error.message);
-        
-        // Token expired olabilir, refresh dene
-        const refreshResult = await withAuthTimeout(
-          supabase.auth.refreshSession({ refresh_token: storedSession.refresh_token }),
-          8000
-        );
-        
-        if (refreshResult && !refreshResult.error && refreshResult.data?.session) {
-          console.log("[AuthContext] ✅ Token refresh başarılı!");
-          const newSession = refreshResult.data.session;
+      // Arka planda token'ı refresh et (UI'ı engellemeden)
+      setTimeout(async () => {
+        try {
+          console.log("[AuthContext] 🔄 Arka planda token refresh...");
           
-          if (mounted.current) {
-            setUser(newSession.user);
-            setSession(newSession);
+          const { data, error } = await supabase.auth.setSession({
+            access_token: storedSession.access_token,
+            refresh_token: storedSession.refresh_token,
+          });
+          
+          if (error) {
+            console.log("[AuthContext] ⚠️ setSession hatası:", error.message);
+            
+            // Token geçersizse yeniden login gerekebilir
+            // AMA UI'da user hala gösterilsin - SIGNED_OUT zırhı aktif
+            return;
           }
           
-          // Yeni session'ı kaydet
-          await saveSessionToStorage(newSession);
-          return true;
-        } else {
-          console.log("[AuthContext] ❌ Refresh de başarısız");
-          return false;
+          if (data?.session && mounted.current) {
+            console.log("[AuthContext] ✅ Token refresh başarılı!");
+            setUser(data.session.user);
+            setSession(data.session);
+            await saveSessionToStorage(data.session);
+          }
+        } catch (e) {
+          console.error("[AuthContext] ⚠️ Background refresh hatası:", e);
         }
-      }
+      }, 100);
       
-      // setSession başarılı
-      if (data?.session) {
-        console.log("[AuthContext] ✅ Session set edildi ve doğrulandı");
-        
-        if (mounted.current) {
-          setUser(data.session.user);
-          setSession(data.session);
-        }
-        
-        // Güncel session'ı kaydet
-        await saveSessionToStorage(data.session);
-      }
-      
-      return true;
+      return storedSession as Session;
     } catch (e) {
       console.error("[AuthContext] ❌ Session restore hatası:", e);
-      return false;
+      return null;
     }
   }, []);
 
@@ -169,15 +162,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // User null - storage'dan restore dene
         console.log("[AuthContext] ⚠️ User NULL! Storage'dan restore...");
-        if (mounted.current) setLoading(true);
         
-        const success = await restoreSessionFromStorage();
+        const restoredSession = await restoreSessionFromStorage();
         
-        if (success && session) {
-          await startNativeService(session.access_token);
+        if (restoredSession) {
+          await startNativeService(restoredSession.access_token);
         }
-        
-        if (mounted.current) setLoading(false);
       }, 0);
     },
     onBackground: () => {
@@ -199,10 +189,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (isNative) {
         // 🔥 NATIVE: Preferences'tan session yükle
-        const success = await restoreSessionFromStorage();
+        const restoredSession = await restoreSessionFromStorage();
         
-        if (success && session) {
-          await startNativeService(session.access_token);
+        if (restoredSession) {
+          await startNativeService(restoredSession.access_token);
         }
         
         if (mounted.current) setLoading(false);
@@ -244,9 +234,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(newSession.user);
           setLoading(false);
           
-          // 🔥 NATIVE: Session'ı Preferences'a kaydet
+          // 🔥 NATIVE: Session'ı Preferences'a kaydet + ProtectedRoute cache
           if (Capacitor.isNativePlatform()) {
             await saveSessionToStorage(newSession);
+            
+            // ProtectedRoute için de cache güncelle
+            await setCachedSession({
+              userId: newSession.user.id,
+              email: newSession.user.email || '',
+              accessToken: newSession.access_token,
+              refreshToken: newSession.refresh_token,
+              expiresAt: (newSession.expires_at || 0) * 1000,
+            });
           }
         }
       } else if (event === "SIGNED_OUT") {
@@ -313,9 +312,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(data.session);
       setUser(data.session.user);
       
-      // 🔥 NATIVE: Session'ı Preferences'a kaydet
+      // 🔥 NATIVE: Session'ı Preferences'a kaydet + ProtectedRoute cache
       if (Capacitor.isNativePlatform()) {
         await saveSessionToStorage(data.session);
+        
+        await setCachedSession({
+          userId: data.session.user.id,
+          email: data.session.user.email || '',
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          expiresAt: (data.session.expires_at || 0) * 1000,
+        });
       }
       
       // Native service başlat
@@ -351,6 +358,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Storage'ı temizle
     if (Capacitor.isNativePlatform()) {
       await clearSessionStorage();
+      await setCachedSession(null); // ProtectedRoute cache'i de temizle
     }
     
     try {
