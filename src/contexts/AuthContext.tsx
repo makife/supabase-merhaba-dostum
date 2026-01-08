@@ -186,20 +186,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     mounted.current = true;
     
     const initAuth = async () => {
-      if (initCompletedRef.current) return;
+      if (initCompletedRef.current) {
+        console.log("[Auth] ⏭️ Init zaten tamamlandı, skip");
+        return;
+      }
       initCompletedRef.current = true;
       
-      console.log("🔒 Auth Başlatılıyor...");
+      console.log("🔒 Auth Başlatılıyor... isNative:", isNative);
       
       if (isNative) {
         // NATIVE: Storage'dan restore
-        const restored = await restoreFromStorage();
+        console.log("[Auth] 📱 Native mod - storage'dan restore başlıyor...");
         
-        if (!restored && mounted.current) {
-          setLoading(false);
+        try {
+          const restored = await restoreFromStorage();
+          console.log("[Auth] 📱 Restore sonucu:", restored);
+          
+          if (!restored && mounted.current) {
+            console.log("[Auth] 📱 Session bulunamadı, loading kapatılıyor");
+            setLoading(false);
+          }
+        } catch (e) {
+          console.error("[Auth] ❌ Native init hatası:", e);
+          if (mounted.current) setLoading(false);
         }
       } else {
         // WEB: Normal Supabase getSession
+        console.log("[Auth] 🌐 Web mod - getSession...");
         try {
           const { data } = await supabase.auth.getSession();
           
@@ -216,11 +229,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // FAILSAFE: 8 saniye sonra loading kapat
     const failsafe = setTimeout(() => {
       if (loading && mounted.current) {
-        console.warn("[Auth] ⚠️ FAILSAFE: 8s timeout");
+        console.warn("[Auth] ⚠️ FAILSAFE: 8s timeout - loading zorla kapatılıyor");
         setLoading(false);
       }
     }, 8000);
     
+    // 🔥 HEMEN ÇALIŞTIR
     initAuth();
     
     // 🔔 Auth State Listener
