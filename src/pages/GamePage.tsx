@@ -5105,15 +5105,40 @@ const GamePage = ({
     };
   }, [currentRoom?.id, user?.id, gameMode]);
 
-  // Turnuva real-time senkronizasyonu
+  // 🏆 Turnuva real-time senkronizasyonu - Ref ile closure sorunu çözümü
+  const tournamentChannelRef = useRef<any>(null);
+  const tournamentMatchIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
-    if (gameMode !== "tournament" || !tournamentMatch) return;
+    if (gameMode !== "tournament" || !tournamentMatch) {
+      // Turnuva modundan çıkıldığında channel'ı temizle
+      if (tournamentChannelRef.current) {
+        console.log("🧹 Turnuva channel temizleniyor (mod değişti)");
+        supabase.removeChannel(tournamentChannelRef.current);
+        tournamentChannelRef.current = null;
+        tournamentMatchIdRef.current = null;
+      }
+      return;
+    }
+    
+    // Aynı maç için zaten subscription varsa yeni oluşturma
+    if (tournamentMatchIdRef.current === tournamentMatch.id && tournamentChannelRef.current) {
+      console.log("⏭️ Turnuva subscription zaten aktif:", tournamentMatch.id.slice(-8));
+      return;
+    }
+    
+    // Önceki subscription'ı temizle (farklı maç için)
+    if (tournamentChannelRef.current) {
+      console.log("🔄 Eski turnuva channel temizleniyor, yeni maç için");
+      supabase.removeChannel(tournamentChannelRef.current);
+    }
 
-    console.log("🏆 Turnuva real-time senkronizasyon başlatıldı");
+    console.log("🏆 Turnuva real-time senkronizasyon başlatıldı:", tournamentMatch.id.slice(-8));
+    tournamentMatchIdRef.current = tournamentMatch.id;
 
     // Tournament match değişikliklerini dinle
     const tournamentChannel = supabase
-      .channel(`tournament-match-${tournamentMatch.id}`)
+      .channel(`tournament-match-${tournamentMatch.id}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -5125,42 +5150,48 @@ const GamePage = ({
         (payload) => {
           console.log("🔄 Tournament match güncellendi:", payload.new);
 
-          // Rakip skorunu real-time güncelle - DÜZELTME
+          // Rakip skorunu real-time güncelle
           const newMatch = payload.new as any;
-          if (user) {
-            const isPlayer1 = String(newMatch.player1_id) === String(user.id);
-            const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
-            const newPlayerScore = isPlayer1 ? newMatch.player1_score : newMatch.player2_score;
+          const currentUserId = user?.id;
+          
+          if (currentUserId) {
+            const isPlayer1 = String(newMatch.player1_id) === String(currentUserId);
+            const newOpponentScore = isPlayer1 ? (newMatch.player2_score ?? 0) : (newMatch.player1_score ?? 0);
+            const newPlayerScore = isPlayer1 ? (newMatch.player1_score ?? 0) : (newMatch.player2_score ?? 0);
 
             console.log("🔄 Real-time tournament sync:", {
               isPlayer1,
               newPlayerScore,
               newOpponentScore,
-              currentPlayerScore: playerScore,
-              currentOpponentScore: opponentScore,
             });
 
-            if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
-              console.log("🔄 Rakip skoru güncellendi:", opponentScore, "->", newOpponentScore);
-              setOpponentScore(newOpponentScore);
-            }
+            // 🔥 Functional update kullan - closure sorunu yok!
+            setOpponentScore(prev => {
+              if (newOpponentScore !== prev) {
+                console.log("🔄 Rakip skoru güncellendi:", prev, "->", newOpponentScore);
+                return newOpponentScore;
+              }
+              return prev;
+            });
 
-            // Kendi skorumuzu da güncelle (eğer başka yerden geliyorsa)
-            if (newPlayerScore !== undefined && newPlayerScore !== playerScore) {
-              console.log("🔄 Kendi skorumuz güncellendi:", playerScore, "->", newPlayerScore);
-              setPlayerScore(newPlayerScore);
-            }
+            // Kendi skorumuzu güncelleme - kendi skorumuz zaten local'de güncel
+            // Sadece rakipten gelen skor güncellemesini al
           }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("🏆 Tournament channel status:", status);
+      });
+    
+    tournamentChannelRef.current = tournamentChannel;
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [GamePage] Turnuva real-time cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(tournamentChannel);
+      // Cleanup sadece component unmount olduğunda
+      console.log("⚠️ [GamePage] Turnuva real-time useEffect cleanup");
+      // NOT: Channel'ı burada temizlemiyoruz çünkü bağlantı koruması aktif
+      // Sadece tournamentMatch değiştiğinde veya gameMode değiştiğinde temizle
     };
-  }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
+  }, [gameMode, tournamentMatch?.id, user?.id]);
 
   // İlk sync
   useEffect(() => {
