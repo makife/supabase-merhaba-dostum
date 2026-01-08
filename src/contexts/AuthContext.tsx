@@ -158,44 +158,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [startNativeService]);
 
-  // 🔥 FOREGROUND RECOVERY
+  // 🔥 FOREGROUND RECOVERY - Her zaman storage'dan kontrol et!
   useAppState({
     onForeground: async () => {
       console.log("[Auth] ☀️ Ön plana geldi");
       
       if (!isNative) return;
       
-      // 🔥 REF'leri kullan - closure sorunu yok!
-      const currentSession = sessionRef.current;
-      const currentUser = userRef.current;
+      // 🔥 Memory state'e GÜVENME! Her zaman storage'dan kontrol et
+      console.log("[Auth] 📦 Storage'dan session kontrol ediliyor...");
       
-      console.log("[Auth] 📊 Mevcut durum - User:", currentUser?.email, "Session:", !!currentSession);
-      
-      // Zaten oturum varsa sadece refresh et
-      if (currentSession && currentUser) {
-        console.log("[Auth] ✅ Oturum aktif, token tazeleniyor...");
+      try {
+        const storedSession = await loadSessionFromStorage();
         
-        try {
-          const { data, error } = await supabase.auth.refreshSession();
+        if (storedSession) {
+          console.log("[Auth] ✅ Storage'da session bulundu:", storedSession.user?.email);
+          
+          // Token'ı refresh et
+          const { data, error } = await supabase.auth.refreshSession({
+            refresh_token: storedSession.refresh_token
+          });
           
           if (!error && data?.session && mounted.current) {
+            console.log("[Auth] ✅ Token yenilendi, state güncelleniyor");
             setSession(data.session);
             setUser(data.session.user);
             await saveSessionToStorage(data.session);
-            console.log("[Auth] ✅ Token tazelendi");
+            setLoading(false);
           } else if (error) {
-            console.log("[Auth] ⚠️ Refresh hatası:", error.message);
+            console.log("[Auth] ⚠️ Refresh hatası, storage session kullanılıyor:", error.message);
+            // Refresh başarısız olsa bile storage'daki session'ı kullan
+            if (mounted.current) {
+              setSession(storedSession);
+              setUser(storedSession.user);
+              setLoading(false);
+            }
           }
-        } catch (e) {
-          console.error("[Auth] ⚠️ Refresh exception:", e);
+        } else {
+          console.log("[Auth] ⚠️ Storage'da session yok");
+          if (mounted.current) {
+            setLoading(false);
+          }
         }
-        
-        return;
+      } catch (e) {
+        console.error("[Auth] ❌ Foreground recovery hatası:", e);
+        if (mounted.current) {
+          setLoading(false);
+        }
       }
-      
-      // User null - storage'dan restore
-      console.log("[Auth] ⚠️ User NULL! Storage'dan restore...");
-      await restoreFromStorage();
     },
     onBackground: () => {
       console.log("[Auth] 🌑 Arka plana geçti");
