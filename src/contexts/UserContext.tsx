@@ -223,7 +223,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // Visibility change - sayfa görünür olduğunda kontrol et VE profili yenile
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        console.log("👁️ [UserContext] Sayfa görünür - profil yeniden yükleniyor...");
+        console.log("👁️ [UserContext] Sayfa görünür - flag reset + profil yeniden yükleniyor...");
+        // 🔥 Flag'leri resetle - foreground recovery için kritik
+        isRefreshingCreditsRef.current = false;
         setIsSystemConnected(navigator.onLine);
         // Her görünür olduğunda profili zorla yenile
         refreshProfile(true);
@@ -232,7 +234,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     // App foreground event (native)
     const handleForeground = () => {
-      console.log("📱 [UserContext] App foreground - profil yeniden yükleniyor...");
+      console.log("📱 [UserContext] App foreground - flag reset + profil yeniden yükleniyor...");
+      // 🔥 Flag'leri resetle - foreground recovery için kritik
+      isRefreshingCreditsRef.current = false;
       setIsSystemConnected(true);
       refreshProfile(true);
     };
@@ -256,19 +260,46 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, []);
 
+  // 🔥 Intentional logout tracking (from AuthContext)
+  const intentionalLogoutRef = useRef(false);
+  
+  // Logout event'ini dinle
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log("[UserContext] 🚪 Intentional logout algılandı");
+      intentionalLogoutRef.current = true;
+    };
+    window.addEventListener("auth-logout", handleLogout);
+    return () => window.removeEventListener("auth-logout", handleLogout);
+  }, []);
+
   // Hydrate profile from cache immediately on user change to avoid avatar flicker
   useEffect(() => {
+    // 🔥 KRİTİK: Sadece GERÇEK logout'ta profile'ı sıfırla
     if (!user) {
-      setProfile(null);
+      if (intentionalLogoutRef.current) {
+        console.log("[UserContext] 🚪 Logout - profile temizleniyor");
+        setProfile(null);
+        localStorage.removeItem("cached_profile");
+        intentionalLogoutRef.current = false;
+      } else {
+        // 🔥 Foreground'dan dönüşte user henüz null olabilir - SİFIRLAMA!
+        console.log("[UserContext] ⏳ User null ama logout değil - profile korunuyor");
+      }
       return;
     }
+
+    // 🔥 Foreground recovery için flag'leri resetle
+    isRefreshingCreditsRef.current = false;
 
     const cached = localStorage.getItem("cached_profile");
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (parsed.id === user.id) {
-          setProfile((prev) => prev ?? { ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+          // 🔥 Cache'den HEMEN yükle (prev kontrolü olmadan)
+          console.log("[UserContext] ⚡ Cache'den hızlı hydrate:", parsed.data?.username);
+          setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
           // Preload avatar image to ensure instant display
           if (parsed.data?.avatar_url) {
             const img = new Image();
@@ -287,6 +318,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // Supabase reconnect olduğunda profili yeniden yükle
     const handleReconnect = () => {
       console.log("🔄 [UserContext] Reconnect - profil yeniden yükleniyor...");
+      // 🔥 Flag'i resetle
+      isRefreshingCreditsRef.current = false;
       refreshProfile(true);
     };
     window.addEventListener("supabase-reconnected", handleReconnect);
