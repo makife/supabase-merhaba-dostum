@@ -356,6 +356,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     console.log("[Auth] 🚪 Çıkış yapılıyor...");
     
+    // 🔥 UserContext'e logout bildirimi gönder
+    window.dispatchEvent(new Event("auth-logout"));
+    
     intentionalLogoutRef.current = true;
     setLoading(true);
     
