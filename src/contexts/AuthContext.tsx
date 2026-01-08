@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ]);
   };
 
-  // 🔥 NATIVE SESSION RESTORE - Preferences'tan session yükle ve HEMEN UI'ı aç
+  // 🔥 NATIVE SESSION RESTORE - Preferences'tan session yükle
   const restoreSessionFromStorage = useCallback(async (): Promise<Session | null> => {
     console.log("[AuthContext] 🔄 Storage'dan session restore ediliyor...");
     
@@ -66,13 +66,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("[AuthContext] ✅ Storage'da session bulundu:", storedSession.user.email);
       
-      // 🔥 KRITIK: HEMEN UI'ı aç - token validation'ı BEKLEME!
+      // 🔥 HEMEN UI'ı aç - optimistic
       if (mounted.current) {
         setUser(storedSession.user);
         setSession(storedSession as Session);
         setLoading(false);
         
-        // ProtectedRoute için de cache güncelle
         await setCachedSession({
           userId: storedSession.user.id,
           email: storedSession.user.email || '',
@@ -82,34 +81,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
       }
       
-      // Arka planda token'ı refresh et (UI'ı engellemeden)
+      // 🔥🔥🔥 KRİTİK: refreshSession kullan - setSession DEĞİL!
+      // setSession eski token'la 400 verir, refreshSession YENİ token alır
       setTimeout(async () => {
         try {
-          console.log("[AuthContext] 🔄 Arka planda token refresh...");
+          console.log("[AuthContext] 🔄 refreshSession ile token yenileniyor...");
           
-          const { data, error } = await supabase.auth.setSession({
+          // Önce mevcut session'ı set et (Supabase'e refresh_token'ı bildir)
+          await supabase.auth.setSession({
             access_token: storedSession.access_token,
             refresh_token: storedSession.refresh_token,
           });
           
+          // Şimdi refresh et - bu YENİ refresh_token döndürür
+          const { data, error } = await supabase.auth.refreshSession();
+          
           if (error) {
-            console.log("[AuthContext] ⚠️ setSession hatası:", error.message);
+            console.log("[AuthContext] ⚠️ refreshSession hatası:", error.message);
             
-            // Token geçersizse yeniden login gerekebilir
-            // AMA UI'da user hala gösterilsin - SIGNED_OUT zırhı aktif
+            // 🔥 Refresh token expired ise kullanıcıyı çıkar
+            if (error.message?.includes('expired') || error.message?.includes('invalid')) {
+              console.log("[AuthContext] 🚫 Token tamamen geçersiz - logout");
+              if (mounted.current) {
+                setUser(null);
+                setSession(null);
+                await clearSessionStorage();
+              }
+            }
             return;
           }
           
           if (data?.session && mounted.current) {
-            console.log("[AuthContext] ✅ Token refresh başarılı!");
+            console.log("[AuthContext] ✅ Token refresh başarılı! Yeni token kaydediliyor...");
             setUser(data.session.user);
             setSession(data.session);
+            
+            // 🔥 YENİ SESSION'I KAYDET - refresh_token değişti!
             await saveSessionToStorage(data.session);
+            
+            await setCachedSession({
+              userId: data.session.user.id,
+              email: data.session.user.email || '',
+              accessToken: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+              expiresAt: (data.session.expires_at || 0) * 1000,
+            });
           }
         } catch (e) {
           console.error("[AuthContext] ⚠️ Background refresh hatası:", e);
         }
-      }, 100);
+      }, 500);
       
       return storedSession as Session;
     } catch (e) {
@@ -142,16 +163,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     onForeground: () => {
       console.log("[AuthContext] ☀️ Uygulama ön plana geldi");
       
-      // Async işlemleri defer et
       setTimeout(async () => {
-        // Zaten oturum varsa sadece token tazele
+        // Zaten oturum varsa refreshSession ile tazele
         if (session && user) {
-          console.log("[AuthContext] ✅ Oturum aktif, token tazeleniyor...");
+          console.log("[AuthContext] ✅ Oturum aktif, refreshSession ile tazeleniyor...");
           try {
-            const { data } = await supabase.auth.getSession();
+            const { data, error } = await supabase.auth.refreshSession();
+            
+            if (error) {
+              console.log("[AuthContext] ⚠️ refreshSession hatası:", error.message);
+              // Hata olsa bile mevcut UI'ı koru
+              return;
+            }
+            
             if (data?.session && mounted.current) {
               setSession(data.session);
               setUser(data.session.user);
+              // 🔥 YENİ refresh_token'ı kaydet!
               await saveSessionToStorage(data.session);
             }
           } catch (e) {
