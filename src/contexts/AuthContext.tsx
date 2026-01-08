@@ -38,8 +38,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const intentionalLogoutRef = useRef(false);
   const initCompletedRef = useRef(false);
   const isRestoringRef = useRef(false);
+  
+  // 🔥 REF'LER - closure sorununu çözmek için
+  const sessionRef = useRef<Session | null>(null);
+  const userRef = useRef<User | null>(null);
 
   const isNative = Capacitor.isNativePlatform();
+  
+  // 🔥 State değişince ref'leri güncelle
+  useEffect(() => {
+    sessionRef.current = session;
+    userRef.current = user;
+  }, [session, user]);
 
   // 🔧 Native Service başlat
   const startNativeService = useCallback(async (accessToken: string) => {
@@ -155,8 +165,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (!isNative) return;
       
+      // 🔥 REF'leri kullan - closure sorunu yok!
+      const currentSession = sessionRef.current;
+      const currentUser = userRef.current;
+      
+      console.log("[Auth] 📊 Mevcut durum - User:", currentUser?.email, "Session:", !!currentSession);
+      
       // Zaten oturum varsa sadece refresh et
-      if (session && user) {
+      if (currentSession && currentUser) {
         console.log("[Auth] ✅ Oturum aktif, token tazeleniyor...");
         
         try {
@@ -166,8 +182,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSession(data.session);
             setUser(data.session.user);
             await saveSessionToStorage(data.session);
+            console.log("[Auth] ✅ Token tazelendi");
+          } else if (error) {
+            console.log("[Auth] ⚠️ Refresh hatası:", error.message);
           }
-        } catch {}
+        } catch (e) {
+          console.error("[Auth] ⚠️ Refresh exception:", e);
+        }
         
         return;
       }
