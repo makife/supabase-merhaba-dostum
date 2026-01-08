@@ -523,9 +523,10 @@ const GlobalReconnectionOverlay = () => {
   );
 };
 
-// 🆕 Session Recovery Component - Native'de session kaybolmasını önler
+// 🆕 Session Recovery Component - AuthContext kendi recovery'sini yapıyor
+// Bu component artık pasif - sadece placeholder olarak duruyor
 const SessionRecoveryManager = () => {
-  useSessionRecovery();
+  // useSessionRecovery(); // Devre dışı - AuthContext handles this
   return null;
 };
 
