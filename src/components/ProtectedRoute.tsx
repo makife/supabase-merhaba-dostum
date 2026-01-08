@@ -1,9 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { Navigate, useLocation } from "react-router-dom";
-import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
-import { getCachedSession } from "@/utils/persistentState";
+import { ReactNode, useEffect, useState, useRef } from "react";
+import { loadSessionFromStorage } from "@/integrations/supabase/client";
 import { ReconnectingOverlay } from "@/components/ReconnectingOverlay";
+import { Capacitor } from "@capacitor/core";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -13,184 +14,91 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { isSystemConnected } = useUser();
   const location = useLocation();
-
-  // State'ler
-  const [showLoadingLonger, setShowLoadingLonger] = useState(true);
-  const [giveUpAndRedirect, setGiveUpAndRedirect] = useState(false);
-  const [optimisticAuth, setOptimisticAuth] = useState(false);
-  const [showReconnectOverlay, setShowReconnectOverlay] = useState(false);
   
-  const hasCheckedCacheRef = useRef(false);
-  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isRecoveringRef = useRef(false); // 🆕 Auth recovery durumunu takip et
+  const isNative = Capacitor.isNativePlatform();
 
-  // 🔧 User geldiğinde TÜM bekleme state'lerini temizle
+  // State
+  const [showLoading, setShowLoading] = useState(true);
+  const [hasStoredSession, setHasStoredSession] = useState<boolean | null>(null);
+  const [giveUp, setGiveUp] = useState(false);
+  
+  const checkedStorageRef = useRef(false);
+
+  // 🔧 User geldiğinde tüm loading'leri kapat
   useEffect(() => {
     if (user) {
-      console.log("✅ [ProtectedRoute] User geldi, tüm loading/redirect state'leri temizleniyor");
-      setShowLoadingLonger(false);
-      setGiveUpAndRedirect(false);
-      setOptimisticAuth(false);
-      setShowReconnectOverlay(false);
-      
-      // Bekleyen timeout'ları temizle
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-        redirectTimeoutRef.current = null;
-      }
+      console.log("✅ [ProtectedRoute] User geldi");
+      setShowLoading(false);
+      setGiveUp(false);
     }
   }, [user]);
 
+  // 🔧 Storage'da session var mı kontrol et (sadece native)
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    let optimisticTimeout: NodeJS.Timeout;
-
-    if (!authLoading) {
-      // Auth yüklemesi bittikten 300ms sonra loading'i kapat
-      timeout = setTimeout(() => setShowLoadingLonger(false), 300);
-    }
-
-    // 🆕 AGRESİF OPTİMİSTİC AUTH: 800ms içinde user gelmezse cached session'a bak
-    optimisticTimeout = setTimeout(async () => {
-      if (!user && !hasCheckedCacheRef.current) {
-        hasCheckedCacheRef.current = true;
-        console.log("⏰ [ProtectedRoute] 800ms doldu, agresif optimistic auth kontrolü...");
-        
-        try {
-          const cachedSession = await getCachedSession();
-          if (cachedSession && cachedSession.expiresAt > Date.now()) {
-            console.log("✅ [ProtectedRoute] Cached session bulundu, ANINDA optimistic auth aktif");
-            setOptimisticAuth(true);
-            setShowReconnectOverlay(true);
-            
-            // 5 saniye sonra overlay'i kapat (daha hızlı)
-            setTimeout(() => setShowReconnectOverlay(false), 5000);
-          }
-        } catch (e) {
-          console.error("[ProtectedRoute] Cache kontrol hatası:", e);
-        }
-      }
-    }, 800); // 🔧 2000ms -> 800ms (daha agresif)
-
-    // 🔧 12 saniye boyunca hiçbir şey olmazsa güvenli redirect (6s -> 12s)
-    // 🛡️ isRecoveringRef true ise redirect ASLA YAPMA! Max 25 saniye bekle.
-    // 🆕 KRİTİK: 12sn dolsa bile isRecovering true ise /auth'a ASLA yönlendirme!
-    redirectTimeoutRef.current = setTimeout(() => {
-      // 🛡️ ÖNCE RECOVERY KONTROLÜ - 12sn dolsa bile recovery varsa BEKLE (max 25sn daha)
-      if (isRecoveringRef.current) {
-        console.log("⏳ [ProtectedRoute] 12sn doldu AMA recovery devam ediyor - /auth'a YÖNLENDİRME YOK!");
-        console.log("⏳ [ProtectedRoute] Max 25sn daha LoadingScreen'de tutulacak (Misafir yok!)");
-        
-        // 🆕 Recovery bitene kadar veya max 25sn boyunca bekle
-        // Bu süre boyunca ASLA redirect yapma, ASLA 'Misafir' olarak içeri sokma
-        let waitedMs = 0;
-        const maxWaitMs = 25000; // Max ek bekleme - 25sn (toplam 12 + 25 = 37sn)
-        
-        const recoveryCheckInterval = setInterval(() => {
-          waitedMs += 1000;
-          
-          if (!isRecoveringRef.current) {
-            // Recovery bitti
-            clearInterval(recoveryCheckInterval);
-            console.log("✅ [ProtectedRoute] Recovery bitti (" + waitedMs + "ms sonra)");
-            
-            // User geldi mi kontrol et - 1sn bekle state güncellensin
-            setTimeout(() => {
-              // Sessizce bekle - user state'i güncellenecek ve useEffect tetiklenecek
-            }, 1000);
-          } else if (waitedMs >= maxWaitMs) {
-            // Max bekleme doldu - AMA HALA REDIRECT YAPMA!
-            clearInterval(recoveryCheckInterval);
-            console.log("⚠️ [ProtectedRoute] 25sn ek bekleme doldu, recovery hala devam - LoadingScreen'de KALACAK");
-            // 🛡️ KRİTİK: setGiveUpAndRedirect(true) YAPMA!
-            // Kullanıcı LoadingScreen'de kalacak, Misafir olarak içeri alınmayacak
-          }
-        }, 1000);
-        
-        return; // Bu callback'ten çık, redirect YAPMA
-      }
-      
-      // Recovery yok ve user/optimisticAuth da yok - artık redirect yapılabilir
-      if (!user && !optimisticAuth) {
-        console.log("⏰ [ProtectedRoute] 12sn zaman aşımı, recovery yok, /auth'a yönlendiriliyor...");
-        setGiveUpAndRedirect(true);
-      }
-    }, 12000);
-
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(optimisticTimeout);
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, [authLoading, user, optimisticAuth]);
-
-  // Optimistic auth aktifken user gelirse
-  useEffect(() => {
-    if (user && optimisticAuth) {
-      console.log("✅ [ProtectedRoute] Gerçek user geldi, optimistic auth kapatılıyor");
-      setOptimisticAuth(false);
-      setShowReconnectOverlay(false);
-    }
-  }, [user, optimisticAuth]);
-
-  // 🆕 Auth recovery event'lerini dinle
-  useEffect(() => {
-    const handleRecoveryStart = () => {
-      console.log("[ProtectedRoute] 🔄 Auth recovery başladı");
-      isRecoveringRef.current = true;
-    };
+    if (!isNative || checkedStorageRef.current) return;
     
-    const handleRecoveryEnd = () => {
-      console.log("[ProtectedRoute] ✅ Auth recovery bitti");
-      isRecoveringRef.current = false;
-    };
+    checkedStorageRef.current = true;
     
-    window.addEventListener('auth-recovery-start', handleRecoveryStart);
-    window.addEventListener('auth-recovery-end', handleRecoveryEnd);
-    
-    return () => {
-      window.removeEventListener('auth-recovery-start', handleRecoveryStart);
-      window.removeEventListener('auth-recovery-end', handleRecoveryEnd);
-    };
-  }, []);
-
-  // 🆕 OPTIMISTIC UI: İlk mount'ta hemen storage kontrol et
-  useEffect(() => {
-    const checkStorageImmediately = async () => {
+    const checkStorage = async () => {
       try {
-        const cachedSession = await getCachedSession();
-        if (cachedSession && cachedSession.expiresAt > Date.now()) {
-          console.log("⚡ [ProtectedRoute] İlk mount - cached session bulundu, ANINDA optimistic");
-          setOptimisticAuth(true);
-        }
-      } catch (e) {
-        // Sessiz hata
+        const stored = await loadSessionFromStorage();
+        const hasSession = !!(stored?.refresh_token && stored?.user);
+        console.log("[ProtectedRoute] 📦 Storage session:", hasSession);
+        setHasStoredSession(hasSession);
+      } catch {
+        setHasStoredSession(false);
       }
     };
     
-    // Sadece user yoksa kontrol et
-    if (!user) {
-      checkStorageImmediately();
-    }
-  }, []); // Sadece mount'ta çalış
+    checkStorage();
+  }, [isNative]);
 
-  // 🔧 1. USER VARSA - HEMEN children göster (en öncelikli)
+  // 🔧 Loading timeout'ları
+  useEffect(() => {
+    // Auth yüklemesi bittiyse kısa süre sonra loading kapat
+    let loadingTimeout: NodeJS.Timeout;
+    
+    if (!authLoading) {
+      loadingTimeout = setTimeout(() => setShowLoading(false), 500);
+    }
+    
+    // 🔥 NATIVE'DE: Storage'da session varsa 15 saniye bekle
+    // Storage'da session yoksa 5 saniye bekle
+    const maxWait = isNative && hasStoredSession ? 15000 : 8000;
+    
+    const giveUpTimeout = setTimeout(() => {
+      if (!user) {
+        console.log(`⏰ [ProtectedRoute] ${maxWait}ms timeout`);
+        
+        // 🛡️ Native'de storage'da session varsa giveUp YAPMA
+        if (isNative && hasStoredSession) {
+          console.log("[ProtectedRoute] 🛡️ Storage'da session var, beklemeye devam...");
+          // Ek 10 saniye daha bekle
+          setTimeout(() => {
+            if (!user) {
+              console.log("[ProtectedRoute] ⚠️ 25sn doldu, artık redirect");
+              setGiveUp(true);
+            }
+          }, 10000);
+        } else {
+          setGiveUp(true);
+        }
+      }
+    }, maxWait);
+    
+    return () => {
+      clearTimeout(loadingTimeout);
+      clearTimeout(giveUpTimeout);
+    };
+  }, [authLoading, user, isNative, hasStoredSession]);
+
+  // 1. USER VARSA - hemen göster
   if (user) {
-    return (
-      <>
-        {children}
-        <ReconnectingOverlay 
-          isVisible={showReconnectOverlay} 
-          status="reconnecting"
-        />
-      </>
-    );
+    return <>{children}</>;
   }
 
-  // 2. İlk yükleme anı (user henüz gelmedi)
-  if (authLoading || showLoadingLonger) {
+  // 2. İlk yükleme
+  if (authLoading || showLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
@@ -199,42 +107,35 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // 3. Zaman aşımı olduysa ve optimistic auth da yoksa -> /auth'a git
-  if (giveUpAndRedirect && !optimisticAuth) {
-    console.log("🚪 [ProtectedRoute] Redirect to /auth");
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  // 4. Optimistic auth aktifse - sayfayı göster ama overlay ekle
-  if (optimisticAuth) {
-    return (
-      <>
-        {children}
-        <ReconnectingOverlay 
-          isVisible={showReconnectOverlay} 
-          status="restoring"
-          message="Oturumunuz geri yükleniyor..."
-        />
-      </>
-    );
-  }
-
-  // 5. User yok ama sistem bağlı - kısa süre bekle
-  if (isSystemConnected) {
+  // 3. Native'de storage'da session varsa - bekle
+  if (isNative && hasStoredSession && !giveUp) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
         <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-          </div>
-          <p className="text-primary font-medium animate-pulse">Bağlantı tazeleniyor...</p>
-          <p className="text-xs text-muted-foreground">Oturumunuz güvenli bir şekilde korunuyor</p>
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-primary font-medium animate-pulse">Oturum geri yükleniyor...</p>
         </div>
       </div>
     );
   }
 
-  // 6. Hiçbir koşul sağlanmadı - loading göster
+  // 4. Timeout - redirect
+  if (giveUp) {
+    console.log("🚪 [ProtectedRoute] Redirect to /auth");
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // 5. Sistem bağlı - kısa bekle
+  if (isSystemConnected) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <p className="mt-4 text-sm text-muted-foreground">Bağlantı kontrol ediliyor...</p>
+      </div>
+    );
+  }
+
+  // 6. Fallback loading
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
