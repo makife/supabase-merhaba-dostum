@@ -9,32 +9,55 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 const isNative = Capacitor.isNativePlatform();
 
-// 🔧 NATIVE: Sadece Capacitor Preferences (kalıcı, arka plan dayanıklı)
-const NativeStorage = {
-  getItem: async (key: string): Promise<string | null> => {
+// 🔧 HYBRID STORAGE: Native'de localStorage + Preferences senkron!
+// Supabase client senkron storage bekliyor, async Preferences = session kaybı
+// Çözüm: localStorage'a HEMEN yaz, Preferences'a arka planda senkronize et
+const HybridNativeStorage = {
+  getItem: (key: string): string | null => {
+    // 🔥 SENKRON: localStorage'dan anında oku (cold start için)
     try {
-      const { value } = await Preferences.get({ key });
-      return value;
+      const value = localStorage.getItem(key);
+      if (value) {
+        console.log(`[HybridStorage] ✅ getItem(${key.substring(0, 20)}...) → localStorage`);
+        return value;
+      }
     } catch (e) {
-      console.error("[NativeStorage] getItem error:", e);
-      return null;
+      console.warn("[HybridStorage] localStorage okuma hatası:", e);
     }
+    
+    // localStorage boşsa null dön (Preferences async olduğu için bekleyemeyiz)
+    console.log(`[HybridStorage] ⚠️ getItem(${key.substring(0, 20)}...) → null (localStorage boş)`);
+    return null;
   },
   
-  setItem: async (key: string, value: string): Promise<void> => {
+  setItem: (key: string, value: string): void => {
+    // 🔥 SENKRON: localStorage'a HEMEN yaz
     try {
-      await Preferences.set({ key, value });
+      localStorage.setItem(key, value);
+      console.log(`[HybridStorage] ✅ setItem(${key.substring(0, 20)}...) → localStorage`);
     } catch (e) {
-      console.error("[NativeStorage] setItem error:", e);
+      console.warn("[HybridStorage] localStorage yazma hatası:", e);
     }
+    
+    // 🔄 ASYNC: Preferences'a da yaz (kill sonrası için yedek)
+    Preferences.set({ key, value })
+      .then(() => console.log(`[HybridStorage] 💾 setItem → Preferences senkronize edildi`))
+      .catch((e) => console.warn("[HybridStorage] Preferences yazma hatası:", e));
   },
   
-  removeItem: async (key: string): Promise<void> => {
+  removeItem: (key: string): void => {
+    // 🔥 SENKRON: localStorage'dan HEMEN sil
     try {
-      await Preferences.remove({ key });
+      localStorage.removeItem(key);
+      console.log(`[HybridStorage] 🗑️ removeItem(${key.substring(0, 20)}...) → localStorage`);
     } catch (e) {
-      console.error("[NativeStorage] removeItem error:", e);
+      console.warn("[HybridStorage] localStorage silme hatası:", e);
     }
+    
+    // 🔄 ASYNC: Preferences'dan da sil
+    Preferences.remove({ key })
+      .then(() => console.log(`[HybridStorage] 🗑️ removeItem → Preferences senkronize edildi`))
+      .catch((e) => console.warn("[HybridStorage] Preferences silme hatası:", e));
   },
 };
 
@@ -53,8 +76,37 @@ const WebStorage = {
   },
 };
 
+// 🆕 Cold Start Sync: App açıldığında Preferences → localStorage senkronize et
+const syncPreferencesToLocalStorage = async () => {
+  if (!isNative) return;
+  
+  const keys = ['kelimele-auth-token', 'sb-nnlvtqmuwmrqfinsgvwc-auth-token'];
+  
+  for (const key of keys) {
+    try {
+      const localValue = localStorage.getItem(key);
+      
+      // localStorage boşsa Preferences'tan doldur
+      if (!localValue) {
+        const { value } = await Preferences.get({ key });
+        if (value) {
+          localStorage.setItem(key, value);
+          console.log(`[HybridStorage] 🔄 Cold start sync: ${key.substring(0, 20)}... → localStorage`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[HybridStorage] Sync hatası (${key}):`, e);
+    }
+  }
+};
+
+// 🔥 Cold start'ta HEMEN senkronize et (async ama beklemeyiz)
+if (isNative && typeof window !== 'undefined') {
+  syncPreferencesToLocalStorage();
+}
+
 // Platform'a göre storage seç
-const StorageAdapter = isNative ? NativeStorage : WebStorage;
+const StorageAdapter = isNative ? HybridNativeStorage : WebStorage;
 
 // Supabase client oluşturma fonksiyonu
 const createSupabaseClient = (): SupabaseClient<Database> => {
