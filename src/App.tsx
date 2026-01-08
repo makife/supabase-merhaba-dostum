@@ -95,7 +95,14 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  const [customLoading, setCustomLoading] = useState(true);
+  // 🔧 İlk açılışta true, sonraki render'larda sessionStorage'dan kontrol et
+  const [customLoading, setCustomLoading] = useState(() => {
+    // Eğer daha önce loading tamamlandıysa, tekrar gösterme
+    if (typeof window !== 'undefined' && sessionStorage.getItem('app-loaded')) {
+      return false;
+    }
+    return true;
+  });
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
 
@@ -185,8 +192,14 @@ const AppRoutes = () => {
     initPush();
   }, []);
 
+  // Loading tamamlandığında sessionStorage'a kaydet
+  const handleLoadingComplete = () => {
+    sessionStorage.setItem('app-loaded', 'true');
+    setCustomLoading(false);
+  };
+
   if (loading || customLoading) {
-    return <LoadingScreen onLoadingComplete={() => setCustomLoading(false)} />;
+    return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
   }
 
   return (
