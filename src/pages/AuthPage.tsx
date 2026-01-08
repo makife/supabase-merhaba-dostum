@@ -27,9 +27,14 @@ const AuthPage = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
-  const [signInData, setSignInData] = useState({
-    email: "",
-    password: "",
+  // 🔧 Email'i localStorage'dan yükle
+  const [signInData, setSignInData] = useState(() => {
+    const savedEmail = localStorage.getItem('kelimele-saved-email') || '';
+    const savedPassword = localStorage.getItem('kelimele-saved-password') || '';
+    return {
+      email: savedEmail,
+      password: savedPassword,
+    };
   });
 
   const [signUpData, setSignUpData] = useState({
@@ -41,6 +46,11 @@ const AuthPage = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // 🔧 Giriş bilgilerini kaydet
+    localStorage.setItem('kelimele-saved-email', signInData.email);
+    localStorage.setItem('kelimele-saved-password', signInData.password);
+    
     await signIn(signInData.email, signInData.password);
     setLoading(false);
   };
