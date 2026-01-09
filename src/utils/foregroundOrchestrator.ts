@@ -1,18 +1,17 @@
 /**
- * 🎯 FOREGROUND ORCHESTRATOR V2 - Sequential Cold-Start Simulation
+ * 🎯 FOREGROUND ORCHESTRATOR
  * 
- * Android Native'de arka plandan gelirken SIRALI (sequential) veri yükleme.
- * Cold start güvenilirliğini sağlar, ama Loading screen göstermez.
+ * Android Native'de arka plandan gelirken tüm işlemleri kademeli (staggered)
+ * şekilde yönetir. Aynı anda çok fazla istek Bridge'i tıkar.
  * 
- * Akış:
- * 1. Temizlik: Tüm subscription'ları kapat, zombi istekleri iptal et
- * 2. Session Recovery: BEKLE - tamam olana kadar devam etme
- * 3. Profile Fetch: BEKLE - tamam olana kadar devam etme
- * 4. Subscription'ları Aç: Joker, Chat, Role vs.
- * 5. Kullanıcı aynı sayfada kalır
+ * Timeline:
+ * T+0ms:    UI hazırlığı (immersive bars) + Bridge Kickstart Ping
+ * T+400ms:  Auth/Session recovery
+ * T+1000ms: ServerTime sync
+ * T+1800ms: Global veri tazeleme
  */
 
-import { supabase, loadSessionFromStorage, saveSessionToStorage } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 // Global AbortController - tüm zombi istekleri temizlemek için
 let globalForegroundAbortController: AbortController | null = null;
@@ -21,69 +20,22 @@ let globalForegroundAbortController: AbortController | null = null;
 let isOrchestrating = false;
 let orchestratorTimeouts: NodeJS.Timeout[] = [];
 
-// Callback türleri
+// Callbacks
 type OrchestrationCallbacks = {
-  onCleanupStart?: () => void;           // Temizlik başladı
-  onSessionRecoveryStart?: () => void;   // Session recovery başladı
-  onSessionRecoveryComplete?: (success: boolean) => void; // Session tamam
-  onProfileFetchStart?: () => void;      // Profile fetch başladı
-  onProfileFetchComplete?: (success: boolean) => void;   // Profile tamam
-  onSubscriptionsReady?: () => void;     // Subscription'lar açılabilir
-  onComplete?: () => void;               // Tüm süreç tamamlandı
-  onError?: (error: string) => void;     // Hata oluştu
+  onUIReady?: () => void;
+  onAuthRecovery?: () => void;
+  onTimeSync?: () => void;
+  onDataRefresh?: () => void;
+  onComplete?: () => void;
+  onBridgeHealthFail?: () => void;
 };
-
-// Subscription cleanup fonksiyonları - hook'lar buraya register olacak
-type CleanupFunction = () => void;
-const registeredCleanupFunctions: CleanupFunction[] = [];
-
-// Recovery tamamlandığında çağrılacak callback'ler
-const recoveryCompleteListeners: Set<() => void> = new Set();
-
-/**
- * Hook'lar kendi cleanup fonksiyonlarını buraya kaydetsin
- * Örn: useJokerInventory, useChatNotifications
- */
-export function registerForegroundCleanup(cleanupFn: CleanupFunction): () => void {
-  registeredCleanupFunctions.push(cleanupFn);
-  
-  // Unregister fonksiyonu döndür
-  return () => {
-    const index = registeredCleanupFunctions.indexOf(cleanupFn);
-    if (index > -1) {
-      registeredCleanupFunctions.splice(index, 1);
-    }
-  };
-}
-
-/**
- * Sequential recovery tamamlandığında bildirim al
- * Hook'lar subscription'larını bu event'te açabilir
- */
-export function subscribeToRecoveryComplete(callback: () => void): () => void {
-  recoveryCompleteListeners.add(callback);
-  return () => recoveryCompleteListeners.delete(callback);
-}
-
-/**
- * Recovery tamamlandığında tüm listener'ları bilgilendir
- */
-function notifyRecoveryComplete(): void {
-  console.log(`[ForegroundOrchestrator] 🔔 Recovery complete - ${recoveryCompleteListeners.size} listener bilgilendiriliyor`);
-  recoveryCompleteListeners.forEach((cb) => {
-    try {
-      cb();
-    } catch (e) {
-      console.warn("[ForegroundOrchestrator] Recovery listener hatası:", e);
-    }
-  });
-}
 
 /**
  * Tüm bekleyen foreground işlemlerini iptal et
+ * Her yeni foreground'da çağrılmalı (zombi temizliği)
  */
 export function abortAllPendingForegroundTasks(): void {
-  console.log("[ForegroundOrchestrator] 🛑 Temizlik başlıyor...");
+  console.log("[ForegroundOrchestrator] 🛑 Tüm zombi istekler iptal ediliyor...");
   
   // 1. Global AbortController ile tüm fetch'leri iptal et
   if (globalForegroundAbortController) {
@@ -95,17 +47,7 @@ export function abortAllPendingForegroundTasks(): void {
   orchestratorTimeouts.forEach(t => clearTimeout(t));
   orchestratorTimeouts = [];
   
-  // 3. Kayıtlı cleanup fonksiyonlarını çağır
-  console.log(`[ForegroundOrchestrator] 🧹 ${registeredCleanupFunctions.length} subscription temizleniyor...`);
-  registeredCleanupFunctions.forEach(cleanup => {
-    try {
-      cleanup();
-    } catch (e) {
-      console.warn("[ForegroundOrchestrator] Cleanup hatası:", e);
-    }
-  });
-  
-  // 4. Flag'i sıfırla
+  // 3. Orchestrating flag'ini resetle
   isOrchestrating = false;
 }
 
@@ -117,207 +59,87 @@ export function getForegroundAbortSignal(): AbortSignal | undefined {
 }
 
 /**
- * ADIM 2: Session Recovery - Storage'dan yükle ve refresh et
+ * 🆕 BRIDGE KICKSTART: Android'in uyuyan network soketlerini uyandır
+ * Küçük bir ping atarak ağ bağlantısını zorla aktifleştir
  */
-async function performSessionRecovery(): Promise<boolean> {
-  console.log("[ForegroundOrchestrator] 🔐 Session recovery başlıyor...");
+async function bridgeKickstartPing(): Promise<void> {
+  console.log("[ForegroundOrchestrator] 📡 Bridge Kickstart Ping gönderiliyor...");
   
   try {
-    // Önce mevcut session'ı kontrol et
-    const { data: { session } } = await supabase.auth.getSession();
+    // Çok basit ve hızlı bir RPC çağrısı - sadece network'ü uyandırmak için
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s max
     
-    if (session?.access_token) {
-      console.log("[ForegroundOrchestrator] ✅ Session zaten aktif");
-      return true;
-    }
+    await supabase.rpc("get_server_time");
     
-    // Storage'dan yükle
-    const stored = await loadSessionFromStorage();
-    
-    if (!stored?.refresh_token) {
-      console.log("[ForegroundOrchestrator] ⚠️ Storage'da session yok - login gerekli");
-      return false;
-    }
-    
-    // Token refresh
-    console.log("[ForegroundOrchestrator] 🔄 Token refresh yapılıyor...");
-    const { data, error } = await supabase.auth.refreshSession({
-      refresh_token: stored.refresh_token,
-    });
-    
-    if (error) {
-      console.error("[ForegroundOrchestrator] ❌ Refresh hatası:", error.message);
-      return false;
-    }
-    
-    if (data?.session) {
-      await saveSessionToStorage(data.session);
-      console.log("[ForegroundOrchestrator] ✅ Session yenilendi!");
-      return true;
-    }
-    
-    return false;
+    clearTimeout(timeoutId);
+    console.log("[ForegroundOrchestrator] ✅ Bridge Kickstart başarılı - network aktif");
   } catch (e: any) {
-    console.error("[ForegroundOrchestrator] ❌ Session recovery hatası:", e);
-    return false;
+    // Hata olsa bile sorun değil - amaç sadece network'ü uyandırmak
+    console.log("[ForegroundOrchestrator] ⚠️ Bridge Kickstart ping hata (beklenen):", e?.message);
   }
 }
 
 /**
- * ADIM 3: Profile Fetch
+ * Kademeli foreground uyanışını başlat
  */
-async function performProfileFetch(userId: string): Promise<boolean> {
-  console.log("[ForegroundOrchestrator] 👤 Profile fetch başlıyor...");
-  
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, username")
-      .eq("id", userId)
-      .single();
-    
-    if (error) {
-      console.error("[ForegroundOrchestrator] ❌ Profile fetch hatası:", error.message);
-      return false;
-    }
-    
-    if (data) {
-      console.log("[ForegroundOrchestrator] ✅ Profile yüklendi:", data.username);
-      return true;
-    }
-    
-    return false;
-  } catch (e: any) {
-    console.error("[ForegroundOrchestrator] ❌ Profile fetch exception:", e);
-    return false;
-  }
-}
-
-/**
- * 🚀 ANA FONKSİYON: Sequential Cold-Start Simulation
- * 
- * Arka plandan dönüşte cold start sırasını taklit eder.
- * Kullanıcı aynı sayfada kalır, loading screen GÖSTERMEZ.
- */
-export async function startSequentialForegroundRecovery(callbacks: OrchestrationCallbacks): Promise<void> {
-  // Zaten çalışıyorsa bekle
+export async function startForegroundOrchestration(callbacks: OrchestrationCallbacks): Promise<void> {
   if (isOrchestrating) {
-    console.log("[ForegroundOrchestrator] ⏳ Zaten çalışıyor, atlanıyor...");
-    return;
+    console.log("[ForegroundOrchestrator] ⏳ Zaten çalışıyor, önce temizleniyor...");
+    abortAllPendingForegroundTasks();
   }
   
-  console.log("[ForegroundOrchestrator] 🚀 === SEQUENTIAL RECOVERY BAŞLIYOR ===");
+  console.log("[ForegroundOrchestrator] 🚀 Kademeli uyanış başlıyor...");
   isOrchestrating = true;
   
-  // Yeni AbortController
+  // Yeni AbortController oluştur
   globalForegroundAbortController = new AbortController();
   
-  try {
-    // ═══════════════════════════════════════════════════════════
-    // ADIM 1: TEMİZLİK
-    // ═══════════════════════════════════════════════════════════
-    console.log("[ForegroundOrchestrator] 📍 ADIM 1: Temizlik");
-    callbacks.onCleanupStart?.();
+  // 🔧 NOT: autoRefreshToken artık TRUE - stopAutoRefresh çağırmıyoruz!
+  // Supabase kendi token refresh'ini yönetsin
+  
+  // T+0ms: UI hazırlığı + Bridge Kickstart Ping (async, bloklama yok)
+  const t0 = setTimeout(() => {
+    console.log("[ForegroundOrchestrator] T+0ms: UI hazırlığı + Bridge Kickstart");
+    callbacks.onUIReady?.();
     
-    // Kayıtlı cleanup'ları çağır (subscription'ları kapat)
-    registeredCleanupFunctions.forEach(cleanup => {
-      try {
-        cleanup();
-      } catch (e) {
-        console.warn("[ForegroundOrchestrator] Cleanup hatası:", e);
-      }
-    });
-    
-    // Kısa bekleme - cleanup'ların tamamlanması için
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // ═══════════════════════════════════════════════════════════
-    // ADIM 2: SESSION RECOVERY (BEKLE!)
-    // ═══════════════════════════════════════════════════════════
-    console.log("[ForegroundOrchestrator] 📍 ADIM 2: Session Recovery");
-    callbacks.onSessionRecoveryStart?.();
-    
-    const sessionSuccess = await performSessionRecovery();
-    callbacks.onSessionRecoveryComplete?.(sessionSuccess);
-    
-    if (!sessionSuccess) {
-      console.log("[ForegroundOrchestrator] ⚠️ Session recovery başarısız - akış durduruluyor");
-      isOrchestrating = false;
-      callbacks.onError?.("Session recovery failed");
-      return;
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // ADIM 3: PROFILE FETCH (BEKLE!)
-    // ═══════════════════════════════════════════════════════════
-    console.log("[ForegroundOrchestrator] 📍 ADIM 3: Profile Fetch");
-    callbacks.onProfileFetchStart?.();
-    
-    // Session'dan user ID al
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-    
-    if (!userId) {
-      console.log("[ForegroundOrchestrator] ⚠️ User ID bulunamadı");
-      isOrchestrating = false;
-      callbacks.onError?.("No user ID");
-      return;
-    }
-    
-    const profileSuccess = await performProfileFetch(userId);
-    callbacks.onProfileFetchComplete?.(profileSuccess);
-    
-    // Profile başarısız olsa bile devam et - subscription'ları açalım
-    if (!profileSuccess) {
-      console.log("[ForegroundOrchestrator] ⚠️ Profile fetch başarısız ama devam ediliyor");
-    }
-    
-    // ═══════════════════════════════════════════════════════════
-    // ADIM 4: SUBSCRIPTION'LAR AÇILACAK
-    // ═══════════════════════════════════════════════════════════
-    console.log("[ForegroundOrchestrator] 📍 ADIM 4: Subscription'lar hazır");
-    callbacks.onSubscriptionsReady?.();
-    
-    // 🔔 Tüm dinleyicilere "recovery tamamlandı" sinyali gönder
-    notifyRecoveryComplete();
-    
-    // Kısa bekleme - subscription'ların kurulması için
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // ═══════════════════════════════════════════════════════════
-    // TAMAMLANDI
-    // ═══════════════════════════════════════════════════════════
-    console.log("[ForegroundOrchestrator] ✅ === SEQUENTIAL RECOVERY TAMAMLANDI ===");
+    // 🆕 Bridge Kickstart: Network soketlerini uyandır (async)
+    bridgeKickstartPing();
+  }, 0);
+  orchestratorTimeouts.push(t0);
+  
+  // T+400ms: Auth/Session recovery
+  const t400 = setTimeout(() => {
+    console.log("[ForegroundOrchestrator] T+400ms: Auth recovery");
+    callbacks.onAuthRecovery?.();
+  }, 400);
+  orchestratorTimeouts.push(t400);
+  
+  // T+1000ms: ServerTime sync
+  const t1000 = setTimeout(() => {
+    console.log("[ForegroundOrchestrator] T+1000ms: Time sync");
+    callbacks.onTimeSync?.();
+  }, 1000);
+  orchestratorTimeouts.push(t1000);
+  
+  // T+1800ms: Global veri tazeleme
+  const t1800 = setTimeout(() => {
+    console.log("[ForegroundOrchestrator] T+1800ms: Data refresh");
+    callbacks.onDataRefresh?.();
     isOrchestrating = false;
     callbacks.onComplete?.();
-    
-  } catch (e: any) {
-    console.error("[ForegroundOrchestrator] ❌ Recovery hatası:", e);
-    isOrchestrating = false;
-    callbacks.onError?.(e.message || "Unknown error");
-  }
-}
-
-/**
- * ESKİ FONKSİYON - Geriye uyumluluk için (deprecated)
- * Yeni kod startSequentialForegroundRecovery kullanmalı
- */
-export async function startForegroundOrchestration(callbacks: {
-  onUIReady?: () => void;
-  onAuthRecovery?: () => void;
-  onTimeSync?: () => void;
-  onDataRefresh?: () => void;
-  onComplete?: () => void;
-  onBridgeHealthFail?: () => void;
-}): Promise<void> {
-  console.log("[ForegroundOrchestrator] ⚠️ Eski API kullanılıyor - Sequential Recovery'e yönlendiriliyor");
+  }, 1800);
+  orchestratorTimeouts.push(t1800);
   
-  await startSequentialForegroundRecovery({
-    onSessionRecoveryStart: callbacks.onAuthRecovery,
-    onSubscriptionsReady: callbacks.onDataRefresh,
-    onComplete: callbacks.onComplete,
-    onError: () => callbacks.onBridgeHealthFail?.(),
-  });
+  // 🔧 Bridge Sağlık Kontrolü: 3 saniye sonra hala veri yüklenememişse
+  const bridgeHealthCheck = setTimeout(() => {
+    if (isOrchestrating) {
+      console.log("[ForegroundOrchestrator] ⚠️ 3sn timeout - Bridge health fail!");
+      isOrchestrating = false;
+      callbacks.onBridgeHealthFail?.();
+    }
+  }, 3000);
+  orchestratorTimeouts.push(bridgeHealthCheck);
 }
 
 /**
@@ -325,11 +147,4 @@ export async function startForegroundOrchestration(callbacks: {
  */
 export function isOrchestrationComplete(): boolean {
   return !isOrchestrating;
-}
-
-/**
- * Orchestration çalışıyor mu?
- */
-export function isOrchestrationRunning(): boolean {
-  return isOrchestrating;
 }

@@ -5,10 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 import { getIsAppInForeground } from "./useAppForegroundState";
 import { getActivePrivateChats } from "@/utils/notifications";
-import { registerForegroundCleanup, subscribeToRecoveryComplete } from "@/utils/foregroundOrchestrator";
 
 export function useChatNotifications() {
   const { user } = useAuth();
@@ -17,10 +15,11 @@ export function useChatNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
   
-  // Refs
+  // 🔥 Subscription guard - aynı user için tekrar oluşturma
+  const subscriptionUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<any>(null);
+  // navigate'i ref'te tut - dependency'den çıkar
   const navigateRef = useRef(navigate);
-  const isMountedRef = useRef(true);
   navigateRef.current = navigate;
 
   const loadUnreadMessages = async () => {
@@ -64,7 +63,7 @@ export function useChatNotifications() {
       .eq("recipient_id", user.id)
       .eq("is_read", false);
 
-    if (!error && isMountedRef.current) {
+    if (!error) {
       setUnreadCount(0);
     }
   };
@@ -72,9 +71,7 @@ export function useChatNotifications() {
   const markAllAsRead = async () => {
     await markPrivateMessagesAsRead();
     await markGlobalMessagesAsRead();
-    if (isMountedRef.current) {
-      setGlobalMentionCount(0);
-    }
+    setGlobalMentionCount(0);
   };
 
   const markGlobalMessagesAsRead = async () => {
@@ -86,22 +83,17 @@ export function useChatNotifications() {
       .eq("type", "mention")
       .eq("is_read", false);
 
-    if (isMountedRef.current) {
-      setGlobalMentionCount(0);
-    }
+    setGlobalMentionCount(0);
   };
 
   const refreshUnreadCounts = useCallback(async () => {
-    if (!isMountedRef.current) return;
     const privateCount = await loadUnreadMessages();
     const mentionCount = await loadGlobalMentions();
-    if (isMountedRef.current) {
-      setUnreadCount(privateCount);
-      setGlobalMentionCount(mentionCount);
-    }
+    setUnreadCount(privateCount);
+    setGlobalMentionCount(mentionCount);
   }, [user?.id, profile?.username]);
 
-  // Uygulama içi bildirim gösterme
+  // Uygulama içi bildirim gösterme - ref kullan
   const showInAppNotification = useCallback(
     (title: string, description: string, navigateTo?: string) => {
       if (!getIsAppInForeground()) {
@@ -120,26 +112,27 @@ export function useChatNotifications() {
         ) : undefined,
       });
     },
-    [],
+    [], // 🔥 Boş dependency - navigateRef kullandığımız için
   );
 
-  // 🔥 Subscription'ı kapat
-  const closeSubscription = useCallback(() => {
-    console.log("[ChatNotif] 🧹 Subscription kapatılıyor...");
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+  // --- REAL-TIME LISTENER ---
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
+    if (subscriptionUserIdRef.current === user.id && channelRef.current) {
+      console.log("[ChatNotif] ⏭️ Subscription zaten aktif, atlanıyor...");
+      refreshUnreadCounts(); // Sadece count'ları yenile
+      return;
     }
-  }, []);
 
-  // 🔥 Subscription'ı aç
-  const openSubscription = useCallback(() => {
-    if (!user?.id || channelRef.current) return;
+    console.log("[ChatNotif] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
+    subscriptionUserIdRef.current = user.id;
 
-    console.log("[ChatNotif] 🔌 Subscription açılıyor:", user.id.slice(-8));
+    refreshUnreadCounts();
 
     const channel = supabase
-      .channel(`notifications-channel-${user.id}-${Date.now()}`)
+      .channel("notifications-channel")
       .on(
         "postgres_changes",
         {
@@ -231,45 +224,13 @@ export function useChatNotifications() {
       .subscribe();
     
     channelRef.current = channel;
+
+    // Cleanup - channel'ı koruyoruz
+    return () => {
+      // Channel korunuyor, sadece log
+      console.log("[ChatNotif] Cleanup - channel korunuyor");
+    };
   }, [user?.id, refreshUnreadCounts, showInAppNotification]);
-
-  // Ana effect
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    if (!user?.id) return;
-
-    // İlk yükleme
-    refreshUnreadCounts();
-
-    // Native platformda orchestrator'a kayıt ol
-    if (Capacitor.isNativePlatform()) {
-      const unregisterCleanup = registerForegroundCleanup(closeSubscription);
-      
-      const unsubscribeRecovery = subscribeToRecoveryComplete(() => {
-        console.log("[ChatNotif] 🔄 Recovery complete - subscription yeniden açılıyor");
-        openSubscription();
-        refreshUnreadCounts();
-      });
-
-      openSubscription();
-
-      return () => {
-        isMountedRef.current = false;
-        unregisterCleanup();
-        unsubscribeRecovery();
-        closeSubscription();
-      };
-    } else {
-      // Web platformda normal davranış
-      openSubscription();
-
-      return () => {
-        isMountedRef.current = false;
-        closeSubscription();
-      };
-    }
-  }, [user?.id, refreshUnreadCounts, openSubscription, closeSubscription]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 

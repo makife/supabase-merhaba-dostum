@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 import { updateForegroundTime } from "@/utils/coldStartTime";
-import { startSequentialForegroundRecovery } from "@/utils/foregroundOrchestrator";
+import { BackgroundServiceManager } from "@/utils/backgroundServiceManager";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -17,104 +17,43 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
 };
 
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
+// ÖNEMLİ: Bu fonksiyon ÇOK HAFİF olmalı - hiçbir native plugin çağrısı YAPMA!
 const handleForegroundStateChange = (inForeground: boolean) => {
   const wasInBackground = !isAppInForeground;
   isAppInForeground = inForeground;
 
   console.log(`[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"}`);
 
-  if (inForeground && wasInBackground) {
-    // 🚀 ARKA PLANDAN ÖN PLANA GEÇİŞ - Sequential Recovery başlat!
-    console.log("[AppForegroundState] 🔄 Arka plandan dönüş - Sequential Recovery başlatılıyor...");
-    
-    // Native platformda sequential recovery kullan
-    if (Capacitor.isNativePlatform()) {
-      startSequentialForegroundRecovery({
-        onCleanupStart: () => {
-          console.log("[AppForegroundState] 🧹 Cleanup başladı");
-        },
-        onSessionRecoveryStart: () => {
-          console.log("[AppForegroundState] 🔐 Session recovery başladı");
-        },
-        onSessionRecoveryComplete: (success) => {
-          console.log(`[AppForegroundState] 🔐 Session recovery: ${success ? "✅" : "❌"}`);
-        },
-        onProfileFetchStart: () => {
-          console.log("[AppForegroundState] 👤 Profile fetch başladı");
-        },
-        onProfileFetchComplete: (success) => {
-          console.log(`[AppForegroundState] 👤 Profile fetch: ${success ? "✅" : "❌"}`);
-        },
-        onSubscriptionsReady: () => {
-          console.log("[AppForegroundState] 📡 Subscription'lar açılabilir");
-          // 🔔 notifyRecoveryComplete artık foregroundOrchestrator içinde çağrılıyor
-        },
-        onComplete: () => {
-          console.log("[AppForegroundState] ✅ Sequential Recovery tamamlandı!");
-          // Listener'ları bilgilendir
-          listeners.forEach((cb) => {
-            try {
-              cb(true);
-            } catch (e) {
-              console.warn(e);
-            }
-          });
-        },
-        onError: (error) => {
-          console.error("[AppForegroundState] ❌ Recovery hatası:", error);
-          // Hata olsa bile listener'ları bilgilendir
-          listeners.forEach((cb) => {
-            try {
-              cb(true);
-            } catch (e) {
-              console.warn(e);
-            }
-          });
-        }
-      });
-      
-      // Native plugin çağrılarını defer et
-      setTimeout(() => {
-        updateForegroundTime();
-      }, 0);
-      
-    } else {
-      // Web platformda eski davranış
-      listeners.forEach((cb) => {
-        try {
-          cb(true);
-        } catch (e) {
-          console.warn(e);
-        }
-      });
-      
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-      }, 0);
+  // 🔥 KRİTİK: Tüm listener'ları ÖNCE bilgilendir (senkron)
+  listeners.forEach((cb) => {
+    try {
+      cb(inForeground);
+    } catch (e) {
+      console.warn(e);
     }
-    
-  } else if (inForeground) {
-    // Zaten foreground'daydı
-    listeners.forEach((cb) => {
-      try {
-        cb(true);
-      } catch (e) {
-        console.warn(e);
+  });
+
+  // 🔥 KRİTİK: Native plugin çağrıları ve diğer async işlemler DEFER edilmeli!
+  // setTimeout(0) ile event loop'un sonraki tick'ine atıyoruz
+  // Bu sayede appStateChange callback'i hemen tamamlanıyor ve bridge bloke olmuyor
+  setTimeout(() => {
+    if (inForeground) {
+      // Ön plana geldi
+      updateForegroundTime();
+      
+      // 🔥 Service manager çağrısı DEFER edildi
+      BackgroundServiceManager.onAppForeground();
+      
+      // Reconnect event'i
+      if (wasInBackground) {
+        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
       }
-    });
-  } else {
-    // 🔙 ARKA PLANA GEÇİŞ
-    console.log("[AppForegroundState] 🔙 Arka plana geçiş");
-    
-    // Listener'ları bilgilendir
-    listeners.forEach((cb) => {
-      try {
-        cb(false);
-      } catch (e) {
-        console.warn(e);
-      }
-    });
-  }
+    } else {
+      // Arka plana geçti
+      // 🔥 Service manager çağrısı DEFER edildi
+      BackgroundServiceManager.onAppBackground();
+    }
+  }, 0);
 };
 
 // Update last_seen in database to track user activity
@@ -142,6 +81,8 @@ const initGlobalListener = () => {
     console.log("[AppForegroundState] 🔧 Native global listener kuruluyor...");
 
     App.addListener("appStateChange", ({ isActive }) => {
+      // 🔥 KRİTİK: Bu callback ÇOK HAFİF olmalı!
+      // Sadece state güncelle, HİÇBİR ağır işlem yapma!
       console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
       handleForegroundStateChange(isActive);
     })
