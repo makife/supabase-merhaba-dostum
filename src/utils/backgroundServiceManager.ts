@@ -1,60 +1,41 @@
-import { NativeRealtime } from "@/plugins/NativeRealtime";
 import { Capacitor } from "@capacitor/core";
+import { 
+  startForegroundServiceStandalone, 
+  onAppEnteredForeground, 
+  onAppEnteredBackground 
+} from "@/hooks/useForegroundService";
 
 /**
  * 🔥 Background Service Manager
- * Arka plan servisini ve 1 dakikalık zamanlayıcıyı yönetir.
  * 
- * ⚠️ KRİTİK: Bu sınıfın metodları appStateChange callback'inden çağrılıyor!
- * Native plugin çağrıları asenkron ve GÜVENLİ olmalı - hata fırlatmamalı!
+ * YENİ MANTIK:
+ * - Uygulama ÖN PLANDAYKEN → Foreground Service HER ZAMAN AÇIK
+ * - Uygulama ARKA PLANA GEÇTİĞİNDE → 60 saniyelik sayaç başlar
+ * - 60 saniye dolmadan ÖN PLANA dönerse → Sayaç iptal, FS çalışmaya devam
+ * - 60 saniye dolarsa → FS kapanır ve uygulama kill olur
  */
 
-let isServiceRunning = false;
-
 export const BackgroundServiceManager = {
-  // Uygulama ARKA PLANA geçtiğinde
-  onAppBackground: () => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    console.log("[ServiceManager] 🌑 Arka plan modu: Bildirim açılıyor");
-    
-    // 🔥 KRİTİK: Native çağrısı ASYNC ve GÜVENLİ - hata fırlatmaz
-    // Promise'i await etmiyoruz çünkü callback bloke olmamalı
-    NativeRealtime.enterBackgroundMode()
-      .then(() => {
-        isServiceRunning = true;
-        console.log("[ServiceManager] ✅ Background mode aktif");
-      })
-      .catch((e) => {
-        console.warn("[ServiceManager] ⚠️ Background mode hatası (sessiz):", e);
-      });
-  },
-
   // Uygulama ÖN PLANA geldiğinde
   onAppForeground: () => {
     if (!Capacitor.isNativePlatform()) return;
 
-    console.log("[ServiceManager] ☀️ Ön plan modu: Bildirim gizleniyor");
+    console.log("[ServiceManager] ☀️ Ön plan modu");
     
-    // 🔥 KRİTİK: Native çağrısı ASYNC ve GÜVENLİ - hata fırlatmaz
-    NativeRealtime.enterForegroundMode()
-      .then(() => {
-        isServiceRunning = false;
-        console.log("[ServiceManager] ✅ Foreground mode aktif");
-        
-        // 500ms sonra durumu kontrol et (opsiyonel)
-        setTimeout(async () => {
-          try {
-            const { state } = await NativeRealtime.getConnectionState();
-            console.log("[ServiceManager] 🔎 Bağlantı durumu:", state);
-          } catch (e) {
-            // Sessizce devam
-          }
-        }, 500);
-      })
-      .catch((e) => {
-        console.warn("[ServiceManager] ⚠️ Foreground mode hatası (sessiz):", e);
-      });
+    // Foreground service handler'ı çağır
+    onAppEnteredForeground().catch((e) => {
+      console.warn("[ServiceManager] ⚠️ Foreground handler hatası:", e);
+    });
+  },
+
+  // Uygulama ARKA PLANA geçtiğinde
+  onAppBackground: () => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    console.log("[ServiceManager] 🌙 Arka plan modu");
+    
+    // Foreground service handler'ı çağır (kill timer başlatır)
+    onAppEnteredBackground();
   },
 
   // Uygulama ilk açıldığında
@@ -63,16 +44,17 @@ export const BackgroundServiceManager = {
     
     console.log("[ServiceManager] 🚀 Başlatılıyor...");
     
-    // Cold start sonrası temizlik için ön plan modunu zorla
-    NativeRealtime.enterForegroundMode()
-      .then(() => {
-        console.log("[ServiceManager] ✅ Init tamamlandı");
-      })
-      .catch((e) => {
-        console.warn("[ServiceManager] ⚠️ Init hatası (sessiz):", e);
-      });
+    // Uygulama açıldığında hemen foreground service başlat
+    startForegroundServiceStandalone({
+      description: "🎮 Oyun aktif",
+    }).then((success) => {
+      if (success) {
+        console.log("[ServiceManager] ✅ Init: Foreground service başlatıldı");
+      } else {
+        console.warn("[ServiceManager] ⚠️ Init: Foreground service başlatılamadı");
+      }
+    }).catch((e) => {
+      console.warn("[ServiceManager] ⚠️ Init hatası:", e);
+    });
   },
-
-  // Servis durumu
-  isRunning: () => isServiceRunning,
 };
