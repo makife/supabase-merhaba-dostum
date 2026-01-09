@@ -116,11 +116,21 @@ const AppRoutes = () => {
   //useImmersiveMode();
 
   useEffect(() => {
-    const applyImmersiveMode = async () => {
+    const initializeApp = async () => {
       if (!Capacitor.isNativePlatform()) return;
       
+      // 🔥 FOREGROUND SERVICE'İ EN ÖNCE BAŞLAT!
       try {
-        // 🔊 Native Audio'yu ÖNCE ve AWAIT ile başlat - kritik!
+        const { BackgroundServiceManager } = await import("@/utils/backgroundServiceManager");
+        console.log("🔔 App: Foreground Service başlatılıyor...");
+        await BackgroundServiceManager.init();
+        console.log("✅ App: Foreground Service başlatıldı!");
+      } catch (e) {
+        console.warn("[App] Foreground Service init hatası tolere edildi:", e);
+      }
+      
+      try {
+        // 🔊 Native Audio'yu başlat
         if (isNativePlatform()) {
           console.log("🔊 App: Native Audio başlatılıyor...");
           await initNativeAudio();
@@ -143,7 +153,7 @@ const AppRoutes = () => {
       }
     };
 
-    applyImmersiveMode();
+    initializeApp();
   }, []);
 
   // İlk açılış kontrolü

@@ -1,33 +1,44 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 
 // 🔧 GLOBAL STATE - Module scope'da, tüm instance'lar paylaşıyor
 let isForegroundServiceRunning = false;
 let backgroundKillTimer: ReturnType<typeof setTimeout> | null = null;
+let isAppInitialized = false; // 🔥 Uygulama başlatıldı mı?
 
 // 🔥 Arka planda kalma süresi: 60 saniye sonra FS kapanır ve app kill olur
 const BACKGROUND_KILL_TIMEOUT_MS = 60000;
 
-// 🔧 Lazy import - sadece gerektiğinde yükle
+// 🔧 Plugin referansı - eagerly load edeceğiz
 let CapacitorForegroundService: any = null;
+let pluginLoadPromise: Promise<boolean> | null = null;
 
 const loadForegroundServicePlugin = async (): Promise<boolean> => {
   if (CapacitorForegroundService) return true;
   
-  try {
-    const module = await import("capacitor-foreground-service");
-    CapacitorForegroundService = module.CapacitorForegroundService;
-    return true;
-  } catch (error) {
-    console.warn("[ForegroundService] Plugin yüklenemedi:", error);
-    return false;
-  }
+  // Eğer zaten yükleme devam ediyorsa, aynı promise'i bekle
+  if (pluginLoadPromise) return pluginLoadPromise;
+  
+  pluginLoadPromise = (async () => {
+    try {
+      console.log("[ForegroundService] 📦 Plugin yükleniyor...");
+      const module = await import("capacitor-foreground-service");
+      CapacitorForegroundService = module.CapacitorForegroundService;
+      console.log("[ForegroundService] ✅ Plugin yüklendi");
+      return true;
+    } catch (error) {
+      console.warn("[ForegroundService] ❌ Plugin yüklenemedi:", error);
+      return false;
+    }
+  })();
+  
+  return pluginLoadPromise;
 };
 
 interface ForegroundServiceConfig {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   notificationId?: number;
   icon?: string;
 }
@@ -43,16 +54,17 @@ const clearBackgroundKillTimer = () => {
 
 // 🔧 DEBUG: FS durumunu logla
 const logFSState = (action: string) => {
-  console.log(`[ForegroundService] ${action} | running=${isForegroundServiceRunning}`);
+  console.log(`[ForegroundService] ${action} | running=${isForegroundServiceRunning} | initialized=${isAppInitialized}`);
 };
 
 // --- Standalone Fonksiyonlar (hook dışından çağrılabilir) ---
 
-export const startForegroundServiceStandalone = async (config?: Partial<ForegroundServiceConfig>): Promise<boolean> => {
+export const startForegroundServiceStandalone = async (config?: ForegroundServiceConfig): Promise<boolean> => {
   const isNative = Capacitor.isNativePlatform();
   const isAndroid = Capacitor.getPlatform() === "android";
   
   if (!isNative || !isAndroid) {
+    console.log("[ForegroundService] ⏭️ Native Android değil, atlıyorum");
     return false;
   }
   
@@ -63,7 +75,7 @@ export const startForegroundServiceStandalone = async (config?: Partial<Foregrou
 
   const loaded = await loadForegroundServicePlugin();
   if (!loaded || !CapacitorForegroundService) {
-    console.warn("[ForegroundService] Standalone: Plugin mevcut değil");
+    console.warn("[ForegroundService] ❌ Plugin mevcut değil, başlatılamıyor");
     return false;
   }
 
@@ -82,13 +94,14 @@ export const startForegroundServiceStandalone = async (config?: Partial<Foregrou
 
     return true;
   } catch (error) {
-    console.warn("[ForegroundService] Başlatma hatası (tolere):", error);
+    console.error("[ForegroundService] ❌ Başlatma hatası:", error);
     return false;
   }
 };
 
 export const stopForegroundServiceStandalone = async (): Promise<void> => {
   if (!isForegroundServiceRunning) {
+    logFSState("⏭️ Zaten durmuş, atlıyorum");
     return;
   }
   
@@ -106,9 +119,40 @@ export const stopForegroundServiceStandalone = async (): Promise<void> => {
     isForegroundServiceRunning = false;
     logFSState("✅ DURDURULDU");
   } catch (error) {
-    console.warn("[ForegroundService] Durdurma hatası (tolere):", error);
+    console.warn("[ForegroundService] ⚠️ Durdurma hatası:", error);
     isForegroundServiceRunning = false;
   }
+};
+
+// 🔥 Uygulama İLK BAŞLATILDIĞINDA çağrılır (sadece 1 kez)
+export const initForegroundService = async (): Promise<boolean> => {
+  const isAndroid = Capacitor.getPlatform() === "android";
+  if (!isAndroid) {
+    console.log("[ForegroundService] ⏭️ Android değil, init atlıyorum");
+    return false;
+  }
+  
+  if (isAppInitialized) {
+    console.log("[ForegroundService] ⏭️ Zaten initialize edilmiş, atlıyorum");
+    return true;
+  }
+  
+  console.log("[ForegroundService] 🚀 İlk başlatma...");
+  
+  // Plugin'i önceden yükle
+  await loadForegroundServicePlugin();
+  
+  // Foreground service'i başlat
+  const success = await startForegroundServiceStandalone({
+    description: "🎮 Oyun başlatılıyor...",
+  });
+  
+  if (success) {
+    isAppInitialized = true;
+    console.log("[ForegroundService] ✅ İlk başlatma tamamlandı");
+  }
+  
+  return success;
 };
 
 // 🔥 Uygulama ÖN PLANA geldiğinde çağrılır
@@ -116,12 +160,19 @@ export const onAppEnteredForeground = async (): Promise<void> => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) return;
 
+  // Uygulama henüz initialize edilmediyse, bu çağrıyı atla
+  // (init fonksiyonu bunu halledecek)
+  if (!isAppInitialized) {
+    console.log("[ForegroundService] ⏭️ Henüz init edilmedi, foreground atlıyorum");
+    return;
+  }
+
   console.log("[ForegroundService] ☀️ Ön plana gelindi");
   
   // Kill timer'ı iptal et
   clearBackgroundKillTimer();
   
-  // FS zaten çalışıyorsa devam et, çalışmıyorsa başlat
+  // FS çalışmıyorsa başlat
   if (!isForegroundServiceRunning) {
     await startForegroundServiceStandalone({
       description: "🎮 Oyun aktif",
@@ -133,6 +184,12 @@ export const onAppEnteredForeground = async (): Promise<void> => {
 export const onAppEnteredBackground = (): void => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) return;
+
+  // Uygulama henüz initialize edilmediyse, bu çağrıyı atla
+  if (!isAppInitialized) {
+    console.log("[ForegroundService] ⏭️ Henüz init edilmedi, background atlıyorum");
+    return;
+  }
 
   console.log("[ForegroundService] 🌙 Arka plana geçildi");
   
@@ -150,7 +207,7 @@ export const onAppEnteredBackground = (): void => {
     try {
       await App.exitApp();
     } catch (e) {
-      console.warn("[ForegroundService] App.exitApp hatası:", e);
+      console.warn("[ForegroundService] ⚠️ App.exitApp hatası:", e);
     }
   }, BACKGROUND_KILL_TIMEOUT_MS);
   
@@ -166,7 +223,7 @@ export const useForegroundService = () => {
   const isAndroid = Capacitor.getPlatform() === "android";
 
   const startForegroundService = useCallback(
-    async (config?: Partial<ForegroundServiceConfig>) => {
+    async (config?: ForegroundServiceConfig) => {
       return startForegroundServiceStandalone(config);
     },
     [],
