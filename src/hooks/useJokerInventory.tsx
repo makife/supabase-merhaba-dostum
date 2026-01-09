@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,6 +16,11 @@ export const useJokerInventory = () => {
     senYaz: 0,
   });
   const [loading, setLoading] = useState(true);
+  
+  // 🔥 Subscription guard - aynı user için tekrar oluşturma
+  const subscriptionUserIdRef = useRef<string | null>(null);
+  const channelRef = useRef<any>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadJokers = useCallback(async () => {
     if (!user) return;
@@ -25,7 +30,6 @@ export const useJokerInventory = () => {
         .from("user_inventory")
         .select("item_type, quantity")
         .eq("user_id", user.id)
-        // BURAYA 'joker_fisilida' (hatalı versiyonu) da ekledik ki geçmiş kayıplar görünsün
         .in("item_type", [
           "degistir",
           "joker_degistir",
@@ -47,12 +51,10 @@ export const useJokerInventory = () => {
       const keyMap: Record<string, keyof JokerInventory> = {
         degistir: "degistir",
         joker_degistir: "degistir",
-
         fisilda: "fisilida",
         fisilida: "fisilida",
         joker_fisildi: "fisilida",
         joker_fisilida: "fisilida",
-
         senYaz: "senYaz",
         senyaz: "senYaz",
         joker_senyaz: "senYaz",
@@ -71,11 +73,21 @@ export const useJokerInventory = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]); // 🔥 Sadece user.id'ye bağlı
 
-  // Realtime Listener (Markette satın alınanı Ana Sayfada görmek için ŞART)
+  // Realtime Listener
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+
+    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
+    if (subscriptionUserIdRef.current === user.id && channelRef.current) {
+      console.log("[Joker] ⏭️ Subscription zaten aktif, atlanıyor...");
+      loadJokers(); // Sadece veriyi yenile
+      return;
+    }
+
+    console.log("[Joker] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
+    subscriptionUserIdRef.current = user.id;
 
     // İlk yükleme
     loadJokers();
@@ -86,7 +98,7 @@ export const useJokerInventory = () => {
       .on(
         "postgres_changes",
         {
-          event: "*", // Ekleme, silme veya güncelleme
+          event: "*",
           schema: "public",
           table: "user_inventory",
           filter: `user_id=eq.${user.id}`,
@@ -100,20 +112,20 @@ export const useJokerInventory = () => {
         console.log(`[Joker] 📡 Channel status: ${status}`);
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.log("[Joker] ⚠️ Channel error, 3 saniye sonra yeniden denenecek...");
-          setTimeout(() => {
-            loadJokers();
-          }, 3000);
+          setTimeout(() => loadJokers(), 3000);
         }
       });
+    
+    channelRef.current = channel;
 
-    // Supabase reconnect olduğunda joker'ları yeniden yükle
+    // Supabase reconnect
     const handleReconnect = () => {
       console.log("🔄 [Joker] Reconnect - jokerler yeniden yükleniyor...");
       loadJokers();
     };
     window.addEventListener("supabase-reconnected", handleReconnect);
 
-    // Visibility change - sayfa görünür olduğunda kontrol et
+    // Visibility change
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         console.log("[Joker] 👁️ Sayfa görünür, jokerler yeniden yükleniyor...");
@@ -122,21 +134,19 @@ export const useJokerInventory = () => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // 🆕 Fallback polling - realtime çalışmasa bile 15 saniyede bir kontrol et
-    const pollingInterval = setInterval(() => {
+    // Fallback polling
+    pollingRef.current = setInterval(() => {
       console.log("[Joker] ⏱️ Polling - jokerler kontrol ediliyor...");
       loadJokers();
     }, 15000);
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel); - bağlantıyı öldürüyordu
-      console.log("⚠️ [Joker] Cleanup ATLANYOR (bağlantı koruması)");
+      // Channel'ı koruyoruz ama event listener'ları temizliyoruz
       window.removeEventListener("supabase-reconnected", handleReconnect);
       document.removeEventListener("visibilitychange", handleVisibility);
-      clearInterval(pollingInterval);
+      if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [user, loadJokers]);
+  }, [user?.id, loadJokers]);
 
   const useJoker = async (jokerType: keyof JokerInventory) => {
     if (!user || jokers[jokerType] <= 0) return false;

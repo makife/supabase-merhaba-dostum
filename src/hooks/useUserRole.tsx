@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,6 +8,10 @@ export function useUserRole() {
   const { user } = useAuth();
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
+  
+  // 🔥 Subscription guard - aynı user için tekrar oluşturma
+  const subscriptionUserIdRef = useRef<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -15,6 +19,15 @@ export function useUserRole() {
       setLoading(false);
       return;
     }
+
+    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
+    if (subscriptionUserIdRef.current === user.id && channelRef.current) {
+      console.log("[useUserRole] ⏭️ Subscription zaten aktif, atlanıyor...");
+      return;
+    }
+
+    console.log("[useUserRole] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
+    subscriptionUserIdRef.current = user.id;
 
     const fetchUserRole = async () => {
       try {
@@ -61,11 +74,12 @@ export function useUserRole() {
         }
       )
       .subscribe();
+    
+    channelRef.current = channel;
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
+    // Cleanup - channel'ı koruyoruz
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
-      console.log("⚠️ [useUserRole] Cleanup ATLANYOR (bağlantı koruması)");
+      console.log("[useUserRole] Cleanup - channel korunuyor");
     };
   }, [user?.id]);
 

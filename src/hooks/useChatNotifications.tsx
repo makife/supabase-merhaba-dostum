@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast"; // Projende hangisi varsa: "sonner" veya "use-toast"
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
@@ -14,6 +14,13 @@ export function useChatNotifications() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
+  
+  // 🔥 Subscription guard - aynı user için tekrar oluşturma
+  const subscriptionUserIdRef = useRef<string | null>(null);
+  const channelRef = useRef<any>(null);
+  // navigate'i ref'te tut - dependency'den çıkar
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   const loadUnreadMessages = async () => {
     if (!user?.id) return 0;
@@ -79,14 +86,14 @@ export function useChatNotifications() {
     setGlobalMentionCount(0);
   };
 
-  const refreshUnreadCounts = async () => {
+  const refreshUnreadCounts = useCallback(async () => {
     const privateCount = await loadUnreadMessages();
     const mentionCount = await loadGlobalMentions();
     setUnreadCount(privateCount);
     setGlobalMentionCount(mentionCount);
-  };
+  }, [user?.id, profile?.username]);
 
-  // Uygulama içi bildirim gösterme (Sadece app öndeyse)
+  // Uygulama içi bildirim gösterme - ref kullan
   const showInAppNotification = useCallback(
     (title: string, description: string, navigateTo?: string) => {
       if (!getIsAppInForeground()) {
@@ -99,24 +106,33 @@ export function useChatNotifications() {
         description,
         duration: 5000,
         action: navigateTo ? (
-          <Button variant="outline" size="sm" onClick={() => navigate(navigateTo)}>
+          <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
             Görüntüle
           </Button>
         ) : undefined,
       });
     },
-    [navigate],
+    [], // 🔥 Boş dependency - navigateRef kullandığımız için
   );
 
   // --- REAL-TIME LISTENER ---
   useEffect(() => {
     if (!user?.id) return;
 
+    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
+    if (subscriptionUserIdRef.current === user.id && channelRef.current) {
+      console.log("[ChatNotif] ⏭️ Subscription zaten aktif, atlanıyor...");
+      refreshUnreadCounts(); // Sadece count'ları yenile
+      return;
+    }
+
+    console.log("[ChatNotif] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
+    subscriptionUserIdRef.current = user.id;
+
     refreshUnreadCounts();
 
     const channel = supabase
       .channel("notifications-channel")
-      // 1. ÖZEL MESAJLARI DİNLE
       .on(
         "postgres_changes",
         {
@@ -133,18 +149,13 @@ export function useChatNotifications() {
 
           refreshUnreadCounts();
 
-          // 🔴 AKTİF SOHBET KONTROLÜ - Eğer kullanıcı zaten bu sohbetteyse toast gösterme
           const activeChats = getActivePrivateChats();
-          console.log("📋 [ChatNotif] Aktif sohbetler:", activeChats, "Gelen mesajın chat_id:", newMsg.chat_id);
-          
           const isInActiveChat = activeChats.includes(newMsg.chat_id);
           
           if (isInActiveChat) {
-            console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor:", newMsg.chat_id);
-            return; // Toast gösterme, sadece unread count güncellendi
+            console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
+            return;
           }
-
-          console.log("🔔 [ChatNotif] Toast gösteriliyor...");
 
           const { data: senderProfile } = await supabase
             .from("profiles")
@@ -153,11 +164,9 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
-
           showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
         },
       )
-      // 2. GENEL BİLDİRİMLERİ DİNLE (Notifications Tablosu)
       .on(
         "postgres_changes",
         {
@@ -170,19 +179,16 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
-          // Mention (Etiketlenme)
           if (notif.type === "mention") {
             refreshUnreadCounts();
             showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
           }
 
-          // Özel Mesaj (Notifications tablosu üzerinden gelirse)
           if (notif.type === "message") {
             refreshUnreadCounts();
             showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
           }
 
-          // Rakip Oyundan Ayrıldı
           if (notif.type === "tournament_opponent_left") {
             toast({
               title: "🏆 Hükmen Galibiyet!",
@@ -191,14 +197,13 @@ export function useChatNotifications() {
             });
           }
 
-          // 🏆 TURNUVA SONA ERDİ (Buraya ekledik)
           if (notif.type === "tournament_end") {
             toast({
               title: "🏆 Turnuva Sona Erdi!",
               description: notif.message,
-              duration: 8000, // Kutlama için biraz uzun kalsın
+              duration: 8000,
               action: (
-                <Button variant="outline" size="sm" onClick={() => navigate(`/tournament-bracket/${notif.related_id}`)}>
+                <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
                   Sonuçlar
                 </Button>
               ),
@@ -217,13 +222,15 @@ export function useChatNotifications() {
         refreshUnreadCounts,
       )
       .subscribe();
+    
+    channelRef.current = channel;
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
+    // Cleanup - channel'ı koruyoruz
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
-      console.log("⚠️ [useChatNotifications] Cleanup ATLANYOR (bağlantı koruması)");
+      // Channel korunuyor, sadece log
+      console.log("[ChatNotif] Cleanup - channel korunuyor");
     };
-  }, [user?.id, profile?.username, navigate, showInAppNotification]);
+  }, [user?.id, refreshUnreadCounts, showInAppNotification]);
 
   const totalNotifications = unreadCount + globalMentionCount;
 
