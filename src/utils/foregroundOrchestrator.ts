@@ -37,6 +37,9 @@ type OrchestrationCallbacks = {
 type CleanupFunction = () => void;
 const registeredCleanupFunctions: CleanupFunction[] = [];
 
+// Recovery tamamlandığında çağrılacak callback'ler
+const recoveryCompleteListeners: Set<() => void> = new Set();
+
 /**
  * Hook'lar kendi cleanup fonksiyonlarını buraya kaydetsin
  * Örn: useJokerInventory, useChatNotifications
@@ -51,6 +54,29 @@ export function registerForegroundCleanup(cleanupFn: CleanupFunction): () => voi
       registeredCleanupFunctions.splice(index, 1);
     }
   };
+}
+
+/**
+ * Sequential recovery tamamlandığında bildirim al
+ * Hook'lar subscription'larını bu event'te açabilir
+ */
+export function subscribeToRecoveryComplete(callback: () => void): () => void {
+  recoveryCompleteListeners.add(callback);
+  return () => recoveryCompleteListeners.delete(callback);
+}
+
+/**
+ * Recovery tamamlandığında tüm listener'ları bilgilendir
+ */
+function notifyRecoveryComplete(): void {
+  console.log(`[ForegroundOrchestrator] 🔔 Recovery complete - ${recoveryCompleteListeners.size} listener bilgilendiriliyor`);
+  recoveryCompleteListeners.forEach((cb) => {
+    try {
+      cb();
+    } catch (e) {
+      console.warn("[ForegroundOrchestrator] Recovery listener hatası:", e);
+    }
+  });
 }
 
 /**
@@ -251,6 +277,9 @@ export async function startSequentialForegroundRecovery(callbacks: Orchestration
     // ═══════════════════════════════════════════════════════════
     console.log("[ForegroundOrchestrator] 📍 ADIM 4: Subscription'lar hazır");
     callbacks.onSubscriptionsReady?.();
+    
+    // 🔔 Tüm dinleyicilere "recovery tamamlandı" sinyali gönder
+    notifyRecoveryComplete();
     
     // Kısa bekleme - subscription'ların kurulması için
     await new Promise(resolve => setTimeout(resolve, 200));

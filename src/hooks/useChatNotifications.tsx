@@ -6,9 +6,9 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { getIsAppInForeground, subscribeToRecoveryComplete } from "./useAppForegroundState";
+import { getIsAppInForeground } from "./useAppForegroundState";
 import { getActivePrivateChats } from "@/utils/notifications";
-import { registerForegroundCleanup } from "@/utils/foregroundOrchestrator";
+import { registerForegroundCleanup, subscribeToRecoveryComplete } from "@/utils/foregroundOrchestrator";
 
 export function useChatNotifications() {
   const { user } = useAuth();
