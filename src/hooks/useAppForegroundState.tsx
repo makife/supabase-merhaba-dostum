@@ -9,37 +9,11 @@ import { startSequentialForegroundRecovery } from "@/utils/foregroundOrchestrato
 let isAppInForeground = true;
 const listeners: Set<(inForeground: boolean) => void> = new Set();
 
-// Sequential recovery tamamlandığında çağrılacak listener'lar
-const recoveryCompleteListeners: Set<() => void> = new Set();
-
 export const getIsAppInForeground = () => isAppInForeground;
 
 export const subscribeToForegroundState = (callback: (inForeground: boolean) => void) => {
   listeners.add(callback);
   return () => listeners.delete(callback);
-};
-
-/**
- * Sequential recovery tamamlandığında bildirim al
- * Hook'lar subscription'larını bu event'te açabilir
- */
-export const subscribeToRecoveryComplete = (callback: () => void) => {
-  recoveryCompleteListeners.add(callback);
-  return () => recoveryCompleteListeners.delete(callback);
-};
-
-/**
- * Recovery tamamlandığında tüm listener'ları bilgilendir
- */
-const notifyRecoveryComplete = () => {
-  console.log(`[AppForegroundState] 🔔 Recovery complete - ${recoveryCompleteListeners.size} listener bilgilendiriliyor`);
-  recoveryCompleteListeners.forEach((cb) => {
-    try {
-      cb();
-    } catch (e) {
-      console.warn("[AppForegroundState] Recovery listener hatası:", e);
-    }
-  });
 };
 
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
@@ -73,8 +47,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
         },
         onSubscriptionsReady: () => {
           console.log("[AppForegroundState] 📡 Subscription'lar açılabilir");
-          // 🔔 Tüm hook'lara "subscription açabilirsiniz" sinyali gönder
-          notifyRecoveryComplete();
+          // 🔔 notifyRecoveryComplete artık foregroundOrchestrator içinde çağrılıyor
         },
         onComplete: () => {
           console.log("[AppForegroundState] ✅ Sequential Recovery tamamlandı!");

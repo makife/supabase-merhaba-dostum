@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { 
-  registerForegroundCleanup 
+  registerForegroundCleanup,
+  subscribeToRecoveryComplete
 } from "@/utils/foregroundOrchestrator";
-import { subscribeToRecoveryComplete } from "@/hooks/useAppForegroundState";
 
 interface JokerInventory {
   degistir: number;

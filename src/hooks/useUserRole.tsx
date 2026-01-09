@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from "@capacitor/core";
-import { registerForegroundCleanup } from "@/utils/foregroundOrchestrator";
-import { subscribeToRecoveryComplete } from "@/hooks/useAppForegroundState";
+import { registerForegroundCleanup, subscribeToRecoveryComplete } from "@/utils/foregroundOrchestrator";
 
 type UserRole = 'admin' | 'moderator' | 'user' | null;
 

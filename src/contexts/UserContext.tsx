@@ -3,7 +3,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
-
+import { Capacitor } from "@capacitor/core";
+import { subscribeToRecoveryComplete, registerForegroundCleanup } from "@/utils/foregroundOrchestrator";
 interface OnlineUser {
   id: string;
   username: string;
@@ -150,7 +151,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, [isNative]);
 
-  // 2. JS SDK BAĞLANTI DURUMUNU İZLE
+  // 2. JS SDK BAĞLANTI DURUMUNU İZLE + SEQUENTIAL RECOVERY LISTENER
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -159,10 +160,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           return;
         }
 
-        const isNative =
-          typeof (window as any).Capacitor !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
+        const isNativePlatform = Capacitor.isNativePlatform();
 
-        if (isNative) {
+        if (isNativePlatform) {
           setIsSystemConnected(navigator.onLine);
           return;
         }
@@ -208,48 +208,42 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     const handleVisibility = () => {
+      // Native platformda visibilitychange'i ATLA - sequential recovery hallediyor
+      if (Capacitor.isNativePlatform()) {
+        console.log("👁️ [UserContext] Native - visibilitychange atlanıyor (sequential recovery kullanılıyor)");
+        return;
+      }
+      
       if (document.visibilityState === "visible") {
-        console.log("👁️ [UserContext] Sayfa görünür - flag reset + profil yeniden yükleniyor...");
+        console.log("👁️ [UserContext] Web - Sayfa görünür - flag reset + profil yeniden yükleniyor...");
         isRefreshingCreditsRef.current = false;
         setIsSystemConnected(navigator.onLine);
         refreshProfile(true);
       }
     };
 
-    const handleForeground = async () => {
-      console.log("📱 [UserContext] App foreground - flag reset + profil yenileme bekleniyor...");
-      isRefreshingCreditsRef.current = false;
-      setIsSystemConnected(true);
-
-      let attempts = 0;
-      const maxAttempts = 15;
-
-      const waitForSession = async (): Promise<void> => {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          console.log("📱 [UserContext] ✅ Session hazır, profil yenileniyor:", session.user.email);
-          refreshProfile(true);
-          return;
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          await new Promise((r) => setTimeout(r, 200));
-          return waitForSession();
-        } else {
-          console.log("📱 [UserContext] ⚠️ Session bulunamadı (3sn timeout)");
-        }
-      };
-
-      await waitForSession();
-    };
+    // 🔥 NATIVE: Sequential Recovery tamamlandığında profil yenile
+    let unsubscribeRecovery: (() => void) | null = null;
+    
+    if (Capacitor.isNativePlatform()) {
+      console.log("📱 [UserContext] Native - Sequential Recovery listener kuruluyor...");
+      
+      unsubscribeRecovery = subscribeToRecoveryComplete(() => {
+        console.log("🔄 [UserContext] 🚀 Sequential Recovery tamamlandı - profil ZORLA yenileniyor...");
+        isRefreshingCreditsRef.current = false;
+        setIsSystemConnected(true);
+        
+        // 🔥 COOLDOWN BYPASS: lastRefreshTimeRef'i sıfırla ki refreshProfile çalışsın
+        lastRefreshTimeRef.current = 0;
+        isFetchingProfileRef.current = false;
+        
+        refreshProfile(true);
+      });
+    }
 
     window.addEventListener("supabase-reconnected", handleReconnect);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    window.addEventListener("appForeground", handleForeground);
     document.addEventListener("visibilitychange", handleVisibility);
 
     const interval = setInterval(checkConnection, 30000);
@@ -258,9 +252,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("appForeground", handleForeground);
       document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
+      
+      // Sequential recovery listener cleanup
+      if (unsubscribeRecovery) {
+        unsubscribeRecovery();
+      }
     };
   }, []);
 
