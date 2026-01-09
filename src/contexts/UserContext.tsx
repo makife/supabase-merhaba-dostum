@@ -233,12 +233,34 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     // App foreground event (native)
-    const handleForeground = () => {
-      console.log("📱 [UserContext] App foreground - flag reset + profil yeniden yükleniyor...");
+    const handleForeground = async () => {
+      console.log("📱 [UserContext] App foreground - flag reset + profil yenileme bekleniyor...");
       // 🔥 Flag'leri resetle - foreground recovery için kritik
       isRefreshingCreditsRef.current = false;
       setIsSystemConnected(true);
-      refreshProfile(true);
+      
+      // 🔥 KRİTİK: Session recover olmasını bekle (max 3 saniye)
+      let attempts = 0;
+      const maxAttempts = 15; // 15 x 200ms = 3 saniye
+      
+      const waitForSession = async (): Promise<void> => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          console.log("📱 [UserContext] ✅ Session hazır, profil yenileniyor:", session.user.email);
+          refreshProfile(true);
+          return;
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(r => setTimeout(r, 200));
+          return waitForSession();
+        } else {
+          console.log("📱 [UserContext] ⚠️ Session bulunamadı (3sn timeout)");
+        }
+      };
+      
+      await waitForSession();
     };
 
     window.addEventListener("supabase-reconnected", handleReconnect);
