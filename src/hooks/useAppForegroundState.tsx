@@ -3,12 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 import { updateForegroundTime } from "@/utils/coldStartTime";
-import { BackgroundServiceManager } from "@/utils/backgroundServiceManager";
-import { 
-  startSequentialForegroundRecovery, 
-  abortAllPendingForegroundTasks,
-  isOrchestrationRunning 
-} from "@/utils/foregroundOrchestrator";
+import { startSequentialForegroundRecovery } from "@/utils/foregroundOrchestrator";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -108,7 +103,6 @@ const handleForegroundStateChange = (inForeground: boolean) => {
       // Native plugin çağrılarını defer et
       setTimeout(() => {
         updateForegroundTime();
-        BackgroundServiceManager.onAppForeground();
       }, 0);
       
     } else {
@@ -147,11 +141,6 @@ const handleForegroundStateChange = (inForeground: boolean) => {
         console.warn(e);
       }
     });
-    
-    // Native plugin çağrısı defer
-    setTimeout(() => {
-      BackgroundServiceManager.onAppBackground();
-    }, 0);
   }
 };
 
