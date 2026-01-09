@@ -3,7 +3,6 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 import { updateForegroundTime } from "@/utils/coldStartTime";
-import { BackgroundServiceManager } from "@/utils/backgroundServiceManager";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -14,6 +13,21 @@ export const getIsAppInForeground = () => isAppInForeground;
 export const subscribeToForegroundState = (callback: (inForeground: boolean) => void) => {
   listeners.add(callback);
   return () => listeners.delete(callback);
+};
+
+// 🔥 LAZY IMPORT - döngüsel bağımlılığı önlemek için
+let BackgroundServiceManagerRef: any = null;
+
+const getBackgroundServiceManager = async () => {
+  if (!BackgroundServiceManagerRef) {
+    try {
+      const module = await import("@/utils/backgroundServiceManager");
+      BackgroundServiceManagerRef = module.BackgroundServiceManager;
+    } catch (e) {
+      console.warn("[AppForegroundState] BackgroundServiceManager import hatası:", e);
+    }
+  }
+  return BackgroundServiceManagerRef;
 };
 
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
@@ -36,13 +50,17 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   // 🔥 KRİTİK: Native plugin çağrıları ve diğer async işlemler DEFER edilmeli!
   // setTimeout(0) ile event loop'un sonraki tick'ine atıyoruz
   // Bu sayede appStateChange callback'i hemen tamamlanıyor ve bridge bloke olmuyor
-  setTimeout(() => {
+  setTimeout(async () => {
+    const manager = await getBackgroundServiceManager();
+    
     if (inForeground) {
       // Ön plana geldi
       updateForegroundTime();
       
       // 🔥 Service manager çağrısı DEFER edildi
-      BackgroundServiceManager.onAppForeground();
+      if (manager) {
+        manager.onAppForeground();
+      }
       
       // Reconnect event'i
       if (wasInBackground) {
@@ -51,7 +69,9 @@ const handleForegroundStateChange = (inForeground: boolean) => {
     } else {
       // Arka plana geçti
       // 🔥 Service manager çağrısı DEFER edildi
-      BackgroundServiceManager.onAppBackground();
+      if (manager) {
+        manager.onAppBackground();
+      }
     }
   }, 0);
 };
