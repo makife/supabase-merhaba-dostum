@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -94,6 +94,9 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
             <Award className="w-6 h-6 text-primary" />
             Rozetler
           </DialogTitle>
+          <DialogDescription>
+            Kazanılan ve kilitli rozetlerinizi görüntüleyin
+          </DialogDescription>
         </DialogHeader>
         
         <ScrollArea className="h-[60vh] pr-4">
