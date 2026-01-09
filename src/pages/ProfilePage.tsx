@@ -455,39 +455,67 @@ const ProfilePage = () => {
     
     console.log('🔄 [ProfilePage] Resync triggered - profil verileri yeniden yükleniyor...');
     
-    const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle();
-    const tournamentStats = await fetchTournamentStats();
-    
-    if (data) {
-      const levelData = calculateLevel(data.total_score || 0);
-      const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
-
-      setViewedProfile({ avatar_url: data.avatar_url });
+    try {
+      const [profileResult, tournamentStats] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle(),
+        fetchTournamentStats()
+      ]);
       
-      setProfileData((prev) => ({
-        ...prev,
-        username: username,
-        totalGames: data.total_games || 0,
-        wins: data.wins || 0,
-        losses: data.losses || 0,
-        totalScore: data.total_score || 0,
-        winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
-        longestWord: data.longest_word || "",
-        longestWordLength: data.longest_word_length || 0,
-        currentStreak: data.win_streak || 0,
-        level: levelData.level,
-        experience: levelData.experience,
-        nextLevelExp: levelData.nextLevelExp,
-        premiumUntil: data.premium_until,
-        averageScore: data.average_score || 0,
-        tournamentsWon: tournamentStats.won,
-        tournamentsLost: tournamentStats.lost,
-        tournamentsPlayed: tournamentStats.played,
-        tournamentWinRate: tournamentStats.winRate,
-      }));
+      const { data } = profileResult;
+      
+      if (data) {
+        const levelData = calculateLevel(data.total_score || 0);
+        const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
+
+        setViewedProfile({ avatar_url: data.avatar_url });
+        
+        setProfileData((prev) => ({
+          ...prev,
+          username: username,
+          totalGames: data.total_games || 0,
+          wins: data.wins || 0,
+          losses: data.losses || 0,
+          totalScore: data.total_score || 0,
+          winRate: data.total_games > 0 ? Math.round(((data.wins || 0) / data.total_games) * 100) : 0,
+          longestWord: data.longest_word || "",
+          longestWordLength: data.longest_word_length || 0,
+          currentStreak: data.win_streak || 0,
+          level: levelData.level,
+          experience: levelData.experience,
+          nextLevelExp: levelData.nextLevelExp,
+          premiumUntil: data.premium_until,
+          averageScore: data.average_score || 0,
+          tournamentsWon: tournamentStats.won,
+          tournamentsLost: tournamentStats.lost,
+          tournamentsPlayed: tournamentStats.played,
+          tournamentWinRate: tournamentStats.winRate,
+        }));
+
+        // Badge ilerleme için userStats'ı da güncelle
+        setUserStats({
+          total_games: data.total_games || 0,
+          total_score: data.total_score || 0,
+          win_streak: data.win_streak || 0,
+          total_words_created: data.total_words_created || 0,
+          longest_word_length: data.longest_word_length || 0,
+          tournament_wins: data.tournament_wins || 0,
+          degistir_joker_used: data.degistir_joker_used || 0,
+          fisilida_joker_used: data.fisilida_joker_used || 0,
+          senyaz_joker_used: data.senyaz_joker_used || 0,
+          vs_bot_games: data.vs_bot_games || 0,
+          private_room_games: data.private_room_games || 0,
+          random_match_games: data.random_match_games || 0,
+          wins: data.wins || 0,
+          fastest_word_time: data.fastest_word_time || 0,
+        });
+      }
+      
+      // Rozetleri de yeniden yükle
+      await fetchBadges();
+      console.log('✅ [ProfilePage] Resync tamamlandı - rozetler dahil');
+    } catch (error) {
+      console.error('❌ [ProfilePage] Resync hatası:', error);
     }
-    
-    fetchBadges();
   }, [viewedUserId, user?.email]);
 
   usePageResync(refreshProfileData, 'ProfilePage', false);
