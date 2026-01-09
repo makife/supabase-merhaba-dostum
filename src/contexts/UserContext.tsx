@@ -1,5 +1,4 @@
 import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
-import { useAppState } from "@/hooks/useAppState";
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +21,6 @@ interface UserProfile {
   created_at: string;
   ink_count: number;
   unlimited_lives_until?: string | null;
-  // Diğer alanlar...
   daily_games?: number;
   win_streak?: number;
   daily_wins?: number;
@@ -86,10 +84,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+
+  // Refs
   const previousCreditsRef = useRef<number>(0);
   const lastNotificationRef = useRef<{ amount: number; timestamp: number } | null>(null);
   const isRefreshingCreditsRef = useRef(false);
   const lastNotifiedTotalRef = useRef<number>(0);
+
+  // 🛡️ YENİ EKLENEN KORUMA REFLERİ
+  const lastRefreshTimeRef = useRef<number>(0); // Son yenileme zamanı
+  const isFetchingProfileRef = useRef<boolean>(false); // Şu an istek atılıyor mu?
+
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
   // 1. NATIVE BAĞLANTIYI BAŞLAT + DİNLE
@@ -98,17 +103,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     const initNativeConnection = async () => {
       try {
-        // Önce mevcut durumu kontrol et
         const state = await NativeRealtime.getConnectionState();
         console.log("[UserContext] 🔍 Native mevcut durum:", state);
 
-        // Eğer bağlı değilse, bağlantıyı başlat
         if (!state.isConnected) {
           console.log("[UserContext] 🚀 Native bağlantı başlatılıyor...");
-          
-          const { data: { session } } = await supabase.auth.getSession();
+
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           const wsUrl = "wss://nnlvtqmuwmrqfinsgvwc.supabase.co/realtime/v1/websocket";
-          const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
+          const apiKey =
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
 
           await NativeRealtime.connect({
             url: wsUrl,
@@ -126,92 +132,73 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    // Native state listener
     const handleNativeState = (data: { state: string }) => {
       console.log("[UserContext] 🔌 Native state:", data.state);
       if (data.state === "connected") {
         setIsSystemConnected(true);
       } else if (data.state === "disconnected") {
-        // JS SDK bağlıysa hala sistem bağlı
         const jsConnected = supabase.realtime?.channels?.length > 0;
         setIsSystemConnected(jsConnected);
       }
     };
 
     NativeRealtime.addListener("connectionState", handleNativeState);
-
-    // Bağlantıyı başlat
     initNativeConnection();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Native bağlantı koruması
     return () => {
-      console.log("⚠️ [UserContext] Cleanup ATLANYOR (bağlantı koruması) - removeAllListeners çağrılmadı");
-      // ❌ DEVRE DIŞI: NativeRealtime.removeAllListeners();
+      console.log("⚠️ [UserContext] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [isNative]);
 
-  // 2. JS SDK BAĞLANTI DURUMUNU İZLE - HTTP + Realtime hybrid
+  // 2. JS SDK BAĞLANTI DURUMUNU İZLE
   useEffect(() => {
-    // 🔧 KRİTİK DÜZELTME: isSystemConnected'ı sadece Realtime'a bağlama
-    // HTTP istekleri Realtime'dan bağımsız çalışıyor!
-    // Native'de Realtime kapalı ama HTTP çalışıyor
-    
     const checkConnection = async () => {
       try {
-        // 1. Önce navigator.onLine kontrolü (hızlı)
         if (!navigator.onLine) {
           setIsSystemConnected(false);
           return;
         }
 
-        // 2. Native'de her zaman true varsay (HTTP çalışıyor)
-        const isNative = typeof (window as any).Capacitor !== "undefined" 
-          && (window as any).Capacitor?.isNativePlatform?.();
-        
+        const isNative =
+          typeof (window as any).Capacitor !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
+
         if (isNative) {
-          // Native'de sadece online/offline'a bak
           setIsSystemConnected(navigator.onLine);
           return;
         }
-        
-        // 3. Web'de Realtime durumunu da kontrol et
+
         const state = (supabase.realtime as any).connectionState?.();
         const isConnected = state === "open" || state === "connecting";
-        
+
         const channels = supabase.getChannels();
-        const hasActiveChannel = channels.some(
-          (ch) => ch.state === "joined" || ch.state === "joining"
-        );
-        
+        const hasActiveChannel = channels.some((ch) => ch.state === "joined" || ch.state === "joining");
+
         const isReallyConnected = isConnected && (channels.length === 0 || hasActiveChannel);
-        
+
         setIsSystemConnected((prev) => {
           if (isReallyConnected !== prev) {
-            console.log(`[UserContext] 🔌 Web bağlantı: ${state}, channels: ${channels.length} -> ${isReallyConnected}`);
+            console.log(
+              `[UserContext] 🔌 Web bağlantı: ${state}, channels: ${channels.length} -> ${isReallyConnected}`,
+            );
           }
           return isReallyConnected;
         });
       } catch (e) {
-        // Online varsay
         setIsSystemConnected(navigator.onLine);
       }
     };
 
-    // İlk kontrol
     checkConnection();
 
-    // Reconnect event'ini dinle
     const handleReconnect = () => {
       console.log("🔄 [UserContext] Reconnected - profil yeniden yükleniyor...");
       setIsSystemConnected(true);
       refreshProfile(true);
     };
 
-    // Online/offline event'leri dinle
     const handleOnline = () => {
       console.log("🌐 [UserContext] Network online - profil yeniden yükleniyor...");
       setIsSystemConnected(true);
-      // Hemen profili yenile
       refreshProfile(true);
     };
 
@@ -220,46 +207,42 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // Visibility change - sayfa görünür olduğunda kontrol et VE profili yenile
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         console.log("👁️ [UserContext] Sayfa görünür - flag reset + profil yeniden yükleniyor...");
-        // 🔥 Flag'leri resetle - foreground recovery için kritik
         isRefreshingCreditsRef.current = false;
         setIsSystemConnected(navigator.onLine);
-        // Her görünür olduğunda profili zorla yenile
         refreshProfile(true);
       }
     };
 
-    // App foreground event (native)
     const handleForeground = async () => {
       console.log("📱 [UserContext] App foreground - flag reset + profil yenileme bekleniyor...");
-      // 🔥 Flag'leri resetle - foreground recovery için kritik
       isRefreshingCreditsRef.current = false;
       setIsSystemConnected(true);
-      
-      // 🔥 KRİTİK: Session recover olmasını bekle (max 3 saniye)
+
       let attempts = 0;
-      const maxAttempts = 15; // 15 x 200ms = 3 saniye
-      
+      const maxAttempts = 15;
+
       const waitForSession = async (): Promise<void> => {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user) {
           console.log("📱 [UserContext] ✅ Session hazır, profil yenileniyor:", session.user.email);
           refreshProfile(true);
           return;
         }
-        
+
         attempts++;
         if (attempts < maxAttempts) {
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise((r) => setTimeout(r, 200));
           return waitForSession();
         } else {
           console.log("📱 [UserContext] ⚠️ Session bulunamadı (3sn timeout)");
         }
       };
-      
+
       await waitForSession();
     };
 
@@ -268,8 +251,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     window.addEventListener("offline", handleOffline);
     window.addEventListener("appForeground", handleForeground);
     document.addEventListener("visibilitychange", handleVisibility);
-    
-    // Periyodik kontrol - her 30 saniyede bir (daha az agresif)
+
     const interval = setInterval(checkConnection, 30000);
 
     return () => {
@@ -282,10 +264,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, []);
 
-  // 🔥 Intentional logout tracking (from AuthContext)
   const intentionalLogoutRef = useRef(false);
-  
-  // Logout event'ini dinle
+
   useEffect(() => {
     const handleLogout = () => {
       console.log("[UserContext] 🚪 Intentional logout algılandı");
@@ -295,9 +275,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return () => window.removeEventListener("auth-logout", handleLogout);
   }, []);
 
-  // Hydrate profile from cache immediately on user change to avoid avatar flicker
   useEffect(() => {
-    // 🔥 KRİTİK: Sadece GERÇEK logout'ta profile'ı sıfırla
     if (!user) {
       if (intentionalLogoutRef.current) {
         console.log("[UserContext] 🚪 Logout - profile temizleniyor");
@@ -305,13 +283,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         localStorage.removeItem("cached_profile");
         intentionalLogoutRef.current = false;
       } else {
-        // 🔥 Foreground'dan dönüşte user henüz null olabilir - SİFIRLAMA!
         console.log("[UserContext] ⏳ User null ama logout değil - profile korunuyor");
       }
       return;
     }
 
-    // 🔥 Foreground recovery için flag'leri resetle
     isRefreshingCreditsRef.current = false;
 
     const cached = localStorage.getItem("cached_profile");
@@ -319,10 +295,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       try {
         const parsed = JSON.parse(cached);
         if (parsed.id === user.id) {
-          // 🔥 Cache'den HEMEN yükle (prev kontrolü olmadan)
           console.log("[UserContext] ⚡ Cache'den hızlı hydrate:", parsed.data?.username);
           setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
-          // Preload avatar image to ensure instant display
           if (parsed.data?.avatar_url) {
             const img = new Image();
             img.src = parsed.data.avatar_url;
@@ -333,14 +307,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     }
 
-    // 🔧 DÜZELTME: Her zaman zorla yenile (cache'e güvenme ilk yüklemede)
     console.log("[UserContext] 🚀 User değişti, profil zorla yenileniyor...");
     refreshProfile(true);
 
-    // Supabase reconnect olduğunda profili yeniden yükle
     const handleReconnect = () => {
       console.log("🔄 [UserContext] Reconnect - profil yeniden yükleniyor...");
-      // 🔥 Flag'i resetle
       isRefreshingCreditsRef.current = false;
       refreshProfile(true);
     };
@@ -349,9 +320,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // 🛡️ DÜZELTİLMİŞ VE KORUMALI REFRESH PROFILE
   const refreshProfile = async (forceRefresh = false) => {
     if (!user) {
       setProfile(null);
@@ -359,7 +330,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return;
     }
 
-    // 🔧 DÜZELTME: Cache süresini kısalt (30 saniye) ve daha agresif yenile
+    // 1. KİLİT KONTROLÜ: Zaten bir istek varsa yenisini kabul etme
+    if (isFetchingProfileRef.current) {
+      console.log("🛡️ [UserContext] Zaten profil çekiliyor, istek sıraya alınmadı (Concurrency Lock).");
+      return;
+    }
+
+    // 2. SPAM KORUMASI (Cool-down): Son 2 saniye içinde çekildiyse reddet
+    const now = Date.now();
+    const COOLDOWN_MS = 2000; // 2 saniye koruma
+    if (now - lastRefreshTimeRef.current < COOLDOWN_MS) {
+      console.log(
+        `🛡️ [UserContext] Profil çok yeni (${Math.round(now - lastRefreshTimeRef.current)}ms), istek atlandı (Debounce).`,
+      );
+      return;
+    }
+
     const CACHE_DURATION = 30000; // 30 saniye
 
     // Check cache first if not forcing refresh
@@ -368,14 +354,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       if (cachedProfile) {
         try {
           const parsed = JSON.parse(cachedProfile);
-          // 🔧 KRİTİK: Cache'deki verilerin geçerli olup olmadığını kontrol et
-          const isValidCache = parsed.id === user.id && 
+          const isValidCache =
+            parsed.id === user.id &&
             parsed.timestamp > Date.now() - CACHE_DURATION &&
-            parsed.data?.username && // username olmalı
-            typeof parsed.data?.total_score === 'number'; // total_score olmalı
-          
+            parsed.data?.username &&
+            typeof parsed.data?.total_score === "number";
+
           if (isValidCache) {
-            console.log("[UserContext] ✅ Cache'den yüklendi (kalan:", Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000), "sn)");
+            console.log(
+              "[UserContext] ✅ Cache'den yüklendi (kalan:",
+              Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000),
+              "sn)",
+            );
             setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             setLoading(false);
             return;
@@ -388,25 +378,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     }
 
+    // KİLİDİ KAPAT (İşlem Başlıyor)
+    isFetchingProfileRef.current = true;
     setLoading(true);
     console.log("[UserContext] 🔄 Profil Supabase'den çekiliyor...", forceRefresh ? "(FORCE)" : "");
-    
+
     try {
-      // 🔧 DÜZELTME: Timeout ekle (5 saniye)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5sn timeout
+
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+
       clearTimeout(timeoutId);
 
       if (error) {
         console.error("[UserContext] ❌ Profil çekme hatası:", error.message);
-        // Hata olsa bile cache'i göster (varsa)
+        // Fallback to cache on error
         const cachedProfile = localStorage.getItem("cached_profile");
         if (cachedProfile) {
           try {
@@ -417,13 +404,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             }
           } catch {}
         }
-        return;
-      }
-      
-      if (data) {
-        // Check if daily reset is needed
+      } else if (data) {
         await checkAndResetDailyStats(data);
-        console.log("[UserContext] ✅ Profil yüklendi:", data.username);
+        console.log("[UserContext] ✅ Profil başarıyla yüklendi:", data.username);
 
         const profileData = {
           ...data,
@@ -431,8 +414,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         };
 
         setProfile(profileData);
+        // Zaman damgasını güncelle - BAŞARILI İŞLEM SONRASI
+        lastRefreshTimeRef.current = Date.now();
 
-        // Cache profile data with avatar_url
         localStorage.setItem(
           "cached_profile",
           JSON.stringify({
@@ -445,6 +429,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     } catch (error: any) {
       console.error("[UserContext] ❌ Profile fetch exception:", error?.message || error);
     } finally {
+      // KİLİDİ AÇ (İşlem Bitti)
+      isFetchingProfileRef.current = false;
       setLoading(false);
     }
   };
@@ -456,7 +442,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const lastReset = profileData.last_daily_reset ? new Date(profileData.last_daily_reset) : null;
     const today = now.toISOString().split("T")[0];
 
-    // If no reset recorded or last reset was before today
     if (!lastReset || lastReset.toISOString().split("T")[0] !== today) {
       console.log("🔄 Resetting daily stats for user:", user.id);
 
@@ -519,7 +504,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const remainingBonus = Math.max(0, bonusCredits - neededForFull);
       const newTotalBonus = profile.bonus_credits + remainingBonus;
 
-      // Krediler 5/5'e ulaştıysa last_credit_refresh'i temizle (timer dursun)
       const updateData: any = {
         game_credits: newBase,
         bonus_credits: newTotalBonus,
@@ -558,37 +542,25 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     try {
       const baseline = previousCreditsRef.current || getTotalCredits();
-
-      // Just call RPC, let real-time subscription handle profile updates
       await supabase.rpc("check_and_refresh_credits", { user_id: user.id });
-
-      // Wait a moment for real-time to deliver the update
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       const newTotal = getTotalCredits();
 
-      // Only notify if credits actually increased and enough time has passed
       const lastNotified = lastNotifiedTotalRef.current || 0;
 
       if (newTotal > baseline && newTotal > lastNotified && isPermissionGranted) {
         const creditsGained = newTotal - baseline;
         const now = Date.now();
-
         const lastNotif = lastNotificationRef.current;
-        // Require at least 60 seconds between notifications to prevent spam
         const shouldShowNotification = !lastNotif || now - lastNotif.timestamp > 60000;
 
         if (shouldShowNotification) {
-          console.log(`📢 Showing credit notification: +${creditsGained} credits (${baseline} -> ${newTotal})`);
+          console.log(`📢 Showing credit notification: +${creditsGained} credits`);
           showLocalNotification("🎮 Hak Doldu!", `+${creditsGained} oyun hakkı kazandınız! Toplam: ${newTotal}/5`);
           lastNotificationRef.current = { amount: creditsGained, timestamp: now };
           lastNotifiedTotalRef.current = newTotal;
-        } else {
-          console.log(`🔇 Notification throttled: ${(now - lastNotif.timestamp) / 1000}s since last`);
         }
       }
-
-      // Persist latest totals for next run
       previousCreditsRef.current = newTotal;
     } catch (error) {
       console.error("Error checking credits:", error);
@@ -614,20 +586,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   };
 
-  // Check both premium_until and unlimited_lives_until for premium/unlimited status
   const isPremium = (() => {
     const now = new Date();
-
-    // Check permanent premium subscription
-    if (profile?.premium_until && new Date(profile.premium_until) > now) {
-      return true;
-    }
-
-    // Check temporary unlimited lives (1 hour or 24 hour packages from market)
-    if (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now) {
-      return true;
-    }
-
+    if (profile?.premium_until && new Date(profile.premium_until) > now) return true;
+    if (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now) return true;
     return false;
   })();
 
@@ -649,23 +611,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       let newGameCredits = profile.game_credits;
       let newBonusCredits = profile.bonus_credits;
 
-      // Önce bonus kredilerden düş, sonra normal kredilerden
       if (profile.bonus_credits > 0) {
         newBonusCredits = profile.bonus_credits - 1;
       } else if (profile.game_credits > 0) {
         newGameCredits = profile.game_credits - 1;
       }
 
-      // last_credit_refresh'i sadece kredi 5'in altına düştüğünde ve daha önce set edilmediyse güncelle
-      // Böylece timer her kredi kullanımında sıfırlanmaz
       const shouldSetRefreshTime = newGameCredits < 5 && !profile.last_credit_refresh;
-
       const updateData: any = {
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits,
       };
 
-      // Sadece ilk kez 5'in altına düştüğünde last_credit_refresh set et
       if (shouldSetRefreshTime) {
         updateData.last_credit_refresh = new Date().toISOString();
       }
@@ -682,7 +639,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
-      console.log("Credit consumed:", updatedProfile);
       return true;
     } catch (error) {
       console.error("Error consuming credit:", error);
@@ -696,21 +652,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const refreshOnlineUsers = async () => {
     try {
-      // is_online kontrolü yerine sadece last_seen kontrolü yap
-      // Çünkü is_online her zaman doğru güncellenmeyebilir (mobil uygulamada bağlantı koptuğunda)
       const { data }: any = await supabase
         .from("user_presence" as any)
-        .select(
-          `
-          user_id, 
-          last_seen, 
-          profiles!inner(
-            username, 
-            avatar_url
-          )
-        `,
-        )
-        .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler = ONLINE
+        .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
+        .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString());
 
       if (data) {
         setOnlineUsers(
@@ -727,11 +672,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  // User presence management - REALTIME + POLLING HYBRID
+  // User presence management
   useEffect(() => {
     if (!user?.id) return;
 
-    // 1. Durumunu Güncelle (Ben Buradayım Sinyali)
     const updatePresence = async () => {
       try {
         await supabase.from("user_presence" as any).upsert({
@@ -744,27 +688,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    // 2. Online Olanları Çek (Listeyi Güncelle)
     const fetchOnlineUsers = async () => {
       try {
-        // is_online kontrolü yerine sadece last_seen kontrolü yap
-        // Çünkü is_online her zaman doğru güncellenmeyebilir (mobil uygulamada bağlantı koptuğunda)
         const { data }: any = await supabase
           .from("user_presence" as any)
-          .select(
-            `
-            user_id, 
-            last_seen, 
-            profiles!inner(
-              username, 
-              avatar_url
-            )
-          `,
-          )
-          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString()); // Son 45 saniyede görülenler = ONLINE
+          .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
+          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString());
 
         if (data) {
-          // Gelen veriyi formatla
           const newUsers = data.map((item: any) => ({
             id: item.user_id,
             username: item.profiles.username || "Unknown",
@@ -772,7 +703,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             last_seen: item.last_seen,
           }));
 
-          // STATE GÜNCELLEMESİ: Sadece veri değiştiyse set et (Render optimizasyonu)
           setOnlineUsers((prev) => {
             const isDifferent = JSON.stringify(prev) !== JSON.stringify(newUsers);
             return isDifferent ? newUsers : prev;
@@ -783,10 +713,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    const handleBeforeUnload = () => {
-      setUserOffline();
-    };
-
+    const handleBeforeUnload = () => setUserOffline();
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         updatePresence();
@@ -794,104 +721,71 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    // --- BAŞLATMA ---
     updatePresence();
     fetchOnlineUsers();
 
-    // A. HEARTBEAT (GÖNDEREN): Her 30 saniyede bir veritabanına "Ben Online'ım" de.
     const heartbeatInterval = setInterval(updatePresence, 30000);
-
-    // B. POLLING (ALICI): Her 5 saniyede bir "Kimler Online?" diye sor.
-    // Bu, Realtime çalışmasa bile listenin en geç 5 saniye içinde güncellenmesini garanti eder.
     const pollingInterval = setInterval(fetchOnlineUsers, 5000);
 
-    // C. REALTIME (ANLIK): Veritabanında bir değişiklik olursa ANINDA yakala.
     const channel = supabase
       .channel("presence_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // INSERT, UPDATE veya DELETE olduğunda
-          schema: "public",
-          table: "user_presence" as any,
-        },
-        (payload) => {
-          console.log("🔔 Realtime Presence Change:", payload);
-          fetchOnlineUsers(); // Değişiklik olur olmaz listeyi çek
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" as any }, (payload) => {
+        console.log("🔔 Realtime Presence Change:", payload);
+        fetchOnlineUsers();
+      })
       .subscribe();
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // ⚠️ CLEANUP DEVRE DIŞI - UserContext unmount olmamalı, ama olursa bağlantı korunsun
     return () => {
       clearInterval(heartbeatInterval);
       clearInterval(pollingInterval);
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel); - bağlantıyı öldürüyordu
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user?.id]);
 
-  // Initial profile load
   useEffect(() => {
     if (user) {
       refreshProfile(true);
-      // checkAndRefreshCredits() - Çift çağrıyı önle, interval zaten yapacak
     } else {
       setProfile(null);
     }
   }, [user]);
 
-  // Credit check - REALTIME ONLY (NO POLLING)
   useEffect(() => {
     if (!user || isPremium) return;
-
-    // İlk kontrolü hemen yap
     checkAndRefreshCredits();
-
-    // ❌ Credit refresh subscription kaldırıldı - Profile subscription zaten tüm güncellemeleri yakalıyor
-    // Bu subscription sonsuz döngüye neden oluyordu
   }, [user, isPremium]);
 
-  // ENHANCED Real-time profile subscription - Only update if data changed
+  // ENHANCED Real-time profile subscription
   useEffect(() => {
     if (!user) return;
 
     console.log("🔄 Setting up real-time profile subscription for user:", user.id);
-
     const lastUpdateRef = { timestamp: 0, data: "" };
 
     const channel = supabase
       .channel(`profile-realtime-${user.id}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${user.id}`,
-        },
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
         (payload) => {
           if (!payload.new) return;
 
           const now = Date.now();
-
-          // 🔥 FIX: unlimited_lives_until alanını da hash'e ekle
           const dataHash = JSON.stringify({
             game_credits: (payload.new as any).game_credits,
             bonus_credits: (payload.new as any).bonus_credits,
             total_score: (payload.new as any).total_score,
             wins: (payload.new as any).wins,
             losses: (payload.new as any).losses,
-            unlimited_lives_until: (payload.new as any).unlimited_lives_until, // ✅ EKLENEN
-            ink_count: (payload.new as any).ink_count, // ✅ EKLENEN
+            unlimited_lives_until: (payload.new as any).unlimited_lives_until,
+            ink_count: (payload.new as any).ink_count,
           });
 
-          // Ignore if same data within 2 seconds
           if (now - lastUpdateRef.timestamp < 2000 && dataHash === lastUpdateRef.data) {
             console.log("🚫 Ignoring duplicate profile update (same data)");
             return;
@@ -907,7 +801,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             ink_count: (payload.new as any).ink_count ?? 0,
           };
 
-          // 🔥 FIX: Detaylı log ekle
           console.log("📊 Profile stats updated:", {
             total_score: newProfile.total_score,
             wins: newProfile.wins,
@@ -915,12 +808,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             game_credits: newProfile.game_credits,
             bonus_credits: newProfile.bonus_credits,
             ink_count: newProfile.ink_count,
-            unlimited_lives_until: (payload.new as any).unlimited_lives_until, // ✅ LOG EKLENEN
+            unlimited_lives_until: (payload.new as any).unlimited_lives_until,
           });
 
           setProfile(newProfile);
+          // Realtime'dan gelince de zaman damgasını güncelle ki manuel refresh çakışmasın
+          lastRefreshTimeRef.current = Date.now();
 
-          // 🔥 FIX: Cache'i de güncelle (HomePage refresh olsa bile çalışsın)
           localStorage.setItem(
             "cached_profile",
             JSON.stringify({
@@ -941,11 +835,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         }
       });
 
-    // Visibility change - sayfa görünür olduğunda profili yeniden yükle
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         console.log("[Profile] 👁️ Sayfa görünür, profil kontrol ediliyor...");
-        // Cache'deki profil 30 saniyeden eski ise yeniden yükle
         const cached = localStorage.getItem("cached_profile");
         if (cached) {
           try {
@@ -963,10 +855,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       console.log("⚠️ [UserContext] Profile cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [user]);
