@@ -119,15 +119,20 @@ const AppRoutes = () => {
     const initializeApp = async () => {
       if (!Capacitor.isNativePlatform()) return;
       
-      // 🔥 FOREGROUND SERVICE'İ EN ÖNCE BAŞLAT!
-      try {
-        const { BackgroundServiceManager } = await import("@/utils/backgroundServiceManager");
-        console.log("🔔 App: Foreground Service başlatılıyor...");
-        await BackgroundServiceManager.init();
-        console.log("✅ App: Foreground Service başlatıldı!");
-      } catch (e) {
-        console.warn("[App] Foreground Service init hatası tolere edildi:", e);
-      }
+      // 🔥 FOREGROUND SERVICE - NON-BLOCKING! (App başlamasını bloke etmemeli)
+      // Fire-and-forget pattern - hata olsa bile app çalışmaya devam etmeli
+      import("@/utils/backgroundServiceManager")
+        .then(({ BackgroundServiceManager }) => {
+          console.log("🔔 App: Foreground Service başlatılıyor...");
+          // Timeout ile sarmalayarak sonsuz beklemeyi önle
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("FS init timeout")), 5000)
+          );
+          Promise.race([BackgroundServiceManager.init(), timeoutPromise])
+            .then(() => console.log("✅ App: Foreground Service başlatıldı!"))
+            .catch((e) => console.warn("[App] FS init timeout/hata (tolere edildi):", e));
+        })
+        .catch((e) => console.warn("[App] FS import hatası (tolere edildi):", e));
       
       try {
         // 🔊 Native Audio'yu başlat

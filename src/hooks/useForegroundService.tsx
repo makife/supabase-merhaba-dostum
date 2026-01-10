@@ -23,12 +23,27 @@ const loadForegroundServicePlugin = async (): Promise<boolean> => {
   pluginLoadPromise = (async () => {
     try {
       console.log("[ForegroundService] 📦 Plugin yükleniyor...");
-      const module = await import("capacitor-foreground-service");
-      CapacitorForegroundService = module.CapacitorForegroundService;
+      
+      // 🔥 Timeout ile sarmalayarak sonsuz beklemeyi önle (3 saniye)
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error("Plugin load timeout")), 3000)
+      );
+      
+      const importPromise = import("capacitor-foreground-service");
+      const module = await Promise.race([importPromise, timeoutPromise]);
+      
+      if (!module) {
+        console.warn("[ForegroundService] ❌ Plugin timeout");
+        pluginLoadPromise = null; // Tekrar denenmesine izin ver
+        return false;
+      }
+      
+      CapacitorForegroundService = (module as any).CapacitorForegroundService;
       console.log("[ForegroundService] ✅ Plugin yüklendi");
       return true;
     } catch (error) {
       console.warn("[ForegroundService] ❌ Plugin yüklenemedi:", error);
+      pluginLoadPromise = null; // Tekrar denenmesine izin ver
       return false;
     }
   })();
@@ -129,6 +144,7 @@ export const initForegroundService = async (): Promise<boolean> => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) {
     console.log("[ForegroundService] ⏭️ Android değil, init atlıyorum");
+    isAppInitialized = true; // Non-Android'de de initialized say ki lifecycle çalışsın
     return false;
   }
   
@@ -139,20 +155,30 @@ export const initForegroundService = async (): Promise<boolean> => {
   
   console.log("[ForegroundService] 🚀 İlk başlatma...");
   
-  // Plugin'i önceden yükle
-  await loadForegroundServicePlugin();
-  
-  // Foreground service'i başlat
-  const success = await startForegroundServiceStandalone({
-    description: "🎮 Oyun başlatılıyor...",
-  });
-  
-  if (success) {
-    isAppInitialized = true;
-    console.log("[ForegroundService] ✅ İlk başlatma tamamlandı");
+  try {
+    // Plugin'i önceden yükle (timeout korumalı)
+    const loaded = await loadForegroundServicePlugin();
+    
+    if (!loaded) {
+      console.warn("[ForegroundService] ⚠️ Plugin yüklenemedi, init başarısız ama app devam edecek");
+      isAppInitialized = true; // Yine de initialized say
+      return false;
+    }
+    
+    // Foreground service'i başlat
+    const success = await startForegroundServiceStandalone({
+      description: "🎮 Oyun başlatılıyor...",
+    });
+    
+    isAppInitialized = true; // Başarılı olsun olmasın, initialized olarak işaretle
+    console.log(`[ForegroundService] ${success ? "✅" : "⚠️"} İlk başlatma tamamlandı (success=${success})`);
+    
+    return success;
+  } catch (error) {
+    console.warn("[ForegroundService] ❌ Init hatası (tolere edildi):", error);
+    isAppInitialized = true; // Hata olsa bile initialized say
+    return false;
   }
-  
-  return success;
 };
 
 // 🔥 Uygulama ÖN PLANA geldiğinde çağrılır
