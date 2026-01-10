@@ -115,48 +115,67 @@ const initGlobalListener = () => {
   if (globalListenerInitialized) return;
   globalListenerInitialized = true;
 
-  if (Capacitor.isNativePlatform()) {
-    console.log("[AppForegroundState] 🔧 Native global listener kuruluyor...");
+  // 🔥 KRİTİK: Native platform kontrolünü TRY-CATCH içinde yap
+  // Bridge hazır olmayabilir!
+  try {
+    if (Capacitor.isNativePlatform()) {
+      console.log("[AppForegroundState] 🔧 Native global listener kuruluyor...");
 
-    App.addListener("appStateChange", ({ isActive }) => {
-      console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
-      
-      // 🔥 KRİTİK: Listener hazır değilse, state'i kuyruğa al
-      if (!isListenerReady) {
-        console.log("[AppForegroundState] ⏳ Listener henüz hazır değil, kuyruğa alındı");
-        pendingStateChanges.push(isActive);
-        return;
-      }
-      
-      handleForegroundStateChange(isActive);
-    })
-      .then(() => {
-        console.log("[AppForegroundState] ✅ Native listener kuruldu");
-      })
-      .catch((err) => {
-        console.error("[AppForegroundState] ❌ Native listener hatası:", err);
+      // 🔥 KRİTİK: App.addListener'ı setTimeout içinde çağır
+      // Bu sayede module load anında değil, event loop'ta çağrılır
+      setTimeout(() => {
+        try {
+          App.addListener("appStateChange", ({ isActive }) => {
+            console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
+            
+            if (!isListenerReady) {
+              console.log("[AppForegroundState] ⏳ Listener henüz hazır değil, kuyruğa alındı");
+              pendingStateChanges.push(isActive);
+              return;
+            }
+            
+            handleForegroundStateChange(isActive);
+          })
+            .then(() => {
+              console.log("[AppForegroundState] ✅ Native listener kuruldu");
+            })
+            .catch((err) => {
+              console.error("[AppForegroundState] ❌ Native listener hatası:", err);
+            });
+        } catch (e) {
+          console.error("[AppForegroundState] ❌ App.addListener exception:", e);
+        }
+      }, 100); // 100ms gecikme - bridge'in hazır olmasını bekle
+    } else {
+      console.log("[AppForegroundState] 🔧 Web visibility listener kuruluyor...");
+
+      document.addEventListener("visibilitychange", () => {
+        const isVisible = document.visibilityState === "visible";
+        console.log(`[AppForegroundState] 👁️ Web visibility: ${isVisible ? "VISIBLE" : "HIDDEN"}`);
+        
+        if (!isListenerReady) {
+          pendingStateChanges.push(isVisible);
+          return;
+        }
+        
+        handleForegroundStateChange(isVisible);
       });
-  } else {
-    console.log("[AppForegroundState] 🔧 Web visibility listener kuruluyor...");
 
-    document.addEventListener("visibilitychange", () => {
-      const isVisible = document.visibilityState === "visible";
-      console.log(`[AppForegroundState] 👁️ Web visibility: ${isVisible ? "VISIBLE" : "HIDDEN"}`);
-      
-      if (!isListenerReady) {
-        pendingStateChanges.push(isVisible);
-        return;
-      }
-      
-      handleForegroundStateChange(isVisible);
-    });
-
-    console.log("[AppForegroundState] ✅ Web listener kuruldu");
+      console.log("[AppForegroundState] ✅ Web listener kuruldu");
+    }
+  } catch (e) {
+    console.error("[AppForegroundState] ❌ initGlobalListener exception:", e);
   }
 };
 
-// 🔥 GLOBAL LISTENER'I HEMEN KUR ama işlemler GECIKTIRILECEK
-initGlobalListener();
+// 🔥 KRİTİK: GLOBAL LISTENER'I HEMEN KURMA!
+// App.tsx'den markListenerReady çağrıldığında kurulacak
+// initGlobalListener(); // <- KALDIRILDI!
+
+// Listener'ı başlat (App.tsx'den çağrılacak)
+export const initAppStateListener = () => {
+  initGlobalListener();
+};
 
 export function useAppForegroundState() {
   const [isInForeground, setIsInForeground] = useState(true);

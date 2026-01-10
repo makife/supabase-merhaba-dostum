@@ -136,14 +136,14 @@ const AppRoutes = () => {
             console.warn("[App] FS init timeout/hata (tolere edildi):", e);
           }
           
-          // 🔥 KRİTİK: FS init tamamlandıktan SONRA listener'ı aktif et!
-          // Bu sayede erken appStateChange olayları zararsız olur
+          // 🔥 KRİTİK: FS init tamamlandıktan SONRA listener'ı başlat ve aktif et!
           try {
-            const { markListenerReady } = await import("@/hooks/useAppForegroundState");
-            markListenerReady();
-            console.log("✅ App: Listener hazır!");
+            const { initAppStateListener, markListenerReady } = await import("@/hooks/useAppForegroundState");
+            initAppStateListener(); // Önce listener'ı kur
+            markListenerReady();    // Sonra hazır işaretle
+            console.log("✅ App: AppState Listener başlatıldı ve hazır!");
           } catch (e) {
-            console.warn("[App] markListenerReady hatası:", e);
+            console.warn("[App] AppState listener hatası:", e);
           }
         })
         .catch((e) => console.warn("[App] FS import hatası (tolere edildi):", e));
