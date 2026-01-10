@@ -122,15 +122,29 @@ const AppRoutes = () => {
       // 🔥 FOREGROUND SERVICE - NON-BLOCKING! (App başlamasını bloke etmemeli)
       // Fire-and-forget pattern - hata olsa bile app çalışmaya devam etmeli
       import("@/utils/backgroundServiceManager")
-        .then(({ BackgroundServiceManager }) => {
+        .then(async ({ BackgroundServiceManager }) => {
           console.log("🔔 App: Foreground Service başlatılıyor...");
           // Timeout ile sarmalayarak sonsuz beklemeyi önle
           const timeoutPromise = new Promise((_, reject) => 
             setTimeout(() => reject(new Error("FS init timeout")), 5000)
           );
-          Promise.race([BackgroundServiceManager.init(), timeoutPromise])
-            .then(() => console.log("✅ App: Foreground Service başlatıldı!"))
-            .catch((e) => console.warn("[App] FS init timeout/hata (tolere edildi):", e));
+          
+          try {
+            await Promise.race([BackgroundServiceManager.init(), timeoutPromise]);
+            console.log("✅ App: Foreground Service başlatıldı!");
+          } catch (e) {
+            console.warn("[App] FS init timeout/hata (tolere edildi):", e);
+          }
+          
+          // 🔥 KRİTİK: FS init tamamlandıktan SONRA listener'ı aktif et!
+          // Bu sayede erken appStateChange olayları zararsız olur
+          try {
+            const { markListenerReady } = await import("@/hooks/useAppForegroundState");
+            markListenerReady();
+            console.log("✅ App: Listener hazır!");
+          } catch (e) {
+            console.warn("[App] markListenerReady hatası:", e);
+          }
         })
         .catch((e) => console.warn("[App] FS import hatası (tolere edildi):", e));
       
