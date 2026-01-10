@@ -1,55 +1,15 @@
 import { useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
+import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 
 // 🔧 GLOBAL STATE - Module scope'da, tüm instance'lar paylaşıyor
 let isForegroundServiceRunning = false;
 let backgroundKillTimer: ReturnType<typeof setTimeout> | null = null;
-let isAppInitialized = false; // 🔥 Uygulama başlatıldı mı?
+let isAppInitialized = false;
 
 // 🔥 Arka planda kalma süresi: 60 saniye sonra FS kapanır ve app kill olur
 const BACKGROUND_KILL_TIMEOUT_MS = 60000;
-
-// 🔧 Plugin referansı - eagerly load edeceğiz
-let CapacitorForegroundService: any = null;
-let pluginLoadPromise: Promise<boolean> | null = null;
-
-const loadForegroundServicePlugin = async (): Promise<boolean> => {
-  if (CapacitorForegroundService) return true;
-  
-  // Eğer zaten yükleme devam ediyorsa, aynı promise'i bekle
-  if (pluginLoadPromise) return pluginLoadPromise;
-  
-  pluginLoadPromise = (async () => {
-    try {
-      console.log("[ForegroundService] 📦 Plugin yükleniyor...");
-      
-      // 🔥 Timeout ile sarmalayarak sonsuz beklemeyi önle (3 saniye)
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error("Plugin load timeout")), 3000)
-      );
-      
-      const importPromise = import("capacitor-foreground-service");
-      const module = await Promise.race([importPromise, timeoutPromise]);
-      
-      if (!module) {
-        console.warn("[ForegroundService] ❌ Plugin timeout");
-        pluginLoadPromise = null; // Tekrar denenmesine izin ver
-        return false;
-      }
-      
-      CapacitorForegroundService = (module as any).CapacitorForegroundService;
-      console.log("[ForegroundService] ✅ Plugin yüklendi");
-      return true;
-    } catch (error) {
-      console.warn("[ForegroundService] ❌ Plugin yüklenemedi:", error);
-      pluginLoadPromise = null; // Tekrar denenmesine izin ver
-      return false;
-    }
-  })();
-  
-  return pluginLoadPromise;
-};
 
 interface ForegroundServiceConfig {
   title?: string;
@@ -75,10 +35,7 @@ const logFSState = (action: string) => {
 // --- Standalone Fonksiyonlar (hook dışından çağrılabilir) ---
 
 export const startForegroundServiceStandalone = async (config?: ForegroundServiceConfig): Promise<boolean> => {
-  const isNative = Capacitor.isNativePlatform();
-  const isAndroid = Capacitor.getPlatform() === "android";
-  
-  if (!isNative || !isAndroid) {
+  if (!isNativeRealtimeAvailable()) {
     console.log("[ForegroundService] ⏭️ Native Android değil, atlıyorum");
     return false;
   }
@@ -88,21 +45,11 @@ export const startForegroundServiceStandalone = async (config?: ForegroundServic
     return true;
   }
 
-  const loaded = await loadForegroundServicePlugin();
-  if (!loaded || !CapacitorForegroundService) {
-    console.warn("[ForegroundService] ❌ Plugin mevcut değil, başlatılamıyor");
-    return false;
-  }
-
   try {
-    logFSState("▶️ BAŞLATILIYOR");
+    logFSState("▶️ BAŞLATILIYOR (NativeRealtime.enterForegroundMode)");
     
-    await CapacitorForegroundService.startService({
-      title: config?.title || "Kelimele",
-      description: config?.description || "🎮 Oyun aktif",
-      icon: config?.icon || "ic_stat_notification",
-      notificationId: config?.notificationId || 1001,
-    });
+    // 🔥 Senin native plugin'ini kullan
+    await NativeRealtime.enterForegroundMode();
     
     isForegroundServiceRunning = true;
     logFSState("✅ BAŞLATILDI");
@@ -122,15 +69,14 @@ export const stopForegroundServiceStandalone = async (): Promise<void> => {
   
   clearBackgroundKillTimer();
 
-  const loaded = await loadForegroundServicePlugin();
-  if (!loaded || !CapacitorForegroundService) {
+  if (!isNativeRealtimeAvailable()) {
     isForegroundServiceRunning = false;
     return;
   }
   
   try {
-    logFSState("⏹️ DURDURULUYOR");
-    await CapacitorForegroundService.stopService();
+    logFSState("⏹️ DURDURULUYOR (NativeRealtime.enterBackgroundMode)");
+    await NativeRealtime.enterBackgroundMode();
     isForegroundServiceRunning = false;
     logFSState("✅ DURDURULDU");
   } catch (error) {
@@ -144,7 +90,7 @@ export const initForegroundService = async (): Promise<boolean> => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) {
     console.log("[ForegroundService] ⏭️ Android değil, init atlıyorum");
-    isAppInitialized = true; // Non-Android'de de initialized say ki lifecycle çalışsın
+    isAppInitialized = true;
     return false;
   }
   
@@ -153,30 +99,21 @@ export const initForegroundService = async (): Promise<boolean> => {
     return true;
   }
   
-  console.log("[ForegroundService] 🚀 İlk başlatma...");
+  console.log("[ForegroundService] 🚀 İlk başlatma (NativeRealtime kullanılıyor)...");
   
   try {
-    // Plugin'i önceden yükle (timeout korumalı)
-    const loaded = await loadForegroundServicePlugin();
-    
-    if (!loaded) {
-      console.warn("[ForegroundService] ⚠️ Plugin yüklenemedi, init başarısız ama app devam edecek");
-      isAppInitialized = true; // Yine de initialized say
-      return false;
+    // NativeRealtime plugin'i ile foreground mode'a geç
+    if (isNativeRealtimeAvailable()) {
+      await NativeRealtime.enterForegroundMode();
+      isForegroundServiceRunning = true;
+      console.log("[ForegroundService] ✅ NativeRealtime foreground mode aktif");
     }
     
-    // Foreground service'i başlat
-    const success = await startForegroundServiceStandalone({
-      description: "🎮 Oyun başlatılıyor...",
-    });
-    
-    isAppInitialized = true; // Başarılı olsun olmasın, initialized olarak işaretle
-    console.log(`[ForegroundService] ${success ? "✅" : "⚠️"} İlk başlatma tamamlandı (success=${success})`);
-    
-    return success;
+    isAppInitialized = true;
+    return true;
   } catch (error) {
-    console.warn("[ForegroundService] ❌ Init hatası (tolere edildi):", error);
-    isAppInitialized = true; // Hata olsa bile initialized say
+    console.warn("[ForegroundService] ⚠️ Init hatası (tolere edildi):", error);
+    isAppInitialized = true;
     return false;
   }
 };
@@ -186,8 +123,6 @@ export const onAppEnteredForeground = async (): Promise<void> => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) return;
 
-  // Uygulama henüz initialize edilmediyse, bu çağrıyı atla
-  // (init fonksiyonu bunu halledecek)
   if (!isAppInitialized) {
     console.log("[ForegroundService] ⏭️ Henüz init edilmedi, foreground atlıyorum");
     return;
@@ -199,10 +134,14 @@ export const onAppEnteredForeground = async (): Promise<void> => {
   clearBackgroundKillTimer();
   
   // FS çalışmıyorsa başlat
-  if (!isForegroundServiceRunning) {
-    await startForegroundServiceStandalone({
-      description: "🎮 Oyun aktif",
-    });
+  if (!isForegroundServiceRunning && isNativeRealtimeAvailable()) {
+    try {
+      await NativeRealtime.enterForegroundMode();
+      isForegroundServiceRunning = true;
+      console.log("[ForegroundService] ✅ Foreground mode yeniden aktif");
+    } catch (e) {
+      console.warn("[ForegroundService] ⚠️ Foreground mode hatası:", e);
+    }
   }
 };
 
@@ -211,7 +150,6 @@ export const onAppEnteredBackground = (): void => {
   const isAndroid = Capacitor.getPlatform() === "android";
   if (!isAndroid) return;
 
-  // Uygulama henüz initialize edilmediyse, bu çağrıyı atla
   if (!isAppInitialized) {
     console.log("[ForegroundService] ⏭️ Henüz init edilmedi, background atlıyorum");
     return;
@@ -226,8 +164,16 @@ export const onAppEnteredBackground = (): void => {
   backgroundKillTimer = setTimeout(async () => {
     console.log("[ForegroundService] ⏰ 60 saniye doldu - FS kapatılıyor ve app kill ediliyor");
     
-    // Önce FS'i kapat
-    await stopForegroundServiceStandalone();
+    // Önce background mode'a geç (native service'e söyle)
+    if (isNativeRealtimeAvailable()) {
+      try {
+        await NativeRealtime.enterBackgroundMode();
+      } catch (e) {
+        console.warn("[ForegroundService] ⚠️ Background mode hatası:", e);
+      }
+    }
+    
+    isForegroundServiceRunning = false;
     
     // Sonra app'i kill et
     try {
