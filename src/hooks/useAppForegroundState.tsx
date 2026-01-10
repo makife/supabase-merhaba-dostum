@@ -93,6 +93,24 @@ const updateLastSeen = async () => {
 // 🔥 GLOBAL LISTENER - Sadece 1 kez kurulur (module scope)
 let globalListenerInitialized = false;
 
+// 🔥 KRİTİK: Erken çağrıları önlemek için gecikme
+let isListenerReady = false;
+let pendingStateChanges: boolean[] = [];
+
+// Listener'ı hazır hale getir (App.tsx'den çağrılacak)
+export const markListenerReady = () => {
+  console.log("[AppForegroundState] ✅ Listener artık hazır!");
+  isListenerReady = true;
+  
+  // Bekleyen state değişikliklerini işle (sadece en sonuncusu önemli)
+  if (pendingStateChanges.length > 0) {
+    const lastState = pendingStateChanges[pendingStateChanges.length - 1];
+    console.log(`[AppForegroundState] 📤 Bekleyen state işleniyor: ${lastState ? "FOREGROUND" : "BACKGROUND"}`);
+    handleForegroundStateChange(lastState);
+    pendingStateChanges = [];
+  }
+};
+
 const initGlobalListener = () => {
   if (globalListenerInitialized) return;
   globalListenerInitialized = true;
@@ -101,9 +119,15 @@ const initGlobalListener = () => {
     console.log("[AppForegroundState] 🔧 Native global listener kuruluyor...");
 
     App.addListener("appStateChange", ({ isActive }) => {
-      // 🔥 KRİTİK: Bu callback ÇOK HAFİF olmalı!
-      // Sadece state güncelle, HİÇBİR ağır işlem yapma!
       console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
+      
+      // 🔥 KRİTİK: Listener hazır değilse, state'i kuyruğa al
+      if (!isListenerReady) {
+        console.log("[AppForegroundState] ⏳ Listener henüz hazır değil, kuyruğa alındı");
+        pendingStateChanges.push(isActive);
+        return;
+      }
+      
       handleForegroundStateChange(isActive);
     })
       .then(() => {
@@ -118,6 +142,12 @@ const initGlobalListener = () => {
     document.addEventListener("visibilitychange", () => {
       const isVisible = document.visibilityState === "visible";
       console.log(`[AppForegroundState] 👁️ Web visibility: ${isVisible ? "VISIBLE" : "HIDDEN"}`);
+      
+      if (!isListenerReady) {
+        pendingStateChanges.push(isVisible);
+        return;
+      }
+      
       handleForegroundStateChange(isVisible);
     });
 
@@ -125,7 +155,7 @@ const initGlobalListener = () => {
   }
 };
 
-// 🔥 GLOBAL LISTENER'I HEMEN KUR (module load anında)
+// 🔥 GLOBAL LISTENER'I HEMEN KUR ama işlemler GECIKTIRILECEK
 initGlobalListener();
 
 export function useAppForegroundState() {
