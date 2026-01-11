@@ -216,40 +216,39 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    const handleForeground = async () => {
-      console.log("📱 [UserContext] App foreground - flag reset + profil yenileme bekleniyor...");
+    // 🔥 Session recovered eventi - useSessionRecovery hook'undan geliyor
+    const handleSessionRecovered = (event: any) => {
+      console.log("📱 [UserContext] ✅ Session recovered eventi alındı! Profil yenileniyor...");
       isRefreshingCreditsRef.current = false;
       setIsSystemConnected(true);
+      
+      // Biraz bekle ki AuthContext de güncellensin
+      setTimeout(() => {
+        refreshProfile(true);
+      }, 300);
+    };
 
-      let attempts = 0;
-      const maxAttempts = 15;
-
-      const waitForSession = async (): Promise<void> => {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          console.log("📱 [UserContext] ✅ Session hazır, profil yenileniyor:", session.user.email);
-          refreshProfile(true);
-          return;
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          await new Promise((r) => setTimeout(r, 200));
-          return waitForSession();
-        } else {
-          console.log("📱 [UserContext] ⚠️ Session bulunamadı (3sn timeout)");
-        }
-      };
-
-      await waitForSession();
+    const handleForeground = async () => {
+      console.log("📱 [UserContext] App foreground - session recovery bekleniyor...");
+      isRefreshingCreditsRef.current = false;
+      setIsSystemConnected(true);
+      
+      // 🔥 ARTIK BURADA SESSION BEKLEMİYORUZ!
+      // useSessionRecovery hook'u session'ı geri yükleyecek ve "session-recovered" eventi gönderecek
+      // Biz sadece o eventi dinliyoruz (handleSessionRecovered)
+      
+      // Eğer user zaten varsa direkt refresh yap
+      if (user) {
+        console.log("📱 [UserContext] User zaten var, profil yenileniyor...");
+        setTimeout(() => refreshProfile(true), 500);
+      }
     };
 
     window.addEventListener("supabase-reconnected", handleReconnect);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("appForeground", handleForeground);
+    window.addEventListener("session-recovered", handleSessionRecovered);
     document.addEventListener("visibilitychange", handleVisibility);
 
     const interval = setInterval(checkConnection, 30000);
@@ -259,6 +258,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("appForeground", handleForeground);
+      window.removeEventListener("session-recovered", handleSessionRecovered);
       document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
     };

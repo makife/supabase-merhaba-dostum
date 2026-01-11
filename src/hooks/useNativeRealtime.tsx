@@ -47,41 +47,22 @@ export function useNativeRealtime() {
 
     const setupListeners = async () => {
       // 🔥 KRİTİK: sessionRestored eventi - Misafir modundan kurtarma
+      // Bu event Kotlin'den geliyor - Native WebSocket bağlandığında
       await NativeRealtime.addListener("sessionRestored", async (data: any) => {
         console.log("[NativeRealtime] 🔐 SESSION RESTORED eventi alındı!", data);
         
         if (data.restored && data.accessToken) {
-          console.log("[NativeRealtime] 🔄 Supabase session yenileniyor...");
+          // 🔥 Sadece event dispatch et - useSessionRecovery dinleyecek
+          // Session recovery işlemini TEK YERDEN yap (useSessionRecovery)
+          console.log("[NativeRealtime] 📢 session-restored-from-native eventi gönderiliyor...");
           
-          try {
-            // Mevcut session'ı kontrol et
-            const { data: currentSession } = await supabase.auth.getSession();
-            
-            if (!currentSession?.session) {
-              console.log("[NativeRealtime] ⚠️ JS session yok, yeniden auth yapılıyor...");
-              
-              // Session'ı yenile - bu kullanıcıyı tekrar login yapar
-              const { data: refreshData, error } = await supabase.auth.refreshSession();
-              
-              if (error) {
-                console.error("[NativeRealtime] ❌ Session refresh hatası:", error);
-                // Hata olursa bile native token'ı kullanmayı dene
-                // Native tarafta token varsa, kullanıcı hala giriş yapmış demektir
-              } else {
-                console.log("[NativeRealtime] ✅ Session başarıyla yenilendi:", refreshData.user?.email);
-              }
-            } else {
-              console.log("[NativeRealtime] ✅ JS session zaten mevcut:", currentSession.session.user.email);
+          window.dispatchEvent(new CustomEvent("session-restored-from-native", {
+            detail: { 
+              accessToken: data.accessToken,
+              apiKey: data.apiKey,
+              url: data.url 
             }
-            
-            // Session restore olayını tüm uygulamaya bildir
-            window.dispatchEvent(new CustomEvent("session-restored-from-native", {
-              detail: { accessToken: data.accessToken }
-            }));
-            
-          } catch (e) {
-            console.error("[NativeRealtime] ❌ Session restore hatası:", e);
-          }
+          }));
         }
       });
 
