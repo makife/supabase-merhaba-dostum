@@ -134,19 +134,37 @@ export const useGlobalResync = ({
     wasAppActiveRef.current = isAppActive;
   }, [isAppActive, isSystemConnected, performResync, pageName, isPriority]);
 
-  // Supabase reconnect eventi dinle
+  // Supabase reconnect ve session recovery eventlerini dinle
   useEffect(() => {
     const handleReconnect = () => {
       console.log(`[Resync] 📡 ${pageName} supabase-reconnected event`);
       performResync('supabase-event');
     };
     
+    // 🔥 KRİTİK: Session recovery sonrası TÜM sayfalar yenilensin!
+    const handleSessionRecovered = () => {
+      console.log(`[Resync] 🔐 ${pageName} session-recovered event - ZORLA yenileme`);
+      // Session recovery sonrası hemen veri tazele (debounce'u atla)
+      lastResyncTimeRef.current = 0;
+      setTimeout(() => performResync('session-recovered'), isPriority ? 100 : 300);
+    };
+    
+    // 🔥 appForeground event'ini de dinle (native için)
+    const handleAppForeground = () => {
+      console.log(`[Resync] ☀️ ${pageName} appForeground event`);
+      setTimeout(() => performResync('app-foreground-event'), isPriority ? 200 : 600);
+    };
+    
     window.addEventListener('supabase-reconnected', handleReconnect);
+    window.addEventListener('session-recovered', handleSessionRecovered);
+    window.addEventListener('appForeground', handleAppForeground);
     
     return () => {
       window.removeEventListener('supabase-reconnected', handleReconnect);
+      window.removeEventListener('session-recovered', handleSessionRecovered);
+      window.removeEventListener('appForeground', handleAppForeground);
     };
-  }, [performResync, pageName]);
+  }, [performResync, pageName, isPriority]);
 
   // Cleanup
   useEffect(() => {

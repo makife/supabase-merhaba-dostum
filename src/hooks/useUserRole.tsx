@@ -76,10 +76,26 @@ export function useUserRole() {
       .subscribe();
     
     channelRef.current = channel;
+    
+    // 🔥 Session recovered event listener - foreground'dan dönünce rolü yenile
+    const handleSessionRecovered = () => {
+      console.log("[useUserRole] 🔐 Session recovered - rol yeniden yükleniyor...");
+      fetchUserRole();
+    };
+    
+    const handleForeground = () => {
+      console.log("[useUserRole] ☀️ App foreground - rol kontrol ediliyor...");
+      setTimeout(() => fetchUserRole(), 300);
+    };
+    
+    window.addEventListener('session-recovered', handleSessionRecovered);
+    window.addEventListener('appForeground', handleForeground);
 
     // Cleanup - channel'ı koruyoruz
     return () => {
       console.log("[useUserRole] Cleanup - channel korunuyor");
+      window.removeEventListener('session-recovered', handleSessionRecovered);
+      window.removeEventListener('appForeground', handleForeground);
     };
   }, [user?.id]);
 
