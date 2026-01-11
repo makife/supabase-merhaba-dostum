@@ -73,9 +73,46 @@ export function useSessionRecovery() {
             console.log("[SessionRecovery] 🚫 Token geçersiz - session siliniyor");
             // Session'ı SİLMİYORUZ - kullanıcı bir süre daha bekleyebilir
             // Sadece log tutuyoruz
+          } else {
+            // 🔥🔥🔥 REFRESH BAŞARISIZ AMA TOKEN HALA GEÇERLİ OLABİLİR
+            // Storage'daki session'ı Supabase client'a ZORLA set et!
+            console.log("[SessionRecovery] 🔧 Refresh başarısız - storage session'ı zorla set ediliyor...");
+            try {
+              const { error: setError } = await supabase.auth.setSession({
+                access_token: stored.access_token,
+                refresh_token: stored.refresh_token,
+              });
+              
+              if (!setError) {
+                console.log("[SessionRecovery] ✅ Storage session zorla set edildi!");
+                window.dispatchEvent(new CustomEvent("session-recovered", {
+                  detail: { userId: stored.user.id }
+                }));
+                window.dispatchEvent(new Event("supabase-reconnected"));
+              }
+            } catch (setErr) {
+              console.error("[SessionRecovery] ❌ setSession hatası:", setErr);
+            }
           }
         } else if (data?.session) {
           console.log("[SessionRecovery] ✅ Session yenilendi!", data.session.user.email);
+          
+          // 🔥🔥🔥 KRİTİK: Supabase client'a session'ı EXPLICIT olarak bildir!
+          // Native'de persistSession: false olduğu için refreshSession tek başına yetmez!
+          try {
+            const { error: setError } = await supabase.auth.setSession({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+            });
+            
+            if (setError) {
+              console.error("[SessionRecovery] ⚠️ setSession hatası:", setError.message);
+            } else {
+              console.log("[SessionRecovery] ✅ Supabase client session SET EDİLDİ!");
+            }
+          } catch (setErr) {
+            console.error("[SessionRecovery] ❌ setSession exception:", setErr);
+          }
           
           // 🔥 Yeni session'ı kaydet (yeni refresh_token ile)
           await saveSessionToStorage(data.session);

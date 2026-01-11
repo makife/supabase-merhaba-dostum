@@ -75,7 +75,7 @@ export const useJokerInventory = () => {
     }
   }, [user?.id]); // 🔥 Sadece user.id'ye bağlı
 
-  // 🔥 Foreground'da joker yenileme
+  // 🔥 Foreground ve Session Recovery'de joker yenileme
   useEffect(() => {
     const handleForeground = () => {
       console.log("[Joker] ☀️ App foreground - jokerler ZORLA yenileniyor...");
@@ -83,12 +83,20 @@ export const useJokerInventory = () => {
       setTimeout(() => loadJokers(), 300);
     };
     
+    // 🔥 Session recovery sonrası da jokerleri yenile
+    const handleSessionRecovered = () => {
+      console.log("[Joker] 🔐 Session recovered - jokerler yeniden yükleniyor...");
+      setTimeout(() => loadJokers(), 500);
+    };
+    
     window.addEventListener("app-foreground", handleForeground);
     window.addEventListener("appForeground", handleForeground);
+    window.addEventListener("session-recovered", handleSessionRecovered);
     
     return () => {
       window.removeEventListener("app-foreground", handleForeground);
       window.removeEventListener("appForeground", handleForeground);
+      window.removeEventListener("session-recovered", handleSessionRecovered);
     };
   }, [loadJokers]);
 
