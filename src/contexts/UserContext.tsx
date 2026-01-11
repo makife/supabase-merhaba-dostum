@@ -94,6 +94,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   // 🛡️ YENİ EKLENEN KORUMA REFLERİ
   const lastRefreshTimeRef = useRef<number>(0); // Son yenileme zamanı
   const isFetchingProfileRef = useRef<boolean>(false); // Şu an istek atılıyor mu?
+  
+  // 🔥 KRİTİK: User ref - closure sorununu çözmek için
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
@@ -224,8 +228,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         
         setIsSystemConnected(navigator.onLine);
         
-        // User varsa profili yenile
-        if (user) {
+        // 🔥 REF KULLAN - closure sorunu çözümü
+        if (userRef.current) {
           refreshProfile(true);
         }
       } else {
@@ -243,6 +247,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
+      // 🔥 HEMEN CACHE'DEN YÜKLE (UI anında göstersin)
+      const cached = localStorage.getItem("cached_profile");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.data?.username) {
+            console.log("[UserContext] ⚡ Session recovered - cache'den hızlı hydrate:", parsed.data.username);
+            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+          }
+        } catch {}
+      }
+      
       // Profil yenilenmesini biraz bekle
       setTimeout(() => {
         refreshProfile(true);
@@ -257,8 +273,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // Eğer user zaten varsa direkt refresh yap
-      if (user) {
+      // 🔥 REF KULLAN - closure sorunu çözümü
+      if (userRef.current) {
         console.log("📱 [UserContext] User zaten var, profil yenileniyor...");
         setTimeout(() => refreshProfile(true), 500);
       }
@@ -353,9 +369,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   // 🛡️ DÜZELTİLMİŞ VE KORUMALI REFRESH PROFILE
   const refreshProfile = async (forceRefresh = false) => {
-    if (!user) {
-      setProfile(null);
-      localStorage.removeItem("cached_profile");
+    // 🔥 KRİTİK: Her iki kaynaktan da user'ı kontrol et
+    const currentUser = user || userRef.current;
+    
+    if (!currentUser) {
+      console.log("⏳ [UserContext] refreshProfile: user yok, bekleniyor...");
+      // Sadece intentional logout'ta temizle
       return;
     }
 
@@ -384,7 +403,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         try {
           const parsed = JSON.parse(cachedProfile);
           const isValidCache =
-            parsed.id === user.id &&
+            parsed.id === currentUser.id &&
             parsed.timestamp > Date.now() - CACHE_DURATION &&
             parsed.data?.username &&
             typeof parsed.data?.total_score === "number";
@@ -416,7 +435,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5sn timeout
 
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
 
       clearTimeout(timeoutId);
 
@@ -427,7 +446,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         if (cachedProfile) {
           try {
             const parsed = JSON.parse(cachedProfile);
-            if (parsed.id === user.id) {
+            if (parsed.id === currentUser.id) {
               console.log("[UserContext] ⚠️ Hata - Cache'den fallback yükleniyor");
               setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             }
@@ -449,7 +468,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         localStorage.setItem(
           "cached_profile",
           JSON.stringify({
-            id: user.id,
+            id: currentUser.id,
             data: profileData,
             timestamp: Date.now(),
           }),
@@ -465,14 +484,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   };
 
   const checkAndResetDailyStats = async (profileData: any) => {
-    if (!user || !profileData) return;
+    const currentUser = user || userRef.current;
+    if (!currentUser || !profileData) return;
 
     const now = new Date();
     const lastReset = profileData.last_daily_reset ? new Date(profileData.last_daily_reset) : null;
     const today = now.toISOString().split("T")[0];
 
     if (!lastReset || lastReset.toISOString().split("T")[0] !== today) {
-      console.log("🔄 Resetting daily stats for user:", user.id);
+      console.log("🔄 Resetting daily stats for user:", currentUser.id);
 
       try {
         const { error } = await supabase
@@ -483,7 +503,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             win_streak: 0,
             last_daily_reset: today,
           })
-          .eq("id", user.id);
+          .eq("id", currentUser.id);
 
         if (error) {
           console.error("Error resetting daily stats:", error);
