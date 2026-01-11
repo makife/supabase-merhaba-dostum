@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import { supabase, loadSessionFromStorage, saveSessionToStorage } from "@/integrations/supabase/client";
+import { supabase, loadSessionFromStorage, saveSessionToStorage, setGlobalAccessToken } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 
 /**
- * 🔧 Session Recovery Hook - V5 (Gelişmiş)
+ * 🔧 Session Recovery Hook - V6 (GLOBAL TOKEN FIX)
  * Arka plandan gelince session'ı korur ve geri yükler
  * TEK KAYNAK: client.ts storage fonksiyonları
  * 
- * 🔥 KRİTİK: Native'de Supabase persistSession: false
- * Bu yüzden supabase.auth.refreshSession() PARAMETRE İLE çağrılmalı!
+ * 🔥🔥🔥 KRİTİK: Native'de her istek için globalAccessToken gerekli!
+ * Bu hook session recovery sırasında token'ı global'e set ediyor.
  */
 
 export function useSessionRecovery() {
@@ -40,6 +40,11 @@ export function useSessionRecovery() {
 
         if (currentSession?.access_token && currentSession?.user) {
           console.log("[SessionRecovery] ✅ Session zaten aktif:", currentSession.user.email);
+          
+          // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I SET ET!
+          // Native'de her istek bu token'ı kullanır
+          setGlobalAccessToken(currentSession.access_token);
+          console.log("[SessionRecovery] 🔐 Global token SET EDİLDİ!");
           
           // 🔥🔥🔥 KRİTİK: Session aktif olsa bile event dispatch et!
           // Native'de arka plandan gelince hook'lar bu event'i bekliyor
@@ -106,6 +111,10 @@ export function useSessionRecovery() {
         } else if (data?.session) {
           console.log("[SessionRecovery] ✅ Session yenilendi!", data.session.user.email);
           
+          // 🔥🔥🔥 EN KRİTİK ADIM: GLOBAL TOKEN'I SET ET!
+          setGlobalAccessToken(data.session.access_token);
+          console.log("[SessionRecovery] 🔐 Global token SET EDİLDİ (refresh sonrası)!");
+          
           // 🔥🔥🔥 KRİTİK: Supabase client'a session'ı EXPLICIT olarak bildir!
           // Native'de persistSession: false olduğu için refreshSession tek başına yetmez!
           try {
@@ -123,7 +132,7 @@ export function useSessionRecovery() {
             console.error("[SessionRecovery] ❌ setSession exception:", setErr);
           }
           
-          // 🔥 Yeni session'ı kaydet (yeni refresh_token ile)
+          // 🔥 Yeni session'ı kaydet (yeni refresh_token ile) - bu da global token'ı set eder
           await saveSessionToStorage(data.session);
           
           // 🔥 Tüm uygulamaya bildir - profil yenilensin!
