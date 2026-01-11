@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useAppState } from '@/hooks/useAppState';
+import { registerHubCallback } from '@/utils/foregroundEventHub';
 
 interface ResyncOptions {
   // Ana veri çekme fonksiyonu
@@ -16,16 +17,18 @@ interface ResyncOptions {
 }
 
 /**
- * 🔄 Global Resync Hook
+ * 🔄 Global Resync Hook V2 - EVENT HUB ENTEGRASYONU
  * 
- * Uygulama arka plandan döndüğünde ve bağlantı yeniden kurulduğunda
- * otomatik veri tazeleme yapar.
+ * ÖNCEKİ PROBLEM: Her sayfa bağımsız event listener'lar kuruyordu
+ * = 15 sayfa × 3 event = 45 listener! Event storm!
+ * 
+ * YENİ ÇÖZÜM: Merkezi Event Hub'a kayıt ol
+ * = 1 hub × 1 event = kontrollü, sıralı veri tazeleme
  * 
  * Kurallar:
- * - isSystemConnected false→true geçişinde resync tetiklenir
- * - Sadece mount edilmiş sayfalar için çalışır
- * - Loading ekranı göstermez (sessiz tazeleme)
- * - Kritik sayfalar öncelikli
+ * - Event Hub'dan onDataReady eventi geldiğinde resync tetiklenir
+ * - Sayfa aktif değilse atlanır
+ * - Debounce korunuyor (aynı sayfa için çift tetikleme önlenir)
  */
 export const useGlobalResync = ({
   onResync,
@@ -37,20 +40,25 @@ export const useGlobalResync = ({
   const { isSystemConnected } = useUser();
   const { isActive: isAppActive } = useAppState({});
   
-  // Önceki bağlantı durumunu takip et
-  const wasConnectedRef = useRef<boolean | null>(null);
-  const wasAppActiveRef = useRef<boolean | null>(null);
+  // Refs
   const isMountedRef = useRef(true);
   const lastResyncTimeRef = useRef<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const onResyncRef = useRef(onResync);
+  const onResubscribeRef = useRef(onResubscribe);
+  
+  // Callback ref'lerini güncel tut
+  useEffect(() => {
+    onResyncRef.current = onResync;
+    onResubscribeRef.current = onResubscribe;
+  }, [onResync, onResubscribe]);
   
   // Debounce için minimum süre (ms)
-  const MIN_RESYNC_INTERVAL = isPriority ? 500 : 2000;
+  const MIN_RESYNC_INTERVAL = isPriority ? 300 : 1000;
 
-  const performResync = useCallback(async (source: string = 'unknown', forceBypassDebounce = false) => {
+  const performResync = useCallback(async (source: string = 'unknown') => {
     // Mount kontrolü
     if (!isMountedRef.current) {
-      console.log(`[Resync] ⏭️ ${pageName} unmounted, skip (${source})`);
       return;
     }
     
@@ -60,10 +68,9 @@ export const useGlobalResync = ({
       return;
     }
     
-    // Debounce kontrolü - session-recovered geldiğinde BYPASS et!
+    // Debounce kontrolü
     const now = Date.now();
-    const shouldBypass = forceBypassDebounce || source === 'session-recovered';
-    if (!shouldBypass && now - lastResyncTimeRef.current < MIN_RESYNC_INTERVAL) {
+    if (now - lastResyncTimeRef.current < MIN_RESYNC_INTERVAL) {
       console.log(`[Resync] ⏭️ ${pageName} debounced (${source})`);
       return;
     }
@@ -71,27 +78,44 @@ export const useGlobalResync = ({
     lastResyncTimeRef.current = now;
     console.log(`[Resync] 🔄 ${pageName} veri tazeleniyor... (${source})`);
     
-    // Sessiz tazeleme - loading gösterme
     setIsRefreshing(true);
     
     try {
       // Önce kanalları yeniden subscribe et (kritik sayfalar için)
-      if (onResubscribe && isPriority) {
-        await onResubscribe();
+      if (onResubscribeRef.current && isPriority) {
+        await onResubscribeRef.current();
       }
       
-      await onResync();
+      await onResyncRef.current();
       console.log(`[Resync] ✅ ${pageName} tamamlandı`);
     } catch (error) {
       console.error(`[Resync] ❌ ${pageName} hata:`, error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [onResync, onResubscribe, isActive, pageName, MIN_RESYNC_INTERVAL, isPriority]);
+  }, [isActive, pageName, MIN_RESYNC_INTERVAL, isPriority]);
+
+  // 🆕 MERKEZİ EVENT HUB'A KAYIT
+  // Artık bağımsız event listener yok!
+  useEffect(() => {
+    const unregisterHub = registerHubCallback('onDataReady', () => {
+      // Kritik sayfalar küçük gecikmeyle, diğerleri daha fazla
+      const delay = isPriority ? 0 : 200;
+      
+      setTimeout(() => {
+        performResync('event-hub');
+      }, delay);
+    });
+    
+    return () => {
+      unregisterHub();
+    };
+  }, [performResync, isPriority]);
 
   // isSystemConnected değişimini izle - FALSE → TRUE geçişi
+  // (Bu hala gerekli çünkü bağlantı kaybı/geri gelme Event Hub'dan bağımsız olabilir)
+  const wasConnectedRef = useRef<boolean | null>(null);
   useEffect(() => {
-    // İlk render'da sadece değeri kaydet
     if (wasConnectedRef.current === null) {
       wasConnectedRef.current = isSystemConnected;
       return;
@@ -100,10 +124,7 @@ export const useGlobalResync = ({
     // false → true geçişi tespit et
     if (!wasConnectedRef.current && isSystemConnected) {
       console.log(`[Resync] 🌐 ${pageName} bağlantı geri geldi!`);
-      
-      // Kritik sayfalar hemen, diğerleri küçük gecikmeyle
-      const delay = isPriority ? 50 : 300;
-      
+      const delay = isPriority ? 100 : 400;
       setTimeout(() => {
         performResync('connection-restored');
       }, delay);
@@ -111,62 +132,6 @@ export const useGlobalResync = ({
     
     wasConnectedRef.current = isSystemConnected;
   }, [isSystemConnected, performResync, pageName, isPriority]);
-
-  // App foreground'a geldiğinde resync (bağlantı varsa)
-  useEffect(() => {
-    // İlk render'da sadece değeri kaydet
-    if (wasAppActiveRef.current === null) {
-      wasAppActiveRef.current = isAppActive;
-      return;
-    }
-    
-    // false → true geçişi (arka plan → ön plan)
-    if (!wasAppActiveRef.current && isAppActive && isSystemConnected) {
-      console.log(`[Resync] 📱 ${pageName} ön plana geldi!`);
-      
-      // App uyanışında küçük gecikmeyle resync
-      const delay = isPriority ? 100 : 500;
-      
-      setTimeout(() => {
-        performResync('app-foreground');
-      }, delay);
-    }
-    
-    wasAppActiveRef.current = isAppActive;
-  }, [isAppActive, isSystemConnected, performResync, pageName, isPriority]);
-
-  // Supabase reconnect ve session recovery eventlerini dinle
-  useEffect(() => {
-    const handleReconnect = () => {
-      console.log(`[Resync] 📡 ${pageName} supabase-reconnected event`);
-      performResync('supabase-event');
-    };
-    
-    // 🔥 KRİTİK: Session recovery sonrası TÜM sayfalar yenilensin!
-    const handleSessionRecovered = () => {
-      console.log(`[Resync] 🔐 ${pageName} session-recovered event - ZORLA yenileme`);
-      // 🔥🔥🔥 Session recovery sonrası HEMEN ve ZORLA veri tazele!
-      lastResyncTimeRef.current = 0; // Debounce'u sıfırla
-      // Küçük gecikme ile ama kesinlikle çalıştır
-      setTimeout(() => performResync('session-recovered', true), isPriority ? 50 : 200);
-    };
-    
-    // 🔥 appForeground event'ini de dinle (native için)
-    const handleAppForeground = () => {
-      console.log(`[Resync] ☀️ ${pageName} appForeground event`);
-      setTimeout(() => performResync('app-foreground-event'), isPriority ? 200 : 600);
-    };
-    
-    window.addEventListener('supabase-reconnected', handleReconnect);
-    window.addEventListener('session-recovered', handleSessionRecovered);
-    window.addEventListener('appForeground', handleAppForeground);
-    
-    return () => {
-      window.removeEventListener('supabase-reconnected', handleReconnect);
-      window.removeEventListener('session-recovered', handleSessionRecovered);
-      window.removeEventListener('appForeground', handleAppForeground);
-    };
-  }, [performResync, pageName, isPriority]);
 
   // Cleanup
   useEffect(() => {
@@ -181,7 +146,7 @@ export const useGlobalResync = ({
     triggerResync: () => performResync('manual'),
     isConnected: isSystemConnected,
     isAppActive,
-    // Sessiz tazeleme durumu (UI'da kullanılabilir)
+    // Sessiz tazeleme durumu
     isRefreshing
   };
 };

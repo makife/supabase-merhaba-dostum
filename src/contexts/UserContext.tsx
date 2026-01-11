@@ -280,20 +280,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     isRefreshingCreditsRef.current = false;
     lastRefreshTimeRef.current = 0;
     refreshProfile(true);
-
-    const handleReconnect = () => {
-      console.log("🔄 [UserContext] Reconnect - profil yeniden yükleniyor...");
-      // 🔥 Reconnect'te kilitleri sıfırla
-      isFetchingProfileRef.current = false;
-      isRefreshingCreditsRef.current = false;
-      lastRefreshTimeRef.current = 0;
-      refreshProfile(true);
-    };
-    window.addEventListener("supabase-reconnected", handleReconnect);
-
-    return () => {
-      window.removeEventListener("supabase-reconnected", handleReconnect);
-    };
+    
+    // 🆕 supabase-reconnected artık Event Hub tarafından yönetiliyor!
+    // Bağımsız listener KALDIRILDI - döngü önlendi
   }, [user?.id]);
 
   // 🛡️ DÜZELTİLMİŞ VE KORUMALI REFRESH PROFILE
