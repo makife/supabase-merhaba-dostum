@@ -75,13 +75,30 @@ export const useJokerInventory = () => {
     }
   }, [user?.id]); // 🔥 Sadece user.id'ye bağlı
 
+  // 🔥 Foreground'da joker yenileme
+  useEffect(() => {
+    const handleForeground = () => {
+      console.log("[Joker] ☀️ App foreground - jokerler ZORLA yenileniyor...");
+      // Küçük gecikme ile yükle
+      setTimeout(() => loadJokers(), 300);
+    };
+    
+    window.addEventListener("app-foreground", handleForeground);
+    window.addEventListener("appForeground", handleForeground);
+    
+    return () => {
+      window.removeEventListener("app-foreground", handleForeground);
+      window.removeEventListener("appForeground", handleForeground);
+    };
+  }, [loadJokers]);
+
   // Realtime Listener
   useEffect(() => {
     if (!user?.id) return;
 
     // 🔥 GUARD: Aynı user için zaten subscription varsa atla
     if (subscriptionUserIdRef.current === user.id && channelRef.current) {
-      console.log("[Joker] ⏭️ Subscription zaten aktif, atlanıyor...");
+      console.log("[Joker] ⏭️ Subscription zaten aktif, veri yenileniyor...");
       loadJokers(); // Sadece veriyi yenile
       return;
     }

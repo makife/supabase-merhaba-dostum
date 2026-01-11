@@ -379,14 +379,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
 
     // 1. KİLİT KONTROLÜ: Zaten bir istek varsa yenisini kabul etme
-    if (isFetchingProfileRef.current) {
+    // 🔥 FORCE modunda kilidi atla
+    if (isFetchingProfileRef.current && !forceRefresh) {
       console.log("🛡️ [UserContext] Zaten profil çekiliyor, istek sıraya alınmadı (Concurrency Lock).");
       return;
     }
+    
+    // 🔥 Force refresh ise kilidi zorla aç
+    if (forceRefresh && isFetchingProfileRef.current) {
+      console.log("🔓 [UserContext] FORCE - kilit zorla açılıyor...");
+      isFetchingProfileRef.current = false;
+    }
 
-    // 2. SPAM KORUMASI (Cool-down): Son 2 saniye içinde çekildiyse reddet
+    // 2. SPAM KORUMASI (Cool-down): Son 1 saniye içinde çekildiyse reddet
+    // 🔥 Force modunda cooldown'ı kısalt
     const now = Date.now();
-    const COOLDOWN_MS = 2000; // 2 saniye koruma
+    const COOLDOWN_MS = forceRefresh ? 500 : 2000; // Force: 0.5sn, Normal: 2sn
     if (now - lastRefreshTimeRef.current < COOLDOWN_MS) {
       console.log(
         `🛡️ [UserContext] Profil çok yeni (${Math.round(now - lastRefreshTimeRef.current)}ms), istek atlandı (Debounce).`,
