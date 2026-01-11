@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscribeToForegroundState, getIsAppInForeground } from "@/hooks/useAppForegroundState";
 import { Network } from "@capacitor/network";
 import { Capacitor } from "@capacitor/core";
-import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface TimeSample {
   offset: number;
@@ -326,17 +325,19 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     }
   }, [calculateOffset]);
 
-  // 🆕 Event Hub üzerinden yönetim - bağımsız listener KALDIRILDI
+  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
   useEffect(() => {
-    const unregisterHub = registerHubCallback('onAuthReady', () => {
-      console.log("[ServerTime] 🔌 Event Hub - recalibrating...");
+    const handleAppResumed = () => {
+      console.log("[ServerTime] 🔌 App resumed - recalibrating...");
       setTimeout(() => {
         calculateOffset();
       }, 300);
-    });
+    };
+
+    window.addEventListener("app-resumed", handleAppResumed);
     
     return () => {
-      unregisterHub();
+      window.removeEventListener("app-resumed", handleAppResumed);
     };
   }, [calculateOffset]);
 

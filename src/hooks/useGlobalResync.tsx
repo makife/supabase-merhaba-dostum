@@ -1,7 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { useAppState } from '@/hooks/useAppState';
-import { registerHubCallback } from '@/utils/foregroundEventHub';
 
 interface ResyncOptions {
   // Ana veri çekme fonksiyonu
@@ -17,18 +15,10 @@ interface ResyncOptions {
 }
 
 /**
- * 🔄 Global Resync Hook V2 - EVENT HUB ENTEGRASYONU
+ * 🔥 ULTRA BASİT GLOBAL RESYNC HOOK
  * 
- * ÖNCEKİ PROBLEM: Her sayfa bağımsız event listener'lar kuruyordu
- * = 15 sayfa × 3 event = 45 listener! Event storm!
- * 
- * YENİ ÇÖZÜM: Merkezi Event Hub'a kayıt ol
- * = 1 hub × 1 event = kontrollü, sıralı veri tazeleme
- * 
- * Kurallar:
- * - Event Hub'dan onDataReady eventi geldiğinde resync tetiklenir
- * - Sayfa aktif değilse atlanır
- * - Debounce korunuyor (aynı sayfa için çift tetikleme önlenir)
+ * Tüm karmaşık Event Hub mantığı KALDIRILDI.
+ * Sadece "app-resumed" eventini dinle ve veriyi tazele.
  */
 export const useGlobalResync = ({
   onResync,
@@ -38,7 +28,6 @@ export const useGlobalResync = ({
   onResubscribe
 }: ResyncOptions) => {
   const { isSystemConnected } = useUser();
-  const { isActive: isAppActive } = useAppState({});
   
   // Refs
   const isMountedRef = useRef(true);
@@ -95,29 +84,25 @@ export const useGlobalResync = ({
     }
   }, [isActive, pageName, MIN_RESYNC_INTERVAL, isPriority]);
 
-  // 🆕 MERKEZİ EVENT HUB'A KAYIT
-  // Artık bağımsız event listener yok!
-  // ⚠️ KRİTİK: Callback HEMEN return etmeli - async olmamalı!
+  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
   useEffect(() => {
-    const unregisterHub = registerHubCallback('onDataReady', () => {
+    const handleAppResumed = () => {
       // Kritik sayfalar küçük gecikmeyle, diğerleri daha fazla
-      const delay = isPriority ? 0 : 200;
+      const delay = isPriority ? 50 : 300;
       
-      // 🔥 setTimeout ile fire-and-forget - Event Hub beklemez
       setTimeout(() => {
-        performResync('event-hub');
+        performResync('app-resumed');
       }, delay);
-      
-      // ✅ Hemen return - timeout'a düşmez
-    });
+    };
+
+    window.addEventListener("app-resumed", handleAppResumed);
     
     return () => {
-      unregisterHub();
+      window.removeEventListener("app-resumed", handleAppResumed);
     };
   }, [performResync, isPriority]);
 
   // isSystemConnected değişimini izle - FALSE → TRUE geçişi
-  // (Bu hala gerekli çünkü bağlantı kaybı/geri gelme Event Hub'dan bağımsız olabilir)
   const wasConnectedRef = useRef<boolean | null>(null);
   useEffect(() => {
     if (wasConnectedRef.current === null) {
@@ -149,7 +134,6 @@ export const useGlobalResync = ({
     // Manuel resync tetikleme
     triggerResync: () => performResync('manual'),
     isConnected: isSystemConnected,
-    isAppActive,
     // Sessiz tazeleme durumu
     isRefreshing
   };

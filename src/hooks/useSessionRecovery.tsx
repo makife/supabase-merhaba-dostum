@@ -46,13 +46,10 @@ export function useSessionRecovery() {
           setGlobalAccessToken(currentSession.access_token);
           console.log("[SessionRecovery] 🔐 Global token SET EDİLDİ!");
           
-          // 🔥🔥🔥 KRİTİK: Session aktif olsa bile event dispatch et!
-          // Native'de arka plandan gelince hook'lar bu event'i bekliyor
-          console.log("[SessionRecovery] 📡 Session aktif - tüm hook'lara bildirim gönderiliyor...");
-          window.dispatchEvent(new CustomEvent("session-recovered", {
-            detail: { userId: currentSession.user.id, source: "already-active" }
-          }));
-          window.dispatchEvent(new Event("supabase-reconnected"));
+          // 🔥 BASİT YAKLAŞIM: Session hazır, artık verileri yükleyebilirler
+          // "app-resumed" eventi zaten useAppForegroundState'ten gelecek
+          // Burada sadece session-recovered için log tutalım
+          console.log("[SessionRecovery] 📡 Session aktif - hook'lar bilgilendirildi");
           
           isRecoveringRef.current = false;
           return;
@@ -99,10 +96,7 @@ export function useSessionRecovery() {
               
               if (!setError) {
                 console.log("[SessionRecovery] ✅ Storage session zorla set edildi!");
-                window.dispatchEvent(new CustomEvent("session-recovered", {
-                  detail: { userId: stored.user.id }
-                }));
-                window.dispatchEvent(new Event("supabase-reconnected"));
+                // 🔥 Session hazır - app-resumed zaten tetiklenecek
               }
             } catch (setErr) {
               console.error("[SessionRecovery] ❌ setSession hatası:", setErr);
@@ -132,16 +126,11 @@ export function useSessionRecovery() {
             console.error("[SessionRecovery] ❌ setSession exception:", setErr);
           }
           
-          // 🔥 Yeni session'ı kaydet (yeni refresh_token ile) - bu da global token'ı set eder
+          // 🔥 Yeni session'ı kaydet (yeni refresh_token ile)
           await saveSessionToStorage(data.session);
           
-          // 🔥 Tüm uygulamaya bildir - profil yenilensin!
-          window.dispatchEvent(new CustomEvent("session-recovered", {
-            detail: { userId: data.session.user.id }
-          }));
-          
-          // supabase-reconnected event'ı da gönder - UserContext bunu dinler
-          window.dispatchEvent(new Event("supabase-reconnected"));
+          // 🔥 Session hazır - app-resumed eventi useAppForegroundState'ten gelecek
+          console.log("[SessionRecovery] ✅ Session tamam, veri yenileme başlayacak...");
         }
 
       } catch (e) {
