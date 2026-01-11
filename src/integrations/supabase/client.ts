@@ -188,25 +188,51 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
-        // 🔥🔥🔥 KRİTİK: Native'de header'ları düzgün ekle!
-        let finalHeaders = { ...(optionsWithoutSignal.headers || {}) } as Record<string, string>;
+        // 🔥🔥🔥 KRİTİK: Headers'ı DÜZGÜN kopyala!
+        // Supabase client Headers objesi gönderebilir, bunu düzgün handle etmeliyiz
+        const originalHeaders = optionsWithoutSignal.headers;
+        let finalHeaders: Record<string, string> = {};
+        
+        // Headers objesini düzgün kopyala
+        if (originalHeaders) {
+          if (originalHeaders instanceof Headers) {
+            // Headers objesi ise forEach ile kopyala
+            originalHeaders.forEach((value, key) => {
+              finalHeaders[key] = value;
+            });
+          } else if (Array.isArray(originalHeaders)) {
+            // Array ise [key, value] çiftlerini kopyala
+            originalHeaders.forEach(([key, value]) => {
+              finalHeaders[key] = value;
+            });
+          } else {
+            // Plain object ise spread et
+            finalHeaders = { ...originalHeaders as Record<string, string> };
+          }
+        }
         
         if (isNativePlatform) {
           // 🔥 1. APIKEY - HER ZAMAN GEREKLİ!
-          const existingApiKey = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'apikey');
-          if (!existingApiKey) {
+          const hasApiKey = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'apikey');
+          if (!hasApiKey) {
             finalHeaders['apikey'] = SUPABASE_PUBLISHABLE_KEY;
           }
           
           // 🔥 2. AUTHORIZATION - Token varsa ekle!
           if (globalAccessToken) {
-            const existingAuth = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'authorization');
-            if (!existingAuth) {
+            const hasAuth = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'authorization');
+            if (!hasAuth) {
               finalHeaders['Authorization'] = `Bearer ${globalAccessToken}`;
             }
           }
           
-          console.log(`[Supabase] 🔐 Headers: apikey=✓, auth=${globalAccessToken ? '✓' : '✗'}`);
+          // 🔥 3. Content-Type kontrolü - Supabase genelde ekler ama kontrol et
+          const hasContentType = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'content-type');
+          if (!hasContentType && optionsWithoutSignal.body) {
+            finalHeaders['Content-Type'] = 'application/json';
+          }
+          
+          console.log(`[Supabase] 🔐 Headers: apikey=✓, auth=${globalAccessToken ? '✓' : '✗'}, ct=${finalHeaders['Content-Type'] || finalHeaders['content-type'] || '✗'}`);
         }
         
         const controller = new AbortController();
