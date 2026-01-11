@@ -188,51 +188,58 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
-        // 🔥🔥🔥 KRİTİK: Headers'ı DÜZGÜN kopyala!
-        // Supabase client Headers objesi gönderebilir, bunu düzgün handle etmeliyiz
-        const originalHeaders = optionsWithoutSignal.headers;
-        let finalHeaders: Record<string, string> = {};
+        // 🔥🔥🔥 KRİTİK FIX: Native'de TÜM header'ları doğru şekilde yönet
+        // Supabase client farklı formatlarda header gönderebilir
         
-        // Headers objesini düzgün kopyala
+        const originalHeaders = optionsWithoutSignal.headers;
+        const method = optionsWithoutSignal.method?.toUpperCase() || 'GET';
+        const hasBody = !!optionsWithoutSignal.body;
+        
+        // 🔥 Native için TAMAMEN yeni Headers objesi oluştur
+        const finalHeaders = new Headers();
+        
+        // 1. Önce orijinal header'ları kopyala
         if (originalHeaders) {
           if (originalHeaders instanceof Headers) {
-            // Headers objesi ise forEach ile kopyala
             originalHeaders.forEach((value, key) => {
-              finalHeaders[key] = value;
+              finalHeaders.set(key, value);
             });
           } else if (Array.isArray(originalHeaders)) {
-            // Array ise [key, value] çiftlerini kopyala
             originalHeaders.forEach(([key, value]) => {
-              finalHeaders[key] = value;
+              finalHeaders.set(key, value);
             });
-          } else {
-            // Plain object ise spread et
-            finalHeaders = { ...originalHeaders as Record<string, string> };
+          } else if (typeof originalHeaders === 'object') {
+            Object.entries(originalHeaders).forEach(([key, value]) => {
+              if (value) finalHeaders.set(key, value as string);
+            });
           }
         }
         
         if (isNativePlatform) {
-          // 🔥 1. APIKEY - HER ZAMAN GEREKLİ!
-          const hasApiKey = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'apikey');
-          if (!hasApiKey) {
-            finalHeaders['apikey'] = SUPABASE_PUBLISHABLE_KEY;
+          // 2. APIKEY - Yoksa ekle
+          if (!finalHeaders.has('apikey')) {
+            finalHeaders.set('apikey', SUPABASE_PUBLISHABLE_KEY);
           }
           
-          // 🔥 2. AUTHORIZATION - Token varsa ekle!
-          if (globalAccessToken) {
-            const hasAuth = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'authorization');
-            if (!hasAuth) {
-              finalHeaders['Authorization'] = `Bearer ${globalAccessToken}`;
-            }
+          // 3. AUTHORIZATION - Token varsa ve yoksa ekle  
+          if (globalAccessToken && !finalHeaders.has('Authorization')) {
+            finalHeaders.set('Authorization', `Bearer ${globalAccessToken}`);
           }
           
-          // 🔥 3. Content-Type kontrolü - Supabase genelde ekler ama kontrol et
-          const hasContentType = Object.keys(finalHeaders).some(k => k.toLowerCase() === 'content-type');
-          if (!hasContentType && optionsWithoutSignal.body) {
-            finalHeaders['Content-Type'] = 'application/json';
+          // 4. Content-Type - POST/PATCH/PUT için ZORUNLU application/json
+          if (hasBody && ['POST', 'PATCH', 'PUT'].includes(method)) {
+            // HER ZAMAN application/json olarak set et (override)
+            finalHeaders.set('Content-Type', 'application/json');
           }
           
-          console.log(`[Supabase] 🔐 Headers: apikey=✓, auth=${globalAccessToken ? '✓' : '✗'}, ct=${finalHeaders['Content-Type'] || finalHeaders['content-type'] || '✗'}`);
+          // 5. Accept header - response için
+          if (!finalHeaders.has('Accept')) {
+            finalHeaders.set('Accept', 'application/json');
+          }
+          
+          // Debug log
+          const ct = finalHeaders.get('Content-Type');
+          console.log(`[Supabase] 🔐 ${method} | apikey=✓ | auth=${globalAccessToken ? '✓' : '✗'} | ct=${ct || 'none'}`);
         }
         
         const controller = new AbortController();
