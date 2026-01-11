@@ -595,6 +595,8 @@ const App = () => {
   useAppState({
     onBackground: () => {
       console.log("📱 Uygulama arka plana gitti (UI)");
+      // 🔥 ARKA PLANA GİDİNCE TÜM CONTEXT'LERE BİLDİR
+      window.dispatchEvent(new Event('appBackground'));
       // Zombi istek temizliği için abort controller'ı hazırla
       abortAllPendingForegroundTasks();
     },
