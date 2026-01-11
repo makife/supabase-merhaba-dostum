@@ -207,35 +207,55 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
+    // 🔥🔥🔥 ARKA PLANA GİDİNCE KİLİTLERİ SIFIRLA!
+    const handleBackground = () => {
+      console.log("🌙 [UserContext] Arka plana gidiliyor - kilitler sıfırlanıyor");
+      isFetchingProfileRef.current = false; // 🔥 KRİTİK: Kilidi aç!
+      isRefreshingCreditsRef.current = false;
+    };
+
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         console.log("👁️ [UserContext] Sayfa görünür - flag reset + profil yeniden yükleniyor...");
+        // 🔥 KİLİTLERİ SIFIRLA
+        isFetchingProfileRef.current = false;
         isRefreshingCreditsRef.current = false;
+        lastRefreshTimeRef.current = 0; // Cooldown'ı da sıfırla
+        
         setIsSystemConnected(navigator.onLine);
-        refreshProfile(true);
+        
+        // User varsa profili yenile
+        if (user) {
+          refreshProfile(true);
+        }
+      } else {
+        // Arka plana gidince kilitlerimi sıfırla
+        handleBackground();
       }
     };
 
     // 🔥 Session recovered eventi - useSessionRecovery hook'undan geliyor
     const handleSessionRecovered = (event: any) => {
       console.log("📱 [UserContext] ✅ Session recovered eventi alındı! Profil yenileniyor...");
+      // 🔥 TÜM KİLİTLERİ SIFIRLA
+      isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
+      lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // Biraz bekle ki AuthContext de güncellensin
+      // Profil yenilenmesini biraz bekle
       setTimeout(() => {
         refreshProfile(true);
       }, 300);
     };
 
     const handleForeground = async () => {
-      console.log("📱 [UserContext] App foreground - session recovery bekleniyor...");
+      console.log("📱 [UserContext] App foreground - kilitler sıfırlanıyor...");
+      // 🔥 TÜM KİLİTLERİ SIFIRLA
+      isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
+      lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
-      
-      // 🔥 ARTIK BURADA SESSION BEKLEMİYORUZ!
-      // useSessionRecovery hook'u session'ı geri yükleyecek ve "session-recovered" eventi gönderecek
-      // Biz sadece o eventi dinliyoruz (handleSessionRecovered)
       
       // Eğer user zaten varsa direkt refresh yap
       if (user) {
@@ -248,6 +268,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("appForeground", handleForeground);
+    window.addEventListener("appBackground", handleBackground);
     window.addEventListener("session-recovered", handleSessionRecovered);
     document.addEventListener("visibilitychange", handleVisibility);
 
@@ -258,6 +279,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("appForeground", handleForeground);
+      window.removeEventListener("appBackground", handleBackground);
       window.removeEventListener("session-recovered", handleSessionRecovered);
       document.removeEventListener("visibilitychange", handleVisibility);
       clearInterval(interval);
@@ -308,11 +330,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
 
     console.log("[UserContext] 🚀 User değişti, profil zorla yenileniyor...");
+    // 🔥 User değiştiğinde tüm kilitleri sıfırla
+    isFetchingProfileRef.current = false;
+    isRefreshingCreditsRef.current = false;
+    lastRefreshTimeRef.current = 0;
     refreshProfile(true);
 
     const handleReconnect = () => {
       console.log("🔄 [UserContext] Reconnect - profil yeniden yükleniyor...");
+      // 🔥 Reconnect'te kilitleri sıfırla
+      isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
+      lastRefreshTimeRef.current = 0;
       refreshProfile(true);
     };
     window.addEventListener("supabase-reconnected", handleReconnect);
