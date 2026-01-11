@@ -239,12 +239,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     // 🔥 Session recovered eventi - useSessionRecovery hook'undan geliyor
-    const handleSessionRecovered = (event: any) => {
-      console.log("📱 [UserContext] ✅ Session recovered eventi alındı! Profil yenileniyor...");
-      // 🔥 TÜM KİLİTLERİ SIFIRLA
+    const handleSessionRecovered = async (event: any) => {
+      console.log("📱 [UserContext] ✅ Session recovered eventi alındı!", event.detail);
+      
+      // 🔥🔥🔥 KRİTİK: TÜM KİLİTLERİ VE COOLDOWN'LARI SIFIRLA!
       isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
-      lastRefreshTimeRef.current = 0;
+      lastRefreshTimeRef.current = 0; // Cooldown sıfırla
       setIsSystemConnected(true);
       
       // 🔥 HEMEN CACHE'DEN YÜKLE (UI anında göstersin)
@@ -259,10 +260,23 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         } catch {}
       }
       
-      // Profil yenilenmesini biraz bekle
-      setTimeout(() => {
-        refreshProfile(true);
-      }, 300);
+      // 🔥🔥🔥 KRİTİK: userRef kullan (closure sorunu çözümü)
+      // Birden fazla deneme yap - user hemen hazır olmayabilir
+      const tryRefresh = async (attempt = 1) => {
+        const currentUser = userRef.current;
+        if (currentUser?.id) {
+          console.log(`[UserContext] 🔄 Session recovered - profil yenileniyor... (attempt ${attempt})`);
+          await refreshProfile(true);
+        } else if (attempt < 3) {
+          console.log(`[UserContext] ⏳ User henüz yok, ${attempt * 300}ms sonra tekrar...`);
+          setTimeout(() => tryRefresh(attempt + 1), 300);
+        } else {
+          console.log("[UserContext] ⚠️ Session recovered ama user hala yok - Auth bekleniyor");
+        }
+      };
+      
+      // Küçük gecikmeyle başla
+      setTimeout(() => tryRefresh(1), 100);
     };
 
     const handleForeground = async () => {

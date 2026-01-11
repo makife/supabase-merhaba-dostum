@@ -21,15 +21,26 @@ export const useJokerInventory = () => {
   const subscriptionUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<any>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 🔥 KRİTİK: User ref - closure sorununu çözmek için
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const loadJokers = useCallback(async () => {
-    if (!user) return;
+    // 🔥 KRİTİK: userRef kullan - closure sorunu çözümü
+    const currentUser = userRef.current;
+    if (!currentUser?.id) {
+      console.log("[Joker] ⏭️ loadJokers: user yok, atlanıyor");
+      return;
+    }
+    
+    console.log("[Joker] 🔄 Jokerler yükleniyor...", currentUser.id.slice(-8));
 
     try {
       const { data } = await supabase
         .from("user_inventory")
         .select("item_type, quantity")
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .in("item_type", [
           "degistir",
           "joker_degistir",
@@ -77,16 +88,31 @@ export const useJokerInventory = () => {
 
   // 🔥 Foreground ve Session Recovery'de joker yenileme
   useEffect(() => {
+    // 🔥 KRİTİK: userRef kullan - closure sorunu çözümü
+    const forceLoadJokers = (attempt = 1) => {
+      const currentUser = userRef.current;
+      if (currentUser?.id) {
+        console.log(`[Joker] 🔄 Force load triggered for: ${currentUser.id.slice(-8)} (attempt ${attempt})`);
+        loadJokers();
+      } else if (attempt < 3) {
+        console.log(`[Joker] ⏭️ Force load: user henüz yok, ${attempt * 300}ms sonra tekrar...`);
+        setTimeout(() => forceLoadJokers(attempt + 1), 300);
+      } else {
+        console.log("[Joker] ⚠️ User hala yok, jokerler yüklenemedi");
+      }
+    };
+    
     const handleForeground = () => {
       console.log("[Joker] ☀️ App foreground - jokerler ZORLA yenileniyor...");
-      // Küçük gecikme ile yükle
-      setTimeout(() => loadJokers(), 300);
+      // Küçük gecikmeyle başla
+      setTimeout(() => forceLoadJokers(1), 100);
     };
     
     // 🔥 Session recovery sonrası da jokerleri yenile
     const handleSessionRecovered = () => {
       console.log("[Joker] 🔐 Session recovered - jokerler yeniden yükleniyor...");
-      setTimeout(() => loadJokers(), 500);
+      // Session recovery sonrası biraz daha bekle
+      setTimeout(() => forceLoadJokers(1), 200);
     };
     
     window.addEventListener("app-foreground", handleForeground);

@@ -47,7 +47,7 @@ export const useGlobalResync = ({
   // Debounce için minimum süre (ms)
   const MIN_RESYNC_INTERVAL = isPriority ? 500 : 2000;
 
-  const performResync = useCallback(async (source: string = 'unknown') => {
+  const performResync = useCallback(async (source: string = 'unknown', forceBypassDebounce = false) => {
     // Mount kontrolü
     if (!isMountedRef.current) {
       console.log(`[Resync] ⏭️ ${pageName} unmounted, skip (${source})`);
@@ -60,9 +60,10 @@ export const useGlobalResync = ({
       return;
     }
     
-    // Debounce kontrolü
+    // Debounce kontrolü - session-recovered geldiğinde BYPASS et!
     const now = Date.now();
-    if (now - lastResyncTimeRef.current < MIN_RESYNC_INTERVAL) {
+    const shouldBypass = forceBypassDebounce || source === 'session-recovered';
+    if (!shouldBypass && now - lastResyncTimeRef.current < MIN_RESYNC_INTERVAL) {
       console.log(`[Resync] ⏭️ ${pageName} debounced (${source})`);
       return;
     }
@@ -144,9 +145,10 @@ export const useGlobalResync = ({
     // 🔥 KRİTİK: Session recovery sonrası TÜM sayfalar yenilensin!
     const handleSessionRecovered = () => {
       console.log(`[Resync] 🔐 ${pageName} session-recovered event - ZORLA yenileme`);
-      // Session recovery sonrası hemen veri tazele (debounce'u atla)
-      lastResyncTimeRef.current = 0;
-      setTimeout(() => performResync('session-recovered'), isPriority ? 100 : 300);
+      // 🔥🔥🔥 Session recovery sonrası HEMEN ve ZORLA veri tazele!
+      lastResyncTimeRef.current = 0; // Debounce'u sıfırla
+      // Küçük gecikme ile ama kesinlikle çalıştır
+      setTimeout(() => performResync('session-recovered', true), isPriority ? 50 : 200);
     };
     
     // 🔥 appForeground event'ini de dinle (native için)
