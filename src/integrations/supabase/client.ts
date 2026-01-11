@@ -188,17 +188,25 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
-        // 🔥🔥🔥 KRİTİK: Native'de global token'ı header'a ekle!
+        // 🔥🔥🔥 KRİTİK: Native'de header'ları düzgün ekle!
         let finalHeaders = { ...(optionsWithoutSignal.headers || {}) } as Record<string, string>;
         
-        if (isNativePlatform && globalAccessToken) {
-          // Eğer zaten Authorization header varsa dokunma
-          const existingAuth = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'authorization');
-          if (!existingAuth) {
-            finalHeaders['Authorization'] = `Bearer ${globalAccessToken}`;
-            // Debug için ilk 20 karakteri logla
-            console.log(`[Supabase] 🔐 Token eklendi: ${globalAccessToken.slice(0, 20)}...`);
+        if (isNativePlatform) {
+          // 🔥 1. APIKEY - HER ZAMAN GEREKLİ!
+          const existingApiKey = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'apikey');
+          if (!existingApiKey) {
+            finalHeaders['apikey'] = SUPABASE_PUBLISHABLE_KEY;
           }
+          
+          // 🔥 2. AUTHORIZATION - Token varsa ekle!
+          if (globalAccessToken) {
+            const existingAuth = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'authorization');
+            if (!existingAuth) {
+              finalHeaders['Authorization'] = `Bearer ${globalAccessToken}`;
+            }
+          }
+          
+          console.log(`[Supabase] 🔐 Headers: apikey=✓, auth=${globalAccessToken ? '✓' : '✗'}`);
         }
         
         const controller = new AbortController();
