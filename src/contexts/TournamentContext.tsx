@@ -5,7 +5,6 @@ import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tour
 import { toast } from "@/components/ui/use-toast";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -631,19 +630,19 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .subscribe()
     );
 
-    // 🆕 Event Hub üzerinden yönetim - bağımsız listener KALDIRILDI
-    // ⚠️ KRİTİK: FIRE-AND-FORGET - await ETME, timeout önleme
-    const unregisterHub = registerHubCallback('onDataReady', () => {
-      console.log("🔄 [Tournament] Event Hub - turnuvalar yeniden yükleniyor...");
+    // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
+    const handleAppResumed = () => {
+      console.log("🔄 [Tournament] App resumed - turnuvalar yeniden yükleniyor...");
       fetchTournaments().catch(e => {
-        console.error("[Tournament] ❌ Event Hub turnuva yenileme hatası:", e);
+        console.error("[Tournament] ❌ Resume turnuva yenileme hatası:", e);
       });
-      // ✅ Hemen return - timeout'a düşmez
-    });
+    };
+
+    window.addEventListener("app-resumed", handleAppResumed);
 
     return () => {
       autoReconnect.unregisterChannel(channelName);
-      unregisterHub();
+      window.removeEventListener("app-resumed", handleAppResumed);
     };
   }, [user]);
 

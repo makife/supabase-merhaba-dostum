@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
-import { registerHubCallback } from "@/utils/foregroundEventHub";
+// 🔥 Basit yaklaşım - useAppResume kullanılacak (aşağıda)
 
 interface OnlineUser {
   id: string;
@@ -155,7 +155,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, [isNative]);
 
-  // 2. 🆕 MERKEZİ EVENT HUB'A KAYIT - Artık kendi listener'larımız yok!
+  // 2. 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -194,13 +194,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    window.addEventListener("appBackground", handleBackground);
-    window.addEventListener("offline", handleOffline);
-
-    // 🆕 MERKEZİ HUB'A KAYIT - onProfileReady aşamasında profil yükle
-    // ⚠️ KRİTİK: Bu callback MUTLAKA hızlı return etmeli (timeout önleme)
-    const unregisterHub = registerHubCallback('onProfileReady', () => {
-      console.log("📱 [UserContext] 🎯 Event Hub - profil yenileniyor...");
+    // 🔥 BASİT RESUME HANDLER - Ön plana gelince profil yenile
+    const handleAppResumed = () => {
+      console.log("📱 [UserContext] 🎯 App resumed - profil yenileniyor...");
       
       // Kilitleri sıfırla
       isFetchingProfileRef.current = false;
@@ -208,33 +204,23 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // Cache'den hızlı hydrate (senkron)
-      const cached = localStorage.getItem("cached_profile");
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed.data?.username) {
-            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
-          }
-        } catch {}
-      }
-      
-      // 🔥 Profil yüklemeyi FIRE-AND-FORGET yap - await ETME!
-      // Event Hub timeout'a düşmesin diye hemen return ediyoruz
+      // Profil yükle
       if (userRef.current) {
         refreshProfile(true).catch(e => {
-          console.error("[UserContext] ❌ Event Hub profil yenileme hatası:", e);
+          console.error("[UserContext] ❌ Resume profil yenileme hatası:", e);
         });
       }
-      
-      // ✅ Callback hemen tamamlanıyor - Event Hub timeout'a düşmez
-    });
+    };
+
+    window.addEventListener("appBackground", handleBackground);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("app-resumed", handleAppResumed);
 
     return () => {
       window.removeEventListener("appBackground", handleBackground);
       window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("app-resumed", handleAppResumed);
       clearInterval(interval);
-      unregisterHub();
     };
   }, []);
 

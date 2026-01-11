@@ -48,8 +48,6 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   });
 
   // 🔥 KRİTİK: Native plugin çağrıları ve diğer async işlemler DEFER edilmeli!
-  // setTimeout(0) ile event loop'un sonraki tick'ine atıyoruz
-  // Bu sayede appStateChange callback'i hemen tamamlanıyor ve bridge bloke olmuyor
   setTimeout(async () => {
     const manager = await getBackgroundServiceManager();
     
@@ -62,13 +60,20 @@ const handleForegroundStateChange = (inForeground: boolean) => {
         manager.onAppForeground();
       }
       
-      // Reconnect event'i
+      // 🔥 BASİT YAKLAŞIM: Tek bir "app-resumed" eventi dispatch et
+      // Tüm component'ler bunu dinleyecek
       if (wasInBackground) {
-        window.dispatchEvent(new CustomEvent("supabase-reconnected"));
+        console.log("[AppForegroundState] 🎯 app-resumed eventi dispatch ediliyor...");
+        
+        // 🔥 Session recovery için yeterli zaman tanı (500ms)
+        // useSessionRecovery bu sürede session'ı yenileyecek
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("app-resumed"));
+          console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi - tüm veriler yenilenecek");
+        }, 500);
       }
     } else {
       // Arka plana geçti
-      // 🔥 Service manager çağrısı DEFER edildi
       if (manager) {
         manager.onAppBackground();
       }

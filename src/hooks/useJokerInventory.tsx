@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface JokerInventory {
   degistir: number;
@@ -86,22 +85,21 @@ export const useJokerInventory = () => {
     }
   }, [user?.id]);
 
-  // 🆕 MERKEZİ EVENT HUB'A KAYIT
-  // ⚠️ KRİTİK: FIRE-AND-FORGET - async olmamalı, timeout önleme
+  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
   useEffect(() => {
-    const unregisterHub = registerHubCallback('onDataReady', () => {
-      console.log("[Joker] 🎯 Event Hub - jokerler yenileniyor...");
+    const handleAppResumed = () => {
+      console.log("[Joker] 🎯 App resumed - jokerler yenileniyor...");
       if (userRef.current?.id) {
-        // 🔥 Fire-and-forget - await ETME!
         loadJokers().catch(e => {
-          console.error("[Joker] ❌ Event Hub joker yenileme hatası:", e);
+          console.error("[Joker] ❌ Resume joker yenileme hatası:", e);
         });
       }
-      // ✅ Hemen return - timeout'a düşmez
-    });
+    };
+
+    window.addEventListener("app-resumed", handleAppResumed);
     
     return () => {
-      unregisterHub();
+      window.removeEventListener("app-resumed", handleAppResumed);
     };
   }, [loadJokers]);
 
