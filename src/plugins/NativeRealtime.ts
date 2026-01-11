@@ -41,6 +41,11 @@ export interface NativeRealtimePlugin {
     listenerFunc: (data: ConnectionStateEvent) => void,
   ): Promise<PluginListenerHandle>;
 
+  addListener(
+    eventName: "sessionRestored",
+    listenerFunc: (data: SessionRestoredEvent) => void,
+  ): Promise<PluginListenerHandle>;
+
   removeAllListeners(): Promise<void>;
 }
 
@@ -53,6 +58,13 @@ export interface RealtimeMessageEvent {
 export interface ConnectionStateEvent {
   state: "connecting" | "connected" | "disconnected";
   reason?: string;
+}
+
+export interface SessionRestoredEvent {
+  accessToken: string;
+  apiKey: string;
+  url: string;
+  restored: boolean;
 }
 
 // 1. Plugin'i kaydet (Sadece tek bir isimde tutuyoruz)

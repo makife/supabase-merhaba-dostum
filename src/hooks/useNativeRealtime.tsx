@@ -5,6 +5,7 @@ import {
   isNativeRealtimeAvailable,
   RealtimeMessageEvent,
   ConnectionStateEvent,
+  SessionRestoredEvent,
 } from "@/plugins/NativeRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppState } from "@/hooks/useAppState";
@@ -45,6 +46,45 @@ export function useNativeRealtime() {
     if (!isNative || !NativeRealtime) return;
 
     const setupListeners = async () => {
+      // 🔥 KRİTİK: sessionRestored eventi - Misafir modundan kurtarma
+      await NativeRealtime.addListener("sessionRestored", async (data: any) => {
+        console.log("[NativeRealtime] 🔐 SESSION RESTORED eventi alındı!", data);
+        
+        if (data.restored && data.accessToken) {
+          console.log("[NativeRealtime] 🔄 Supabase session yenileniyor...");
+          
+          try {
+            // Mevcut session'ı kontrol et
+            const { data: currentSession } = await supabase.auth.getSession();
+            
+            if (!currentSession?.session) {
+              console.log("[NativeRealtime] ⚠️ JS session yok, yeniden auth yapılıyor...");
+              
+              // Session'ı yenile - bu kullanıcıyı tekrar login yapar
+              const { data: refreshData, error } = await supabase.auth.refreshSession();
+              
+              if (error) {
+                console.error("[NativeRealtime] ❌ Session refresh hatası:", error);
+                // Hata olursa bile native token'ı kullanmayı dene
+                // Native tarafta token varsa, kullanıcı hala giriş yapmış demektir
+              } else {
+                console.log("[NativeRealtime] ✅ Session başarıyla yenilendi:", refreshData.user?.email);
+              }
+            } else {
+              console.log("[NativeRealtime] ✅ JS session zaten mevcut:", currentSession.session.user.email);
+            }
+            
+            // Session restore olayını tüm uygulamaya bildir
+            window.dispatchEvent(new CustomEvent("session-restored-from-native", {
+              detail: { accessToken: data.accessToken }
+            }));
+            
+          } catch (e) {
+            console.error("[NativeRealtime] ❌ Session restore hatası:", e);
+          }
+        }
+      });
+
       await NativeRealtime.addListener("realtimeMessage", (data: RealtimeMessageEvent) => {
         console.log("[NativeRealtime] 📨 Mesaj geldi:", data.topic, data.event);
         
