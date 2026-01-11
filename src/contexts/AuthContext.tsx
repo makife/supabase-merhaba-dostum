@@ -158,54 +158,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [startNativeService]);
 
-  // 🔥 FOREGROUND RECOVERY - Her zaman storage'dan kontrol et!
-  useAppState({
-    onForeground: async () => {
-      console.log("[Auth] ☀️ Ön plana geldi");
+  // 🔥 FOREGROUND RECOVERY - SessionRecovery hook'una bırak
+  // AuthContext sadece session-recovered eventini dinlesin
+  useEffect(() => {
+    if (!isNative) return;
+
+    const handleSessionRecovered = async (event: any) => {
+      console.log("[Auth] 🔄 Session recovered eventi alındı");
       
-      if (!isNative) return;
-      
-      // 🔥 Memory state'e GÜVENME! Her zaman storage'dan kontrol et
-      console.log("[Auth] 📦 Storage'dan session kontrol ediliyor...");
-      
+      // Session recovery hook başarılı oldu, session'ı Supabase'den al
       try {
-        const storedSession = await loadSessionFromStorage();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (storedSession) {
-          console.log("[Auth] ✅ Storage'da session bulundu:", storedSession.user?.email);
-          
-          // Token'ı refresh et
-          const { data, error } = await supabase.auth.refreshSession({
-            refresh_token: storedSession.refresh_token
-          });
-          
-          if (!error && data?.session && mounted.current) {
-            console.log("[Auth] ✅ Token yenilendi, state güncelleniyor");
-            setSession(data.session);
-            setUser(data.session.user);
-            await saveSessionToStorage(data.session);
-            setLoading(false);
-          } else if (error) {
-            console.log("[Auth] ⚠️ Refresh hatası, storage session kullanılıyor:", error.message);
-            // Refresh başarısız olsa bile storage'daki session'ı kullan
-            if (mounted.current) {
-              setSession(storedSession);
-              setUser(storedSession.user);
-              setLoading(false);
-            }
-          }
-        } else {
-          console.log("[Auth] ⚠️ Storage'da session yok");
-          if (mounted.current) {
-            setLoading(false);
-          }
-        }
-      } catch (e) {
-        console.error("[Auth] ❌ Foreground recovery hatası:", e);
-        if (mounted.current) {
+        if (currentSession && mounted.current) {
+          console.log("[Auth] ✅ Session güncellendi:", currentSession.user.email);
+          setSession(currentSession);
+          setUser(currentSession.user);
           setLoading(false);
         }
+      } catch (e) {
+        console.error("[Auth] ❌ Session recovered handler hatası:", e);
       }
+    };
+
+    window.addEventListener("session-recovered", handleSessionRecovered);
+    
+    return () => {
+      window.removeEventListener("session-recovered", handleSessionRecovered);
+    };
+  }, [isNative]);
+
+  useAppState({
+    onForeground: () => {
+      console.log("[Auth] ☀️ Ön plana geldi - useSessionRecovery devralacak");
+      // 🔥 ARTIK BURADA HİÇBİR ŞEY YAPMA!
+      // useSessionRecovery hook'u tüm session recovery işlemlerini yapıyor
     },
     onBackground: () => {
       console.log("[Auth] 🌑 Arka plana geçti");
