@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -15,7 +15,6 @@ import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
-import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
@@ -130,14 +129,7 @@ const HomePage = () => {
   const { startBackgroundMusic } = useMusic();
   const { jokers, loadJokers } = useJokerInventory();
   
-  // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil ve joker verilerini otomatik tazele
-  const handleHomeResync = useCallback(() => {
-    console.log('🔄 [HomePage] Resync triggered - veriler yeniden yükleniyor...');
-    refreshProfile();
-    loadJokers();
-  }, [refreshProfile, loadJokers]);
-  
-  usePageResync(handleHomeResync, 'HomePage', false);
+  // 🆕 Event Hub artık merkezi yönetim yapıyor - usePageResync kaldırıldı
   
   // Premium kullanıcılar için günlük joker kontrolü
   usePremiumDailyRewards();
@@ -320,49 +312,12 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // 🔧 DÜZELTME: Sayfa her mount olduğunda VE görünür olduğunda verileri yenile
+  // 🆕 Sayfa mount olduğunda ilk yükleme - Event Hub otomatik yönetecek
   useEffect(() => {
-    // Sayfa ilk yüklendiğinde her zaman verileri zorla yenile
-    console.log('🏠 [HomePage] Mount - veriler zorla yenileniyor...');
+    console.log('🏠 [HomePage] Mount - ilk veri yüklemesi...');
     refreshProfile(true);
     loadJokers();
-    
-    // Reconnect event handler
-    const handleReconnect = () => {
-      console.log('🔄 [HomePage] Supabase reconnected - tüm veriler yeniden yükleniyor...');
-      refreshProfile(true);
-      loadJokers();
-    };
-
-    // Visibility change handler - sayfa görünür olduğunda verileri yenile
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible" && user) {
-        console.log('👁️ [HomePage] Sayfa görünür - veriler zorla yenileniyor...');
-        refreshProfile(true);
-        loadJokers();
-      }
-    };
-
-    // App foreground event (native)
-    const handleForeground = () => {
-      if (user) {
-        console.log('📱 [HomePage] App foreground - veriler zorla yenileniyor...');
-        refreshProfile(true);
-        loadJokers();
-      }
-    };
-
-    // Event listeners
-    window.addEventListener("supabase-reconnected", handleReconnect);
-    window.addEventListener("appForeground", handleForeground);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      window.removeEventListener("supabase-reconnected", handleReconnect);
-      window.removeEventListener("appForeground", handleForeground);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [user]);
+  }, []);
 
   const handleGameModeClick = (modeId: string) => {
     playSound("buttonClick");

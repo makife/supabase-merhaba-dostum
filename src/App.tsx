@@ -69,10 +69,7 @@ import { useReconnectionState } from "@/hooks/useReconnectionState";
 import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
-import { 
-  startForegroundOrchestration, 
-  abortAllPendingForegroundTasks 
-} from "@/utils/foregroundOrchestrator";
+import { initEventHub } from "@/utils/foregroundEventHub";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -591,51 +588,24 @@ const App = () => {
     };
   }, []);
 
-  // 2. Arka plan/ön plan yönetimi - KADEMELİ UYANIŞLA (STAGGERED)
+  // 🆕 MERKEZİ EVENT HUB - Tüm foreground/reconnect eventlerini TEK MERKEZDEN yönet
+  useEffect(() => {
+    console.log("[App] 🎯 Merkezi Event Hub başlatılıyor...");
+    const cleanup = initEventHub();
+    return cleanup;
+  }, []);
+
+  // 2. Arka plan/ön plan yönetimi - SADECE appBackground event'i
   useAppState({
     onBackground: () => {
       console.log("📱 Uygulama arka plana gitti (UI)");
-      // 🔥 ARKA PLANA GİDİNCE TÜM CONTEXT'LERE BİLDİR
       window.dispatchEvent(new Event('appBackground'));
-      // Zombi istek temizliği için abort controller'ı hazırla
-      abortAllPendingForegroundTasks();
     },
     onForeground: () => {
-      console.log("▶️ Uygulama ön plana geldi - KADEMELİ UYANIS başlıyor");
-      
-      // 🔥 KRİTİK: appForeground event'ini HEMEN dispatch et (hook'lar dinlesin)
-      window.dispatchEvent(new Event('appForeground'));
-      
-      // 🆕 Önce tüm zombi istekleri temizle
-      abortAllPendingForegroundTasks();
-      
-      // 🆕 Kademeli orchestration başlat
-      startForegroundOrchestration({
-        onUIReady: () => {
-          // T+0ms: UI hazırlığı (immersive bars)
-          manualHideBars();
-        },
-        onAuthRecovery: () => {
-          // T+400ms: Auth recovery (AuthContext kendi içinde yapıyor)
-          window.dispatchEvent(new CustomEvent('app-auth-recovery'));
-        },
-        onTimeSync: () => {
-          // T+1000ms: ServerTime sync
-          window.dispatchEvent(new CustomEvent('app-time-sync'));
-        },
-        onDataRefresh: () => {
-          // T+1800ms: Global veri tazeleme
-          window.dispatchEvent(new CustomEvent('supabase-reconnected'));
-        },
-        onComplete: () => {
-          console.log("[App] ✅ Kademeli uyanış tamamlandı");
-        },
-        onBridgeHealthFail: () => {
-          // 🔧 Bridge Sağlık Kontrolü: 3 saniye sonra hala tıkalıysa
-          console.log("[App] ⚠️ Bridge health fail - session restore from storage");
-          window.dispatchEvent(new CustomEvent('app-force-restore'));
-        }
-      });
+      console.log("▶️ Uygulama ön plana geldi");
+      // 🆕 UI hazırlığı için immersive bars
+      manualHideBars();
+      // Event Hub otomatik olarak appForeground'u yakalayacak
     },
   });
 
