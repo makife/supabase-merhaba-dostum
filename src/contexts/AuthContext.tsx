@@ -344,7 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // 📝 Sign Up
   const signUp = async (email: string, password: string, username: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username } },
@@ -352,6 +352,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     if (error) {
       toast({ title: "Kayıt Hatası", description: error.message, variant: "destructive" });
+    } else if (data.session) {
+      // 🔥🔥🔥 KRİTİK: YENİ KULLANICILAR İÇİN DE GLOBAL TOKEN SET ET!
+      setGlobalAccessToken(data.session.access_token);
+      console.log("[Auth] 🔐 Global token SET EDİLDİ (signUp)!");
+      
+      setSession(data.session);
+      setUser(data.session.user);
+      
+      if (isNative) {
+        await saveSessionToStorage(data.session);
+      }
+      
+      await startNativeService(data.session.access_token);
     }
     
     return { error };
@@ -363,6 +376,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // 🔥 UserContext'e logout bildirimi gönder
     window.dispatchEvent(new Event("auth-logout"));
+    
+    // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I TEMİZLE!
+    setGlobalAccessToken(null);
+    console.log("[Auth] 🔐 Global token TEMİZLENDİ (signOut)!");
     
     intentionalLogoutRef.current = true;
     setLoading(true);
