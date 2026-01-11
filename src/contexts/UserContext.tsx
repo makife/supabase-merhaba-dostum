@@ -198,15 +198,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     window.addEventListener("offline", handleOffline);
 
     // 🆕 MERKEZİ HUB'A KAYIT - onProfileReady aşamasında profil yükle
-    const unregisterHub = registerHubCallback('onProfileReady', async () => {
+    // ⚠️ KRİTİK: Bu callback MUTLAKA hızlı return etmeli (timeout önleme)
+    const unregisterHub = registerHubCallback('onProfileReady', () => {
       console.log("📱 [UserContext] 🎯 Event Hub - profil yenileniyor...");
+      
       // Kilitleri sıfırla
       isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // Cache'den hızlı hydrate
+      // Cache'den hızlı hydrate (senkron)
       const cached = localStorage.getItem("cached_profile");
       if (cached) {
         try {
@@ -217,10 +219,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         } catch {}
       }
       
-      // Profil yükle
+      // 🔥 Profil yüklemeyi FIRE-AND-FORGET yap - await ETME!
+      // Event Hub timeout'a düşmesin diye hemen return ediyoruz
       if (userRef.current) {
-        await refreshProfile(true);
+        refreshProfile(true).catch(e => {
+          console.error("[UserContext] ❌ Event Hub profil yenileme hatası:", e);
+        });
       }
+      
+      // ✅ Callback hemen tamamlanıyor - Event Hub timeout'a düşmez
     });
 
     return () => {

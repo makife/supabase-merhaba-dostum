@@ -632,9 +632,13 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     );
 
     // 🆕 Event Hub üzerinden yönetim - bağımsız listener KALDIRILDI
+    // ⚠️ KRİTİK: FIRE-AND-FORGET - await ETME, timeout önleme
     const unregisterHub = registerHubCallback('onDataReady', () => {
       console.log("🔄 [Tournament] Event Hub - turnuvalar yeniden yükleniyor...");
-      fetchTournaments();
+      fetchTournaments().catch(e => {
+        console.error("[Tournament] ❌ Event Hub turnuva yenileme hatası:", e);
+      });
+      // ✅ Hemen return - timeout'a düşmez
     });
 
     return () => {

@@ -19,7 +19,7 @@ let isHubActive = false;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let lastHubTriggerTime = 0;
 const HUB_DEBOUNCE_MS = 600; // 600ms debounce
-const CALLBACK_TIMEOUT_MS = 5000; // Her callback max 5sn bekleyebilir
+const CALLBACK_TIMEOUT_MS = 2000; // Her callback max 2sn bekleyebilir (fire-and-forget için yeterli)
 
 // Callback registry
 type HubCallback = () => void | Promise<void>;
