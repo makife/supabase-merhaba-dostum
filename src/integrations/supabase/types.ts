@@ -1687,10 +1687,9 @@ export type Database = {
         Returns: undefined
       }
       check_and_finish_expired_games: { Args: never; Returns: undefined }
-      check_and_refresh_credits: {
-        Args: { user_id: string }
-        Returns: undefined
-      }
+      check_and_refresh_credits:
+        | { Args: never; Returns: undefined }
+        | { Args: { user_id: string }; Returns: undefined }
       check_memory_game_cooldown: {
         Args: { p_hours_ago: number; p_user_id: string }
         Returns: number
