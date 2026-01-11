@@ -87,12 +87,17 @@ export const useJokerInventory = () => {
   }, [user?.id]);
 
   // 🆕 MERKEZİ EVENT HUB'A KAYIT
+  // ⚠️ KRİTİK: FIRE-AND-FORGET - async olmamalı, timeout önleme
   useEffect(() => {
-    const unregisterHub = registerHubCallback('onDataReady', async () => {
+    const unregisterHub = registerHubCallback('onDataReady', () => {
       console.log("[Joker] 🎯 Event Hub - jokerler yenileniyor...");
       if (userRef.current?.id) {
-        await loadJokers();
+        // 🔥 Fire-and-forget - await ETME!
+        loadJokers().catch(e => {
+          console.error("[Joker] ❌ Event Hub joker yenileme hatası:", e);
+        });
       }
+      // ✅ Hemen return - timeout'a düşmez
     });
     
     return () => {

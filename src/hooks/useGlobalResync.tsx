@@ -97,14 +97,18 @@ export const useGlobalResync = ({
 
   // 🆕 MERKEZİ EVENT HUB'A KAYIT
   // Artık bağımsız event listener yok!
+  // ⚠️ KRİTİK: Callback HEMEN return etmeli - async olmamalı!
   useEffect(() => {
     const unregisterHub = registerHubCallback('onDataReady', () => {
       // Kritik sayfalar küçük gecikmeyle, diğerleri daha fazla
       const delay = isPriority ? 0 : 200;
       
+      // 🔥 setTimeout ile fire-and-forget - Event Hub beklemez
       setTimeout(() => {
         performResync('event-hub');
       }, delay);
+      
+      // ✅ Hemen return - timeout'a düşmez
     });
     
     return () => {
