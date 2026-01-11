@@ -40,6 +40,15 @@ export function useSessionRecovery() {
 
         if (currentSession?.access_token && currentSession?.user) {
           console.log("[SessionRecovery] ✅ Session zaten aktif:", currentSession.user.email);
+          
+          // 🔥🔥🔥 KRİTİK: Session aktif olsa bile event dispatch et!
+          // Native'de arka plandan gelince hook'lar bu event'i bekliyor
+          console.log("[SessionRecovery] 📡 Session aktif - tüm hook'lara bildirim gönderiliyor...");
+          window.dispatchEvent(new CustomEvent("session-recovered", {
+            detail: { userId: currentSession.user.id, source: "already-active" }
+          }));
+          window.dispatchEvent(new Event("supabase-reconnected"));
+          
           isRecoveringRef.current = false;
           return;
         }
