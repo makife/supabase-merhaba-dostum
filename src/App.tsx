@@ -603,6 +603,9 @@ const App = () => {
     onForeground: () => {
       console.log("▶️ Uygulama ön plana geldi - KADEMELİ UYANIS başlıyor");
       
+      // 🔥 KRİTİK: appForeground event'ini HEMEN dispatch et (hook'lar dinlesin)
+      window.dispatchEvent(new Event('appForeground'));
+      
       // 🆕 Önce tüm zombi istekleri temizle
       abortAllPendingForegroundTasks();
       
