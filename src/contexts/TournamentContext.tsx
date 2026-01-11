@@ -5,6 +5,7 @@ import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tour
 import { toast } from "@/components/ui/use-toast";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
+import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -630,16 +631,15 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .subscribe()
     );
 
-    // Supabase reconnect olduğunda turnuvaları yeniden yükle
-    const handleReconnect = () => {
-      console.log("🔄 [Tournament] Reconnect - turnuvalar yeniden yükleniyor...");
+    // 🆕 Event Hub üzerinden yönetim - bağımsız listener KALDIRILDI
+    const unregisterHub = registerHubCallback('onDataReady', () => {
+      console.log("🔄 [Tournament] Event Hub - turnuvalar yeniden yükleniyor...");
       fetchTournaments();
-    };
-    window.addEventListener("supabase-reconnected", handleReconnect);
+    });
 
     return () => {
       autoReconnect.unregisterChannel(channelName);
-      window.removeEventListener("supabase-reconnected", handleReconnect);
+      unregisterHub();
     };
   }, [user]);
 

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscribeToForegroundState, getIsAppInForeground } from "@/hooks/useAppForegroundState";
 import { Network } from "@capacitor/network";
 import { Capacitor } from "@capacitor/core";
+import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface TimeSample {
   offset: number;
@@ -325,19 +326,17 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     }
   }, [calculateOffset]);
 
-  // supabase-reconnected event'ini dinle
+  // 🆕 Event Hub üzerinden yönetim - bağımsız listener KALDIRILDI
   useEffect(() => {
-    const handleReconnect = () => {
-      console.log("[ServerTime] 🔌 Supabase reconnected, recalibrating...");
-      // Biraz bekle
+    const unregisterHub = registerHubCallback('onAuthReady', () => {
+      console.log("[ServerTime] 🔌 Event Hub - recalibrating...");
       setTimeout(() => {
         calculateOffset();
-      }, 500);
-    };
-
-    window.addEventListener("supabase-reconnected", handleReconnect);
+      }, 300);
+    });
+    
     return () => {
-      window.removeEventListener("supabase-reconnected", handleReconnect);
+      unregisterHub();
     };
   }, [calculateOffset]);
 
