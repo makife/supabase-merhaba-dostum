@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useRef, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase, saveSessionToStorage, loadSessionFromStorage, clearSessionStorage } from "@/integrations/supabase/client";
+import { supabase, saveSessionToStorage, loadSessionFromStorage, clearSessionStorage, setGlobalAccessToken } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Capacitor } from "@capacitor/core";
 import { NativeRealtime } from "@/plugins/NativeRealtime";
@@ -91,6 +91,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("[Auth] ✅ Storage'da session bulundu:", stored.user.email);
       
+      // 🔥🔥🔥 KRİTİK: HEMEN GLOBAL TOKEN'I SET ET!
+      // Bu sayede optimistic UI kullanırken bile istekler çalışır
+      setGlobalAccessToken(stored.access_token);
+      console.log("[Auth] 🔐 Global token SET EDİLDİ (optimistic)!");
+      
       // 🔥 HEMEN UI'ı aç (optimistic)
       if (mounted.current) {
         setUser(stored.user);
@@ -131,10 +136,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (data?.session && mounted.current) {
           console.log("[Auth] ✅ Token yenilendi! Yeni session kaydediliyor...");
+          
+          // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I SET ET!
+          setGlobalAccessToken(data.session.access_token);
+          console.log("[Auth] 🔐 Global token SET EDİLDİ (restore sonrası)!");
+          
           setUser(data.session.user);
           setSession(data.session);
           
-          // 🔥 YENİ refresh_token'ı kaydet - bu kritik!
+          // 🔥 YENİ refresh_token'ı kaydet - bu da global token'ı set eder
           await saveSessionToStorage(data.session);
           
           // Native service'i başlat
@@ -281,13 +291,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if ((event === "TOKEN_REFRESHED" || event === "SIGNED_IN") && newSession) {
         console.log(`🔐 Token güncellendi (${event})`);
         
+        // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I HER ZAMAN SET ET!
+        setGlobalAccessToken(newSession.access_token);
+        console.log("[Auth] 🔐 Global token SET EDİLDİ!");
+        
         if (mounted.current) {
           setSession(newSession);
           setUser(newSession.user);
           setLoading(false);
         }
         
-        // Native'de storage'a kaydet
+        // Native'de storage'a kaydet - bu da token'ı set eder
         if (isNative) {
           await saveSessionToStorage(newSession);
         }
@@ -310,6 +324,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast({ title: "Giriş Hatası", description: "Bilgileri kontrol ediniz.", variant: "destructive" });
     } else if (data.session) {
+      // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I SET ET!
+      setGlobalAccessToken(data.session.access_token);
+      console.log("[Auth] 🔐 Global token SET EDİLDİ (signIn)!");
+      
       setSession(data.session);
       setUser(data.session.user);
       

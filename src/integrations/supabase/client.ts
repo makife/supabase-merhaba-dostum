@@ -12,6 +12,23 @@ const isNative = Capacitor.isNativePlatform();
 // 🔧 TEK STORAGE KEY - HER YERDE BU KULLANILACAK
 export const SESSION_STORAGE_KEY = "kelimele-session-v3";
 
+// 🔥🔥🔥 KRİTİK: GLOBAL ACCESS TOKEN - Native'de her istek için kullanılacak!
+let globalAccessToken: string | null = null;
+
+/**
+ * 🔥 Native'de her istek için token'ı set et
+ * Bu fonksiyon AuthContext ve useSessionRecovery tarafından çağrılmalı
+ */
+export const setGlobalAccessToken = (token: string | null) => {
+  globalAccessToken = token;
+  console.log("[SupabaseClient] 🔐 Global access token", token ? "SET EDİLDİ" : "TEMİZLENDİ");
+};
+
+/**
+ * Global token'ı al
+ */
+export const getGlobalAccessToken = (): string | null => globalAccessToken;
+
 // ============================================================
 // 🔥 SESSION STORAGE - TEK KAYNAK TEK DOĞRULUK
 // ============================================================
@@ -23,6 +40,7 @@ export const saveSessionToStorage = async (session: Session | null): Promise<voi
   if (!session) {
     console.log("[Storage] 🗑️ Session siliniyor...");
     await Preferences.remove({ key: SESSION_STORAGE_KEY });
+    setGlobalAccessToken(null); // 🔥 Token'ı da temizle
     return;
   }
   
@@ -39,6 +57,10 @@ export const saveSessionToStorage = async (session: Session | null): Promise<voi
     });
     
     await Preferences.set({ key: SESSION_STORAGE_KEY, value: data });
+    
+    // 🔥🔥🔥 KRİTİK: Token'ı global'e de kaydet!
+    setGlobalAccessToken(session.access_token);
+    
     console.log("[Storage] ✅ Session kaydedildi:", session.user?.email?.slice(0, 10) + "...");
   } catch (e) {
     console.error("[Storage] ❌ Session kaydetme hatası:", e);
@@ -71,6 +93,9 @@ export const loadSessionFromStorage = async (): Promise<Session | null> => {
           // Eski key'i sil
           await Preferences.remove({ key: oldKey });
           
+          // 🔥 Token'ı global'e set et!
+          setGlobalAccessToken(parsed.access_token);
+          
           return {
             access_token: parsed.access_token,
             refresh_token: parsed.refresh_token,
@@ -88,6 +113,9 @@ export const loadSessionFromStorage = async (): Promise<Session | null> => {
     
     const parsed = JSON.parse(value);
     console.log("[Storage] ✅ Session yüklendi:", parsed.user?.email?.slice(0, 10) + "...");
+    
+    // 🔥🔥🔥 KRİTİK: Token'ı global'e set et!
+    setGlobalAccessToken(parsed.access_token);
     
     return {
       access_token: parsed.access_token,
@@ -118,6 +146,9 @@ export const clearSessionStorage = async (): Promise<void> => {
   for (const key of allKeys) {
     await Preferences.remove({ key });
   }
+  
+  // 🔥 Global token'ı da temizle!
+  setGlobalAccessToken(null);
   
   console.log("[Storage] 🗑️ Tüm session storage temizlendi");
 };
@@ -157,6 +188,19 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         
         const { signal: _ignoredSignal, ...optionsWithoutSignal } = options || {};
         
+        // 🔥🔥🔥 KRİTİK: Native'de global token'ı header'a ekle!
+        let finalHeaders = { ...(optionsWithoutSignal.headers || {}) } as Record<string, string>;
+        
+        if (isNativePlatform && globalAccessToken) {
+          // Eğer zaten Authorization header varsa dokunma
+          const existingAuth = Object.keys(finalHeaders).find(k => k.toLowerCase() === 'authorization');
+          if (!existingAuth) {
+            finalHeaders['Authorization'] = `Bearer ${globalAccessToken}`;
+            // Debug için ilk 20 karakteri logla
+            console.log(`[Supabase] 🔐 Token eklendi: ${globalAccessToken.slice(0, 20)}...`);
+          }
+        }
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
           console.warn(`[Supabase] ⏱️ Fetch timeout (${TIMEOUT_MS}ms): ${url}`);
@@ -164,7 +208,11 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
         }, TIMEOUT_MS);
         
         try {
-          const response = await fetch(url, { ...optionsWithoutSignal, signal: controller.signal });
+          const response = await fetch(url, { 
+            ...optionsWithoutSignal, 
+            headers: finalHeaders,
+            signal: controller.signal 
+          });
           return response;
         } catch (error: any) {
           if (error?.name === 'AbortError') {
@@ -208,6 +256,8 @@ export const recreateSupabaseClient = async (): Promise<SupabaseClient<Database>
     const { data: { session } } = await supabaseInstance.auth.getSession();
     if (session?.access_token) {
       supabaseInstance.realtime.setAuth(session.access_token);
+      // 🔥 Global token'ı da güncelle!
+      setGlobalAccessToken(session.access_token);
     }
   } catch {}
   
