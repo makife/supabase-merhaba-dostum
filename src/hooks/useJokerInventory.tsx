@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface JokerInventory {
   degistir: number;
@@ -30,7 +31,6 @@ export const useJokerInventory = () => {
     // 🔥 KRİTİK: userRef kullan - closure sorunu çözümü
     const currentUser = userRef.current;
     if (!currentUser?.id) {
-      console.log("[Joker] ⏭️ loadJokers: user yok, atlanıyor");
       return;
     }
     
@@ -84,45 +84,19 @@ export const useJokerInventory = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]); // 🔥 Sadece user.id'ye bağlı
+  }, [user?.id]);
 
-  // 🔥 Foreground ve Session Recovery'de joker yenileme
+  // 🆕 MERKEZİ EVENT HUB'A KAYIT
   useEffect(() => {
-    // 🔥 KRİTİK: userRef kullan - closure sorunu çözümü
-    const forceLoadJokers = (attempt = 1) => {
-      const currentUser = userRef.current;
-      if (currentUser?.id) {
-        console.log(`[Joker] 🔄 Force load triggered for: ${currentUser.id.slice(-8)} (attempt ${attempt})`);
-        loadJokers();
-      } else if (attempt < 3) {
-        console.log(`[Joker] ⏭️ Force load: user henüz yok, ${attempt * 300}ms sonra tekrar...`);
-        setTimeout(() => forceLoadJokers(attempt + 1), 300);
-      } else {
-        console.log("[Joker] ⚠️ User hala yok, jokerler yüklenemedi");
+    const unregisterHub = registerHubCallback('onDataReady', async () => {
+      console.log("[Joker] 🎯 Event Hub - jokerler yenileniyor...");
+      if (userRef.current?.id) {
+        await loadJokers();
       }
-    };
-    
-    const handleForeground = () => {
-      console.log("[Joker] ☀️ App foreground - jokerler ZORLA yenileniyor...");
-      // Küçük gecikmeyle başla
-      setTimeout(() => forceLoadJokers(1), 100);
-    };
-    
-    // 🔥 Session recovery sonrası da jokerleri yenile
-    const handleSessionRecovered = () => {
-      console.log("[Joker] 🔐 Session recovered - jokerler yeniden yükleniyor...");
-      // Session recovery sonrası biraz daha bekle
-      setTimeout(() => forceLoadJokers(1), 200);
-    };
-    
-    window.addEventListener("app-foreground", handleForeground);
-    window.addEventListener("appForeground", handleForeground);
-    window.addEventListener("session-recovered", handleSessionRecovered);
+    });
     
     return () => {
-      window.removeEventListener("app-foreground", handleForeground);
-      window.removeEventListener("appForeground", handleForeground);
-      window.removeEventListener("session-recovered", handleSessionRecovered);
+      unregisterHub();
     };
   }, [loadJokers]);
 
@@ -132,7 +106,6 @@ export const useJokerInventory = () => {
 
     // 🔥 GUARD: Aynı user için zaten subscription varsa atla
     if (subscriptionUserIdRef.current === user.id && channelRef.current) {
-      console.log("[Joker] ⏭️ Subscription zaten aktif, veri yenileniyor...");
       loadJokers(); // Sadece veriyi yenile
       return;
     }
@@ -162,39 +135,18 @@ export const useJokerInventory = () => {
       .subscribe((status) => {
         console.log(`[Joker] 📡 Channel status: ${status}`);
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.log("[Joker] ⚠️ Channel error, 3 saniye sonra yeniden denenecek...");
           setTimeout(() => loadJokers(), 3000);
         }
       });
     
     channelRef.current = channel;
 
-    // Supabase reconnect
-    const handleReconnect = () => {
-      console.log("🔄 [Joker] Reconnect - jokerler yeniden yükleniyor...");
-      loadJokers();
-    };
-    window.addEventListener("supabase-reconnected", handleReconnect);
-
-    // Visibility change
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        console.log("[Joker] 👁️ Sayfa görünür, jokerler yeniden yükleniyor...");
-        loadJokers();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    // Fallback polling
+    // Fallback polling (daha uzun interval)
     pollingRef.current = setInterval(() => {
-      console.log("[Joker] ⏱️ Polling - jokerler kontrol ediliyor...");
       loadJokers();
-    }, 15000);
+    }, 30000); // 30 saniye
 
     return () => {
-      // Channel'ı koruyoruz ama event listener'ları temizliyoruz
-      window.removeEventListener("supabase-reconnected", handleReconnect);
-      document.removeEventListener("visibilitychange", handleVisibility);
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [user?.id, loadJokers]);
@@ -203,7 +155,7 @@ export const useJokerInventory = () => {
     if (!user || jokers[jokerType] <= 0) return false;
 
     try {
-      // Optimistik UI Güncellemesi (Kullanıcıya anında tepki vermek için)
+      // Optimistik UI Güncellemesi
       setJokers((prev) => ({
         ...prev,
         [jokerType]: Math.max(0, prev[jokerType] - 1),
@@ -248,7 +200,6 @@ export const useJokerInventory = () => {
       const row = rows?.[0];
       if (!row) {
         console.warn("⚠️ Joker kaydı bulunamadı (Veritabanı), geri alınıyor:", jokerType);
-        // Hata olursa UI'ı geri düzelt
         loadJokers();
         return false;
       }
@@ -262,12 +213,10 @@ export const useJokerInventory = () => {
         await supabase.from("user_inventory").update({ quantity: newQuantity }).eq("id", row.id);
       }
 
-      // İşlem başarılı, Realtime zaten loadJokers'ı tetikleyecek ama garanti olsun
       console.log(`✅ Joker başarıyla kullanıldı: ${jokerType}`);
       return true;
     } catch (error) {
       console.error("Joker kullanılırken hata:", error);
-      // Hata durumunda gerçek veriyi geri yükle
       loadJokers();
       return false;
     }

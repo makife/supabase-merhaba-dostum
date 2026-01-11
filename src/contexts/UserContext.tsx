@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+import { registerHubCallback } from "@/utils/foregroundEventHub";
 
 interface OnlineUser {
   id: string;
@@ -154,7 +155,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, [isNative]);
 
-  // 2. JS SDK BAĞLANTI DURUMUNU İZLE
+  // 2. 🆕 MERKEZİ EVENT HUB'A KAYIT - Artık kendi listener'larımız yok!
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -162,48 +163,30 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           setIsSystemConnected(false);
           return;
         }
-
-        const isNative =
-          typeof (window as any).Capacitor !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
-
-        if (isNative) {
+        const isNativePlatform = typeof (window as any).Capacitor !== "undefined" && (window as any).Capacitor?.isNativePlatform?.();
+        if (isNativePlatform) {
           setIsSystemConnected(navigator.onLine);
           return;
         }
-
         const state = (supabase.realtime as any).connectionState?.();
         const isConnected = state === "open" || state === "connecting";
-
         const channels = supabase.getChannels();
         const hasActiveChannel = channels.some((ch) => ch.state === "joined" || ch.state === "joining");
-
         const isReallyConnected = isConnected && (channels.length === 0 || hasActiveChannel);
-
-        setIsSystemConnected((prev) => {
-          if (isReallyConnected !== prev) {
-            console.log(
-              `[UserContext] 🔌 Web bağlantı: ${state}, channels: ${channels.length} -> ${isReallyConnected}`,
-            );
-          }
-          return isReallyConnected;
-        });
+        setIsSystemConnected(isReallyConnected);
       } catch (e) {
         setIsSystemConnected(navigator.onLine);
       }
     };
 
     checkConnection();
+    const interval = setInterval(checkConnection, 30000);
 
-    const handleReconnect = () => {
-      console.log("🔄 [UserContext] Reconnected - profil yeniden yükleniyor...");
-      setIsSystemConnected(true);
-      refreshProfile(true);
-    };
-
-    const handleOnline = () => {
-      console.log("🌐 [UserContext] Network online - profil yeniden yükleniyor...");
-      setIsSystemConnected(true);
-      refreshProfile(true);
+    // 🔥 ARKA PLANA GİDİNCE KİLİTLERİ SIFIRLA
+    const handleBackground = () => {
+      console.log("🌙 [UserContext] Arka plana gidiliyor - kilitler sıfırlanıyor");
+      isFetchingProfileRef.current = false;
+      isRefreshingCreditsRef.current = false;
     };
 
     const handleOffline = () => {
@@ -211,108 +194,40 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // 🔥🔥🔥 ARKA PLANA GİDİNCE KİLİTLERİ SIFIRLA!
-    const handleBackground = () => {
-      console.log("🌙 [UserContext] Arka plana gidiliyor - kilitler sıfırlanıyor");
-      isFetchingProfileRef.current = false; // 🔥 KRİTİK: Kilidi aç!
-      isRefreshingCreditsRef.current = false;
-    };
+    window.addEventListener("appBackground", handleBackground);
+    window.addEventListener("offline", handleOffline);
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        console.log("👁️ [UserContext] Sayfa görünür - flag reset + profil yeniden yükleniyor...");
-        // 🔥 KİLİTLERİ SIFIRLA
-        isFetchingProfileRef.current = false;
-        isRefreshingCreditsRef.current = false;
-        lastRefreshTimeRef.current = 0; // Cooldown'ı da sıfırla
-        
-        setIsSystemConnected(navigator.onLine);
-        
-        // 🔥 REF KULLAN - closure sorunu çözümü
-        if (userRef.current) {
-          refreshProfile(true);
-        }
-      } else {
-        // Arka plana gidince kilitlerimi sıfırla
-        handleBackground();
-      }
-    };
-
-    // 🔥 Session recovered eventi - useSessionRecovery hook'undan geliyor
-    const handleSessionRecovered = async (event: any) => {
-      console.log("📱 [UserContext] ✅ Session recovered eventi alındı!", event.detail);
-      
-      // 🔥🔥🔥 KRİTİK: TÜM KİLİTLERİ VE COOLDOWN'LARI SIFIRLA!
-      isFetchingProfileRef.current = false;
-      isRefreshingCreditsRef.current = false;
-      lastRefreshTimeRef.current = 0; // Cooldown sıfırla
-      setIsSystemConnected(true);
-      
-      // 🔥 HEMEN CACHE'DEN YÜKLE (UI anında göstersin)
-      const cached = localStorage.getItem("cached_profile");
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed.data?.username) {
-            console.log("[UserContext] ⚡ Session recovered - cache'den hızlı hydrate:", parsed.data.username);
-            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
-          }
-        } catch {}
-      }
-      
-      // 🔥🔥🔥 KRİTİK: userRef kullan (closure sorunu çözümü)
-      // Birden fazla deneme yap - user hemen hazır olmayabilir
-      const tryRefresh = async (attempt = 1) => {
-        const currentUser = userRef.current;
-        if (currentUser?.id) {
-          console.log(`[UserContext] 🔄 Session recovered - profil yenileniyor... (attempt ${attempt})`);
-          await refreshProfile(true);
-        } else if (attempt < 3) {
-          console.log(`[UserContext] ⏳ User henüz yok, ${attempt * 300}ms sonra tekrar...`);
-          setTimeout(() => tryRefresh(attempt + 1), 300);
-        } else {
-          console.log("[UserContext] ⚠️ Session recovered ama user hala yok - Auth bekleniyor");
-        }
-      };
-      
-      // Küçük gecikmeyle başla
-      setTimeout(() => tryRefresh(1), 100);
-    };
-
-    const handleForeground = async () => {
-      console.log("📱 [UserContext] App foreground - kilitler sıfırlanıyor...");
-      // 🔥 TÜM KİLİTLERİ SIFIRLA
+    // 🆕 MERKEZİ HUB'A KAYIT - onProfileReady aşamasında profil yükle
+    const unregisterHub = registerHubCallback('onProfileReady', async () => {
+      console.log("📱 [UserContext] 🎯 Event Hub - profil yenileniyor...");
+      // Kilitleri sıfırla
       isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // 🔥 REF KULLAN - closure sorunu çözümü
-      if (userRef.current) {
-        console.log("📱 [UserContext] User zaten var, profil yenileniyor...");
-        setTimeout(() => refreshProfile(true), 500);
+      // Cache'den hızlı hydrate
+      const cached = localStorage.getItem("cached_profile");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.data?.username) {
+            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+          }
+        } catch {}
       }
-    };
-
-    window.addEventListener("supabase-reconnected", handleReconnect);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("appForeground", handleForeground);
-    window.addEventListener("appBackground", handleBackground);
-    window.addEventListener("session-recovered", handleSessionRecovered);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    const interval = setInterval(checkConnection, 30000);
+      
+      // Profil yükle
+      if (userRef.current) {
+        await refreshProfile(true);
+      }
+    });
 
     return () => {
-      window.removeEventListener("supabase-reconnected", handleReconnect);
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("appForeground", handleForeground);
       window.removeEventListener("appBackground", handleBackground);
-      window.removeEventListener("session-recovered", handleSessionRecovered);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
+      unregisterHub();
     };
   }, []);
 
