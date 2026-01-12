@@ -195,7 +195,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     // 🔥 GLOBAL RESUME HANDLER - React lifecycle'dan bağımsız
-    const handleAppResumed = async () => {
+    const handleAppResumed = () => {
       console.log("📱 [UserContext] 🎯 App resumed eventi alındı!");
       
       // Kilitleri HEMEN sıfırla
@@ -204,25 +204,35 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // 🔥 Biraz bekle - WebView'ın stabil olmasını sağla
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Profil yükle - doğrudan Supabase'den çek
+      // Profil yükle - SYNC başlat, async devam etsin
       const currentUser = userRef.current;
-      if (currentUser?.id) {
-        console.log("📱 [UserContext] 🔄 Profil yenileniyor...", currentUser.id?.slice(-8));
-        
-        try {
-          // 🔥 DOĞRUDAN Supabase'den çek - refreshProfile'ı bypass et
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", currentUser.id)
-            .single();
-          
+      const userId = currentUser?.id;
+      
+      console.log("📱 [UserContext] 📊 userRef durumu:", {
+        hasUser: !!currentUser,
+        userId: userId?.slice(-8) || "YOK",
+      });
+      
+      if (!userId) {
+        console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
+        return;
+      }
+      
+      console.log("📱 [UserContext] 🔄 Profil yenileniyor...", userId.slice(-8));
+      
+      // 🔥 Doğrudan fetch - promise chain
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single()
+        .then(({ data, error }) => {
           if (error) {
-            console.error("[UserContext] ❌ Resume profil çekme hatası:", error.message);
-          } else if (data) {
+            console.error("📱 [UserContext] ❌ Resume profil hatası:", error.message);
+            return;
+          }
+          
+          if (data) {
             console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
             
             const profileData = {
@@ -234,21 +244,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             lastRefreshTimeRef.current = Date.now();
             
             // Cache güncelle
-            localStorage.setItem(
-              "cached_profile",
-              JSON.stringify({
-                id: currentUser.id,
-                data: profileData,
-                timestamp: Date.now(),
-              }),
-            );
+            try {
+              localStorage.setItem(
+                "cached_profile",
+                JSON.stringify({
+                  id: userId,
+                  data: profileData,
+                  timestamp: Date.now(),
+                }),
+              );
+            } catch (e) {
+              // localStorage hatası önemsiz
+            }
           }
-        } catch (e: any) {
-          console.error("[UserContext] ❌ Resume profil exception:", e?.message || e);
-        }
-      } else {
-        console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
-      }
+        });
     };
 
     window.addEventListener("appBackground", handleBackground);
