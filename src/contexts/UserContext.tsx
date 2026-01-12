@@ -195,22 +195,57 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     // 🔥 GLOBAL RESUME HANDLER - React lifecycle'dan bağımsız
-    const handleAppResumed = () => {
+    const handleAppResumed = async () => {
       console.log("📱 [UserContext] 🎯 App resumed eventi alındı!");
       
-      // Kilitleri sıfırla
+      // Kilitleri HEMEN sıfırla
       isFetchingProfileRef.current = false;
       isRefreshingCreditsRef.current = false;
       lastRefreshTimeRef.current = 0;
       setIsSystemConnected(true);
       
-      // Profil yükle
+      // 🔥 Biraz bekle - WebView'ın stabil olmasını sağla
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Profil yükle - doğrudan Supabase'den çek
       const currentUser = userRef.current;
-      if (currentUser) {
+      if (currentUser?.id) {
         console.log("📱 [UserContext] 🔄 Profil yenileniyor...", currentUser.id?.slice(-8));
-        refreshProfile(true).catch(e => {
-          console.error("[UserContext] ❌ Resume profil yenileme hatası:", e);
-        });
+        
+        try {
+          // 🔥 DOĞRUDAN Supabase'den çek - refreshProfile'ı bypass et
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single();
+          
+          if (error) {
+            console.error("[UserContext] ❌ Resume profil çekme hatası:", error.message);
+          } else if (data) {
+            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
+            
+            const profileData = {
+              ...data,
+              ink_count: (data as any).ink_count ?? 0,
+            };
+            
+            setProfile(profileData);
+            lastRefreshTimeRef.current = Date.now();
+            
+            // Cache güncelle
+            localStorage.setItem(
+              "cached_profile",
+              JSON.stringify({
+                id: currentUser.id,
+                data: profileData,
+                timestamp: Date.now(),
+              }),
+            );
+          }
+        } catch (e: any) {
+          console.error("[UserContext] ❌ Resume profil exception:", e?.message || e);
+        }
       } else {
         console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
       }
