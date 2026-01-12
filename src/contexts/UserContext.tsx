@@ -216,17 +216,30 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       resumeFetchInProgressRef.current = true;
       
+      // 🔥 ZORLA TIMEOUT - 5 saniye içinde cevap gelmezse KES
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn("📱 [UserContext] ⏰ 5s TIMEOUT - fetch zorla kesiliyor!");
+        controller.abort();
+      }, 5000);
+      
       try {
-        // 🔥 DOĞRUDAN FETCH - refreshSession asılı kalıyor, atla
-        console.log("📱 [UserContext] 📡 Profil fetch başlıyor...");
+        console.log("📱 [UserContext] 📡 Profil fetch başlıyor (5s timeout)...");
+        
+        // Supabase fetch with AbortController
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", userId)
+          .abortSignal(controller.signal)
           .single();
+        
+        clearTimeout(timeoutId);
         
         if (error) {
           console.error("📱 [UserContext] ❌ Profil fetch hatası:", error.message);
+          // Hata olsa bile bağlantı var demektir
+          setIsSystemConnected(true);
         } else if (data) {
           console.log("📱 [UserContext] ✅ Profil yüklendi:", data.username);
           setProfile(data);
@@ -234,7 +247,42 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           setIsSystemConnected(true);
         }
       } catch (e: any) {
-        console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+        clearTimeout(timeoutId);
+        
+        if (e?.name === "AbortError" || e?.message?.includes("abort")) {
+          console.warn("📱 [UserContext] ⚠️ Fetch ABORT edildi - Supabase client yeniden oluşturulacak");
+          
+          // 🔥 SUPABASE CLIENT'I YENİDEN OLUŞTUR
+          try {
+            const { recreateSupabaseClient } = await import("@/integrations/supabase/client");
+            recreateSupabaseClient();
+            console.log("📱 [UserContext] 🔄 Supabase client yeniden oluşturuldu");
+            
+            // 1 saniye bekle ve tekrar dene
+            setTimeout(async () => {
+              try {
+                const { supabase: newSupabase } = await import("@/integrations/supabase/client");
+                const { data: retryData } = await newSupabase
+                  .from("profiles")
+                  .select("*")
+                  .eq("id", userId)
+                  .single();
+                  
+                if (retryData) {
+                  console.log("📱 [UserContext] ✅ RETRY başarılı:", retryData.username);
+                  setProfile(retryData);
+                  setIsSystemConnected(true);
+                }
+              } catch (retryErr) {
+                console.error("📱 [UserContext] ❌ RETRY de başarısız:", retryErr);
+              }
+            }, 1000);
+          } catch (recreateErr) {
+            console.error("📱 [UserContext] ❌ Client recreate hatası:", recreateErr);
+          }
+        } else {
+          console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+        }
       } finally {
         resumeFetchInProgressRef.current = false;
       }
