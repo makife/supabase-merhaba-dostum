@@ -216,29 +216,32 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       resumeFetchInProgressRef.current = true;
       
-      // 🔥 ZORLA TIMEOUT - 5 saniye içinde cevap gelmezse KES
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.warn("📱 [UserContext] ⏰ 5s TIMEOUT - fetch zorla kesiliyor!");
-        controller.abort();
-      }, 5000);
+      // 🔥 PROMISE.RACE İLE TIMEOUT - AbortController çalışmıyor
+      const TIMEOUT_MS = 5000;
       
       try {
         console.log("📱 [UserContext] 📡 Profil fetch başlıyor (5s timeout)...");
         
-        // Supabase fetch with AbortController
-        const { data, error } = await supabase
+        // Fetch promise
+        const fetchPromise = supabase
           .from("profiles")
           .select("*")
           .eq("id", userId)
-          .abortSignal(controller.signal)
           .single();
         
-        clearTimeout(timeoutId);
+        // Timeout promise
+        const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((_, reject) => {
+          setTimeout(() => {
+            console.warn("📱 [UserContext] ⏰ 5s TIMEOUT!");
+            reject(new Error("TIMEOUT"));
+          }, TIMEOUT_MS);
+        });
+        
+        // Race - hangisi önce biterse
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
         
         if (error) {
           console.error("📱 [UserContext] ❌ Profil fetch hatası:", error.message);
-          // Hata olsa bile bağlantı var demektir
           setIsSystemConnected(true);
         } else if (data) {
           console.log("📱 [UserContext] ✅ Profil yüklendi:", data.username);
@@ -247,36 +250,49 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           setIsSystemConnected(true);
         }
       } catch (e: any) {
-        clearTimeout(timeoutId);
+        const isTimeout = e?.message === "TIMEOUT";
         
-        if (e?.name === "AbortError" || e?.message?.includes("abort")) {
-          console.warn("📱 [UserContext] ⚠️ Fetch ABORT edildi - Supabase client yeniden oluşturulacak");
+        if (isTimeout) {
+          console.warn("📱 [UserContext] ⚠️ TIMEOUT! Supabase client yeniden oluşturuluyor...");
           
           // 🔥 SUPABASE CLIENT'I YENİDEN OLUŞTUR
           try {
-            const { recreateSupabaseClient } = await import("@/integrations/supabase/client");
+            const { recreateSupabaseClient, supabase: freshSupabase } = await import("@/integrations/supabase/client");
             recreateSupabaseClient();
             console.log("📱 [UserContext] 🔄 Supabase client yeniden oluşturuldu");
             
-            // 1 saniye bekle ve tekrar dene
-            setTimeout(async () => {
-              try {
-                const { supabase: newSupabase } = await import("@/integrations/supabase/client");
-                const { data: retryData } = await newSupabase
-                  .from("profiles")
-                  .select("*")
-                  .eq("id", userId)
-                  .single();
-                  
-                if (retryData) {
-                  console.log("📱 [UserContext] ✅ RETRY başarılı:", retryData.username);
-                  setProfile(retryData);
-                  setIsSystemConnected(true);
+            // 🔥 NATIVE WEBSOCKET'E YENİ TOKEN GÖNDER
+            try {
+              const { getGlobalAccessToken } = await import("@/integrations/supabase/client");
+              const { Capacitor } = await import("@capacitor/core");
+              const token = getGlobalAccessToken();
+              if (token && Capacitor.isNativePlatform()) {
+                const { NativeRealtime, isNativeRealtimeAvailable } = await import("@/plugins/NativeRealtime");
+                if (isNativeRealtimeAvailable() && NativeRealtime) {
+                  await NativeRealtime.setAccessToken({ token });
+                  console.log("📱 [UserContext] 🔐 Native token güncellendi");
                 }
-              } catch (retryErr) {
-                console.error("📱 [UserContext] ❌ RETRY de başarısız:", retryErr);
               }
-            }, 1000);
+            } catch (tokenErr) {
+              console.error("📱 [UserContext] ⚠️ Native token güncelleme hatası:", tokenErr);
+            }
+            
+            // 1.5 saniye bekle ve tekrar dene
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            const { data: retryData, error: retryError } = await freshSupabase
+              .from("profiles")
+              .select("*")
+              .eq("id", userId)
+              .single();
+              
+            if (retryData) {
+              console.log("📱 [UserContext] ✅ RETRY başarılı:", retryData.username);
+              setProfile(retryData);
+              setIsSystemConnected(true);
+            } else if (retryError) {
+              console.error("📱 [UserContext] ❌ RETRY hatası:", retryError.message);
+            }
           } catch (recreateErr) {
             console.error("📱 [UserContext] ❌ Client recreate hatası:", recreateErr);
           }
