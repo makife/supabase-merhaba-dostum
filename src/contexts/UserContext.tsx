@@ -217,18 +217,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       resumeFetchInProgressRef.current = true;
       
       try {
-        // 🔥 ÇÖZÜM: Önce session'ı yenile - bu Supabase bağlantısını canlandırır
-        console.log("📱 [UserContext] 🔄 Session yenileniyor...");
-        const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
-        
-        if (sessionError) {
-          console.warn("📱 [UserContext] ⚠️ Session refresh hatası:", sessionError.message);
-          // Session yenilenemese bile fetch dene
-        } else {
-          console.log("📱 [UserContext] ✅ Session yenilendi");
-        }
-        
-        // 🔥 Şimdi profil fetch
+        // 🔥 DOĞRUDAN FETCH - refreshSession asılı kalıyor, atla
         console.log("📱 [UserContext] 📡 Profil fetch başlıyor...");
         const { data, error } = await supabase
           .from("profiles")
