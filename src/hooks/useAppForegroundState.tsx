@@ -30,13 +30,16 @@ const getBackgroundServiceManager = async () => {
   return BackgroundServiceManagerRef;
 };
 
+// 🔥 Son arka plan zamanı - foreground'a gelince event tetiklemek için
+let lastBackgroundTime: number | null = null;
+
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
 // ÖNEMLİ: Bu fonksiyon ÇOK HAFİF olmalı - hiçbir native plugin çağrısı YAPMA!
 const handleForegroundStateChange = (inForeground: boolean) => {
-  const wasInBackground = !isAppInForeground;
+  const previousState = isAppInForeground;
   isAppInForeground = inForeground;
 
-  console.log(`[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"}`);
+  console.log(`[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"} (önceki: ${previousState ? "FG" : "BG"})`);
 
   // 🔥 KRİTİK: Tüm listener'ları ÖNCE bilgilendir (senkron)
   listeners.forEach((cb) => {
@@ -61,19 +64,30 @@ const handleForegroundStateChange = (inForeground: boolean) => {
       }
       
       // 🔥 BASİT YAKLAŞIM: Tek bir "app-resumed" eventi dispatch et
-      // Tüm component'ler bunu dinleyecek
-      if (wasInBackground) {
+      // Koşul: Daha önce arka plana gitmiştik (lastBackgroundTime != null)
+      // VEYA önceki state background idi
+      const shouldDispatchResume = lastBackgroundTime !== null || !previousState;
+      
+      if (shouldDispatchResume) {
         console.log("[AppForegroundState] 🎯 app-resumed eventi dispatch ediliyor...");
+        console.log(`[AppForegroundState] 📊 lastBackgroundTime: ${lastBackgroundTime}, previousState: ${previousState}`);
         
         // 🔥 Session recovery için yeterli zaman tanı (500ms)
-        // useSessionRecovery bu sürede session'ı yenileyecek
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent("app-resumed"));
           console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi - tüm veriler yenilenecek");
+          
+          // Reset
+          lastBackgroundTime = null;
         }, 500);
+      } else {
+        console.log("[AppForegroundState] ⏭️ app-resumed atlandı (ilk başlatma veya zaten FG)");
       }
     } else {
-      // Arka plana geçti
+      // Arka plana geçti - zamanı kaydet
+      lastBackgroundTime = Date.now();
+      console.log(`[AppForegroundState] 🌙 Arka plan zamanı kaydedildi: ${lastBackgroundTime}`);
+      
       if (manager) {
         manager.onAppBackground();
       }
