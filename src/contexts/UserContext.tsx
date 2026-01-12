@@ -92,9 +92,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const isRefreshingCreditsRef = useRef(false);
   const lastNotifiedTotalRef = useRef<number>(0);
 
-  // 🛡️ YENİ EKLENEN KORUMA REFLERİ
-  const lastRefreshTimeRef = useRef<number>(0); // Son yenileme zamanı
-  const isFetchingProfileRef = useRef<boolean>(false); // Şu an istek atılıyor mu?
+  // 🛡️ KORUMA REFLERİ - GÜÇLENDIRILDI
+  const lastRefreshTimeRef = useRef<number>(0);
+  const isFetchingProfileRef = useRef<boolean>(false);
+  const resumeFetchInProgressRef = useRef<boolean>(false); // 🆕 Resume fetch kilidi
+  const lastSuccessfulFetchRef = useRef<number>(0); // 🆕 Son başarılı fetch
   
   // 🔥 KRİTİK: User ref - closure sorununu çözmek için
   const userRef = useRef(user);
@@ -194,78 +196,61 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // 🔥 GLOBAL RESUME HANDLER - React lifecycle'dan bağımsız
+    // 🔥 GLOBAL RESUME HANDLER - GÜÇLENDIRILDI
     const handleAppResumed = () => {
       console.log("📱 [UserContext] 🎯 App resumed eventi alındı!");
       
-      // Kilitleri HEMEN sıfırla
-      isFetchingProfileRef.current = false;
-      isRefreshingCreditsRef.current = false;
-      lastRefreshTimeRef.current = 0;
-      setIsSystemConnected(true);
+      // 🛡️ DUPLICATE GUARD: Zaten resume fetch yapılıyorsa ATLA
+      if (resumeFetchInProgressRef.current) {
+        console.log("📱 [UserContext] ⏭️ Resume fetch zaten devam ediyor, ATLA");
+        return;
+      }
       
-      // Profil yükle - SYNC başlat, async devam etsin
+      // 🛡️ SON FETCH ÇOK YENİYSE ATLA (3 saniye içinde)
+      const timeSinceLastFetch = Date.now() - lastSuccessfulFetchRef.current;
+      if (timeSinceLastFetch < 3000) {
+        console.log(`📱 [UserContext] ⏭️ Son fetch çok yeni (${timeSinceLastFetch}ms), ATLA`);
+        return;
+      }
+      
       const currentUser = userRef.current;
       const userId = currentUser?.id;
-      
-      console.log("📱 [UserContext] 📊 userRef durumu:", {
-        hasUser: !!currentUser,
-        userId: userId?.slice(-8) || "YOK",
-      });
       
       if (!userId) {
         console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
         return;
       }
       
-      console.log("📱 [UserContext] 🔄 Profil yenileniyor...", userId.slice(-8));
+      // KİLİTLE
+      resumeFetchInProgressRef.current = true;
+      setIsSystemConnected(true);
       
-      // 🔥 COOLDOWN'I SIFIRLA - böylece refreshProfile çalışır
-      lastRefreshTimeRef.current = 0;
-      isFetchingProfileRef.current = false;
+      console.log("📱 [UserContext] 🔄 Resume profil fetch başlıyor...", userId.slice(-8));
       
-      // 🔥 NATIVE-SAFE: Promise.race ile timeout (AbortController Android'de çalışmıyor!)
-      setTimeout(async () => {
-        console.log("📱 [UserContext] 📡 Resume refresh başlıyor...");
-        
-        const timeoutPromise = new Promise<null>((_, reject) => {
-          setTimeout(() => reject(new Error("TIMEOUT")), 5000);
-        });
-        
-        const fetchPromise = supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", userId)
-          .single();
-        
+      // 🔥 HIZLI FETCH - Gecikme yok, doğrudan fetch
+      (async () => {
         try {
-          console.log("📱 [UserContext] 📡 Supabase fetch başlatılıyor...");
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
           
-          const result = await Promise.race([fetchPromise, timeoutPromise]);
-          
-          if (result && "data" in result) {
-            const { data, error } = result;
-            
-            console.log("📱 [UserContext] 📡 Supabase fetch tamamlandı:", { 
-              hasData: !!data, 
-              hasError: !!error 
-            });
-            
-            if (error) {
-              console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
-            } else if (data) {
-              console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
-              setProfile(data);
-            }
+          if (error) {
+            console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
+          } else if (data) {
+            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
+            setProfile(data);
+            lastSuccessfulFetchRef.current = Date.now();
+            lastRefreshTimeRef.current = Date.now();
           }
         } catch (e: any) {
-          if (e?.message === "TIMEOUT") {
-            console.error("📱 [UserContext] ⏱️ Resume fetch TIMEOUT (5s)!");
-          } else {
-            console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
-          }
+          console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+        } finally {
+          // 🔓 KİLİDİ AÇ
+          resumeFetchInProgressRef.current = false;
         }
-      }, 300);
+      })();
     };
 
     window.addEventListener("appBackground", handleBackground);
@@ -329,11 +314,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     // 🔥 User değiştiğinde tüm kilitleri sıfırla
     isFetchingProfileRef.current = false;
     isRefreshingCreditsRef.current = false;
+    resumeFetchInProgressRef.current = false;
     lastRefreshTimeRef.current = 0;
-    refreshProfile(true);
     
-    // 🆕 supabase-reconnected artık Event Hub tarafından yönetiliyor!
-    // Bağımsız listener KALDIRILDI - döngü önlendi
+    // 🛡️ Sadece son fetch çok eski ise yenile (duplicate önleme)
+    const timeSinceLastFetch = Date.now() - lastSuccessfulFetchRef.current;
+    if (timeSinceLastFetch > 2000) {
+      refreshProfile(true);
+    } else {
+      console.log(`[UserContext] ⏭️ Son fetch çok yeni (${timeSinceLastFetch}ms), atlanıyor`);
+    }
   }, [user?.id]);
 
   // 🛡️ DÜZELTİLMİŞ VE KORUMALI REFRESH PROFILE
