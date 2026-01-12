@@ -220,17 +220,44 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       console.log("📱 [UserContext] 🔄 Profil yenileniyor...", userId.slice(-8));
       
-      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + refreshProfile kullan
-      setTimeout(() => {
-        console.log("📱 [UserContext] 📡 Delayed refresh başlıyor...");
+      // 🔥 COOLDOWN'I SIFIRLA - böylece refreshProfile çalışır
+      lastRefreshTimeRef.current = 0;
+      isFetchingProfileRef.current = false;
+      
+      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + doğrudan Supabase çağrısı
+      setTimeout(async () => {
+        console.log("📱 [UserContext] 📡 Resume refresh başlıyor...");
         
-        // refreshProfile'ı çağır - bu zaten çalışıyor
-        refreshProfile(true).then(() => {
-          console.log("📱 [UserContext] ✅ Delayed refresh tamamlandı!");
-        }).catch((err) => {
-          console.error("📱 [UserContext] ❌ Delayed refresh hatası:", err);
-        });
-      }, 150); // 150ms gecikme - WebView stabilize olsun
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
+          
+          if (error) {
+            console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
+            return;
+          }
+          
+          if (data) {
+            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
+            setProfile({ ...data, ink_count: (data as any).ink_count ?? 0 });
+            lastRefreshTimeRef.current = Date.now();
+            
+            // Cache güncelle
+            try {
+              localStorage.setItem("cached_profile", JSON.stringify({
+                id: userId,
+                data: { ...data, ink_count: (data as any).ink_count ?? 0 },
+                timestamp: Date.now(),
+              }));
+            } catch (e) {}
+          }
+        } catch (e: any) {
+          console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+        }
+      }, 200); // 200ms gecikme
     };
 
     window.addEventListener("appBackground", handleBackground);
