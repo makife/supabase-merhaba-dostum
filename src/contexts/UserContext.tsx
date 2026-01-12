@@ -197,19 +197,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
 
     // 🔥 GLOBAL RESUME HANDLER - GÜÇLENDIRILDI
-    const handleAppResumed = () => {
+    const handleAppResumed = async () => {
       console.log("📱 [UserContext] 🎯 App resumed eventi alındı!");
       
-      // 🛡️ DUPLICATE GUARD: Zaten resume fetch yapılıyorsa ATLA
+      // 🛡️ DUPLICATE GUARD
       if (resumeFetchInProgressRef.current) {
-        console.log("📱 [UserContext] ⏭️ Resume fetch zaten devam ediyor, ATLA");
-        return;
-      }
-      
-      // 🛡️ SON FETCH ÇOK YENİYSE ATLA (3 saniye içinde)
-      const timeSinceLastFetch = Date.now() - lastSuccessfulFetchRef.current;
-      if (timeSinceLastFetch < 3000) {
-        console.log(`📱 [UserContext] ⏭️ Son fetch çok yeni (${timeSinceLastFetch}ms), ATLA`);
+        console.log("📱 [UserContext] ⏭️ Resume zaten devam ediyor, ATLA");
         return;
       }
       
@@ -217,40 +210,45 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const userId = currentUser?.id;
       
       if (!userId) {
-        console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
+        console.log("📱 [UserContext] ⚠️ User yok, atlanıyor");
         return;
       }
       
-      // KİLİTLE
       resumeFetchInProgressRef.current = true;
-      setIsSystemConnected(true);
       
-      console.log("📱 [UserContext] 🔄 Resume profil fetch başlıyor...", userId.slice(-8));
-      
-      // 🔥 HIZLI FETCH - Gecikme yok, doğrudan fetch
-      (async () => {
-        try {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
-          
-          if (error) {
-            console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
-          } else if (data) {
-            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
-            setProfile(data);
-            lastSuccessfulFetchRef.current = Date.now();
-            lastRefreshTimeRef.current = Date.now();
-          }
-        } catch (e: any) {
-          console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
-        } finally {
-          // 🔓 KİLİDİ AÇ
-          resumeFetchInProgressRef.current = false;
+      try {
+        // 🔥 ÇÖZÜM: Önce session'ı yenile - bu Supabase bağlantısını canlandırır
+        console.log("📱 [UserContext] 🔄 Session yenileniyor...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.refreshSession();
+        
+        if (sessionError) {
+          console.warn("📱 [UserContext] ⚠️ Session refresh hatası:", sessionError.message);
+          // Session yenilenemese bile fetch dene
+        } else {
+          console.log("📱 [UserContext] ✅ Session yenilendi");
         }
-      })();
+        
+        // 🔥 Şimdi profil fetch
+        console.log("📱 [UserContext] 📡 Profil fetch başlıyor...");
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
+        
+        if (error) {
+          console.error("📱 [UserContext] ❌ Profil fetch hatası:", error.message);
+        } else if (data) {
+          console.log("📱 [UserContext] ✅ Profil yüklendi:", data.username);
+          setProfile(data);
+          lastSuccessfulFetchRef.current = Date.now();
+          setIsSystemConnected(true);
+        }
+      } catch (e: any) {
+        console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+      } finally {
+        resumeFetchInProgressRef.current = false;
+      }
     };
 
     window.addEventListener("appBackground", handleBackground);
