@@ -85,18 +85,23 @@ export const useJokerInventory = () => {
     }
   }, [user?.id]);
 
-  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
+  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
   useEffect(() => {
     const handleAppResumed = () => {
-      console.log("[Joker] 🎯 App resumed - jokerler yenileniyor...");
-      if (userRef.current?.id) {
+      console.log("[Joker] 🎯 App resumed eventi alındı!");
+      const currentUser = userRef.current;
+      if (currentUser?.id) {
+        console.log("[Joker] 🔄 Jokerler yenileniyor...", currentUser.id.slice(-8));
         loadJokers().catch(e => {
           console.error("[Joker] ❌ Resume joker yenileme hatası:", e);
         });
+      } else {
+        console.log("[Joker] ⚠️ User yok, jokerler yenilenmedi");
       }
     };
 
     window.addEventListener("app-resumed", handleAppResumed);
+    console.log("[Joker] ✅ app-resumed listener kaydedildi");
     
     return () => {
       window.removeEventListener("app-resumed", handleAppResumed);

@@ -155,7 +155,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     };
   }, [isNative]);
 
-  // 2. 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
+  // 2. 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -194,9 +194,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // 🔥 BASİT RESUME HANDLER - Ön plana gelince profil yenile
+    // 🔥 GLOBAL RESUME HANDLER - React lifecycle'dan bağımsız
     const handleAppResumed = () => {
-      console.log("📱 [UserContext] 🎯 App resumed - profil yenileniyor...");
+      console.log("📱 [UserContext] 🎯 App resumed eventi alındı!");
       
       // Kilitleri sıfırla
       isFetchingProfileRef.current = false;
@@ -205,16 +205,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(true);
       
       // Profil yükle
-      if (userRef.current) {
+      const currentUser = userRef.current;
+      if (currentUser) {
+        console.log("📱 [UserContext] 🔄 Profil yenileniyor...", currentUser.id?.slice(-8));
         refreshProfile(true).catch(e => {
           console.error("[UserContext] ❌ Resume profil yenileme hatası:", e);
         });
+      } else {
+        console.log("📱 [UserContext] ⚠️ User yok, profil yenilenmedi");
       }
     };
 
     window.addEventListener("appBackground", handleBackground);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("app-resumed", handleAppResumed);
+    
+    console.log("[UserContext] ✅ app-resumed listener kaydedildi");
 
     return () => {
       window.removeEventListener("appBackground", handleBackground);
