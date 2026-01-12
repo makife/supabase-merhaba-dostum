@@ -220,57 +220,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       console.log("📱 [UserContext] 🔄 Profil yenileniyor...", userId.slice(-8));
       
-      // 🔥 Immediately Invoked Async Function
-      (async () => {
-        try {
-          console.log("📱 [UserContext] 📡 Supabase sorgusu başlıyor...");
-          
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
-          
-          console.log("📱 [UserContext] 📡 Supabase sorgusu tamamlandı:", {
-            hasData: !!data,
-            hasError: !!error,
-            errorMsg: error?.message || "yok",
-          });
-          
-          if (error) {
-            console.error("📱 [UserContext] ❌ Resume profil hatası:", error.message);
-            return;
-          }
-          
-          if (data) {
-            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
-            
-            const profileData = {
-              ...data,
-              ink_count: (data as any).ink_count ?? 0,
-            };
-            
-            setProfile(profileData);
-            lastRefreshTimeRef.current = Date.now();
-            
-            // Cache güncelle
-            try {
-              localStorage.setItem(
-                "cached_profile",
-                JSON.stringify({
-                  id: userId,
-                  data: profileData,
-                  timestamp: Date.now(),
-                }),
-              );
-            } catch (e) {
-              // localStorage hatası önemsiz
-            }
-          }
-        } catch (e: any) {
-          console.error("📱 [UserContext] ❌ Resume fetch exception:", e?.message || e);
-        }
-      })();
+      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + refreshProfile kullan
+      setTimeout(() => {
+        console.log("📱 [UserContext] 📡 Delayed refresh başlıyor...");
+        
+        // refreshProfile'ı çağır - bu zaten çalışıyor
+        refreshProfile(true).then(() => {
+          console.log("📱 [UserContext] ✅ Delayed refresh tamamlandı!");
+        }).catch((err) => {
+          console.error("📱 [UserContext] ❌ Delayed refresh hatası:", err);
+        });
+      }, 150); // 150ms gecikme - WebView stabilize olsun
     };
 
     window.addEventListener("appBackground", handleBackground);
