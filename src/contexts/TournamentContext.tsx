@@ -630,15 +630,16 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .subscribe()
     );
 
-    // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
+    // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
     const handleAppResumed = () => {
-      console.log("🔄 [Tournament] App resumed - turnuvalar yeniden yükleniyor...");
+      console.log("🔄 [Tournament] 🎯 App resumed eventi alındı!");
       fetchTournaments().catch(e => {
         console.error("[Tournament] ❌ Resume turnuva yenileme hatası:", e);
       });
     };
 
     window.addEventListener("app-resumed", handleAppResumed);
+    console.log("[Tournament] ✅ app-resumed listener kaydedildi");
 
     return () => {
       autoReconnect.unregisterChannel(channelName);
