@@ -220,13 +220,23 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       
       console.log("📱 [UserContext] 🔄 Profil yenileniyor...", userId.slice(-8));
       
-      // 🔥 Doğrudan fetch - promise chain
-      supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single()
-        .then(({ data, error }) => {
+      // 🔥 Immediately Invoked Async Function
+      (async () => {
+        try {
+          console.log("📱 [UserContext] 📡 Supabase sorgusu başlıyor...");
+          
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
+          
+          console.log("📱 [UserContext] 📡 Supabase sorgusu tamamlandı:", {
+            hasData: !!data,
+            hasError: !!error,
+            errorMsg: error?.message || "yok",
+          });
+          
           if (error) {
             console.error("📱 [UserContext] ❌ Resume profil hatası:", error.message);
             return;
@@ -257,7 +267,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
               // localStorage hatası önemsiz
             }
           }
-        });
+        } catch (e: any) {
+          console.error("📱 [UserContext] ❌ Resume fetch exception:", e?.message || e);
+        }
+      })();
     };
 
     window.addEventListener("appBackground", handleBackground);
