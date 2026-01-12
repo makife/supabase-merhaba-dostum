@@ -224,16 +224,34 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       isFetchingProfileRef.current = false;
       
-      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + doğrudan Supabase çağrısı
+      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + AbortController ile timeout
       setTimeout(async () => {
         console.log("📱 [UserContext] 📡 Resume refresh başlıyor...");
         
+        // 🔥 AbortController ile 5 saniye timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.error("📱 [UserContext] ⏱️ Resume fetch TIMEOUT (5s)!");
+          controller.abort();
+        }, 5000);
+        
         try {
+          console.log("📱 [UserContext] 📡 Supabase fetch başlatılıyor...");
+          
           const { data, error } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", userId)
+            .abortSignal(controller.signal)
             .single();
+          
+          clearTimeout(timeoutId);
+          
+          console.log("📱 [UserContext] 📡 Supabase fetch tamamlandı:", { 
+            hasData: !!data, 
+            hasError: !!error,
+            errorMsg: error?.message 
+          });
           
           if (error) {
             console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
@@ -255,9 +273,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             } catch (e) {}
           }
         } catch (e: any) {
-          console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+          clearTimeout(timeoutId);
+          if (e?.name === "AbortError") {
+            console.error("📱 [UserContext] ⏱️ Resume fetch iptal edildi (timeout)");
+          } else {
+            console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
+          }
         }
-      }, 200); // 200ms gecikme
+      }, 300); // 300ms gecikme - WebView + native stabilize olsun
     };
 
     window.addEventListener("appBackground", handleBackground);
