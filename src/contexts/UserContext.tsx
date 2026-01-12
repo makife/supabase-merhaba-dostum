@@ -224,63 +224,48 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       lastRefreshTimeRef.current = 0;
       isFetchingProfileRef.current = false;
       
-      // 🔥 NATIVE-SAFE: setTimeout ile geciktir + AbortController ile timeout
+      // 🔥 NATIVE-SAFE: Promise.race ile timeout (AbortController Android'de çalışmıyor!)
       setTimeout(async () => {
         console.log("📱 [UserContext] 📡 Resume refresh başlıyor...");
         
-        // 🔥 AbortController ile 5 saniye timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.error("📱 [UserContext] ⏱️ Resume fetch TIMEOUT (5s)!");
-          controller.abort();
-        }, 5000);
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          setTimeout(() => reject(new Error("TIMEOUT")), 5000);
+        });
+        
+        const fetchPromise = supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
         
         try {
           console.log("📱 [UserContext] 📡 Supabase fetch başlatılıyor...");
           
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .abortSignal(controller.signal)
-            .single();
+          const result = await Promise.race([fetchPromise, timeoutPromise]);
           
-          clearTimeout(timeoutId);
-          
-          console.log("📱 [UserContext] 📡 Supabase fetch tamamlandı:", { 
-            hasData: !!data, 
-            hasError: !!error,
-            errorMsg: error?.message 
-          });
-          
-          if (error) {
-            console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
-            return;
-          }
-          
-          if (data) {
-            console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
-            setProfile({ ...data, ink_count: (data as any).ink_count ?? 0 });
-            lastRefreshTimeRef.current = Date.now();
+          if (result && "data" in result) {
+            const { data, error } = result;
             
-            // Cache güncelle
-            try {
-              localStorage.setItem("cached_profile", JSON.stringify({
-                id: userId,
-                data: { ...data, ink_count: (data as any).ink_count ?? 0 },
-                timestamp: Date.now(),
-              }));
-            } catch (e) {}
+            console.log("📱 [UserContext] 📡 Supabase fetch tamamlandı:", { 
+              hasData: !!data, 
+              hasError: !!error 
+            });
+            
+            if (error) {
+              console.error("📱 [UserContext] ❌ Resume fetch hatası:", error.message);
+            } else if (data) {
+              console.log("📱 [UserContext] ✅ Resume profil başarılı:", data.username);
+              setProfile(data);
+            }
           }
         } catch (e: any) {
-          clearTimeout(timeoutId);
-          if (e?.name === "AbortError") {
-            console.error("📱 [UserContext] ⏱️ Resume fetch iptal edildi (timeout)");
+          if (e?.message === "TIMEOUT") {
+            console.error("📱 [UserContext] ⏱️ Resume fetch TIMEOUT (5s)!");
           } else {
             console.error("📱 [UserContext] ❌ Resume exception:", e?.message || e);
           }
         }
-      }, 300); // 300ms gecikme - WebView + native stabilize olsun
+      }, 300);
     };
 
     window.addEventListener("appBackground", handleBackground);
