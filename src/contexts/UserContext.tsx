@@ -233,9 +233,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       setIsSystemConnected(false);
     };
 
-    // 🔥 GLOBAL RESUME HANDLER - STABİLİZE EDİLMİŞ VERSİYON
-    const handleAppResumed = async () => {
-      console.log("📱 [UserContext] 🎯 Uygulama ön plana çıktı (Resume)");
+    // 🆕🔥 AUTH-READY HANDLER - Token refresh BİTTİKTEN sonra çalışır!
+    // useSessionRecovery token'ı yeniledikten sonra auth-ready dispatch eder
+    const handleAuthReady = async (event: any) => {
+      const detail = (event as CustomEvent).detail;
+      console.log("📱 [UserContext] 🎯 auth-ready eventi alındı:", detail?.source);
 
       // 1. 🛡️ DUPLICATE GUARD: Zaten bir işlem devam ediyorsa yeni işlem başlatma
       if (resumeFetchInProgressRef.current) {
@@ -254,51 +256,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       resumeFetchInProgressRef.current = true;
 
       try {
-        // 2. ⏳ ÇOOK KISA STABİLİZASYON BEKLEMESİ (150ms - önceden 500ms idi)
-        console.log("📱 [UserContext] 💤 Ağın stabilize olması bekleniyor (150ms)...");
-        await new Promise((resolve) => setTimeout(resolve, 150));
-
-        // 3. 🔑 KRİTİK: TOKEN YENİLEME - ZORLA REFRESH YAP!
-        // ⚠️ getSession() cache'den dönebilir - refreshSession() kullan!
-        console.log("📱 [UserContext] 🔑 Token ZORLA yenileniyor (refreshSession)...");
-        let tokenUpdated = false;
-        try {
-          // 🔥 ÖNCE refreshSession dene - bu gerçek network isteği yapar
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError) {
-            console.warn("📱 [UserContext] ⚠️ RefreshSession hatası:", refreshError.message);
-            // Fallback: getSession dene
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData?.session?.access_token) {
-              setGlobalAccessToken(sessionData.session.access_token);
-              tokenUpdated = true;
-              console.log("📱 [UserContext] ✅ Token getSession ile güncellendi (fallback)");
-            }
-          } else if (refreshData?.session?.access_token) {
-            setGlobalAccessToken(refreshData.session.access_token);
-            tokenUpdated = true;
-            console.log("📱 [UserContext] ✅ Token refreshSession ile güncellendi!");
-          }
-          
-          if (!tokenUpdated) {
-            console.warn("📱 [UserContext] ⚠️ Token güncellenemedi - session yok olabilir");
-          }
-        } catch (tokenError: any) {
-          console.error("📱 [UserContext] ❌ Token yenileme hatası:", tokenError?.message);
-        }
+        // 🆕 Token zaten useSessionRecovery tarafından yenilendi!
+        // Artık burada token refresh yapmamıza GEREK YOK!
+        console.log("📱 [UserContext] ✅ Token zaten hazır (useSessionRecovery tarafından)");
 
         // 🆕 TOKEN HAZIR - Sayfalara "data-ready" sinyali gönder!
         console.log("📱 [UserContext] 📢 data-ready eventi dispatch ediliyor...");
         window.dispatchEvent(new CustomEvent("data-ready"));
 
-        // 4. 🔌 NATIVE DURUM KONTROLÜ
+        // 🔌 NATIVE DURUM KONTROLÜ
         if (isNative && NativeRealtime) {
           const state = await NativeRealtime.getConnectionState();
           console.log(`📱 [UserContext] 🔍 Native WebSocket Durumu: ${state.state}`);
         }
 
-        // 5. 📡 PROFİL YENİLEME - TIMEOUT İLE
+        // 📡 PROFİL YENİLEME - TIMEOUT İLE
         console.log("📱 [UserContext] 🔄 Profil güncelleniyor...");
 
         // 🔥 Promise.race ile 8 saniye timeout
@@ -334,15 +306,25 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         resumeFetchInProgressRef.current = false;
       }
     };
+
+    // 🆕 Eski app-resumed handler (basitleştirilmiş - sadece log)
+    const handleAppResumed = () => {
+      console.log("📱 [UserContext] 📡 app-resumed eventi alındı - auth-ready bekleniyor...");
+      // Token refresh işlemi useSessionRecovery'de yapılıyor
+      // Profil yenileme auth-ready eventinden sonra yapılacak
+    };
+
     window.addEventListener("appBackground", handleBackground);
     window.addEventListener("offline", handleOffline);
+    window.addEventListener("auth-ready", handleAuthReady);
     window.addEventListener("app-resumed", handleAppResumed);
 
-    console.log("[UserContext] ✅ app-resumed listener kaydedildi");
+    console.log("[UserContext] ✅ auth-ready ve app-resumed listener'ları kaydedildi");
 
     return () => {
       window.removeEventListener("appBackground", handleBackground);
       window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("auth-ready", handleAuthReady);
       window.removeEventListener("app-resumed", handleAppResumed);
       clearInterval(interval);
     };
