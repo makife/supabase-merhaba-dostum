@@ -46,10 +46,16 @@ export function useSessionRecovery() {
           setGlobalAccessToken(currentSession.access_token);
           console.log("[SessionRecovery] 🔐 Global token SET EDİLDİ!");
           
-          // 🔥 BASİT YAKLAŞIM: Session hazır, artık verileri yükleyebilirler
-          // "app-resumed" eventi zaten useAppForegroundState'ten gelecek
-          // Burada sadece session-recovered için log tutalım
-          console.log("[SessionRecovery] 📡 Session aktif - hook'lar bilgilendirildi");
+          // 🆕🔥🔥🔥 KRİTİK: auth-ready eventi dispatch et!
+          // Session zaten aktif - hemen bildir
+          console.log("[SessionRecovery] 📢 auth-ready eventi dispatch ediliyor (existing session)...");
+          window.dispatchEvent(new CustomEvent("auth-ready", {
+            detail: { 
+              userId: currentSession.user.id,
+              email: currentSession.user.email,
+              source: "existing-session"
+            }
+          }));
           
           isRecoveringRef.current = false;
           return;
@@ -129,8 +135,18 @@ export function useSessionRecovery() {
           // 🔥 Yeni session'ı kaydet (yeni refresh_token ile)
           await saveSessionToStorage(data.session);
           
-          // 🔥 Session hazır - app-resumed eventi useAppForegroundState'ten gelecek
-          console.log("[SessionRecovery] ✅ Session tamam, veri yenileme başlayacak...");
+          // 🆕🔥🔥🔥 KRİTİK: auth-ready eventi dispatch et!
+          // Bu event UserContext'e "token hazır, profil çekebilirsin" sinyali gönderir
+          console.log("[SessionRecovery] 📢 auth-ready eventi dispatch ediliyor...");
+          window.dispatchEvent(new CustomEvent("auth-ready", {
+            detail: { 
+              userId: data.session.user.id,
+              email: data.session.user.email,
+              source: "session-recovery"
+            }
+          }));
+          
+          console.log("[SessionRecovery] ✅ Session tamam, auth-ready gönderildi!");
         }
 
       } catch (e) {
