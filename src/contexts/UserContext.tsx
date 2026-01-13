@@ -254,39 +254,67 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       resumeFetchInProgressRef.current = true;
 
       try {
-        // 2. ⏳ STABİLİZASYON BEKLEMESİ (1000ms)
-        // Cihaz uykudan yeni uyandığında WiFi/Mobil verinin el sıkışması (handshake) için
-        // bir saniye beklemek, timeout hatalarını %80 oranında azaltır.
-        console.log("📱 [UserContext] 💤 Ağın stabilize olması bekleniyor (1s)...");
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // 2. ⏳ KISA STABİLİZASYON BEKLEMESİ (500ms)
+        console.log("📱 [UserContext] 💤 Ağın stabilize olması bekleniyor (500ms)...");
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // 3. 🔌 NATIVE DURUM KONTROLÜ
+        // 3. 🔑 KRİTİK: TOKEN YENİLEME - arka plandan dönüşte token expired olabilir!
+        console.log("📱 [UserContext] 🔑 Token yenileniyor...");
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            console.error("📱 [UserContext] ❌ Session hatası:", sessionError.message);
+          } else if (sessionData?.session?.access_token) {
+            setGlobalAccessToken(sessionData.session.access_token);
+            console.log("📱 [UserContext] ✅ Token güncellendi!");
+          } else {
+            console.log("📱 [UserContext] ⚠️ Session yok, refresh deneniyor...");
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData?.session?.access_token) {
+              setGlobalAccessToken(refreshData.session.access_token);
+              console.log("📱 [UserContext] ✅ Token refresh ile güncellendi!");
+            }
+          }
+        } catch (tokenError: any) {
+          console.error("📱 [UserContext] ❌ Token yenileme hatası:", tokenError?.message);
+        }
+
+        // 4. 🔌 NATIVE DURUM KONTROLÜ
         if (isNative && NativeRealtime) {
           const state = await NativeRealtime.getConnectionState();
           console.log(`📱 [UserContext] 🔍 Native WebSocket Durumu: ${state.state}`);
-
-          // Eğer bağlantı kopuksa, connect() emrini burası değil
-          // Kotlin tarafındaki handleDisconnect (retry mekanizması) vermeli.
-          // Sadece token güncelliğinden emin olalım.
         }
 
-        // 4. 📡 PROFİL YENİLEME
-        // refreshProfile zaten kendi içinde lock (isFetchingProfileRef) ve
-        // spam korumasına sahip olduğu için en güvenli yoldur.
+        // 5. 📡 PROFİL YENİLEME - TIMEOUT İLE
         console.log("📱 [UserContext] 🔄 Profil güncelleniyor...");
 
-        // timeout içermeyen temiz bir çağrı, hata durumunda catch'e düşer
-        await refreshProfile(true);
+        // 🔥 Promise.race ile 8 saniye timeout
+        const profilePromise = refreshProfile(true);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("PROFILE_TIMEOUT")), 8000)
+        );
+        
+        await Promise.race([profilePromise, timeoutPromise]);
 
         lastSuccessfulFetchRef.current = Date.now();
         setIsSystemConnected(true);
       } catch (e: any) {
-        console.error("📱 [UserContext] ❌ Resume sırasında bir hata oluştu:", e?.message);
+        const errorMsg = e?.message || "Bilinmeyen hata";
+        console.error("📱 [UserContext] ❌ Resume sırasında hata:", errorMsg);
 
-        // Eğer hata bir timeout ise, client'ı hemen öldürmek yerine
-        // bir sonraki otomatik döngüye bırakmak daha sağlıklıdır.
-        if (e?.message === "TIMEOUT") {
-          console.warn("📱 [UserContext] ⚠️ Sunucu yanıt vermedi, ağ kalitesi düşük olabilir.");
+        if (errorMsg === "PROFILE_TIMEOUT") {
+          console.warn("📱 [UserContext] ⏱️ Profil yenileme 8sn timeout - ağ yavaş olabilir");
+          // Timeout durumunda cache'den yükle
+          const cachedProfile = localStorage.getItem("cached_profile");
+          if (cachedProfile) {
+            try {
+              const parsed = JSON.parse(cachedProfile);
+              if (parsed.id === userId && parsed.data) {
+                console.log("📱 [UserContext] 📦 Timeout - cache'den yükleniyor");
+                setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+              }
+            } catch {}
+          }
         }
       } finally {
         // İşlem bitti, kilidi aç
@@ -439,10 +467,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     console.log("[UserContext] 🔄 Profil Supabase'den çekiliyor...", forceRefresh ? "(FORCE)" : "");
 
     try {
+      // 🔥 KRİTİK: AbortController ile gerçek timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5sn timeout
+      const timeoutId = setTimeout(() => {
+        console.log("[UserContext] ⏱️ 5sn timeout - istek iptal ediliyor...");
+        controller.abort();
+      }, 5000);
 
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
+      // 🔥 Supabase query'sine abort signal geçir
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .abortSignal(controller.signal)
+        .single();
 
       clearTimeout(timeoutId);
 
@@ -468,7 +506,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           ink_count: (data as any).ink_count ?? 0,
         };
 
+        // 🔥 KRİTİK: Profile state güncellemesi
+        console.log("[UserContext] 🎯 setProfile çağrılıyor, yeni veriler:", {
+          username: profileData.username,
+          game_credits: profileData.game_credits,
+          total_score: profileData.total_score,
+          ink_count: profileData.ink_count
+        });
+        
         setProfile(profileData);
+        
+        // 🔥 DEBUG: State güncellemesini doğrula
+        setTimeout(() => {
+          console.log("[UserContext] 📊 State güncelleme sonrası - profile değişti mi?");
+        }, 100);
+        
         // Zaman damgasını güncelle - BAŞARILI İŞLEM SONRASI
         lastRefreshTimeRef.current = Date.now();
 
