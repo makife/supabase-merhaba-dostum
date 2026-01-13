@@ -1,7 +1,7 @@
 import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "./AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, setGlobalAccessToken } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 // 🔥 Basit yaklaşım - useAppResume kullanılacak (aşağıda)
 
@@ -106,7 +106,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
-  // 1. NATIVE BAĞLANTIYI BAŞLAT + DİNLE
+  // 1. NATIVE BAĞLANTIYI BAŞLAT + DİNLE + SESSION RESTORE
   useEffect(() => {
     if (!isNative || !NativeRealtime) return;
 
@@ -141,6 +141,33 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
+    // 🔥 KRİTİK: Kotlin'den gelen session restore event'ini dinle
+    const handleSessionRestored = (data: { accessToken?: string; restored?: boolean }) => {
+      console.log("[UserContext] 🔑 SessionRestored event alındı:", data.restored ? "✅" : "❌");
+      if (data.accessToken) {
+        // Kotlin'deki valid token'ı JS tarafına enjekte et
+        setGlobalAccessToken(data.accessToken);
+        setIsSystemConnected(true);
+        
+        // Token güncellendiğinde profili de yenile
+        console.log("[UserContext] 🔄 Token güncellendi, profil yenileniyor...");
+        refreshProfile(true);
+      }
+    };
+
+    // 🔥 Native realtime mesajlarını dinle (profiles tablosu için)
+    const handleNativeMessage = (data: { topic?: string; event?: string; payload?: string }) => {
+      if (data.topic?.includes("profiles") || data.event === "UPDATE") {
+        try {
+          const payload = typeof data.payload === "string" ? JSON.parse(data.payload) : data.payload;
+          console.log("[UserContext] 📡 Native'den profil güncellemesi:", payload);
+          setProfile(prev => prev ? { ...prev, ...payload } : payload);
+        } catch (e) {
+          console.error("[UserContext] ❌ Native message parse hatası:", e);
+        }
+      }
+    };
+
     const handleNativeState = (data: { state: string }) => {
       console.log("[UserContext] 🔌 Native state:", data.state);
       if (data.state === "connected") {
@@ -151,11 +178,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    NativeRealtime.addListener("connectionState", handleNativeState);
+    // Listener'ları kaydet
+    const stateListener = NativeRealtime.addListener("connectionState", handleNativeState);
+    const sessionListener = NativeRealtime.addListener("sessionRestored", handleSessionRestored);
+    const messageListener = NativeRealtime.addListener("realtimeMessage", handleNativeMessage);
+    
     initNativeConnection();
 
     return () => {
-      console.log("⚠️ [UserContext] Cleanup ATLANYOR (bağlantı koruması)");
+      console.log("⚠️ [UserContext] Native listeners temizleniyor...");
+      stateListener.then(l => l.remove()).catch(() => {});
+      sessionListener.then(l => l.remove()).catch(() => {});
+      messageListener.then(l => l.remove()).catch(() => {});
     };
   }, [isNative]);
 
