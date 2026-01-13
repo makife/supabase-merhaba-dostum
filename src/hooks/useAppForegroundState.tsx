@@ -72,14 +72,14 @@ const handleForegroundStateChange = (inForeground: boolean) => {
         console.log("[AppForegroundState] 🎯 app-resumed eventi dispatch ediliyor...");
         console.log(`[AppForegroundState] 📊 lastBackgroundTime: ${lastBackgroundTime}, previousState: ${previousState}`);
         
-        // 🔥 Session recovery için yeterli zaman tanı (500ms)
+        // 🔥 HIZLANDIRILDI: 500ms -> 100ms (Kotlin zaten bağlantıyı kurmuş durumda)
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent("app-resumed"));
           console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi - tüm veriler yenilenecek");
           
           // Reset
           lastBackgroundTime = null;
-        }, 500);
+        }, 100);
       } else {
         console.log("[AppForegroundState] ⏭️ app-resumed atlandı (ilk başlatma veya zaten FG)");
       }

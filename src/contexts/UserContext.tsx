@@ -254,26 +254,35 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       resumeFetchInProgressRef.current = true;
 
       try {
-        // 2. ⏳ KISA STABİLİZASYON BEKLEMESİ (500ms)
-        console.log("📱 [UserContext] 💤 Ağın stabilize olması bekleniyor (500ms)...");
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // 2. ⏳ ÇOOK KISA STABİLİZASYON BEKLEMESİ (150ms - önceden 500ms idi)
+        console.log("📱 [UserContext] 💤 Ağın stabilize olması bekleniyor (150ms)...");
+        await new Promise((resolve) => setTimeout(resolve, 150));
 
-        // 3. 🔑 KRİTİK: TOKEN YENİLEME - arka plandan dönüşte token expired olabilir!
-        console.log("📱 [UserContext] 🔑 Token yenileniyor...");
+        // 3. 🔑 KRİTİK: TOKEN YENİLEME - ZORLA REFRESH YAP!
+        // ⚠️ getSession() cache'den dönebilir - refreshSession() kullan!
+        console.log("📱 [UserContext] 🔑 Token ZORLA yenileniyor (refreshSession)...");
+        let tokenUpdated = false;
         try {
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError) {
-            console.error("📱 [UserContext] ❌ Session hatası:", sessionError.message);
-          } else if (sessionData?.session?.access_token) {
-            setGlobalAccessToken(sessionData.session.access_token);
-            console.log("📱 [UserContext] ✅ Token güncellendi!");
-          } else {
-            console.log("📱 [UserContext] ⚠️ Session yok, refresh deneniyor...");
-            const { data: refreshData } = await supabase.auth.refreshSession();
-            if (refreshData?.session?.access_token) {
-              setGlobalAccessToken(refreshData.session.access_token);
-              console.log("📱 [UserContext] ✅ Token refresh ile güncellendi!");
+          // 🔥 ÖNCE refreshSession dene - bu gerçek network isteği yapar
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (refreshError) {
+            console.warn("📱 [UserContext] ⚠️ RefreshSession hatası:", refreshError.message);
+            // Fallback: getSession dene
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session?.access_token) {
+              setGlobalAccessToken(sessionData.session.access_token);
+              tokenUpdated = true;
+              console.log("📱 [UserContext] ✅ Token getSession ile güncellendi (fallback)");
             }
+          } else if (refreshData?.session?.access_token) {
+            setGlobalAccessToken(refreshData.session.access_token);
+            tokenUpdated = true;
+            console.log("📱 [UserContext] ✅ Token refreshSession ile güncellendi!");
+          }
+          
+          if (!tokenUpdated) {
+            console.warn("📱 [UserContext] ⚠️ Token güncellenemedi - session yok olabilir");
           }
         } catch (tokenError: any) {
           console.error("📱 [UserContext] ❌ Token yenileme hatası:", tokenError?.message);
