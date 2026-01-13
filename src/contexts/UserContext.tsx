@@ -288,6 +288,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           console.error("📱 [UserContext] ❌ Token yenileme hatası:", tokenError?.message);
         }
 
+        // 🆕 TOKEN HAZIR - Sayfalara "data-ready" sinyali gönder!
+        console.log("📱 [UserContext] 📢 data-ready eventi dispatch ediliyor...");
+        window.dispatchEvent(new CustomEvent("data-ready"));
+
         // 4. 🔌 NATIVE DURUM KONTROLÜ
         if (isNative && NativeRealtime) {
           const state = await NativeRealtime.getConnectionState();
