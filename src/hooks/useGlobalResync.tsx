@@ -84,23 +84,26 @@ export const useGlobalResync = ({
     }
   }, [isActive, pageName, MIN_RESYNC_INTERVAL, isPriority]);
 
-  // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle
+  // 🔥 YENİ YAKLAŞIM: "data-ready" eventini dinle (token refresh SONRASI)
+  // app-resumed yerine data-ready kullanıyoruz çünkü token hazır olmalı
   useEffect(() => {
-    const handleAppResumed = () => {
-      // Kritik sayfalar küçük gecikmeyle, diğerleri daha fazla
-      const delay = isPriority ? 50 : 300;
+    const handleDataReady = () => {
+      console.log(`[Resync] 📡 ${pageName} data-ready eventi aldı`);
+      // Token artık hazır - hemen veri çek!
+      const delay = isPriority ? 0 : 100;
       
       setTimeout(() => {
-        performResync('app-resumed');
+        performResync('data-ready');
       }, delay);
     };
 
-    window.addEventListener("app-resumed", handleAppResumed);
+    // 🔥 ARTIK data-ready dinliyoruz (app-resumed DEĞİL!)
+    window.addEventListener("data-ready", handleDataReady);
     
     return () => {
-      window.removeEventListener("app-resumed", handleAppResumed);
+      window.removeEventListener("data-ready", handleDataReady);
     };
-  }, [performResync, isPriority]);
+  }, [performResync, isPriority, pageName]);
 
   // isSystemConnected değişimini izle - FALSE → TRUE geçişi
   const wasConnectedRef = useRef<boolean | null>(null);
