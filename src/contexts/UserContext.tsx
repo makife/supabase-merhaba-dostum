@@ -148,7 +148,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         // Kotlin'deki valid token'ı JS tarafına enjekte et
         setGlobalAccessToken(data.accessToken);
         setIsSystemConnected(true);
-        
+
         // Token güncellendiğinde profili de yenile
         console.log("[UserContext] 🔄 Token güncellendi, profil yenileniyor...");
         refreshProfile(true);
@@ -161,7 +161,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         try {
           const payload = typeof data.payload === "string" ? JSON.parse(data.payload) : data.payload;
           console.log("[UserContext] 📡 Native'den profil güncellemesi:", payload);
-          setProfile(prev => prev ? { ...prev, ...payload } : payload);
+          setProfile((prev) => (prev ? { ...prev, ...payload } : payload));
         } catch (e) {
           console.error("[UserContext] ❌ Native message parse hatası:", e);
         }
@@ -182,14 +182,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const stateListener = NativeRealtime.addListener("connectionState", handleNativeState);
     const sessionListener = NativeRealtime.addListener("sessionRestored", handleSessionRestored);
     const messageListener = NativeRealtime.addListener("realtimeMessage", handleNativeMessage);
-    
+
     initNativeConnection();
 
     return () => {
       console.log("⚠️ [UserContext] Native listeners temizleniyor...");
-      stateListener.then(l => l.remove()).catch(() => {});
-      sessionListener.then(l => l.remove()).catch(() => {});
-      messageListener.then(l => l.remove()).catch(() => {});
+      stateListener.then((l) => l.remove()).catch(() => {});
+      sessionListener.then((l) => l.remove()).catch(() => {});
+      messageListener.then((l) => l.remove()).catch(() => {});
     };
   }, [isNative]);
 
@@ -239,9 +239,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const detail = (event as CustomEvent).detail;
       console.log("📱 [UserContext] 🎯 auth-ready eventi alındı:", detail?.source);
 
-      // 1. 🛡️ DUPLICATE GUARD: Zaten bir işlem devam ediyorsa yeni işlem başlatma
+      // 1. 🛡️ DUPLICATE GUARD
       if (resumeFetchInProgressRef.current) {
-        console.log("📱 [UserContext] ⏭️ İşlem zaten sürüyor, atlanıyor.");
+        console.log("📱 [UserContext] ⭐️ İşlem zaten sürüyor, atlanıyor.");
         return;
       }
 
@@ -256,39 +256,80 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       resumeFetchInProgressRef.current = true;
 
       try {
-        // 🆕 Token zaten useSessionRecovery tarafından yenilendi!
-        // Artık burada token refresh yapmamıza GEREK YOK!
-        console.log("📱 [UserContext] ✅ Token zaten hazır (useSessionRecovery tarafından)");
+        // 🔥🔥🔥 KRİTİK FİX: Supabase client'ın session'ını VERIFY et
+        console.log("📱 [UserContext] 🔍 Supabase session kontrol ediliyor...");
 
-        // 🆕 TOKEN HAZIR - Sayfalara "data-ready" sinyali gönder!
-        console.log("📱 [UserContext] 📢 data-ready eventi dispatch ediliyor...");
-        window.dispatchEvent(new CustomEvent("data-ready"));
+        const {
+          data: { session: currentSession },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        // 🔌 NATIVE DURUM KONTROLÜ
+        if (sessionError || !currentSession?.access_token) {
+          console.error("📱 [UserContext] ❌ Supabase session yok veya hatalı:", sessionError?.message);
+
+          // 🔥 FIX: Storage'dan session yükle ve Supabase'e set et
+          const stored = await loadSessionFromStorage();
+          if (stored?.access_token) {
+            console.log("📱 [UserContext] 🔄 Storage'dan session zorla yükleniyor...");
+
+            const { error: setError } = await supabase.auth.setSession({
+              access_token: stored.access_token,
+              refresh_token: stored.refresh_token,
+            });
+
+            if (setError) {
+              console.error("📱 [UserContext] ❌ setSession hatası:", setError.message);
+              resumeFetchInProgressRef.current = false;
+              return;
+            }
+
+            // Global token'ı da set et
+            setGlobalAccessToken(stored.access_token);
+            console.log("📱 [UserContext] ✅ Session ve token set edildi!");
+
+            // Biraz bekle ki Supabase internal state güncellensin
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          } else {
+            console.error("📱 [UserContext] ❌ Storage'da da session yok!");
+            resumeFetchInProgressRef.current = false;
+            return;
+          }
+        } else {
+          // Session var - global token'ı set et
+          setGlobalAccessToken(currentSession.access_token);
+          console.log("📱 [UserContext] ✅ Session mevcut, token set edildi");
+        }
+
+        // 🔥 Native durum kontrolü
         if (isNative && NativeRealtime) {
           const state = await NativeRealtime.getConnectionState();
           console.log(`📱 [UserContext] 🔍 Native WebSocket Durumu: ${state.state}`);
         }
 
-        // 📡 PROFİL YENİLEME - TIMEOUT İLE
+        // 🔥 PROFİL YENİLEME - TIMEOUT İLE
         console.log("📱 [UserContext] 🔄 Profil güncelleniyor...");
 
-        // 🔥 Promise.race ile 8 saniye timeout
+        // 🔥 Promise.race ile 10 saniye timeout (8 sn yerine)
         const profilePromise = refreshProfile(true);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("PROFILE_TIMEOUT")), 8000)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("PROFILE_TIMEOUT")), 10000),
         );
-        
+
         await Promise.race([profilePromise, timeoutPromise]);
 
         lastSuccessfulFetchRef.current = Date.now();
         setIsSystemConnected(true);
+
+        // 🔥 data-ready eventi SADECE profil başarıyla yüklendiyse gönder
+        console.log("📱 [UserContext] 📢 data-ready eventi dispatch ediliyor...");
+        window.dispatchEvent(new CustomEvent("data-ready"));
       } catch (e: any) {
         const errorMsg = e?.message || "Bilinmeyen hata";
         console.error("📱 [UserContext] ❌ Resume sırasında hata:", errorMsg);
 
         if (errorMsg === "PROFILE_TIMEOUT") {
-          console.warn("📱 [UserContext] ⏱️ Profil yenileme 8sn timeout - ağ yavaş olabilir");
+          console.warn("📱 [UserContext] ⏱️ Profil yenileme 10sn timeout - ağ yavaş olabilir");
+
           // Timeout durumunda cache'den yükle
           const cachedProfile = localStorage.getItem("cached_profile");
           if (cachedProfile) {
@@ -506,16 +547,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           username: profileData.username,
           game_credits: profileData.game_credits,
           total_score: profileData.total_score,
-          ink_count: profileData.ink_count
+          ink_count: profileData.ink_count,
         });
-        
+
         setProfile(profileData);
-        
+
         // 🔥 DEBUG: State güncellemesini doğrula
         setTimeout(() => {
           console.log("[UserContext] 📊 State güncelleme sonrası - profile değişti mi?");
         }, 100);
-        
+
         // Zaman damgasını güncelle - BAŞARILI İŞLEM SONRASI
         lastRefreshTimeRef.current = Date.now();
 
