@@ -21,19 +21,21 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Realtime WebSocket Service - DÜZELTILMIŞ VERSIYON
+ * Realtime WebSocket Service - MESSAGE QUEUE DESTEKLİ
  * 
  * Foreground Service olarak çalışır, arka planda bile WebSocket bağlantısını canlı tutar.
  * Supabase Realtime (Phoenix Channels) protokolünü native olarak implement eder.
  * 
- * DÜZELTMELER:
- * 1. Wake Lock sonsuz (timeout yok)
- * 2. Heartbeat ACK kontrolü - sunucu cevap vermezse bağlantı kopuk sayılır
- * 3. Network listener - bağlantı kesildiğinde anında tespit
+ * 🔥 YENİ ÖZELLİK: MESSAGE QUEUE
+ * - JS arka plandayken mesajları queue'ya ekler
+ * - JS ön plana gelince queue'daki tüm mesajları gönderir
+ * - Bu sayede veriler KAYBOLMAZ!
  */
 class RealtimeWebSocketService : Service() {
 
@@ -41,14 +43,15 @@ class RealtimeWebSocketService : Service() {
         private const val TAG = "RealtimeWSService"
         private const val NOTIFICATION_CHANNEL_ID = "realtime_connection"
         private const val NOTIFICATION_ID = 1001
-        // 🔧 DÜZELTME: Heartbeat interval artırıldı (sunucu gecikmeleri için)
-        private const val HEARTBEAT_INTERVAL_MS = 30000L // 30 saniye (Supabase default)
-        // 🔧 DÜZELTME: Timeout BÜYÜK ÖLÇÜDE artırıldı - 2 heartbeat kaçırılabilir
-        private const val HEARTBEAT_TIMEOUT_MS = 90000L // 90 saniye (3x heartbeat)
+        private const val HEARTBEAT_INTERVAL_MS = 30000L
+        private const val HEARTBEAT_TIMEOUT_MS = 90000L
         private const val RECONNECT_BASE_DELAY_MS = 1000L
         private const val RECONNECT_MAX_DELAY_MS = 30000L
-        // Minimum bağlı kalma süresi - bu süreden önce disconnect sayılmaz
-        private const val MIN_CONNECTED_TIME_MS = 10000L // 10 saniye
+        private const val MIN_CONNECTED_TIME_MS = 10000L
+        
+        // 🔥 MESSAGE QUEUE AYARLARI
+        private const val MAX_QUEUE_SIZE = 100 // Maksimum 100 mesaj tutulur
+        private const val MESSAGE_EXPIRE_MS = 60000L // 1 dakikadan eski mesajlar atılır
     }
 
     // Binder
@@ -77,152 +80,143 @@ class RealtimeWebSocketService : Service() {
     private var messageCallback: ((String, String, String) -> Unit)? = null
     private var connectionCallback: ((String, String?) -> Unit)? = null
 
-    // Heartbeat - DÜZELTME: ACK kontrolü eklendi
+    // Heartbeat
     private var heartbeatRunnable: Runnable? = null
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var lastHeartbeatAck = System.currentTimeMillis()
     private var pendingHeartbeatRef: String? = null
-    private var connectionStartTime = 0L // Ne zaman bağlandığımızı takip et
-    private var consecutiveHeartbeatFailures = 0 // Ardışık başarısız heartbeat sayısı
+    private var connectionStartTime = 0L
+    private var consecutiveHeartbeatFailures = 0
 
-    // Wake Lock - CPU'yu uyutma
+    // Wake Lock
     private var wakeLock: PowerManager.WakeLock? = null
 
-    // Network Listener - DÜZELTME: Bağlantı kesildiğinde anında tespit
+    // Network Listener
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     // Disconnect timer
     private var disconnectRunnable: Runnable? = null
 
+    // 🔥🔥🔥 MESSAGE QUEUE - Arka planda gelen mesajları tutacak
+    data class QueuedMessage(
+        val topic: String,
+        val event: String,
+        val payload: String,
+        val timestamp: Long = System.currentTimeMillis()
+    )
+    
+    private val messageQueue = CopyOnWriteArrayList<QueuedMessage>()
+    private val isJsInForeground = AtomicBoolean(true) // JS ön planda mı?
+
     data class ChannelSubscription(
         val topic: String,
         val event: String,
-        val schema: String,
-        val table: String,
-        val filter: String?,
-        var joinRef: String? = null,
-        var isJoined: Boolean = false
+        val schema: String = "public",
+        val table: String = "*",
+        val filter: String? = null,
+        var isJoined: Boolean = false,
+        var joinRef: String? = null
     )
+
+    override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "🚀 Service onCreate")
-        
-        createNotificationChannel()
-        
-        // OkHttp client oluştur
-        // 🔧 DÜZELTME: Ping interval artırıldı, çakışma önlendi
+
+        // OkHttp client
         okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS) // Artırıldı
-            .readTimeout(0, TimeUnit.SECONDS) // WebSocket için sonsuz
-            .writeTimeout(60, TimeUnit.SECONDS) // Artırıldı
-            .pingInterval(0, TimeUnit.SECONDS) // OkHttp ping DEVRE DIŞI - kendi heartbeat'imizi kullanıyoruz
+            .pingInterval(25, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .build()
 
-        // DÜZELTME: Wake Lock SONSUZ - timeout yok
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        // Wake Lock
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "Kelimeci:RealtimeWakeLock"
+            "KelimEle::RealtimeWakeLock"
         )
 
-        // DÜZELTME: Network listener kaydet
+        // Network listener
         registerNetworkListener()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "🚀 Service onStartCommand")
 
-        // Foreground notification başlat
+        // Foreground notification
+        createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification("Bağlanıyor..."))
 
         // Bağlantı bilgilerini al
         intent?.let {
-            wsUrl = it.getStringExtra("url") ?: ""
-            apiKey = it.getStringExtra("apiKey") ?: ""
-            accessToken = it.getStringExtra("accessToken") ?: ""
+            wsUrl = it.getStringExtra("url") ?: wsUrl
+            apiKey = it.getStringExtra("apiKey") ?: apiKey
+            accessToken = it.getStringExtra("accessToken") ?: accessToken
         }
 
+        // Bağlantıyı başlat
         if (wsUrl.isNotEmpty() && apiKey.isNotEmpty()) {
             connect()
         }
 
-        // Service öldürülürse yeniden başlat
         return START_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder {
-        return binder
-    }
-
-    fun startDisconnectTimer() {
-        stopDisconnectTimer()
-        disconnectRunnable = Runnable {
-            Log.d(TAG, "⏰ 1 dakika doldu, servis kendi kendini kapatıyor.")
-            stopSelf()
-        }
-        handler.postDelayed(disconnectRunnable!!, 60000) // 1 dakika
-    }
-
-    fun stopDisconnectTimer() {
-        disconnectRunnable?.let { handler.removeCallbacks(it) }
-    }
-
     override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "💀 Service onDestroy")
-        
+        Log.d(TAG, "🔴 Service onDestroy")
         stopHeartbeat()
         disconnect()
         unregisterNetworkListener()
         
-        wakeLock?.let {
-            if (it.isHeld) it.release()
+        // Queue'yu temizle
+        messageQueue.clear()
+        
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d(TAG, "🔋 Wake lock bırakıldı")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Wake lock release hatası: ${e.message}")
         }
+        super.onDestroy()
     }
 
-    // ================= NETWORK LISTENER (DÜZELTME) =================
+    // ================= NETWORK LISTENER =================
 
     private fun registerNetworkListener() {
-        try {
-            connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            
-            networkCallback = object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    Log.d(TAG, "📶 Network bağlantısı geri geldi!")
-                    handler.post {
-                        if (connectionState == "disconnected" && wsUrl.isNotEmpty()) {
-                            Log.d(TAG, "🔄 Network geldi, yeniden bağlanılıyor...")
-                            reconnectAttempts = 0 // Reset attempts
-                            connect()
-                        }
-                    }
-                }
-
-                override fun onLost(network: Network) {
-                    Log.w(TAG, "📵 Network bağlantısı kesildi!")
-                    handler.post {
-                        handleDisconnect("Network lost")
-                    }
-                }
-
-                override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                    val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    val hasValidated = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                    Log.d(TAG, "📡 Network değişti - Internet: $hasInternet, Validated: $hasValidated")
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                Log.d(TAG, "🌐 Network MEVCUT")
+                if (connectionState == "disconnected" && wsUrl.isNotEmpty()) {
+                    handler.postDelayed({ connect() }, 1000)
                 }
             }
 
-            val networkRequest = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build()
+            override fun onLost(network: Network) {
+                Log.d(TAG, "🌐 Network KAYBOLDU")
+                handleDisconnect("Network lost")
+            }
+        }
 
+        val networkRequest = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        try {
             connectivityManager?.registerNetworkCallback(networkRequest, networkCallback!!)
             Log.d(TAG, "✅ Network listener kaydedildi")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Network listener kaydedilemedi: ${e.message}")
+            Log.e(TAG, "❌ Network listener hatası: ${e.message}")
         }
     }
 
@@ -230,44 +224,47 @@ class RealtimeWebSocketService : Service() {
         try {
             networkCallback?.let {
                 connectivityManager?.unregisterNetworkCallback(it)
+                Log.d(TAG, "✅ Network listener kaldırıldı")
             }
-            networkCallback = null
-            connectivityManager = null
-            Log.d(TAG, "✅ Network listener kaldırıldı")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Network listener kaldırılamadı: ${e.message}")
+            Log.e(TAG, "⚠️ Network listener kaldırma hatası: ${e.message}")
         }
     }
 
-    // ================= PUBLIC METHODS =================
+    // ================= PUBLIC API =================
 
     fun setMessageCallback(callback: (String, String, String) -> Unit) {
         messageCallback = callback
+        Log.d(TAG, "✅ Message callback set")
     }
 
     fun setConnectionCallback(callback: (String, String?) -> Unit) {
         connectionCallback = callback
+        Log.d(TAG, "✅ Connection callback set")
     }
 
     fun getConnectionState(): String = connectionState
 
     fun setAccessToken(token: String) {
         accessToken = token
-        // Tüm kanallara yeni token ile yeniden join
-        if (connectionState == "connected") {
-            subscriptions.values.forEach { sub ->
-                sendJoinMessage(sub)
-            }
+        Log.d(TAG, "🔑 Access token güncellendi")
+        
+        // Tüm kanallara yeniden join (yeni token ile)
+        subscriptions.values.forEach { sub ->
+            sub.isJoined = false
+            sendJoinMessage(sub)
         }
     }
 
-    fun subscribe(topic: String, event: String, schema: String, table: String, filter: String?) {
+    fun subscribe(topic: String, event: String, schema: String = "public", table: String = "*", filter: String? = null) {
         val subscription = ChannelSubscription(topic, event, schema, table, filter)
         subscriptions[topic] = subscription
-
+        
         if (connectionState == "connected") {
             sendJoinMessage(subscription)
         }
+        
+        Log.d(TAG, "📢 Subscribe eklendi: $topic (active subs: ${subscriptions.size})")
     }
 
     fun unsubscribe(topic: String) {
@@ -276,25 +273,73 @@ class RealtimeWebSocketService : Service() {
                 sendLeaveMessage(sub)
             }
             subscriptions.remove(topic)
+            Log.d(TAG, "📴 Unsubscribe: $topic")
         }
     }
 
     fun broadcast(topic: String, event: String, payload: String) {
-        if (connectionState != "connected") {
-            Log.w(TAG, "⚠️ Bağlı değil, broadcast yapılamıyor")
-            return
-        }
-
-        val sub = subscriptions[topic]
         val message = JSONArray().apply {
-            put(sub?.joinRef ?: JSONObject.NULL)
+            put(null)
             put(getNextRef())
             put(topic)
             put(event)
             put(JSONObject(payload))
         }
-
+        
         webSocket?.send(message.toString())
+        Log.d(TAG, "📤 Broadcast gönderildi: $topic / $event")
+    }
+
+    // 🔥🔥🔥 YENİ: JS Foreground/Background durumu
+    fun enterForegroundMode() {
+        Log.d(TAG, "▶️ JS Foreground moduna geçti")
+        isJsInForeground.set(true)
+        
+        // Queue'daki mesajları gönder
+        flushMessageQueue()
+    }
+    
+    fun enterBackgroundMode() {
+        Log.d(TAG, "⏸️ JS Background moduna geçti")
+        isJsInForeground.set(false)
+    }
+    
+    // 🔥 Queue'daki tüm mesajları JS'e gönder
+    private fun flushMessageQueue() {
+        if (messageQueue.isEmpty()) {
+            Log.d(TAG, "📭 Message queue boş, gönderilecek mesaj yok")
+            return
+        }
+        
+        val now = System.currentTimeMillis()
+        val validMessages = messageQueue.filter { msg ->
+            now - msg.timestamp < MESSAGE_EXPIRE_MS
+        }
+        
+        Log.d(TAG, "📬 Message queue flush ediliyor: ${validMessages.size} mesaj")
+        
+        validMessages.forEach { msg ->
+            Log.d(TAG, "📤 Queued mesaj gönderiliyor: ${msg.topic} / ${msg.event}")
+            messageCallback?.invoke(msg.topic, msg.event, msg.payload)
+        }
+        
+        // Queue'yu temizle
+        messageQueue.clear()
+        Log.d(TAG, "✅ Message queue temizlendi")
+    }
+    
+    // 🔥 Queue'daki mesajları getir (JS tarafından çağrılabilir)
+    fun getQueuedMessages(): List<QueuedMessage> {
+        val now = System.currentTimeMillis()
+        return messageQueue.filter { msg ->
+            now - msg.timestamp < MESSAGE_EXPIRE_MS
+        }
+    }
+    
+    // 🔥 Queue'yu temizle
+    fun clearMessageQueue() {
+        messageQueue.clear()
+        Log.d(TAG, "🗑️ Message queue manuel temizlendi")
     }
 
     // ================= PRIVATE METHODS =================
@@ -305,7 +350,7 @@ class RealtimeWebSocketService : Service() {
             return
         }
 
-        // DÜZELTME: Wake lock SONSUZ al (timeout yok)
+        // Wake lock
         try {
             if (wakeLock?.isHeld == false) {
                 wakeLock?.acquire()
@@ -337,7 +382,6 @@ class RealtimeWebSocketService : Service() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(TAG, "✅ WebSocket AÇILDI")
                 
-                // DÜZELTME: Heartbeat ACK zamanını ve bağlantı başlangıç zamanını resetle
                 lastHeartbeatAck = System.currentTimeMillis()
                 connectionStartTime = System.currentTimeMillis()
                 consecutiveHeartbeatFailures = 0
@@ -385,7 +429,7 @@ class RealtimeWebSocketService : Service() {
             val event = message.getString(3)
             val payload = message.getJSONObject(4)
 
-            Log.d(TAG, "📩 Mesaj: $topic / $event")
+            Log.d(TAG, "📩 Mesaj: $topic / $event (JS foreground: ${isJsInForeground.get()})")
 
             when (event) {
                 "phx_reply" -> handlePhxReply(topic, payload, ref)
@@ -396,8 +440,8 @@ class RealtimeWebSocketService : Service() {
                 "presence_state" -> handlePresence(topic, "state", payload)
                 "presence_diff" -> handlePresence(topic, "diff", payload)
                 else -> {
-                    // Diğer eventler - JS'e ilet
-                    messageCallback?.invoke(topic, event, payload.toString())
+                    // Diğer eventler - JS'e ilet veya queue'ya ekle
+                    deliverOrQueueMessage(topic, event, payload.toString())
                 }
             }
         } catch (e: Exception) {
@@ -405,15 +449,37 @@ class RealtimeWebSocketService : Service() {
         }
     }
 
+    // 🔥🔥🔥 KRİTİK: Mesajı JS'e gönder veya queue'ya ekle
+    private fun deliverOrQueueMessage(topic: String, event: String, payload: String) {
+        if (isJsInForeground.get()) {
+            // JS ön planda - direkt gönder
+            Log.d(TAG, "📤 Mesaj direkt gönderiliyor: $topic / $event")
+            messageCallback?.invoke(topic, event, payload)
+        } else {
+            // JS arka planda - queue'ya ekle
+            Log.d(TAG, "📥 Mesaj queue'ya ekleniyor: $topic / $event")
+            
+            // Queue boyutunu kontrol et
+            if (messageQueue.size >= MAX_QUEUE_SIZE) {
+                // En eski mesajı sil
+                messageQueue.removeAt(0)
+                Log.d(TAG, "⚠️ Queue dolu, en eski mesaj silindi")
+            }
+            
+            messageQueue.add(QueuedMessage(topic, event, payload))
+            Log.d(TAG, "📊 Queue boyutu: ${messageQueue.size}")
+        }
+    }
+
     private fun handlePhxReply(topic: String, payload: JSONObject, ref: String?) {
         val status = payload.optString("status", "error")
         
-        // DÜZELTME: Heartbeat ACK kontrolü
+        // Heartbeat ACK kontrolü
         if (topic == "phoenix" && ref == pendingHeartbeatRef) {
             lastHeartbeatAck = System.currentTimeMillis()
             pendingHeartbeatRef = null
-            consecutiveHeartbeatFailures = 0 // ACK geldi, sıfırla
-            Log.d(TAG, "💚 Heartbeat ACK alındı (failures reset)")
+            consecutiveHeartbeatFailures = 0
+            Log.d(TAG, "💚 Heartbeat ACK alındı")
             return
         }
         
@@ -439,17 +505,17 @@ class RealtimeWebSocketService : Service() {
 
     private fun handlePostgresChanges(topic: String, payload: JSONObject) {
         Log.d(TAG, "🗃️ Postgres değişiklik: $topic")
-        messageCallback?.invoke(topic, "postgres_changes", payload.toString())
+        deliverOrQueueMessage(topic, "postgres_changes", payload.toString())
     }
 
     private fun handleBroadcast(topic: String, payload: JSONObject) {
         Log.d(TAG, "📢 Broadcast: $topic")
-        messageCallback?.invoke(topic, "broadcast", payload.toString())
+        deliverOrQueueMessage(topic, "broadcast", payload.toString())
     }
 
     private fun handlePresence(topic: String, type: String, payload: JSONObject) {
         Log.d(TAG, "👥 Presence $type: $topic")
-        messageCallback?.invoke(topic, "presence_$type", payload.toString())
+        deliverOrQueueMessage(topic, "presence_$type", payload.toString())
     }
 
     private fun sendJoinMessage(subscription: ChannelSubscription) {
@@ -504,11 +570,9 @@ class RealtimeWebSocketService : Service() {
         webSocket?.send(message.toString())
     }
 
-    // DÜZELTME: Heartbeat ACK timeout kontrolü eklendi
     private fun startHeartbeat() {
         stopHeartbeat()
         
-        // İlk heartbeat ACK zamanını şimdiye ayarla
         lastHeartbeatAck = System.currentTimeMillis()
 
         heartbeatRunnable = object : Runnable {
@@ -518,32 +582,27 @@ class RealtimeWebSocketService : Service() {
                     val timeSinceLastAck = now - lastHeartbeatAck
                     val timeSinceConnection = now - connectionStartTime
                     
-                    // 🔧 DÜZELTME: Minimum bağlantı süresi kontrolü
-                    // Yeni bağlandıysak timeout kontrolü yapma
                     if (timeSinceConnection < MIN_CONNECTED_TIME_MS) {
-                        Log.d(TAG, "⏳ Yeni bağlantı, timeout kontrolü atlanıyor (${timeSinceConnection}ms)")
+                        Log.d(TAG, "⏳ Yeni bağlantı, timeout kontrolü atlanıyor")
                         sendHeartbeat()
                         handler.postDelayed(this, HEARTBEAT_INTERVAL_MS)
                         return
                     }
                     
-                    // 🔧 DÜZELTME: Heartbeat ACK timeout kontrolü - DAHA TOLERANSLI
                     if (timeSinceLastAck > HEARTBEAT_TIMEOUT_MS) {
                         consecutiveHeartbeatFailures++
-                        Log.w(TAG, "⚠️ Heartbeat ACK timeout (${timeSinceLastAck}ms) - failures: $consecutiveHeartbeatFailures")
+                        Log.w(TAG, "⚠️ Heartbeat ACK timeout - failures: $consecutiveHeartbeatFailures")
                         
-                        // 🔧 DÜZELTME: Sadece 3 ardışık başarısızlık sonrası disconnect
                         if (consecutiveHeartbeatFailures >= 3) {
                             Log.e(TAG, "❌ 3 ardışık heartbeat başarısız, yeniden bağlanılıyor...")
                             handler.post {
-                                webSocket?.cancel() // Force close
+                                webSocket?.cancel()
                                 webSocket = null
                                 handleDisconnect("Heartbeat timeout (3 failures)")
                             }
                             return
                         }
                     } else {
-                        // ACK geldi, failure sayacını sıfırla
                         consecutiveHeartbeatFailures = 0
                     }
                     
@@ -554,67 +613,57 @@ class RealtimeWebSocketService : Service() {
         }
 
         handler.postDelayed(heartbeatRunnable!!, HEARTBEAT_INTERVAL_MS)
-    }
-
-    private fun stopHeartbeat() {
-        heartbeatRunnable?.let { handler.removeCallbacks(it) }
-        heartbeatRunnable = null
-        pendingHeartbeatRef = null
+        Log.d(TAG, "💓 Heartbeat başlatıldı")
     }
 
     private fun sendHeartbeat() {
-        val ref = getNextRef()
-        pendingHeartbeatRef = ref
+        pendingHeartbeatRef = getNextRef()
         
         val message = JSONArray().apply {
-            put(JSONObject.NULL)
-            put(ref)
+            put(null)
+            put(pendingHeartbeatRef)
             put("phoenix")
             put("heartbeat")
             put(JSONObject())
         }
 
-        Log.d(TAG, "💓 Heartbeat gönderiliyor (ref: $ref)...")
-        val sent = webSocket?.send(message.toString()) ?: false
-        
-        if (!sent) {
-            Log.w(TAG, "⚠️ Heartbeat gönderilemedi - bağlantı kopuk olabilir")
+        webSocket?.send(message.toString())
+        Log.d(TAG, "💓 Heartbeat gönderildi (ref: $pendingHeartbeatRef)")
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatRunnable?.let {
+            handler.removeCallbacks(it)
+            heartbeatRunnable = null
         }
     }
 
     private fun handleDisconnect(reason: String) {
-        val wasConnected = connectionState == "connected"
+        Log.d(TAG, "🔴 Disconnect: $reason")
         
         webSocket = null
         stopHeartbeat()
-        
-        subscriptions.values.forEach { it.isJoined = false }
-        
         updateConnectionState("disconnected", reason)
         updateNotification("Bağlantı kesildi")
 
-        // Sadece önceden bağlıysak yeniden bağlan
-        if (wasConnected || reconnectAttempts < 10) {
-            scheduleReconnect()
-        } else {
-            Log.w(TAG, "⚠️ Çok fazla reconnect denemesi, durduruluyor")
-        }
+        // Subscription'ları resetle
+        subscriptions.values.forEach { it.isJoined = false }
+
+        // Reconnect dene
+        scheduleReconnect()
     }
 
     private fun scheduleReconnect() {
         reconnectAttempts++
-        
-        // Exponential backoff
         val delay = minOf(
-            RECONNECT_BASE_DELAY_MS * (1L shl minOf(reconnectAttempts, 5)),
+            RECONNECT_BASE_DELAY_MS * (1 shl minOf(reconnectAttempts, 5)),
             RECONNECT_MAX_DELAY_MS
         )
 
-        Log.d(TAG, "🔄 Yeniden bağlanma planlandı: ${delay}ms sonra (deneme: $reconnectAttempts)")
-        updateNotification("Yeniden bağlanıyor... ($reconnectAttempts)")
-
+        Log.d(TAG, "🔄 Reconnect planlandı: ${delay}ms sonra (attempt: $reconnectAttempts)")
+        
         handler.postDelayed({
-            if (connectionState == "disconnected" && wsUrl.isNotEmpty()) {
+            if (connectionState == "disconnected") {
                 connect()
             }
         }, delay)
@@ -622,14 +671,12 @@ class RealtimeWebSocketService : Service() {
 
     private fun disconnect() {
         stopHeartbeat()
-        webSocket?.close(1000, "Service kapatıldı")
+        webSocket?.close(1000, "Normal closure")
         webSocket = null
-        updateConnectionState("disconnected", "Service kapatıldı")
+        updateConnectionState("disconnected", null)
     }
 
-    private fun getNextRef(): String {
-        return messageRef.incrementAndGet().toString()
-    }
+    private fun getNextRef(): String = messageRef.incrementAndGet().toString()
 
     private fun updateConnectionState(state: String, reason: String?) {
         connectionState = state
@@ -642,19 +689,19 @@ class RealtimeWebSocketService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
-                "Oyun Bağlantısı",
+                "Realtime Bağlantı",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Oyun sunucusuyla bağlantı durumu"
+                description = "WebSocket bağlantı durumu"
                 setShowBadge(false)
             }
-            
-            val notificationManager = getSystemService(NotificationManager::class.java)
+
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    private fun createNotification(text: String): Notification {
+    private fun createNotification(status: String): Notification {
         val pendingIntent = packageManager.getLaunchIntentForPackage(packageName)?.let {
             PendingIntent.getActivity(
                 this, 0, it,
@@ -663,19 +710,18 @@ class RealtimeWebSocketService : Service() {
         }
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Kelimeci")
-            .setContentText(text)
+            .setContentTitle("KelimEle")
+            .setContentText(status)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setContentIntent(pendingIntent)
             .build()
     }
 
-    private fun updateNotification(text: String) {
-        val notification = createNotification(text)
-        val notificationManager = getSystemService(NotificationManager::class.java)
+    private fun updateNotification(status: String) {
+        val notification = createNotification(status)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }

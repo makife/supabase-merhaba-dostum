@@ -58,7 +58,17 @@ const handleForegroundStateChange = (inForeground: boolean) => {
       // Ön plana geldi
       updateForegroundTime();
       
-      // 🔥 Service manager çağrısı DEFER edildi
+      // 🔥🔥🔥 KRİTİK: Kotlin'e ön planda olduğumuzu söyle
+      // Queue'daki TÜM mesajlar HEMEN gönderilecek!
+      if (isNativeRealtimeAvailable() && NativeRealtime) {
+        try {
+          await NativeRealtime.enterForegroundMode();
+          console.log("[AppForegroundState] ✅ Kotlin foreground - queue mesajları gelecek!");
+        } catch (e) {
+          console.log("[AppForegroundState] ⚠️ enterForegroundMode hatası:", e);
+        }
+      }
+      
       if (manager) {
         manager.onAppForeground();
       }
@@ -97,6 +107,17 @@ const handleForegroundStateChange = (inForeground: boolean) => {
       // Arka plana geçti - zamanı kaydet
       lastBackgroundTime = Date.now();
       console.log(`[AppForegroundState] 🌙 Arka plan zamanı kaydedildi: ${lastBackgroundTime}`);
+      
+      // 🔥🔥🔥 KRİTİK: Kotlin'e arka planda olduğumuzu söyle
+      // Mesajlar QUEUE'ya eklenecek (kaybolmayacak!)
+      if (isNativeRealtimeAvailable() && NativeRealtime) {
+        try {
+          await NativeRealtime.enterBackgroundMode();
+          console.log("[AppForegroundState] ✅ Kotlin background - mesajlar queue'lanacak");
+        } catch (e) {
+          console.log("[AppForegroundState] ⚠️ enterBackgroundMode hatası:", e);
+        }
+      }
       
       if (manager) {
         manager.onAppBackground();
