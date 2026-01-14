@@ -355,18 +355,46 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       // Profil yenileme auth-ready eventinden sonra yapılacak
     };
 
+    // 🔥🔥🔥 YENİ: data-ready eventini de dinle!
+    // Bu event useAppForegroundState'ten GELİYOR (arka plandan dönüşte)
+    const handleDataReady = async (event: any) => {
+      const detail = (event as CustomEvent).detail;
+      
+      // Sadece foreground-resume kaynağından gelen eventi işle
+      if (detail?.source === "foreground-resume") {
+        console.log("📱 [UserContext] 🎯 data-ready (foreground-resume) alındı - profil yenileniyor!");
+        
+        const currentUser = userRef.current;
+        if (currentUser?.id) {
+          // 🔥 Kilitleri temizle ve profili yenile
+          isFetchingProfileRef.current = false;
+          isRefreshingCreditsRef.current = false;
+          resumeFetchInProgressRef.current = false;
+          
+          try {
+            await refreshProfile(true);
+            console.log("📱 [UserContext] ✅ Profil foreground'da yenilendi!");
+          } catch (e) {
+            console.error("📱 [UserContext] ❌ Foreground profil yenileme hatası:", e);
+          }
+        }
+      }
+    };
+
     window.addEventListener("appBackground", handleBackground);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("auth-ready", handleAuthReady);
     window.addEventListener("app-resumed", handleAppResumed);
+    window.addEventListener("data-ready", handleDataReady);
 
-    console.log("[UserContext] ✅ auth-ready ve app-resumed listener'ları kaydedildi");
+    console.log("[UserContext] ✅ auth-ready, app-resumed ve data-ready listener'ları kaydedildi");
 
     return () => {
       window.removeEventListener("appBackground", handleBackground);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("auth-ready", handleAuthReady);
       window.removeEventListener("app-resumed", handleAppResumed);
+      window.removeEventListener("data-ready", handleDataReady);
       clearInterval(interval);
     };
   }, []);
