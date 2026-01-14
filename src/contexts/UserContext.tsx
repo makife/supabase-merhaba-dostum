@@ -432,32 +432,27 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   // 🛡️ DÜZELTİLMİŞ VE KORUMALI REFRESH PROFILE
   const refreshProfile = async (forceRefresh = false) => {
-    // 🔥 KRİTİK: Her iki kaynaktan da user'ı kontrol et
     const currentUser = user || userRef.current;
 
     if (!currentUser) {
       console.log("⏳ [UserContext] refreshProfile: user yok, bekleniyor...");
-      // Sadece intentional logout'ta temizle
       return;
     }
 
-    // 1. KİLİT KONTROLÜ: Zaten bir istek varsa yenisini kabul etme
-    // 🔥 FORCE modunda kilidi atla
+    // 1. KİLİT KONTROLÜ
     if (isFetchingProfileRef.current && !forceRefresh) {
       console.log("🛡️ [UserContext] Zaten profil çekiliyor, istek sıraya alınmadı (Concurrency Lock).");
       return;
     }
 
-    // 🔥 Force refresh ise kilidi zorla aç
     if (forceRefresh && isFetchingProfileRef.current) {
       console.log("🔓 [UserContext] FORCE - kilit zorla açılıyor...");
       isFetchingProfileRef.current = false;
     }
 
-    // 2. SPAM KORUMASI (Cool-down): Son 1 saniye içinde çekildiyse reddet
-    // 🔥 Force modunda cooldown'ı kısalt
+    // 2. SPAM KORUMASI
     const now = Date.now();
-    const COOLDOWN_MS = forceRefresh ? 500 : 2000; // Force: 0.5sn, Normal: 2sn
+    const COOLDOWN_MS = forceRefresh ? 500 : 2000;
     if (now - lastRefreshTimeRef.current < COOLDOWN_MS) {
       console.log(
         `🛡️ [UserContext] Profil çok yeni (${Math.round(now - lastRefreshTimeRef.current)}ms), istek atlandı (Debounce).`,
@@ -467,7 +462,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     const CACHE_DURATION = 30000; // 30 saniye
 
-    // Check cache first if not forcing refresh
+    // Cache kontrolü (force değilse)
     if (!forceRefresh) {
       const cachedProfile = localStorage.getItem("cached_profile");
       if (cachedProfile) {
@@ -488,8 +483,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             setLoading(false);
             return;
-          } else {
-            console.log("[UserContext] ⚠️ Cache geçersiz veya eksik, API'den çekilecek");
           }
         } catch (e) {
           console.error("Cache parse error:", e);
@@ -497,18 +490,31 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     }
 
-    // KİLİDİ KAPAT (İşlem Başlıyor)
+    // KİLİDİ KAPAT
     isFetchingProfileRef.current = true;
     setLoading(true);
     console.log("[UserContext] 🔄 Profil Supabase'den çekiliyor...", forceRefresh ? "(FORCE)" : "");
 
     try {
-      // 🔥 KRİTİK: AbortController ile gerçek timeout
+      // 🔥🔥🔥 KRİTİK FİX: İstek öncesi session kontrolü
+      const {
+        data: { session },
+        error: sessionCheckError,
+      } = await supabase.auth.getSession();
+
+      if (sessionCheckError || !session?.access_token) {
+        console.error("[UserContext] ❌ Session kontrolü başarısız:", sessionCheckError?.message);
+        throw new Error("NO_VALID_SESSION");
+      }
+
+      console.log("[UserContext] ✅ Session geçerli, profil çekiliyor...");
+
+      // 🔥 AbortController ile gerçek timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log("[UserContext] ⏱️ 5sn timeout - istek iptal ediliyor...");
+        console.log("[UserContext] ⏱️ 8sn timeout - istek iptal ediliyor...");
         controller.abort();
-      }, 5000);
+      }, 8000);
 
       // 🔥 Supabase query'sine abort signal geçir
       const { data, error } = await supabase
@@ -522,6 +528,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       if (error) {
         console.error("[UserContext] ❌ Profil çekme hatası:", error.message);
+        console.error("[UserContext] 🔍 Hata detayları:", {
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+
         // Fallback to cache on error
         const cachedProfile = localStorage.getItem("cached_profile");
         if (cachedProfile) {
@@ -536,13 +548,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       } else if (data) {
         await checkAndResetDailyStats(data);
         console.log("[UserContext] ✅ Profil başarıyla yüklendi:", data.username);
+        console.log("[UserContext] 📊 Profil verileri:", {
+          game_credits: data.game_credits,
+          bonus_credits: data.bonus_credits,
+          total_score: data.total_score,
+          ink_count: (data as any).ink_count,
+        });
 
         const profileData = {
           ...data,
           ink_count: (data as any).ink_count ?? 0,
         };
 
-        // 🔥 KRİTİK: Profile state güncellemesi
         console.log("[UserContext] 🎯 setProfile çağrılıyor, yeni veriler:", {
           username: profileData.username,
           game_credits: profileData.game_credits,
@@ -551,11 +568,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         });
 
         setProfile(profileData);
-
-        // 🔥 DEBUG: State güncellemesini doğrula
-        setTimeout(() => {
-          console.log("[UserContext] 📊 State güncelleme sonrası - profile değişti mi?");
-        }, 100);
 
         // Zaman damgasını güncelle - BAŞARILI İŞLEM SONRASI
         lastRefreshTimeRef.current = Date.now();
@@ -571,8 +583,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     } catch (error: any) {
       console.error("[UserContext] ❌ Profile fetch exception:", error?.message || error);
+
+      // 🔥 Hata tipine göre detaylı log
+      if (error?.message === "NO_VALID_SESSION") {
+        console.error("[UserContext] 🚫 Session geçersiz - kullanıcı logout olabilir");
+      } else if (error?.name === "AbortError") {
+        console.error("[UserContext] ⏱️ İstek timeout'a düştü");
+      } else {
+        console.error("[UserContext] 🔍 Bilinmeyen hata tipi:", error);
+      }
     } finally {
-      // KİLİDİ AÇ (İşlem Bitti)
+      // KİLİDİ AÇ
       isFetchingProfileRef.current = false;
       setLoading(false);
     }
