@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 import { updateForegroundTime } from "@/utils/coldStartTime";
+import { NativeRealtime, isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -39,7 +40,9 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   const previousState = isAppInForeground;
   isAppInForeground = inForeground;
 
-  console.log(`[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"} (önceki: ${previousState ? "FG" : "BG"})`);
+  console.log(
+    `[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"} (önceki: ${previousState ? "FG" : "BG"})`,
+  );
 
   // 🔥 KRİTİK: Tüm listener'ları ÖNCE bilgilendir (senkron)
   listeners.forEach((cb) => {
@@ -53,11 +56,11 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   // 🔥 KRİTİK: Native plugin çağrıları ve diğer async işlemler DEFER edilmeli!
   setTimeout(async () => {
     const manager = await getBackgroundServiceManager();
-    
+
     if (inForeground) {
       // Ön plana geldi
       updateForegroundTime();
-      
+
       // 🔥🔥🔥 KRİTİK: Kotlin'e ön planda olduğumuzu söyle
       // Queue'daki TÜM mesajlar HEMEN gönderilecek!
       if (isNativeRealtimeAvailable() && NativeRealtime) {
@@ -68,35 +71,39 @@ const handleForegroundStateChange = (inForeground: boolean) => {
           console.log("[AppForegroundState] ⚠️ enterForegroundMode hatası:", e);
         }
       }
-      
+
       if (manager) {
         manager.onAppForeground();
       }
-      
+
       // 🔥🔥🔥 YENİ YAKLAŞIM: Doğrudan verileri yenile!
       // Karmaşık event zinciri yerine basit data-ready dispatch et
       const shouldDispatchResume = lastBackgroundTime !== null || !previousState;
-      
+
       if (shouldDispatchResume) {
         console.log("[AppForegroundState] 🎯 Foreground dönüşü tespit edildi!");
-        console.log(`[AppForegroundState] 📊 lastBackgroundTime: ${lastBackgroundTime}, previousState: ${previousState}`);
-        
+        console.log(
+          `[AppForegroundState] 📊 lastBackgroundTime: ${lastBackgroundTime}, previousState: ${previousState}`,
+        );
+
         // 🔥 HIZLANDIRILDI: 100ms sonra eventleri dispatch et
         setTimeout(async () => {
           // 1. app-resumed eventi (gerekli hook'lar için)
           window.dispatchEvent(new CustomEvent("app-resumed"));
           console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi");
-          
+
           // 2. 🔥🔥🔥 DOĞRUDAN data-ready dispatch et!
           // Bu sayede UserContext ve sayfalar HEMEN verileri yeniler
           setTimeout(() => {
             console.log("[AppForegroundState] 🚀 data-ready eventi dispatch ediliyor (foreground)...");
-            window.dispatchEvent(new CustomEvent("data-ready", {
-              detail: { source: "foreground-resume", timestamp: Date.now() }
-            }));
+            window.dispatchEvent(
+              new CustomEvent("data-ready", {
+                detail: { source: "foreground-resume", timestamp: Date.now() },
+              }),
+            );
             console.log("[AppForegroundState] ✅ data-ready gönderildi - tüm veriler yenilenecek!");
           }, 200); // Token refresh için 200ms bekle
-          
+
           // Reset
           lastBackgroundTime = null;
         }, 100);
@@ -107,7 +114,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
       // Arka plana geçti - zamanı kaydet
       lastBackgroundTime = Date.now();
       console.log(`[AppForegroundState] 🌙 Arka plan zamanı kaydedildi: ${lastBackgroundTime}`);
-      
+
       // 🔥🔥🔥 KRİTİK: Kotlin'e arka planda olduğumuzu söyle
       // Mesajlar QUEUE'ya eklenecek (kaybolmayacak!)
       if (isNativeRealtimeAvailable() && NativeRealtime) {
@@ -118,7 +125,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
           console.log("[AppForegroundState] ⚠️ enterBackgroundMode hatası:", e);
         }
       }
-      
+
       if (manager) {
         manager.onAppBackground();
       }
@@ -151,7 +158,7 @@ let pendingStateChanges: boolean[] = [];
 export const markListenerReady = () => {
   console.log("[AppForegroundState] ✅ Listener artık hazır!");
   isListenerReady = true;
-  
+
   // Bekleyen state değişikliklerini işle (sadece en sonuncusu önemli)
   if (pendingStateChanges.length > 0) {
     const lastState = pendingStateChanges[pendingStateChanges.length - 1];
@@ -177,13 +184,13 @@ const initGlobalListener = () => {
         try {
           App.addListener("appStateChange", ({ isActive }) => {
             console.log(`[AppForegroundState] 📡 Native appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
-            
+
             if (!isListenerReady) {
               console.log("[AppForegroundState] ⏳ Listener henüz hazır değil, kuyruğa alındı");
               pendingStateChanges.push(isActive);
               return;
             }
-            
+
             handleForegroundStateChange(isActive);
           })
             .then(() => {
@@ -202,12 +209,12 @@ const initGlobalListener = () => {
       document.addEventListener("visibilitychange", () => {
         const isVisible = document.visibilityState === "visible";
         console.log(`[AppForegroundState] 👁️ Web visibility: ${isVisible ? "VISIBLE" : "HIDDEN"}`);
-        
+
         if (!isListenerReady) {
           pendingStateChanges.push(isVisible);
           return;
         }
-        
+
         handleForegroundStateChange(isVisible);
       });
 
