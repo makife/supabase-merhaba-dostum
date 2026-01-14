@@ -4,6 +4,7 @@ import {
   loadSessionFromStorage,
   saveSessionToStorage,
   setGlobalAccessToken,
+  clearSessionStorage,
 } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 
