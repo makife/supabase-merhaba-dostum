@@ -1,7 +1,7 @@
 import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "./AuthContext";
-import { supabase, setGlobalAccessToken } from "@/integrations/supabase/client";
+import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromStorage } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 // 🔥 Basit yaklaşım - useAppResume kullanılacak (aşağıda)
 
