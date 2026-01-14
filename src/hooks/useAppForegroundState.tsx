@@ -63,25 +63,35 @@ const handleForegroundStateChange = (inForeground: boolean) => {
         manager.onAppForeground();
       }
       
-      // 🔥 BASİT YAKLAŞIM: Tek bir "app-resumed" eventi dispatch et
-      // Koşul: Daha önce arka plana gitmiştik (lastBackgroundTime != null)
-      // VEYA önceki state background idi
+      // 🔥🔥🔥 YENİ YAKLAŞIM: Doğrudan verileri yenile!
+      // Karmaşık event zinciri yerine basit data-ready dispatch et
       const shouldDispatchResume = lastBackgroundTime !== null || !previousState;
       
       if (shouldDispatchResume) {
-        console.log("[AppForegroundState] 🎯 app-resumed eventi dispatch ediliyor...");
+        console.log("[AppForegroundState] 🎯 Foreground dönüşü tespit edildi!");
         console.log(`[AppForegroundState] 📊 lastBackgroundTime: ${lastBackgroundTime}, previousState: ${previousState}`);
         
-        // 🔥 HIZLANDIRILDI: 500ms -> 100ms (Kotlin zaten bağlantıyı kurmuş durumda)
-        setTimeout(() => {
+        // 🔥 HIZLANDIRILDI: 100ms sonra eventleri dispatch et
+        setTimeout(async () => {
+          // 1. app-resumed eventi (gerekli hook'lar için)
           window.dispatchEvent(new CustomEvent("app-resumed"));
-          console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi - tüm veriler yenilenecek");
+          console.log("[AppForegroundState] ✅ app-resumed eventi gönderildi");
+          
+          // 2. 🔥🔥🔥 DOĞRUDAN data-ready dispatch et!
+          // Bu sayede UserContext ve sayfalar HEMEN verileri yeniler
+          setTimeout(() => {
+            console.log("[AppForegroundState] 🚀 data-ready eventi dispatch ediliyor (foreground)...");
+            window.dispatchEvent(new CustomEvent("data-ready", {
+              detail: { source: "foreground-resume", timestamp: Date.now() }
+            }));
+            console.log("[AppForegroundState] ✅ data-ready gönderildi - tüm veriler yenilenecek!");
+          }, 200); // Token refresh için 200ms bekle
           
           // Reset
           lastBackgroundTime = null;
         }, 100);
       } else {
-        console.log("[AppForegroundState] ⏭️ app-resumed atlandı (ilk başlatma veya zaten FG)");
+        console.log("[AppForegroundState] ⏭️ Foreground eventi atlandı (ilk başlatma veya zaten FG)");
       }
     } else {
       // Arka plana geçti - zamanı kaydet
