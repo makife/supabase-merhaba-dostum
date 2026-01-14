@@ -173,9 +173,11 @@ export function useSessionRecovery() {
       }
     };
 
-    // 2. App foreground event (App.tsx'ten)
-    const handleForeground = () => {
-      recoverSession("appForeground");
+    // 🔥🔥🔥 KRİTİK FIX: "app-resumed" eventini dinle!
+    // useAppForegroundState bu eventi dispatch ediyor
+    const handleAppResumed = () => {
+      console.log("[SessionRecovery] 📡 app-resumed eventi alındı!");
+      recoverSession("app-resumed");
     };
 
     // 3. Custom events (Auth recovery request)
@@ -199,7 +201,8 @@ export function useSessionRecovery() {
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("appForeground", handleForeground);
+    // 🔥 KRİTİK: "app-resumed" dinle (useAppForegroundState bu eventi gönderiyor!)
+    window.addEventListener("app-resumed", handleAppResumed);
     window.addEventListener("app-auth-recovery", handleAuthRecovery);
     window.addEventListener("app-force-restore", handleForceRestore);
     window.addEventListener("session-restored-from-native", handleNativeSessionRestored);
@@ -209,7 +212,7 @@ export function useSessionRecovery() {
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("appForeground", handleForeground);
+      window.removeEventListener("app-resumed", handleAppResumed);
       window.removeEventListener("app-auth-recovery", handleAuthRecovery);
       window.removeEventListener("app-force-restore", handleForceRestore);
       window.removeEventListener("session-restored-from-native", handleNativeSessionRestored);
