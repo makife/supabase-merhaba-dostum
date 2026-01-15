@@ -8,8 +8,8 @@ let isForegroundServiceRunning = false;
 let backgroundKillTimer: ReturnType<typeof setTimeout> | null = null;
 let isAppInitialized = false;
 
-// 🔥 Arka planda kalma süresi: 60 saniye sonra FS kapanır ve app kill olur
-const BACKGROUND_KILL_TIMEOUT_MS = 60000;
+// 🔥 Arka planda kalma süresi: 2 dakika sonra FS + WebView kapanır ve app kill olur
+const BACKGROUND_KILL_TIMEOUT_MS = 120000; // 2 dakika
 
 interface ForegroundServiceConfig {
   title?: string;
@@ -160,9 +160,9 @@ export const onAppEnteredBackground = (): void => {
   // Zaten bir timer varsa temizle
   clearBackgroundKillTimer();
   
-  // 60 saniye sonra FS kapat ve app'i kill et
+  // 2 dakika sonra FS + WebView kapat ve app'i kill et
   backgroundKillTimer = setTimeout(async () => {
-    console.log("[ForegroundService] ⏰ 60 saniye doldu - FS kapatılıyor ve app kill ediliyor");
+    console.log("[ForegroundService] ⏰ 2 dakika doldu - FS + WebView kapatılıyor ve app kill ediliyor");
     
     // Önce background mode'a geç (native service'e söyle)
     if (isNativeRealtimeAvailable()) {

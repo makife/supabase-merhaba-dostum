@@ -314,27 +314,28 @@ class RealtimeWebSocketService : Service() {
 
     // 🔥🔥🔥 YENİ: JS Foreground/Background durumu + WebView Keep-Alive
     fun enterForegroundMode() {
-        Log.d(TAG, "▶️ JS Foreground moduna geçti")
+        Log.d(TAG, "☀️ JS ön plana geldi - timer iptal, kuyruk boşaltılıyor")
         isJsInForeground.set(true)
         
-        // 🔥 WebView Keep-Alive'ı durdur (artık gerek yok)
+        // 🔥 WebView Keep-Alive'ı durdur (2 dk dolmadan ön plana gelindi)
         backgroundWebViewKeepAlive?.stopKeepAlive()
-        Log.d(TAG, "🛑 WebView Keep-Alive durduruldu (foreground)")
+        Log.d(TAG, "🌐 Background WebView DURDURULDU (2 dk dolmadan ön plana gelindi)")
         
         // Queue'daki mesajları gönder
         flushMessageQueue()
     }
     
     fun enterBackgroundMode() {
-        Log.d(TAG, "⏸️ JS Background moduna geçti")
+        Log.d(TAG, "🌙 JS arka plana geçti - mesajlar kuyruğa alınacak")
         isJsInForeground.set(false)
         
         // 🔥🔥🔥 HACK: 1x1 WebView başlat - JavaScript execution canlı kalsın!
         if (canDrawOverlays()) {
             backgroundWebViewKeepAlive?.startKeepAlive()
-            Log.d(TAG, "🚀 WebView Keep-Alive başlatıldı (background)")
+            Log.d(TAG, "🌐 Background WebView BAŞLATILDI (overlay permission var)")
+            Log.d(TAG, "⏱️ 2 dakika sonra WebView + FS kapatılacak (JS tarafında timer)")
         } else {
-            Log.w(TAG, "⚠️ SYSTEM_ALERT_WINDOW izni yok, WebView Keep-Alive başlatılamadı")
+            Log.w(TAG, "⚠️ SYSTEM_ALERT_WINDOW izni yok - WebView başlatılamadı")
         }
     }
     
