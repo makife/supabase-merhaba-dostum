@@ -15,6 +15,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import okhttp3.*
@@ -27,15 +28,21 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Realtime WebSocket Service - MESSAGE QUEUE DESTEKLİ
+ * Realtime WebSocket Service - MESSAGE QUEUE + WEBVIEW KEEP-ALIVE DESTEKLİ
  * 
  * Foreground Service olarak çalışır, arka planda bile WebSocket bağlantısını canlı tutar.
  * Supabase Realtime (Phoenix Channels) protokolünü native olarak implement eder.
  * 
- * 🔥 YENİ ÖZELLİK: MESSAGE QUEUE
+ * 🔥 ÖZELLİK 1: MESSAGE QUEUE
  * - JS arka plandayken mesajları queue'ya ekler
  * - JS ön plana gelince queue'daki tüm mesajları gönderir
  * - Bu sayede veriler KAYBOLMAZ!
+ * 
+ * 🔥🔥 ÖZELLİK 2: WEBVIEW KEEP-ALIVE HACK
+ * - Uygulama arka plana gidince 1x1 boyutunda görünmez WebView başlatır
+ * - Bu WebView JavaScript execution'ı canlı tutar
+ * - Ana uygulama ön plana gelince WebView kapatılır
+ * - Böylece JS hiç duraklamaz, veriler kaybolmaz!
  */
 class RealtimeWebSocketService : Service() {
 
@@ -109,6 +116,9 @@ class RealtimeWebSocketService : Service() {
     private val messageQueue = CopyOnWriteArrayList<QueuedMessage>()
     private val isJsInForeground = AtomicBoolean(true) // JS ön planda mı?
 
+    // 🔥🔥🔥 WEBVIEW KEEP-ALIVE - JavaScript'i arka planda canlı tutar
+    private var backgroundWebViewKeepAlive: BackgroundWebViewKeepAlive? = null
+
     data class ChannelSubscription(
         val topic: String,
         val event: String,
@@ -141,6 +151,13 @@ class RealtimeWebSocketService : Service() {
             "KelimEle::RealtimeWakeLock"
         )
 
+        // 🔥 Background WebView Keep-Alive oluştur
+        backgroundWebViewKeepAlive = BackgroundWebViewKeepAlive(this)
+        backgroundWebViewKeepAlive?.setKeepAliveCallback {
+            Log.d(TAG, "💓 WebView Keep-Alive aktif, bağlantı canlı!")
+        }
+        Log.d(TAG, "✅ BackgroundWebViewKeepAlive hazır")
+
         // Network listener
         registerNetworkListener()
     }
@@ -172,6 +189,11 @@ class RealtimeWebSocketService : Service() {
         stopHeartbeat()
         disconnect()
         unregisterNetworkListener()
+        
+        // 🔥 WebView Keep-Alive'ı temizle
+        backgroundWebViewKeepAlive?.destroy()
+        backgroundWebViewKeepAlive = null
+        Log.d(TAG, "✅ BackgroundWebViewKeepAlive temizlendi")
         
         // Queue'yu temizle
         messageQueue.clear()
@@ -290,10 +312,14 @@ class RealtimeWebSocketService : Service() {
         Log.d(TAG, "📤 Broadcast gönderildi: $topic / $event")
     }
 
-    // 🔥🔥🔥 YENİ: JS Foreground/Background durumu
+    // 🔥🔥🔥 YENİ: JS Foreground/Background durumu + WebView Keep-Alive
     fun enterForegroundMode() {
         Log.d(TAG, "▶️ JS Foreground moduna geçti")
         isJsInForeground.set(true)
+        
+        // 🔥 WebView Keep-Alive'ı durdur (artık gerek yok)
+        backgroundWebViewKeepAlive?.stopKeepAlive()
+        Log.d(TAG, "🛑 WebView Keep-Alive durduruldu (foreground)")
         
         // Queue'daki mesajları gönder
         flushMessageQueue()
@@ -302,6 +328,23 @@ class RealtimeWebSocketService : Service() {
     fun enterBackgroundMode() {
         Log.d(TAG, "⏸️ JS Background moduna geçti")
         isJsInForeground.set(false)
+        
+        // 🔥🔥🔥 HACK: 1x1 WebView başlat - JavaScript execution canlı kalsın!
+        if (canDrawOverlays()) {
+            backgroundWebViewKeepAlive?.startKeepAlive()
+            Log.d(TAG, "🚀 WebView Keep-Alive başlatıldı (background)")
+        } else {
+            Log.w(TAG, "⚠️ SYSTEM_ALERT_WINDOW izni yok, WebView Keep-Alive başlatılamadı")
+        }
+    }
+    
+    // 🔥 Overlay izni var mı kontrol et
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true // Android 6 altında izin gerekmiyor
+        }
     }
     
     // 🔥 Queue'daki tüm mesajları JS'e gönder
