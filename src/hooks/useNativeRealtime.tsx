@@ -45,10 +45,27 @@ export function registerMessageListener(listener: MessageListener) {
   return () => messageListeners.delete(listener);
 }
 
-// 🆕 Global subscription ekle
-export function addGlobalSubscription(key: string, info: SubscriptionInfo) {
+// 🆕 Global subscription ekle + HEMEN Kotlin'e kaydet
+export async function addGlobalSubscription(key: string, info: SubscriptionInfo) {
   globalSubscriptions.set(key, info);
   console.log(`[NativeRealtime] 📝 Global subscription eklendi: ${key}, toplam: ${globalSubscriptions.size}`);
+  
+  // 🔥 HEMEN Kotlin WebSocket'e de kaydet
+  if (isNativeRealtimeAvailable() && NativeRealtime) {
+    try {
+      console.log(`[NativeRealtime] 🔌 Kotlin'e subscribe ediliyor: ${key}`);
+      await NativeRealtime.subscribe({
+        topic: info.topic,
+        event: info.event || "*",
+        schema: info.schema || "public",
+        table: info.table,
+        filter: info.filter,
+      });
+      console.log(`[NativeRealtime] ✅ Kotlin subscribe başarılı: ${key}`);
+    } catch (e) {
+      console.log(`[NativeRealtime] ⚠️ Kotlin subscribe hatası: ${key}`, e);
+    }
+  }
 }
 
 // 🆕 Global subscription sil
