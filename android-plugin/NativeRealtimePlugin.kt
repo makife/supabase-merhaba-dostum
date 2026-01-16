@@ -82,7 +82,7 @@ class NativeRealtimePlugin : Plugin() {
     }
     
     /**
-     * 🆕 Activity lifecycle observer - Home tuşuna basınca JS uyusa bile çalışır!
+     * 🆕 Activity lifecycle observer - JS'i UYANDIRMAK için!
      */
     private fun setupLifecycleObserver() {
         try {
@@ -92,26 +92,55 @@ class NativeRealtimePlugin : Plugin() {
                 lifecycleObserver = LifecycleEventObserver { _, event ->
                     when (event) {
                         Lifecycle.Event.ON_PAUSE -> {
-                            // 🔴 App arka plana gidiyor - JS'TEN ÖNCE çalışır!
-                            Log.d(TAG, "📱 Lifecycle: ON_PAUSE - Arka plana geçiliyor (JS'ten bağımsız)")
+                            Log.d(TAG, "📱 ON_PAUSE - Arka plana geçiliyor")
                             realtimeService?.setAppForegroundState(false)
                         }
                         Lifecycle.Event.ON_RESUME -> {
-                            // 🟢 App ön plana geliyor - JS'TEN ÖNCE çalışır!
-                            Log.d(TAG, "📱 Lifecycle: ON_RESUME - Ön plana geliniyor (JS'ten bağımsız)")
+                            Log.d(TAG, "📱 ON_RESUME - JS UYANDIRILIYOR!")
                             realtimeService?.setAppForegroundState(true)
+                            
+                            // 🔥 JS'İ ZORLA UYANDIR - evaluateJavascript ile!
+                            wakeUpJavaScript()
                         }
                         else -> {}
                     }
                 }
                 
                 activity.lifecycle.addObserver(lifecycleObserver!!)
-                Log.d(TAG, "✅ Lifecycle observer kuruldu - JS'e bağımlı değil!")
-            } else {
-                Log.w(TAG, "⚠️ Activity LifecycleOwner değil, fallback kullanılacak")
+                Log.d(TAG, "✅ Lifecycle observer kuruldu")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ Lifecycle observer hatası: ${e.message}")
+        }
+    }
+    
+    /**
+     * 🔥 WebView'deki JavaScript'i zorla uyandır!
+     * evaluateJavascript() ile JS execution context'i tetiklenir
+     */
+    private fun wakeUpJavaScript() {
+        try {
+            val bufferedCount = realtimeService?.getBufferedMessageCount() ?: 0
+            Log.d(TAG, "🔔 JS uyandırılıyor, buffer'da $bufferedCount mesaj var")
+            
+            // WebView'e JavaScript inject et - bu JS'i uyandırır!
+            bridge?.webView?.post {
+                bridge?.webView?.evaluateJavascript(
+                    """
+                    (function() {
+                        console.log('[Kotlin→JS] 🔔 Wake-up signal received! Buffer: $bufferedCount');
+                        window.dispatchEvent(new CustomEvent('kotlin-wake-up', { 
+                            detail: { bufferedMessages: $bufferedCount, timestamp: Date.now() } 
+                        }));
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
+            
+            Log.d(TAG, "✅ JS wake-up signal gönderildi")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ JS wake-up hatası: ${e.message}")
         }
     }
 
