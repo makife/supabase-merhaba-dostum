@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -328,6 +329,34 @@ class NativeRealtimePlugin : Plugin() {
         call.resolve(JSObject().apply {
             put("count", count)
         })
+    }
+    
+    /**
+     * 🆕 JS uyanınca bu metodu çağırarak buffer'daki mesajları ÇEKER (PULL model)
+     * JS uyurken Kotlin mesaj gönderemez, bu yüzden JS aktif olarak çekmeli
+     */
+    @PluginMethod
+    fun getBufferedMessages(call: PluginCall) {
+        val messages = realtimeService?.getBufferedMessages() ?: emptyList()
+        val jsMessages = JSArray()
+        
+        messages.forEach { msg ->
+            val jsMsg = JSObject().apply {
+                put("topic", msg.topic)
+                put("event", msg.event)
+                put("payload", msg.payload)
+                put("timestamp", msg.timestamp)
+            }
+            jsMessages.put(jsMsg)
+        }
+        
+        val result = JSObject().apply {
+            put("messages", jsMessages)
+            put("count", messages.size)
+        }
+        
+        Log.d(TAG, "📬 JS ${messages.size} buffered mesaj çekti (PULL)")
+        call.resolve(result)
     }
 
     override fun handleOnDestroy() {

@@ -248,37 +248,24 @@ class RealtimeWebSocketService : Service() {
 
     // 🆕 App ön plana/arka plana geçişi
     fun setAppForegroundState(inForeground: Boolean) {
-        val wasInBackground = !isAppInForeground
         isAppInForeground = inForeground
-        
-        Log.d(TAG, "📱 App foreground state: $inForeground (buffer size: ${messageBuffer.size})")
-        
-        // Ön plana gelince buffer'daki mesajları gönder
-        if (inForeground && wasInBackground && messageBuffer.isNotEmpty()) {
-            flushBufferedMessages()
-        }
+        Log.d(TAG, "📱 App foreground state: ${if (inForeground) "FOREGROUND" else "BACKGROUND"}, buffered: ${messageBuffer.size}")
+        // NOT: Otomatik flush YOK - JS uyanınca getBufferedMessages() çağıracak (PULL model)
     }
-
-    // 🆕 Buffer'daki mesajları JS'e gönder
-    private fun flushBufferedMessages() {
-        Log.d(TAG, "📬 Buffer flush başlıyor, ${messageBuffer.size} mesaj")
-        
-        val messagesToSend = synchronized(messageBuffer) {
+    
+    // 🆕 Buffered mesaj sayısını al
+    fun getBufferedMessageCount(): Int = messageBuffer.size
+    
+    // 🆕 JS bu metodu çağırarak buffer'daki mesajları ÇEKER (PULL model)
+    fun getBufferedMessages(): List<BufferedMessage> {
+        val messages = synchronized(messageBuffer) {
             val copy = messageBuffer.toList()
             messageBuffer.clear()
             copy
         }
-        
-        messagesToSend.forEach { msg ->
-            Log.d(TAG, "📬 Buffered mesaj gönderiliyor: ${msg.topic} / ${msg.event}")
-            messageCallback?.invoke(msg.topic, msg.event, msg.payload)
-        }
-        
-        Log.d(TAG, "📬 Buffer flush tamamlandı, ${messagesToSend.size} mesaj gönderildi")
+        Log.d(TAG, "📬 JS ${messages.size} mesaj çekti (PULL model)")
+        return messages
     }
-
-    // 🆕 Buffered mesaj sayısını al
-    fun getBufferedMessageCount(): Int = messageBuffer.size
 
     fun subscribe(topic: String, event: String, schema: String = "public", table: String = "*", filter: String? = null) {
         val subscription = ChannelSubscription(topic, event, schema, table, filter)

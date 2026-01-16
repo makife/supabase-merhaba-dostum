@@ -66,8 +66,50 @@ export function removeGlobalSubscription(key: string) {
   console.log(`[NativeRealtime] 🗑️ Global subscription silindi: ${key}, kalan: ${globalSubscriptions.size}`);
 }
 
+// 🆕 JS uyanınca Kotlin'den buffered mesajları ÇEK (PULL model)
+// JS uyurken Kotlin mesaj gönderemez, JS aktif olarak çekmeli!
+async function pullBufferedMessages() {
+  if (!isNativeRealtimeAvailable() || !NativeRealtime) return;
+  
+  try {
+    const result = await NativeRealtime.getBufferedMessages();
+    
+    if (result.count > 0) {
+      console.log(`[NativeRealtime] 📬 ${result.count} buffered mesaj çekildi (PULL)`);
+      
+      // Her mesajı listener'lara ilet
+      result.messages.forEach((msg) => {
+        console.log(`[NativeRealtime] 📨 Buffered mesaj işleniyor: ${msg.topic} / ${msg.event}`);
+        
+        let parsedPayload: any;
+        try {
+          parsedPayload = JSON.parse(msg.payload);
+        } catch {
+          parsedPayload = msg.payload;
+        }
+        
+        // Global subscription callback'lerini çağır
+        globalSubscriptions.forEach((sub) => {
+          if (msg.topic === sub.topic || msg.topic.includes(sub.table || "")) {
+            sub.onMessage(parsedPayload);
+          }
+        });
+        
+        // Eski listener'ları da çağır (geriye uyumluluk)
+        messageListeners.forEach((listener) => {
+          listener(msg.topic, parsedPayload);
+        });
+      });
+    } else {
+      console.log("[NativeRealtime] 📭 Buffer boş, yeni mesaj yok");
+    }
+  } catch (e) {
+    console.error("[NativeRealtime] ❌ Buffer çekme hatası:", e);
+  }
+}
+
 // 🆕 Tüm subscription'ları yeniden oluştur (foreground'a dönüşte çağrılır)
-// NOT: Artık Kotlin tarafında mesaj buffering var, bu fonksiyon sadece bağlantı kontrolü yapar
+// PULL MODEL: Önce buffered mesajları çek, sonra bağlantı kontrolü yap
 export async function resubscribeAllChannels() {
   if (!isNativeRealtimeAvailable() || !NativeRealtime) return;
   
@@ -77,9 +119,12 @@ export async function resubscribeAllChannels() {
   }
   
   isReconnecting = true;
-  console.log(`[NativeRealtime] 🔄 Foreground sync başlıyor, ${globalSubscriptions.size} kanal kayıtlı`);
+  console.log(`[NativeRealtime] 🔄 JS uyandı! Foreground sync başlıyor...`);
   
   try {
+    // 🔥 ÖNCE: Kotlin'den buffered mesajları ÇEK (PULL model)
+    await pullBufferedMessages();
+    
     // Token al
     const { data } = await supabase.auth.getSession();
     if (!data?.session?.access_token) {
@@ -122,17 +167,9 @@ export async function resubscribeAllChannels() {
       }
     }
     
-    // Token'ı güncelle (önemli!)
+    // Token'ı güncelle
     await NativeRealtime.setAccessToken({ token: data.session.access_token });
     console.log("[NativeRealtime] 🔑 Token güncellendi");
-    
-    // 🆕 Buffer durumunu kontrol et - artık Kotlin tarafında buffer var
-    try {
-      const bufferResult = await NativeRealtime.getBufferedMessageCount();
-      console.log(`[NativeRealtime] 📦 Kotlin buffer durumu: ${bufferResult.count} mesaj`);
-    } catch (e) {
-      // Eski Kotlin versiyonu olabilir
-    }
     
     console.log(`[NativeRealtime] ✅ Foreground sync tamamlandı, ${globalSubscriptions.size} kanal aktif`);
     
