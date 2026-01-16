@@ -1,4 +1,4 @@
-package com.example.kelimeci.plugins
+package com.ergan.kelimele.plugins
 
 import android.content.ComponentName
 import android.content.Context
