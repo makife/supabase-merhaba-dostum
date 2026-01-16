@@ -6,6 +6,9 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -13,13 +16,12 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 /**
- * Native Realtime Plugin - Basitleştirilmiş Versiyon
+ * Native Realtime Plugin
  * 
  * Supabase Realtime bağlantısını native Kotlin tarafında yönetir.
  * WebView'den bağımsız çalışır, arka planda bile bağlantı kopmaz.
  * 
- * NOT: Message Queue ve WebView Keep-Alive kaldırıldı.
- * Yeni sistem: Silent Push Notification ile arka planda canlı tutma.
+ * 🆕 Activity Lifecycle Observer: JS'e bağımlı olmadan foreground/background algılar
  */
 @CapacitorPlugin(name = "NativeRealtime")
 class NativeRealtimePlugin : Plugin() {
@@ -30,6 +32,9 @@ class NativeRealtimePlugin : Plugin() {
 
     private var realtimeService: RealtimeWebSocketService? = null
     private var isBound = false
+    
+    // 🆕 Lifecycle observer - JS'e bağımlı olmadan çalışır
+    private var lifecycleObserver: LifecycleEventObserver? = null
 
     // Service bağlantısı
     private val serviceConnection = object : ServiceConnection {
@@ -70,6 +75,43 @@ class NativeRealtimePlugin : Plugin() {
     override fun load() {
         super.load()
         Log.d(TAG, "🚀 NativeRealtimePlugin yüklendi")
+        
+        // 🆕 Activity lifecycle'ı dinle - JS'E BAĞIMLI DEĞİL!
+        setupLifecycleObserver()
+    }
+    
+    /**
+     * 🆕 Activity lifecycle observer - Home tuşuna basınca JS uyusa bile çalışır!
+     */
+    private fun setupLifecycleObserver() {
+        try {
+            val activity = activity ?: return
+            
+            if (activity is LifecycleOwner) {
+                lifecycleObserver = LifecycleEventObserver { _, event ->
+                    when (event) {
+                        Lifecycle.Event.ON_PAUSE -> {
+                            // 🔴 App arka plana gidiyor - JS'TEN ÖNCE çalışır!
+                            Log.d(TAG, "📱 Lifecycle: ON_PAUSE - Arka plana geçiliyor (JS'ten bağımsız)")
+                            realtimeService?.setAppForegroundState(false)
+                        }
+                        Lifecycle.Event.ON_RESUME -> {
+                            // 🟢 App ön plana geliyor - JS'TEN ÖNCE çalışır!
+                            Log.d(TAG, "📱 Lifecycle: ON_RESUME - Ön plana geliniyor (JS'ten bağımsız)")
+                            realtimeService?.setAppForegroundState(true)
+                        }
+                        else -> {}
+                    }
+                }
+                
+                activity.lifecycle.addObserver(lifecycleObserver!!)
+                Log.d(TAG, "✅ Lifecycle observer kuruldu - JS'e bağımlı değil!")
+            } else {
+                Log.w(TAG, "⚠️ Activity LifecycleOwner değil, fallback kullanılacak")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Lifecycle observer hatası: ${e.message}")
+        }
     }
 
     /**
@@ -290,6 +332,18 @@ class NativeRealtimePlugin : Plugin() {
 
     override fun handleOnDestroy() {
         super.handleOnDestroy()
+        
+        // Lifecycle observer'ı temizle
+        lifecycleObserver?.let { observer ->
+            try {
+                (activity as? LifecycleOwner)?.lifecycle?.removeObserver(observer)
+                Log.d(TAG, "✅ Lifecycle observer temizlendi")
+            } catch (e: Exception) {
+                Log.e(TAG, "⚠️ Lifecycle observer temizleme hatası: ${e.message}")
+            }
+        }
+        lifecycleObserver = null
+        
         if (isBound) {
             context.unbindService(serviceConnection)
             isBound = false
