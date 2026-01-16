@@ -122,10 +122,19 @@ export async function startForegroundOrchestration(callbacks: OrchestrationCallb
   }, 1000);
   orchestratorTimeouts.push(t1000);
   
-  // T+1800ms: Global veri tazeleme
+  // T+1800ms: Global veri tazeleme + data-ready event
   const t1800 = setTimeout(() => {
     console.log("[ForegroundOrchestrator] T+1800ms: Data refresh");
     callbacks.onDataRefresh?.();
+    
+    // 🔥 data-ready eventi dispatch et - tüm sayfalar verileri yenilesin!
+    console.log("[ForegroundOrchestrator] 📢 data-ready eventi dispatch ediliyor...");
+    window.dispatchEvent(
+      new CustomEvent("data-ready", {
+        detail: { source: "foreground-orchestrator" },
+      }),
+    );
+    
     isOrchestrating = false;
     callbacks.onComplete?.();
   }, 1800);
