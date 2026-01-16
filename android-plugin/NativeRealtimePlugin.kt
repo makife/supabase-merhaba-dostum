@@ -255,6 +255,39 @@ class NativeRealtimePlugin : Plugin() {
         }
     }
 
+    /**
+     * 🆕 App foreground/background durumunu bildir
+     * Bu sayede Kotlin mesajları buffer'layabilir veya hemen iletebilir
+     */
+    @PluginMethod
+    fun setAppForegroundState(call: PluginCall) {
+        val inForeground = call.getBoolean("inForeground") ?: true
+
+        Log.d(TAG, "📱 App foreground state: $inForeground")
+
+        try {
+            realtimeService?.setAppForegroundState(inForeground)
+            call.resolve(JSObject().apply {
+                put("success", true)
+                put("inForeground", inForeground)
+                put("bufferedMessages", realtimeService?.getBufferedMessageCount() ?: 0)
+            })
+        } catch (e: Exception) {
+            call.reject("setAppForegroundState hatası: ${e.message}")
+        }
+    }
+
+    /**
+     * 🆕 Buffer'daki mesaj sayısını al
+     */
+    @PluginMethod
+    fun getBufferedMessageCount(call: PluginCall) {
+        val count = realtimeService?.getBufferedMessageCount() ?: 0
+        call.resolve(JSObject().apply {
+            put("count", count)
+        })
+    }
+
     override fun handleOnDestroy() {
         super.handleOnDestroy()
         if (isBound) {

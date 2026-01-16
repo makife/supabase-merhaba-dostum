@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 import { updateForegroundTime } from "@/utils/coldStartTime";
+import { NativeRealtime, isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
 
 // Global app foreground state - accessible from anywhere
 let isAppInForeground = true;
@@ -18,6 +19,22 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
 // 🔥 Son arka plan zamanı - foreground'a gelince event tetiklemek için
 let lastBackgroundTime: number | null = null;
 
+// 🆕 Kotlin'e foreground durumunu bildir
+const notifyKotlinForegroundState = async (inForeground: boolean) => {
+  if (!isNativeRealtimeAvailable() || !NativeRealtime) {
+    return;
+  }
+
+  try {
+    const result = await NativeRealtime.setAppForegroundState({ inForeground });
+    console.log(
+      `[AppForegroundState] 🔗 Kotlin'e bildirildi: ${inForeground ? "FOREGROUND" : "BACKGROUND"}, buffered: ${result.bufferedMessages}`
+    );
+  } catch (e) {
+    console.warn("[AppForegroundState] ⚠️ Kotlin bildirim hatası:", e);
+  }
+};
+
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
 const handleForegroundStateChange = (inForeground: boolean) => {
   const previousState = isAppInForeground;
@@ -26,6 +43,10 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   console.log(
     `[AppForegroundState] 📱 State: ${inForeground ? "FOREGROUND" : "BACKGROUND"} (önceki: ${previousState ? "FG" : "BG"})`,
   );
+
+  // 🆕 KRİTİK: Kotlin'e ÖNCE foreground durumunu bildir!
+  // Bu sayede ön plana gelince buffer'daki mesajlar iletilir
+  notifyKotlinForegroundState(inForeground);
 
   // 🔥 KRİTİK: Tüm listener'ları ÖNCE bilgilendir (senkron)
   listeners.forEach((cb) => {
