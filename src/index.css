@@ -612,315 +612,48 @@ All colors MUST be HSL.
     0 10px 20px -5px hsl(var(--primary) / 0.4);
 }
 
-.avatar-frame-avatar_floral_roses,
-.avatar-frame-avatar_blue_berries,
-.avatar-frame-avatar_gold_simple,
-.avatar-frame-avatar_floral_wreath,
-.avatar-frame-avatar_purple_flowers,
-.avatar-frame-avatar_pink_flowers,
-.avatar-frame-avatar_antique_bronze,
-.avatar-frame-avatar_green_patrick,
-.avatar-frame-avatar_heart_roses,
-.avatar-frame-avatar_christmas_lights,
-.avatar-frame-avatar_ornate_gold,
-.avatar-frame-avatar_party_balloons,
-.avatar-frame-avatar_christmas_tree,
-.avatar-frame-avatar_ornate_black,
-.avatar-frame-avatar_black_floral,
-.avatar-frame-avatar_golden_stars,
-.avatar-frame-avatar_wavy_black {
-  position: relative;
-  display: inline-block;
-  width: 120px; /* Çerçeve boyutu */
-  height: 120px; /* Çerçeve boyutu */
+/* Simple avatar frames - CSS only, no external images */
+.avatar-frame-gold {
+  @apply ring-4 ring-yellow-500 shadow-lg;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.5);
 }
 
-/* Avatar resmi - çerçevenin ortasına yerleşir */
-.avatar-frame-avatar_floral_roses img,
-.avatar-frame-avatar_blue_berries img,
-.avatar-frame-avatar_gold_simple img,
-.avatar-frame-avatar_floral_wreath img,
-.avatar-frame-avatar_purple_flowers img,
-.avatar-frame-avatar_pink_flowers img,
-.avatar-frame-avatar_antique_bronze img,
-.avatar-frame-avatar_green_patrick img,
-.avatar-frame-avatar_heart_roses img,
-.avatar-frame-avatar_christmas_lights img,
-.avatar-frame-avatar_ornate_gold img,
-.avatar-frame-avatar_party_balloons img,
-.avatar-frame-avatar_christmas_tree img,
-.avatar-frame-avatar_ornate_black img,
-.avatar-frame-avatar_black_floral img,
-.avatar-frame-avatar_golden_stars img,
-.avatar-frame-avatar_wavy_black img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70px; /* Avatar boyutu - çerçeveden küçük */
-  height: 70px; /* Avatar boyutu - çerçeveden küçük */
-  border-radius: 50%;
-  object-fit: cover;
-  z-index: 1; /* Avatar altta */
+.avatar-frame-silver {
+  @apply ring-4 ring-gray-400 shadow-lg;
+  box-shadow: 0 0 15px rgba(156, 163, 175, 0.5);
 }
 
-/* Çerçeve overlay - en üstte, tam boyut */
-.avatar-frame-avatar_floral_roses::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/a717e6dc-c468-4e17-9e40-e2a47817aed6.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10; /* Çerçeve en üstte */
-  pointer-events: none;
+.avatar-frame-diamond {
+  @apply ring-4 ring-cyan-400 shadow-lg;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.5);
 }
 
-.avatar-frame-avatar_blue_berries::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/9224e301-b3e4-47ba-9be4-b9a4fd4694a5.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
+.avatar-frame-emerald {
+  @apply ring-4 ring-emerald-500 shadow-lg;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
-.avatar-frame-avatar_gold_simple::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/aa2df12c-9aa3-49c0-a78e-4a946ad9c396.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-  animation: golden-glow 2s ease-in-out infinite alternate;
+.avatar-frame-ruby {
+  @apply ring-4 ring-red-500 shadow-lg;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
 }
 
-.avatar-frame-avatar_floral_wreath::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/eea94c24-3141-4496-ab48-9911ecfd1400.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
+.avatar-frame-rainbow {
+  @apply ring-4 ring-purple-500 shadow-lg;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+  animation: rainbow-glow 2s ease-in-out infinite alternate;
 }
 
-.avatar-frame-avatar_purple_flowers::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/1b6aaacc-0774-46f0-9aed-58be7383877a.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
+.avatar-frame-star {
+  @apply ring-4 ring-amber-400 shadow-lg;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
 }
 
-.avatar-frame-avatar_pink_flowers::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/4a19df44-882d-4bf3-b557-2986fd9ea69e.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_antique_bronze::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/227894f5-629e-46a5-88d7-2d8df2460fa2.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_green_patrick::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/d9551411-6a1a-4199-b99e-a0ff5defbf4e.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_heart_roses::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/ff7b6503-a976-4eb1-87d0-2373423fc6e5.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_christmas_lights::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/2e9f15c2-49f4-461f-997e-84c4682368c6.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-  animation: twinkle 1.5s ease-in-out infinite;
-}
-
-.avatar-frame-avatar_ornate_gold::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/9ed9fbb7-3aa3-4185-96c5-d118e2067712.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-  animation: luxury-glow 3s ease-in-out infinite alternate;
-}
-
-.avatar-frame-avatar_party_balloons::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/afa305fa-30a5-496f-8af0-029aa71047a3.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_christmas_tree::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/b2d1b581-c29f-43e4-b354-2889ce0621b1.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_ornate_black::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/5b932686-4cbb-44bb-8aa0-d9172ae54764.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_black_floral::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/53623185-5b73-4dd2-bc2b-1af5b94f321a.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_golden_stars::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/ff8a7b50-41b9-461a-bd0b-0e166b281ef3.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.avatar-frame-avatar_wavy_black::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("/lovable-uploads/309c658e-e0d1-423a-80d6-9b012943f30d.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  z-index: 10;
-  pointer-events: none;
+@keyframes rainbow-glow {
+  0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+  33% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.6); }
+  66% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
+  100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
 }
 
 /* Çerçeve animasyonları - Yeni eklenen */
