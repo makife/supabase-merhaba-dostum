@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useAuth } from "./AuthContext";
 import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromStorage } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 // 🔥 Basit yaklaşım - useAppResume kullanılacak (aşağıda)
 
 interface OnlineUser {
@@ -314,17 +315,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         if (errorMsg === "PROFILE_TIMEOUT") {
           console.warn("📱 [UserContext] ⏱️ Profil yenileme 10sn timeout - ağ yavaş olabilir");
 
-          // Timeout durumunda cache'den yükle
-          const cachedProfile = localStorage.getItem("cached_profile");
-          if (cachedProfile) {
-            try {
-              const parsed = JSON.parse(cachedProfile);
+          // Timeout durumunda cache'den yükle (async)
+          try {
+            const cachedStr = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);
+            if (cachedStr) {
+              const parsed = JSON.parse(cachedStr);
               if (parsed.id === userId && parsed.data) {
                 console.log("📱 [UserContext] 📦 Timeout - cache'den yükleniyor");
                 setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
               }
-            } catch {}
-          }
+            }
+          } catch {}
         }
       } finally {
         // İşlem bitti, kilidi aç
@@ -399,7 +400,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       if (intentionalLogoutRef.current) {
         console.log("[UserContext] 🚪 Logout - profile temizleniyor");
         setProfile(null);
-        localStorage.removeItem("cached_profile");
+        nativeStorage.removeItem(STORAGE_KEYS.CACHED_PROFILE);
         intentionalLogoutRef.current = false;
       } else {
         console.log("[UserContext] ⏳ User null ama logout değil - profile korunuyor");
@@ -409,22 +410,27 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     isRefreshingCreditsRef.current = false;
 
-    const cached = localStorage.getItem("cached_profile");
-    if (cached) {
+    // Cache'den profil yükle (async)
+    const loadCachedProfile = async () => {
       try {
-        const parsed = JSON.parse(cached);
-        if (parsed.id === user.id) {
-          console.log("[UserContext] ⚡ Cache'den hızlı hydrate:", parsed.data?.username);
-          setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
-          if (parsed.data?.avatar_url) {
-            const img = new Image();
-            img.src = parsed.data.avatar_url;
+        const cached = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.id === user.id) {
+            console.log("[UserContext] ⚡ Cache'den hızlı hydrate:", parsed.data?.username);
+            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+            if (parsed.data?.avatar_url) {
+              const img = new Image();
+              img.src = parsed.data.avatar_url;
+            }
           }
         }
       } catch (e) {
         console.error("Cache hydrate parse error:", e);
       }
-    }
+    };
+
+    loadCachedProfile();
 
     console.log("[UserContext] 🚀 User değişti, profil zorla yenileniyor...");
     // 🔥 User değiştiğinde tüm kilitleri sıfırla
@@ -474,32 +480,40 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     const CACHE_DURATION = 30000; // 30 saniye
 
-    // Cache kontrolü (force değilse)
-    if (!forceRefresh) {
-      const cachedProfile = localStorage.getItem("cached_profile");
-      if (cachedProfile) {
-        try {
-          const parsed = JSON.parse(cachedProfile);
-          const isValidCache =
-            parsed.id === currentUser.id &&
-            parsed.timestamp > Date.now() - CACHE_DURATION &&
-            parsed.data?.username &&
-            typeof parsed.data?.total_score === "number";
+    // Cache kontrolü (force değilse) - async olduğu için ayrı fonksiyon
+    const checkCache = async (): Promise<boolean> => {
+      if (forceRefresh) return false;
+      
+      try {
+        const cachedStr = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);
+        if (!cachedStr) return false;
+        
+        const parsed = JSON.parse(cachedStr);
+        const isValidCache =
+          parsed.id === currentUser.id &&
+          parsed.timestamp > Date.now() - CACHE_DURATION &&
+          parsed.data?.username &&
+          typeof parsed.data?.total_score === "number";
 
-          if (isValidCache) {
-            console.log(
-              "[UserContext] ✅ Cache'den yüklendi (kalan:",
-              Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000),
-              "sn)",
-            );
-            setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.error("Cache parse error:", e);
+        if (isValidCache) {
+          console.log(
+            "[UserContext] ✅ Cache'den yüklendi (kalan:",
+            Math.round((parsed.timestamp + CACHE_DURATION - Date.now()) / 1000),
+            "sn)",
+          );
+          setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
+          setLoading(false);
+          return true;
         }
+      } catch (e) {
+        console.error("Cache parse error:", e);
       }
+      return false;
+    };
+
+    if (await checkCache()) {
+      isFetchingProfileRef.current = false;
+      return;
     }
 
     // KİLİDİ KAPAT
@@ -546,17 +560,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           hint: error.hint,
         });
 
-        // Fallback to cache on error
-        const cachedProfile = localStorage.getItem("cached_profile");
-        if (cachedProfile) {
-          try {
-            const parsed = JSON.parse(cachedProfile);
+        // Fallback to cache on error (async)
+        try {
+          const cachedStr = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);
+          if (cachedStr) {
+            const parsed = JSON.parse(cachedStr);
             if (parsed.id === currentUser.id) {
               console.log("[UserContext] ⚠️ Hata - Cache'den fallback yükleniyor");
               setProfile({ ...parsed.data, ink_count: parsed.data.ink_count ?? 0 });
             }
-          } catch {}
-        }
+          }
+        } catch {}
       } else if (data) {
         await checkAndResetDailyStats(data);
         console.log("[UserContext] ✅ Profil başarıyla yüklendi:", data.username);
@@ -584,8 +598,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         // Zaman damgasını güncelle - BAŞARILI İŞLEM SONRASI
         lastRefreshTimeRef.current = Date.now();
 
-        localStorage.setItem(
-          "cached_profile",
+        // Native storage'a kaydet
+        await nativeStorage.setItem(
+          STORAGE_KEYS.CACHED_PROFILE,
           JSON.stringify({
             id: currentUser.id,
             data: profileData,
@@ -992,8 +1007,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           // Realtime'dan gelince de zaman damgasını güncelle ki manuel refresh çakışmasın
           lastRefreshTimeRef.current = Date.now();
 
-          localStorage.setItem(
-            "cached_profile",
+          nativeStorage.setItem(
+            STORAGE_KEYS.CACHED_PROFILE,
             JSON.stringify({
               id: user.id,
               data: newProfile,
@@ -1012,20 +1027,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         }
       });
 
-    const handleVisibility = () => {
+    const handleVisibility = async () => {
       if (document.visibilityState === "visible") {
         console.log("[Profile] 👁️ Sayfa görünür, profil kontrol ediliyor...");
-        const cached = localStorage.getItem("cached_profile");
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
+        try {
+          const cachedStr = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);
+          if (cachedStr) {
+            const parsed = JSON.parse(cachedStr);
             if (Date.now() - parsed.timestamp > 30000) {
               refreshProfile(true);
             }
-          } catch (e) {
+          } else {
             refreshProfile(true);
           }
-        } else {
+        } catch (e) {
           refreshProfile(true);
         }
       }

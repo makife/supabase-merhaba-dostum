@@ -14,6 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSounds } from "@/hooks/useSounds";
 import { useMusic } from "@/contexts/MusicContext";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
+import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 import {
   ArrowLeft,
   Bell,
@@ -63,13 +64,14 @@ const SettingsPage = () => {
   const [deleteFinalConfirmOpen, setDeleteFinalConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load settings from localStorage and set initial values
+  // Load settings from native storage and set initial values
   useEffect(() => {
-    const savedSettings = localStorage.getItem("kelimeci-settings");
-    const permissionsCompleted = localStorage.getItem("kelimeci-permissions-completed");
+    const loadSettings = async () => {
+      const savedSettings = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const permissionsCompleted = await nativeStorage.getItem(STORAGE_KEYS.PERMISSIONS_COMPLETED);
 
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
       setNotifications(settings.notifications ?? false);
       setLanguage(settings.language ?? "tr");
 
@@ -126,7 +128,7 @@ const SettingsPage = () => {
 
     if (hasRealChange) {
       hasChangedRef.current = true;
-      localStorage.setItem("kelimeci-settings", JSON.stringify(currentSettings));
+      nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(currentSettings));
 
       // Dispatch custom event to notify other components
       window.dispatchEvent(new Event("settingsChanged"));
@@ -733,8 +735,8 @@ const SettingsPage = () => {
                   // Kullanıcıyı çıkış yap
                   await supabase.auth.signOut();
 
-                  // LocalStorage'ı temizle
-                  localStorage.clear();
+                  // Native storage'ı temizle
+                  await nativeStorage.clear();
 
                   // Ana sayfaya yönlendir
                   setTimeout(() => {

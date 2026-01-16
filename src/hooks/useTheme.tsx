@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
+import { nativeStorage, STORAGE_KEYS } from '@/utils/nativeStorage';
 
 type Theme = 'light' | 'dark' | 'system';
 
 export const useTheme = () => {
   const [theme, setTheme] = useState<Theme>('system');
 
+  // Load theme from native storage
   useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('kelimeci-theme') as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
+    const loadTheme = async () => {
+      const savedTheme = await nativeStorage.getItem(STORAGE_KEYS.THEME) as Theme;
+      if (savedTheme) {
+        setTheme(savedTheme);
+      }
+    };
+    loadTheme();
   }, []);
 
   useEffect(() => {
@@ -28,7 +32,9 @@ export const useTheme = () => {
     };
 
     applyTheme(theme);
-    localStorage.setItem('kelimeci-theme', theme);
+    
+    // Save theme to native storage
+    nativeStorage.setItem(STORAGE_KEYS.THEME, theme);
 
     // Listen for system theme changes
     if (theme === 'system') {
