@@ -27,69 +27,195 @@ const SUPABASE_ANON_KEY =
 type MessageListener = (topic: string, payload: any) => void;
 const messageListeners = new Set<MessageListener>();
 
+// 🆕 GLOBAL SUBSCRIPTION REGISTRY - Component unmount olsa bile korunur
+interface SubscriptionInfo {
+  topic: string;
+  table?: string;
+  schema?: string;
+  event?: string;
+  filter?: string;
+  onMessage: (payload: any) => void;
+}
+const globalSubscriptions = new Map<string, SubscriptionInfo>();
+let isListenerSetup = false;
+let isReconnecting = false;
+
 export function registerMessageListener(listener: MessageListener) {
   messageListeners.add(listener);
   return () => messageListeners.delete(listener);
 }
 
+// 🆕 Global subscription ekle
+export function addGlobalSubscription(key: string, info: SubscriptionInfo) {
+  globalSubscriptions.set(key, info);
+  console.log(`[NativeRealtime] 📝 Global subscription eklendi: ${key}, toplam: ${globalSubscriptions.size}`);
+}
+
+// 🆕 Global subscription sil
+export function removeGlobalSubscription(key: string) {
+  globalSubscriptions.delete(key);
+  console.log(`[NativeRealtime] 🗑️ Global subscription silindi: ${key}, kalan: ${globalSubscriptions.size}`);
+}
+
+// 🆕 Tüm subscription'ları yeniden oluştur (foreground'a dönüşte çağrılır)
+export async function resubscribeAllChannels() {
+  if (!isNativeRealtimeAvailable() || !NativeRealtime) return;
+  
+  if (isReconnecting) {
+    console.log("[NativeRealtime] ⏸️ Zaten yeniden bağlanıyor, skip...");
+    return;
+  }
+  
+  isReconnecting = true;
+  console.log(`[NativeRealtime] 🔄 Global resubscribe başlıyor, toplam: ${globalSubscriptions.size}`);
+  
+  try {
+    // Token al
+    const { data } = await supabase.auth.getSession();
+    if (!data?.session?.access_token) {
+      console.log("[NativeRealtime] ⚠️ Session yok, resubscribe atlanıyor");
+      return;
+    }
+    
+    // Kotlin bağlantı durumunu kontrol et
+    const stateResult = await NativeRealtime.getConnectionState();
+    console.log("[NativeRealtime] 📡 Kotlin state:", stateResult.state);
+    
+    if (stateResult.state !== "connected") {
+      console.log("[NativeRealtime] 🔌 Kotlin bağlantısı kopuk, yeniden bağlanıyor...");
+      const wsUrl = SUPABASE_URL.replace("https://", "wss://") + "/realtime/v1/websocket";
+      
+      await NativeRealtime.connect({
+        url: wsUrl,
+        apiKey: SUPABASE_ANON_KEY,
+        accessToken: data.session.access_token,
+      });
+      
+      // Bağlantı kurulmasını bekle
+      await new Promise((r) => setTimeout(r, 800));
+    }
+    
+    // Token'ı güncelle (önemli!)
+    await NativeRealtime.setAccessToken({ token: data.session.access_token });
+    console.log("[NativeRealtime] 🔑 Token güncellendi");
+    
+    // Tüm subscription'ları yeniden oluştur
+    for (const [key, sub] of globalSubscriptions.entries()) {
+      console.log(`[NativeRealtime] 🔄 Re-subscribing: ${key}`);
+      try {
+        await NativeRealtime.subscribe({
+          topic: sub.topic,
+          event: sub.event || "*",
+          schema: sub.schema || "public",
+          table: sub.table,
+          filter: sub.filter,
+        });
+        console.log(`[NativeRealtime] ✅ Re-subscribed: ${key}`);
+      } catch (e) {
+        console.log(`[NativeRealtime] ⚠️ Re-subscribe hatası: ${key}`, e);
+      }
+    }
+    
+    // Buffered mesajları enjekte et
+    const bufferedMessages = await getBufferedMessages();
+    if (bufferedMessages.length > 0) {
+      console.log("[NativeRealtime] 📦 Buffered mesajlar enjekte ediliyor:", bufferedMessages.length);
+      
+      for (const msg of bufferedMessages) {
+        messageListeners.forEach((listener) => {
+          listener(msg.topic, msg.payload);
+        });
+        
+        // Global subscription callback'lerini de çağır
+        globalSubscriptions.forEach((sub) => {
+          if (msg.topic === sub.topic || msg.topic.includes(sub.table || "")) {
+            sub.onMessage(msg.payload);
+          }
+        });
+      }
+      
+      await clearBufferedMessages();
+    }
+    
+    console.log(`[NativeRealtime] ✅ Resubscribe tamamlandı, ${globalSubscriptions.size} kanal aktif`);
+    
+  } catch (e) {
+    console.error("[NativeRealtime] ❌ Resubscribe hatası:", e);
+  } finally {
+    isReconnecting = false;
+  }
+}
+
+// 🆕 Global listener setup (bir kez çağrılır)
+function setupGlobalListeners() {
+  if (isListenerSetup || !isNativeRealtimeAvailable() || !NativeRealtime) return;
+  
+  isListenerSetup = true;
+  console.log("[NativeRealtime] 🎯 Global listener'lar kuruluyor...");
+  
+  NativeRealtime.addListener("realtimeMessage", (data: RealtimeMessageEvent) => {
+    console.log("[NativeRealtime] 📨 Mesaj geldi:", data.topic, data.event);
+    
+    let parsedPayload: any;
+    try {
+      parsedPayload = JSON.parse(data.payload);
+    } catch {
+      parsedPayload = data.payload;
+    }
+    
+    // Global subscription callback'lerini çağır
+    globalSubscriptions.forEach((sub) => {
+      if (data.topic === sub.topic || data.topic.includes(sub.table || "")) {
+        sub.onMessage(parsedPayload);
+      }
+    });
+    
+    // Eski listener'ları da çağır (geriye uyumluluk)
+    messageListeners.forEach((listener) => {
+      listener(data.topic, parsedPayload);
+    });
+  });
+  
+  NativeRealtime.addListener("connectionState", async (data: ConnectionStateEvent) => {
+    console.log("[NativeRealtime] 🔌 Connection state:", data.state);
+    
+    // Dispatch event for components
+    window.dispatchEvent(new CustomEvent("native-realtime-state", { 
+      detail: { state: data.state, isConnected: data.state === "connected" } 
+    }));
+    
+    // Bağlantı durumunu kaydet
+    await setConnectionState({
+      isConnected: data.state === "connected",
+      lastConnectedAt: data.state === "connected" ? Date.now() : 0,
+      reconnectAttempts: 0,
+    });
+  });
+  
+  console.log("[NativeRealtime] ✅ Global listener'lar kuruldu");
+}
+
 export function useNativeRealtime() {
   const [connectionState, setConnectionStateLocal] = useState<string>("disconnected");
   const [isConnected, setIsConnected] = useState(false);
-  const subscriptionsRef = useRef<Map<string, any>>(new Map());
   const foregroundTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isReconnectingRef = useRef(false);
   const isNative = isNativeRealtimeAvailable();
 
-  // 1. Kotlin'den gelen mesajları dinle
+  // 1. Global listener'ları kur (sadece bir kez)
   useEffect(() => {
-    if (!isNative || !NativeRealtime) return;
-
-    const setupListeners = async () => {
-      // 🔥 sessionRestored eventi kaldırıldı - artık silent push notification kullanıyoruz
-
-      await NativeRealtime.addListener("realtimeMessage", (data: RealtimeMessageEvent) => {
-        console.log("[NativeRealtime] 📨 Mesaj geldi:", data.topic, data.event);
-        
-        let parsedPayload: any;
-        try {
-          parsedPayload = JSON.parse(data.payload);
-        } catch {
-          parsedPayload = data.payload;
-        }
-
-        // Tüm kayıtlı listener'lara bildir
-        subscriptionsRef.current.forEach((sub) => {
-          if (data.topic === sub.topic || data.topic.includes(sub.table || "")) {
-            sub.onMessage(parsedPayload);
-          }
-        });
-
-        // Global listener'lara da bildir (sayfa state enjeksiyonu için)
-        messageListeners.forEach((listener) => {
-          listener(data.topic, parsedPayload);
-        });
-      });
-
-      await NativeRealtime.addListener("connectionState", async (data: ConnectionStateEvent) => {
-        console.log("[NativeRealtime] 🔌 Connection state:", data.state);
-        setConnectionStateLocal(data.state);
-        setIsConnected(data.state === "connected");
-
-        // Bağlantı durumunu kalıcı olarak kaydet
-        await setConnectionState({
-          isConnected: data.state === "connected",
-          lastConnectedAt: data.state === "connected" ? Date.now() : 0,
-          reconnectAttempts: 0,
-        });
-      });
+    if (!isNative) return;
+    setupGlobalListeners();
+    
+    // Connection state event listener
+    const handleStateChange = (e: CustomEvent) => {
+      setConnectionStateLocal(e.detail.state);
+      setIsConnected(e.detail.isConnected);
     };
-
-    setupListeners();
-    // ⚠️ CLEANUP DEVRE DIŞI - Native bağlantı koruması
-    // removeAllListeners() tüm native listener'ları kaldırıyor ve bağlantı kopuyordu
+    
+    window.addEventListener("native-realtime-state", handleStateChange as EventListener);
+    
     return () => {
-      console.log("⚠️ [useNativeRealtime] Cleanup ATLANYOR (bağlantı koruması) - removeAllListeners çağrılmadı");
-      // ❌ DEVRE DIŞI: NativeRealtime.removeAllListeners();
+      window.removeEventListener("native-realtime-state", handleStateChange as EventListener);
     };
   }, [isNative]);
 
@@ -98,9 +224,7 @@ export function useNativeRealtime() {
     if (!isNative || !NativeRealtime) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       const wsUrl = SUPABASE_URL.replace("https://", "wss://") + "/realtime/v1/websocket";
 
       console.log("[NativeRealtime] 🔌 Kotlin motoru başlatılıyor...");
@@ -114,132 +238,50 @@ export function useNativeRealtime() {
     }
   }, [isNative]);
 
-  // 🆕 3. AGGRESSIVE RE-SUBSCRIPTION: Ön plana çıkınca zorla yeniden bağlan
-  // ⚠️ KRİTİK: Native'de JS Supabase Realtime KULLANILMIYOR - sadece Kotlin WebSocket!
-  const forceResubscribe = useCallback(async () => {
-    if (isReconnectingRef.current) {
-      console.log("[NativeRealtime] ⏸️ Zaten yeniden bağlanıyor, skip...");
-      return;
-    }
-
-    isReconnectingRef.current = true;
-    console.log("[NativeRealtime] 🔄 Aggressive re-subscription başlıyor...");
-
-    try {
-      // 🔧 KRİTİK: Native'de JS SDK Realtime KULLANMIYORUZ - Kotlin yönetiyor
-      // Sadece Kotlin bağlantısını kontrol et ve yeniden bağlan
-      if (isNative && NativeRealtime) {
-        console.log("[NativeRealtime] 📡 Kotlin WebSocket kontrol ediliyor...");
-        
-        // Kotlin bağlantı durumunu kontrol et
-        try {
-          const stateResult = await NativeRealtime.getConnectionState();
-          console.log("[NativeRealtime] 📡 Kotlin state:", stateResult.state);
-          
-          if (stateResult.state !== "connected") {
-            console.log("[NativeRealtime] 🔌 Kotlin bağlantısı kopuk, yeniden bağlanıyor...");
-            
-            // Token al
-            const { data } = await supabase.auth.getSession();
-            const wsUrl = SUPABASE_URL.replace("https://", "wss://") + "/realtime/v1/websocket";
-            
-            await NativeRealtime.connect({
-              url: wsUrl,
-              apiKey: SUPABASE_ANON_KEY,
-              accessToken: data?.session?.access_token || "",
-            });
-            
-            console.log("[NativeRealtime] ✅ Kotlin reconnect çağrıldı");
-            
-            // Biraz bekle
-            await new Promise((r) => setTimeout(r, 500));
-          }
-        } catch (e) {
-          console.log("[NativeRealtime] ⚠️ Kotlin state kontrolü hatası:", e);
-        }
-        
-        // Aktif subscription'ları yeniden subscribe et
-        console.log("[NativeRealtime] 📋 Aktif subscription sayısı:", subscriptionsRef.current.size);
-        subscriptionsRef.current.forEach(async (sub, key) => {
-          console.log("[NativeRealtime] 🔄 Re-subscribing:", key);
-          try {
-            await NativeRealtime.subscribe({
-              topic: sub.topic,
-              event: sub.event || "*",
-              schema: sub.schema || "public",
-              table: sub.table,
-              filter: sub.filter,
-            });
-          } catch (e) {
-            console.log("[NativeRealtime] ⚠️ Re-subscribe hatası:", key, e);
-          }
-        });
-      }
-
-      // Native Storage'dan son aktif kanalları oku
-      const [lastRoomId, lastChatId, lastMatchId] = await Promise.all([
-        getLastRoomId(),
-        getLastChatId(),
-        getLastMatchId(),
-      ]);
-
-      console.log("[NativeRealtime] 📖 Cached IDs:", { lastRoomId, lastChatId, lastMatchId });
-
-      // 🆕 4. CHANNEL BUFFERING: Arka planda biriken mesajları enjekte et
-      const bufferedMessages = await getBufferedMessages();
-      if (bufferedMessages.length > 0) {
-        console.log("[NativeRealtime] 📦 Buffered mesajlar enjekte ediliyor:", bufferedMessages.length);
-        
-        for (const msg of bufferedMessages) {
-          messageListeners.forEach((listener) => {
-            listener(msg.topic, msg.payload);
-          });
-        }
-
-        await clearBufferedMessages();
-      }
-    } catch (e) {
-      console.error("[NativeRealtime] Force resubscribe hatası:", e);
-    } finally {
-      isReconnectingRef.current = false;
-    }
-  }, [isNative]);
-
-  // 5. ARKA PLAN YÖNETİMİ
-  // ⚠️ KRİTİK: Native bağlantıyı ASLA kesme! Kotlin WebSocket arka planda çalışmaya devam eder.
+  // 3. ARKA PLAN YÖNETİMİ
   useAppState({
     onBackground: () => {
       console.log("📱 [useNativeRealtime] Arka plana geçildi. Native bağlantı KORUNUYOR.");
-      // Native bağlantıyı KESMİYORUZ - Kotlin Foreground Service devam ediyor
-      // Sadece log tutuyoruz
     },
     onForeground: async () => {
       console.log("▶️ [useNativeRealtime] Ön plana gelindi.");
       
-      // Eğer eski bir timer varsa temizle (artık kullanılmıyor ama güvenlik için)
       if (foregroundTimerRef.current) {
         clearTimeout(foregroundTimerRef.current);
         foregroundTimerRef.current = null;
       }
 
-      // 🆕 AGGRESSIVE RE-SUBSCRIPTION: JS kanallarını zorla yeniden bağla
+      // Aggressive re-subscription
       console.log("▶️ [useNativeRealtime] Foreground - aggressive re-subscription tetikleniyor...");
-      await forceResubscribe();
+      await resubscribeAllChannels();
     },
   });
 
-  // 6. Diğer yardımcı fonksiyonlar
-  // ⚠️ Subscribe fonksiyonu - unsubscribe DEVRE DIŞI
+  // 4. Subscribe fonksiyonu - GLOBAL REGISTRY'ye kaydeder
   const subscribe = useCallback(
-    (options: any) => {
-      const key = `${options.topic}:${options.table}`;
-      subscriptionsRef.current.set(key, options);
-      if (isNative) NativeRealtime?.subscribe(options);
-      // ⚠️ CLEANUP DEVRE DIŞI - unsubscribe bağlantıyı öldürüyordu
+    (options: SubscriptionInfo & { topic: string }) => {
+      const key = `${options.topic}:${options.table || 'broadcast'}`;
+      
+      // Global registry'ye ekle
+      addGlobalSubscription(key, options);
+      
+      // Hemen Kotlin'e de kaydet
+      if (isNative && NativeRealtime) {
+        NativeRealtime.subscribe({
+          topic: options.topic,
+          event: options.event || "*",
+          schema: options.schema || "public",
+          table: options.table,
+          filter: options.filter,
+        }).catch(e => console.log("[NativeRealtime] Subscribe hatası:", e));
+      }
+      
+      // Cleanup - subscription'ı kaldırma (bağlantı koruması)
       return () => {
         console.log(`⚠️ [useNativeRealtime] Unsubscribe ATLANYOR: ${options.topic} (bağlantı koruması)`);
-        // subscriptionsRef.current.delete(key); // Map'ten de silmeyelim - referans kaybolmasın
-        // ❌ DEVRE DIŞI: if (isNative) NativeRealtime?.unsubscribe({ topic: options.topic });
+        // NOT: Global registry'den silmiyoruz çünkü foreground'da lazım olacak
+        // Sadece component unmount olduğunda callback artık çalışmayacak
+        // Ama yeni component mount olduğunda yeni callback ile güncellenecek
       };
     },
     [isNative],
@@ -247,8 +289,8 @@ export function useNativeRealtime() {
 
   const broadcast = useCallback(
     async (topic: string, event: string, payload: any) => {
-      if (isNative) {
-        await NativeRealtime?.broadcast({ topic, event, payload: JSON.stringify(payload) });
+      if (isNative && NativeRealtime) {
+        await NativeRealtime.broadcast({ topic, event, payload: JSON.stringify(payload) });
       }
     },
     [isNative],
@@ -261,6 +303,6 @@ export function useNativeRealtime() {
     connect, 
     subscribe, 
     broadcast,
-    forceResubscribe // Export et ki diğer yerlerden de çağrılabilsin
+    forceResubscribe: resubscribeAllChannels
   };
 }

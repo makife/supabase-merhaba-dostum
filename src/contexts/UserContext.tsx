@@ -4,7 +4,8 @@ import { useAuth } from "./AuthContext";
 import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromStorage } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
-// 🔥 Basit yaklaşım - useAppResume kullanılacak (aşağıda)
+import { addGlobalSubscription, removeGlobalSubscription, resubscribeAllChannels } from "@/hooks/useNativeRealtime";
+// 🔥 Native platformda Kotlin WebSocket'e de kaydediyoruz
 
 interface OnlineUser {
   id: string;
@@ -989,69 +990,92 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     checkAndRefreshCredits();
   }, [user, isPremium]);
 
-  // ENHANCED Real-time profile subscription
+  // ENHANCED Real-time profile subscription + Native global registry
   useEffect(() => {
     if (!user) return;
 
     console.log("🔄 Setting up real-time profile subscription for user:", user.id);
     const lastUpdateRef = { timestamp: 0, data: "" };
 
+    // 🔥 Native platformda Kotlin WebSocket'e de kaydet
+    const handleProfileUpdate = (payload: any) => {
+      if (!payload?.new) return;
+
+      const now = Date.now();
+      const dataHash = JSON.stringify({
+        game_credits: payload.new.game_credits,
+        bonus_credits: payload.new.bonus_credits,
+        total_score: payload.new.total_score,
+        wins: payload.new.wins,
+        losses: payload.new.losses,
+        unlimited_lives_until: payload.new.unlimited_lives_until,
+        ink_count: payload.new.ink_count,
+      });
+
+      if (now - lastUpdateRef.timestamp < 2000 && dataHash === lastUpdateRef.data) {
+        console.log("🚫 Ignoring duplicate profile update (same data)");
+        return;
+      }
+
+      lastUpdateRef.timestamp = now;
+      lastUpdateRef.data = dataHash;
+
+      console.log("🎯 Profile updated via real-time:", payload.new);
+
+      const newProfile = {
+        ...(payload.new as UserProfile),
+        ink_count: payload.new.ink_count ?? 0,
+      };
+
+      console.log("📊 Profile stats updated:", {
+        total_score: newProfile.total_score,
+        wins: newProfile.wins,
+        losses: newProfile.losses,
+        game_credits: newProfile.game_credits,
+        bonus_credits: newProfile.bonus_credits,
+        ink_count: newProfile.ink_count,
+        unlimited_lives_until: payload.new.unlimited_lives_until,
+      });
+
+      setProfile(newProfile);
+      lastRefreshTimeRef.current = Date.now();
+
+      nativeStorage.setItem(
+        STORAGE_KEYS.CACHED_PROFILE,
+        JSON.stringify({
+          id: user.id,
+          data: newProfile,
+          timestamp: Date.now(),
+        }),
+      );
+    };
+
+    // 🔥🔥🔥 NATIVE GLOBAL SUBSCRIPTION - Kotlin WebSocket'e kaydet
+    if (isNative) {
+      const subscriptionKey = `profiles:${user.id}`;
+      addGlobalSubscription(subscriptionKey, {
+        topic: `realtime:public:profiles:id=eq.${user.id}`,
+        table: "profiles",
+        schema: "public",
+        event: "UPDATE",
+        filter: `id=eq.${user.id}`,
+        onMessage: (payload) => {
+          // Kotlin'den gelen mesajı işle
+          console.log("[UserContext] 📡 Kotlin'den profil güncellemesi:", payload);
+          handleProfileUpdate(payload);
+        },
+      });
+      console.log("[UserContext] ✅ Native global subscription kaydedildi:", subscriptionKey);
+    }
+
+    // JS SDK channel (Native'de çalışmayabilir ama yine de kur)
     const channel = supabase
       .channel(`profile-realtime-${user.id}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
         (payload) => {
-          if (!payload.new) return;
-
-          const now = Date.now();
-          const dataHash = JSON.stringify({
-            game_credits: (payload.new as any).game_credits,
-            bonus_credits: (payload.new as any).bonus_credits,
-            total_score: (payload.new as any).total_score,
-            wins: (payload.new as any).wins,
-            losses: (payload.new as any).losses,
-            unlimited_lives_until: (payload.new as any).unlimited_lives_until,
-            ink_count: (payload.new as any).ink_count,
-          });
-
-          if (now - lastUpdateRef.timestamp < 2000 && dataHash === lastUpdateRef.data) {
-            console.log("🚫 Ignoring duplicate profile update (same data)");
-            return;
-          }
-
-          lastUpdateRef.timestamp = now;
-          lastUpdateRef.data = dataHash;
-
-          console.log("🎯 Profile updated via real-time:", payload.new);
-
-          const newProfile = {
-            ...(payload.new as UserProfile),
-            ink_count: (payload.new as any).ink_count ?? 0,
-          };
-
-          console.log("📊 Profile stats updated:", {
-            total_score: newProfile.total_score,
-            wins: newProfile.wins,
-            losses: newProfile.losses,
-            game_credits: newProfile.game_credits,
-            bonus_credits: newProfile.bonus_credits,
-            ink_count: newProfile.ink_count,
-            unlimited_lives_until: (payload.new as any).unlimited_lives_until,
-          });
-
-          setProfile(newProfile);
-          // Realtime'dan gelince de zaman damgasını güncelle ki manuel refresh çakışmasın
-          lastRefreshTimeRef.current = Date.now();
-
-          nativeStorage.setItem(
-            STORAGE_KEYS.CACHED_PROFILE,
-            JSON.stringify({
-              id: user.id,
-              data: newProfile,
-              timestamp: Date.now(),
-            }),
-          );
+          handleProfileUpdate(payload);
         },
       )
       .subscribe((status) => {
@@ -1087,8 +1111,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return () => {
       console.log("⚠️ [UserContext] Profile cleanup ATLANYOR (bağlantı koruması)");
       document.removeEventListener("visibilitychange", handleVisibility);
+      // Native subscription'ı silme - bağlantı koruması
+      // if (isNative) removeGlobalSubscription(`profiles:${user.id}`);
     };
-  }, [user]);
+  }, [user, isNative]);
 
   return (
     <UserContext.Provider
