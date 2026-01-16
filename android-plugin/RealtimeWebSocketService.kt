@@ -90,6 +90,18 @@ class RealtimeWebSocketService : Service() {
     // Disconnect timer
     private var disconnectRunnable: Runnable? = null
 
+    // 🆕 MESSAGE BUFFER - Arka plandayken mesajları biriktir
+    private var isAppInForeground = true
+    private val messageBuffer = mutableListOf<BufferedMessage>()
+    private val MAX_BUFFER_SIZE = 100
+
+    data class BufferedMessage(
+        val topic: String,
+        val event: String,
+        val payload: String,
+        val timestamp: Long = System.currentTimeMillis()
+    )
+
     data class ChannelSubscription(
         val topic: String,
         val event: String,
@@ -233,6 +245,40 @@ class RealtimeWebSocketService : Service() {
             sendJoinMessage(sub)
         }
     }
+
+    // 🆕 App ön plana/arka plana geçişi
+    fun setAppForegroundState(inForeground: Boolean) {
+        val wasInBackground = !isAppInForeground
+        isAppInForeground = inForeground
+        
+        Log.d(TAG, "📱 App foreground state: $inForeground (buffer size: ${messageBuffer.size})")
+        
+        // Ön plana gelince buffer'daki mesajları gönder
+        if (inForeground && wasInBackground && messageBuffer.isNotEmpty()) {
+            flushBufferedMessages()
+        }
+    }
+
+    // 🆕 Buffer'daki mesajları JS'e gönder
+    private fun flushBufferedMessages() {
+        Log.d(TAG, "📬 Buffer flush başlıyor, ${messageBuffer.size} mesaj")
+        
+        val messagesToSend = synchronized(messageBuffer) {
+            val copy = messageBuffer.toList()
+            messageBuffer.clear()
+            copy
+        }
+        
+        messagesToSend.forEach { msg ->
+            Log.d(TAG, "📬 Buffered mesaj gönderiliyor: ${msg.topic} / ${msg.event}")
+            messageCallback?.invoke(msg.topic, msg.event, msg.payload)
+        }
+        
+        Log.d(TAG, "📬 Buffer flush tamamlandı, ${messagesToSend.size} mesaj gönderildi")
+    }
+
+    // 🆕 Buffered mesaj sayısını al
+    fun getBufferedMessageCount(): Int = messageBuffer.size
 
     fun subscribe(topic: String, event: String, schema: String = "public", table: String = "*", filter: String? = null) {
         val subscription = ChannelSubscription(topic, event, schema, table, filter)
@@ -423,18 +469,39 @@ class RealtimeWebSocketService : Service() {
     }
 
     private fun handlePostgresChanges(topic: String, payload: JSONObject) {
-        Log.d(TAG, "📊 Postgres changes: $topic")
-        messageCallback?.invoke(topic, "postgres_changes", payload.toString())
+        Log.d(TAG, "📊 Postgres changes: $topic (foreground: $isAppInForeground)")
+        deliverOrBufferMessage(topic, "postgres_changes", payload.toString())
     }
 
     private fun handleBroadcast(topic: String, payload: JSONObject) {
-        Log.d(TAG, "📢 Broadcast alındı: $topic")
-        messageCallback?.invoke(topic, "broadcast", payload.toString())
+        Log.d(TAG, "📢 Broadcast alındı: $topic (foreground: $isAppInForeground)")
+        deliverOrBufferMessage(topic, "broadcast", payload.toString())
     }
 
     private fun handlePresence(topic: String, type: String, payload: JSONObject) {
-        Log.d(TAG, "👥 Presence $type: $topic")
-        messageCallback?.invoke(topic, "presence_$type", payload.toString())
+        Log.d(TAG, "👥 Presence $type: $topic (foreground: $isAppInForeground)")
+        deliverOrBufferMessage(topic, "presence_$type", payload.toString())
+    }
+
+    // 🆕 Mesajı ya ilet ya da buffer'la
+    private fun deliverOrBufferMessage(topic: String, event: String, payload: String) {
+        if (isAppInForeground) {
+            // Ön plandayız, direkt ilet
+            messageCallback?.invoke(topic, event, payload)
+        } else {
+            // Arka plandayız, buffer'la
+            synchronized(messageBuffer) {
+                if (messageBuffer.size < MAX_BUFFER_SIZE) {
+                    messageBuffer.add(BufferedMessage(topic, event, payload))
+                    Log.d(TAG, "📦 Mesaj buffer'landı: $topic / $event (total: ${messageBuffer.size})")
+                } else {
+                    // Buffer dolu, en eski mesajı at
+                    messageBuffer.removeAt(0)
+                    messageBuffer.add(BufferedMessage(topic, event, payload))
+                    Log.w(TAG, "⚠️ Buffer dolu, eski mesaj atıldı")
+                }
+            }
+        }
     }
 
     private fun handleDisconnect(reason: String) {

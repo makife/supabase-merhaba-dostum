@@ -8,15 +8,7 @@ import {
 } from "@/plugins/NativeRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppState } from "@/hooks/useAppState";
-import {
-  getLastRoomId,
-  getLastChatId,
-  getLastMatchId,
-  addBufferedMessage,
-  getBufferedMessages,
-  clearBufferedMessages,
-  setConnectionState,
-} from "@/utils/persistentState";
+import { setConnectionState } from "@/utils/persistentState";
 
 // Sabitler
 const SUPABASE_URL = "https://nnlvtqmuwmrqfinsgvwc.supabase.co";
@@ -75,6 +67,7 @@ export function removeGlobalSubscription(key: string) {
 }
 
 // 🆕 Tüm subscription'ları yeniden oluştur (foreground'a dönüşte çağrılır)
+// NOT: Artık Kotlin tarafında mesaj buffering var, bu fonksiyon sadece bağlantı kontrolü yapar
 export async function resubscribeAllChannels() {
   if (!isNativeRealtimeAvailable() || !NativeRealtime) return;
   
@@ -84,13 +77,13 @@ export async function resubscribeAllChannels() {
   }
   
   isReconnecting = true;
-  console.log(`[NativeRealtime] 🔄 Global resubscribe başlıyor, toplam: ${globalSubscriptions.size}`);
+  console.log(`[NativeRealtime] 🔄 Foreground sync başlıyor, ${globalSubscriptions.size} kanal kayıtlı`);
   
   try {
     // Token al
     const { data } = await supabase.auth.getSession();
     if (!data?.session?.access_token) {
-      console.log("[NativeRealtime] ⚠️ Session yok, resubscribe atlanıyor");
+      console.log("[NativeRealtime] ⚠️ Session yok, sync atlanıyor");
       return;
     }
     
@@ -110,54 +103,41 @@ export async function resubscribeAllChannels() {
       
       // Bağlantı kurulmasını bekle
       await new Promise((r) => setTimeout(r, 800));
+      
+      // Yeniden bağlandıysak subscription'ları da yenile
+      for (const [key, sub] of globalSubscriptions.entries()) {
+        console.log(`[NativeRealtime] 🔄 Re-subscribing (reconnect): ${key}`);
+        try {
+          await NativeRealtime.subscribe({
+            topic: sub.topic,
+            event: sub.event || "*",
+            schema: sub.schema || "public",
+            table: sub.table,
+            filter: sub.filter,
+          });
+          console.log(`[NativeRealtime] ✅ Re-subscribed: ${key}`);
+        } catch (e) {
+          console.log(`[NativeRealtime] ⚠️ Re-subscribe hatası: ${key}`, e);
+        }
+      }
     }
     
     // Token'ı güncelle (önemli!)
     await NativeRealtime.setAccessToken({ token: data.session.access_token });
     console.log("[NativeRealtime] 🔑 Token güncellendi");
     
-    // Tüm subscription'ları yeniden oluştur
-    for (const [key, sub] of globalSubscriptions.entries()) {
-      console.log(`[NativeRealtime] 🔄 Re-subscribing: ${key}`);
-      try {
-        await NativeRealtime.subscribe({
-          topic: sub.topic,
-          event: sub.event || "*",
-          schema: sub.schema || "public",
-          table: sub.table,
-          filter: sub.filter,
-        });
-        console.log(`[NativeRealtime] ✅ Re-subscribed: ${key}`);
-      } catch (e) {
-        console.log(`[NativeRealtime] ⚠️ Re-subscribe hatası: ${key}`, e);
-      }
+    // 🆕 Buffer durumunu kontrol et - artık Kotlin tarafında buffer var
+    try {
+      const bufferResult = await NativeRealtime.getBufferedMessageCount();
+      console.log(`[NativeRealtime] 📦 Kotlin buffer durumu: ${bufferResult.count} mesaj`);
+    } catch (e) {
+      // Eski Kotlin versiyonu olabilir
     }
     
-    // Buffered mesajları enjekte et
-    const bufferedMessages = await getBufferedMessages();
-    if (bufferedMessages.length > 0) {
-      console.log("[NativeRealtime] 📦 Buffered mesajlar enjekte ediliyor:", bufferedMessages.length);
-      
-      for (const msg of bufferedMessages) {
-        messageListeners.forEach((listener) => {
-          listener(msg.topic, msg.payload);
-        });
-        
-        // Global subscription callback'lerini de çağır
-        globalSubscriptions.forEach((sub) => {
-          if (msg.topic === sub.topic || msg.topic.includes(sub.table || "")) {
-            sub.onMessage(msg.payload);
-          }
-        });
-      }
-      
-      await clearBufferedMessages();
-    }
-    
-    console.log(`[NativeRealtime] ✅ Resubscribe tamamlandı, ${globalSubscriptions.size} kanal aktif`);
+    console.log(`[NativeRealtime] ✅ Foreground sync tamamlandı, ${globalSubscriptions.size} kanal aktif`);
     
   } catch (e) {
-    console.error("[NativeRealtime] ❌ Resubscribe hatası:", e);
+    console.error("[NativeRealtime] ❌ Foreground sync hatası:", e);
   } finally {
     isReconnecting = false;
   }

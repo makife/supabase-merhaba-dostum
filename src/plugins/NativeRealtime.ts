@@ -1,10 +1,11 @@
 import { registerPlugin, PluginListenerHandle, Capacitor } from "@capacitor/core";
 
 /**
- * Native Realtime Plugin Interface - Basitleştirilmiş
+ * Native Realtime Plugin Interface
  * 
- * NOT: enterForegroundMode/enterBackgroundMode kaldırıldı.
- * Yeni sistem: Silent Push Notification ile arka planda canlı tutma.
+ * Kotlin tarafında mesaj buffering destekler:
+ * - Arka plandayken mesajlar buffer'lanır
+ * - Ön plana dönünce buffer'daki mesajlar JS'e gönderilir
  */
 export interface NativeRealtimePlugin {
   connect(options: {
@@ -30,6 +31,16 @@ export interface NativeRealtimePlugin {
   getConnectionState(): Promise<{ state: string; isConnected: boolean }>;
 
   setAccessToken(options: { token: string }): Promise<{ success: boolean }>;
+
+  // 🆕 App foreground/background durumunu Kotlin'e bildir
+  setAppForegroundState(options: { inForeground: boolean }): Promise<{ 
+    success: boolean; 
+    inForeground: boolean;
+    bufferedMessages: number;
+  }>;
+
+  // 🆕 Buffer'daki mesaj sayısını al
+  getBufferedMessageCount(): Promise<{ count: number }>;
 
   addListener(
     eventName: "realtimeMessage",
