@@ -72,37 +72,40 @@ const SettingsPage = () => {
 
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-      setNotifications(settings.notifications ?? false);
-      setLanguage(settings.language ?? "tr");
+        setNotifications(settings.notifications ?? false);
+        setLanguage(settings.language ?? "tr");
 
-      // Store initial settings for comparison
-      initialSettingsRef.current = {
-        notifications: settings.notifications ?? false,
-        sounds: soundsEnabled,
-        music: musicEnabled,
-        theme,
-        language: settings.language ?? "tr",
-      };
-    } else if (permissionsCompleted && isPermissionGranted) {
-      // Eğer izin onboarding'i tamamlanmışsa ve izin verildiyse, notifications'ı true yap
-      setNotifications(true);
-      initialSettingsRef.current = {
-        notifications: true,
-        sounds: soundsEnabled,
-        music: musicEnabled,
-        theme,
-        language: "tr",
-      };
-    } else {
-      // Store initial settings even if no saved settings exist
-      initialSettingsRef.current = {
-        notifications: false,
-        sounds: soundsEnabled,
-        music: musicEnabled,
-        theme,
-        language: "tr",
-      };
-    }
+        // Store initial settings for comparison
+        initialSettingsRef.current = {
+          notifications: settings.notifications ?? false,
+          sounds: soundsEnabled,
+          music: musicEnabled,
+          theme,
+          language: settings.language ?? "tr",
+        };
+      } else if (permissionsCompleted && isPermissionGranted) {
+        // Eğer izin onboarding'i tamamlanmışsa ve izin verildiyse, notifications'ı true yap
+        setNotifications(true);
+        initialSettingsRef.current = {
+          notifications: true,
+          sounds: soundsEnabled,
+          music: musicEnabled,
+          theme,
+          language: "tr",
+        };
+      } else {
+        // Store initial settings even if no saved settings exist
+        initialSettingsRef.current = {
+          notifications: false,
+          sounds: soundsEnabled,
+          music: musicEnabled,
+          theme,
+          language: "tr",
+        };
+      }
+    };
+    
+    loadSettings();
   }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
   // Auto-save when settings change

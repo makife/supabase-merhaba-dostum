@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw } from "lucide-react";
+import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -348,8 +349,9 @@ const MarketPage = () => {
 
   const handleWatchAd = async () => {
     const today = new Date().toDateString();
-    const storedDate = localStorage.getItem("lastAdDate");
-    const storedCount = parseInt(localStorage.getItem("adCount") || "0");
+    const storedDate = await nativeStorage.getItem(STORAGE_KEYS.LAST_AD_DATE);
+    const storedCountStr = await nativeStorage.getItem(STORAGE_KEYS.AD_COUNT);
+    const storedCount = parseInt(storedCountStr || "0");
 
     if (storedDate === today && storedCount >= 5) {
       toast({
@@ -371,10 +373,10 @@ const MarketPage = () => {
       await showRewardedAd();
 
       if (storedDate !== today) {
-        localStorage.setItem("lastAdDate", today);
-        localStorage.setItem("adCount", "1");
+        await nativeStorage.setItem(STORAGE_KEYS.LAST_AD_DATE, today);
+        await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, "1");
       } else {
-        localStorage.setItem("adCount", (storedCount + 1).toString());
+        await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, (storedCount + 1).toString());
       }
     } catch (e) {
       console.error("Reklam hatası:", e);

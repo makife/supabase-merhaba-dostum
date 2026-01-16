@@ -54,6 +54,7 @@ import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
+import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -1831,8 +1832,8 @@ const GamePage = ({
       const finalOpponentScore = isPlayer1 ? updatedMatch.player2_score : updatedMatch.player1_score;
 
       // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
-      const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
-      localStorage.setItem(
+      const completedMatchKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${tournamentMatch.id}`;
+      nativeStorage.setItem(
         completedMatchKey,
         JSON.stringify({
           matchId: tournamentMatch.id,
@@ -2937,8 +2938,8 @@ const GamePage = ({
 
       if (matchId) {
         // 🛡️ TURNUVA MAÇI KORUMASI: Bu maç daha önce tamamlandıysa tekrar oynama
-        const completedKey = `tournament_match_completed_${matchId}`;
-        const completed = localStorage.getItem(completedKey);
+        const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${matchId}`;
+        const completed = await nativeStorage.getItem(completedKey);
         if (completed) {
           const data = JSON.parse(completed);
           console.warn("⚠️ Bu turnuva maçı zaten tamamlanmış:", data);
