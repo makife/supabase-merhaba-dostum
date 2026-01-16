@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAppState } from "@/hooks/useAppState";
-
+import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 interface MusicContextType {
   isPlaying: boolean;
   musicEnabled: boolean;
@@ -129,9 +129,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load settings on mount
   useEffect(() => {
-    const loadSettings = () => {
+    const loadSettings = async () => {
       try {
-        const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
+        const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+        const settings = settingsStr ? JSON.parse(settingsStr) : {};
         setMusicEnabledState(settings.music ?? true);
         setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
@@ -329,14 +330,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const setMusicEnabled = (enabled: boolean) => {
+  const setMusicEnabled = async (enabled: boolean) => {
     setMusicEnabledState(enabled);
 
-    // Save to localStorage
-    const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
-    settings.music = enabled;
-    localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
-    window.dispatchEvent(new Event("settingsChanged"));
+    // Save to native storage
+    try {
+      const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const settings = settingsStr ? JSON.parse(settingsStr) : {};
+      settings.music = enabled;
+      await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      window.dispatchEvent(new Event("settingsChanged"));
+    } catch (e) {
+      console.warn("Failed to save music setting:", e);
+    }
 
     // Control music based on setting
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
@@ -361,7 +367,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const setMusicPack = (pack: string) => {
+  const setMusicPack = async (pack: string) => {
     const wasPlaying = backgroundMusicRef.current && !backgroundMusicRef.current.paused;
 
     // Stop current music if playing
@@ -371,11 +377,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setMusicPackState(pack);
 
-    // Save to localStorage
-    const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
-    settings.musicPack = pack;
-    localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
-    window.dispatchEvent(new Event("settingsChanged"));
+    // Save to native storage
+    try {
+      const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const settings = settingsStr ? JSON.parse(settingsStr) : {};
+      settings.musicPack = pack;
+      await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      window.dispatchEvent(new Event("settingsChanged"));
+    } catch (e) {
+      console.warn("Failed to save music pack setting:", e);
+    }
 
     // Restart music with new pack if it was playing and music is enabled
     if (wasPlaying && musicEnabled) {

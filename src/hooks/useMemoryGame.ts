@@ -1,46 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { nativeStorage, STORAGE_KEYS } from '@/utils/nativeStorage';
+
+interface MemoryGameCache {
+  canPlay: boolean;
+  timeUntilNextPlay: string;
+  lastCheck: number;
+}
 
 export const useMemoryGame = () => {
   const { user } = useAuth();
-  
-  // Başlangıçta localStorage'dan oku
-  const [canPlay, setCanPlay] = useState(() => {
-    if (!user) return true;
-    const cached = localStorage.getItem(`memoryGame_${user.id}`);
-    return cached ? JSON.parse(cached).canPlay : true;
-  });
-  
-  const [timeUntilNextPlay, setTimeUntilNextPlay] = useState<string>(() => {
-    if (!user) return '';
-    const cached = localStorage.getItem(`memoryGame_${user.id}`);
-    return cached ? JSON.parse(cached).timeUntilNextPlay || '' : '';
-  });
-  
+  const [canPlay, setCanPlay] = useState(true);
+  const [timeUntilNextPlay, setTimeUntilNextPlay] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Cache'e kaydet
-  const saveToCache = (canPlayValue: boolean, timeValue: string = '') => {
-    if (user) {
-      localStorage.setItem(`memoryGame_${user.id}`, JSON.stringify({
-        canPlay: canPlayValue,
-        timeUntilNextPlay: timeValue,
-        lastCheck: Date.now()
-      }));
-    }
+  // Cache key oluştur
+  const getCacheKey = () => `${STORAGE_KEYS.MEMORY_GAME_PREFIX}${user?.id}`;
+
+  // Cache'e kaydet (async)
+  const saveToCache = async (canPlayValue: boolean, timeValue: string = '') => {
+    if (!user) return;
+    
+    const cacheData: MemoryGameCache = {
+      canPlay: canPlayValue,
+      timeUntilNextPlay: timeValue,
+      lastCheck: Date.now()
+    };
+    
+    await nativeStorage.setJSON(getCacheKey(), cacheData);
   };
 
-  // Cache'den oku
-  const loadFromCache = () => {
+  // Cache'den oku (async)
+  const loadFromCache = async (): Promise<MemoryGameCache | null> => {
     if (!user) return null;
     
-    const cached = localStorage.getItem(`memoryGame_${user.id}`);
-    if (!cached) return null;
-    
     try {
-      const data = JSON.parse(cached);
+      const data = await nativeStorage.getJSON<MemoryGameCache>(getCacheKey());
+      if (!data) return null;
+      
       const now = Date.now();
       const lastCheck = data.lastCheck || 0;
       
@@ -62,8 +62,8 @@ export const useMemoryGame = () => {
       return;
     }
 
-    // Önce cache'e bak
-    const cached = loadFromCache();
+    // Önce cache'e bak (async)
+    const cached = await loadFromCache();
     if (cached) {
       setCanPlay(cached.canPlay);
       setTimeUntilNextPlay(cached.timeUntilNextPlay || '');
@@ -98,7 +98,7 @@ export const useMemoryGame = () => {
       if (error) {
         console.error('Memory game check error:', error);
         setCanPlay(true);
-        saveToCache(true, '');
+        await saveToCache(true, '');
         setLoading(false);
         return;
       }
@@ -111,34 +111,34 @@ export const useMemoryGame = () => {
         if (now >= nextPlayTime) {
           setCanPlay(true);
           setTimeUntilNextPlay('');
-          saveToCache(true, '');
+          await saveToCache(true, '');
         } else {
           setCanPlay(false);
-          calculateTimeUntilNextPlay(nextPlayTime);
+          await calculateTimeUntilNextPlay(nextPlayTime);
         }
       } else {
         setCanPlay(true);
         setTimeUntilNextPlay('');
-        saveToCache(true, '');
+        await saveToCache(true, '');
       }
     } catch (error) {
       console.error('Memory game check error:', error);
       setCanPlay(true);
-      saveToCache(true, '');
+      await saveToCache(true, '');
     }
     
     setLoading(false);
   };
 
   // Kalan süreyi hesapla
-  const calculateTimeUntilNextPlay = (nextPlayTime: Date) => {
+  const calculateTimeUntilNextPlay = async (nextPlayTime: Date) => {
     const now = new Date();
     const timeDiff = nextPlayTime.getTime() - now.getTime();
     
     if (timeDiff <= 0) {
       setCanPlay(true);
       setTimeUntilNextPlay('');
-      saveToCache(true, '');
+      await saveToCache(true, '');
       return;
     }
 
@@ -147,7 +147,7 @@ export const useMemoryGame = () => {
     
     const timeString = `${hours}s ${minutes}d`;
     setTimeUntilNextPlay(timeString);
-    saveToCache(false, timeString);
+    await saveToCache(false, timeString);
   };
 
   // Oyun tamamlandığında sadece kayıt tut (joker yok)
@@ -181,7 +181,7 @@ export const useMemoryGame = () => {
       // Kalan süreyi hesapla
       const nextPlayTime = new Date();
       nextPlayTime.setHours(nextPlayTime.getHours() + 24);
-      calculateTimeUntilNextPlay(nextPlayTime);
+      await calculateTimeUntilNextPlay(nextPlayTime);
 
       return true;
     } catch (error) {
@@ -192,21 +192,27 @@ export const useMemoryGame = () => {
 
   // Timer effect
   useEffect(() => {
-    if (user) {
+    if (user && !initializedRef.current) {
+      initializedRef.current = true;
       checkCanPlay();
-      
-      const interval = setInterval(() => {
-        if (!canPlay && timeUntilNextPlay) {
-          const cached = loadFromCache();
-          if (cached && !cached.canPlay) {
-            checkCanPlayFromAPI();
-          }
-        }
-      }, 60000);
-
-      return () => clearInterval(interval);
     }
   }, [user]);
+
+  // Periyodik kontrol
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(async () => {
+      if (!canPlay && timeUntilNextPlay) {
+        const cached = await loadFromCache();
+        if (cached && !cached.canPlay) {
+          checkCanPlayFromAPI();
+        }
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [user, canPlay, timeUntilNextPlay]);
 
   return {
     canPlay,
