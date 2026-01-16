@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
-import com.getcapacitor.JSArray
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -14,27 +13,13 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 /**
- * Native Realtime Plugin - MESSAGE QUEUE DESTEKLİ
+ * Native Realtime Plugin - Basitleştirilmiş Versiyon
  * 
  * Supabase Realtime bağlantısını native Kotlin tarafında yönetir.
  * WebView'den bağımsız çalışır, arka planda bile bağlantı kopmaz.
  * 
- * 🔥 YENİ ÖZELLİK: MESSAGE QUEUE
- * - JS arka plana geçince enterBackgroundMode() çağrılır
- * - Kotlin mesajları queue'ya ekler (kaybetmez!)
- * - JS ön plana gelince enterForegroundMode() çağrılır
- * - Queue'daki tüm mesajlar JS'e gönderilir
- * 
- * Kullanım (JS tarafı):
- * ```
- * import { NativeRealtime } from './plugins/NativeRealtime';
- * 
- * // Arka plana geçerken
- * await NativeRealtime.enterBackgroundMode();
- * 
- * // Ön plana gelince
- * await NativeRealtime.enterForegroundMode(); // Queue'daki mesajlar otomatik gelir
- * ```
+ * NOT: Message Queue ve WebView Keep-Alive kaldırıldı.
+ * Yeni sistem: Silent Push Notification ile arka planda canlı tutma.
  */
 @CapacitorPlugin(name = "NativeRealtime")
 class NativeRealtimePlugin : Plugin() {
@@ -151,94 +136,6 @@ class NativeRealtimePlugin : Plugin() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Disconnect hatası", e)
             call.reject("Disconnect hatası: ${e.message}")
-        }
-    }
-
-    /**
-     * 🔥 YENİ: JS ön plana geldiğinde çağır
-     * Queue'daki mesajlar otomatik olarak JS'e gönderilir
-     */
-    @PluginMethod
-    fun enterForegroundMode(call: PluginCall) {
-        Log.d(TAG, "▶️ JS Foreground Mode")
-        
-        try {
-            realtimeService?.enterForegroundMode()
-            call.resolve(JSObject().apply {
-                put("success", true)
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ enterForegroundMode hatası", e)
-            call.reject("Foreground mode hatası: ${e.message}")
-        }
-    }
-
-    /**
-     * 🔥 YENİ: JS arka plana geçtiğinde çağır
-     * Mesajlar queue'ya eklenmeye başlar
-     */
-    @PluginMethod
-    fun enterBackgroundMode(call: PluginCall) {
-        Log.d(TAG, "⏸️ JS Background Mode")
-        
-        try {
-            realtimeService?.enterBackgroundMode()
-            call.resolve(JSObject().apply {
-                put("success", true)
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ enterBackgroundMode hatası", e)
-            call.reject("Background mode hatası: ${e.message}")
-        }
-    }
-
-    /**
-     * 🔥 YENİ: Queue'daki mesajları manuel al (opsiyonel)
-     */
-    @PluginMethod
-    fun getQueuedMessages(call: PluginCall) {
-        Log.d(TAG, "📬 Queued messages isteniyor...")
-        
-        try {
-            val messages = realtimeService?.getQueuedMessages() ?: emptyList()
-            
-            val messagesArray = JSArray()
-            messages.forEach { msg ->
-                val msgObj = JSObject().apply {
-                    put("topic", msg.topic)
-                    put("event", msg.event)
-                    put("payload", msg.payload)
-                    put("timestamp", msg.timestamp)
-                }
-                messagesArray.put(msgObj)
-            }
-            
-            call.resolve(JSObject().apply {
-                put("success", true)
-                put("messages", messagesArray)
-                put("count", messages.size)
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ getQueuedMessages hatası", e)
-            call.reject("Queue mesajları alınamadı: ${e.message}")
-        }
-    }
-
-    /**
-     * 🔥 YENİ: Queue'yu temizle
-     */
-    @PluginMethod
-    fun clearMessageQueue(call: PluginCall) {
-        Log.d(TAG, "🗑️ Message queue temizleniyor...")
-        
-        try {
-            realtimeService?.clearMessageQueue()
-            call.resolve(JSObject().apply {
-                put("success", true)
-            })
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ clearMessageQueue hatası", e)
-            call.reject("Queue temizlenemedi: ${e.message}")
         }
     }
 

@@ -1,7 +1,10 @@
 import { registerPlugin, PluginListenerHandle, Capacitor } from "@capacitor/core";
 
 /**
- * Native Realtime Plugin Interface
+ * Native Realtime Plugin Interface - Basitleştirilmiş
+ * 
+ * NOT: enterForegroundMode/enterBackgroundMode kaldırıldı.
+ * Yeni sistem: Silent Push Notification ile arka planda canlı tutma.
  */
 export interface NativeRealtimePlugin {
   connect(options: {
@@ -11,9 +14,6 @@ export interface NativeRealtimePlugin {
   }): Promise<{ success: boolean; message?: string }>;
 
   disconnect(): Promise<{ success: boolean }>;
-
-  enterForegroundMode(): Promise<void>;
-  enterBackgroundMode(): Promise<void>;
 
   subscribe(options: {
     topic: string;
@@ -41,11 +41,6 @@ export interface NativeRealtimePlugin {
     listenerFunc: (data: ConnectionStateEvent) => void,
   ): Promise<PluginListenerHandle>;
 
-  addListener(
-    eventName: "sessionRestored",
-    listenerFunc: (data: SessionRestoredEvent) => void,
-  ): Promise<PluginListenerHandle>;
-
   removeAllListeners(): Promise<void>;
 }
 
@@ -60,30 +55,15 @@ export interface ConnectionStateEvent {
   reason?: string;
 }
 
-export interface SessionRestoredEvent {
-  accessToken: string;
-  apiKey: string;
-  url: string;
-  restored: boolean;
-}
-
-// 1. Plugin'i kaydet (Sadece tek bir isimde tutuyoruz)
+// Plugin'i kaydet
 const NativeRealtimeImpl = registerPlugin<NativeRealtimePlugin>("NativeRealtime", {
   web: undefined,
 });
 
-/**
- * 2. KRİTİK: Hem Lovable'ı susturuyoruz hem de çakışmayı önlüyoruz.
- * NativeRealtime isminden sadece BİR TANE var artık.
- */
 export const NativeRealtime = (Capacitor.isNativePlatform() ? NativeRealtimeImpl : null) as any as NativeRealtimePlugin;
 
-/**
- * Native Realtime kullanılabilir mi kontrolü
- */
 export const isNativeRealtimeAvailable = (): boolean => {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 };
 
-// 3. Varsayılan export
 export default NativeRealtime;

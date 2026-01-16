@@ -116,34 +116,15 @@ const AppRoutes = () => {
     const initializeApp = async () => {
       if (!Capacitor.isNativePlatform()) return;
       
-      // 🔥 FOREGROUND SERVICE - NON-BLOCKING! (App başlamasını bloke etmemeli)
-      // Fire-and-forget pattern - hata olsa bile app çalışmaya devam etmeli
-      import("@/utils/backgroundServiceManager")
-        .then(async ({ BackgroundServiceManager }) => {
-          console.log("🔔 App: Foreground Service başlatılıyor...");
-          // Timeout ile sarmalayarak sonsuz beklemeyi önle
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("FS init timeout")), 5000)
-          );
-          
-          try {
-            await Promise.race([BackgroundServiceManager.init(), timeoutPromise]);
-            console.log("✅ App: Foreground Service başlatıldı!");
-          } catch (e) {
-            console.warn("[App] FS init timeout/hata (tolere edildi):", e);
-          }
-          
-          // 🔥 KRİTİK: FS init tamamlandıktan SONRA listener'ı başlat ve aktif et!
-          try {
-            const { initAppStateListener, markListenerReady } = await import("@/hooks/useAppForegroundState");
-            initAppStateListener(); // Önce listener'ı kur
-            markListenerReady();    // Sonra hazır işaretle
-            console.log("✅ App: AppState Listener başlatıldı ve hazır!");
-          } catch (e) {
-            console.warn("[App] AppState listener hatası:", e);
-          }
-        })
-        .catch((e) => console.warn("[App] FS import hatası (tolere edildi):", e));
+      // 🔥 App State Listener'ı başlat
+      try {
+        const { initAppStateListener, markListenerReady } = await import("@/hooks/useAppForegroundState");
+        initAppStateListener(); // Önce listener'ı kur
+        markListenerReady();    // Sonra hazır işaretle
+        console.log("✅ App: AppState Listener başlatıldı ve hazır!");
+      } catch (e) {
+        console.warn("[App] AppState listener hatası:", e);
+      }
       
       try {
         // 🔊 Native Audio'yu başlat
