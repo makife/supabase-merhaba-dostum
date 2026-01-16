@@ -25,6 +25,7 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
+import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -363,9 +364,9 @@ const TournamentBracketPage = () => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
-    const navigateToMatch = (match: any, source: string) => {
-      const completedKey = `tournament_match_completed_${match.id}`;
-      const isLocallyCompleted = localStorage.getItem(completedKey);
+    const navigateToMatch = async (match: any, source: string) => {
+      const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${match.id}`;
+      const isLocallyCompleted = await nativeStorage.getItem(completedKey);
 
       if (isLocallyCompleted) return false;
       if (match.status === "completed") return false;

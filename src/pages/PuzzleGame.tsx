@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Timer, RotateCcw, Trophy, ArrowLeft, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 interface GameState {
   board: number[];
@@ -160,13 +161,14 @@ const PuzzleGamePage: React.FC = () => {
       return value === i + 1;
     });
 
-    if (isSolved) {
+      if (isSolved) {
       const finalTime = (gameState.difficulty === 3 ? 120 : 180) - gameState.timeLeft;
       const currentBest = bestTimes[gameState.difficulty];
 
       if (!currentBest || finalTime < currentBest) {
         setBestTimes((prev) => ({ ...prev, [gameState.difficulty]: finalTime }));
-        localStorage.setItem(`bestTime${gameState.difficulty}`, finalTime.toString());
+        // Native storage'a kaydet
+        nativeStorage.setItem(`${STORAGE_KEYS.PUZZLE_BEST_TIME_PREFIX}${gameState.difficulty}`, finalTime.toString());
       }
 
       setGameState((prev) => ({
@@ -203,14 +205,17 @@ const PuzzleGamePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [gameState.isRunning, gameState.timeLeft]);
 
-  // Load best times from localStorage
+  // Load best times from native storage
   useEffect(() => {
-    const best3 = localStorage.getItem("bestTime3");
-    const best4 = localStorage.getItem("bestTime4");
-    setBestTimes({
-      3: best3 ? parseInt(best3) : null,
-      4: best4 ? parseInt(best4) : null,
-    });
+    const loadBestTimes = async () => {
+      const best3 = await nativeStorage.getItem(`${STORAGE_KEYS.PUZZLE_BEST_TIME_PREFIX}3`);
+      const best4 = await nativeStorage.getItem(`${STORAGE_KEYS.PUZZLE_BEST_TIME_PREFIX}4`);
+      setBestTimes({
+        3: best3 ? parseInt(best3) : null,
+        4: best4 ? parseInt(best4) : null,
+      });
+    };
+    loadBestTimes();
   }, []);
 
   const formatTime = (seconds: number) => {
