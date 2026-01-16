@@ -5,7 +5,6 @@ import {
   isNativeRealtimeAvailable,
   RealtimeMessageEvent,
   ConnectionStateEvent,
-  SessionRestoredEvent,
 } from "@/plugins/NativeRealtime";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppState } from "@/hooks/useAppState";
@@ -46,25 +45,7 @@ export function useNativeRealtime() {
     if (!isNative || !NativeRealtime) return;
 
     const setupListeners = async () => {
-      // 🔥 KRİTİK: sessionRestored eventi - Misafir modundan kurtarma
-      // Bu event Kotlin'den geliyor - Native WebSocket bağlandığında
-      await NativeRealtime.addListener("sessionRestored", async (data: any) => {
-        console.log("[NativeRealtime] 🔐 SESSION RESTORED eventi alındı!", data);
-        
-        if (data.restored && data.accessToken) {
-          // 🔥 Sadece event dispatch et - useSessionRecovery dinleyecek
-          // Session recovery işlemini TEK YERDEN yap (useSessionRecovery)
-          console.log("[NativeRealtime] 📢 session-restored-from-native eventi gönderiliyor...");
-          
-          window.dispatchEvent(new CustomEvent("session-restored-from-native", {
-            detail: { 
-              accessToken: data.accessToken,
-              apiKey: data.apiKey,
-              url: data.url 
-            }
-          }));
-        }
-      });
+      // 🔥 sessionRestored eventi kaldırıldı - artık silent push notification kullanıyoruz
 
       await NativeRealtime.addListener("realtimeMessage", (data: RealtimeMessageEvent) => {
         console.log("[NativeRealtime] 📨 Mesaj geldi:", data.topic, data.event);

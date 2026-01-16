@@ -141,20 +141,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    // 🔥 KRİTİK: Kotlin'den gelen session restore event'ini dinle
-    const handleSessionRestored = (data: { accessToken?: string; restored?: boolean }) => {
-      console.log("[UserContext] 🔑 SessionRestored event alındı:", data.restored ? "✅" : "❌");
-      if (data.accessToken) {
-        // Kotlin'deki valid token'ı JS tarafına enjekte et
-        setGlobalAccessToken(data.accessToken);
-        setIsSystemConnected(true);
-
-        // Token güncellendiğinde profili de yenile
-        console.log("[UserContext] 🔄 Token güncellendi, profil yenileniyor...");
-        refreshProfile(true);
-      }
-    };
-
     // 🔥 Native realtime mesajlarını dinle (profiles tablosu için)
     const handleNativeMessage = (data: { topic?: string; event?: string; payload?: string }) => {
       if (data.topic?.includes("profiles") || data.event === "UPDATE") {
@@ -178,9 +164,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       }
     };
 
-    // Listener'ları kaydet
+    // Listener'ları kaydet (sessionRestored kaldırıldı - artık silent push notification kullanıyoruz)
     const stateListener = NativeRealtime.addListener("connectionState", handleNativeState);
-    const sessionListener = NativeRealtime.addListener("sessionRestored", handleSessionRestored);
     const messageListener = NativeRealtime.addListener("realtimeMessage", handleNativeMessage);
 
     initNativeConnection();
@@ -188,7 +173,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return () => {
       console.log("⚠️ [UserContext] Native listeners temizleniyor...");
       stateListener.then((l) => l.remove()).catch(() => {});
-      sessionListener.then((l) => l.remove()).catch(() => {});
       messageListener.then((l) => l.remove()).catch(() => {});
     };
   }, [isNative]);
