@@ -560,6 +560,43 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           hint: error.hint,
         });
 
+        // 🔥 PGRST116 = Profile yok - otomatik oluştur!
+        if (error.code === "PGRST116") {
+          console.log("[UserContext] 🆕 Profile bulunamadı, otomatik oluşturuluyor...");
+          try {
+            const newProfile = {
+              id: currentUser.id,
+              email: currentUser.email || "",
+              username: currentUser.user_metadata?.username || currentUser.email?.split("@")[0] || "Oyuncu",
+              game_credits: 5,
+              bonus_credits: 0,
+              ink_count: 0,
+              total_score: 0,
+              total_games: 0,
+              wins: 0,
+              losses: 0,
+            };
+
+            const { data: createdProfile, error: createError } = await supabase
+              .from("profiles")
+              .insert(newProfile)
+              .select()
+              .single();
+
+            if (createError) {
+              console.error("[UserContext] ❌ Profile oluşturma hatası:", createError.message);
+            } else if (createdProfile) {
+              console.log("[UserContext] ✅ Yeni profile oluşturuldu:", createdProfile.username);
+              setProfile({ ...createdProfile, ink_count: (createdProfile as any).ink_count ?? 0 });
+              isFetchingProfileRef.current = false;
+              setLoading(false);
+              return; // Başarılı - erken çık
+            }
+          } catch (createErr) {
+            console.error("[UserContext] ❌ Profile create exception:", createErr);
+          }
+        }
+
         // Fallback to cache on error (async)
         try {
           const cachedStr = await nativeStorage.getItem(STORAGE_KEYS.CACHED_PROFILE);

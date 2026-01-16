@@ -157,7 +157,17 @@ export function useSessionRecovery() {
             }),
           );
 
-          console.log("[SessionRecovery] ✅ Session tamam, auth-ready gönderildi!");
+          // 🔥 EKSTRA: data-ready eventi de dispatch et - tüm sayfalar verileri yenilesin!
+          console.log("[SessionRecovery] 📢 data-ready eventi dispatch ediliyor (veriler yenilenecek)...");
+          setTimeout(() => {
+            window.dispatchEvent(
+              new CustomEvent("data-ready", {
+                detail: { source: "session-recovery" },
+              }),
+            );
+          }, 500);
+
+          console.log("[SessionRecovery] ✅ Session tamam, auth-ready + data-ready gönderildi!");
         }
       } catch (e) {
         console.error("[SessionRecovery] ❌ Hata:", e);
