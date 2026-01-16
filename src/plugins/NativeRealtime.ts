@@ -42,6 +42,12 @@ export interface NativeRealtimePlugin {
   // 🆕 Buffer'daki mesaj sayısını al
   getBufferedMessageCount(): Promise<{ count: number }>;
 
+  // 🆕 JS uyanınca buffer'daki mesajları ÇEK (PULL model)
+  getBufferedMessages(): Promise<{ 
+    messages: Array<{ topic: string; event: string; payload: string; timestamp: number }>; 
+    count: number 
+  }>;
+
   addListener(
     eventName: "realtimeMessage",
     listenerFunc: (data: RealtimeMessageEvent) => void,
