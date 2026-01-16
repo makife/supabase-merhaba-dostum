@@ -187,6 +187,15 @@ function setupGlobalListeners() {
   isListenerSetup = true;
   console.log("[NativeRealtime] 🎯 Global listener'lar kuruluyor...");
   
+  // 🔥 KOTLIN WAKE-UP EVENT - Kotlin JS'i uyandırdığında bu çalışır!
+  window.addEventListener("kotlin-wake-up", async (e: any) => {
+    const bufferedCount = e.detail?.bufferedMessages || 0;
+    console.log(`[NativeRealtime] 🔔 KOTLIN WAKE-UP! Buffer'da ${bufferedCount} mesaj`);
+    
+    // Hemen buffered mesajları çek
+    await pullBufferedMessages();
+  });
+  
   NativeRealtime.addListener("realtimeMessage", (data: RealtimeMessageEvent) => {
     console.log("[NativeRealtime] 📨 Mesaj geldi:", data.topic, data.event);
     
@@ -226,7 +235,7 @@ function setupGlobalListeners() {
     });
   });
   
-  console.log("[NativeRealtime] ✅ Global listener'lar kuruldu");
+  console.log("[NativeRealtime] ✅ Global listener'lar kuruldu (kotlin-wake-up dahil)");
 }
 
 export function useNativeRealtime() {
