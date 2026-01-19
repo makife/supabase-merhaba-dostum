@@ -16,9 +16,7 @@ if (Capacitor.getPlatform() !== 'web') {
 
 // 🔥 RESUME RELOAD KONTROLÜ - Uygulama başlamadan önce kontrol et
 // Eğer bu bir resume reload ise, loading screen atlanacak
-checkResumeReload().then(() => {
-  createRoot(document.getElementById("root")!).render(<App />);
-}).catch(() => {
-  // Hata olsa bile app'i başlat
-  createRoot(document.getElementById("root")!).render(<App />);
-});
+checkResumeReload();
+
+// App'i başlat
+createRoot(document.getElementById("root")!).render(<App />);
