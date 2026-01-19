@@ -73,6 +73,8 @@ import { initEventHub } from "@/utils/foregroundEventHub";
 import RestorationOverlay from "@/components/RestorationOverlay";
 import { useAppRestoration } from "@/hooks/useAppRestoration";
 import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
+import { GlobalPhotoOverlay } from "@/components/GlobalPhotoOverlay";
+import { usePhotoRestoration } from "@/hooks/usePhotoRestoration";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -559,6 +561,12 @@ const AppRestorationManager = () => {
   return null;
 };
 
+// 📸 Photo Restoration Manager - User varsa pending fotoğrafı yükler
+const PhotoRestorationManager = () => {
+  usePhotoRestoration();
+  return null;
+};
+
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
@@ -726,6 +734,10 @@ const App = () => {
                 <NativeRealtimeManager />
                 {/* 🔄 RESTORATION OVERLAY - Camera/Payment akışı için tam ekran loading */}
                 <RestorationOverlay />
+                {/* 📸 GLOBAL PHOTO OVERLAY - Fotoğraf yükleme animasyonları */}
+                <GlobalPhotoOverlay />
+                {/* 📸 Photo Restoration - Pending fotoğraf varsa yükler */}
+                <PhotoRestorationManager />
                 {/* 🆕 GLOBAL RECONNECTION OVERLAY */}
                 <GlobalReconnectionOverlay />
                 <ThemeProvider>
