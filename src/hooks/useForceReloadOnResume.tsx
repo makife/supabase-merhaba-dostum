@@ -39,6 +39,9 @@ async function setResumeFlag(): Promise<void> {
   } catch {
     sessionStorage.setItem(RESUME_FLAG_KEY, "true");
   }
+  
+  // 🔥 KRİTİK: app-loaded flag'ini de temizle - loading ekranı gösterilsin
+  sessionStorage.removeItem("app-loaded");
 }
 
 async function getAndClearResumeFlag(): Promise<boolean> {
