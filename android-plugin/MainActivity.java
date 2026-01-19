@@ -44,14 +44,14 @@ public class MainActivity extends BridgeActivity {
     }
     
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         wasInBackground = true;
         Log.d(TAG, "📴 onPause - Arka plana gidiliyor");
     }
     
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         hideSystemUI();
         
