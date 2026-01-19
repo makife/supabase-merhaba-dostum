@@ -70,6 +70,8 @@ import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";
+import RestorationOverlay from "@/components/RestorationOverlay";
+import { useAppRestoration } from "@/hooks/useAppRestoration";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -551,6 +553,9 @@ const SessionRecoveryManager = () => {
 };
 
 const App = () => {
+  // 🔄 App Restoration - Camera, Payment, WebSocket restoration
+  useAppRestoration();
+  
   // Initialize foreground state tracking globally
   useAppForegroundState();
 
@@ -710,6 +715,8 @@ const App = () => {
               <UserProvider>
                 {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
                 <NativeRealtimeManager />
+                {/* 🔄 RESTORATION OVERLAY - Camera/Payment akışı için tam ekran loading */}
+                <RestorationOverlay />
                 {/* 🆕 GLOBAL RECONNECTION OVERLAY */}
                 <GlobalReconnectionOverlay />
                 <ThemeProvider>
