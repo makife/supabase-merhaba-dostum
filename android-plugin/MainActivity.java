@@ -18,8 +18,8 @@ import com.getcapacitor.BridgeActivity;
  * Bu sayede YENİ bir WebView oluşturulur ve "ölü" WebView sorunu çözülür.
  * 
  * Akış:
- * 1. onPause → wasInBackground = true
- * 2. onResume → finish() + startActivity() ile GERÇEK restart
+ * 1. onPause → pauseTime kaydedilir
+ * 2. onResume → 3+ saniye geçtiyse finish() + startActivity() ile GERÇEK restart
  * 3. Yeni WebView = Tüm JS ve Supabase kanalları sıfırdan başlar
  * 4. Intent'e RESUME_RESTART flag eklenir → Loading ekranı atlanır
  */
@@ -29,8 +29,9 @@ public class MainActivity extends BridgeActivity {
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1235;
     private static final String EXTRA_RESUME_RESTART = "RESUME_RESTART";
     
-    // 🔥 Arka plan flag'i
-    private boolean wasInBackground = false;
+    // 🔥 Arka plan zamanı - daha güvenilir kontrol için
+    private static long pauseTime = 0;
+    private static final long MIN_BACKGROUND_TIME_MS = 3000; // 3 saniye
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,19 +44,22 @@ public class MainActivity extends BridgeActivity {
         // 🔥 Resume restart'tan mı geliyoruz kontrol et
         boolean isResumeRestart = getIntent().getBooleanExtra(EXTRA_RESUME_RESTART, false);
         if (isResumeRestart) {
-            Log.d(TAG, "✅ MainActivity onCreate - RESUME RESTART (Loading atlanacak)");
+            Log.d(TAG, "✅ onCreate - RESUME RESTART MODE (Loading atlanacak)");
             // JS tarafına sinyal gönder - loading atlanacak
             injectResumeFlag();
         } else {
-            Log.d(TAG, "✅ MainActivity onCreate - Cold Start");
+            Log.d(TAG, "✅ onCreate - COLD START MODE");
         }
+        
+        // pauseTime sıfırla - yeni activity
+        pauseTime = 0;
     }
     
     @Override
     public void onPause() {
         super.onPause();
-        wasInBackground = true;
-        Log.d(TAG, "📴 onPause - Arka plana gidiliyor");
+        pauseTime = System.currentTimeMillis();
+        Log.d(TAG, "📴 onPause - Arka plana gidiliyor, time: " + pauseTime);
     }
     
     @Override
@@ -66,15 +70,26 @@ public class MainActivity extends BridgeActivity {
         // 🔥 Eğer bu zaten bir resume restart ise, tekrar restart yapma
         boolean isResumeRestart = getIntent().getBooleanExtra(EXTRA_RESUME_RESTART, false);
         
-        if (wasInBackground && !isResumeRestart) {
-            wasInBackground = false;
-            Log.d(TAG, "📱 onResume - Arka plandan dönülüyor, ACTIVITY RESTART yapılıyor...");
-            
-            // 🔥 GERÇEK Activity Restart - Yeni WebView oluşturulacak
+        if (isResumeRestart) {
+            Log.d(TAG, "📱 onResume - Bu zaten restart edilmiş, skip");
+            return;
+        }
+        
+        // 🔥 Zaman bazlı kontrol - 3 saniyeden fazla arka plandaysa restart
+        long now = System.currentTimeMillis();
+        long backgroundDuration = pauseTime > 0 ? (now - pauseTime) : 0;
+        
+        Log.d(TAG, "📱 onResume - pauseTime: " + pauseTime + ", now: " + now + ", duration: " + backgroundDuration + "ms");
+        
+        if (pauseTime > 0 && backgroundDuration >= MIN_BACKGROUND_TIME_MS) {
+            Log.d(TAG, "🔥 onResume - " + backgroundDuration + "ms arka planda kaldı, RESTART YAPILIYOR!");
+            pauseTime = 0; // Reset
             restartActivity();
+        } else if (pauseTime > 0) {
+            Log.d(TAG, "📱 onResume - Kısa süre arka planda (" + backgroundDuration + "ms < " + MIN_BACKGROUND_TIME_MS + "ms), restart yok");
+            pauseTime = 0;
         } else {
-            wasInBackground = false;
-            Log.d(TAG, "📱 onResume - Normal (restart değil veya zaten restart edilmiş)");
+            Log.d(TAG, "📱 onResume - İlk açılış veya normal geçiş");
         }
     }
     
@@ -84,19 +99,24 @@ public class MainActivity extends BridgeActivity {
      */
     private void restartActivity() {
         try {
+            Log.d(TAG, "🔄🔄🔄 ACTIVITY RESTART BAŞLIYOR 🔄🔄🔄");
+            
             Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            // Tüm task'ı temizle ve yeni başlat
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             intent.putExtra(EXTRA_RESUME_RESTART, true); // Loading atlanacak flag
             
-            Log.d(TAG, "🔄 Activity restart başlatılıyor...");
-            finish();
+            // Önce yeni activity başlat, sonra bunu kapat
             startActivity(intent);
+            finish();
             
             // Geçiş animasyonunu kaldır (daha hızlı görünsün)
             overridePendingTransition(0, 0);
             
+            Log.d(TAG, "✅ Activity restart tamamlandı");
+            
         } catch (Exception e) {
-            Log.e(TAG, "❌ Activity restart hatası: " + e.getMessage());
+            Log.e(TAG, "❌ Activity restart hatası: " + e.getMessage(), e);
         }
     }
     
@@ -109,16 +129,20 @@ public class MainActivity extends BridgeActivity {
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     getBridge().getWebView().post(() -> {
-                        String js = "sessionStorage.setItem('app-resume-restart', 'true'); " +
+                        String js = "try { " +
+                                   "sessionStorage.setItem('app-resume-restart', 'true'); " +
                                    "sessionStorage.setItem('app-loaded', 'true'); " +
-                                   "console.log('[Native] Resume restart flag set');";
+                                   "console.log('[Native] ✅ Resume restart flag set'); " +
+                                   "} catch(e) { console.error('[Native] Flag set error:', e); }";
                         getBridge().getWebView().evaluateJavascript(js, null);
                         Log.d(TAG, "✅ Resume flag JS'e inject edildi");
                     });
+                } else {
+                    Log.w(TAG, "⚠️ Bridge veya WebView null, flag inject edilemedi");
                 }
-            }, 200); // WebView'in hazır olması için bekle
+            }, 300); // WebView'in hazır olması için bekle
         } catch (Exception e) {
-            Log.e(TAG, "❌ Resume flag inject hatası: " + e.getMessage());
+            Log.e(TAG, "❌ Resume flag inject hatası: " + e.getMessage(), e);
         }
     }
     
