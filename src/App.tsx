@@ -552,10 +552,13 @@ const SessionRecoveryManager = () => {
   return null;
 };
 
-const App = () => {
-  // 🔄 App Restoration - Camera, Payment, WebSocket restoration
+// 🔄 App Restoration Manager - AuthProvider İÇİNDE çalışmalı
+const AppRestorationManager = () => {
   useAppRestoration();
-  
+  return null;
+};
+
+const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
 
@@ -711,6 +714,8 @@ const App = () => {
             <AuthProvider>
               {/* 🆕 Session Recovery - Native'de arka plandan gelince session'ı kurtarır */}
               <SessionRecoveryManager />
+              {/* 🔄 App Restoration Manager - Camera/Payment/WebSocket restoration */}
+              <AppRestorationManager />
               {/* 2. KADEME: UserProvider (Profil Verisi) */}
               <UserProvider>
                 {/* Native Realtime Manager - Android'de native WebSocket yönetir */}
