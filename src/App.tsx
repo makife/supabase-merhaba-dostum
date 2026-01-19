@@ -89,20 +89,37 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   const [customLoading, setCustomLoading] = useState(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('app-loaded')) {
-      return false;
+    if (typeof window !== 'undefined') {
+      // 🔥 Resume parametresi varsa loading ATLA (SYNC kontrol)
+      if (window.location.search.includes('_resume=1')) {
+        console.log("[App] Resume reload tespit edildi - loading atlanıyor");
+        sessionStorage.setItem('app-loaded', 'true');
+        
+        // URL'den _resume parametresini temizle
+        const url = new URL(window.location.href);
+        url.searchParams.delete('_resume');
+        window.history.replaceState({}, '', url.toString());
+        
+        // "Bağlanıyor" toast göster
+        setTimeout(() => {
+          import('sonner').then(({ toast }) => {
+            toast.loading("Bağlanıyor...", {
+              id: "resume-connecting",
+              duration: 2500,
+            });
+            setTimeout(() => toast.dismiss("resume-connecting"), 2500);
+          });
+        }, 100);
+        
+        return false;
+      }
+      
+      if (sessionStorage.getItem('app-loaded')) {
+        return false;
+      }
     }
     return true;
   });
-
-  // Resume reload kontrolü - app başlangıcında çalışır
-  useEffect(() => {
-    const checkResume = async () => {
-      const { checkResumeReload } = await import("@/hooks/useForceReloadOnResume");
-      await checkResumeReload();
-    };
-    checkResume();
-  }, []);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
 
