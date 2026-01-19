@@ -2,15 +2,16 @@ import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Preferences } from "@capacitor/preferences";
+import { toast } from "sonner";
 
 /**
- * 🔄 SIMPLE FORCE RELOAD ON RESUME
+ * 🔄 AGGRESSIVE FORCE RELOAD ON RESUME
  * 
  * Basit mantık:
  * 1. Arka plana giderken path kaydet  
- * 2. Ön plana gelince 300ms bekle (WebView uyanması için)
- * 3. window.location.reload() ile sayfayı yenile
- * 4. Reload sonrası app sıfırdan başlıyor = tüm Supabase kanalları yeniden kurulur
+ * 2. Ön plana gelince 500ms bekle (WebView uyanması için)
+ * 3. Cache-busting ile tam sayfa yenileme (replace + timestamp)
+ * 4. Reload sonrası "Bağlanıyor" toast göster
  */
 
 const LAST_PATH_KEY = "app-last-path";
@@ -61,23 +62,33 @@ async function getAndClearResumeFlag(): Promise<boolean> {
 
 /**
  * App başlangıcında çağrılmalı - resume reload olup olmadığını kontrol eder
+ * ve "Bağlanıyor" toast gösterir
  */
 export async function checkResumeReload(): Promise<boolean> {
   const isResumeReload = await getAndClearResumeFlag();
   if (isResumeReload) {
     console.log("[ForceReload] ✅ Resume reload tespit edildi - loading atlanacak");
     sessionStorage.setItem("app-loaded", "true");
+    
+    // "Bağlanıyor" toast göster ve 2 saniye sonra kapat
+    const toastId = toast.loading("Bağlanıyor...", {
+      duration: 3000,
+    });
+    
+    setTimeout(() => {
+      toast.dismiss(toastId);
+    }, 2000);
   }
   return isResumeReload;
 }
 
 /**
- * Hook: Native platformda arka plandan dönüşte reload tetikler
+ * Hook: Native platformda arka plandan dönüşte agresif reload tetikler
  * 
- * YAKLAŞIM: appStateChange + 300ms gecikme
- * - appStateChange geldiğinde JS henüz tam uyanmamış olabilir
- * - 300ms bekleyerek WebView'in hazır olmasını garantiliyoruz
- * - Reload sonrası app sıfırdan başlıyor = tüm kanallar yeniden kurulur
+ * YAKLAŞIM: 
+ * - appStateChange + 500ms gecikme (daha uzun bekleme)
+ * - window.location.replace() + cache-busting timestamp
+ * - WebView'in tamamen uyanmasını garanti eder
  */
 export function useForceReloadOnResume() {
   const isReloadingRef = useRef(false);
@@ -86,7 +97,7 @@ export function useForceReloadOnResume() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
-    console.log("[ForceReload] 🚀 Hook başlatıldı");
+    console.log("[ForceReload] 🚀 Hook başlatıldı (agresif mod)");
     
     const handleStateChange = async (state: { isActive: boolean }) => {
       // Arka plana gidiş
@@ -110,13 +121,19 @@ export function useForceReloadOnResume() {
         await setLastPath(currentPath);
         await setResumeFlag();
         
-        console.log("[ForceReload] ⏳ 300ms bekleniyor (WebView uyanması için)...");
+        console.log("[ForceReload] ⏳ 500ms bekleniyor (WebView tam uyanması için)...");
         
-        // 🔥 KRİTİK: 300ms bekle - WebView'in tamamen uyanmasını garanti et
+        // 🔥 KRİTİK: 500ms bekle - WebView'in tamamen uyanmasını garanti et
         setTimeout(() => {
-          console.log("[ForceReload] 🔄 Sayfa yeniden yükleniyor:", currentPath);
-          window.location.reload();
-        }, 300);
+          console.log("[ForceReload] 🔄 AGRESİF sayfa yenileme başlatılıyor:", currentPath);
+          
+          // Cache-busting URL oluştur
+          const separator = currentPath.includes('?') ? '&' : '?';
+          const cacheBustUrl = `${currentPath}${separator}_t=${Date.now()}`;
+          
+          // window.location.replace kullan - daha agresif, history'yi değiştirir
+          window.location.replace(cacheBustUrl);
+        }, 500);
       }
     };
     
@@ -134,8 +151,10 @@ export function useForceReloadOnResume() {
 export async function navigateToLastPath(navigate: (path: string) => void): Promise<boolean> {
   const lastPath = await getLastPath();
   if (lastPath && lastPath !== "/" && lastPath !== window.location.pathname) {
-    console.log("[ForceReload] 🎯 Son path'e yönlendiriliyor:", lastPath);
-    navigate(lastPath);
+    // Cache-busting parametresini temizle
+    const cleanPath = lastPath.replace(/[?&]_t=\d+/, '').replace(/[?&]$/, '');
+    console.log("[ForceReload] 🎯 Son path'e yönlendiriliyor:", cleanPath);
+    navigate(cleanPath || lastPath);
     return true;
   }
   return false;
