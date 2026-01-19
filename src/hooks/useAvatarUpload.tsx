@@ -10,6 +10,10 @@ import {
   setPendingAction, 
   clearPendingAction,
 } from '@/utils/pendingActionState';
+import { 
+  startForegroundServiceStandalone, 
+  stopForegroundServiceStandalone 
+} from '@/hooks/useForegroundService';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -144,10 +148,14 @@ export const useAvatarUpload = () => {
     }
 
     setUploading(true);
-    // Kamera açılmadan önce korumayı aktifle
+    
+    // 🛡️ 1. Foreground Service başlat - OS'un WebView'ı öldürmesini engelle
+    await startForegroundServiceStandalone();
+    
+    // 🛡️ 2. Kamera koruma flag'ini aktifle
     setCameraActive(true);
     
-    // 🔥 Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
+    // 🔥 3. Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
     await setPendingAction({
       type: 'camera',
       startedAt: Date.now(),
@@ -187,6 +195,9 @@ export const useAvatarUpload = () => {
       }
       return null;
     } finally {
+      // 🛡️ Foreground Service'i durdur
+      await stopForegroundServiceStandalone();
+      
       // Kısa gecikme ile korumayı kapat (uygulama geri dönmesini bekle)
       setTimeout(() => setCameraActive(false), 2000);
       setUploading(false);
@@ -200,10 +211,14 @@ export const useAvatarUpload = () => {
     }
 
     setUploading(true);
-    // Galeri açılmadan önce korumayı aktifle
+    
+    // 🛡️ 1. Foreground Service başlat - OS'un WebView'ı öldürmesini engelle
+    await startForegroundServiceStandalone();
+    
+    // 🛡️ 2. Galeri koruma flag'ini aktifle
     setCameraActive(true);
     
-    // 🔥 Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
+    // 🔥 3. Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
     await setPendingAction({
       type: 'gallery',
       startedAt: Date.now(),
@@ -243,6 +258,9 @@ export const useAvatarUpload = () => {
       }
       return null;
     } finally {
+      // 🛡️ Foreground Service'i durdur
+      await stopForegroundServiceStandalone();
+      
       // Kısa gecikme ile korumayı kapat
       setTimeout(() => setCameraActive(false), 2000);
       setUploading(false);
