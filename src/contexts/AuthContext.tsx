@@ -9,7 +9,7 @@ import {
 } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Capacitor } from "@capacitor/core";
-import { NativeRealtime } from "@/plugins/NativeRealtime";
+// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 import { useAppState } from "@/hooks/useAppState";
 
 interface AuthContextType {
@@ -57,27 +57,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     userRef.current = user;
   }, [session, user]);
 
-  // 🔧 Native Service başlat
-  const startNativeService = useCallback(
-    async (accessToken: string) => {
-      if (!isNative) return;
-
-      // 🔥 URL'i düzelt: https -> wss ve path ekle
-      const wsUrl = SUPABASE_URL.replace("https://", "wss://") + "/realtime/v1/websocket";
-
-      try {
-        await NativeRealtime.connect({
-          url: wsUrl, // Artık doğru URL gidiyor
-          apiKey: SUPABASE_ANON_KEY,
-          accessToken,
-        });
-        console.log("✅ Native Service bağlandı");
-      } catch (err) {
-        console.error("❌ Native Service başlatılamadı:", err);
-      }
-    },
-    [isNative],
-  );
+  // Native Service kaldırıldı - window.location.reload() stratejisi kullanılıyor
+  // Reload sonrası Supabase JS SDK tüm bağlantıları sıfırdan kuruyor
 
   // 🔥🔥🔥 TEK RESTORE FONKSİYONU
   const restoreFromStorage = useCallback(async (): Promise<boolean> => {
@@ -160,8 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // 🔥 YENİ refresh_token'ı kaydet - bu da global token'ı set eder
           await saveSessionToStorage(data.session);
 
-          // Native service'i başlat
-          await startNativeService(data.session.access_token);
+          // Native service kaldırıldı - reload stratejisi kullanılıyor
         }
 
         isRestoringRef.current = false;
@@ -177,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isRestoringRef.current = false;
       return false;
     }
-  }, [startNativeService]);
+  }, []);
 
   // 🔥 FOREGROUND RECOVERY - SessionRecovery hook'una bırak
   // AuthContext sadece session-recovered eventini dinlesin
@@ -349,8 +329,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isNative) {
         await saveSessionToStorage(data.session);
       }
-
-      await startNativeService(data.session.access_token);
+      // Native service kaldırıldı
     }
 
     setLoading(false);
@@ -378,8 +357,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isNative) {
         await saveSessionToStorage(data.session);
       }
-
-      await startNativeService(data.session.access_token);
+      // Native service kaldırıldı
     }
 
     return { error };

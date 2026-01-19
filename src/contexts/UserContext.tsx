@@ -1,11 +1,10 @@
-import NativeRealtime, { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
+// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromStorage } from "@/integrations/supabase/client";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
-import { addGlobalSubscription, removeGlobalSubscription, resubscribeAllChannels } from "@/hooks/useNativeRealtime";
-// 🔥 Native platformda Kotlin WebSocket'e de kaydediyoruz
+import { Capacitor } from "@capacitor/core";
 
 interface OnlineUser {
   id: string;
@@ -83,7 +82,7 @@ interface UserProviderProps {
 export const UserProvider = ({ children }: UserProviderProps) => {
   const { user } = useAuth();
   const [isSystemConnected, setIsSystemConnected] = useState(true);
-  const isNative = isNativeRealtimeAvailable();
+  const isNative = Capacitor.isNativePlatform();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -108,76 +107,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const { showLocalNotification, isPermissionGranted } = useMobileNotifications();
 
-  // 1. NATIVE BAĞLANTIYI BAŞLAT + DİNLE + SESSION RESTORE
-  useEffect(() => {
-    if (!isNative || !NativeRealtime) return;
-
-    const initNativeConnection = async () => {
-      try {
-        const state = await NativeRealtime.getConnectionState();
-        console.log("[UserContext] 🔍 Native mevcut durum:", state);
-
-        if (!state.isConnected) {
-          console.log("[UserContext] 🚀 Native bağlantı başlatılıyor...");
-
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          const wsUrl = "wss://nnlvtqmuwmrqfinsgvwc.supabase.co/realtime/v1/websocket";
-          const apiKey =
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHZ0cW11d21ycWZpbnNndndjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MTUzODAsImV4cCI6MjA3MDA5MTM4MH0.MrN6Cgs-uTHg9MF_zfae31VXAj6lTI6V9gdEFZBMvVE";
-
-          await NativeRealtime.connect({
-            url: wsUrl,
-            apiKey: apiKey,
-            accessToken: session?.access_token || "",
-          });
-
-          console.log("[UserContext] ✅ Native bağlantı başlatıldı!");
-        } else {
-          console.log("[UserContext] ✅ Native zaten bağlı.");
-          setIsSystemConnected(true);
-        }
-      } catch (e) {
-        console.error("[UserContext] ❌ Native bağlantı hatası:", e);
-      }
-    };
-
-    // 🔥 Native realtime mesajlarını dinle (profiles tablosu için)
-    const handleNativeMessage = (data: { topic?: string; event?: string; payload?: string }) => {
-      if (data.topic?.includes("profiles") || data.event === "UPDATE") {
-        try {
-          const payload = typeof data.payload === "string" ? JSON.parse(data.payload) : data.payload;
-          console.log("[UserContext] 📡 Native'den profil güncellemesi:", payload);
-          setProfile((prev) => (prev ? { ...prev, ...payload } : payload));
-        } catch (e) {
-          console.error("[UserContext] ❌ Native message parse hatası:", e);
-        }
-      }
-    };
-
-    const handleNativeState = (data: { state: string }) => {
-      console.log("[UserContext] 🔌 Native state:", data.state);
-      if (data.state === "connected") {
-        setIsSystemConnected(true);
-      } else if (data.state === "disconnected") {
-        const jsConnected = supabase.realtime?.channels?.length > 0;
-        setIsSystemConnected(jsConnected);
-      }
-    };
-
-    // Listener'ları kaydet (sessionRestored kaldırıldı - artık silent push notification kullanıyoruz)
-    const stateListener = NativeRealtime.addListener("connectionState", handleNativeState);
-    const messageListener = NativeRealtime.addListener("realtimeMessage", handleNativeMessage);
-
-    initNativeConnection();
-
-    return () => {
-      console.log("⚠️ [UserContext] Native listeners temizleniyor...");
-      stateListener.then((l) => l.remove()).catch(() => {});
-      messageListener.then((l) => l.remove()).catch(() => {});
-    };
-  }, [isNative]);
+  // Native bağlantı yönetimi kaldırıldı - window.location.reload() stratejisi kullanılıyor
+  // Reload sonrası Supabase JS SDK tüm bağlantıları sıfırdan kuruyor
 
   // 2. 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
   useEffect(() => {
@@ -286,11 +217,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           console.log("📱 [UserContext] ✅ Session mevcut, token set edildi");
         }
 
-        // 🔥 Native durum kontrolü
-        if (isNative && NativeRealtime) {
-          const state = await NativeRealtime.getConnectionState();
-          console.log(`📱 [UserContext] 🔍 Native WebSocket Durumu: ${state.state}`);
-        }
+        // Native durum kontrolü kaldırıldı - reload stratejisi kullanılıyor
 
         // 🔥 PROFİL YENİLEME - TIMEOUT İLE
         console.log("📱 [UserContext] 🔄 Profil güncelleniyor...");
@@ -1050,23 +977,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       );
     };
 
-    // 🔥🔥🔥 NATIVE GLOBAL SUBSCRIPTION - Kotlin WebSocket'e kaydet
-    if (isNative) {
-      const subscriptionKey = `profiles:${user.id}`;
-      addGlobalSubscription(subscriptionKey, {
-        topic: `realtime:public:profiles:id=eq.${user.id}`,
-        table: "profiles",
-        schema: "public",
-        event: "UPDATE",
-        filter: `id=eq.${user.id}`,
-        onMessage: (payload) => {
-          // Kotlin'den gelen mesajı işle
-          console.log("[UserContext] 📡 Kotlin'den profil güncellemesi:", payload);
-          handleProfileUpdate(payload);
-        },
-      });
-      console.log("[UserContext] ✅ Native global subscription kaydedildi:", subscriptionKey);
-    }
+    // Native subscription kaldırıldı - Supabase JS SDK yeterli
 
     // JS SDK channel (Native'de çalışmayabilir ama yine de kur)
     const channel = supabase
