@@ -88,10 +88,13 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
+  // 🔥 Resume parametresi kontrolü (SYNC)
+  const isResumeReload = typeof window !== 'undefined' && window.location.search.includes('_resume=1');
+  
   const [customLoading, setCustomLoading] = useState(() => {
     if (typeof window !== 'undefined') {
-      // 🔥 Resume parametresi varsa loading ATLA (SYNC kontrol)
-      if (window.location.search.includes('_resume=1')) {
+      // Resume reload'da loading ATLA
+      if (isResumeReload) {
         console.log("[App] Resume reload tespit edildi - loading atlanıyor");
         sessionStorage.setItem('app-loaded', 'true');
         
@@ -99,17 +102,6 @@ const AppRoutes = () => {
         const url = new URL(window.location.href);
         url.searchParams.delete('_resume');
         window.history.replaceState({}, '', url.toString());
-        
-        // "Bağlanıyor" toast göster
-        setTimeout(() => {
-          import('sonner').then(({ toast }) => {
-            toast.loading("Bağlanıyor...", {
-              id: "resume-connecting",
-              duration: 2500,
-            });
-            setTimeout(() => toast.dismiss("resume-connecting"), 2500);
-          });
-        }, 100);
         
         return false;
       }
@@ -120,6 +112,56 @@ const AppRoutes = () => {
     }
     return true;
   });
+  
+  // 🔥 Resume reload'da session recovery ve kanalları başlat
+  useEffect(() => {
+    if (!isResumeReload) return;
+    
+    console.log("[App] 🔄 Resume reload - session recovery başlatılıyor...");
+    
+    // "Bağlanıyor" toast göster
+    import('sonner').then(({ toast }) => {
+      toast.loading("Bağlanıyor...", {
+        id: "resume-connecting",
+        duration: 3000,
+      });
+    });
+    
+    // 🔥 auth-ready eventini bekle, sonra toast kapat
+    const handleAuthReady = () => {
+      console.log("[App] ✅ Auth ready - toast kapatılıyor");
+      import('sonner').then(({ toast }) => {
+        toast.dismiss("resume-connecting");
+        toast.success("Bağlandı!", { duration: 1500 });
+      });
+      
+      // 🔥 data-ready eventi de dispatch et
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("data-ready", { detail: { source: "resume-reload" } }));
+      }, 500);
+    };
+    
+    window.addEventListener("auth-ready", handleAuthReady, { once: true });
+    
+    // 🔥 Session recovery'yi zorla tetikle
+    setTimeout(() => {
+      console.log("[App] 🔑 app-auth-recovery eventi gönderiliyor...");
+      window.dispatchEvent(new Event("app-auth-recovery"));
+    }, 100);
+    
+    // Fallback: 5 saniye sonra hala auth-ready gelmediyse toast kapat
+    const fallbackTimer = setTimeout(() => {
+      window.removeEventListener("auth-ready", handleAuthReady);
+      import('sonner').then(({ toast }) => {
+        toast.dismiss("resume-connecting");
+      });
+    }, 5000);
+    
+    return () => {
+      clearTimeout(fallbackTimer);
+      window.removeEventListener("auth-ready", handleAuthReady);
+    };
+  }, [isResumeReload]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
 
