@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import { Capacitor } from "@capacitor/core";
-import { isNativeRealtimeAvailable, NativeRealtime } from "@/plugins/NativeRealtime";
+// NativeRealtime kaldırıldı
 import { onConnectionStateChange, forceRecovery, getConnectionState } from "@/utils/supabaseConnectionManager";
 
 type ConnectionStatus = "connected" | "connecting" | "reconnecting" | "disconnected";
@@ -147,15 +147,7 @@ export function useReconnectionState() {
         console.log("[ReconnectionState] ✅ Kurtarma başarılı");
         // Manager state callback'i overlay'i kapatacak
       } else {
-        // Native Realtime varsa onu da tetikle
-        if (isNativeRealtimeAvailable() && NativeRealtime) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            await NativeRealtime.setAccessToken({ token: session.access_token });
-          }
-        }
+        // Native realtime kaldırıldı
 
         // 3 saniye sonra overlay'i kapat
         setTimeout(() => {

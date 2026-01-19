@@ -6,8 +6,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { getActivePrivateChats } from "@/utils/notifications";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-import { isNativeRealtimeAvailable } from "@/plugins/NativeRealtime";
-import { addGlobalSubscription } from "@/hooks/useNativeRealtime";
+// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 
 interface NotificationContextType {
   unreadCount: number;
@@ -39,10 +38,9 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
     shownNotifications.current.clear();
 
-    const isNative = isNativeRealtimeAvailable();
     const channelName = `user-notifications-toast-${user.id}`;
 
-    // 🔥 Bildirim işleyici fonksiyonu - hem JS SDK hem Native için
+    // 🔥 Bildirim işleyici fonksiyonu
     const handleNotification = (payload: any) => {
       try {
         const notification = payload.new || payload;
@@ -111,21 +109,8 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
     try {
       console.log("🔔 NotificationContext: Realtime subscription başlatılıyor, user:", user.id);
-      
-      // 🔥 Native platformda Kotlin WebSocket'e de kaydet
-      if (isNative) {
-        addGlobalSubscription(`notifications:${user.id}`, {
-          topic: `realtime:public:notifications:user_id=eq.${user.id}`,
-          table: "notifications",
-          schema: "public",
-          event: "INSERT",
-          filter: `user_id=eq.${user.id}`,
-          onMessage: handleNotification,
-        });
-        console.log("[NotificationContext] ✅ Native global subscription kaydedildi");
-      }
 
-      // JS SDK channel
+      // JS SDK channel - Supabase realtime yeterli
       autoReconnect.registerChannel(channelName, () =>
         supabase
           .channel(channelName)

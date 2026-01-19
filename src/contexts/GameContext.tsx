@@ -10,7 +10,7 @@ import { realtimeManager } from "@/utils/realtimeManager";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { Button } from "@/components/ui/button";
 import { setLastRoomId, getLastRoomId } from "@/utils/persistentState";
-import { registerMessageListener } from "@/hooks/useNativeRealtime";
+// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 
 interface GameRoom {
   id: string;
@@ -249,41 +249,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     restoreRoom();
   }, [isSystemConnected, user, currentRoom]);
 
-  // 🆕 CHANNEL BUFFERING: Native'den gelen mesajları dinle
-  useEffect(() => {
-    if (hasRegisteredListenerRef.current) return;
-    hasRegisteredListenerRef.current = true;
-
-    const unregister = registerMessageListener((topic, payload) => {
-      // Room update mesajları
-      if (topic.includes("game_rooms") && currentRoom) {
-        console.log("[GameContext] 📨 Native'den room update:", payload);
-        if (payload?.new && payload.new.id === currentRoom.id) {
-          setCurrentRoomState(payload.new as GameRoom);
-        }
-      }
-
-      // Participant update mesajları
-      if (topic.includes("game_participants") && currentRoom) {
-        console.log("[GameContext] 📨 Native'den participant update:", payload);
-        // Participant listesini yenile
-        supabase
-          .from("game_participants")
-          .select("*, profiles:user_id(username, avatar_url)")
-          .eq("room_id", currentRoom.id)
-          .then(({ data }) => {
-            if (data) {
-              setParticipants(dedupeParticipants(data as GameParticipant[], currentRoom.game_mode));
-            }
-          });
-      }
-    });
-
-    return () => {
-      unregister();
-      hasRegisteredListenerRef.current = false;
-    };
-  }, [currentRoom]);
+  // Native message listener kaldırıldı - Supabase JS SDK yeterli
+  // Reload stratejisi tüm kanalları sıfırdan kuruyor
 
   // Generate random grid
   const generateRandomGrid = (): string[][] => {

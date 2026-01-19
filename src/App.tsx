@@ -15,7 +15,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { ServerTimeProvider } from "@/contexts/ServerTimeContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
-import { useNativeRealtime } from "@/hooks/useNativeRealtime";
+// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -258,21 +258,7 @@ const GlobalRematchDialog = () => {
   );
 };
 
-const NativeRealtimeManager = () => {
-  const { user, loading } = useAuth();
-  const { connect, isNative } = useNativeRealtime();
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (isNative && user && !loading && !initialized.current) {
-      console.log("🚀 [NativeRealtimeManager] Native WebSocket motoru ateşleniyor...");
-      connect();
-      initialized.current = true;
-    }
-  }, [user, loading, isNative, connect]);
-
-  return null;
-};
+// NativeRealtimeManager kaldırıldı - Supabase JS SDK yeterli
 
 // Session Recovery Component
 const SessionRecoveryManager = () => {
@@ -419,7 +405,7 @@ const App = () => {
             <AuthProvider>
               <SessionRecoveryManager />
               <UserProvider>
-                <NativeRealtimeManager />
+                {/* NativeRealtimeManager kaldırıldı */}
                 <ThemeProvider>
                   <MusicProvider>
                     <MatchmakingWrapper>
