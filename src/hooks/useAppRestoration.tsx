@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { App, RestoredListenerEvent } from '@capacitor/app';
+import { App } from '@capacitor/app';
 import { toast } from 'sonner';
-import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import NativeRealtime, { isNativeRealtimeAvailable } from '@/plugins/NativeRealtime';
+import { 
+  getPendingAction, 
+  clearPendingAction, 
+  PendingAction 
+} from '@/utils/pendingActionState';
 
 // Global restoration state - Context olmadan erişilebilir
 let globalRestorationState = {
@@ -27,7 +31,7 @@ const updateRestorationState = (updates: Partial<typeof globalRestorationState>)
 };
 
 // Restoration tiplerini tanımla
-type RestorationSource = 'camera' | 'payment' | 'websocket' | 'unknown';
+type RestorationSource = 'camera' | 'gallery' | 'payment' | 'websocket' | 'pending-action' | 'unknown';
 
 interface RestorationResult {
   source: RestorationSource;
@@ -40,7 +44,7 @@ interface RestorationResult {
  * 🔄 App Restoration Hook
  * 
  * Handles:
- * 1. Camera/Avatar restoration (appRestoredResult)
+ * 1. Pending Action restoration (camera/gallery/payment that was interrupted)
  * 2. Payment/IAP restoration (pending transactions)
  * 3. WebSocket message restoration (buffered messages)
  */
@@ -48,7 +52,6 @@ export const useAppRestoration = () => {
   const [isRestoring, setIsRestoring] = useState(false);
   const [restorationMessage, setRestorationMessage] = useState('');
   const [restorationProgress, setRestorationProgress] = useState(0);
-  const { uploadAvatar } = useAvatarUpload();
   const isProcessingRef = useRef(false);
   const hasCheckedRestorationRef = useRef(false);
 
@@ -58,56 +61,53 @@ export const useAppRestoration = () => {
   }, [isRestoring, restorationMessage, restorationProgress]);
 
   /**
-   * 📸 Camera Restoration Handler
+   * 📸 Pending Action Handler
+   * App arka planda öldürüldüyse, pending action varsa kullanıcıya bildir
    */
-  const handleCameraRestoration = useCallback(async (result: RestoredListenerEvent): Promise<RestorationResult> => {
-    console.log('[Restoration] 📸 Camera result alındı:', result);
+  const handlePendingAction = useCallback(async (): Promise<RestorationResult> => {
+    console.log('[Restoration] 📋 Pending action kontrolü...');
     
     try {
-      setRestorationMessage('Fotoğrafınız işleniyor...');
-      setRestorationProgress(30);
+      const pendingAction = await getPendingAction();
       
-      // Check if it's from Camera plugin
-      if (result.pluginId !== 'Camera') {
-        return { source: 'camera', success: false, error: 'Not a camera result' };
+      if (!pendingAction) {
+        return { source: 'pending-action', success: true, data: 'no-pending' };
       }
 
-      const photoData = result.data;
+      console.log('[Restoration] ⚠️ Pending action bulundu:', pendingAction);
       
-      if (!photoData?.dataUrl && !photoData?.path && !photoData?.webPath) {
-        return { source: 'camera', success: false, error: 'No photo data found' };
+      // Pending action türüne göre kullanıcıya bildir
+      switch (pendingAction.type) {
+        case 'camera':
+        case 'gallery':
+          toast.error(
+            'Fotoğraf yükleme işlemi yarıda kaldı. Lütfen tekrar deneyin.',
+            { duration: 5000 }
+          );
+          break;
+        case 'payment':
+          toast.warning(
+            'Satın alma işlemi tamamlanamamış olabilir. Lütfen satın alımlarınızı kontrol edin.',
+            { duration: 8000 }
+          );
+          // RevenueCat'ten restore dene
+          await handlePaymentRestoration();
+          break;
       }
-
-      setRestorationProgress(50);
-      setRestorationMessage('Avatar yükleniyor...');
-
-      // Convert to File and upload
-      let imageUrl = photoData.dataUrl || photoData.webPath || photoData.path;
       
-      if (imageUrl) {
-        // DataUrl ise direkt fetch et
-        if (imageUrl.startsWith('data:')) {
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'restored-avatar.jpg', { type: 'image/jpeg' });
-          
-          setRestorationProgress(70);
-          const uploadedUrl = await uploadAvatar(file);
-          
-          if (uploadedUrl) {
-            setRestorationProgress(100);
-            toast.success('Avatar başarıyla güncellendi!');
-            return { source: 'camera', success: true, data: uploadedUrl };
-          }
-        }
-      }
-
-      return { source: 'camera', success: false, error: 'Failed to process photo' };
+      // Pending action'ı temizle
+      await clearPendingAction();
+      
+      return { 
+        source: 'pending-action', 
+        success: true, 
+        data: { type: pendingAction.type, context: pendingAction.context } 
+      };
     } catch (error) {
-      console.error('[Restoration] Camera error:', error);
-      return { source: 'camera', success: false, error: String(error) };
+      console.error('[Restoration] Pending action error:', error);
+      return { source: 'pending-action', success: false, error: String(error) };
     }
-  }, [uploadAvatar]);
+  }, []);
 
   /**
    * 💳 Payment Restoration Handler
@@ -124,6 +124,14 @@ export const useAppRestoration = () => {
       // Dynamically import RevenueCat
       const { Purchases } = await import('@revenuecat/purchases-capacitor');
       
+      // Önce restore dene - yarıda kalan işlemleri tamamla
+      try {
+        const restoreResult = await Purchases.restorePurchases();
+        console.log('[Restoration] 💳 Restore result:', restoreResult);
+      } catch (restoreError) {
+        console.warn('[Restoration] Restore error (non-critical):', restoreError);
+      }
+      
       // Get customer info to check for pending purchases
       const result = await Purchases.getCustomerInfo();
       // RevenueCat returns { customerInfo: CustomerInfo } wrapper
@@ -139,6 +147,8 @@ export const useAppRestoration = () => {
           window.dispatchEvent(new CustomEvent('payment-restored', {
             detail: { entitlements: activeEntitlements }
           }));
+          
+          toast.success('Satın alımlarınız geri yüklendi!', { duration: 3000 });
           
           return { source: 'payment', success: true, data: activeEntitlements };
         }
@@ -195,9 +205,9 @@ export const useAppRestoration = () => {
   }, []);
 
   /**
-   * 🚀 Ana Restoration Flow
+   * 🚀 Ana Restoration Flow - App başlatıldığında çağrılır
    */
-  const performRestoration = useCallback(async (restoredEvent?: RestoredListenerEvent) => {
+  const performRestoration = useCallback(async () => {
     if (isProcessingRef.current) {
       console.log('[Restoration] Already processing, skipping...');
       return;
@@ -211,22 +221,21 @@ export const useAppRestoration = () => {
     try {
       const results: RestorationResult[] = [];
 
-      // 1. Camera restoration (if there's a restored result)
-      if (restoredEvent) {
-        setRestorationMessage('Fotoğraf işleniyor...');
-        const cameraResult = await handleCameraRestoration(restoredEvent);
-        results.push(cameraResult);
-      }
+      // 1. Pending action kontrolü (camera/gallery/payment yarıda kaldı mı?)
+      setRestorationMessage('İşlemler kontrol ediliyor...');
+      setRestorationProgress(25);
+      const pendingResult = await handlePendingAction();
+      results.push(pendingResult);
 
-      // 2. Payment restoration
+      // 2. Payment restoration (RevenueCat)
       setRestorationMessage('Satın alma durumu kontrol ediliyor...');
-      setRestorationProgress(40);
+      setRestorationProgress(50);
       const paymentResult = await handlePaymentRestoration();
       results.push(paymentResult);
 
       // 3. WebSocket restoration
       setRestorationMessage('Mesajlar alınıyor...');
-      setRestorationProgress(70);
+      setRestorationProgress(75);
       const wsResult = await handleWebSocketRestoration();
       results.push(wsResult);
 
@@ -236,49 +245,49 @@ export const useAppRestoration = () => {
       console.log('[Restoration] ✅ Tamamlandı:', results);
       
       // Small delay to show completion
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
     } catch (error) {
       console.error('[Restoration] ❌ Hata:', error);
-      toast.error('Uygulama durumu yüklenirken hata oluştu');
+      // Sessiz hata - kullanıcıyı rahatsız etme
     } finally {
       setIsRestoring(false);
       setRestorationMessage('');
       setRestorationProgress(0);
       isProcessingRef.current = false;
     }
-  }, [handleCameraRestoration, handlePaymentRestoration, handleWebSocketRestoration]);
+  }, [handlePendingAction, handlePaymentRestoration, handleWebSocketRestoration]);
 
   /**
-   * 🎯 Initial Setup - Listen for restoration events
+   * 🎯 Initial Setup - App başlatıldığında ve resume'da çalış
    */
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     if (hasCheckedRestorationRef.current) return;
     hasCheckedRestorationRef.current = true;
 
-    console.log('[Restoration] 🎯 Restoration listeners kuruluyor...');
+    console.log('[Restoration] 🎯 Restoration başlatılıyor...');
 
-    // Listen for appRestoredResult (when app was killed and restored)
-    const setupListeners = async () => {
+    // App ilk açıldığında hemen kontrol et
+    performRestoration();
+
+    // Resume listener - arka plandan dönünce de kontrol et
+    const setupResumeListener = async () => {
       try {
-        // Check if there's already a restored result waiting
-        // Note: This event fires when the app is restored after being killed
-        const appRestoredListener = await App.addListener('appRestoredResult', async (event) => {
-          console.log('[Restoration] 🔄 appRestoredResult event:', event);
-          await performRestoration(event);
-        });
-
-        // Also listen for resume without restored result (for WebSocket & Payment only)
         const resumeListener = await App.addListener('resume', async () => {
-          console.log('[Restoration] 📱 App resumed - checking buffers...');
-          // Only check WebSocket and Payment on regular resume
+          console.log('[Restoration] 📱 App resumed - kontrol ediliyor...');
+          
+          // Sadece pending action ve websocket kontrol et (payment restore ağır)
+          const pendingAction = await getPendingAction();
+          if (pendingAction) {
+            console.log('[Restoration] ⚠️ Resume sonrası pending action:', pendingAction);
+            await handlePendingAction();
+          }
+          
           await handleWebSocketRestoration();
-          await handlePaymentRestoration();
         });
 
         return () => {
-          appRestoredListener.remove();
           resumeListener.remove();
         };
       } catch (error) {
@@ -286,8 +295,8 @@ export const useAppRestoration = () => {
       }
     };
 
-    setupListeners();
-  }, [performRestoration, handleWebSocketRestoration, handlePaymentRestoration]);
+    setupResumeListener();
+  }, [performRestoration, handlePendingAction, handleWebSocketRestoration]);
 
   return {
     isRestoring,
