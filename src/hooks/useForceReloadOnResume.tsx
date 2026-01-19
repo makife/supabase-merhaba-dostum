@@ -5,55 +5,54 @@ import { Preferences } from "@capacitor/preferences";
 import { toast } from "sonner";
 
 /**
- * 🔄 AGGRESSIVE FORCE RELOAD ON RESUME
+ * 🔄 COLD START RELOAD ON RESUME
  * 
- * Basit mantık:
- * 1. Arka plana giderken path kaydet  
- * 2. Ön plana gelince 500ms bekle (WebView uyanması için)
- * 3. Cache-busting ile tam sayfa yenileme (replace + timestamp)
- * 4. Reload sonrası "Bağlanıyor" toast göster
+ * İlk açılış davranışını simüle eder:
+ * 1. Arka plana giderken path kaydet
+ * 2. Ön plana gelince window.location.href = origin + path
+ * 3. Bu TAM bir cold start - tüm JS sıfırdan yüklenir
  */
 
 const LAST_PATH_KEY = "app-last-path";
-const RESUME_RELOAD_FLAG = "app-resume-reload";
+const RESUME_FLAG_KEY = "app-resume-reload";
 
-async function setLastPath(path: string): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await Preferences.set({ key: LAST_PATH_KEY, value: path });
-  } else {
-    sessionStorage.setItem(LAST_PATH_KEY, path);
-  }
-}
-
-export async function getLastPath(): Promise<string | null> {
-  if (Capacitor.isNativePlatform()) {
+async function getLastPath(): Promise<string | null> {
+  try {
     const { value } = await Preferences.get({ key: LAST_PATH_KEY });
     return value;
-  } else {
+  } catch {
     return sessionStorage.getItem(LAST_PATH_KEY);
   }
 }
 
+async function setLastPath(path: string): Promise<void> {
+  try {
+    await Preferences.set({ key: LAST_PATH_KEY, value: path });
+  } catch {
+    sessionStorage.setItem(LAST_PATH_KEY, path);
+  }
+}
+
 async function setResumeFlag(): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await Preferences.set({ key: RESUME_RELOAD_FLAG, value: "true" });
-  } else {
-    sessionStorage.setItem(RESUME_RELOAD_FLAG, "true");
+  try {
+    await Preferences.set({ key: RESUME_FLAG_KEY, value: "true" });
+  } catch {
+    sessionStorage.setItem(RESUME_FLAG_KEY, "true");
   }
 }
 
 async function getAndClearResumeFlag(): Promise<boolean> {
-  if (Capacitor.isNativePlatform()) {
-    const { value } = await Preferences.get({ key: RESUME_RELOAD_FLAG });
+  try {
+    const { value } = await Preferences.get({ key: RESUME_FLAG_KEY });
     if (value === "true") {
-      await Preferences.remove({ key: RESUME_RELOAD_FLAG });
+      await Preferences.remove({ key: RESUME_FLAG_KEY });
       return true;
     }
     return false;
-  } else {
-    const flag = sessionStorage.getItem(RESUME_RELOAD_FLAG);
-    if (flag === "true") {
-      sessionStorage.removeItem(RESUME_RELOAD_FLAG);
+  } catch {
+    const value = sessionStorage.getItem(RESUME_FLAG_KEY);
+    if (value === "true") {
+      sessionStorage.removeItem(RESUME_FLAG_KEY);
       return true;
     }
     return false;
@@ -61,34 +60,33 @@ async function getAndClearResumeFlag(): Promise<boolean> {
 }
 
 /**
- * App başlangıcında çağrılmalı - resume reload olup olmadığını kontrol eder
- * ve "Bağlanıyor" toast gösterir
+ * App başlangıcında çağrılmalı - resume reload'dan gelip gelmediğini kontrol eder
  */
 export async function checkResumeReload(): Promise<boolean> {
   const isResumeReload = await getAndClearResumeFlag();
   if (isResumeReload) {
-    console.log("[ForceReload] ✅ Resume reload tespit edildi - loading atlanacak");
+    console.log("[ForceReload] ✅ Resume reload tespit edildi");
     sessionStorage.setItem("app-loaded", "true");
     
-    // "Bağlanıyor" toast göster ve 2 saniye sonra kapat
-    const toastId = toast.loading("Bağlanıyor...", {
-      duration: 3000,
+    // "Bağlanıyor" toast göster
+    toast.loading("Bağlanıyor...", {
+      id: "resume-connecting",
+      duration: 2500,
     });
     
+    // 2.5 saniye sonra kapat
     setTimeout(() => {
-      toast.dismiss(toastId);
-    }, 2000);
+      toast.dismiss("resume-connecting");
+    }, 2500);
   }
   return isResumeReload;
 }
 
 /**
- * Hook: Native platformda arka plandan dönüşte agresif reload tetikler
+ * Hook: Native platformda arka plandan dönüşte COLD START reload tetikler
  * 
- * YAKLAŞIM: 
- * - appStateChange + 500ms gecikme (daha uzun bekleme)
- * - window.location.replace() + cache-busting timestamp
- * - WebView'in tamamen uyanmasını garanti eder
+ * YAKLAŞIM: window.location.href = origin + path
+ * Bu TAM bir cold start - ilk açılış ile aynı davranış
  */
 export function useForceReloadOnResume() {
   const isReloadingRef = useRef(false);
@@ -97,62 +95,64 @@ export function useForceReloadOnResume() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
-    console.log("[ForceReload] 🚀 Hook başlatıldı (agresif mod)");
+    console.log("[ForceReload] 🚀 Cold Start Reload Hook başlatıldı");
     
     const handleStateChange = async (state: { isActive: boolean }) => {
       // Arka plana gidiş
       if (!state.isActive) {
+        console.log("[ForceReload] 📴 Arka plana gidiliyor, path kaydediliyor...");
         wasInBackgroundRef.current = true;
         const currentPath = window.location.pathname + window.location.search;
         await setLastPath(currentPath);
-        console.log("[ForceReload] 💤 Arka plana gidiliyor, path kaydedildi:", currentPath);
         return;
       }
       
       // Ön plana dönüş
-      if (state.isActive && wasInBackgroundRef.current && !isReloadingRef.current) {
-        console.log("[ForceReload] 📱 Ön plana dönüldü...");
+      if (state.isActive && wasInBackgroundRef.current) {
+        if (isReloadingRef.current) {
+          console.log("[ForceReload] ⏳ Zaten reload yapılıyor, atlanıyor");
+          return;
+        }
         
         isReloadingRef.current = true;
         wasInBackgroundRef.current = false;
         
-        // Path'i kaydet
-        const currentPath = window.location.pathname + window.location.search;
-        await setLastPath(currentPath);
+        const lastPath = await getLastPath();
+        const targetPath = lastPath || "/";
+        
+        // Clean path (cache-busting parametrelerini temizle)
+        const cleanPath = targetPath.replace(/[?&]_t=\d+/, "").replace(/[?&]$/, "") || "/";
+        
         await setResumeFlag();
         
-        console.log("[ForceReload] ⏳ 500ms bekleniyor (WebView tam uyanması için)...");
+        console.log("[ForceReload] ⏳ 500ms bekleniyor (WebView uyanması için)...");
         
-        // 🔥 KRİTİK: 500ms bekle - WebView'in tamamen uyanmasını garanti et
+        // 500ms bekle - WebView'in uyanmasını garanti et
         setTimeout(() => {
-          console.log("[ForceReload] 🔄 AGRESİF sayfa yenileme başlatılıyor:", currentPath);
+          console.log("[ForceReload] 🔄 COLD START yapılıyor:", cleanPath);
           
-          // Cache-busting URL oluştur
-          const separator = currentPath.includes('?') ? '&' : '?';
-          const cacheBustUrl = `${currentPath}${separator}_t=${Date.now()}`;
-          
-          // window.location.replace kullan - daha agresif, history'yi değiştirir
-          window.location.replace(cacheBustUrl);
+          // 🔥 COLD START: İlk açılış ile aynı davranış
+          // window.location.href = origin + path → TAM sayfa yüklemesi
+          window.location.href = window.location.origin + cleanPath;
         }, 500);
       }
     };
     
-    const listenerPromise = App.addListener("appStateChange", handleStateChange);
+    const listener = App.addListener("appStateChange", handleStateChange);
     
     return () => {
-      listenerPromise.then(listener => listener.remove());
+      listener.then(l => l.remove());
     };
   }, []);
 }
 
 /**
- * Son path'e yönlendirme için kullanılacak
+ * Son path'e yönlendirme (App.tsx'de kullanılır)
  */
 export async function navigateToLastPath(navigate: (path: string) => void): Promise<boolean> {
   const lastPath = await getLastPath();
   if (lastPath && lastPath !== "/" && lastPath !== window.location.pathname) {
-    // Cache-busting parametresini temizle
-    const cleanPath = lastPath.replace(/[?&]_t=\d+/, '').replace(/[?&]$/, '');
+    const cleanPath = lastPath.replace(/[?&]_t=\d+/, "").replace(/[?&]$/, "");
     console.log("[ForceReload] 🎯 Son path'e yönlendiriliyor:", cleanPath);
     navigate(cleanPath || lastPath);
     return true;
