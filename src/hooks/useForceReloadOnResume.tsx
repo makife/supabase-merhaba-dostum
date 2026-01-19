@@ -61,23 +61,13 @@ async function getAndClearResumeFlag(): Promise<boolean> {
 
 /**
  * App başlangıcında çağrılmalı - resume reload'dan gelip gelmediğini kontrol eder
+ * NOT: "app-loaded" flag'i SET ETMİYORUZ - loading ekranı normal gösterilecek
  */
 export async function checkResumeReload(): Promise<boolean> {
   const isResumeReload = await getAndClearResumeFlag();
   if (isResumeReload) {
-    console.log("[ForceReload] ✅ Resume reload tespit edildi");
-    sessionStorage.setItem("app-loaded", "true");
-    
-    // "Bağlanıyor" toast göster
-    toast.loading("Bağlanıyor...", {
-      id: "resume-connecting",
-      duration: 2500,
-    });
-    
-    // 2.5 saniye sonra kapat
-    setTimeout(() => {
-      toast.dismiss("resume-connecting");
-    }, 2500);
+    console.log("[ForceReload] ✅ Resume reload tespit edildi - TAM ilk açılış gibi davranılacak");
+    // 🔥 app-loaded SET ETMİYORUZ - loading ekranı gösterilecek (ilk açılış ile aynı)
   }
   return isResumeReload;
 }
