@@ -72,6 +72,7 @@ import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";
 import RestorationOverlay from "@/components/RestorationOverlay";
 import { useAppRestoration } from "@/hooks/useAppRestoration";
+import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 const queryClient = new QueryClient();
 
 // Wrapper component to use useNavigate inside Router context
@@ -561,6 +562,9 @@ const AppRestorationManager = () => {
 const App = () => {
   // Initialize foreground state tracking globally
   useAppForegroundState();
+
+  // 🔥 FORCE RELOAD ON RESUME - Arka plandan dönünce sayfayı yeniden yükle
+  useForceReloadOnResume();
 
   // 1. Hook'u sadece bir referans almak için kullanıyoruz
   const { manualHideBars } = useImmersiveBars();
