@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Preferences } from "@capacitor/preferences";
-import { isCameraActive } from "@/utils/cameraState";
+import { isCameraActive, loadCameraActiveState } from "@/utils/cameraState";
 
 /**
  * 🔄 FORCE RELOAD ON RESUME
@@ -10,16 +10,12 @@ import { isCameraActive } from "@/utils/cameraState";
  * Uygulama arka plandan döndüğünde TAMAMEN yeniden başlatır.
  * Ama LoadingScreen'i göstermez - son sayfada kalır.
  * 
- * Mantık:
- * 1. Arka plana giderken: current path'i kaydet
- * 2. Ön plana dönünce: Kamera aktif değilse → window.location.reload() + resume flag
- * 3. Reload sonrası: flag varsa → LoadingScreen atla
+ * ⚠️ KAMERA/GALERİ AKTİFKEN RELOAD YAPILMAZ!
  */
 
 const RESUME_RELOAD_FLAG = "app-resume-reload";
 const LAST_PATH_KEY = "app-last-path";
 
-// Native storage helpers
 async function setResumeFlag(): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     await Preferences.set({ key: RESUME_RELOAD_FLAG, value: "true" });
@@ -65,12 +61,19 @@ export async function getLastPath(): Promise<string | null> {
 
 /**
  * App başlangıcında çağrılmalı - resume reload olup olmadığını kontrol eder
+ * Ayrıca kamera state'ini de yükler
  */
 export async function checkResumeReload(): Promise<boolean> {
+  // Önce kamera state'ini yükle (native storage'dan)
+  const wasCameraActive = await loadCameraActiveState();
+  
+  if (wasCameraActive) {
+    console.log("[ForceReload] 📷 Kamera aktifti - reload bypass edilecek");
+  }
+  
   const isResumeReload = await getAndClearResumeFlag();
   if (isResumeReload) {
     console.log("[ForceReload] ✅ Resume reload tespit edildi - loading atlanacak");
-    // sessionStorage'a da kaydet ki AppRoutes bunu görsün
     sessionStorage.setItem("app-loaded", "true");
   }
   return isResumeReload;
@@ -92,7 +95,6 @@ export function useForceReloadOnResume() {
       // Ön plana dönüş
       if (state.isActive && !isReloadingRef.current) {
         // 🛡️ KAMERA AKTİFSE RELOAD YAPMA!
-        // Kamera/galeri açıkken arka plana gidip gelmek normal
         if (isCameraActive()) {
           console.log("[ForceReload] 📷 Kamera aktif - reload atlanıyor");
           return;
@@ -102,19 +104,15 @@ export function useForceReloadOnResume() {
         
         isReloadingRef.current = true;
         
-        // Current path'i kaydet
         const currentPath = window.location.pathname + window.location.search;
         await setLastPath(currentPath);
-        
-        // Resume flag'ini set et
         await setResumeFlag();
         
         console.log("[ForceReload] 🔄 Sayfa yeniden yükleniyor:", currentPath);
         
-        // Sayfayı yeniden yükle
         window.location.reload();
       }
-      // Arka plana gidiş - path'i kaydet
+      // Arka plana gidiş
       else if (!state.isActive) {
         const currentPath = window.location.pathname + window.location.search;
         await setLastPath(currentPath);
@@ -122,7 +120,6 @@ export function useForceReloadOnResume() {
       }
     };
     
-    // App state listener'ı ekle
     const listenerPromise = App.addListener("appStateChange", handleAppStateChange);
     
     return () => {

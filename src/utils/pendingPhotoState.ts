@@ -1,13 +1,13 @@
 /**
  * 📸 Pending Photo State Manager
  * 
- * Kamera/galeri ile çekilen fotoğrafı native storage'a kaydeder.
- * App öldürülürse, geri geldiğinde bu fotoğraf alınıp yüklenir.
+ * Kamera/galeri işleminin başladığını kaydet.
+ * NOT: Base64 veriyi kaydetmiyoruz çünkü çok büyük (2-5MB) ve Preferences crash yapıyor!
+ * Sadece meta bilgiyi kaydediyoruz.
  */
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
 
-const KEY_PENDING_PHOTO = "pending_photo_data";
 const KEY_PENDING_PHOTO_META = "pending_photo_meta";
 
 export interface PendingPhotoMeta {
@@ -19,65 +19,66 @@ export interface PendingPhotoMeta {
 const isNative = Capacitor.isNativePlatform();
 
 /**
- * Çekilen fotoğrafı native storage'a kaydet
+ * Fotoğraf işlemi başladığında meta bilgiyi kaydet
+ * NOT: Base64 veriyi KAYDETME - crash yapıyor!
  */
-export async function savePendingPhoto(
-  dataUrl: string,
-  meta: PendingPhotoMeta
-): Promise<void> {
-  console.log("[PendingPhoto] 💾 Fotoğraf kaydediliyor...", meta);
+export async function savePendingPhotoMeta(meta: PendingPhotoMeta): Promise<void> {
+  console.log("[PendingPhoto] 💾 Meta kaydediliyor...", meta);
   
   try {
     if (isNative) {
-      await Preferences.set({ key: KEY_PENDING_PHOTO, value: dataUrl });
       await Preferences.set({ key: KEY_PENDING_PHOTO_META, value: JSON.stringify(meta) });
     } else {
-      localStorage.setItem(KEY_PENDING_PHOTO, dataUrl);
       localStorage.setItem(KEY_PENDING_PHOTO_META, JSON.stringify(meta));
     }
-    console.log("[PendingPhoto] ✅ Fotoğraf kaydedildi");
+    console.log("[PendingPhoto] ✅ Meta kaydedildi");
   } catch (error) {
     console.error("[PendingPhoto] ❌ Kaydetme hatası:", error);
-    throw error;
+    // Don't throw - this is not critical
   }
 }
 
 /**
- * Kaydedilmiş fotoğrafı oku
+ * @deprecated Use savePendingPhotoMeta instead
+ * Bu fonksiyon geriye uyumluluk için bırakıldı
  */
-export async function getPendingPhoto(): Promise<{
-  dataUrl: string;
-  meta: PendingPhotoMeta;
-} | null> {
+export async function savePendingPhoto(
+  _dataUrl: string, // Artık kullanılmıyor - çok büyük crash yapıyor
+  meta: PendingPhotoMeta
+): Promise<void> {
+  // Sadece meta'yı kaydet, dataUrl'i KAYDETME
+  await savePendingPhotoMeta(meta);
+}
+
+/**
+ * Pending photo meta bilgisini oku
+ */
+export async function getPendingPhotoMeta(): Promise<PendingPhotoMeta | null> {
   try {
-    let dataUrl: string | null = null;
     let metaStr: string | null = null;
     
     if (isNative) {
-      const photoResult = await Preferences.get({ key: KEY_PENDING_PHOTO });
       const metaResult = await Preferences.get({ key: KEY_PENDING_PHOTO_META });
-      dataUrl = photoResult.value;
       metaStr = metaResult.value;
     } else {
-      dataUrl = localStorage.getItem(KEY_PENDING_PHOTO);
       metaStr = localStorage.getItem(KEY_PENDING_PHOTO_META);
     }
     
-    if (!dataUrl || !metaStr) {
+    if (!metaStr) {
       return null;
     }
     
     const meta = JSON.parse(metaStr) as PendingPhotoMeta;
     
-    // 10 dakikadan eski fotoğrafları geçersiz say
+    // 10 dakikadan eski işlemleri geçersiz say
     if (Date.now() - meta.capturedAt > 10 * 60 * 1000) {
-      console.log("[PendingPhoto] ⏰ Fotoğraf süresi dolmuş, siliniyor...");
+      console.log("[PendingPhoto] ⏰ İşlem süresi dolmuş, siliniyor...");
       await clearPendingPhoto();
       return null;
     }
     
-    console.log("[PendingPhoto] 📖 Fotoğraf bulundu:", meta);
-    return { dataUrl, meta };
+    console.log("[PendingPhoto] 📖 Meta bulundu:", meta);
+    return meta;
   } catch (error) {
     console.error("[PendingPhoto] ❌ Okuma hatası:", error);
     return null;
@@ -85,17 +86,27 @@ export async function getPendingPhoto(): Promise<{
 }
 
 /**
- * Pending fotoğrafı temizle
+ * @deprecated Use getPendingPhotoMeta instead
+ */
+export async function getPendingPhoto(): Promise<{
+  dataUrl: string;
+  meta: PendingPhotoMeta;
+} | null> {
+  // Artık dataUrl kaydetmiyoruz, bu fonksiyon her zaman null dönecek
+  // Ama meta varsa yarım kalan işlemi bildirebiliriz
+  return null;
+}
+
+/**
+ * Pending photo meta'yı temizle
  */
 export async function clearPendingPhoto(): Promise<void> {
-  console.log("[PendingPhoto] 🗑️ Fotoğraf temizleniyor...");
+  console.log("[PendingPhoto] 🗑️ Meta temizleniyor...");
   
   try {
     if (isNative) {
-      await Preferences.remove({ key: KEY_PENDING_PHOTO });
       await Preferences.remove({ key: KEY_PENDING_PHOTO_META });
     } else {
-      localStorage.removeItem(KEY_PENDING_PHOTO);
       localStorage.removeItem(KEY_PENDING_PHOTO_META);
     }
   } catch (error) {
@@ -104,7 +115,7 @@ export async function clearPendingPhoto(): Promise<void> {
 }
 
 /**
- * Pending fotoğraf var mı kontrol et (hızlı kontrol, veri okumadan)
+ * Pending fotoğraf işlemi var mı kontrol et
  */
 export async function hasPendingPhoto(): Promise<boolean> {
   try {
