@@ -2,19 +2,35 @@ import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Preferences } from "@capacitor/preferences";
-import { isCameraActive, loadCameraActiveState } from "@/utils/cameraState";
 
 /**
- * 🔄 FORCE RELOAD ON RESUME
+ * 🔄 SIMPLE FORCE RELOAD ON RESUME
  * 
- * Uygulama arka plandan döndüğünde TAMAMEN yeniden başlatır.
- * Ama LoadingScreen'i göstermez - son sayfada kalır.
- * 
- * ⚠️ KAMERA/GALERİ AKTİFKEN RELOAD YAPILMAZ!
+ * Basit mantık:
+ * 1. Arka plana giderken path kaydet
+ * 2. Ön plana gelince reload et
+ * 3. Reload sonrası aynı path'e git
  */
 
-const RESUME_RELOAD_FLAG = "app-resume-reload";
 const LAST_PATH_KEY = "app-last-path";
+const RESUME_RELOAD_FLAG = "app-resume-reload";
+
+async function setLastPath(path: string): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await Preferences.set({ key: LAST_PATH_KEY, value: path });
+  } else {
+    sessionStorage.setItem(LAST_PATH_KEY, path);
+  }
+}
+
+export async function getLastPath(): Promise<string | null> {
+  if (Capacitor.isNativePlatform()) {
+    const { value } = await Preferences.get({ key: LAST_PATH_KEY });
+    return value;
+  } else {
+    return sessionStorage.getItem(LAST_PATH_KEY);
+  }
+}
 
 async function setResumeFlag(): Promise<void> {
   if (Capacitor.isNativePlatform()) {
@@ -42,35 +58,10 @@ async function getAndClearResumeFlag(): Promise<boolean> {
   }
 }
 
-async function setLastPath(path: string): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    await Preferences.set({ key: LAST_PATH_KEY, value: path });
-  } else {
-    sessionStorage.setItem(LAST_PATH_KEY, path);
-  }
-}
-
-export async function getLastPath(): Promise<string | null> {
-  if (Capacitor.isNativePlatform()) {
-    const { value } = await Preferences.get({ key: LAST_PATH_KEY });
-    return value;
-  } else {
-    return sessionStorage.getItem(LAST_PATH_KEY);
-  }
-}
-
 /**
  * App başlangıcında çağrılmalı - resume reload olup olmadığını kontrol eder
- * Ayrıca kamera state'ini de yükler
  */
 export async function checkResumeReload(): Promise<boolean> {
-  // Önce kamera state'ini yükle (native storage'dan)
-  const wasCameraActive = await loadCameraActiveState();
-  
-  if (wasCameraActive) {
-    console.log("[ForceReload] 📷 Kamera aktifti - reload bypass edilecek");
-  }
-  
   const isResumeReload = await getAndClearResumeFlag();
   if (isResumeReload) {
     console.log("[ForceReload] ✅ Resume reload tespit edildi - loading atlanacak");
@@ -81,7 +72,6 @@ export async function checkResumeReload(): Promise<boolean> {
 
 /**
  * Hook: Native platformda arka plandan dönüşte reload tetikler
- * NOT: Kamera/Galeri aktifken reload YAPILMAZ!
  */
 export function useForceReloadOnResume() {
   const isReloadingRef = useRef(false);
@@ -94,12 +84,6 @@ export function useForceReloadOnResume() {
     const handleAppStateChange = async (state: { isActive: boolean }) => {
       // Ön plana dönüş
       if (state.isActive && !isReloadingRef.current) {
-        // 🛡️ KAMERA AKTİFSE RELOAD YAPMA!
-        if (isCameraActive()) {
-          console.log("[ForceReload] 📷 Kamera aktif - reload atlanıyor");
-          return;
-        }
-        
         console.log("[ForceReload] 📱 Ön plana dönüldü - reload tetikleniyor...");
         
         isReloadingRef.current = true;
