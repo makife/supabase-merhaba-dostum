@@ -88,8 +88,14 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  // 🔥 Resume parametresi kontrolü (SYNC)
-  const isResumeReload = typeof window !== 'undefined' && window.location.search.includes('_resume=1');
+  // 🔥 Resume parametresi kontrolü (SYNC) - useState DIŞINDA hesapla
+  const [isResumeReload] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('_resume=1')) {
+      console.log("[App] 🔄 Resume reload tespit edildi!");
+      return true;
+    }
+    return false;
+  });
   
   const [customLoading, setCustomLoading] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -254,7 +260,8 @@ const AppRoutes = () => {
     setCustomLoading(false);
   };
 
-  if (loading || customLoading) {
+  // 🔥 Resume reload'da LoadingScreen (ergan.jpg) ASLA gösterilmez
+  if ((loading || customLoading) && !isResumeReload) {
     return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
   }
 
