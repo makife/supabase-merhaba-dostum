@@ -7,9 +7,10 @@ import { Preferences } from "@capacitor/preferences";
  * 🔄 SIMPLE FORCE RELOAD ON RESUME
  * 
  * Basit mantık:
- * 1. Arka plana giderken path kaydet
- * 2. Ön plana gelince reload et
- * 3. Reload sonrası aynı path'e git
+ * 1. Arka plana giderken path kaydet  
+ * 2. Ön plana gelince 300ms bekle (WebView uyanması için)
+ * 3. window.location.reload() ile sayfayı yenile
+ * 4. Reload sonrası app sıfırdan başlıyor = tüm Supabase kanalları yeniden kurulur
  */
 
 const LAST_PATH_KEY = "app-last-path";
@@ -72,39 +73,54 @@ export async function checkResumeReload(): Promise<boolean> {
 
 /**
  * Hook: Native platformda arka plandan dönüşte reload tetikler
+ * 
+ * YAKLAŞIM: appStateChange + 300ms gecikme
+ * - appStateChange geldiğinde JS henüz tam uyanmamış olabilir
+ * - 300ms bekleyerek WebView'in hazır olmasını garantiliyoruz
+ * - Reload sonrası app sıfırdan başlıyor = tüm kanallar yeniden kurulur
  */
 export function useForceReloadOnResume() {
   const isReloadingRef = useRef(false);
+  const wasInBackgroundRef = useRef(false);
   
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
     console.log("[ForceReload] 🚀 Hook başlatıldı");
     
-    const handleAppStateChange = async (state: { isActive: boolean }) => {
+    const handleStateChange = async (state: { isActive: boolean }) => {
+      // Arka plana gidiş
+      if (!state.isActive) {
+        wasInBackgroundRef.current = true;
+        const currentPath = window.location.pathname + window.location.search;
+        await setLastPath(currentPath);
+        console.log("[ForceReload] 💤 Arka plana gidiliyor, path kaydedildi:", currentPath);
+        return;
+      }
+      
       // Ön plana dönüş
-      if (state.isActive && !isReloadingRef.current) {
-        console.log("[ForceReload] 📱 Ön plana dönüldü - reload tetikleniyor...");
+      if (state.isActive && wasInBackgroundRef.current && !isReloadingRef.current) {
+        console.log("[ForceReload] 📱 Ön plana dönüldü...");
         
         isReloadingRef.current = true;
+        wasInBackgroundRef.current = false;
         
+        // Path'i kaydet
         const currentPath = window.location.pathname + window.location.search;
         await setLastPath(currentPath);
         await setResumeFlag();
         
-        console.log("[ForceReload] 🔄 Sayfa yeniden yükleniyor:", currentPath);
+        console.log("[ForceReload] ⏳ 300ms bekleniyor (WebView uyanması için)...");
         
-        window.location.reload();
-      }
-      // Arka plana gidiş
-      else if (!state.isActive) {
-        const currentPath = window.location.pathname + window.location.search;
-        await setLastPath(currentPath);
-        console.log("[ForceReload] 💤 Arka plana gidiliyor, path kaydedildi:", currentPath);
+        // 🔥 KRİTİK: 300ms bekle - WebView'in tamamen uyanmasını garanti et
+        setTimeout(() => {
+          console.log("[ForceReload] 🔄 Sayfa yeniden yükleniyor:", currentPath);
+          window.location.reload();
+        }, 300);
       }
     };
     
-    const listenerPromise = App.addListener("appStateChange", handleAppStateChange);
+    const listenerPromise = App.addListener("appStateChange", handleStateChange);
     
     return () => {
       listenerPromise.then(listener => listener.remove());
