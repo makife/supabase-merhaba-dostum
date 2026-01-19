@@ -6,6 +6,10 @@ import { Camera } from '@capacitor/camera';
 import { CameraResultType, CameraSource } from '@capacitor/camera';
 import imageCompression from 'browser-image-compression';
 import { setCameraActive } from '@/utils/cameraState';
+import { 
+  setPendingAction, 
+  clearPendingAction,
+} from '@/utils/pendingActionState';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -143,6 +147,13 @@ export const useAvatarUpload = () => {
     // Kamera açılmadan önce korumayı aktifle
     setCameraActive(true);
     
+    // 🔥 Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
+    await setPendingAction({
+      type: 'camera',
+      startedAt: Date.now(),
+      context: 'avatar-upload',
+    });
+    
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -160,11 +171,19 @@ export const useAvatarUpload = () => {
       const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
       // uploadAvatar içinde zaten compress ediliyor
-      return await uploadAvatar(file);
+      const result = await uploadAvatar(file);
+      
+      // ✅ Başarılı - pending action'ı temizle
+      await clearPendingAction();
+      
+      return result;
     } catch (error: any) {
       if (error.message !== 'User cancelled photos app') {
         console.error('Error taking photo:', error);
         toast.error('Fotoğraf çekilirken hata oluştu');
+      } else {
+        // User cancelled - pending action'ı temizle
+        await clearPendingAction();
       }
       return null;
     } finally {
@@ -184,6 +203,13 @@ export const useAvatarUpload = () => {
     // Galeri açılmadan önce korumayı aktifle
     setCameraActive(true);
     
+    // 🔥 Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
+    await setPendingAction({
+      type: 'gallery',
+      startedAt: Date.now(),
+      context: 'avatar-upload',
+    });
+    
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -201,11 +227,19 @@ export const useAvatarUpload = () => {
       const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
 
       // uploadAvatar içinde zaten compress ediliyor
-      return await uploadAvatar(file);
+      const result = await uploadAvatar(file);
+      
+      // ✅ Başarılı - pending action'ı temizle
+      await clearPendingAction();
+      
+      return result;
     } catch (error: any) {
       if (error.message !== 'User cancelled photos app') {
         console.error('Error selecting photo:', error);
         toast.error('Fotoğraf seçilirken hata oluştu');
+      } else {
+        // User cancelled - pending action'ı temizle
+        await clearPendingAction();
       }
       return null;
     } finally {
