@@ -5,17 +5,6 @@ import { toast } from 'sonner';
 import { Camera } from '@capacitor/camera';
 import { CameraResultType, CameraSource } from '@capacitor/camera';
 import imageCompression from 'browser-image-compression';
-import { setCameraActive } from '@/utils/cameraState';
-import { 
-  setPendingAction, 
-  clearPendingAction,
-} from '@/utils/pendingActionState';
-import { 
-  startForegroundServiceStandalone, 
-  stopForegroundServiceStandalone 
-} from '@/hooks/useForegroundService';
-import { savePendingPhotoMeta, clearPendingPhoto } from '@/utils/pendingPhotoState';
-import { showPhotoOverlay, hidePhotoOverlay } from '@/components/PhotoUploadOverlay';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -141,23 +130,6 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     
-    // 🛡️ Koruma mekanizmalarını başlat
-    await startForegroundServiceStandalone();
-    setCameraActive(true);
-    
-    await setPendingAction({
-      type: 'camera',
-      startedAt: Date.now(),
-      context: 'avatar-upload',
-    });
-    
-    // Meta kaydet (Base64 DEĞİL - crash yapıyor!)
-    await savePendingPhotoMeta({
-      capturedAt: Date.now(),
-      source: 'camera',
-      context: 'avatar-upload'
-    });
-    
     try {
       console.log("[Avatar] 📷 Kamera açılıyor...");
       
@@ -173,29 +145,17 @@ export const useAvatarUpload = () => {
 
       console.log("[Avatar] ✅ Fotoğraf çekildi, yükleniyor...");
       
-      // 🎬 Overlay göster
-      showPhotoOverlay('optimizing');
+      toast.info("Fotoğraf yükleniyor...");
 
       // DataUrl'i blob'a çevir
       const response = await fetch(photo.dataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
-      showPhotoOverlay('uploading');
-      
       const result = await uploadAvatar(file);
-      
-      // ✅ Başarılı - temizle
-      await clearPendingAction();
-      await clearPendingPhoto();
-      
-      showPhotoOverlay('complete');
-      setTimeout(() => hidePhotoOverlay(), 1200);
       
       return result;
     } catch (error: any) {
-      hidePhotoOverlay();
-      
       const isCancelled = error.message?.includes('cancelled') || 
                           error.message?.includes('User cancelled');
       
@@ -204,16 +164,8 @@ export const useAvatarUpload = () => {
         toast.error('Fotoğraf çekilirken hata oluştu');
       }
       
-      // Temizle
-      await clearPendingAction();
-      await clearPendingPhoto();
-      
       return null;
     } finally {
-      await stopForegroundServiceStandalone();
-      
-      // Gecikmeyle korumayı kapat
-      setTimeout(() => setCameraActive(false), 3000);
       setUploading(false);
     }
   };
@@ -225,22 +177,6 @@ export const useAvatarUpload = () => {
     }
 
     setUploading(true);
-    
-    // 🛡️ Koruma mekanizmalarını başlat
-    await startForegroundServiceStandalone();
-    setCameraActive(true);
-    
-    await setPendingAction({
-      type: 'gallery',
-      startedAt: Date.now(),
-      context: 'avatar-upload',
-    });
-    
-    await savePendingPhotoMeta({
-      capturedAt: Date.now(),
-      source: 'gallery',
-      context: 'avatar-upload'
-    });
     
     try {
       console.log("[Avatar] 🖼️ Galeri açılıyor...");
@@ -257,26 +193,16 @@ export const useAvatarUpload = () => {
 
       console.log("[Avatar] ✅ Fotoğraf seçildi, yükleniyor...");
       
-      showPhotoOverlay('optimizing');
+      toast.info("Fotoğraf yükleniyor...");
 
       const response = await fetch(photo.dataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
 
-      showPhotoOverlay('uploading');
-      
       const result = await uploadAvatar(file);
-      
-      await clearPendingAction();
-      await clearPendingPhoto();
-      
-      showPhotoOverlay('complete');
-      setTimeout(() => hidePhotoOverlay(), 1200);
       
       return result;
     } catch (error: any) {
-      hidePhotoOverlay();
-      
       const isCancelled = error.message?.includes('cancelled') || 
                           error.message?.includes('User cancelled');
       
@@ -285,13 +211,8 @@ export const useAvatarUpload = () => {
         toast.error('Fotoğraf seçilirken hata oluştu');
       }
       
-      await clearPendingAction();
-      await clearPendingPhoto();
-      
       return null;
     } finally {
-      await stopForegroundServiceStandalone();
-      setTimeout(() => setCameraActive(false), 3000);
       setUploading(false);
     }
   };

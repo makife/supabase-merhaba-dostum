@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
-import { setPendingAction, clearPendingAction } from "@/utils/pendingActionState";
 
 // Sadece ana kütüphaneyi çekiyoruz
 import { Purchases } from "@revenuecat/purchases-capacitor";
@@ -42,20 +41,11 @@ export const useNativePurchases = () => {
 
       setIsLoading(true);
       try {
-        // 🔥 Pending action kaydet - app ölürse geri geldiğinde kontrol edilecek
-        await setPendingAction({
-          type: 'payment',
-          startedAt: Date.now(),
-          context: 'purchase',
-          productId: packageIdentifier,
-        });
-
         // 1. Market paketlerini çek
         const offerings = await Purchases.getOfferings();
         const currentOffering = offerings.current;
 
         if (!currentOffering || !currentOffering.availablePackages) {
-          await clearPendingAction();
           throw new Error("Market paketleri bulunamadı.");
         }
 
@@ -63,25 +53,18 @@ export const useNativePurchases = () => {
         const packageToBuy = currentOffering.availablePackages.find((pkg: any) => pkg.identifier === packageIdentifier);
 
         if (!packageToBuy) {
-          await clearPendingAction();
           throw new Error(`Paket bulunamadı: ${packageIdentifier}`);
         }
 
         // 3. Satın al
         const { customerInfo } = await Purchases.purchasePackage({ aPackage: packageToBuy });
 
-        // ✅ Başarılı - pending action temizle
-        await clearPendingAction();
-
         console.log("Satın alma başarılı:", customerInfo);
         return true;
       } catch (error: any) {
         if (error.userCancelled) {
-          // User cancelled - pending action temizle
-          await clearPendingAction();
           console.log("Kullanıcı iptal etti");
         } else {
-          // Diğer hatalar için pending action'ı bırak (recovery için)
           console.error("Satın alma hatası:", error);
           toast({ title: "Hata", description: error.message || "Satın alma başarısız", variant: "destructive" });
         }

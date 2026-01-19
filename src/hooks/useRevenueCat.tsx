@@ -4,7 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/integrations/supabase/client';
-import { setPendingAction, clearPendingAction } from '@/utils/pendingActionState';
 
 // Dinamik import - sadece native platformda yüklenir
 const getPurchases = async () => {
@@ -112,14 +111,6 @@ export const useRevenueCat = () => {
 
     try {
       setIsLoading(true);
-      
-      // 🔥 Pending action kaydet - app ölürse geri geldiğinde kontrol edilecek
-      await setPendingAction({
-        type: 'payment',
-        startedAt: Date.now(),
-        context: 'purchase',
-        productId,
-      });
 
       // Package'ı bul
       const packageToPurchase = offerings.availablePackages.find(
@@ -127,7 +118,6 @@ export const useRevenueCat = () => {
       );
 
       if (!packageToPurchase) {
-        await clearPendingAction();
         toast({
           title: 'Hata',
           description: 'Ürün bulunamadı',
@@ -140,9 +130,6 @@ export const useRevenueCat = () => {
       const result = await Purchases.purchasePackage({
         aPackage: packageToPurchase
       });
-
-      // ✅ Satın alma başarılı - pending action'ı temizle
-      await clearPendingAction();
 
       // Satın alma başarılı - veritabanını güncelle
       await handleSuccessfulPurchase(productId, null);
@@ -161,15 +148,12 @@ export const useRevenueCat = () => {
     } catch (error: any) {
       console.error('Purchase failed:', error);
       
-      // Kullanıcı iptal ettiyse - pending action'ı temizle
       if (error.code === 'PURCHASE_CANCELLED_ERROR' || error.userCancelled) {
-        await clearPendingAction();
         toast({
           title: 'İptal Edildi',
           description: 'Satın alma işlemi iptal edildi',
         });
       } else {
-        // Diğer hatalar için pending action'ı bırak (recovery için)
         toast({
           title: 'Satın Alma Hatası',
           description: 'İşlem gerçekleştirilemedi. Lütfen tekrar deneyin.',
