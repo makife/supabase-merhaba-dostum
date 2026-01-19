@@ -94,6 +94,15 @@ const AppRoutes = () => {
     }
     return true;
   });
+
+  // Resume reload kontrolü - app başlangıcında çalışır
+  useEffect(() => {
+    const checkResume = async () => {
+      const { checkResumeReload } = await import("@/hooks/useForceReloadOnResume");
+      await checkResumeReload();
+    };
+    checkResume();
+  }, []);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
 
