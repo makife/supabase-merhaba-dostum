@@ -134,9 +134,11 @@ export function useForceReloadOnResume() {
         setTimeout(() => {
           console.log("[ForceReload] 🔄 COLD START yapılıyor:", cleanPath);
           
-          // 🔥 COLD START: İlk açılış ile aynı davranış
-          // window.location.href = origin + path → TAM sayfa yüklemesi
-          window.location.href = window.location.origin + cleanPath;
+          // 🔥 URL'ye resume=1 ekle - App.tsx'de SYNC kontrol edilecek
+          const separator = cleanPath.includes('?') ? '&' : '?';
+          const resumeUrl = window.location.origin + cleanPath + separator + "_resume=1";
+          
+          window.location.href = resumeUrl;
         }, 500);
       }
     };
