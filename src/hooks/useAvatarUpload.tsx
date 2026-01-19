@@ -14,6 +14,8 @@ import {
   startForegroundServiceStandalone, 
   stopForegroundServiceStandalone 
 } from '@/hooks/useForegroundService';
+import { savePendingPhoto, clearPendingPhoto } from '@/utils/pendingPhotoState';
+import { showPhotoOverlay, hidePhotoOverlay } from '@/components/PhotoUploadOverlay';
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -173,25 +175,44 @@ export const useAvatarUpload = () => {
         throw new Error('Fotoğraf alınamadı');
       }
 
+      // 📸 Fotoğrafı HEMEN native storage'a kaydet (app ölürse kurtarılabilir)
+      await savePendingPhoto(photo.dataUrl, {
+        capturedAt: Date.now(),
+        source: 'camera',
+        context: 'avatar-upload'
+      });
+      
+      // 🎬 Overlay göster
+      showPhotoOverlay('optimizing');
+
       // DataUrl'i blob'a çevir
       const response = await fetch(photo.dataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
+      // Yükleme aşaması
+      showPhotoOverlay('uploading');
+      
       // uploadAvatar içinde zaten compress ediliyor
       const result = await uploadAvatar(file);
       
-      // ✅ Başarılı - pending action'ı temizle
+      // ✅ Başarılı - tüm pending state'leri temizle
       await clearPendingAction();
+      await clearPendingPhoto();
+      
+      showPhotoOverlay('complete');
+      setTimeout(() => hidePhotoOverlay(), 1000);
       
       return result;
     } catch (error: any) {
+      hidePhotoOverlay();
       if (error.message !== 'User cancelled photos app') {
         console.error('Error taking photo:', error);
         toast.error('Fotoğraf çekilirken hata oluştu');
       } else {
-        // User cancelled - pending action'ı temizle
+        // User cancelled - pending state'leri temizle
         await clearPendingAction();
+        await clearPendingPhoto();
       }
       return null;
     } finally {
@@ -236,25 +257,44 @@ export const useAvatarUpload = () => {
         throw new Error('Fotoğraf seçilemedi');
       }
 
+      // 📸 Fotoğrafı HEMEN native storage'a kaydet (app ölürse kurtarılabilir)
+      await savePendingPhoto(photo.dataUrl, {
+        capturedAt: Date.now(),
+        source: 'gallery',
+        context: 'avatar-upload'
+      });
+      
+      // 🎬 Overlay göster
+      showPhotoOverlay('optimizing');
+
       // DataUrl'i blob'a çevir
       const response = await fetch(photo.dataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
 
+      // Yükleme aşaması
+      showPhotoOverlay('uploading');
+      
       // uploadAvatar içinde zaten compress ediliyor
       const result = await uploadAvatar(file);
       
-      // ✅ Başarılı - pending action'ı temizle
+      // ✅ Başarılı - tüm pending state'leri temizle
       await clearPendingAction();
+      await clearPendingPhoto();
+      
+      showPhotoOverlay('complete');
+      setTimeout(() => hidePhotoOverlay(), 1000);
       
       return result;
     } catch (error: any) {
+      hidePhotoOverlay();
       if (error.message !== 'User cancelled photos app') {
         console.error('Error selecting photo:', error);
         toast.error('Fotoğraf seçilirken hata oluştu');
       } else {
-        // User cancelled - pending action'ı temizle
+        // User cancelled - pending state'leri temizle
         await clearPendingAction();
+        await clearPendingPhoto();
       }
       return null;
     } finally {
