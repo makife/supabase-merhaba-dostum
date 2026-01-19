@@ -14,7 +14,7 @@ import {
   startForegroundServiceStandalone, 
   stopForegroundServiceStandalone 
 } from '@/hooks/useForegroundService';
-import { savePendingPhoto, clearPendingPhoto } from '@/utils/pendingPhotoState';
+import { savePendingPhotoMeta, clearPendingPhoto } from '@/utils/pendingPhotoState';
 import { showPhotoOverlay, hidePhotoOverlay } from '@/components/PhotoUploadOverlay';
 
 export const useAvatarUpload = () => {
@@ -23,19 +23,18 @@ export const useAvatarUpload = () => {
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
-      maxSizeMB: 0.3,          // 300KB max
-      maxWidthOrHeight: 800,    // 800px max
+      maxSizeMB: 0.3,
+      maxWidthOrHeight: 800,
       useWebWorker: true,
-      fileType: 'image/webp'    // WebP formatına çevir
+      fileType: 'image/webp'
     };
 
     try {
       const compressedFile = await imageCompression(file, options);
-      toast.success(`Resim optimize edildi: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
+      console.log(`[Avatar] Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
       return compressedFile;
     } catch (error) {
       console.error('Error compressing image:', error);
-      // Compression başarısız olursa orijinal dosyayı döndür
       return file;
     }
   };
@@ -53,10 +52,7 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     try {
-      // Resmi compress et
       const compressedFile = await compressImage(file);
-
-      // Create a unique filename with webp extension
       const fileName = `${user.id}/${Date.now()}.webp`;
 
       // Delete existing avatar if any
@@ -66,13 +62,11 @@ export const useAvatarUpload = () => {
 
       if (existingFiles && existingFiles.length > 0) {
         const filesToDelete = existingFiles.map(f => `${user.id}/${f.name}`);
-        await supabase.storage
-          .from('avatars')
-          .remove(filesToDelete);
+        await supabase.storage.from('avatars').remove(filesToDelete);
       }
 
       // Upload new avatar
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, compressedFile, {
           cacheControl: '3600',
@@ -86,7 +80,7 @@ export const useAvatarUpload = () => {
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update profile with avatar URL
+      // Update profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -111,19 +105,15 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     try {
-      // Delete from storage
       const { data: existingFiles } = await supabase.storage
         .from('avatars')
         .list(user.id);
 
       if (existingFiles && existingFiles.length > 0) {
         const filesToDelete = existingFiles.map(f => `${user.id}/${f.name}`);
-        await supabase.storage
-          .from('avatars')
-          .remove(filesToDelete);
+        await supabase.storage.from('avatars').remove(filesToDelete);
       }
 
-      // Update profile to remove avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
@@ -151,36 +141,37 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     
-    // 🛡️ 1. Foreground Service başlat - OS'un WebView'ı öldürmesini engelle
+    // 🛡️ Koruma mekanizmalarını başlat
     await startForegroundServiceStandalone();
-    
-    // 🛡️ 2. Kamera koruma flag'ini aktifle
     setCameraActive(true);
     
-    // 🔥 3. Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
     await setPendingAction({
       type: 'camera',
       startedAt: Date.now(),
       context: 'avatar-upload',
     });
     
+    // Meta kaydet (Base64 DEĞİL - crash yapıyor!)
+    await savePendingPhotoMeta({
+      capturedAt: Date.now(),
+      source: 'camera',
+      context: 'avatar-upload'
+    });
+    
     try {
+      console.log("[Avatar] 📷 Kamera açılıyor...");
+      
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
-        quality: 90,
+        quality: 85,
       });
 
       if (!photo.dataUrl) {
         throw new Error('Fotoğraf alınamadı');
       }
 
-      // 📸 Fotoğrafı HEMEN native storage'a kaydet (app ölürse kurtarılabilir)
-      await savePendingPhoto(photo.dataUrl, {
-        capturedAt: Date.now(),
-        source: 'camera',
-        context: 'avatar-upload'
-      });
+      console.log("[Avatar] ✅ Fotoğraf çekildi, yükleniyor...");
       
       // 🎬 Overlay göster
       showPhotoOverlay('optimizing');
@@ -190,37 +181,39 @@ export const useAvatarUpload = () => {
       const blob = await response.blob();
       const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
 
-      // Yükleme aşaması
       showPhotoOverlay('uploading');
       
-      // uploadAvatar içinde zaten compress ediliyor
       const result = await uploadAvatar(file);
       
-      // ✅ Başarılı - tüm pending state'leri temizle
+      // ✅ Başarılı - temizle
       await clearPendingAction();
       await clearPendingPhoto();
       
       showPhotoOverlay('complete');
-      setTimeout(() => hidePhotoOverlay(), 1000);
+      setTimeout(() => hidePhotoOverlay(), 1200);
       
       return result;
     } catch (error: any) {
       hidePhotoOverlay();
-      if (error.message !== 'User cancelled photos app') {
-        console.error('Error taking photo:', error);
+      
+      const isCancelled = error.message?.includes('cancelled') || 
+                          error.message?.includes('User cancelled');
+      
+      if (!isCancelled) {
+        console.error('[Avatar] Camera error:', error);
         toast.error('Fotoğraf çekilirken hata oluştu');
-      } else {
-        // User cancelled - pending state'leri temizle
-        await clearPendingAction();
-        await clearPendingPhoto();
       }
+      
+      // Temizle
+      await clearPendingAction();
+      await clearPendingPhoto();
+      
       return null;
     } finally {
-      // 🛡️ Foreground Service'i durdur
       await stopForegroundServiceStandalone();
       
-      // Kısa gecikme ile korumayı kapat (uygulama geri dönmesini bekle)
-      setTimeout(() => setCameraActive(false), 2000);
+      // Gecikmeyle korumayı kapat
+      setTimeout(() => setCameraActive(false), 3000);
       setUploading(false);
     }
   };
@@ -233,76 +226,72 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     
-    // 🛡️ 1. Foreground Service başlat - OS'un WebView'ı öldürmesini engelle
+    // 🛡️ Koruma mekanizmalarını başlat
     await startForegroundServiceStandalone();
-    
-    // 🛡️ 2. Galeri koruma flag'ini aktifle
     setCameraActive(true);
     
-    // 🔥 3. Pending action'ı kaydet - app ölürse geri geldiğinde kontrol edilecek
     await setPendingAction({
       type: 'gallery',
       startedAt: Date.now(),
       context: 'avatar-upload',
     });
     
+    await savePendingPhotoMeta({
+      capturedAt: Date.now(),
+      source: 'gallery',
+      context: 'avatar-upload'
+    });
+    
     try {
+      console.log("[Avatar] 🖼️ Galeri açılıyor...");
+      
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Photos,
-        quality: 90,
+        quality: 85,
       });
 
       if (!photo.dataUrl) {
         throw new Error('Fotoğraf seçilemedi');
       }
 
-      // 📸 Fotoğrafı HEMEN native storage'a kaydet (app ölürse kurtarılabilir)
-      await savePendingPhoto(photo.dataUrl, {
-        capturedAt: Date.now(),
-        source: 'gallery',
-        context: 'avatar-upload'
-      });
+      console.log("[Avatar] ✅ Fotoğraf seçildi, yükleniyor...");
       
-      // 🎬 Overlay göster
       showPhotoOverlay('optimizing');
 
-      // DataUrl'i blob'a çevir
       const response = await fetch(photo.dataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'gallery-photo.jpg', { type: 'image/jpeg' });
 
-      // Yükleme aşaması
       showPhotoOverlay('uploading');
       
-      // uploadAvatar içinde zaten compress ediliyor
       const result = await uploadAvatar(file);
       
-      // ✅ Başarılı - tüm pending state'leri temizle
       await clearPendingAction();
       await clearPendingPhoto();
       
       showPhotoOverlay('complete');
-      setTimeout(() => hidePhotoOverlay(), 1000);
+      setTimeout(() => hidePhotoOverlay(), 1200);
       
       return result;
     } catch (error: any) {
       hidePhotoOverlay();
-      if (error.message !== 'User cancelled photos app') {
-        console.error('Error selecting photo:', error);
+      
+      const isCancelled = error.message?.includes('cancelled') || 
+                          error.message?.includes('User cancelled');
+      
+      if (!isCancelled) {
+        console.error('[Avatar] Gallery error:', error);
         toast.error('Fotoğraf seçilirken hata oluştu');
-      } else {
-        // User cancelled - pending state'leri temizle
-        await clearPendingAction();
-        await clearPendingPhoto();
       }
+      
+      await clearPendingAction();
+      await clearPendingPhoto();
+      
       return null;
     } finally {
-      // 🛡️ Foreground Service'i durdur
       await stopForegroundServiceStandalone();
-      
-      // Kısa gecikme ile korumayı kapat
-      setTimeout(() => setCameraActive(false), 2000);
+      setTimeout(() => setCameraActive(false), 3000);
       setUploading(false);
     }
   };
@@ -315,7 +304,6 @@ export const useAvatarUpload = () => {
 
     setUploading(true);
     try {
-      // Update profile with game avatar path directly
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: avatarPath })
