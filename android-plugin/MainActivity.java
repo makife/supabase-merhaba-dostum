@@ -113,13 +113,16 @@ public class MainActivity extends BridgeActivity {
         boolean isColdRestart = getIntent().getBooleanExtra(EXTRA_COLD_RESTART, false);
         
         if (isResumeRestart || isColdRestart) {
-            Log.d(TAG, "📱 onResume - Restart sonrası ilk açılış. Kontrol atlanıyor.");
+            Log.d(TAG, "📱 onResume - Restart sonrası ilk açılış.");
             
             // Bayrakları tüket
             getIntent().removeExtra(EXTRA_RESUME_RESTART);
             getIntent().removeExtra(EXTRA_COLD_RESTART);
             
             clearPauseTime();
+            
+            // 🎵 Restart sonrasında da müzik devam etsin!
+            dispatchForegroundEvent();
             return;
         }
         
@@ -143,7 +146,7 @@ public class MainActivity extends BridgeActivity {
                 // ✅ 2 DAKİKADAN AZ → SOFT RECOVERY (Activity restart YOK! Sadece JS recovery)
                 Log.d(TAG, "✅ <2 dakika arka planda. SOFT RECOVERY yapılıyor (Activity restart YOK!)");
                 clearPauseTime();
-                performSoftRecovery(); // 🔥 Activity restart YAPMADAN sadece JS inject et
+                performSoftRecovery(); // 🔥 Activity restart YAPMADAN sadece JS inject et - bu zaten foreground event içeriyor
             }
         } else {
             Log.d(TAG, "✅ Süre yetersiz veya ilk açılış, sadece foreground event.");
