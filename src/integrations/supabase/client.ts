@@ -162,11 +162,9 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
   
   const isNativePlatform = Capacitor.isNativePlatform();
   
-  // Native'de Realtime DEVRE DIŞI - Kotlin WebSocket kullanılacak
-  const realtimeConfig = isNativePlatform ? {
-    params: { eventsPerSecond: 0 },
-    reconnectAfterMs: () => 999999999,
-  } : {
+  // 🔥🔥🔥 FIX: Native'de de Realtime AÇIK olmalı!
+  // Kotlin WebSocket deprecate edildi, JS SDK Realtime kullanılacak
+  const realtimeConfig = {
     params: { eventsPerSecond: 10 },
     heartbeatIntervalMs: 15000,
     reconnectAfterMs: (tries: number) => Math.min(1000 * Math.pow(2, tries), 30000),
@@ -267,20 +265,18 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
     },
   });
 
-  if (isNativePlatform) {
-    console.log("[SupabaseClient] 🚫 Native platform - persistSession: false, JS Realtime pasif");
-  } else {
-    // Web'de realtime kontrol
-    if (typeof document !== "undefined") {
-      setInterval(() => {
-        try {
-          const state = (client.realtime as any).connectionState?.();
-          if (state !== "open" && state !== "connecting") {
-            (client.realtime as any).connect?.();
-          }
-        } catch {}
-      }, 10000);
-    }
+  // 🔥 Tüm platformlarda realtime kontrol
+  if (typeof document !== "undefined") {
+    console.log("[SupabaseClient] ✅ Realtime aktif - heartbeat başlatılıyor...");
+    setInterval(() => {
+      try {
+        const state = (client.realtime as any).connectionState?.();
+        if (state !== "open" && state !== "connecting") {
+          console.log("[SupabaseClient] 🔄 Realtime reconnect tetikleniyor...");
+          (client.realtime as any).connect?.();
+        }
+      } catch {}
+    }, 10000);
   }
 
   return client;
