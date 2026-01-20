@@ -69,46 +69,30 @@ import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
-// 🔥 Resume flag kontrolü
+// 🔥 Resume ve Loading flag'leri
 const RESUME_FLAG_KEY = 'app-resume-restart';
 const APP_LOADED_KEY = 'app-loaded';
 
-function checkIsResumeRestart(): boolean {
-  if (typeof window === 'undefined') return false;
-  
-  const nativeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === 'true';
-  const urlFlag = window.location.search.includes('_resume=1');
-  
-  if (nativeFlag || urlFlag) {
-    console.log("[App] 🔥🔥🔥 RESUME RESTART TESPİT EDİLDİ!");
-    console.log("[App] 📱 Loading atlanacak, session recovery yapılacak");
-    
-    // Flag'i temizle
-    sessionStorage.removeItem(RESUME_FLAG_KEY);
-    if (urlFlag) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('_resume');
-      window.history.replaceState({}, '', url.toString());
-    }
-    
-    return true;
-  }
-  
-  return false;
-}
-
-// İlk render öncesi kontrol
-const IS_RESUME_RESTART = checkIsResumeRestart();
-console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART);
-
-// Onboarding/Welcome dialogs wrapper - kendi state'ini yönetir
+// Onboarding/Welcome dialogs wrapper - SADECE GİRİŞ YAPMIS KULLANICILAR İÇİN
 const OnboardingWrapper = () => {
-  const [showPermissions, setShowPermissions] = useState(() => {
-    // İlk açılışta izin dialogunu göster
-    const completed = localStorage.getItem('kelimeci-permissions-completed');
-    return !completed;
-  });
+  const { user, loading } = useAuth();
+  const [showPermissions, setShowPermissions] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  
+  // Kullanıcı giriş yaptığında ve henüz onboarding tamamlanmamışsa göster
+  useEffect(() => {
+    if (loading) return; // Auth loading bitene kadar bekle
+    if (!user) return; // Giriş yapılmamışsa gösterme
+    
+    const permissionsCompleted = localStorage.getItem('kelimeci-permissions-completed');
+    const introCompleted = localStorage.getItem('kelimeci-intro-completed');
+    
+    if (!permissionsCompleted) {
+      setShowPermissions(true);
+    } else if (!introCompleted) {
+      setShowIntro(true);
+    }
+  }, [user, loading]);
   
   const handlePermissionsComplete = () => {
     localStorage.setItem('kelimeci-permissions-completed', 'true');
@@ -124,6 +108,9 @@ const OnboardingWrapper = () => {
     localStorage.setItem('kelimeci-intro-completed', 'true');
     setShowIntro(false);
   };
+  
+  // Kullanıcı giriş yapmamışsa hiçbir şey gösterme
+  if (!user) return null;
   
   return (
     <>
@@ -160,33 +147,31 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   
-  // 🔥 Global değişkenden al - React render döngüsünden ÖNCE hesaplandı
-  const [isResumeReload] = useState(IS_RESUME_RESTART);
-  
-  // 🔥 Loading: Resume ise ASLA gösterme, değilse göster (app-loaded yoksa)
-  const [customLoading, setCustomLoading] = useState(() => {
-    if (IS_RESUME_RESTART) {
-      console.log("[App] ✅ Resume restart - Loading ATLANDI");
+  // 🔥🔥🔥 Loading kontrolü: Her render'da CANLI kontrol et
+  // sessionStorage.getItem HER RENDER'DA çağrılmalı!
+  const checkShouldShowLoading = (): boolean => {
+    // 1. Resume flag varsa ASLA loading gösterme
+    const resumeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === 'true';
+    if (resumeFlag) {
+      console.log("[App] ✅ Resume flag aktif - Loading ATLANDI");
       sessionStorage.setItem(APP_LOADED_KEY, 'true');
+      sessionStorage.removeItem(RESUME_FLAG_KEY); // Flag'i temizle
       return false;
     }
-    // Cold start - daha önce yüklenmediyse loading göster
+    
+    // 2. Zaten yüklendiyse loading gösterme
     const alreadyLoaded = sessionStorage.getItem(APP_LOADED_KEY) === 'true';
     if (alreadyLoaded) {
       console.log("[App] ✅ Zaten yüklenmişti - Loading atlanıyor");
       return false;
     }
+    
+    // 3. İlk açılış - loading göster
     console.log("[App] 📱 Cold start - Loading gösterilecek");
     return true;
-  });
+  };
   
-  // 🔥 Resume reload'da artık burada bir şey yapmaya gerek yok!
-  // Tüm provider'lar sıfırdan mount oluyor (App key değişiyor)
-  // İlk açılışta ne çalışıyorsa aynısı çalışıyor!
-  useEffect(() => {
-    if (!isResumeReload) return;
-    console.log("[App] 🔄 Resume reload tespit edildi - Provider'lar sıfırdan başlıyor (ilk açılış gibi)");
-  }, [isResumeReload]);
+  const [customLoading, setCustomLoading] = useState(checkShouldShowLoading);
   
   // App State & Connection Management
   useAppState();
@@ -220,8 +205,8 @@ const AppRoutes = () => {
     sessionStorage.setItem(APP_LOADED_KEY, 'true');
   };
 
-  // 🔥 Resume'da loading ASLA gösterme
-  if (customLoading && !isResumeReload) {
+  // 🔥 Loading göster (sadece ilk cold start'ta)
+  if (customLoading) {
     return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
   }
 
