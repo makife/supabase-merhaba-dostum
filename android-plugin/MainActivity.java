@@ -33,9 +33,9 @@ public class MainActivity extends BridgeActivity {
     private static final String PREFS_NAME = "AppRestartPrefs";
     private static final String KEY_PAUSE_TIME = "pause_time";
     
-    // Kaç ms arkada kalırsa restart atılsın? (500ms = 0.5 saniye)
+    // Kaç ms arkada kalırsa restart atılsın? (100ms = 0.1 saniye)
     // Çok düşük tutuyoruz ki her arka plan dönüşünde restart atsın
-    private static final long MIN_BACKGROUND_TIME_MS = 500;
+    private static final long MIN_BACKGROUND_TIME_MS = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
