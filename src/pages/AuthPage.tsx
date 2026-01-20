@@ -1,5 +1,6 @@
 // AuthPage.tsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Preferences } from "@capacitor/preferences";
@@ -20,7 +21,8 @@ import {
 } from "@/components/ui/dialog";
 
 const AuthPage = () => {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const navigate = useNavigate();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -34,6 +36,14 @@ const AuthPage = () => {
     email: "",
     password: "",
   });
+
+  // 🔥 User değişince ana sayfaya yönlendir (giriş başarılı)
+  useEffect(() => {
+    if (user) {
+      console.log("[AuthPage] ✅ User detected, navigating to home...");
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   // İlk yüklemede kayıtlı bilgileri al
   useEffect(() => {
