@@ -410,8 +410,8 @@ const AppProviders = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ThemeProvider>
-          <UserProvider>
+        <UserProvider>
+          <ThemeProvider>
             <ServerTimeProvider>
               <MusicProvider>
                 <GameProvider>
@@ -431,8 +431,8 @@ const AppProviders = () => {
                 </GameProvider>
               </MusicProvider>
             </ServerTimeProvider>
-          </UserProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </UserProvider>
       </AuthProvider>
     </BrowserRouter>
   );
