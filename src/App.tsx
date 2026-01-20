@@ -65,9 +65,80 @@ import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";
-import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
+import { useForceReloadOnResume, performResumeRecoveryDirect } from "@/hooks/useForceReloadOnResume";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
+
+// 🔥🔥🔥 KRİTİK: App yüklenmeden ÖNCE resume flag'i kontrol et
+// Bu SYNC olmalı - React render başlamadan önce karar verilmeli
+const RESUME_FLAG_KEY = 'app-resume-restart';
+const APP_LOADED_KEY = 'app-loaded';
+
+function checkIsResumeRestart(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const nativeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === 'true';
+  const urlFlag = window.location.search.includes('_resume=1');
+  
+  if (nativeFlag || urlFlag) {
+    console.log("[App] 🔥 RESUME RESTART TESPİT EDİLDİ! Loading ATLANACAK");
+    // Flag'i HEMEN temizle - bir kez kullanılır
+    sessionStorage.removeItem(RESUME_FLAG_KEY);
+    // URL'den de temizle
+    if (urlFlag) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('_resume');
+      window.history.replaceState({}, '', url.toString());
+    }
+    return true;
+  }
+  
+  return false;
+}
+
+// 🔥 İLK RENDER ÖNCESI karar ver - bu global değişken React dışında
+const IS_RESUME_RESTART = checkIsResumeRestart();
+console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART);
+
+// Onboarding/Welcome dialogs wrapper - kendi state'ini yönetir
+const OnboardingWrapper = () => {
+  const [showPermissions, setShowPermissions] = useState(() => {
+    // İlk açılışta izin dialogunu göster
+    const completed = localStorage.getItem('kelimeci-permissions-completed');
+    return !completed;
+  });
+  const [showIntro, setShowIntro] = useState(false);
+  
+  const handlePermissionsComplete = () => {
+    localStorage.setItem('kelimeci-permissions-completed', 'true');
+    setShowPermissions(false);
+    // İzinler tamamlandığında intro göster
+    const introCompleted = localStorage.getItem('kelimeci-intro-completed');
+    if (!introCompleted) {
+      setShowIntro(true);
+    }
+  };
+  
+  const handleIntroClose = () => {
+    localStorage.setItem('kelimeci-intro-completed', 'true');
+    setShowIntro(false);
+  };
+  
+  return (
+    <>
+      <OnboardingPermissions 
+        open={showPermissions} 
+        onComplete={handlePermissionsComplete}
+        onShowIntro={() => setShowIntro(true)}
+      />
+      <WelcomeIntroDialog 
+        open={showIntro} 
+        onClose={handleIntroClose} 
+      />
+    </>
+  );
+};
 
 // Wrapper component to use useNavigate inside Router context
 const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -89,479 +160,299 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   
-  // 🔥🔥🔥 KRİTİK: Race condition'ı engellemek için loading'i ASYNC kontrol et
-  // Native 300ms sonra flag inject ediyor, bu yüzden SYNC kontrol yetersiz
+  // 🔥 Global değişkenden al - React render döngüsünden ÖNCE hesaplandı
+  const [isResumeReload] = useState(IS_RESUME_RESTART);
   
-  // İlk kontrol: SYNC (flag zaten varsa)
-  const [isResumeReload, setIsResumeReload] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const nativeResumeFlag = sessionStorage.getItem('app-resume-restart') === 'true';
-      const urlResumeFlag = window.location.search.includes('_resume=1');
-      
-      if (nativeResumeFlag || urlResumeFlag) {
-        console.log("[App] 🔄 SYNC: Resume reload tespit edildi! (native:", nativeResumeFlag, ")");
-        return true;
-      }
-    }
-    return false;
-  });
-  
-  // 🔥 Loading başlangıçta KAPALI tut, 150ms sonra flag yoksa aç
-  // Bu sayede native flag inject edene kadar bekleriz
+  // 🔥 Loading: Resume ise ASLA gösterme, değilse göster (app-loaded yoksa)
   const [customLoading, setCustomLoading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      // Zaten yüklenmişse loading atla
-      if (sessionStorage.getItem('app-loaded')) {
-        return false;
-      }
-      // Native restart flag varsa loading atla
-      if (sessionStorage.getItem('app-resume-restart') === 'true') {
-        console.log("[App] ✅ SYNC: Resume flag bulundu - Loading ATLANIYOR");
-        sessionStorage.setItem('app-loaded', 'true');
-        return false;
-      }
+    if (IS_RESUME_RESTART) {
+      console.log("[App] ✅ Resume restart - Loading ATLANDI");
+      sessionStorage.setItem(APP_LOADED_KEY, 'true');
+      return false;
     }
-    // 🔥 İLK AÇILIŞTA loading KAPALI başla, 150ms sonra karar ver
-    return false;
+    // Cold start - daha önce yüklenmediyse loading göster
+    const alreadyLoaded = sessionStorage.getItem(APP_LOADED_KEY) === 'true';
+    if (alreadyLoaded) {
+      console.log("[App] ✅ Zaten yüklenmişti - Loading atlanıyor");
+      return false;
+    }
+    console.log("[App] 📱 Cold start - Loading gösterilecek");
+    return true;
   });
   
-  const [loadingDecided, setLoadingDecided] = useState(() => {
-    if (typeof window !== 'undefined') {
-      // Zaten bir karar verilmişse (app-loaded veya resume flag)
-      return sessionStorage.getItem('app-loaded') === 'true' || 
-             sessionStorage.getItem('app-resume-restart') === 'true';
-    }
-    return false;
-  });
-  
-  // 🔥🔥🔥 RACE CONDITION ÇÖZÜMÜ: Native flag'i dinamik olarak dinle
-  useEffect(() => {
-    if (loadingDecided) return; // Karar verilmişse tekrar kontrol etme
-    
-    console.log("[App] ⏳ Native flag bekleniyor (150ms)...");
-    
-    // 150ms bekle - native 300ms içinde flag inject edecek
-    // Ama WebView yüklenme süresi de var, 150ms yeterli
-    const timer = setTimeout(() => {
-      const nativeFlag = sessionStorage.getItem('app-resume-restart') === 'true';
-      
-      if (nativeFlag) {
-        // 🔥 Native flag bulundu - loading ATLA, recovery başlat
-        console.log("[App] ✅ ASYNC: Native resume flag bulundu!");
-        setIsResumeReload(true);
-        setCustomLoading(false);
-        setLoadingDecided(true);
-        sessionStorage.setItem('app-loaded', 'true');
-        
-        // URL temizle
-        if (window.location.search.includes('_resume=1')) {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('_resume');
-          window.history.replaceState({}, '', url.toString());
-        }
-      } else {
-        // 🔥 Flag yok - bu gerçek bir COLD START, loading göster
-        console.log("[App] 📱 ASYNC: Native flag YOK - COLD START, loading gösteriliyor");
-        setCustomLoading(true);
-        setLoadingDecided(true);
-      }
-    }, 150);
-    
-    return () => clearTimeout(timer);
-  }, [loadingDecided]);
-  
-  // 🔥 Resume reload'da session recovery ve kanalları başlat
+  // 🔥 Resume reload'da session recovery ve kanalları HEMEN başlat
   useEffect(() => {
     if (!isResumeReload) return;
     
-    console.log("[App] 🔄 Resume reload - session recovery başlatılıyor...");
+    console.log("[App] 🔄 Resume reload - session recovery BAŞLATIYOR...");
     
     // "Bağlanıyor" toast göster
-    import('sonner').then(({ toast }) => {
-      toast.loading("Bağlanıyor...", {
-        id: "resume-connecting",
-        duration: 10000, // 10 saniye timeout
-      });
+    toast.loading("Bağlanıyor...", {
+      id: "resume-connecting",
+      duration: 15000, // 15 saniye timeout
     });
     
-    // 🔥 checkResumeReload'u çağır - bu performResumeRecovery'yi tetikler
-    import('@/hooks/useForceReloadOnResume').then(({ checkResumeReload }) => {
-      checkResumeReload();
-    });
-    
-    // 🔥 auth-ready eventini bekle, sonra toast kapat
-    const handleAuthReady = () => {
-      console.log("[App] ✅ Auth ready - toast kapatılıyor");
-      import('sonner').then(({ toast }) => {
+    // 🔥 Session recovery'yi DOĞRUDAN çağır
+    performResumeRecoveryDirect()
+      .then((success) => {
+        if (success) {
+          console.log("[App] ✅ Resume recovery BAŞARILI!");
+          toast.dismiss("resume-connecting");
+          toast.success("Bağlandı!", { duration: 1500 });
+        } else {
+          console.log("[App] ⚠️ Resume recovery başarısız");
+          toast.dismiss("resume-connecting");
+          toast.error("Bağlantı hatası", { duration: 2000 });
+        }
+      })
+      .catch((e) => {
+        console.error("[App] ❌ Resume recovery hatası:", e);
         toast.dismiss("resume-connecting");
-        toast.success("Bağlandı!", { duration: 1500 });
+        toast.error("Bağlantı hatası", { duration: 2000 });
       });
       
-      // 🔥 data-ready eventi de dispatch et
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("data-ready", { detail: { source: "resume-reload" } }));
-      }, 500);
-    };
-    
-    window.addEventListener("auth-ready", handleAuthReady, { once: true });
-    
-    // 🔥 Session recovery'yi zorla tetikle
-    setTimeout(() => {
-      console.log("[App] 🔑 app-auth-recovery eventi gönderiliyor...");
-      window.dispatchEvent(new Event("app-auth-recovery"));
-    }, 100);
-    
-    // Fallback: 8 saniye sonra hala auth-ready gelmediyse toast kapat
-    const fallbackTimer = setTimeout(() => {
-      window.removeEventListener("auth-ready", handleAuthReady);
-      import('sonner').then(({ toast }) => {
-        toast.dismiss("resume-connecting");
-        toast.warning("Bağlantı zaman aşımı", { duration: 2000 });
-      });
-    }, 8000);
-    
-    return () => {
-      clearTimeout(fallbackTimer);
-      window.removeEventListener("auth-ready", handleAuthReady);
-    };
   }, [isResumeReload]);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showIntroDialog, setShowIntroDialog] = useState(false);
-
+  
+  // App State & Connection Management
+  useAppState();
+  useAppForegroundState();
   useLocalStorageClear();
   useScreenOrientation();
+  useImmersiveBars();
+  useSessionRecovery();
+  useForceReloadOnResume();
 
+  // İlk yüklemede audio başlat
   useEffect(() => {
-    const initializeApp = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      
-      try {
-        const { initAppStateListener, markListenerReady } = await import("@/hooks/useAppForegroundState");
-        initAppStateListener();
-        markListenerReady();
-        console.log("✅ App: AppState Listener başlatıldı");
-      } catch (e) {
-        console.warn("[App] AppState listener hatası:", e);
-      }
-      
-      try {
-        if (isNativePlatform()) {
-          console.log("🔊 App: Native Audio başlatılıyor...");
-          await initNativeAudio();
-        }
-      } catch (e) {
-        console.log("[App] Native Audio init hatası:", e);
-      }
-
-      try {
-        await SafeStatusBar.setStyle({ style: "Dark" });
-        await SafeStatusBar.setBackgroundColor({ color: "#000000" });
-        await SafeStatusBar.setOverlaysWebView({ overlay: true });
-        await SafeNavigationBar.setColor({ color: "#000000", darkButtons: false });
-        await SafeStatusBar.hide();
-        await SafeNavigationBar.hide();
-      } catch (e) {
-        console.log("[App] Immersive mode hatası:", e);
-      }
-    };
-
-    initializeApp();
+    if (isNativePlatform()) {
+      initNativeAudio().catch(console.error);
+    }
   }, []);
 
+  // Connection monitor başlat
   useEffect(() => {
-    if (user && !loading) {
-      const onboardingCompleted = localStorage.getItem("kelimeci-onboarding-completed");
-      if (!onboardingCompleted) {
-        setShowOnboarding(true);
-      }
-    }
-  }, [user, loading]);
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    startConnectionMonitor();
+    initEventHub();
     
-    const initPush = async () => {
-      try {
-        const permStatus = await SafePushNotifications.checkPermissions();
-        if (!permStatus) return;
-        
-        let finalStatus = permStatus;
-        if (permStatus.receive === "prompt") {
-          const reqResult = await SafePushNotifications.requestPermissions();
-          if (reqResult) finalStatus = reqResult;
-        }
-        
-        if (finalStatus.receive === "granted") {
-          await SafePushNotifications.createChannel({
-            id: "kelimeci_alerts_v2",
-            name: "Oyun Bildirimleri",
-            description: "Oyun davetleri ve sıra bildirimleri",
-            importance: 5,
-            visibility: 1,
-            sound: "default",
-            vibration: true,
-            lights: true,
-          });
-          await SafePushNotifications.register();
-        }
-      } catch (e) {
-        console.log("[App] Push başlatma hatası:", e);
-      }
+    return () => {
+      stopConnectionMonitor();
     };
-
-    initPush();
   }, []);
 
   const handleLoadingComplete = () => {
-    sessionStorage.setItem('app-loaded', 'true');
+    console.log('[App] Loading completed');
     setCustomLoading(false);
+    sessionStorage.setItem(APP_LOADED_KEY, 'true');
   };
 
-  // 🔥 Resume reload'da LoadingScreen (ergan.jpg) ASLA gösterilmez
-  if ((loading || customLoading) && !isResumeReload) {
+  // 🔥 Resume'da loading ASLA gösterme
+  if (customLoading && !isResumeReload) {
     return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
   }
 
   return (
     <>
-      <OnboardingPermissions
-        open={showOnboarding}
-        onComplete={() => setShowOnboarding(false)}
-        onShowIntro={() => setShowIntroDialog(true)}
-      />
-      <WelcomeIntroDialog open={showIntroDialog} onClose={() => setShowIntroDialog(false)} />
       <Routes>
-        <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/game/vs-computer" element={<ProtectedRoute><GamePage gameMode="vs-computer" /></ProtectedRoute>} />
-        <Route path="/game/private-room" element={<ProtectedRoute><GamePage gameMode="private-room" /></ProtectedRoute>} />
-        <Route path="/game/random-match" element={<ProtectedRoute><GamePage gameMode="random-match" /></ProtectedRoute>} />
-        <Route path="/game/nakama" element={<ProtectedRoute><NakamaGamePage /></ProtectedRoute>} />
-        <Route path="/game/nakama-game" element={<ProtectedRoute><NakamaGamePage /></ProtectedRoute>} />
-        <Route path="/nakama-game" element={<ProtectedRoute><NakamaGamePage /></ProtectedRoute>} />
-        <Route path="/game/:matchId" element={<ProtectedRoute><GamePage gameMode="tournament" /></ProtectedRoute>} />
-        <Route path="/game" element={<ProtectedRoute><GamePage gameMode="tournament" /></ProtectedRoute>} />
-        <Route path="/tournament" element={<ProtectedRoute><TournamentPage /></ProtectedRoute>} />
-        <Route path="/private-room-waiting" element={<ProtectedRoute><PrivateRoomWaitingPage /></ProtectedRoute>} />
-        <Route path="/tournament-waiting/:tournamentId" element={<ProtectedRoute><TournamentWaitingPage /></ProtectedRoute>} />
-        <Route path="/tournament-bracket/:tournamentId" element={<ProtectedRoute><TournamentBracketPage /></ProtectedRoute>} />
-        <Route path="/game/tournament" element={<ProtectedRoute><GamePage gameMode="tournament" /></ProtectedRoute>} />
-        <Route path="/puzzle-game" element={<ProtectedRoute><PuzzleGamePage /></ProtectedRoute>} />
-        <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
-        <Route path="/market" element={<ProtectedRoute><MarketPage /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-        <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-        <Route path="/test-matchmaking" element={<ProtectedRoute><TestMatchmakingPage /></ProtectedRoute>} />
-        <Route path="/sync-test" element={<ProtectedRoute><SyncTestPage /></ProtectedRoute>} />
-        <Route path="/wheel" element={<ProtectedRoute><WheelPage /></ProtectedRoute>} />
-        <Route path="/memory-game" element={<ProtectedRoute><MemoryGamePage /></ProtectedRoute>} />
-        <Route path="/grid-simon-says" element={<ProtectedRoute><GridSimonSaysPage /></ProtectedRoute>} />
-        <Route path="/reactor-runner" element={<ProtectedRoute><ReactorRunnerPage /></ProtectedRoute>} />
-        <Route path="/neon-blitz" element={<ProtectedRoute><NeonBlitzPage /></ProtectedRoute>} />
-        <Route path="/snake-game" element={<ProtectedRoute><SnakeGamePage /></ProtectedRoute>} />
-        <Route path="/morles-game" element={<ProtectedRoute><MorlesGamePage /></ProtectedRoute>} />
-        <Route path="/moderator" element={<ModeratorRoute><ModeratorPage /></ModeratorRoute>} />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback" element={<AuthPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/game/:mode" element={
+          <ProtectedRoute>
+            <GamePage gameMode="random-match" />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/market" element={
+          <ProtectedRoute>
+            <MarketPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/test-matchmaking" element={
+          <ProtectedRoute>
+            <TestMatchmakingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/sync-test" element={
+          <ProtectedRoute>
+            <SyncTestPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/random-match" element={
+          <ProtectedRoute>
+            <RandomMatchPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/nakama-game" element={
+          <ProtectedRoute>
+            <NakamaGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/leaderboard" element={
+          <ProtectedRoute>
+            <LeaderboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament" element={
+          <ProtectedRoute>
+            <TournamentPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/waiting/:tournamentId" element={
+          <ProtectedRoute>
+            <TournamentWaitingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/bracket/:tournamentId" element={
+          <ProtectedRoute>
+            <TournamentBracketPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/game/:matchId" element={
+          <ProtectedRoute>
+            <GamePage gameMode="tournament" />
+          </ProtectedRoute>
+        } />
+        <Route path="/wheel" element={
+          <ProtectedRoute>
+            <WheelPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/private-room/waiting/:roomCode" element={
+          <ProtectedRoute>
+            <PrivateRoomWaitingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/memory-game" element={
+          <ProtectedRoute>
+            <MemoryGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/puzzle-game" element={
+          <ProtectedRoute>
+            <PuzzleGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/grid-simon-says" element={
+          <ProtectedRoute>
+            <GridSimonSaysPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/reactor-runner" element={
+          <ProtectedRoute>
+            <ReactorRunnerPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/neon-blitz" element={
+          <ProtectedRoute>
+            <NeonBlitzPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/snake-game" element={
+          <ProtectedRoute>
+            <SnakeGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/morles" element={
+          <ProtectedRoute>
+            <MorlesGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/moderator" element={
+          <ModeratorRoute>
+            <ModeratorPage />
+          </ModeratorRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <RoomAutoNavigator />
+      <GlobalRematchDialogWrapper />
     </>
   );
 };
 
-// Global Rematch Dialog
-const GlobalRematchDialog = () => {
+// Global Rematch Dialog wrapper
+const GlobalRematchDialogWrapper = () => {
   const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
-  const { profile } = useUser();
-
-  const hasEnoughCredits = (profile?.game_credits ?? 0) >= 1;
-
+  
+  const handleAccept = async () => {
+    try {
+      await acceptRematch();
+    } catch (error) {
+      console.error('Rematch kabul hatası:', error);
+    }
+  };
+  
+  const handleReject = async () => {
+    try {
+      await rejectRematch();
+    } catch (error) {
+      console.error('Rematch reddetme hatası:', error);
+    }
+  };
+  
   return (
     <RematchDialog
       open={!!incomingRequest}
-      onAccept={acceptRematch}
-      onReject={rejectRematch}
-      senderName={incomingRequest?.senderName || ""}
+      onAccept={handleAccept}
+      onReject={handleReject}
+      senderName={incomingRequest?.senderName || 'Rakip'}
       senderAvatar={incomingRequest?.senderAvatar}
-      hasEnoughCredits={hasEnoughCredits}
     />
   );
 };
 
-// NativeRealtimeManager kaldırıldı - Supabase JS SDK yeterli
-
-// Session Recovery Component
-const SessionRecoveryManager = () => {
-  useSessionRecovery();
-  return null;
-};
-
 const App = () => {
-  useAppForegroundState();
-  useForceReloadOnResume();
-
-  const { manualHideBars } = useImmersiveBars();
-
-  useEffect(() => {
-    console.log("[App] 🏥 Bağlantı yöneticileri başlatılıyor...");
-    connectionHealthMonitor.start();
-    startConnectionMonitor();
-
-    return () => {
-      connectionHealthMonitor.stop();
-      stopConnectionMonitor();
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("[App] 🎯 Merkezi Event Hub başlatılıyor...");
-    const cleanup = initEventHub();
-    return cleanup;
-  }, []);
-
-  useAppState({
-    onBackground: () => {
-      console.log("📱 Uygulama arka plana gitti");
-      window.dispatchEvent(new Event('appBackground'));
-    },
-    onForeground: () => {
-      console.log("▶️ Uygulama ön plana geldi");
-      manualHideBars();
-    },
-  });
-
-  // Push Notification
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
-      try {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ push_token: tokenValue } as any)
-          .eq("id", userId as any);
-
-        if (error) console.error("❌ Token kaydedilemedi:", error);
-        else console.log("✅ Token kaydedildi");
-      } catch (e) {
-        console.log("[App] Token kaydetme hatası:", e);
-      }
-    };
-
-    const initPush = async () => {
-      try {
-        const permStatus = await SafePushNotifications.checkPermissions();
-        if (!permStatus) return;
-        
-        let finalStatus = permStatus;
-        if (permStatus.receive === "prompt") {
-          const reqResult = await SafePushNotifications.requestPermissions();
-          if (reqResult) finalStatus = reqResult;
-        }
-        
-        if (finalStatus.receive === "granted") {
-          await SafePushNotifications.register();
-        }
-      } catch (e) {
-        console.log("[App] Push başlatma hatası:", e);
-      }
-    };
-
-    initPush();
-
-    let registrationHandle: { remove: () => void } | null = null;
-    let notificationHandle: { remove: () => void } | null = null;
-    let actionHandle: { remove: () => void } | null = null;
-
-    try {
-      registrationHandle = SafePushNotifications.addListener("registration", (token: any) => {
-        console.log("🔥 PUSH TOKEN GELDİ:", token.value);
-        setTimeout(() => {
-          import("@capacitor/preferences").then(({ Preferences }) => {
-            Preferences.set({ key: 'temp_push_token', value: token.value }).catch(() => {});
-          }).catch(() => {});
-        }, 100);
-        try { localStorage.setItem("temp_push_token", token.value); } catch {}
-      });
-    } catch {}
-
-    try {
-      notificationHandle = SafePushNotifications.addListener("pushNotificationReceived", (n: any) => {
-        console.log("🔔 Bildirim geldi:", n);
-      });
-    } catch {}
-
-    try {
-      actionHandle = SafePushNotifications.addListener("pushNotificationActionPerformed", (n: any) => {
-        const data = n.notification?.data;
-        if (data?.roomCode) window.location.href = `/game?room=${data.roomCode}`;
-      });
-    } catch {}
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        const storedToken = localStorage.getItem("temp_push_token");
-        if (storedToken) await saveTokenToSupabase(session.user.id, storedToken);
-      }
-    });
-
-    return () => {
-      if (authListener?.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-      
-      try {
-        if (registrationHandle) registrationHandle.remove();
-        if (notificationHandle) notificationHandle.remove();
-        if (actionHandle) actionHandle.remove();
-      } catch (e) {
-        console.log("[App] Push cleanup hatası:", e);
-      }
-    };
-  }, []);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <AuthProvider>
-              <SessionRecoveryManager />
-              <UserProvider>
-                {/* NativeRealtimeManager kaldırıldı */}
-                <ThemeProvider>
-                  <MusicProvider>
-                    <MatchmakingWrapper>
+        <ThemeProvider>
+          <TooltipProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <UserProvider>
+                  <ServerTimeProvider>
+                    <MusicProvider>
                       <GameProvider>
-                        <RematchProvider>
-                          <GlobalRematchDialog />
-                          <BackButtonDialog />
-                          <RoomAutoNavigator />
-                          <ServerTimeProvider>
-                            <TournamentProvider>
-                              <NotificationProvider>
+                        <TournamentProvider>
+                          <NotificationProvider>
+                            <MatchmakingWrapper>
+                              <RematchProvider>
+                                <Toaster />
+                                <Sonner />
+                                <OnboardingWrapper />
+                                <BackButtonDialog />
                                 <AppRoutes />
-                              </NotificationProvider>
-                            </TournamentProvider>
-                          </ServerTimeProvider>
-                        </RematchProvider>
+                              </RematchProvider>
+                            </MatchmakingWrapper>
+                          </NotificationProvider>
+                        </TournamentProvider>
                       </GameProvider>
-                    </MatchmakingWrapper>
-                  </MusicProvider>
-                </ThemeProvider>
-              </UserProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
+                    </MusicProvider>
+                  </ServerTimeProvider>
+                </UserProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
