@@ -81,44 +81,22 @@ public class MainActivity extends BridgeActivity {
     }
     
     /**
-     * 🔥 Arka plana giderken müziği DOĞRUDAN durdur - 3 yöntemli yaklaşım
+     * Arka plana giderken müziği durdur
      */
     private void pauseMusicOnBackground() {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().post(() -> {
-                    // 🔥 3 YÖNTEM: Hepsini birden dene, biri çalışsın!
                     String js = "try { " +
-                           "console.log('[Native] 🎵 Müzik durdurma başladı...'); " +
-                           
-                           // YÖNTEM 1: Global fonksiyon çağır
-                           "if (window.__pauseAllMusic) { " +
-                           "  window.__pauseAllMusic(); " +
-                           "  console.log('[Native] ✅ __pauseAllMusic çağrıldı'); " +
-                           "} " +
-                           
-                           // YÖNTEM 2: Custom event dispatch
                            "window.dispatchEvent(new CustomEvent('app-background')); " +
-                           "console.log('[Native] ✅ app-background event gönderildi'); " +
-                           
-                           // YÖNTEM 3: Tüm audio elementlerini doğrudan durdur
+                           "console.log('[Native] 🎵 app-background event gönderildi - müzik durduruluyor'); " +
                            "var audios = document.querySelectorAll('audio'); " +
-                           "audios.forEach(function(a) { " +
-                           "  a.pause(); " +
-                           "  console.log('[Native] ✅ Audio durdu:', a.src); " +
-                           "}); " +
-                           
-                           // YÖNTEM 4: HTMLMediaElement.prototype hack (tüm medya)
-                           "document.querySelectorAll('video').forEach(function(v) { v.pause(); }); " +
-                           
-                           "console.log('[Native] 🎵 Müzik durdurma tamamlandı'); " +
+                           "audios.forEach(function(a) { a.pause(); }); " +
                            "} catch(e) { console.error('[Native] Müzik durdurma hatası:', e); }";
                     
                     getBridge().getWebView().evaluateJavascript(js, null);
                     Log.d(TAG, "🎵 Müzik durdurma JS inject edildi");
                 });
-            } else {
-                Log.w(TAG, "⚠️ WebView null - müzik durdurulamadı");
             }
         } catch (Exception e) {
             Log.e(TAG, "❌ Müzik durdurma hatası: " + e.getMessage());
@@ -135,16 +113,13 @@ public class MainActivity extends BridgeActivity {
         boolean isColdRestart = getIntent().getBooleanExtra(EXTRA_COLD_RESTART, false);
         
         if (isResumeRestart || isColdRestart) {
-            Log.d(TAG, "📱 onResume - Restart sonrası ilk açılış.");
+            Log.d(TAG, "📱 onResume - Restart sonrası ilk açılış. Kontrol atlanıyor.");
             
             // Bayrakları tüket
             getIntent().removeExtra(EXTRA_RESUME_RESTART);
             getIntent().removeExtra(EXTRA_COLD_RESTART);
             
             clearPauseTime();
-            
-            // 🎵 Restart sonrasında da müzik devam etsin!
-            dispatchForegroundEvent();
             return;
         }
         
@@ -168,7 +143,7 @@ public class MainActivity extends BridgeActivity {
                 // ✅ 2 DAKİKADAN AZ → SOFT RECOVERY (Activity restart YOK! Sadece JS recovery)
                 Log.d(TAG, "✅ <2 dakika arka planda. SOFT RECOVERY yapılıyor (Activity restart YOK!)");
                 clearPauseTime();
-                performSoftRecovery(); // 🔥 Activity restart YAPMADAN sadece JS inject et - bu zaten foreground event içeriyor
+                performSoftRecovery(); // 🔥 Activity restart YAPMADAN sadece JS inject et
             }
         } else {
             Log.d(TAG, "✅ Süre yetersiz veya ilk açılış, sadece foreground event.");

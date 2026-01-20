@@ -1,6 +1,5 @@
 // AuthPage.tsx
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Preferences } from "@capacitor/preferences";
@@ -21,8 +20,7 @@ import {
 } from "@/components/ui/dialog";
 
 const AuthPage = () => {
-  const navigate = useNavigate();
-  const { user, signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -30,14 +28,6 @@ const AuthPage = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
-
-  // 🔥🔥🔥 KRİTİK: User değiştiğinde ana sayfaya yönlendir
-  useEffect(() => {
-    if (user) {
-      console.log("[AuthPage] ✅ User bulundu, ana sayfaya yönlendiriliyor...");
-      navigate("/", { replace: true });
-    }
-  }, [user, navigate]);
 
   // 🔧 Email'i Preferences'dan yükle
   const [signInData, setSignInData] = useState({
@@ -74,14 +64,8 @@ const AuthPage = () => {
     await Preferences.set({ key: 'kelimele-saved-email', value: signInData.email });
     await Preferences.set({ key: 'kelimele-saved-password', value: signInData.password });
     
-    const { error } = await signIn(signInData.email, signInData.password);
-    
-    // 🔥 Hata yoksa navigate yapılacak (useEffect tetiklenecek)
-    // Hata varsa loading'i kapat
-    if (error) {
-      setLoading(false);
-    }
-    // NOT: Başarılı girişte loading açık kalır, navigate tetiklenir
+    await signIn(signInData.email, signInData.password);
+    setLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
