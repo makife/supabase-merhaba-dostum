@@ -88,35 +88,48 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  // 🔥 Resume parametresi kontrolü (SYNC) - useState DIŞINDA hesapla
+  
+  // 🔥🔥🔥 KRİTİK: Native Activity Restart kontrolü
+  // MainActivity.java sessionStorage'a 'app-resume-restart' flag'i inject ediyor
   const [isResumeReload] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('_resume=1')) {
-      console.log("[App] 🔄 Resume reload tespit edildi!");
-      return true;
+    if (typeof window !== 'undefined') {
+      // 1. Native taraftan gelen flag (MainActivity.java inject etti)
+      const nativeResumeFlag = sessionStorage.getItem('app-resume-restart') === 'true';
+      
+      // 2. URL parametresi (eski yöntem, yine de destekle)
+      const urlResumeFlag = window.location.search.includes('_resume=1');
+      
+      if (nativeResumeFlag || urlResumeFlag) {
+        console.log("[App] 🔄 Resume reload tespit edildi! (native:", nativeResumeFlag, ", url:", urlResumeFlag, ")");
+        return true;
+      }
     }
     return false;
   });
   
   const [customLoading, setCustomLoading] = useState(() => {
     if (typeof window !== 'undefined') {
-      // Resume reload'da loading ATLA
+      // 🔥 Resume reload'da loading ASLA gösterilmez - ergan.jpg ATLANIR
       if (isResumeReload) {
-        console.log("[App] Resume reload tespit edildi - loading atlanıyor");
+        console.log("[App] ✅ Resume reload - Loading ve ergan.jpg ATLANIYOR");
         sessionStorage.setItem('app-loaded', 'true');
         
-        // URL'den _resume parametresini temizle
-        const url = new URL(window.location.href);
-        url.searchParams.delete('_resume');
-        window.history.replaceState({}, '', url.toString());
+        // URL'den _resume parametresini temizle (varsa)
+        if (window.location.search.includes('_resume=1')) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('_resume');
+          window.history.replaceState({}, '', url.toString());
+        }
         
-        return false;
+        return false; // Loading KAPALI
       }
       
+      // Zaten yüklenmişse loading atla
       if (sessionStorage.getItem('app-loaded')) {
         return false;
       }
     }
-    return true;
+    return true; // İlk açılış - Loading göster
   });
   
   // 🔥 Resume reload'da session recovery ve kanalları başlat
