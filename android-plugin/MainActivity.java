@@ -159,55 +159,58 @@ public class MainActivity extends BridgeActivity {
 
     /**
      * WebView'a JS kodu enjekte eder.
+     * Soft restart için WebView'ın hazır olmasını bekler.
      * @param showLoading true = loading gösterilsin, false = loading atlansin
      */
     private void injectResumeFlag(boolean showLoading) {
-        try {
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+        if (showLoading) {
+            // Cold restart - hiçbir şey inject etme, normal akış devam etsin
+            Log.d(TAG, "📱 Cold restart - JS injection atlanıyor");
+            return;
+        }
+        
+        // Soft restart - WebView hazır olana kadar bekle ve inject et
+        Log.d(TAG, "📱 Soft restart - WebView bekleniyor...");
+        
+        final int MAX_RETRIES = 20; // 20 x 100ms = 2 saniye max
+        final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        
+        final Runnable[] retryRunnable = new Runnable[1];
+        final int[] retryCount = {0};
+        
+        retryRunnable[0] = () -> {
+            retryCount[0]++;
+            
+            try {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     getBridge().getWebView().post(() -> {
-                        String js;
-                        if (showLoading) {
-                            // Cold restart - normal cold start gibi davran
-                            js = "try { " +
-                                   "console.log('[Native] ✅ Cold restart - loading gösterilecek'); " +
-                                   "} catch(e) { console.error('[Native] Flag set error:', e); }";
-                        } else {
-                            // Soft restart - loading atla, kanalları canlandır
-                            js = "try { " +
-                                   "sessionStorage.setItem('app-resume-restart', 'true'); " +
-                                   "sessionStorage.setItem('app-loaded', 'true'); " +
-                                   "console.log('[Native] ✅ Soft restart - loading atlanacak'); " +
-                                   "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
-                                   "} catch(e) { console.error('[Native] Flag set error:', e); }";
-                        }
+                        String js = "try { " +
+                               "sessionStorage.setItem('app-resume-restart', 'true'); " +
+                               "sessionStorage.setItem('app-loaded', 'true'); " +
+                               "console.log('[Native] ✅ Soft restart - loading atlanacak (retry=" + retryCount[0] + ")'); " +
+                               "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
+                               "} catch(e) { console.error('[Native] Flag set error:', e); }";
                         
                         getBridge().getWebView().evaluateJavascript(js, null);
-                        Log.d(TAG, "✅ Resume flag JS'e inject edildi (showLoading=" + showLoading + ")");
+                        Log.d(TAG, "✅ Resume flag inject edildi (retry=" + retryCount[0] + ")");
                     });
+                } else if (retryCount[0] < MAX_RETRIES) {
+                    // WebView henüz hazır değil, tekrar dene
+                    Log.d(TAG, "⏳ WebView henüz hazır değil, retry " + retryCount[0] + "/" + MAX_RETRIES);
+                    handler.postDelayed(retryRunnable[0], 100);
                 } else {
-                    Log.w(TAG, "⚠️ Bridge veya WebView null, fallback deneniyor...");
-                    
-                    // Fallback
-                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                        if (getBridge() != null && getBridge().getWebView() != null) {
-                            String js = showLoading ? 
-                                "console.log('[Native] Cold restart fallback');" :
-                                "try { " +
-                                   "sessionStorage.setItem('app-resume-restart', 'true'); " +
-                                   "sessionStorage.setItem('app-loaded', 'true'); " +
-                                   "console.log('[Native] ✅ Soft restart fallback'); " +
-                                   "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
-                                   "} catch(e) {}";
-                            
-                            getBridge().getWebView().evaluateJavascript(js, null);
-                        }
-                    }, 200);
+                    Log.e(TAG, "❌ WebView " + MAX_RETRIES + " denemede hazır olmadı!");
                 }
-            }, 50);
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Resume flag inject hatası: " + e.getMessage(), e);
-        }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Resume flag inject hatası: " + e.getMessage(), e);
+                if (retryCount[0] < MAX_RETRIES) {
+                    handler.postDelayed(retryRunnable[0], 100);
+                }
+            }
+        };
+        
+        // İlk denemeyi 50ms sonra başlat
+        handler.postDelayed(retryRunnable[0], 50);
     }
     
     @Override
