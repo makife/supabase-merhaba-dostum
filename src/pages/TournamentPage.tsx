@@ -36,7 +36,7 @@ const TournamentPage = () => {
 
     const tournamentId = await createTournament();
     if (tournamentId) {
-      navigate(`/tournament-waiting/${tournamentId}`);
+      navigate(`/tournament/waiting/${tournamentId}`);
     }
   };
 
@@ -53,7 +53,7 @@ const TournamentPage = () => {
 
     const success = await joinTournament(tournamentId);
     if (success) {
-      navigate(`/tournament-waiting/${tournamentId}`);
+      navigate(`/tournament/waiting/${tournamentId}`);
     }
   };
 

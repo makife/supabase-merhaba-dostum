@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
@@ -144,6 +144,29 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
+// 🎮 GamePage wrapper - URL'deki :mode parametresinden gameMode'u alır
+const GamePageWrapper = () => {
+  const { mode } = useParams<{ mode: string }>();
+  
+  // URL'deki mode'u gameMode'a çevir
+  const gameMode = (() => {
+    switch (mode) {
+      case "vs-computer":
+        return "vs-computer";
+      case "private-room":
+        return "private-room";
+      case "random-match":
+        return "random-match";
+      case "tournament":
+        return "tournament";
+      default:
+        return "vs-computer";
+    }
+  })() as "vs-computer" | "private-room" | "random-match" | "tournament";
+  
+  return <GamePage gameMode={gameMode} />;
+};
+
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   
@@ -223,7 +246,7 @@ const AppRoutes = () => {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/game/:mode" element={
           <ProtectedRoute>
-            <GamePage gameMode="random-match" />
+            <GamePageWrapper />
           </ProtectedRoute>
         } />
         <Route path="/profile" element={
