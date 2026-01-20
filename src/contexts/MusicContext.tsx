@@ -158,10 +158,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (removeListener) removeListener();
     };
   }, [musicEnabled]);
-  
-  // Eski useAppState'i kaldır - artık doğrudan listener kullanıyoruz
-  const isNative = Capacitor.isNativePlatform();
-
 
   // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [
