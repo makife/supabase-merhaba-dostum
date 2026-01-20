@@ -89,48 +89,86 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   
-  // 🔥🔥🔥 KRİTİK: Native Activity Restart kontrolü
-  // MainActivity.java sessionStorage'a 'app-resume-restart' flag'i inject ediyor
-  const [isResumeReload] = useState(() => {
+  // 🔥🔥🔥 KRİTİK: Race condition'ı engellemek için loading'i ASYNC kontrol et
+  // Native 300ms sonra flag inject ediyor, bu yüzden SYNC kontrol yetersiz
+  
+  // İlk kontrol: SYNC (flag zaten varsa)
+  const [isResumeReload, setIsResumeReload] = useState(() => {
     if (typeof window !== 'undefined') {
-      // 1. Native taraftan gelen flag (MainActivity.java inject etti)
       const nativeResumeFlag = sessionStorage.getItem('app-resume-restart') === 'true';
-      
-      // 2. URL parametresi (eski yöntem, yine de destekle)
       const urlResumeFlag = window.location.search.includes('_resume=1');
       
       if (nativeResumeFlag || urlResumeFlag) {
-        console.log("[App] 🔄 Resume reload tespit edildi! (native:", nativeResumeFlag, ", url:", urlResumeFlag, ")");
+        console.log("[App] 🔄 SYNC: Resume reload tespit edildi! (native:", nativeResumeFlag, ")");
         return true;
       }
     }
     return false;
   });
   
+  // 🔥 Loading başlangıçta KAPALI tut, 150ms sonra flag yoksa aç
+  // Bu sayede native flag inject edene kadar bekleriz
   const [customLoading, setCustomLoading] = useState(() => {
     if (typeof window !== 'undefined') {
-      // 🔥 Resume reload'da loading ASLA gösterilmez - ergan.jpg ATLANIR
-      if (isResumeReload) {
-        console.log("[App] ✅ Resume reload - Loading ve ergan.jpg ATLANIYOR");
+      // Zaten yüklenmişse loading atla
+      if (sessionStorage.getItem('app-loaded')) {
+        return false;
+      }
+      // Native restart flag varsa loading atla
+      if (sessionStorage.getItem('app-resume-restart') === 'true') {
+        console.log("[App] ✅ SYNC: Resume flag bulundu - Loading ATLANIYOR");
+        sessionStorage.setItem('app-loaded', 'true');
+        return false;
+      }
+    }
+    // 🔥 İLK AÇILIŞTA loading KAPALI başla, 150ms sonra karar ver
+    return false;
+  });
+  
+  const [loadingDecided, setLoadingDecided] = useState(() => {
+    if (typeof window !== 'undefined') {
+      // Zaten bir karar verilmişse (app-loaded veya resume flag)
+      return sessionStorage.getItem('app-loaded') === 'true' || 
+             sessionStorage.getItem('app-resume-restart') === 'true';
+    }
+    return false;
+  });
+  
+  // 🔥🔥🔥 RACE CONDITION ÇÖZÜMÜ: Native flag'i dinamik olarak dinle
+  useEffect(() => {
+    if (loadingDecided) return; // Karar verilmişse tekrar kontrol etme
+    
+    console.log("[App] ⏳ Native flag bekleniyor (150ms)...");
+    
+    // 150ms bekle - native 300ms içinde flag inject edecek
+    // Ama WebView yüklenme süresi de var, 150ms yeterli
+    const timer = setTimeout(() => {
+      const nativeFlag = sessionStorage.getItem('app-resume-restart') === 'true';
+      
+      if (nativeFlag) {
+        // 🔥 Native flag bulundu - loading ATLA, recovery başlat
+        console.log("[App] ✅ ASYNC: Native resume flag bulundu!");
+        setIsResumeReload(true);
+        setCustomLoading(false);
+        setLoadingDecided(true);
         sessionStorage.setItem('app-loaded', 'true');
         
-        // URL'den _resume parametresini temizle (varsa)
+        // URL temizle
         if (window.location.search.includes('_resume=1')) {
           const url = new URL(window.location.href);
           url.searchParams.delete('_resume');
           window.history.replaceState({}, '', url.toString());
         }
-        
-        return false; // Loading KAPALI
+      } else {
+        // 🔥 Flag yok - bu gerçek bir COLD START, loading göster
+        console.log("[App] 📱 ASYNC: Native flag YOK - COLD START, loading gösteriliyor");
+        setCustomLoading(true);
+        setLoadingDecided(true);
       }
-      
-      // Zaten yüklenmişse loading atla
-      if (sessionStorage.getItem('app-loaded')) {
-        return false;
-      }
-    }
-    return true; // İlk açılış - Loading göster
-  });
+    }, 150);
+    
+    return () => clearTimeout(timer);
+  }, [loadingDecided]);
   
   // 🔥 Resume reload'da session recovery ve kanalları başlat
   useEffect(() => {
@@ -142,8 +180,13 @@ const AppRoutes = () => {
     import('sonner').then(({ toast }) => {
       toast.loading("Bağlanıyor...", {
         id: "resume-connecting",
-        duration: 3000,
+        duration: 10000, // 10 saniye timeout
       });
+    });
+    
+    // 🔥 checkResumeReload'u çağır - bu performResumeRecovery'yi tetikler
+    import('@/hooks/useForceReloadOnResume').then(({ checkResumeReload }) => {
+      checkResumeReload();
     });
     
     // 🔥 auth-ready eventini bekle, sonra toast kapat
@@ -168,13 +211,14 @@ const AppRoutes = () => {
       window.dispatchEvent(new Event("app-auth-recovery"));
     }, 100);
     
-    // Fallback: 5 saniye sonra hala auth-ready gelmediyse toast kapat
+    // Fallback: 8 saniye sonra hala auth-ready gelmediyse toast kapat
     const fallbackTimer = setTimeout(() => {
       window.removeEventListener("auth-ready", handleAuthReady);
       import('sonner').then(({ toast }) => {
         toast.dismiss("resume-connecting");
+        toast.warning("Bağlantı zaman aşımı", { duration: 2000 });
       });
-    }, 5000);
+    }, 8000);
     
     return () => {
       clearTimeout(fallbackTimer);
