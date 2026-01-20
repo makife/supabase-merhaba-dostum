@@ -61,32 +61,45 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 50);
   };
 
-  // 🔥 Arka plan event'lerini dinle - Native'de App.addListener daha güvenilir
-  useEffect(() => {
-    const handleBackground = () => {
-      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        console.log("🎵 Arka plan algılandı - müzik durduruluyor");
-        wasPlayingBeforeBackgroundRef.current = true;
-        // Native'de hemen durdur, fade yapma (performans)
-        backgroundMusicRef.current.pause();
-      }
-    };
-    
-    const handleForeground = () => {
-      if (backgroundFadeRef.current) {
-        clearInterval(backgroundFadeRef.current);
-        backgroundFadeRef.current = null;
-      }
+  // 🔥 MÜZİK DURMA FONKSİYONU - Global erişim için
+  const pauseAllMusic = () => {
+    if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+      console.log("🎵 Müzik durduruluyor (pauseAllMusic)");
+      wasPlayingBeforeBackgroundRef.current = true;
+      backgroundMusicRef.current.pause();
+    }
+  };
 
-      if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
-        console.log("🎵 Müzik ön plan için devam ettiriliyor");
-        wasPlayingBeforeBackgroundRef.current = false;
-        backgroundMusicRef.current.volume = originalVolumeRef.current;
-        backgroundMusicRef.current.play().catch(console.warn);
-      }
-    };
+  const resumeMusic = () => {
+    if (backgroundFadeRef.current) {
+      clearInterval(backgroundFadeRef.current);
+      backgroundFadeRef.current = null;
+    }
+
+    if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+      console.log("🎵 Müzik devam ettiriliyor (resumeMusic)");
+      wasPlayingBeforeBackgroundRef.current = false;
+      backgroundMusicRef.current.volume = originalVolumeRef.current;
+      backgroundMusicRef.current.play().catch(console.warn);
+    }
+  };
+
+  // 🔥 Global fonksiyonu window'a ekle (Native JS injection için)
+  useEffect(() => {
+    (window as any).__pauseAllMusic = pauseAllMusic;
+    (window as any).__resumeMusic = resumeMusic;
     
-    // Global event'leri dinle
+    return () => {
+      delete (window as any).__pauseAllMusic;
+      delete (window as any).__resumeMusic;
+    };
+  }, [musicEnabled]);
+
+  // 🔥 1. YÖNTEM: Custom event'leri dinle (Native injection için)
+  useEffect(() => {
+    const handleBackground = () => pauseAllMusic();
+    const handleForeground = () => resumeMusic();
+    
     window.addEventListener('app-background', handleBackground);
     window.addEventListener('app-foreground', handleForeground);
     
@@ -96,7 +109,26 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [musicEnabled]);
 
-  // Native appStateChange için doğrudan dinleme
+  // 🔥 2. YÖNTEM: Visibility API (Web için güvenilir)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log("🎵 [Visibility] Sayfa gizlendi - müzik durduruluyor");
+        pauseAllMusic();
+      } else {
+        console.log("🎵 [Visibility] Sayfa görünür - müzik devam");
+        resumeMusic();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [musicEnabled]);
+
+  // 🔥 3. YÖNTEM: Native appStateChange (Capacitor)
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
@@ -106,23 +138,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const { App } = await import('@capacitor/app');
         const listener = await App.addListener('appStateChange', ({ isActive }) => {
-          console.log(`🎵 [Music] appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+          console.log(`🎵 [Native] appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
           
           if (!isActive) {
-            // Arka plana gitti
-            if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-              console.log("🎵 Arka plan - müzik durduruluyor");
-              wasPlayingBeforeBackgroundRef.current = true;
-              backgroundMusicRef.current.pause();
-            }
+            pauseAllMusic();
           } else {
-            // Ön plana geldi
-            if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
-              console.log("🎵 Ön plan - müzik devam ettiriliyor");
-              wasPlayingBeforeBackgroundRef.current = false;
-              backgroundMusicRef.current.volume = originalVolumeRef.current;
-              backgroundMusicRef.current.play().catch(console.warn);
-            }
+            resumeMusic();
           }
         });
         removeListener = () => listener.remove();

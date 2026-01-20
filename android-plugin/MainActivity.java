@@ -81,22 +81,44 @@ public class MainActivity extends BridgeActivity {
     }
     
     /**
-     * Arka plana giderken müziği durdur
+     * 🔥 Arka plana giderken müziği DOĞRUDAN durdur - 3 yöntemli yaklaşım
      */
     private void pauseMusicOnBackground() {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().post(() -> {
+                    // 🔥 3 YÖNTEM: Hepsini birden dene, biri çalışsın!
                     String js = "try { " +
+                           "console.log('[Native] 🎵 Müzik durdurma başladı...'); " +
+                           
+                           // YÖNTEM 1: Global fonksiyon çağır
+                           "if (window.__pauseAllMusic) { " +
+                           "  window.__pauseAllMusic(); " +
+                           "  console.log('[Native] ✅ __pauseAllMusic çağrıldı'); " +
+                           "} " +
+                           
+                           // YÖNTEM 2: Custom event dispatch
                            "window.dispatchEvent(new CustomEvent('app-background')); " +
-                           "console.log('[Native] 🎵 app-background event gönderildi - müzik durduruluyor'); " +
+                           "console.log('[Native] ✅ app-background event gönderildi'); " +
+                           
+                           // YÖNTEM 3: Tüm audio elementlerini doğrudan durdur
                            "var audios = document.querySelectorAll('audio'); " +
-                           "audios.forEach(function(a) { a.pause(); }); " +
+                           "audios.forEach(function(a) { " +
+                           "  a.pause(); " +
+                           "  console.log('[Native] ✅ Audio durdu:', a.src); " +
+                           "}); " +
+                           
+                           // YÖNTEM 4: HTMLMediaElement.prototype hack (tüm medya)
+                           "document.querySelectorAll('video').forEach(function(v) { v.pause(); }); " +
+                           
+                           "console.log('[Native] 🎵 Müzik durdurma tamamlandı'); " +
                            "} catch(e) { console.error('[Native] Müzik durdurma hatası:', e); }";
                     
                     getBridge().getWebView().evaluateJavascript(js, null);
                     Log.d(TAG, "🎵 Müzik durdurma JS inject edildi");
                 });
+            } else {
+                Log.w(TAG, "⚠️ WebView null - müzik durdurulamadı");
             }
         } catch (Exception e) {
             Log.e(TAG, "❌ Müzik durdurma hatası: " + e.getMessage());
