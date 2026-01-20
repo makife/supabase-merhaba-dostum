@@ -410,27 +410,29 @@ const AppProviders = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <UserProvider>
-          <ServerTimeProvider>
-            <MusicProvider>
-              <GameProvider>
-                <TournamentProvider>
-                  <NotificationProvider>
-                    <MatchmakingWrapper>
-                      <RematchProvider>
-                        <Toaster />
-                        <Sonner />
-                        <OnboardingWrapper />
-                        <BackButtonDialog />
-                        <AppRoutes />
-                      </RematchProvider>
-                    </MatchmakingWrapper>
-                  </NotificationProvider>
-                </TournamentProvider>
-              </GameProvider>
-            </MusicProvider>
-          </ServerTimeProvider>
-        </UserProvider>
+        <ThemeProvider>
+          <UserProvider>
+            <ServerTimeProvider>
+              <MusicProvider>
+                <GameProvider>
+                  <TournamentProvider>
+                    <NotificationProvider>
+                      <MatchmakingWrapper>
+                        <RematchProvider>
+                          <Toaster />
+                          <Sonner />
+                          <OnboardingWrapper />
+                          <BackButtonDialog />
+                          <AppRoutes />
+                        </RematchProvider>
+                      </MatchmakingWrapper>
+                    </NotificationProvider>
+                  </TournamentProvider>
+                </GameProvider>
+              </MusicProvider>
+            </ServerTimeProvider>
+          </UserProvider>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   );
@@ -476,14 +478,12 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <TooltipProvider>
-            {/* 🔥🔥🔥 KEY DEĞİŞİNCE TÜM PROVIDER'LAR SIFIRDAN BAŞLAR! */}
-            <div key={appKey}>
-              <AppProviders />
-            </div>
-          </TooltipProvider>
-        </ThemeProvider>
+        <TooltipProvider>
+          {/* 🔥🔥🔥 KEY DEĞİŞİNCE TÜM PROVIDER'LAR SIFIRDAN BAŞLAR! */}
+          <div key={appKey}>
+            <AppProviders />
+          </div>
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
