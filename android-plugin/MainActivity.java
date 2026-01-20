@@ -14,28 +14,30 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 
 /**
- * 🚀 MainActivity - PROCESS DEATH PROOF RESTART
+ * 🚀 MainActivity - 2 DAKİKA KURALI
  * 
- * Bu sürüm, "pauseTime" verisini RAM yerine DİSKE (SharedPreferences) kaydeder.
- * Böylece Android uygulamayı arka planda öldürse bile (Vivo/Samsung vb.),
- * uygulama geri döndüğünde ne kadar süredir kapalı olduğunu hatırlar ve
- * gerekiyorsa kendini sıfırdan başlatır.
+ * KURAL:
+ * - 2 dakikadan FAZLA arka planda → TAM RESTART (cold start, loading ekranı gösterilir)
+ * - 2 dakikadan AZ arka planda → SOFT RESTART (aynı sayfada, loading ATLANIR, kanallar canlanır)
  */
 public class MainActivity extends BridgeActivity {
     
     private static final String TAG = "MainActivity";
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1235;
     
-    // Restart sonrası JS'e iletilecek bayrak
-    private static final String EXTRA_RESUME_RESTART = "RESUME_RESTART";
+    // Restart türlerini belirten bayraklar
+    private static final String EXTRA_RESUME_RESTART = "RESUME_RESTART";  // Soft restart (loading atlanır)
+    private static final String EXTRA_COLD_RESTART = "COLD_RESTART";      // Tam restart (loading gösterilir)
     
-    // 🔥 DİSK KAYIT AYARLARI
+    // DİSK KAYIT AYARLARI
     private static final String PREFS_NAME = "AppRestartPrefs";
     private static final String KEY_PAUSE_TIME = "pause_time";
     
-    // Kaç ms arkada kalırsa restart atılsın? (100ms = 0.1 saniye)
-    // Çok düşük tutuyoruz ki her arka plan dönüşünde restart atsın
-    private static final long MIN_BACKGROUND_TIME_MS = 100;
+    // 🔥 2 DAKİKA = 120.000 ms
+    private static final long FULL_RESTART_THRESHOLD_MS = 120000; // 2 dakika
+    
+    // Minimum arka plan süresi (her dönüşte restart için)
+    private static final long MIN_BACKGROUND_TIME_MS = 500; // 0.5 saniye
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,15 +45,19 @@ public class MainActivity extends BridgeActivity {
         hideSystemUI();
         checkNotificationPermission();
         
-        // Bu bir "Zorla Restart" açılışı mı kontrol et
+        // Bu bir restart mı kontrol et
         boolean isResumeRestart = getIntent().getBooleanExtra(EXTRA_RESUME_RESTART, false);
+        boolean isColdRestart = getIntent().getBooleanExtra(EXTRA_COLD_RESTART, false);
         
         if (isResumeRestart) {
-            Log.d(TAG, "✅ onCreate - RESUME RESTART MODU (Loading atlanacak)");
-            // JS tarafına "Ben restart oldum" sinyalini gönder
-            injectResumeFlag();
+            Log.d(TAG, "✅ onCreate - SOFT RESTART (Loading ATLANACAK, kanallar canlanacak)");
+            // JS tarafına "Soft restart" sinyalini gönder
+            injectResumeFlag(false); // loading atla
+        } else if (isColdRestart) {
+            Log.d(TAG, "✅ onCreate - COLD RESTART (Loading GÖSTERİLECEK - 2dk+ arka planda)");
+            // Normal cold start - loading gösterilecek (flag inject etme)
         } else {
-            Log.d(TAG, "✅ onCreate - NORMAL (SOĞUK) AÇILIŞ");
+            Log.d(TAG, "✅ onCreate - NORMAL (İLK) AÇILIŞ");
         }
         
         // Bir sonraki döngü için disk'i temizle
@@ -62,11 +68,9 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         
-        // Şu anki zamanı al
         long now = System.currentTimeMillis();
         
-        // 🔥 RAM'e değil, DİSKE (SharedPreferences) kaydet.
-        // Telefon RAM'i temizlese bile bu veri silinmez.
+        // Zamanı diske kaydet
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.edit().putLong(KEY_PAUSE_TIME, now).apply();
         
@@ -78,74 +82,74 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         hideSystemUI();
         
-        // 1. BU BİR RESTART MI? KONTROL ET
+        // BU BİR RESTART MI? KONTROL ET
         boolean isResumeRestart = getIntent().getBooleanExtra(EXTRA_RESUME_RESTART, false);
+        boolean isColdRestart = getIntent().getBooleanExtra(EXTRA_COLD_RESTART, false);
         
-        if (isResumeRestart) {
+        if (isResumeRestart || isColdRestart) {
             Log.d(TAG, "📱 onResume - Restart sonrası ilk açılış. Kontrol atlanıyor.");
             
-            // 🔥 Bayrağı tüket - bir sonraki resume'da tekrar kontrol edilsin
+            // Bayrakları tüket
             getIntent().removeExtra(EXTRA_RESUME_RESTART);
+            getIntent().removeExtra(EXTRA_COLD_RESTART);
             
-            // Disk'i temizle
             clearPauseTime();
             return;
         }
         
-        // 2. NORMAL RESUME: DİSKTEN ZAMANI OKU
+        // NORMAL RESUME: DİSKTEN ZAMANI OKU
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         long lastPauseTime = prefs.getLong(KEY_PAUSE_TIME, 0);
         long now = System.currentTimeMillis();
         
-        // Geçen süreyi hesapla (Eğer lastPauseTime 0 ise sonuç 0 olur)
         long backgroundDuration = (lastPauseTime > 0) ? (now - lastPauseTime) : 0;
         
-        Log.d(TAG, "📱 onResume - Disk Zamanı: " + lastPauseTime + " | Geçen Süre: " + backgroundDuration + "ms");
+        Log.d(TAG, "📱 onResume - Arka plan süresi: " + backgroundDuration + "ms");
         
-        // 3. KARAR ANI: EŞİK DEĞER GEÇİLDİ Mİ?
+        // KARAR ANI
         if (lastPauseTime > 0 && backgroundDuration >= MIN_BACKGROUND_TIME_MS) {
-            Log.w(TAG, "🚨 KRİTİK: Uygulama " + backgroundDuration + "ms ölü kaldı. RESTART ATILIYOR!");
-            
-            // Sonsuz döngü olmasın diye zamanı temizle
-            clearPauseTime();
-            
-            // ATOM BOMBASI: Uygulamayı yeniden yarat
-            restartActivity();
+            if (backgroundDuration >= FULL_RESTART_THRESHOLD_MS) {
+                // 🔥 2 DAKİKADAN FAZLA → COLD RESTART (loading gösterilir)
+                Log.w(TAG, "🚨 2+ dakika arka planda! COLD RESTART yapılıyor (loading gösterilecek)");
+                clearPauseTime();
+                restartActivity(true); // cold restart
+            } else {
+                // ✅ 2 DAKİKADAN AZ → SOFT RESTART (loading atlanır, kanallar canlanır)
+                Log.d(TAG, "✅ <2 dakika arka planda. SOFT RESTART yapılıyor (loading atlanacak)");
+                clearPauseTime();
+                restartActivity(false); // soft restart
+            }
         } else {
-            // Süre 3 saniyeden azsa veya uygulama ilk kez açılıyorsa (Cold Start)
             Log.d(TAG, "✅ Süre yetersiz veya ilk açılış, restart yok.");
-            
-            // Her ihtimale karşı zamanı temizle
             clearPauseTime();
         }
     }
     
-    /**
-     * Zamanı diskten siler.
-     */
     private void clearPauseTime() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.edit().remove(KEY_PAUSE_TIME).apply();
     }
     
     /**
-     * 🔥 Activity'yi tamamen öldürüp sıfırdan başlatır.
-     * Bu işlem yepyeni bir WebView oluşturur.
+     * Activity'yi yeniden başlatır.
+     * @param isColdRestart true = loading gösterilir, false = loading atlanır
      */
-    private void restartActivity() {
+    private void restartActivity(boolean isColdRestart) {
         try {
-            Log.d(TAG, "🔄🔄🔄 ACTIVITY RESTART BAŞLIYOR 🔄🔄🔄");
+            Log.d(TAG, "🔄 ACTIVITY RESTART - " + (isColdRestart ? "COLD" : "SOFT"));
             
             Intent intent = new Intent(this, MainActivity.class);
-            // Geçmişi sil, yeni görev başlat
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            // Restart bayrağını ekle
-            intent.putExtra(EXTRA_RESUME_RESTART, true);
+            
+            if (isColdRestart) {
+                intent.putExtra(EXTRA_COLD_RESTART, true);
+            } else {
+                intent.putExtra(EXTRA_RESUME_RESTART, true);
+            }
             
             startActivity(intent);
-            finish(); // Kendini öldür
+            finish();
             
-            // Geçiş animasyonunu kaldır (Hız hissi için)
             overridePendingTransition(0, 0);
             
         } catch (Exception e) {
@@ -154,48 +158,53 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * 🔥 WebView'a JS kodu enjekte eder.
-     * React tarafı bu sessionStorage değerini okuyup Splash'i atlar.
-     * 
-     * 🔥🔥 50ms delay - React yüklenmeden ÖNCE flag inject et
+     * WebView'a JS kodu enjekte eder.
+     * @param showLoading true = loading gösterilsin, false = loading atlansin
      */
-    private void injectResumeFlag() {
+    private void injectResumeFlag(boolean showLoading) {
         try {
-            // 🔥 50ms delay - çok erken inject etmemek için (WebView hazır olmalı)
-            // ama çok geç de inject etmemek için (React state hesaplanmadan önce)
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     getBridge().getWebView().post(() -> {
-                        // 🔥 Flag set ET ve custom event DISPATCH et
-                        String js = "try { " +
+                        String js;
+                        if (showLoading) {
+                            // Cold restart - normal cold start gibi davran
+                            js = "try { " +
+                                   "console.log('[Native] ✅ Cold restart - loading gösterilecek'); " +
+                                   "} catch(e) { console.error('[Native] Flag set error:', e); }";
+                        } else {
+                            // Soft restart - loading atla, kanalları canlandır
+                            js = "try { " +
                                    "sessionStorage.setItem('app-resume-restart', 'true'); " +
                                    "sessionStorage.setItem('app-loaded', 'true'); " +
-                                   "console.log('[Native] ✅ Resume restart flag set'); " +
+                                   "console.log('[Native] ✅ Soft restart - loading atlanacak'); " +
                                    "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
                                    "} catch(e) { console.error('[Native] Flag set error:', e); }";
+                        }
                         
                         getBridge().getWebView().evaluateJavascript(js, null);
-                        Log.d(TAG, "✅ Resume flag JS'e inject edildi (50ms delay)");
+                        Log.d(TAG, "✅ Resume flag JS'e inject edildi (showLoading=" + showLoading + ")");
                     });
                 } else {
-                    Log.w(TAG, "⚠️ Bridge veya WebView null, flag inject edilemedi");
+                    Log.w(TAG, "⚠️ Bridge veya WebView null, fallback deneniyor...");
                     
-                    // 🔥 Fallback: 200ms sonra tekrar dene
+                    // Fallback
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                         if (getBridge() != null && getBridge().getWebView() != null) {
-                            String js = "try { " +
-                                       "sessionStorage.setItem('app-resume-restart', 'true'); " +
-                                       "sessionStorage.setItem('app-loaded', 'true'); " +
-                                       "console.log('[Native] ✅ Resume restart flag set (fallback)'); " +
-                                       "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
-                                       "} catch(e) { console.error('[Native] Flag set error:', e); }";
+                            String js = showLoading ? 
+                                "console.log('[Native] Cold restart fallback');" :
+                                "try { " +
+                                   "sessionStorage.setItem('app-resume-restart', 'true'); " +
+                                   "sessionStorage.setItem('app-loaded', 'true'); " +
+                                   "console.log('[Native] ✅ Soft restart fallback'); " +
+                                   "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
+                                   "} catch(e) {}";
                             
                             getBridge().getWebView().evaluateJavascript(js, null);
-                            Log.d(TAG, "✅ Resume flag JS'e inject edildi (fallback 200ms)");
                         }
                     }, 200);
                 }
-            }, 50); // 🔥 50ms - React yüklenmeden önce flag inject et
+            }, 50);
         } catch (Exception e) {
             Log.e(TAG, "❌ Resume flag inject hatası: " + e.getMessage(), e);
         }
@@ -209,9 +218,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
     
-    /**
-     * Tam ekran (Immersive) mod
-     */
     private void hideSystemUI() {
         View decorView = getWindow().getDecorView();
         decorView.setSystemUiVisibility(
@@ -226,9 +232,6 @@ public class MainActivity extends BridgeActivity {
         getWindow().setNavigationBarColor(0xFF000000);
     }
     
-    /**
-     * Bildirim izni kontrolü (Android 13+)
-     */
     private void checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
