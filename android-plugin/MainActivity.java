@@ -75,6 +75,32 @@ public class MainActivity extends BridgeActivity {
         prefs.edit().putLong(KEY_PAUSE_TIME, now).apply();
         
         Log.d(TAG, "📴 onPause - Zaman Diske Kaydedildi: " + now);
+        
+        // 🎵 MÜZİĞİ DURDUR - Arka plana giderken
+        pauseMusicOnBackground();
+    }
+    
+    /**
+     * Arka plana giderken müziği durdur
+     */
+    private void pauseMusicOnBackground() {
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().post(() -> {
+                    String js = "try { " +
+                           "window.dispatchEvent(new CustomEvent('app-background')); " +
+                           "console.log('[Native] 🎵 app-background event gönderildi - müzik durduruluyor'); " +
+                           "var audios = document.querySelectorAll('audio'); " +
+                           "audios.forEach(function(a) { a.pause(); }); " +
+                           "} catch(e) { console.error('[Native] Müzik durdurma hatası:', e); }";
+                    
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                    Log.d(TAG, "🎵 Müzik durdurma JS inject edildi");
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Müzik durdurma hatası: " + e.getMessage());
+        }
     }
     
     @Override
@@ -164,15 +190,13 @@ public class MainActivity extends BridgeActivity {
      */
     private void injectResumeFlag(boolean showLoading) {
         if (showLoading) {
-            // Cold restart - hiçbir şey inject etme, normal akış devam etsin
             Log.d(TAG, "📱 Cold restart - JS injection atlanıyor");
             return;
         }
         
-        // Soft restart - WebView hazır olana kadar bekle ve inject et
         Log.d(TAG, "📱 Soft restart - WebView bekleniyor...");
         
-        final int MAX_RETRIES = 20; // 20 x 100ms = 2 saniye max
+        final int MAX_RETRIES = 30; // 30 x 100ms = 3 saniye max
         final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
         
         final Runnable[] retryRunnable = new Runnable[1];
@@ -184,18 +208,33 @@ public class MainActivity extends BridgeActivity {
             try {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     getBridge().getWebView().post(() -> {
+                        // 🔥 ÇOK ÖNEMLİ: Önce loading ekranını gizle, sonra flagleri set et
                         String js = "try { " +
+                               // Loading ekranını anında gizle
+                               "var loadingScreen = document.getElementById('initial-loading'); " +
+                               "if (loadingScreen) { loadingScreen.style.display = 'none'; } " +
+                               
+                               // Session storage flagleri
                                "sessionStorage.setItem('app-resume-restart', 'true'); " +
                                "sessionStorage.setItem('app-loaded', 'true'); " +
-                               "console.log('[Native] ✅ Soft restart - loading atlanacak (retry=" + retryCount[0] + ")'); " +
+                               "sessionStorage.setItem('skip-loading-screen', 'true'); " +
+                               
+                               // CSS ile zorla gizle
+                               "var style = document.createElement('style'); " +
+                               "style.textContent = '#initial-loading { display: none !important; }'; " +
+                               "document.head.appendChild(style); " +
+                               
+                               // Event dispatch
                                "window.dispatchEvent(new CustomEvent('native-resume-ready')); " +
+                               "window.dispatchEvent(new CustomEvent('app-foreground')); " +
+                               
+                               "console.log('[Native] ✅ Soft restart - loading GIZLENDI, flagler SET edildi (retry=" + retryCount[0] + ")'); " +
                                "} catch(e) { console.error('[Native] Flag set error:', e); }";
                         
                         getBridge().getWebView().evaluateJavascript(js, null);
                         Log.d(TAG, "✅ Resume flag inject edildi (retry=" + retryCount[0] + ")");
                     });
                 } else if (retryCount[0] < MAX_RETRIES) {
-                    // WebView henüz hazır değil, tekrar dene
                     Log.d(TAG, "⏳ WebView henüz hazır değil, retry " + retryCount[0] + "/" + MAX_RETRIES);
                     handler.postDelayed(retryRunnable[0], 100);
                 } else {
