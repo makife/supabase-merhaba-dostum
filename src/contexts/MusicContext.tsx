@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { useAppState } from "@/hooks/useAppState";
+import { Capacitor } from "@capacitor/core";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 interface MusicContextType {
   isPlaying: boolean;
@@ -61,18 +61,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 50);
   };
 
-  // Arka plan yönetimi - uygulama arka plana gittiğinde müziği fade out ile durdur
-  const { isActive, isNative } = useAppState({
-    onBackground: () => {
-      // Arka plana gitti - müziği fade out ile durdur
+  // 🔥 Arka plan event'lerini dinle - Native'de App.addListener daha güvenilir
+  useEffect(() => {
+    const handleBackground = () => {
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-        console.log("🎵 Arka plan algılandı - fade out başlatılıyor");
+        console.log("🎵 Arka plan algılandı - müzik durduruluyor");
         wasPlayingBeforeBackgroundRef.current = true;
-        quickFadeOut();
+        // Native'de hemen durdur, fade yapma (performans)
+        backgroundMusicRef.current.pause();
       }
-    },
-    onForeground: () => {
-      // Ön plana geldi - fade'i temizle ve müziği başlat
+    };
+    
+    const handleForeground = () => {
       if (backgroundFadeRef.current) {
         clearInterval(backgroundFadeRef.current);
         backgroundFadeRef.current = null;
@@ -84,17 +84,63 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.volume = originalVolumeRef.current;
         backgroundMusicRef.current.play().catch(console.warn);
       }
-    },
-  });
+    };
+    
+    // Global event'leri dinle
+    window.addEventListener('app-background', handleBackground);
+    window.addEventListener('app-foreground', handleForeground);
+    
+    return () => {
+      window.removeEventListener('app-background', handleBackground);
+      window.removeEventListener('app-foreground', handleForeground);
+    };
+  }, [musicEnabled]);
 
-  // Native'de ek güvenlik: isActive false olduğunda müziği zorla durdur
+  // Native appStateChange için doğrudan dinleme
   useEffect(() => {
-    if (!isActive && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
-      console.log("🎵 isActive=false - müzik zorla durduruluyor");
-      wasPlayingBeforeBackgroundRef.current = true;
-      quickFadeOut();
-    }
-  }, [isActive]);
+    if (!Capacitor.isNativePlatform()) return;
+    
+    let removeListener: (() => void) | null = null;
+    
+    const setupListener = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const listener = await App.addListener('appStateChange', ({ isActive }) => {
+          console.log(`🎵 [Music] appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+          
+          if (!isActive) {
+            // Arka plana gitti
+            if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+              console.log("🎵 Arka plan - müzik durduruluyor");
+              wasPlayingBeforeBackgroundRef.current = true;
+              backgroundMusicRef.current.pause();
+            }
+          } else {
+            // Ön plana geldi
+            if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+              console.log("🎵 Ön plan - müzik devam ettiriliyor");
+              wasPlayingBeforeBackgroundRef.current = false;
+              backgroundMusicRef.current.volume = originalVolumeRef.current;
+              backgroundMusicRef.current.play().catch(console.warn);
+            }
+          }
+        });
+        removeListener = () => listener.remove();
+      } catch (e) {
+        console.warn('🎵 App listener kurulumu başarısız:', e);
+      }
+    };
+    
+    setupListener();
+    
+    return () => {
+      if (removeListener) removeListener();
+    };
+  }, [musicEnabled]);
+  
+  // Eski useAppState'i kaldır - artık doğrudan listener kullanıyoruz
+  const isNative = Capacitor.isNativePlatform();
+
 
   // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [

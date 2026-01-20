@@ -78,20 +78,34 @@ const OnboardingWrapper = () => {
   const { user, loading } = useAuth();
   const [showPermissions, setShowPermissions] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   
   // Kullanıcı giriş yaptığında ve henüz onboarding tamamlanmamışsa göster
   useEffect(() => {
     if (loading) return; // Auth loading bitene kadar bekle
-    if (!user) return; // Giriş yapılmamışsa gösterme
-    
-    const permissionsCompleted = localStorage.getItem('kelimeci-permissions-completed');
-    const introCompleted = localStorage.getItem('kelimeci-intro-completed');
-    
-    if (!permissionsCompleted) {
-      setShowPermissions(true);
-    } else if (!introCompleted) {
-      setShowIntro(true);
+    if (!user) {
+      // User yoksa state'leri resetle
+      setShowPermissions(false);
+      setShowIntro(false);
+      setIsReady(false);
+      return;
     }
+    
+    // 🔥 User gelince 500ms bekle (auth context stabilize olsun)
+    const timer = setTimeout(() => {
+      const permissionsCompleted = localStorage.getItem('kelimeci-permissions-completed');
+      const introCompleted = localStorage.getItem('kelimeci-intro-completed');
+      
+      setIsReady(true);
+      
+      if (!permissionsCompleted) {
+        setShowPermissions(true);
+      } else if (!introCompleted) {
+        setShowIntro(true);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, [user, loading]);
   
   const handlePermissionsComplete = () => {
@@ -100,7 +114,7 @@ const OnboardingWrapper = () => {
     // İzinler tamamlandığında intro göster
     const introCompleted = localStorage.getItem('kelimeci-intro-completed');
     if (!introCompleted) {
-      setShowIntro(true);
+      setTimeout(() => setShowIntro(true), 300);
     }
   };
   
@@ -109,8 +123,8 @@ const OnboardingWrapper = () => {
     setShowIntro(false);
   };
   
-  // Kullanıcı giriş yapmamışsa hiçbir şey gösterme
-  if (!user) return null;
+  // Kullanıcı giriş yapmamışsa veya henüz hazır değilse gösterme
+  if (!user || !isReady) return null;
   
   return (
     <>
