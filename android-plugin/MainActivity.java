@@ -138,22 +138,86 @@ public class MainActivity extends BridgeActivity {
                 // 🔥 2 DAKİKADAN FAZLA → COLD RESTART (loading gösterilir)
                 Log.w(TAG, "🚨 2+ dakika arka planda! COLD RESTART yapılıyor (loading gösterilecek)");
                 clearPauseTime();
-                restartActivity(true); // cold restart
+                restartActivity(true); // cold restart - Activity tamamen yeniden başlar
             } else {
-                // ✅ 2 DAKİKADAN AZ → SOFT RESTART (loading atlanır, kanallar canlanır)
-                Log.d(TAG, "✅ <2 dakika arka planda. SOFT RESTART yapılıyor (loading atlanacak)");
+                // ✅ 2 DAKİKADAN AZ → SOFT RECOVERY (Activity restart YOK! Sadece JS recovery)
+                Log.d(TAG, "✅ <2 dakika arka planda. SOFT RECOVERY yapılıyor (Activity restart YOK!)");
                 clearPauseTime();
-                restartActivity(false); // soft restart
+                performSoftRecovery(); // 🔥 Activity restart YAPMADAN sadece JS inject et
             }
         } else {
-            Log.d(TAG, "✅ Süre yetersiz veya ilk açılış, restart yok.");
+            Log.d(TAG, "✅ Süre yetersiz veya ilk açılış, sadece foreground event.");
             clearPauseTime();
+            dispatchForegroundEvent(); // Müzik devam etsin
         }
     }
     
     private void clearPauseTime() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.edit().remove(KEY_PAUSE_TIME).apply();
+    }
+    
+    /**
+     * 🔥 SOFT RECOVERY - Activity restart YAPMADAN sadece JS inject ederek recovery yapar.
+     * Bu sayede kullanıcı hiçbir loading ekranı görmez, aynı sayfada kalır.
+     */
+    private void performSoftRecovery() {
+        Log.d(TAG, "🔄 SOFT RECOVERY başlıyor (Activity restart YOK!)");
+        
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().post(() -> {
+                    String js = "try { " +
+                           // 🔥 Supabase token yenileme ve kanal reconnect
+                           "console.log('[Native] 🔄 SOFT RECOVERY - Token ve kanallar yenileniyor...'); " +
+                           
+                           // Session storage flag'leri (React tarafı bunları okur)
+                           "sessionStorage.setItem('soft-recovery', 'true'); " +
+                           "sessionStorage.setItem('force-reconnect', 'true'); " +
+                           
+                           // Foreground event - müzik devam etsin
+                           "window.dispatchEvent(new CustomEvent('app-foreground')); " +
+                           
+                           // Supabase recovery event
+                           "window.dispatchEvent(new CustomEvent('native-soft-recovery')); " +
+                           
+                           // Realtime reconnect trigger
+                           "if (window.__supabaseClient) { " +
+                           "  window.__supabaseClient.realtime.disconnect(); " +
+                           "  setTimeout(function() { window.__supabaseClient.realtime.connect(); }, 100); " +
+                           "} " +
+                           
+                           "console.log('[Native] ✅ SOFT RECOVERY tamamlandı - Kullanıcı aynı sayfada!'); " +
+                           "} catch(e) { console.error('[Native] Soft recovery error:', e); }";
+                    
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                    Log.d(TAG, "✅ Soft recovery JS inject edildi");
+                });
+            } else {
+                Log.w(TAG, "⚠️ WebView null, soft recovery yapılamadı");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Soft recovery hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Sadece foreground event dispatch eder (müzik için)
+     */
+    private void dispatchForegroundEvent() {
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().post(() -> {
+                    String js = "try { " +
+                           "window.dispatchEvent(new CustomEvent('app-foreground')); " +
+                           "console.log('[Native] ✅ app-foreground event gönderildi'); " +
+                           "} catch(e) { }";
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Foreground event hatası: " + e.getMessage());
+        }
     }
     
     /**
