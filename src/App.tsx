@@ -67,11 +67,6 @@ import { initEventHub } from "@/utils/foregroundEventHub";
 import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 import { toast } from "sonner";
 
-// 🔥🔥🔥 GLOBAL STATE: App mount key
-// Arka plandan dönüşte bu key değişirse TÜM PROVIDER'LAR sıfırdan mount olur
-// Bu sayede ilk açılışta ne çalışıyorsa aynısı çalışır!
-let globalAppKey = 1;
-
 const queryClient = new QueryClient();
 
 // 🔥 Resume flag kontrolü
@@ -86,7 +81,7 @@ function checkIsResumeRestart(): boolean {
   
   if (nativeFlag || urlFlag) {
     console.log("[App] 🔥🔥🔥 RESUME RESTART TESPİT EDİLDİ!");
-    console.log("[App] 🔄 Tüm provider'lar sıfırdan mount edilecek (ilk açılış gibi)");
+    console.log("[App] 📱 Loading atlanacak, session recovery yapılacak");
     
     // Flag'i temizle
     sessionStorage.removeItem(RESUME_FLAG_KEY);
@@ -96,10 +91,6 @@ function checkIsResumeRestart(): boolean {
       window.history.replaceState({}, '', url.toString());
     }
     
-    // 🔥🔥🔥 KRİTİK: App key'i değiştir - tüm React ağacı sıfırlanacak!
-    globalAppKey = Date.now();
-    console.log("[App] 🔑 Yeni App Key:", globalAppKey);
-    
     return true;
   }
   
@@ -108,7 +99,7 @@ function checkIsResumeRestart(): boolean {
 
 // İlk render öncesi kontrol
 const IS_RESUME_RESTART = checkIsResumeRestart();
-console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART, "App Key:", globalAppKey);
+console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART);
 
 // Onboarding/Welcome dialogs wrapper - kendi state'ini yönetir
 const OnboardingWrapper = () => {
@@ -439,30 +430,39 @@ const AppProviders = () => {
 };
 
 const App = () => {
-  // 🔥🔥🔥 KRİTİK: appKey state'i - değişince tüm provider ağacı unmount/remount olur
-  const [appKey, setAppKey] = useState(globalAppKey);
-  
   // Native resume event dinle - uygulamayı sıfırdan başlat
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     
-    const handleNativeResumeReady = () => {
+    const handleNativeResumeReady = async () => {
       console.log("[App] 📱 native-resume-ready eventi alındı!");
-      console.log("[App] 🔄🔄🔄 TÜM UYGULAMA YENİDEN BAŞLATILIYOR! 🔄🔄🔄");
+      console.log("[App] 🔄🔄🔄 SESSION RECOVERY BAŞLIYOR (Sayfa korunuyor) 🔄🔄🔄");
+      
+      // 🔥🔥🔥 KRİTİK: Loading ekranı ATLANACAK flag'i set et
+      // Yeni mount'ta bu flag kontrol edilecek
+      sessionStorage.setItem(RESUME_FLAG_KEY, 'true');
+      sessionStorage.setItem(APP_LOADED_KEY, 'true');
       
       // Toast göster
-      toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 10000 });
+      toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 15000 });
       
-      // 🔥🔥🔥 App key'i değiştir = TÜM REACT AĞACI SIFIRLANIR
-      const newKey = Date.now();
-      globalAppKey = newKey;
-      setAppKey(newKey);
-      
-      // 2 saniye sonra toast'u kapat
-      setTimeout(() => {
+      // 🔥 Session recovery başlat (sayfa değişmeden kanalları canlandır)
+      try {
+        const { performResumeRecoveryDirect } = await import("@/hooks/useForceReloadOnResume");
+        const success = await performResumeRecoveryDirect();
+        
         toast.dismiss("resume-loading");
-        toast.success("Bağlandı!", { duration: 1500 });
-      }, 2000);
+        
+        if (success) {
+          toast.success("Bağlandı!", { duration: 1500 });
+        } else {
+          toast.error("Bağlantı hatası", { duration: 2000 });
+        }
+      } catch (e) {
+        console.error("[App] Resume recovery hatası:", e);
+        toast.dismiss("resume-loading");
+        toast.error("Bağlantı hatası", { duration: 2000 });
+      }
     };
     
     window.addEventListener("native-resume-ready", handleNativeResumeReady);
@@ -473,16 +473,11 @@ const App = () => {
     };
   }, []);
   
-  console.log("[App] 🔑 Current App Key:", appKey);
-  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          {/* 🔥🔥🔥 KEY DEĞİŞİNCE TÜM PROVIDER'LAR SIFIRDAN BAŞLAR! */}
-          <div key={appKey}>
-            <AppProviders />
-          </div>
+          <AppProviders />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
