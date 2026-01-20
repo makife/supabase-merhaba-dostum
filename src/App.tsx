@@ -15,7 +15,6 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { ServerTimeProvider } from "@/contexts/ServerTimeContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
-// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -65,13 +64,17 @@ import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";
-import { useForceReloadOnResume, performResumeRecoveryDirect } from "@/hooks/useForceReloadOnResume";
+import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 import { toast } from "sonner";
+
+// 🔥🔥🔥 GLOBAL STATE: App mount key
+// Arka plandan dönüşte bu key değişirse TÜM PROVIDER'LAR sıfırdan mount olur
+// Bu sayede ilk açılışta ne çalışıyorsa aynısı çalışır!
+let globalAppKey = 1;
 
 const queryClient = new QueryClient();
 
-// 🔥🔥🔥 KRİTİK: App yüklenmeden ÖNCE resume flag'i kontrol et
-// Bu SYNC olmalı - React render başlamadan önce karar verilmeli
+// 🔥 Resume flag kontrolü
 const RESUME_FLAG_KEY = 'app-resume-restart';
 const APP_LOADED_KEY = 'app-loaded';
 
@@ -82,24 +85,30 @@ function checkIsResumeRestart(): boolean {
   const urlFlag = window.location.search.includes('_resume=1');
   
   if (nativeFlag || urlFlag) {
-    console.log("[App] 🔥 RESUME RESTART TESPİT EDİLDİ! Loading ATLANACAK");
-    // Flag'i HEMEN temizle - bir kez kullanılır
+    console.log("[App] 🔥🔥🔥 RESUME RESTART TESPİT EDİLDİ!");
+    console.log("[App] 🔄 Tüm provider'lar sıfırdan mount edilecek (ilk açılış gibi)");
+    
+    // Flag'i temizle
     sessionStorage.removeItem(RESUME_FLAG_KEY);
-    // URL'den de temizle
     if (urlFlag) {
       const url = new URL(window.location.href);
       url.searchParams.delete('_resume');
       window.history.replaceState({}, '', url.toString());
     }
+    
+    // 🔥🔥🔥 KRİTİK: App key'i değiştir - tüm React ağacı sıfırlanacak!
+    globalAppKey = Date.now();
+    console.log("[App] 🔑 Yeni App Key:", globalAppKey);
+    
     return true;
   }
   
   return false;
 }
 
-// 🔥 İLK RENDER ÖNCESI karar ver - bu global değişken React dışında
+// İlk render öncesi kontrol
 const IS_RESUME_RESTART = checkIsResumeRestart();
-console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART);
+console.log("[App] 🚀 Initial check - IS_RESUME_RESTART:", IS_RESUME_RESTART, "App Key:", globalAppKey);
 
 // Onboarding/Welcome dialogs wrapper - kendi state'ini yönetir
 const OnboardingWrapper = () => {
@@ -180,37 +189,12 @@ const AppRoutes = () => {
     return true;
   });
   
-  // 🔥 Resume reload'da session recovery ve kanalları HEMEN başlat
+  // 🔥 Resume reload'da artık burada bir şey yapmaya gerek yok!
+  // Tüm provider'lar sıfırdan mount oluyor (App key değişiyor)
+  // İlk açılışta ne çalışıyorsa aynısı çalışıyor!
   useEffect(() => {
     if (!isResumeReload) return;
-    
-    console.log("[App] 🔄 Resume reload - session recovery BAŞLATIYOR...");
-    
-    // "Bağlanıyor" toast göster
-    toast.loading("Bağlanıyor...", {
-      id: "resume-connecting",
-      duration: 15000, // 15 saniye timeout
-    });
-    
-    // 🔥 Session recovery'yi DOĞRUDAN çağır
-    performResumeRecoveryDirect()
-      .then((success) => {
-        if (success) {
-          console.log("[App] ✅ Resume recovery BAŞARILI!");
-          toast.dismiss("resume-connecting");
-          toast.success("Bağlandı!", { duration: 1500 });
-        } else {
-          console.log("[App] ⚠️ Resume recovery başarısız");
-          toast.dismiss("resume-connecting");
-          toast.error("Bağlantı hatası", { duration: 2000 });
-        }
-      })
-      .catch((e) => {
-        console.error("[App] ❌ Resume recovery hatası:", e);
-        toast.dismiss("resume-connecting");
-        toast.error("Bağlantı hatası", { duration: 2000 });
-      });
-      
+    console.log("[App] 🔄 Resume reload tespit edildi - Provider'lar sıfırdan başlıyor (ilk açılış gibi)");
   }, [isResumeReload]);
   
   // App State & Connection Management
@@ -420,37 +404,84 @@ const GlobalRematchDialogWrapper = () => {
   );
 };
 
+// 🔥🔥🔥 İÇ PROVIDER AĞACI - key ile kontrol edilir
+// key değişince TÜM context'ler sıfırdan başlar = ilk açılış gibi!
+const AppProviders = () => {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <UserProvider>
+          <ServerTimeProvider>
+            <MusicProvider>
+              <GameProvider>
+                <TournamentProvider>
+                  <NotificationProvider>
+                    <MatchmakingWrapper>
+                      <RematchProvider>
+                        <Toaster />
+                        <Sonner />
+                        <OnboardingWrapper />
+                        <BackButtonDialog />
+                        <AppRoutes />
+                      </RematchProvider>
+                    </MatchmakingWrapper>
+                  </NotificationProvider>
+                </TournamentProvider>
+              </GameProvider>
+            </MusicProvider>
+          </ServerTimeProvider>
+        </UserProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
 const App = () => {
+  // 🔥🔥🔥 KRİTİK: appKey state'i - değişince tüm provider ağacı unmount/remount olur
+  const [appKey, setAppKey] = useState(globalAppKey);
+  
+  // Native resume event dinle - uygulamayı sıfırdan başlat
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    const handleNativeResumeReady = () => {
+      console.log("[App] 📱 native-resume-ready eventi alındı!");
+      console.log("[App] 🔄🔄🔄 TÜM UYGULAMA YENİDEN BAŞLATILIYOR! 🔄🔄🔄");
+      
+      // Toast göster
+      toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 10000 });
+      
+      // 🔥🔥🔥 App key'i değiştir = TÜM REACT AĞACI SIFIRLANIR
+      const newKey = Date.now();
+      globalAppKey = newKey;
+      setAppKey(newKey);
+      
+      // 2 saniye sonra toast'u kapat
+      setTimeout(() => {
+        toast.dismiss("resume-loading");
+        toast.success("Bağlandı!", { duration: 1500 });
+      }, 2000);
+    };
+    
+    window.addEventListener("native-resume-ready", handleNativeResumeReady);
+    console.log("[App] ✅ native-resume-ready listener kaydedildi");
+    
+    return () => {
+      window.removeEventListener("native-resume-ready", handleNativeResumeReady);
+    };
+  }, []);
+  
+  console.log("[App] 🔑 Current App Key:", appKey);
+  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <TooltipProvider>
-            <BrowserRouter>
-              <AuthProvider>
-                <UserProvider>
-                  <ServerTimeProvider>
-                    <MusicProvider>
-                      <GameProvider>
-                        <TournamentProvider>
-                          <NotificationProvider>
-                            <MatchmakingWrapper>
-                              <RematchProvider>
-                                <Toaster />
-                                <Sonner />
-                                <OnboardingWrapper />
-                                <BackButtonDialog />
-                                <AppRoutes />
-                              </RematchProvider>
-                            </MatchmakingWrapper>
-                          </NotificationProvider>
-                        </TournamentProvider>
-                      </GameProvider>
-                    </MusicProvider>
-                  </ServerTimeProvider>
-                </UserProvider>
-              </AuthProvider>
-            </BrowserRouter>
+            {/* 🔥🔥🔥 KEY DEĞİŞİNCE TÜM PROVIDER'LAR SIFIRDAN BAŞLAR! */}
+            <div key={appKey}>
+              <AppProviders />
+            </div>
           </TooltipProvider>
         </ThemeProvider>
       </QueryClientProvider>
