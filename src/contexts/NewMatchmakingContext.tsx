@@ -5,7 +5,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 
 interface MatchmakingRoom {
   id: string;
@@ -48,7 +47,6 @@ interface MatchmakingProviderProps {
 export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ children, onMatchFound }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { serverNow } = useServerTimeContext();
 
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
@@ -140,72 +138,47 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.log("🔍 Supabase Realtime matchmaking başlatıldı:", gameType);
       startProgressTimer();
 
-      // 🔄 RETRY LOOP - Race condition'ı önlemek için birkaç kez dene
-      const MAX_RETRIES = 3;
-      let retryCount = 0;
-      let joinedRoom = false;
+      // 1️⃣ ÖNCELİKLE BOŞ ODA ARA (matchBanlist kontrollü)
+      // 5 dakika içinde oluşturulan bekleyen odaları ara (60 saniye çok kısa)
+      console.log("🔍 Boş oda aranıyor...");
+      const { data: existingRooms, error: searchError } = await supabase
+        .from("game_rooms")
+        .select("id, status, current_grid, host_id, game_type_new")
+        .eq("game_mode", "random-match")
+        .eq("game_type_new", gameType)
+        .eq("status", "waiting")
+        .gt("created_at", new Date(Date.now() - 300000).toISOString()) // 5 dakika
+        .order("created_at", { ascending: true })
+        .limit(10);
 
-      while (retryCount < MAX_RETRIES && !joinedRoom) {
-        retryCount++;
-        console.log(`🔍 Boş oda aranıyor... (deneme ${retryCount}/${MAX_RETRIES})`);
+      if (searchError) {
+        console.error("❌ Oda arama hatası:", searchError);
+      }
+
+      // Uygun oda bul (banlist dışında ve farklı host)
+      let targetRoom = existingRooms?.find(
+        (room) => !matchBanlist.has(room.id) && room.host_id !== user.id
+      );
+
+      if (targetRoom) {
+        console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
         
-        // 1️⃣ ÖNCELİKLE BOŞ ODA ARA (matchBanlist kontrollü)
-        // Server time kullan - client time farkı sorununu önle
-        const serverTime = serverNow();
-        const fiveMinutesAgo = new Date(serverTime - 300000).toISOString();
-        
-        const { data: existingRooms, error: searchError } = await supabase
-          .from("game_rooms")
-          .select("id, status, current_grid, host_id, game_type_new")
-          .eq("game_mode", "random-match")
-          .eq("game_type_new", gameType)
-          .eq("status", "waiting")
-          .gt("created_at", fiveMinutesAgo)
-          .order("created_at", { ascending: true })
-          .limit(10);
+        // Odaya katıl
+        const { error: participantError } = await supabase
+          .from("game_participants")
+          .insert({
+            room_id: targetRoom.id,
+            user_id: user.id,
+            score: 0,
+            is_bot: false,
+          });
 
-        if (searchError) {
-          console.error("❌ Oda arama hatası:", searchError);
-        }
-
-        console.log(`📊 Bulunan odalar: ${existingRooms?.length || 0}`);
-
-        // Uygun oda bul (banlist dışında ve farklı host)
-        let targetRoom = existingRooms?.find(
-          (room) => !matchBanlist.has(room.id) && room.host_id !== user.id
-        );
-
-        if (targetRoom) {
-          console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
-          
-          // Odaya katıl - UPSERT kullan (race condition önleme)
-          const { error: participantError } = await supabase
-            .from("game_participants")
-            .insert({
-              room_id: targetRoom.id,
-              user_id: user.id,
-              score: 0,
-              is_bot: false,
-            });
-
-          if (participantError) {
-            if (participantError.code === "23505") {
-              console.log("⚠️ Zaten bu odada katılımcı - devam ediliyor");
-            } else if (participantError.code === "23503") {
-              // Foreign key error - oda silinmiş olabilir
-              console.warn("⚠️ Oda artık mevcut değil, tekrar deneniyor...");
-              await new Promise(r => setTimeout(r, 200)); // Kısa bekle
-              continue; // Retry
-            } else {
-              console.error("❌ Katılımcı ekleme hatası:", participantError);
-              continue; // Retry
-            }
-          }
-          
+        if (participantError && participantError.code !== "23505") {
+          console.error("❌ Katılımcı ekleme hatası:", participantError);
+        } else {
           console.log("✅ Odaya katıldı! Countdown başlatılıyor...");
-          joinedRoom = true;
           
-          // Countdown başlat (Player 2 - odaya katılan)
+          // Countdown başlat (Player 1)
           const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
             p_room_id: targetRoom.id,
           });
@@ -213,7 +186,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           if (rpcError) {
             console.error("❌ Countdown RPC error:", rpcError);
           } else if (countdownTime) {
-            console.log("✅ Countdown başlatıldı - real-time subscription event'i bekleyeceğiz");
+            console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
+            // ❌ KALDIRILDI: window.dispatchEvent burada yapılmıyor
+            // Çünkü real-time subscription zaten yapacak (line 334)
           }
           
           setCurrentRoom({
@@ -232,15 +207,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           onMatchFound?.(targetRoom.id);
           return;
         }
-
-        // Oda bulunamadı - ilk denemede hemen oda oluşturma, kısa bekle
-        if (retryCount < MAX_RETRIES) {
-          console.log(`⏳ Oda bulunamadı, ${300}ms bekleyip tekrar deneniyor...`);
-          await new Promise(r => setTimeout(r, 300));
-        }
       }
 
-      // Tüm denemeler başarısız - yeni oda oluştur
+      // 2️⃣ BOŞ ODA YOK, YENİ ODA OLUŞTUR
       console.log("❌ Boş oda yok, yeni oda oluşturuluyor...");
       
       // Grid oluştur

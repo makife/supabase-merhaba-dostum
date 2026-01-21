@@ -203,7 +203,7 @@ export function useChatNotifications() {
               description: notif.message,
               duration: 8000,
               action: (
-                <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament/bracket/${notif.related_id}`)}>
+                <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
                   Sonuçlar
                 </Button>
               ),
