@@ -13,7 +13,8 @@ interface ThemeContextType {
   applySoundPack: (pack: string) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+// 🔥 FIX: Context'i export et - useSounds gibi hook'lar güvenli erişim için kullanabilsin
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const useThemeContext = () => {
   const context = useContext(ThemeContext);
