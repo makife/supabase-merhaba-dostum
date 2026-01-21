@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
-import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
+import { getGlobalServerNow } from "@/contexts/ServerTimeContext"; // Server saati eklendi
 
 interface MatchmakingRoom {
   id: string;
@@ -56,7 +56,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
   const progressIntervalRef = useRef<number | null>(null);
-  // Ref to access current room inside closures/timeouts without dependency issues
   const currentRoomRef = useRef<MatchmakingRoom | null>(null);
 
   // State'i ref ile senkronize et
@@ -96,27 +95,22 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     if (roomToDelete && user) {
       console.log("🗑️ Oda veritabanından siliniyor (Cleanup):", roomToDelete.id.slice(-8));
 
-      // Önce katılımcıları sil (Constraints hatasını önlemek için)
       await supabase.from("game_participants").delete().eq("room_id", roomToDelete.id);
 
-      // Sonra odayı sil
       await supabase
         .from("game_rooms")
         .delete()
         .eq("id", roomToDelete.id)
-        .eq("host_id", user.id) // Sadece host ise sil
-        .eq("status", "waiting"); // Sadece bekliyorsa sil
+        .eq("host_id", user.id)
+        .eq("status", "waiting");
     }
   };
 
   const handleSearchTimeout = async () => {
     console.log("⏰ Arama zaman aşımına uğradı - Oda temizleniyor...");
     clearProgressTimer();
-
-    // Zaman aşımında odayı mutlaka sil!
     await deleteRoomFromDB();
     await cleanupLocalState();
-
     setSearchTimeout(true);
     toast({
       title: "Oyuncu Bulunamadı",
@@ -128,17 +122,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const startProgressTimer = () => {
     clearProgressTimer();
     let progress = 0;
-    // 60 saniyelik sayaç (Her tick 1.66 eklerse yaklaşık 60sn sürer)
-    // Mevcut kodunuzda 3.33 vardı (30 sn). Bunu 60 sn'ye çıkaralım daha sağlıklı olur.
-    const increment = 100 / 60;
+    const increment = 100 / 60; // 60 saniye
 
     const id = window.setInterval(() => {
       progress += increment;
       setSearchProgress(Math.min(progress, 100));
-
       if (progress >= 100) {
         clearInterval(id);
-        handleSearchTimeout(); // Timeout logic'i çağır
+        handleSearchTimeout();
       }
     }, 1000);
     progressIntervalRef.current = id;
@@ -152,10 +143,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setIsSearching(false);
     setCurrentRoom(null);
     setSearchProgress(0);
-    // Timeout state'ini burada sıfırlamıyoruz çünkü UI'da göstermek isteyebiliriz
   };
 
-  // Tam temizlik (Unmount veya Cancel durumunda)
   const cleanup = async () => {
     console.log("🧹 Matchmaking cleanup...");
     clearProgressTimer();
@@ -164,42 +153,38 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setCurrentGameType("timed");
   };
 
-  // Supabase Realtime ile matchmaking başlat
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
 
     try {
-      // Önce temizlik yap
       await cleanup();
-
       setIsSearching(true);
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
 
-      // Global flag set et
       (window as any).__currentMatchmakingType = gameType;
-
       console.log("🔍 Matchmaking başlatıldı:", gameType);
       startProgressTimer();
 
-      // 1️⃣ ADIM: ÖNCE MEVCUT ODALARI ARA
+      // 1️⃣ ADIM: MEVCUT ODALARI ARA
       // -------------------------------------------------------------
-      // KRİTİK DÜZELTME:
-      // 1. getGlobalServerNow() kullanarak telefon saati hatalarını yok sayıyoruz.
-      // 2. Süreyi 1 SAAT (3600000ms) yapıyoruz ki "az önce kurulmuş" odalar kaybolmasın.
-      // 3. Status 'waiting' olduğu sürece odayı alıyoruz.
+      // getGlobalServerNow() ve 1 SAAT (3600000ms) süresi kullanıldı
       // -------------------------------------------------------------
       console.log("🔍 Boş oda aranıyor...");
+
+      // Server saati hazır değilse fallback olarak Date.now() kullan
+      const currentTime = getGlobalServerNow() || Date.now();
+      const oneHourAgo = new Date(currentTime - 3600000).toISOString();
 
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
         .select("id, status, current_grid, host_id, game_type_new, created_at")
-        .eq("game_mode", "random-match") // Mod kontrolü
-        .eq("game_type_new", gameType) // Oyun tipi kontrolü
-        .eq("status", "waiting") // Sadece bekleyenler
-        .gt("created_at", new Date(getGlobalServerNow() - 3600000).toISOString()) // Son 1 saat
-        .neq("host_id", user.id) // Kendi odamızı bulmayalım
+        .eq("game_mode", "random-match")
+        .eq("game_type_new", gameType)
+        .eq("status", "waiting")
+        .gt("created_at", oneHourAgo)
+        .neq("host_id", user.id) // KENDİ ODAMI BULMA
         .limit(10);
 
       if (searchError) {
@@ -208,14 +193,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         console.log(`🔍 Bulunan potansiyel oda sayısı: ${existingRooms?.length || 0}`);
       }
 
-      // Banlı olmayan ve uygun bir oda seç
       let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id));
 
       // --- BULUNDU: ODAYA KATIL ---
       if (targetRoom) {
         console.log("✅ Uygun oda bulundu, katılım yapılıyor:", targetRoom.id);
 
-        // Katılımcı ekle
         const { error: participantError } = await supabase.from("game_participants").insert({
           room_id: targetRoom.id,
           user_id: user.id,
@@ -225,16 +208,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
         if (participantError && participantError.code !== "23505") {
           console.error("❌ Katılımcı ekleme hatası:", participantError);
-          // Hata varsa döngüyü kırma, aşağı inip kendi odasını kursun
         } else {
           console.log("✅ Odaya başarıyla girildi! (Guest)");
 
-          // Countdown başlat (Tetikleyici)
+          // Countdown başlat
           await supabase.rpc("start_game_countdown", {
             p_room_id: targetRoom.id,
           });
 
-          // State güncelle
           setCurrentRoom({
             id: targetRoom.id,
             game_type: gameType,
@@ -249,120 +230,45 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           setSearchProgress(100);
           setIsSearching(false);
 
-          // Yönlendirme callback
           onMatchFound?.(targetRoom.id);
-          return; // Fonksiyondan çık
+          return;
         }
       }
 
-      // 2️⃣ ADIM: ODA BULUNAMADI, HEMEN YENİ ODA KUR
-      // -------------------------------------------------------------
-      // Burada bekleme yok! Bulamadıysa anında kurar.
-      // -------------------------------------------------------------
+      // 2️⃣ ADIM: ODA BULUNAMADI, YENİ ODA KUR
       console.log("❌ Uygun oda bulunamadı, yeni oda kuruluyor (Host)...");
 
-      // Grid oluştur
       const generateRandomGrid = (): string[] => {
         const letterPool = [
           "A",
           "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
-          "A",
           "E",
           "E",
-          "E",
-          "E",
-          "E",
-          "E",
-          "E",
-          "İ",
-          "İ",
-          "İ",
-          "İ",
-          "İ",
           "İ",
           "I",
-          "I",
-          "I",
-          "I",
-          "I",
           "O",
-          "O",
-          "O",
-          "O",
-          "O",
-          "U",
-          "U",
-          "U",
           "U",
           "Ü",
-          "Ü",
-          "Ü",
-          "Ö",
-          "Ö",
           "Ö",
           "L",
-          "L",
-          "L",
-          "L",
-          "L",
           "N",
-          "N",
-          "N",
-          "N",
-          "N",
-          "R",
-          "R",
-          "R",
-          "R",
           "R",
           "K",
-          "K",
-          "K",
-          "K",
-          "M",
-          "M",
-          "M",
           "M",
           "T",
-          "T",
-          "T",
-          "T",
-          "S",
-          "S",
-          "S",
           "S",
           "D",
-          "D",
-          "D",
           "Y",
-          "Y",
-          "Y",
-          "B",
-          "B",
           "B",
           "C",
-          "C",
-          "Ç",
           "Ç",
           "F",
-          "F",
-          "G",
           "G",
           "Ğ",
-          "Ğ",
-          "H",
           "H",
           "J",
           "P",
-          "P",
           "Ş",
-          "Ş",
-          "V",
           "V",
           "Z",
         ];
@@ -375,13 +281,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       const newRoomId = crypto.randomUUID();
 
-      // Odayı oluştur
       const { error: roomError } = await supabase.from("game_rooms").insert({
         id: newRoomId,
         room_code: newRoomId,
         host_id: user.id,
-        player1_id: user.id, // Host aynı zamanda Player 1'dir
-        game_mode: "random-match", // Modun doğru olduğundan emin ol
+        player1_id: user.id, // Player 1 olarak kendini kaydet
+        game_mode: "random-match",
         game_type_new: gameType,
         status: "waiting",
         max_players: 2,
@@ -397,7 +302,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       console.log("✅ Oda veritabanına kaydedildi:", newRoomId);
 
-      // Kendini katılımcı olarak ekle
       await supabase.from("game_participants").insert({
         room_id: newRoomId,
         user_id: user.id,
@@ -405,7 +309,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         is_bot: false,
       });
 
-      // State güncelle (Host modu)
       const newRoomObj = {
         id: newRoomId,
         game_type: gameType,
@@ -419,12 +322,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setCurrentRoom(newRoomObj);
       currentRoomRef.current = newRoomObj;
 
-      // 3️⃣ ADIM: RAKİBİ BEKLE (Realtime)
+      // 3️⃣ ADIM: RAKİBİ BEKLE
       const channelName = `matchmaking-${newRoomId}`;
       const channel = autoReconnect.registerChannel(channelName, () =>
         supabase
           .channel(channelName)
-          // Katılımcı gelmesini dinle
           .on(
             "postgres_changes",
             {
@@ -434,17 +336,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `room_id=eq.${newRoomId}`,
             },
             async (payload) => {
-              // Gelen kişi ben değilsem ve bot değilse -> RAKİPTİR
               if (!payload.new.is_bot && payload.new.user_id !== user.id) {
                 console.log("🎉 Rakip bulundu! (Player 2 katıldı)");
                 clearProgressTimer();
                 setSearchProgress(100);
                 setIsSearching(false);
-                // Burada yönlendirme YAPMA, countdown_started_at'i bekle
               }
             },
           )
-          // Oda güncellemesini dinle (Countdown başlayınca git)
           .on(
             "postgres_changes",
             {
@@ -460,7 +359,6 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
                 autoReconnect.unregisterChannel(channelName);
                 setSearchChannel(null);
 
-                // Event fırlat (Timer senkronizasyonu için)
                 window.dispatchEvent(
                   new CustomEvent("countdownStarted", {
                     detail: { serverTime: payload.new.countdown_started_at },
@@ -487,32 +385,25 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       });
     }
   };
+
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
     clearProgressTimer();
-
-    // İptal durumunda da odayı silmeliyiz!
     await deleteRoomFromDB();
     await cleanupLocalState();
-
     toast({ title: "Arama İptal Edildi" });
   };
 
   const restartSearch = async (gameType: "timed" | "score") => {
     await cleanup();
-    setTimeout(() => startSearch(gameType), 100); // Hafif gecikme ile başlat (race condition önlemek için)
+    setTimeout(() => startSearch(gameType), 100);
   };
 
-  const playWithAI = () => {
-    // AI mantığı
-  };
+  const playWithAI = () => {};
 
   useEffect(() => {
     return () => {
-      // Unmount olduğunda odayı silmeye çalış (User navigating away while searching)
-      if (currentRoomRef.current) {
-        deleteRoomFromDB();
-      }
+      if (currentRoomRef.current) deleteRoomFromDB();
       cleanup();
     };
   }, []);
