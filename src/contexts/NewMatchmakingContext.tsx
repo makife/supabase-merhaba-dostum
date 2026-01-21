@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-import { useServerTimeContext } from "@/contexts/ServerTimeContext";
+import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
 
 interface MatchmakingRoom {
   id: string;
@@ -48,7 +48,9 @@ interface MatchmakingProviderProps {
 export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ children, onMatchFound }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { serverNow } = useServerTimeContext();
+  
+  // 🔥 FIX: Hook yerine global fonksiyon kullan - provider sırası sorunu önlenir
+  const serverNow = useCallback(() => getGlobalServerNow(), []);
 
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
