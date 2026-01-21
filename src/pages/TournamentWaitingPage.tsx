@@ -44,7 +44,7 @@ const TournamentWaitingPage = () => {
   // Turnuva başladıysa bracket sayfasına yönlendir
   useEffect(() => {
     if (currentTournament?.status === "in_progress" && tournamentId) {
-      navigate(`/tournament-bracket/${tournamentId}`);
+      navigate(`/tournament/bracket/${tournamentId}`);
     }
   }, [currentTournament?.status, tournamentId, navigate]);
 

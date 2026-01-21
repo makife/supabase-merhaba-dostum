@@ -113,7 +113,7 @@ export const useTournament = (tournamentId?: string) => {
         .update({ next_round_starts_at: nextRoundStartsAt.toISOString() })
         .eq("id", tournamentId);
       
-      navigate(`/tournament-bracket/${tournamentId}`);
+      navigate(`/tournament/bracket/${tournamentId}`);
     }
   }, [tournamentId, user, context.currentTournament, context.participants, navigate]);
 

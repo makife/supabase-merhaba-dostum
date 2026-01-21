@@ -1795,7 +1795,7 @@ const GamePage = ({
         console.error("❌ Maç tamamlama hatası:", updateError);
         // Hata olsa bile winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -1815,7 +1815,7 @@ const GamePage = ({
         console.error("❌ Güncellenmiş maç bilgisi alınamadı:", matchError);
         // Winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -1902,7 +1902,7 @@ const GamePage = ({
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
           console.log("🔄 Bracket sayfasına yönlendiriliyor...");
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 1500);
       } else {
         console.log(
@@ -1911,7 +1911,7 @@ const GamePage = ({
 
         // Backend winner_id'ye göre yönlendirme (hızlandırıldı: 1.5 saniye)
         const redirectDelay = 1500;
-        const redirectPath = `/tournament-bracket/${tournamentMatch.tournament_id}`;
+        const redirectPath = `/tournament/bracket/${tournamentMatch.tournament_id}`;
 
         console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
         setTimeout(() => {
@@ -1930,7 +1930,7 @@ const GamePage = ({
 
       // 3 saniye sonra yönlendir
       setTimeout(() => {
-        navigate(`/tournament-bracket/${tournamentMatch?.tournament_id}`);
+        navigate(`/tournament/bracket/${tournamentMatch?.tournament_id}`);
       }, 3000);
     }
   };
@@ -2407,7 +2407,7 @@ const GamePage = ({
         tournamentBtn.addEventListener("click", () => {
           document.body.removeChild(modalDiv);
           // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
-          navigate(`/tournament-bracket/${tournamentId}`);
+          navigate(`/tournament/bracket/${tournamentId}`);
         });
       }
 
@@ -2417,7 +2417,7 @@ const GamePage = ({
           document.body.removeChild(modalDiv);
         }
         // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
-        navigate(`/tournament-bracket/${tournamentId}`);
+        navigate(`/tournament/bracket/${tournamentId}`);
       }, 3000);
     } catch (error) {
       console.error("❌ Turnuva bitiş kartı hatası:", error);
@@ -2974,7 +2974,7 @@ const GamePage = ({
                 description: "Bu maç zaten oynandı. Turnuva sayfasına yönlendiriliyorsunuz.",
               });
               // Bracket sayfasına zorla yönlendir
-              setTimeout(() => navigate(`/tournament-bracket/${tournamentId}`), 1000);
+              setTimeout(() => navigate(`/tournament/bracket/${tournamentId}`), 1000);
               return;
             }
 
@@ -3726,7 +3726,7 @@ const GamePage = ({
           if (matchData.status === "completed") {
             console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına sessizce yönlendiriliyor:", matchData.id);
             // Toast gösterme - döngüyü kırmak için sessizce dön
-            navigate(`/tournament-bracket/${finalTournamentId}`, {
+            navigate(`/tournament/bracket/${finalTournamentId}`, {
               replace: true,
               state: { fromCompletedMatch: matchData.id },
             });
@@ -3772,7 +3772,7 @@ const GamePage = ({
 
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
-                    navigate(`/tournament-bracket/${finalTournamentId}`, { replace: true });
+                    navigate(`/tournament/bracket/${finalTournamentId}`, { replace: true });
                   }, 500);
                 }
               },
@@ -6546,7 +6546,7 @@ const GamePage = ({
                         console.log("🏆 Tournament ID from URL:", tournamentId);
 
                         // ✅ React Router ile Yönlendirme
-                        navigate(`/tournament-bracket/${tournamentId}`);
+                        navigate(`/tournament/bracket/${tournamentId}`);
                       }}
                       className="w-full"
                     >
