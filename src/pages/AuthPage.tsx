@@ -77,10 +77,11 @@ const AuthPage = () => {
     const { error } = await signIn(signInData.email, signInData.password);
     setLoading(false);
     
-    // 🔥 Hata yoksa direkt yönlendir (useEffect yedeği)
+    // 🔥 FIX: Manuel navigate KALDIRILDI!
+    // useEffect zaten user değişince "/" yoluna yönlendiriyor.
+    // Bu sayede React state güncellenene kadar beklenmiş oluyor.
     if (!error) {
-      console.log("[AuthPage] ✅ SignIn successful, navigating to home...");
-      navigate("/", { replace: true });
+      console.log("[AuthPage] ✅ SignIn successful - useEffect yönlendirecek");
     }
   };
 
