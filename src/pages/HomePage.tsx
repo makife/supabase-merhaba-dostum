@@ -408,7 +408,7 @@ const HomePage = () => {
     if (level >= 70) return { bg: "#F8F8F8", gradient: "from-slate-100/60" }; // Siyah tema - çok açık gri
     if (level >= 40) return { bg: "#F0F7FF", gradient: "from-blue-100/60" }; // Mavi tema - çok açık mavi
     if (level >= 25) return { bg: "#F0FDF4", gradient: "from-emerald-100/60" }; // Yeşil tema - çok açık yeşil
-    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/30" }; // Mor tema - çok açık mor
+    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/10" }; // Mor tema - çok açık mor
     return { bg: "#FFFDF5", gradient: "from-orange-100/40" }; // Turuncu tema (varsayılan) - krem
   };
 
