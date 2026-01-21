@@ -94,7 +94,7 @@ const GameModeCard = ({ mode, onClick }: any) => (
     onClick={onClick}
     // GAME MODE CARD: Border rengi slate-600 yapıldı (Füme)
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
-    style={{ transform: "translateZ(0)" }}
+    style={{ transform: 'translateZ(0)' }}
   >
     <div
       className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
@@ -128,9 +128,9 @@ const HomePage = () => {
   const { playSound } = useSounds();
   const { startBackgroundMusic } = useMusic();
   const { jokers, loadJokers } = useJokerInventory();
-
+  
   // 🆕 Event Hub artık merkezi yönetim yapıyor - usePageResync kaldırıldı
-
+  
   // Premium kullanıcılar için günlük joker kontrolü
   usePremiumDailyRewards();
 
@@ -314,7 +314,7 @@ const HomePage = () => {
 
   // 🆕 Sayfa mount olduğunda ilk yükleme - Event Hub otomatik yönetecek
   useEffect(() => {
-    console.log("🏠 [HomePage] Mount - ilk veri yüklemesi...");
+    console.log('🏠 [HomePage] Mount - ilk veri yüklemesi...');
     refreshProfile(true);
     loadJokers();
   }, []);
@@ -405,52 +405,23 @@ const HomePage = () => {
   // Seviyeye göre arka plan rengi
   const getLevelBackgroundColor = () => {
     const level = levelData.level;
-
-    // Level 70+ (Siyah/Gri Tema): Daha belirgin gri
-    if (level >= 70)
-      return {
-        bg: "#E2E8F0", // Slate-200 (Eskisi F8F8F8 idi)
-        gradient: "from-slate-300/50", // Gradienti 100'den 300'e çektik
-      };
-
-    // Level 40+ (Mavi Tema): Daha belirgin gökyüzü mavisi
-    if (level >= 40)
-      return {
-        bg: "#DBEAFE", // Blue-100 (Eskisi F0F7FF idi)
-        gradient: "from-blue-200/50", // Gradienti güçlendirdik
-      };
-
-    // Level 25+ (Yeşil Tema): Daha belirgin nane yeşili
-    if (level >= 25)
-      return {
-        bg: "#DCFCE7", // Emerald-100 (Eskisi F0FDF4 idi)
-        gradient: "from-emerald-200/50",
-      };
-
-    // Level 10+ (Mor Tema): Daha belirgin lavanta
-    if (level >= 10)
-      return {
-        bg: "#F3E8FF", // Purple-100 (Eskisi FAF5FF idi)
-        gradient: "from-purple-200/50",
-      };
-
-    // Varsayılan (Turuncu/Krem Tema): Daha sıcak bir bej/krem
-    return {
-      bg: "#FEF3C7", // Amber-100 (Eskisi FFFDF5 idi)
-      gradient: "from-orange-200/40", // Opaklığı ve tonu artırdık
-    };
+    if (level >= 70) return { bg: "#F8F8F8", gradient: "from-slate-100/60" }; // Siyah tema - çok açık gri
+    if (level >= 40) return { bg: "#F0F7FF", gradient: "from-blue-100/60" }; // Mavi tema - çok açık mavi
+    if (level >= 25) return { bg: "#F0FDF4", gradient: "from-emerald-100/60" }; // Yeşil tema - çok açık yeşil
+    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/60" }; // Mor tema - çok açık mor
+    return { bg: "#FFFDF5", gradient: "from-orange-100/40" }; // Turuncu tema (varsayılan) - krem
   };
 
   const levelBgColors = getLevelBackgroundColor();
 
   return (
-    <div
+    <div 
       className="fixed inset-0 flex flex-col text-slate-800 font-sans selection:bg-amber-200 overflow-hidden transition-colors duration-500"
       style={{ backgroundColor: levelBgColors.bg }}
     >
       {/* Light Effects */}
-      <div
-        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`}
+      <div 
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`} 
       />
 
       {/* --------------------------------------------------------
@@ -458,7 +429,7 @@ const HomePage = () => {
         flex-none ve z-30 kullanarak bu alanı yukarı sabitledik.
         --------------------------------------------------------
       */}
-      <div
+      <div 
         className="flex-none z-30 pb-2 relative shadow-sm border-b border-slate-200 transition-colors duration-500"
         style={{ backgroundColor: levelBgColors.bg }}
       >
@@ -598,60 +569,40 @@ const HomePage = () => {
         <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
             // VIP HEADER: Yıllık altın, aylık mavi
-            <div
-              className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
-                vipType === "yearly"
-                  ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
-                  : vipType === "monthly"
-                    ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
-                    : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
-              }`}
-            >
+            <div className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+              vipType === "yearly" 
+                ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600" 
+                : vipType === "monthly"
+                  ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                  : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
+            }`}>
               <div className="flex items-center gap-2">
-                <div
-                  className={`p-1.5 rounded-full ${
-                    vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
-                  }`}
-                >
-                  <Crown
-                    className={`w-5 h-5 ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
-                    }`}
-                  />
+                <div className={`p-1.5 rounded-full ${
+                  vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                }`}>
+                  <Crown className={`w-5 h-5 ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
+                  }`} />
                 </div>
                 <div className="flex flex-col">
-                  <span
-                    className={`text-sm font-bold ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
-                    }`}
-                  >
-                    {vipType === "yearly"
-                      ? "⭐ VIP Yazar (Yıllık)"
-                      : vipType === "monthly"
-                        ? "💎 VIP Yazar (Aylık)"
-                        : "VIP Yazar"}
+                  <span className={`text-sm font-bold ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                  }`}>
+                    {vipType === "yearly" ? "⭐ VIP Yazar (Yıllık)" : vipType === "monthly" ? "💎 VIP Yazar (Aylık)" : "VIP Yazar"}
                   </span>
-                  <span
-                    className={`text-[10px] ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
-                    }`}
-                  >
+                  <span className={`text-[10px] ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
+                  }`}>
                     Sınırsız hak • Günlük joker • 2x XP
                   </span>
                 </div>
               </div>
-              <div
-                className={`px-2 py-1 rounded-lg ${
-                  vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
-                }`}
-              >
-                <span
-                  className={`text-xs font-mono font-bold ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
-                  }`}
-                >
-                  {premiumTimeLeft}
-                </span>
+              <div className={`px-2 py-1 rounded-lg ${
+                vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
+              }`}>
+                <span className={`text-xs font-mono font-bold ${
+                  vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
+                }`}>{premiumTimeLeft}</span>
               </div>
             </div>
           )}

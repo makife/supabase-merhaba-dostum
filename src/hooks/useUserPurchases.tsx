@@ -30,8 +30,7 @@ interface UserInventory {
 
 export const useUserPurchases = () => {
   const { user } = useAuth();
-  const toastResult = useToast();
-  
+  const { toast } = useToast();
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
   const [settings, setSettings] = useState<UserSettings>({
     active_theme: 'default',
@@ -44,15 +43,6 @@ export const useUserPurchases = () => {
   });
   const [inventory, setInventory] = useState<UserInventory[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // 🔥 FIX: Güvenli toast erişimi - hook tam yüklenmeden çağrılabilir
-  const showToast = (props: { title: string; description: string; variant?: "default" | "destructive" }) => {
-    if (toastResult?.toast && typeof toastResult.toast === 'function') {
-      toastResult.toast(props);
-    } else {
-      console.log('[useUserPurchases] Toast not ready:', props.title);
-    }
-  };
 
   // Kullanıcı satın alımlarını yükle
   const loadPurchases = useCallback(async () => {
@@ -179,19 +169,19 @@ export const useUserPurchases = () => {
       setSettings(updatedSettings);
       await loadSettings();
 
-      showToast({
+      toast({
         title: 'Ayarlar Güncellendi',
         description: 'Tercihleriniz başarıyla kaydedildi.',
       });
     } catch (error) {
       console.error('Error updating settings:', error);
-      showToast({
+      toast({
         title: 'Güncelleme Hatası',
         description: 'Ayarlar güncellenirken bir hata oluştu.',
         variant: 'destructive',
       });
     }
-  }, [user?.id, settings, loadSettings]);
+  }, [user?.id, settings, loadSettings, toast]);
 
   // Satın alma işlemi gerçekleştir
   const processPurchase = useCallback(async (item: any) => {
@@ -325,7 +315,7 @@ export const useUserPurchases = () => {
       // Profile yenilenmesini zorunlu kıl
       window.dispatchEvent(new CustomEvent('refreshProfile'));
 
-      showToast({
+      toast({
         title: 'Satın Alma Başarılı! 🎉',
         description: `${item.title} başarıyla satın alındı.`,
       });
@@ -333,7 +323,7 @@ export const useUserPurchases = () => {
       return true;
     } catch (error) {
       console.error('Purchase error:', error);
-      showToast({
+      toast({
         title: 'Satın Alma Hatası',
         description: 'Bir hata oluştu, lütfen tekrar deneyin.',
         variant: 'destructive',
@@ -342,7 +332,7 @@ export const useUserPurchases = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, updateInventory, updateSettings, loadPurchases, loadInventory]);
+  }, [user?.id, updateInventory, updateSettings, loadPurchases, loadInventory, toast]);
 
   // Satın alınmış öğe kontrolü
   const hasPurchased = useCallback((itemId: string) => {

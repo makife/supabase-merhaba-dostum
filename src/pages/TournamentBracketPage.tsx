@@ -24,7 +24,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
-import { getGlobalServerNow, getGlobalServerOffset } from "@/contexts/ServerTimeContext";
+import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 const TournamentBracketPage = () => {
@@ -34,10 +34,7 @@ const TournamentBracketPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile, isSystemConnected } = useUser();
   const { playSpecialSound } = useSounds();
-  
-  // 🔥 FIX: Hook yerine global fonksiyonlar kullan - provider sırası sorunu önlenir
-  const serverNow = useCallback(() => getGlobalServerNow(), []);
-  const offset = getGlobalServerOffset();
+  const { serverNow, offset } = useServerTimeContext();
 
   const {
     currentTournament,

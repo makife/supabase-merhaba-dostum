@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback, useContext } from "react";
-import { ThemeContext } from "@/components/ThemeProvider";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useThemeContext } from "@/components/ThemeProvider";
 import { Capacitor } from '@capacitor/core';
 import { 
   initNativeAudio, 
@@ -98,11 +98,7 @@ if (typeof window !== "undefined") {
 
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
-  
-  // 🔥 FIX: Context'e güvenli erişim - ThemeProvider hazır değilse fallback kullan
-  const themeContext = useContext(ThemeContext);
-  const soundPack = themeContext?.soundPack ?? 'default';
-  
+  const { soundPack } = useThemeContext();
   const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioUnlockedRef = useRef(false);

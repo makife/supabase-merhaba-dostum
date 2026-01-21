@@ -87,25 +87,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // 1. USER VARSA - hemen göster
   if (user) {
-    // 🔥 KRİTİK: User var ama context'ler henüz hazır olmamış olabilir
-    // ErrorBoundary bunu yakalar ama daha iyi deneyim için kısa bir bekleme ekleyelim
     return <>{children}</>;
   }
 
-  // 2. Auth yüklemesi devam ediyor - SADECE spinner
-  if (authLoading) {
+  // 2. İlk yükleme - SADECE spinner, mesaj yok
+  if (authLoading || showLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
-      </div>
-    );
-  }
-
-  // 3. İlk yükleme tamamlandı ama kısa bekleme - SADECE spinner
-  if (showLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-primary"></div>
       </div>
     );
   }
