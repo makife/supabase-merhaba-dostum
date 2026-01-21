@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"; // DialogTitle eklendi
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,7 +127,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(`/private-room/waiting/${shortCode}`);
+      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=timed`);
       onClose();
     } catch (error: any) {
       toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
@@ -156,7 +157,9 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(`/private-room/waiting/${joinCode.toUpperCase()}`);
+      navigate(
+        `/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${room.id}&gameType=${room.game_type_new || "timed"}`,
+      );
       onClose();
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
@@ -196,7 +199,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
               <Users className="w-8 h-8 text-white" />
             </div>
 
-            <h2 className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</h2>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</DialogTitle>
           </div>
 
           {/* TABS */}
