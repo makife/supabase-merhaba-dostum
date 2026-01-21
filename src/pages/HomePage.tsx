@@ -405,11 +405,40 @@ const HomePage = () => {
   // Seviyeye göre arka plan rengi
   const getLevelBackgroundColor = () => {
     const level = levelData.level;
-    if (level >= 70) return { bg: "#F8F8F8", gradient: "from-slate-100/60" }; // Siyah tema - çok açık gri
-    if (level >= 40) return { bg: "#F0F7FF", gradient: "from-blue-100/60" }; // Mavi tema - çok açık mavi
-    if (level >= 25) return { bg: "#F0FDF4", gradient: "from-emerald-100/60" }; // Yeşil tema - çok açık yeşil
-    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/10" }; // Mor tema - çok açık mor
-    return { bg: "#FFFDF5", gradient: "from-orange-100/40" }; // Turuncu tema (varsayılan) - krem
+
+    // Level 70+ (Siyah/Gri Tema): Daha belirgin gri
+    if (level >= 70)
+      return {
+        bg: "#E2E8F0", // Slate-200 (Eskisi F8F8F8 idi)
+        gradient: "from-slate-300/50", // Gradienti 100'den 300'e çektik
+      };
+
+    // Level 40+ (Mavi Tema): Daha belirgin gökyüzü mavisi
+    if (level >= 40)
+      return {
+        bg: "#DBEAFE", // Blue-100 (Eskisi F0F7FF idi)
+        gradient: "from-blue-200/50", // Gradienti güçlendirdik
+      };
+
+    // Level 25+ (Yeşil Tema): Daha belirgin nane yeşili
+    if (level >= 25)
+      return {
+        bg: "#DCFCE7", // Emerald-100 (Eskisi F0FDF4 idi)
+        gradient: "from-emerald-200/50",
+      };
+
+    // Level 10+ (Mor Tema): Daha belirgin lavanta
+    if (level >= 10)
+      return {
+        bg: "#F3E8FF", // Purple-100 (Eskisi FAF5FF idi)
+        gradient: "from-purple-200/50",
+      };
+
+    // Varsayılan (Turuncu/Krem Tema): Daha sıcak bir bej/krem
+    return {
+      bg: "#FEF3C7", // Amber-100 (Eskisi FFFDF5 idi)
+      gradient: "from-orange-200/40", // Opaklığı ve tonu artırdık
+    };
   };
 
   const levelBgColors = getLevelBackgroundColor();
