@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"; // DialogTitle eklendi
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+// HATA DÜZELTİLDİ: Aşağıdaki satır tek bir import haline getirildi
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
@@ -127,7 +127,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=timed`);
+      // DÜZELTME: URL yapısı /private-room/waiting/:code formatına getirildi
+      navigate(`/private-room/waiting/${shortCode}`);
       onClose();
     } catch (error: any) {
       toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
@@ -157,9 +158,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(
-        `/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${room.id}&gameType=${room.game_type_new || "timed"}`,
-      );
+      // DÜZELTME: URL yapısı /private-room/waiting/:code formatına getirildi
+      navigate(`/private-room/waiting/${joinCode.toUpperCase()}`);
       onClose();
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
