@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -186,7 +187,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .eq("game_mode", "random-match")
         .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        .gt("created_at", new Date(Date.now() - 120000).toISOString())
+        .gt("created_at", new Date(getGlobalServerNow() - 120000).toISOString())
         .order("created_at", { ascending: true })
         .limit(10);
 
