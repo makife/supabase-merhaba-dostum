@@ -187,7 +187,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .eq("game_mode", "random-match")
         .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        .gt("created_at", new Date(getGlobalServerNow() - 120000).toISOString())
+        .gt("created_at", new Date(getGlobalServerNow() - 3600000).toISOString())
         .order("created_at", { ascending: true })
         .limit(10);
 
