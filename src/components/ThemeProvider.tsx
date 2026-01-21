@@ -25,8 +25,13 @@ export const useThemeContext = () => {
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
-  const { hasPurchased } = useUserPurchases();
-  const { isPremium } = useUser();
+  const userPurchases = useUserPurchases();
+  const userContext = useUser();
+  
+  // 🔥 FIX: Güvenli erişim - context tam yüklenmeden çağrılabilir
+  const hasPurchased = userPurchases?.hasPurchased ?? (() => false);
+  const isPremium = userContext?.isPremium ?? false;
+  
   const [theme, setTheme] = useState('default');
   const [avatarFrame, setAvatarFrame] = useState('none');
   const [soundPack, setSoundPack] = useState('default');
