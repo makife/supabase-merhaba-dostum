@@ -74,8 +74,14 @@ const AuthPage = () => {
     await Preferences.set({ key: 'kelimele-saved-email', value: signInData.email });
     await Preferences.set({ key: 'kelimele-saved-password', value: signInData.password });
     
-    await signIn(signInData.email, signInData.password);
+    const { error } = await signIn(signInData.email, signInData.password);
     setLoading(false);
+    
+    // 🔥 Hata yoksa direkt yönlendir (useEffect yedeği)
+    if (!error) {
+      console.log("[AuthPage] ✅ SignIn successful, navigating to home...");
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
