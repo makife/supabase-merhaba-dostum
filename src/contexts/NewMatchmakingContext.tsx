@@ -164,40 +164,58 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setCurrentGameType("timed");
   };
 
+  // Supabase Realtime ile matchmaking başlat
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
 
     try {
-      await cleanup(); // Önceki aramayı temizle
+      // Önce temizlik yap
+      await cleanup();
+
       setIsSearching(true);
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
 
+      // Global flag set et
       (window as any).__currentMatchmakingType = gameType;
+
       console.log("🔍 Matchmaking başlatıldı:", gameType);
       startProgressTimer();
 
-      // 1️⃣ ÖNCELİKLE BOŞ ODA ARA
-      // DÜZELTME: Sadece son 2 dakika (120000ms) içinde açılan odaları ara.
-      // 5 dakika (300000ms) çok uzun, host gitmiş olabilir.
+      // 1️⃣ ADIM: ÖNCE MEVCUT ODALARI ARA
+      // -------------------------------------------------------------
+      // KRİTİK DÜZELTME:
+      // 1. getGlobalServerNow() kullanarak telefon saati hatalarını yok sayıyoruz.
+      // 2. Süreyi 1 SAAT (3600000ms) yapıyoruz ki "az önce kurulmuş" odalar kaybolmasın.
+      // 3. Status 'waiting' olduğu sürece odayı alıyoruz.
+      // -------------------------------------------------------------
+      console.log("🔍 Boş oda aranıyor...");
+
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
-        .select("id, status, current_grid, host_id, game_type_new")
-        .eq("game_mode", "random-match")
-        .eq("game_type_new", gameType)
-        .eq("status", "waiting")
-        .gt("created_at", new Date(getGlobalServerNow() - 3600000).toISOString())
-        .order("created_at", { ascending: true })
+        .select("id, status, current_grid, host_id, game_type_new, created_at")
+        .eq("game_mode", "random-match") // Mod kontrolü
+        .eq("game_type_new", gameType) // Oyun tipi kontrolü
+        .eq("status", "waiting") // Sadece bekleyenler
+        .gt("created_at", new Date(getGlobalServerNow() - 3600000).toISOString()) // Son 1 saat
+        .neq("host_id", user.id) // Kendi odamızı bulmayalım
         .limit(10);
 
-      if (searchError) console.error("❌ Oda arama hatası:", searchError);
+      if (searchError) {
+        console.error("❌ Oda arama hatası:", searchError);
+      } else {
+        console.log(`🔍 Bulunan potansiyel oda sayısı: ${existingRooms?.length || 0}`);
+      }
 
-      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id) && room.host_id !== user.id);
+      // Banlı olmayan ve uygun bir oda seç
+      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id));
 
+      // --- BULUNDU: ODAYA KATIL ---
       if (targetRoom) {
-        console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
+        console.log("✅ Uygun oda bulundu, katılım yapılıyor:", targetRoom.id);
 
+        // Katılımcı ekle
         const { error: participantError } = await supabase.from("game_participants").insert({
           room_id: targetRoom.id,
           user_id: user.id,
@@ -207,33 +225,43 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
         if (participantError && participantError.code !== "23505") {
           console.error("❌ Katılımcı ekleme hatası:", participantError);
+          // Hata varsa döngüyü kırma, aşağı inip kendi odasını kursun
         } else {
-          console.log("✅ Odaya katıldı! Countdown başlatılıyor...");
+          console.log("✅ Odaya başarıyla girildi! (Guest)");
 
-          // Countdown başlat
-          await supabase.rpc("start_game_countdown", { p_room_id: targetRoom.id });
+          // Countdown başlat (Tetikleyici)
+          await supabase.rpc("start_game_countdown", {
+            p_room_id: targetRoom.id,
+          });
 
+          // State güncelle
           setCurrentRoom({
             id: targetRoom.id,
             game_type: gameType,
             status: "waiting",
             current_players: 2,
             max_players: 2,
-            created_at: new Date().toISOString(),
+            created_at: targetRoom.created_at,
             expires_at: new Date(Date.now() + 300000).toISOString(),
           });
 
           clearProgressTimer();
           setSearchProgress(100);
           setIsSearching(false);
+
+          // Yönlendirme callback
           onMatchFound?.(targetRoom.id);
-          return;
+          return; // Fonksiyondan çık
         }
       }
 
-      // 2️⃣ BOŞ ODA YOK, YENİ ODA OLUŞTUR
-      console.log("❌ Boş oda yok, yeni oda oluşturuluyor...");
+      // 2️⃣ ADIM: ODA BULUNAMADI, HEMEN YENİ ODA KUR
+      // -------------------------------------------------------------
+      // Burada bekleme yok! Bulamadıysa anında kurar.
+      // -------------------------------------------------------------
+      console.log("❌ Uygun oda bulunamadı, yeni oda kuruluyor (Host)...");
 
+      // Grid oluştur
       const generateRandomGrid = (): string[] => {
         const letterPool = [
           "A",
@@ -347,11 +375,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       const newRoomId = crypto.randomUUID();
 
+      // Odayı oluştur
       const { error: roomError } = await supabase.from("game_rooms").insert({
         id: newRoomId,
         room_code: newRoomId,
         host_id: user.id,
-        game_mode: "random-match",
+        player1_id: user.id, // Host aynı zamanda Player 1'dir
+        game_mode: "random-match", // Modun doğru olduğundan emin ol
         game_type_new: gameType,
         status: "waiting",
         max_players: 2,
@@ -360,9 +390,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         current_grid: generateRandomGrid(),
       });
 
-      if (roomError) throw roomError;
+      if (roomError) {
+        console.error("❌ Oda oluşturma hatası:", roomError);
+        throw roomError;
+      }
 
-      // Kendini ekle
+      console.log("✅ Oda veritabanına kaydedildi:", newRoomId);
+
+      // Kendini katılımcı olarak ekle
       await supabase.from("game_participants").insert({
         room_id: newRoomId,
         user_id: user.id,
@@ -370,7 +405,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         is_bot: false,
       });
 
-      // State güncelle
+      // State güncelle (Host modu)
       const newRoomObj = {
         id: newRoomId,
         game_type: gameType,
@@ -382,13 +417,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       };
 
       setCurrentRoom(newRoomObj);
-      currentRoomRef.current = newRoomObj; // Ref'i de hemen güncelle
+      currentRoomRef.current = newRoomObj;
 
-      // 3️⃣ REALTIME SUBSCRIPTION
+      // 3️⃣ ADIM: RAKİBİ BEKLE (Realtime)
       const channelName = `matchmaking-${newRoomId}`;
       const channel = autoReconnect.registerChannel(channelName, () =>
         supabase
           .channel(channelName)
+          // Katılımcı gelmesini dinle
           .on(
             "postgres_changes",
             {
@@ -398,15 +434,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `room_id=eq.${newRoomId}`,
             },
             async (payload) => {
-              // Bot olmayan ve biz olmayan biri geldiyse
+              // Gelen kişi ben değilsem ve bot değilse -> RAKİPTİR
               if (!payload.new.is_bot && payload.new.user_id !== user.id) {
-                console.log("🎉 2. oyuncu odaya katıldı!");
+                console.log("🎉 Rakip bulundu! (Player 2 katıldı)");
                 clearProgressTimer();
                 setSearchProgress(100);
                 setIsSearching(false);
+                // Burada yönlendirme YAPMA, countdown_started_at'i bekle
               }
             },
           )
+          // Oda güncellemesini dinle (Countdown başlayınca git)
           .on(
             "postgres_changes",
             {
@@ -417,14 +455,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             },
             async (payload) => {
               if (payload.new.countdown_started_at) {
-                console.log("✅ Oyun başlıyor! Countdown:", payload.new.countdown_started_at);
+                console.log("🚀 Oyun başlıyor! Countdown:", payload.new.countdown_started_at);
 
                 autoReconnect.unregisterChannel(channelName);
                 setSearchChannel(null);
 
+                // Event fırlat (Timer senkronizasyonu için)
                 window.dispatchEvent(
-                  new CustomEvent("countdownStarted", { detail: { serverTime: payload.new.countdown_started_at } }),
+                  new CustomEvent("countdownStarted", {
+                    detail: { serverTime: payload.new.countdown_started_at },
+                  }),
                 );
+
                 onMatchFound?.(newRoomId);
               }
             },
@@ -433,17 +475,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       );
 
       setSearchChannel(channelName);
+      console.log("📡 Rakip bekleniyor...");
     } catch (error) {
-      console.error("❌ Matchmaking hatası:", error);
-      await cleanup();
+      console.error("❌ Matchmaking genel hatası:", error);
+      setIsSearching(false);
+      clearProgressTimer();
       toast({
         title: "Hata",
-        description: "Arama başlatılamadı",
+        description: "Arama başlatılamadı. Lütfen tekrar deneyin.",
         variant: "destructive",
       });
     }
   };
-
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
     clearProgressTimer();
