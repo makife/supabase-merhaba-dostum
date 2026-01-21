@@ -48,7 +48,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (
       errorMessage.includes("not implemented") ||
       errorMessage.includes("Capacitor") ||
-      errorMessage.includes("Plugin")
+      errorMessage.includes("Plugin") ||
+      errorMessage.includes("NavigationBar") ||
+      errorMessage.includes("StatusBar") ||
+      errorMessage.includes("PushNotifications") ||
+      errorMessage.includes("LocalNotifications")
     ) {
       console.log("[ErrorBoundary] Plugin error ignored:", error.message);
       // State'i reset et ki UI normal çalışsın
@@ -56,8 +60,12 @@ export class ErrorBoundary extends Component<Props, State> {
       return;
     }
     
-    console.error("[ErrorBoundary] Uncaught error:", error);
-    console.error("[ErrorBoundary] Error info:", errorInfo);
+    // 🔥 KRİTİK: Tüm hataları detaylı logla
+    console.error("🚨🚨🚨 [ErrorBoundary] UNCAUGHT ERROR 🚨🚨🚨");
+    console.error("[ErrorBoundary] Error name:", error.name);
+    console.error("[ErrorBoundary] Error message:", error.message);
+    console.error("[ErrorBoundary] Error stack:", error.stack);
+    console.error("[ErrorBoundary] Component stack:", errorInfo?.componentStack);
     
     this.setState({ errorInfo });
   }
