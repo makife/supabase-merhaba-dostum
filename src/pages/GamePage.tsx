@@ -31,7 +31,7 @@ import { useNativeGameplay } from "@/hooks/useNativeGameplay";
 import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateServerOffset } from "@/utils/serverTimeSync";
-import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
+import { getGlobalServerNow, getGlobalServerOffset, isServerTimeReady, subscribeToOffsetChange, triggerGlobalResync } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import {
@@ -186,8 +186,10 @@ const GamePage = ({
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   
-  // 🔄 Server Time Context - Tüm uygulama genelinde senkronize offset
-  const { offset: contextOffset, serverNow, isReady: contextServerTimeReady, triggerResync } = useServerTimeContext();
+  // 🔥 FIX: Hook yerine global fonksiyonlar kullan - provider sırası sorunu önlenir
+  const serverNow = useCallback(() => getGlobalServerNow(), []);
+  const contextOffset = getGlobalServerOffset();
+  const contextServerTimeReady = isServerTimeReady();
   // Geriye uyumluluk için local state'i context'ten al
   const serverTimeOffset = contextOffset;
 
@@ -1229,10 +1231,10 @@ const GamePage = ({
         }
       }
       
-      // 3. Server time sync yeniden kalibre et (Context üzerinden otomatik yapılıyor)
+      // 3. Server time sync yeniden kalibre et (Global event tabanlı)
       try {
-        await triggerResync();
-        console.log("✅ [GamePage Resync] Server time re-synced via context");
+        triggerGlobalResync();
+        console.log("✅ [GamePage Resync] Server time re-synced via global event");
       } catch (e) {
         console.warn("⚠️ [GamePage Resync] Server time sync hatası:", e);
       }
@@ -1240,7 +1242,7 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync]);
+  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused]);
 
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
