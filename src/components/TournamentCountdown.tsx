@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Users, Bot } from "lucide-react";
-import { useServerTimeContext } from "@/contexts/ServerTimeContext";
+import { getGlobalServerNow, getGlobalServerOffset, isServerTimeReady } from "@/contexts/ServerTimeContext";
 
 interface TournamentCountdownProps {
   timeLeft: number;
@@ -18,7 +18,10 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   isCreator,
   expiresAt,
 }) => {
-  const { serverNow, offset, isReady } = useServerTimeContext();
+  // 🔥 FIX: Hook yerine global fonksiyonlar kullan - provider sırası sorunu önlenir
+  const serverNow = useCallback(() => getGlobalServerNow(), []);
+  const offset = getGlobalServerOffset();
+  const isReady = isServerTimeReady();
   const [calculatedTimeLeft, setCalculatedTimeLeft] = useState(propTimeLeft);
 
   // Server time offset değiştiğinde ve expiresAt varsa, doğru kalan süreyi hesapla

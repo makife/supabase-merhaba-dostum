@@ -37,6 +37,11 @@ export const getGlobalServerOffset = () => globalOffset;
 export const getGlobalServerNow = () => Date.now() + globalOffset;
 export const isServerTimeReady = () => globalIsReady;
 
+// Global triggerResync - event tabanlı yaklaşım
+export const triggerGlobalResync = () => {
+  window.dispatchEvent(new Event('app-time-sync'));
+};
+
 export const subscribeToOffsetChange = (callback: (offset: number) => void) => {
   offsetListeners.add(callback);
   return () => offsetListeners.delete(callback);
