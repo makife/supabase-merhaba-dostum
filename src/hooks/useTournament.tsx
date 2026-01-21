@@ -3,13 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useServerTimeContext } from "@/contexts/ServerTimeContext";
+import { getGlobalServerNow, getGlobalServerOffset } from "@/contexts/ServerTimeContext";
 
 export const useTournament = (tournamentId?: string) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const context = useTournamentContext();
-  const { serverNow, offset } = useServerTimeContext();
+  
+  // 🔥 FIX: Hook yerine global fonksiyonlar kullan - provider sırası sorunu önlenir
+  const serverNow = useCallback(() => getGlobalServerNow(), []);
+  const offset = getGlobalServerOffset();
 
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCreator, setIsCreator] = useState(false);
@@ -135,7 +138,7 @@ export const useTournament = (tournamentId?: string) => {
     if (!tournamentId) return false;
     const success = await context.joinTournament(tournamentId);
     if (success) {
-      navigate(`/tournament-waiting/${tournamentId}`);
+      navigate(`/tournament/waiting/${tournamentId}`);
     }
     return success;
   };
