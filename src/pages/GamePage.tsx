@@ -30,8 +30,7 @@ import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { useNativeGameplay } from "@/hooks/useNativeGameplay";
 import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateServerOffset } from "@/utils/serverTimeSync";
-import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
+import { calculateServerOffset, startDriftMonitoring } from "@/utils/serverTimeSync";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import {
@@ -47,14 +46,11 @@ import {
   Lightbulb,
   PenTool,
   Loader2,
-  Crown,
 } from "lucide-react";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGlobalResync } from "@/hooks/useGlobalResync";
-import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -185,11 +181,7 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
-  
-  // 🔄 Server Time Context - Tüm uygulama genelinde senkronize offset
-  const { offset: contextOffset, serverNow, isReady: contextServerTimeReady, triggerResync } = useServerTimeContext();
-  // Geriye uyumluluk için local state'i context'ten al
-  const serverTimeOffset = contextOffset;
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
   const addCleanup = useCallback((cleanupFn: () => void) => {
     cleanupRef.current.push(cleanupFn);
@@ -1148,130 +1140,49 @@ const GamePage = ({
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
 
-  // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
-  const handleGameResync = useCallback(async () => {
-    // Oyun bittiyse resync gereksiz
-    if (gameEndedRef.current) {
-      console.log("🔄 [GamePage] Oyun bitti, resync atlanıyor");
-      return;
-    }
-    
-    console.log("🔄 [GamePage] Bağlantı geri geldi - veri senkronizasyonu başlıyor...");
-    
-    try {
-      // 1. TURNUVA MODU SYNC
-      if (gameMode === "tournament" && tournamentMatch?.id) {
-        const { data: matchData, error } = await supabase
-          .from("tournament_matches")
-          .select("*")
-          .eq("id", tournamentMatch.id)
-          .single();
-        
-        if (!error && matchData) {
-          console.log("✅ [GamePage Resync] Turnuva maçı güncellendi:", matchData.status);
-          
-          // Skorları güncelle
-          const isPlayer1 = String(matchData.player1_id) === String(user?.id);
-          if (isPlayer1) {
-            setOpponentScore(matchData.player2_score || 0);
-          } else {
-            setOpponentScore(matchData.player1_score || 0);
-          }
-          
-          // Maç tamamlandıysa UI'ı güncelle
-          if (matchData.status === "completed" && matchData.winner_id) {
-            const iWon = matchData.winner_id === user?.id;
-            setWinner(iWon ? "player" : "opponent");
-            setGameEnded(true);
-            setShowResults(true);
-          }
-        }
-        return;
-      }
-      
-      // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
-      if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
-        const { data: roomData, error: roomError } = await supabase
-          .from("game_rooms")
-          .select("*")
-          .eq("id", currentRoom.id)
-          .single();
-        
-        if (!roomError && roomData) {
-          console.log("✅ [GamePage Resync] Oda verisi güncellendi - status:", roomData.status);
-          
-          // Skorları güncelle
-          const isPlayer1 = roomData.player1_id === user?.id;
-          if (isPlayer1) {
-            setOpponentScore(roomData.player2_score || 0);
-          } else {
-            setOpponentScore(roomData.player1_score || 0);
-          }
-          
-          // Oda bittiyse UI'ı güncelle
-          if (roomData.status === "finished" && roomData.winner_id) {
-            const iWon = roomData.winner_id === user?.id;
-            setWinner(iWon ? "player" : "opponent");
-            setGameEnded(true);
-            setShowResults(true);
-          }
-          
-          // Grid sync (joker koruması yoksa)
-          if (!gridSyncPaused && roomData.current_grid && Array.isArray(roomData.current_grid)) {
-            const flat = roomData.current_grid as string[];
-            const grid: string[][] = [];
-            for (let i = 0; i < 4; i++) {
-              grid.push(flat.slice(i * 4, (i + 1) * 4));
-            }
-            setGameGrid(grid);
-            console.log("✅ [GamePage Resync] Grid senkronize edildi");
-          }
-        }
-      }
-      
-      // 3. Server time sync yeniden kalibre et (Context üzerinden otomatik yapılıyor)
-      try {
-        await triggerResync();
-        console.log("✅ [GamePage Resync] Server time re-synced via context");
-      } catch (e) {
-        console.warn("⚠️ [GamePage Resync] Server time sync hatası:", e);
-      }
-      
-    } catch (err) {
-      console.error("❌ [GamePage Resync] Hata:", err);
-    }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync]);
-
-  // Priority: true - GamePage en kritik sayfa!
-  useGlobalResync({
-    onResync: handleGameResync,
-    isActive: !gameEndedRef.current && (gameMode === "tournament" || gameMode === "random-match" || gameMode === "private-room"),
-    isPriority: true,
-    pageName: 'GamePage'
-  });
-
-  // 🔒 Server time sync için state ve ref'ler - Context'ten geliyor
+  // 🔒 Server time sync için state ve ref'ler
   const serverTimeReadyRef = useRef(false);
   const [serverTimeReady, setServerTimeReady] = useState(false);
 
-  // Server time context'ten ready durumunu al
+  // Server time offset'i fetch et - Seviye 1 & 2 optimizasyonlu
   useEffect(() => {
-    if (contextServerTimeReady) {
-      serverTimeReadyRef.current = true;
-      setServerTimeReady(true);
-      console.log("⏰ Server time ready from context, offset:", contextOffset, "ms");
-    }
-  }, [contextServerTimeReady, contextOffset]);
-
-  // Context offset değiştiğinde (foreground/reconnect sonrası) log
-  useEffect(() => {
-    const unsubscribe = subscribeToOffsetChange((newOffset) => {
-      console.log(`🔄 [GamePage] Server time offset updated: ${newOffset}ms`);
-    });
-    return () => {
-      unsubscribe();
+    const initializeServerSync = async () => {
+      try {
+        // Seviye 1: Multiple samples + RTT compensation
+        const offset = await calculateServerOffset();
+        setServerTimeOffset(offset);
+        serverTimeReadyRef.current = true;
+        setServerTimeReady(true);
+        console.log("⏰ Server time offset initialized:", offset, "ms");
+      } catch (err) {
+        console.error("Server time sync error:", err);
+        // Fallback: Hata durumunda da devam et
+        serverTimeReadyRef.current = true;
+        setServerTimeReady(true);
+      }
     };
+
+    initializeServerSync();
   }, []);
+
+  // Seviye 2: Drift detection (her 30 saniyede kontrol)
+  useEffect(() => {
+    if (!gameStarted) return;
+
+    const driftInterval = startDriftMonitoring(
+      () => serverTimeOffset,
+      (newOffset, drift) => {
+        setServerTimeOffset(newOffset);
+        console.log(`🔄 Clock re-synced due to drift: ${drift}ms`);
+      },
+      30000, // 30 saniye
+    );
+
+    return () => {
+      clearInterval(driftInterval);
+      console.log("🔄 Drift monitoring stopped");
+    };
+  }, [gameStarted, toast]); // serverTimeOffset'i dependency'den çıkardık (callback içinde güncel değer okunuyor)
 
   // Rakip ayrıldığında işlem yap
   useEffect(() => {
@@ -1662,9 +1573,8 @@ const GamePage = ({
             // Opponent ID'yi kaydet (ceza için)
             savedOpponentIdRef.current = opponentId;
 
-            // ❌ DEVRE DIŞI: Subscription'ı kapat - bağlantı koruması
-            // supabase.removeChannel(channel);
-            console.log("⚠️ [GamePage] Disconnect handler - removeChannel ATLANYOR (bağlantı koruması)");
+            // Subscription'ı kapat
+            supabase.removeChannel(channel);
 
             // Disconnect event'i dispatch et
             window.dispatchEvent(
@@ -1683,10 +1593,9 @@ const GamePage = ({
         console.log("📡 Disconnect channel status:", status);
       });
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [GamePage] Disconnect subscription cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("🔌 Disconnect subscription temizleniyor:", shortId(capturedRoomId));
+      supabase.removeChannel(channel);
     };
   }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
 
@@ -1832,8 +1741,8 @@ const GamePage = ({
       const finalOpponentScore = isPlayer1 ? updatedMatch.player2_score : updatedMatch.player1_score;
 
       // ✅ Bu maçı tamamlanmış olarak işaretle (tekrar oynamayı engelle)
-      const completedMatchKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${tournamentMatch.id}`;
-      nativeStorage.setItem(
+      const completedMatchKey = `tournament_match_completed_${tournamentMatch.id}`;
+      localStorage.setItem(
         completedMatchKey,
         JSON.stringify({
           matchId: tournamentMatch.id,
@@ -1869,15 +1778,15 @@ const GamePage = ({
       setGameEnded(false);
       leaveRoom();
 
-      // ⚠️ KRİTİK: DEVRE DIŞI - Bağlantı koruması
-      console.log("⚠️ [GamePage] Tournament channel cleanup ATLANYOR (bağlantı koruması)");
-      // const channels = supabase.getChannels();
-      // channels.forEach((channel) => {
-      //   if (channel.topic.includes(tournamentMatch.id)) {
-      //     console.log("🔌 Unsubscribing from channel:", channel.topic);
-      //     supabase.removeChannel(channel);
-      //   }
-      // });
+      // ⚠️ KRİTİK: Tüm real-time subscriptionları kapat
+      console.log("📡 Unsubscribing from all channels for completed tournament match");
+      const channels = supabase.getChannels();
+      channels.forEach((channel) => {
+        if (channel.topic.includes(tournamentMatch.id)) {
+          console.log("🔌 Unsubscribing from channel:", channel.topic);
+          supabase.removeChannel(channel);
+        }
+      });
 
       // ⏳ KRİTİK: Winner_id propagation için bekle
       console.log("⏳ Waiting for winner_id to propagate in database...");
@@ -2938,8 +2847,8 @@ const GamePage = ({
 
       if (matchId) {
         // 🛡️ TURNUVA MAÇI KORUMASI: Bu maç daha önce tamamlandıysa tekrar oynama
-        const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${matchId}`;
-        const completed = await nativeStorage.getItem(completedKey);
+        const completedKey = `tournament_match_completed_${matchId}`;
+        const completed = localStorage.getItem(completedKey);
         if (completed) {
           const data = JSON.parse(completed);
           console.warn("⚠️ Bu turnuva maçı zaten tamamlanmış:", data);
@@ -3760,9 +3669,8 @@ const GamePage = ({
                   queryClient.invalidateQueries({ queryKey: ["tournament_matches"] });
                   queryClient.invalidateQueries({ queryKey: ["active_match"] });
 
-                  // ❌ DEVRE DIŞI: Listener kapat - bağlantı koruması
-                  // supabase.removeChannel(statusChannel);
-                  console.log("⚠️ [GamePage] Status channel cleanup ATLANYOR (bağlantı koruması)");
+                  // Listener kapat
+                  supabase.removeChannel(statusChannel);
 
                   // Toast göster
                   toast({
@@ -4369,10 +4277,9 @@ const GamePage = ({
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [GamePage] Turnuva maçı subscription cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("🔌 Turnuva maçı subscription temizleniyor");
+      supabase.removeChannel(channel);
     };
     // ⚠️ DİKKAT: gameStarted ve showCountdown dependency'ye eklendi
     // Oyun başladığında countdown tekrar başlamaması için gerekli
@@ -4425,33 +4332,15 @@ const GamePage = ({
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
-  // 🔒 Ref kullanarak closure sorununu önle
-  const countdownChannelRef = useRef<any>(null);
-  
   useEffect(() => {
     if (gameMode === "tournament" || gameMode === "vs-computer") return;
     if (!currentRoom || !user) return;
-    
-    // 🔒 OYUN BAŞLADIYSA SUBSCRIPTION'I KAPAT VE ÇIKIŞ YAP
-    if (gameStarted) {
-      if (countdownChannelRef.current) {
-        console.log("🛑 Oyun başladı, countdown subscription kapatılıyor");
-        supabase.removeChannel(countdownChannelRef.current);
-        countdownChannelRef.current = null;
-      }
-      return;
-    }
-    
-    // Countdown zaten gösteriliyorsa yeni subscription açma
-    if (showCountdown) return;
-    
-    // Zaten subscription varsa tekrar açma
-    if (countdownChannelRef.current) return;
+    if (showCountdown || gameStarted) return; // Zaten countdown başlamışsa tekrar başlatma
 
     console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
 
     const channel = supabase
-      .channel(`game-room-countdown-${currentRoom.id}-${Date.now()}`)
+      .channel(`game-room-countdown-${currentRoom.id}`)
       .on(
         "postgres_changes",
         {
@@ -4461,12 +4350,6 @@ const GamePage = ({
           filter: `id=eq.${currentRoom.id}`,
         },
         (payload) => {
-          // 🔒 CALLBACK İÇİNDE REF KULLAN - closure sorunu yok!
-          if (gameStartedRef.current || countdownInitiatedRef.current) {
-            console.log("⚠️ Countdown zaten aktif veya oyun başladı - event ignored");
-            return;
-          }
-          
           console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
 
@@ -4481,27 +4364,14 @@ const GamePage = ({
 
             // Buffer animasyonlarını göster (skipBuffer = false)
             initiateCountdown(adjustedTime, false);
-            
-            // 🔒 Subscription'ı hemen kapat - artık countdown tetiklendi
-            if (countdownChannelRef.current) {
-              console.log("✅ Countdown tetiklendi, subscription kapatılıyor");
-              supabase.removeChannel(countdownChannelRef.current);
-              countdownChannelRef.current = null;
-            }
           }
         },
       )
       .subscribe();
-    
-    countdownChannelRef.current = channel;
 
     return () => {
-      // 🔒 Sadece oyun başladığında veya component unmount olduğunda temizle
-      if (countdownChannelRef.current && gameStartedRef.current) {
-        console.log("🧹 Countdown subscription temizleniyor (oyun başladı)");
-        supabase.removeChannel(countdownChannelRef.current);
-        countdownChannelRef.current = null;
-      }
+      console.log("🔌 Game room countdown subscription temizleniyor");
+      supabase.removeChannel(channel);
     };
   }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
 
@@ -4764,11 +4634,9 @@ const GamePage = ({
               timerRef.current = null;
             }
 
-            // ⚠️ DEVRE DIŞI: removeChannel - bağlantı koruması
             if (syncInterval) {
               if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
-                // ❌ DEVRE DIŞI: supabase.removeChannel(syncInterval as any);
-                console.log("⚠️ [GamePage] Sync interval removeChannel ATLANYOR (bağlantı koruması)");
+                supabase.removeChannel(syncInterval as any);
               } else {
                 clearInterval(syncInterval as any);
               }
@@ -4802,11 +4670,11 @@ const GamePage = ({
         timerRef.current = null;
         console.log("✅ Timer cleared in cleanup");
       }
-      // ⚠️ DEVRE DIŞI: removeChannel - bağlantı koruması
       if (syncInterval) {
+        // Realtime channel'ı kapat
         if (typeof syncInterval === "object" && "unsubscribe" in syncInterval) {
-          // ❌ DEVRE DIŞI: supabase.removeChannel(syncInterval as any);
-          console.log("⚠️ [GamePage] Timer cleanup removeChannel ATLANYOR (bağlantı koruması)");
+          supabase.removeChannel(syncInterval as any);
+          console.log("✅ Sync channel unsubscribed in cleanup");
         } else {
           clearInterval(syncInterval);
         }
@@ -5062,8 +4930,8 @@ const GamePage = ({
           );
 
           console.log("🔄 Syncing - All words:", allWordsSet.size, "My words:", myWordsSet.size);
-          setGlobalUsedWords(allWordsSet as Set<string>);
-          setUsedWords(myWordsSet as Set<string>);
+          setGlobalUsedWords(allWordsSet);
+          setUsedWords(myWordsSet);
         }
       } catch (error) {
         console.error("❌ Word sync error:", error);
@@ -5098,48 +4966,22 @@ const GamePage = ({
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("⚠️ [GamePage] Mobile word sync cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(wordChannel);
+      console.log("📱 Mobile word sync cleanup");
+      supabase.removeChannel(wordChannel);
     };
   }, [currentRoom?.id, user?.id, gameMode]);
 
-  // 🏆 Turnuva real-time senkronizasyonu - Ref ile closure sorunu çözümü
-  const tournamentChannelRef = useRef<any>(null);
-  const tournamentMatchIdRef = useRef<string | null>(null);
-  
+  // Turnuva real-time senkronizasyonu
   useEffect(() => {
-    if (gameMode !== "tournament" || !tournamentMatch) {
-      // Turnuva modundan çıkıldığında channel'ı temizle
-      if (tournamentChannelRef.current) {
-        console.log("🧹 Turnuva channel temizleniyor (mod değişti)");
-        supabase.removeChannel(tournamentChannelRef.current);
-        tournamentChannelRef.current = null;
-        tournamentMatchIdRef.current = null;
-      }
-      return;
-    }
-    
-    // Aynı maç için zaten subscription varsa yeni oluşturma
-    if (tournamentMatchIdRef.current === tournamentMatch.id && tournamentChannelRef.current) {
-      console.log("⏭️ Turnuva subscription zaten aktif:", tournamentMatch.id.slice(-8));
-      return;
-    }
-    
-    // Önceki subscription'ı temizle (farklı maç için)
-    if (tournamentChannelRef.current) {
-      console.log("🔄 Eski turnuva channel temizleniyor, yeni maç için");
-      supabase.removeChannel(tournamentChannelRef.current);
-    }
+    if (gameMode !== "tournament" || !tournamentMatch) return;
 
-    console.log("🏆 Turnuva real-time senkronizasyon başlatıldı:", tournamentMatch.id.slice(-8));
-    tournamentMatchIdRef.current = tournamentMatch.id;
+    console.log("🏆 Turnuva real-time senkronizasyon başlatıldı");
 
     // Tournament match değişikliklerini dinle
     const tournamentChannel = supabase
-      .channel(`tournament-match-${tournamentMatch.id}-${Date.now()}`)
+      .channel(`tournament-match-${tournamentMatch.id}`)
       .on(
         "postgres_changes",
         {
@@ -5151,48 +4993,41 @@ const GamePage = ({
         (payload) => {
           console.log("🔄 Tournament match güncellendi:", payload.new);
 
-          // Rakip skorunu real-time güncelle
+          // Rakip skorunu real-time güncelle - DÜZELTME
           const newMatch = payload.new as any;
-          const currentUserId = user?.id;
-          
-          if (currentUserId) {
-            const isPlayer1 = String(newMatch.player1_id) === String(currentUserId);
-            const newOpponentScore = isPlayer1 ? (newMatch.player2_score ?? 0) : (newMatch.player1_score ?? 0);
-            const newPlayerScore = isPlayer1 ? (newMatch.player1_score ?? 0) : (newMatch.player2_score ?? 0);
+          if (user) {
+            const isPlayer1 = String(newMatch.player1_id) === String(user.id);
+            const newOpponentScore = isPlayer1 ? newMatch.player2_score : newMatch.player1_score;
+            const newPlayerScore = isPlayer1 ? newMatch.player1_score : newMatch.player2_score;
 
             console.log("🔄 Real-time tournament sync:", {
               isPlayer1,
               newPlayerScore,
               newOpponentScore,
+              currentPlayerScore: playerScore,
+              currentOpponentScore: opponentScore,
             });
 
-            // 🔥 Functional update kullan - closure sorunu yok!
-            setOpponentScore(prev => {
-              if (newOpponentScore !== prev) {
-                console.log("🔄 Rakip skoru güncellendi:", prev, "->", newOpponentScore);
-                return newOpponentScore;
-              }
-              return prev;
-            });
+            if (newOpponentScore !== undefined && newOpponentScore !== opponentScore) {
+              console.log("🔄 Rakip skoru güncellendi:", opponentScore, "->", newOpponentScore);
+              setOpponentScore(newOpponentScore);
+            }
 
-            // Kendi skorumuzu güncelleme - kendi skorumuz zaten local'de güncel
-            // Sadece rakipten gelen skor güncellemesini al
+            // Kendi skorumuzu da güncelle (eğer başka yerden geliyorsa)
+            if (newPlayerScore !== undefined && newPlayerScore !== playerScore) {
+              console.log("🔄 Kendi skorumuz güncellendi:", playerScore, "->", newPlayerScore);
+              setPlayerScore(newPlayerScore);
+            }
           }
         },
       )
-      .subscribe((status) => {
-        console.log("🏆 Tournament channel status:", status);
-      });
-    
-    tournamentChannelRef.current = tournamentChannel;
+      .subscribe();
 
     return () => {
-      // Cleanup sadece component unmount olduğunda
-      console.log("⚠️ [GamePage] Turnuva real-time useEffect cleanup");
-      // NOT: Channel'ı burada temizlemiyoruz çünkü bağlantı koruması aktif
-      // Sadece tournamentMatch değiştiğinde veya gameMode değiştiğinde temizle
+      console.log("🏆 Turnuva real-time temizliği");
+      supabase.removeChannel(tournamentChannel);
     };
-  }, [gameMode, tournamentMatch?.id, user?.id]);
+  }, [gameMode, tournamentMatch?.id, user?.id, opponentScore]);
 
   // İlk sync
   useEffect(() => {
@@ -5228,11 +5063,10 @@ const GamePage = ({
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       clearTimeout(initialSyncTimer);
-      console.log("⚠️ [GamePage] Mobile word sync cleanup 2 ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(wordChannel);
+      console.log("📱 Mobile word sync cleanup");
+      supabase.removeChannel(wordChannel);
     };
   }, [currentRoom?.id, user?.id]);
 
@@ -5259,8 +5093,8 @@ const GamePage = ({
           roomWords.filter((w) => w.player_id === user?.id).map((w) => w.word.toLocaleUpperCase("tr-TR")),
         );
 
-        setGlobalUsedWords(allWordsSet as Set<string>);
-        setUsedWords(myWordsSet as Set<string>);
+        setGlobalUsedWords(allWordsSet);
+        setUsedWords(myWordsSet);
       }
     } catch (error) {
       console.error("❌ Word sync error:", error);
@@ -6321,14 +6155,8 @@ const GamePage = ({
     [playSpecialSound],
   );
 
-  // Get opponent info based on game mode with avatar and premium status
+  // Get opponent info based on game mode with avatar
   const getOpponentInfo = () => {
-    // Helper to check if premium
-    const isPremiumActive = (premiumUntil: string | null | undefined) => {
-      if (!premiumUntil) return false;
-      return new Date(premiumUntil) > new Date();
-    };
-
     // Tournament mode için özel opponent isim mantığı
     if (gameMode === "tournament" && tournamentMatch) {
       const opponentId =
@@ -6337,12 +6165,12 @@ const GamePage = ({
       if (!opponentId || String(opponentId).startsWith("bot_")) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
         const botName = generateBotName(seed);
-        return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName), isPremium: false };
+        return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName) };
       }
 
       // Participants yüklenmediyse fallback
       if (!participants || participants.length === 0) {
-        return { name: "Rakip", icon: Trophy, avatar: null, isPremium: false };
+        return { name: "Rakip", icon: Trophy, avatar: null };
       }
 
       const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
@@ -6352,11 +6180,10 @@ const GamePage = ({
           name: realOpponent.profiles?.username || "Rakip",
           icon: Trophy,
           avatar: realOpponent.profiles?.avatar_url || null,
-          isPremium: isPremiumActive((realOpponent as any).profiles?.premium_until),
         };
       }
 
-      return { name: "Turnuva Rakibi", icon: Trophy, avatar: null, isPremium: false };
+      return { name: "Turnuva Rakibi", icon: Trophy, avatar: null };
     }
 
     const realOpponent = participants.find(
@@ -6369,13 +6196,12 @@ const GamePage = ({
         name: (realOpponent as any).profiles?.username || "Oyuncu",
         icon: User,
         avatar: (realOpponent as any).profiles?.avatar_url || null,
-        isPremium: isPremiumActive((realOpponent as any).profiles?.premium_until),
       };
     }
 
     switch (gameMode) {
       case "vs-computer":
-        return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar, isPremium: false };
+        return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar };
       case "random-match":
       case "private-room":
         if (participants.length >= 2) {
@@ -6386,7 +6212,6 @@ const GamePage = ({
               name: (opponent as any).profiles.username,
               icon: User,
               avatar: (opponent as any).profiles?.avatar_url || null,
-              isPremium: isPremiumActive((opponent as any).profiles?.premium_until),
             };
           }
         }
@@ -6395,28 +6220,22 @@ const GamePage = ({
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
           const fallbackOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
-          return { 
-            name, 
-            icon: User, 
-            avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null,
-            isPremium: isPremiumActive((fallbackOpponent as any)?.profiles?.premium_until),
-          };
+          return { name, icon: User, avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null };
         }
         // Henüz başlamadıysa ama state'te rakip varsa göster
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
           console.log("📝 State'ten rakip:", opponentName);
-          const stateOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
           return {
             name: opponentName,
             icon: User,
-            avatar: (stateOpponent as any)?.profiles?.avatar_url || null,
-            isPremium: isPremiumActive((stateOpponent as any)?.profiles?.premium_until),
+            avatar:
+              (participants.find((p) => String(p.user_id) !== String(user?.id)) as any)?.profiles?.avatar_url || null,
           };
         }
         console.log("⏳ Henüz rakip yok, aranıyor...");
-        return { name: "Rakip Aranıyor...", icon: User, avatar: null, isPremium: false };
+        return { name: "Rakip Aranıyor...", icon: User, avatar: null };
       default:
-        return { name: "Rakip", icon: User, avatar: null, isPremium: false };
+        return { name: "Rakip", icon: User, avatar: null };
     }
   };
 
@@ -6869,20 +6688,12 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-4 relative">
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
-                      <div className="relative inline-block">
-                        <Avatar className="w-16 h-16 mx-auto mb-2">
-                          <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                          <AvatarFallback>
-                            <User className="w-8 h-8 text-gray-600" />
-                          </AvatarFallback>
-                        </Avatar>
-                        {/* VIP rozet - kendi kartımız */}
-                        {isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
-                            <Crown className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
+                      <Avatar className="w-16 h-16 mx-auto mb-2">
+                        <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
+                        <AvatarFallback>
+                          <User className="w-8 h-8 text-gray-600" />
+                        </AvatarFallback>
+                      </Avatar>
                       <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
                       <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
                       {gameType === "score" && (
@@ -6901,20 +6712,12 @@ const GamePage = ({
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
                       {/* Normal kart içeriği - her zaman göster */}
-                      <div className="relative inline-block">
-                        <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
-                          <AvatarImage src={opponent.avatar} alt="Opponent" />
-                          <AvatarFallback>
-                            <opponent.icon className="w-8 h-8 text-gray-600" />
-                          </AvatarFallback>
-                        </Avatar>
-                        {/* VIP rozet - rakip kartı */}
-                        {opponent.isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
-                            <Crown className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
+                      <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                        <AvatarImage src={opponent.avatar} alt="Opponent" />
+                        <AvatarFallback>
+                          <opponent.icon className="w-8 h-8 text-gray-600" />
+                        </AvatarFallback>
+                      </Avatar>
                       <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
                       <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
                       {gameType === "score" && (
