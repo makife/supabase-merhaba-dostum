@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(error: Error): Partial<State> {
     // Plugin hatalarını tolere et - sadece logla, UI'ı kırma
     const errorMessage = String(error);
-
+    
     // Capacitor plugin hataları için state'i reset etme
     if (
       errorMessage.includes("not implemented") ||
@@ -37,36 +37,28 @@ export class ErrorBoundary extends Component<Props, State> {
       console.warn("[ErrorBoundary] Plugin error caught and tolerated:", error.message);
       return { hasError: false, error: null, errorInfo: null };
     }
-
+    
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const errorMessage = String(error);
-
+    
     // Plugin hatalarını tamamen ignore et
     if (
       errorMessage.includes("not implemented") ||
       errorMessage.includes("Capacitor") ||
-      errorMessage.includes("Plugin") ||
-      errorMessage.includes("NavigationBar") ||
-      errorMessage.includes("StatusBar") ||
-      errorMessage.includes("PushNotifications") ||
-      errorMessage.includes("LocalNotifications")
+      errorMessage.includes("Plugin")
     ) {
       console.log("[ErrorBoundary] Plugin error ignored:", error.message);
       // State'i reset et ki UI normal çalışsın
       this.setState({ hasError: false, error: null, errorInfo: null });
       return;
     }
-
-    // 🔥 KRİTİK: Tüm hataları detaylı logla
-    console.error("🚨🚨🚨 [ErrorBoundary] UNCAUGHT ERROR 🚨🚨🚨");
-    console.error("[ErrorBoundary] Error name:", error.name);
-    console.error("[ErrorBoundary] Error message:", error.message);
-    console.error("[ErrorBoundary] Error stack:", error.stack);
-    console.error("[ErrorBoundary] Component stack:", errorInfo?.componentStack);
-
+    
+    console.error("[ErrorBoundary] Uncaught error:", error);
+    console.error("[ErrorBoundary] Error info:", errorInfo);
+    
     this.setState({ errorInfo });
   }
 
@@ -80,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
-
+      
       // Default error UI
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">

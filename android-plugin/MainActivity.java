@@ -76,52 +76,30 @@ public class MainActivity extends BridgeActivity {
         
         Log.d(TAG, "📴 onPause - Zaman Diske Kaydedildi: " + now);
         
-        // 🎵 MÜZİĞİ DURDUR - Arka plana giderken (hemen!)
-        pauseMusicImmediately();
+        // 🎵 MÜZİĞİ DURDUR - Arka plana giderken
+        pauseMusicOnBackground();
     }
     
     /**
-     * 🎵 Arka plana giderken müziği ANINDA durdur
-     * WebView hazır olmasa bile çalışacak şekilde tasarlandı
+     * Arka plana giderken müziği durdur
      */
-    private void pauseMusicImmediately() {
-        Log.d(TAG, "🎵 pauseMusicImmediately() çağrıldı");
-        
+    private void pauseMusicOnBackground() {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
-                // UI thread'de çalıştır - post() yerine doğrudan evaluateJavascript
-                getBridge().getWebView().evaluateJavascript(
-                    "(function() {" +
-                    "  try {" +
-                    "    console.log('[Native] 🎵 Arka plan - müzik durduruluyor...');" +
-                    // Tüm audio elementlerini bul ve durdur
-                    "    var audios = document.querySelectorAll('audio');" +
-                    "    window.__nativeMusicWasPlaying = false;" +
-                    "    window.__nativePausedAudios = [];" +
-                    "    audios.forEach(function(a, i) {" +
-                    "      if (!a.paused) {" +
-                    "        window.__nativeMusicWasPlaying = true;" +
-                    "        window.__nativePausedAudios.push(a);" +
-                    "        a.pause();" +
-                    "        console.log('[Native] 🎵 Audio ' + i + ' durduruldu');" +
-                    "      }" +
-                    "    });" +
-                    // Custom event dispatch et
-                    "    window.dispatchEvent(new CustomEvent('app-background'));" +
-                    "    console.log('[Native] ✅ Müzik durduruldu, wasPlaying:', window.__nativeMusicWasPlaying);" +
-                    "    return 'paused:' + window.__nativeMusicWasPlaying;" +
-                    "  } catch(e) {" +
-                    "    console.error('[Native] ❌ Müzik durdurma hatası:', e);" +
-                    "    return 'error:' + e.message;" +
-                    "  }" +
-                    "})()",
-                    value -> Log.d(TAG, "🎵 JS sonucu: " + value)
-                );
-            } else {
-                Log.w(TAG, "⚠️ WebView null, müzik durdurulamadı");
+                getBridge().getWebView().post(() -> {
+                    String js = "try { " +
+                           "window.dispatchEvent(new CustomEvent('app-background')); " +
+                           "console.log('[Native] 🎵 app-background event gönderildi - müzik durduruluyor'); " +
+                           "var audios = document.querySelectorAll('audio'); " +
+                           "audios.forEach(function(a) { a.pause(); }); " +
+                           "} catch(e) { console.error('[Native] Müzik durdurma hatası:', e); }";
+                    
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                    Log.d(TAG, "🎵 Müzik durdurma JS inject edildi");
+                });
             }
         } catch (Exception e) {
-            Log.e(TAG, "❌ Müzik durdurma exception: " + e.getMessage());
+            Log.e(TAG, "❌ Müzik durdurma hatası: " + e.getMessage());
         }
     }
     
@@ -224,47 +202,21 @@ public class MainActivity extends BridgeActivity {
     }
     
     /**
-     * 🎵 Ön plana geldiğinde müziği devam ettir
+     * Sadece foreground event dispatch eder (müzik için)
      */
     private void dispatchForegroundEvent() {
-        Log.d(TAG, "🎵 dispatchForegroundEvent() çağrıldı");
-        
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().evaluateJavascript(
-                    "(function() {" +
-                    "  try {" +
-                    "    console.log('[Native] 🎵 Ön plan - müzik devam ettiriliyor...');" +
-                    // Custom event dispatch et
-                    "    window.dispatchEvent(new CustomEvent('app-foreground'));" +
-                    // Daha önce durdurulan audio'ları devam ettir
-                    "    if (window.__nativeMusicWasPlaying && window.__nativePausedAudios) {" +
-                    "      window.__nativePausedAudios.forEach(function(a, i) {" +
-                    "        if (a && a.paused) {" +
-                    "          a.play().then(function() {" +
-                    "            console.log('[Native] 🎵 Audio ' + i + ' devam etti');" +
-                    "          }).catch(function(e) {" +
-                    "            console.warn('[Native] ⚠️ Audio ' + i + ' devam ettirilemedi:', e);" +
-                    "          });" +
-                    "        }" +
-                    "      });" +
-                    "      window.__nativeMusicWasPlaying = false;" +
-                    "      window.__nativePausedAudios = [];" +
-                    "    }" +
-                    "    console.log('[Native] ✅ Foreground event tamamlandı');" +
-                    "    return 'resumed';" +
-                    "  } catch(e) {" +
-                    "    console.error('[Native] ❌ Foreground event hatası:', e);" +
-                    "    return 'error:' + e.message;" +
-                    "  }" +
-                    "})()",
-                    value -> Log.d(TAG, "🎵 Foreground JS sonucu: " + value)
-                );
-            } else {
-                Log.w(TAG, "⚠️ WebView null, foreground event gönderilemedi");
+                getBridge().getWebView().post(() -> {
+                    String js = "try { " +
+                           "window.dispatchEvent(new CustomEvent('app-foreground')); " +
+                           "console.log('[Native] ✅ app-foreground event gönderildi'); " +
+                           "} catch(e) { }";
+                    getBridge().getWebView().evaluateJavascript(js, null);
+                });
             }
         } catch (Exception e) {
-            Log.e(TAG, "❌ Foreground event exception: " + e.getMessage());
+            Log.e(TAG, "❌ Foreground event hatası: " + e.getMessage());
         }
     }
     

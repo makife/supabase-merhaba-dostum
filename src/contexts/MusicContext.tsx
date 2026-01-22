@@ -96,9 +96,49 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [musicEnabled]);
 
-  // Native appStateChange listener'ı KALDIRILDI
-  // Artık sadece 'app-background' ve 'app-foreground' custom event'lerini dinliyoruz
-  // Bu event'ler MainActivity.java'dan inject ediliyor
+  // Native appStateChange için doğrudan dinleme
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    let removeListener: (() => void) | null = null;
+    
+    const setupListener = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        const listener = await App.addListener('appStateChange', ({ isActive }) => {
+          console.log(`🎵 [Music] appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+          
+          if (!isActive) {
+            // Arka plana gitti
+            if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+              console.log("🎵 Arka plan - müzik durduruluyor");
+              wasPlayingBeforeBackgroundRef.current = true;
+              backgroundMusicRef.current.pause();
+            }
+          } else {
+            // Ön plana geldi
+            if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+              console.log("🎵 Ön plan - müzik devam ettiriliyor");
+              wasPlayingBeforeBackgroundRef.current = false;
+              backgroundMusicRef.current.volume = originalVolumeRef.current;
+              backgroundMusicRef.current.play().catch(console.warn);
+            }
+          }
+        });
+        removeListener = () => listener.remove();
+      } catch (e) {
+        console.warn('🎵 App listener kurulumu başarısız:', e);
+      }
+    };
+    
+    setupListener();
+    
+    return () => {
+      if (removeListener) removeListener();
+    };
+  }, [musicEnabled]);
+  
+  // Eski useAppState'i kaldır - artık doğrudan listener kullanıyoruz
   const isNative = Capacitor.isNativePlatform();
 
 

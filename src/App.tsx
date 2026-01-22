@@ -70,8 +70,8 @@ import { toast } from "sonner";
 const queryClient = new QueryClient();
 
 // 🔥 Resume ve Loading flag'leri
-const RESUME_FLAG_KEY = "app-resume-restart";
-const APP_LOADED_KEY = "app-loaded";
+const RESUME_FLAG_KEY = 'app-resume-restart';
+const APP_LOADED_KEY = 'app-loaded';
 
 // Onboarding/Welcome dialogs wrapper - SADECE GİRİŞ YAPMIS KULLANICILAR İÇİN
 const OnboardingWrapper = () => {
@@ -79,7 +79,7 @@ const OnboardingWrapper = () => {
   const [showPermissions, setShowPermissions] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [isReady, setIsReady] = useState(false);
-
+  
   // Kullanıcı giriş yaptığında ve henüz onboarding tamamlanmamışsa göster
   useEffect(() => {
     if (loading) return; // Auth loading bitene kadar bekle
@@ -90,50 +90,53 @@ const OnboardingWrapper = () => {
       setIsReady(false);
       return;
     }
-
+    
     // 🔥 User gelince 500ms bekle (auth context stabilize olsun)
     const timer = setTimeout(() => {
-      const permissionsCompleted = localStorage.getItem("kelimeci-permissions-completed");
-      const introCompleted = localStorage.getItem("kelimeci-intro-completed");
-
+      const permissionsCompleted = localStorage.getItem('kelimeci-permissions-completed');
+      const introCompleted = localStorage.getItem('kelimeci-intro-completed');
+      
       setIsReady(true);
-
+      
       if (!permissionsCompleted) {
         setShowPermissions(true);
       } else if (!introCompleted) {
         setShowIntro(true);
       }
     }, 500);
-
+    
     return () => clearTimeout(timer);
   }, [user, loading]);
-
+  
   const handlePermissionsComplete = () => {
-    localStorage.setItem("kelimeci-permissions-completed", "true");
+    localStorage.setItem('kelimeci-permissions-completed', 'true');
     setShowPermissions(false);
     // İzinler tamamlandığında intro göster
-    const introCompleted = localStorage.getItem("kelimeci-intro-completed");
+    const introCompleted = localStorage.getItem('kelimeci-intro-completed');
     if (!introCompleted) {
       setTimeout(() => setShowIntro(true), 300);
     }
   };
-
+  
   const handleIntroClose = () => {
-    localStorage.setItem("kelimeci-intro-completed", "true");
+    localStorage.setItem('kelimeci-intro-completed', 'true');
     setShowIntro(false);
   };
-
+  
   // Kullanıcı giriş yapmamışsa veya henüz hazır değilse gösterme
   if (!user || !isReady) return null;
-
+  
   return (
     <>
-      <OnboardingPermissions
-        open={showPermissions}
+      <OnboardingPermissions 
+        open={showPermissions} 
         onComplete={handlePermissionsComplete}
         onShowIntro={() => setShowIntro(true)}
       />
-      <WelcomeIntroDialog open={showIntro} onClose={handleIntroClose} />
+      <WelcomeIntroDialog 
+        open={showIntro} 
+        onClose={handleIntroClose} 
+      />
     </>
   );
 };
@@ -158,7 +161,7 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 // 🎮 GamePage wrapper - URL'deki :mode parametresinden gameMode'u alır
 const GamePageWrapper = () => {
   const { mode } = useParams<{ mode: string }>();
-
+  
   // URL'deki mode'u gameMode'a çevir
   const gameMode = (() => {
     switch (mode) {
@@ -174,39 +177,39 @@ const GamePageWrapper = () => {
         return "vs-computer";
     }
   })() as "vs-computer" | "private-room" | "random-match" | "tournament";
-
+  
   return <GamePage gameMode={gameMode} />;
 };
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-
+  
   // 🔥🔥🔥 Loading kontrolü: Her render'da CANLI kontrol et
   // sessionStorage.getItem HER RENDER'DA çağrılmalı!
   const checkShouldShowLoading = (): boolean => {
     // 1. Resume flag varsa ASLA loading gösterme
-    const resumeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === "true";
+    const resumeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === 'true';
     if (resumeFlag) {
       console.log("[App] ✅ Resume flag aktif - Loading ATLANDI");
-      sessionStorage.setItem(APP_LOADED_KEY, "true");
+      sessionStorage.setItem(APP_LOADED_KEY, 'true');
       sessionStorage.removeItem(RESUME_FLAG_KEY); // Flag'i temizle
       return false;
     }
-
+    
     // 2. Zaten yüklendiyse loading gösterme
-    const alreadyLoaded = sessionStorage.getItem(APP_LOADED_KEY) === "true";
+    const alreadyLoaded = sessionStorage.getItem(APP_LOADED_KEY) === 'true';
     if (alreadyLoaded) {
       console.log("[App] ✅ Zaten yüklenmişti - Loading atlanıyor");
       return false;
     }
-
+    
     // 3. İlk açılış - loading göster
     console.log("[App] 📱 Cold start - Loading gösterilecek");
     return true;
   };
-
+  
   const [customLoading, setCustomLoading] = useState(checkShouldShowLoading);
-
+  
   // App State & Connection Management
   useAppState();
   useAppForegroundState();
@@ -227,16 +230,16 @@ const AppRoutes = () => {
   useEffect(() => {
     startConnectionMonitor();
     initEventHub();
-
+    
     return () => {
       stopConnectionMonitor();
     };
   }, []);
 
   const handleLoadingComplete = () => {
-    console.log("[App] Loading completed");
+    console.log('[App] Loading completed');
     setCustomLoading(false);
-    sessionStorage.setItem(APP_LOADED_KEY, "true");
+    sessionStorage.setItem(APP_LOADED_KEY, 'true');
   };
 
   // 🔥 Loading göster (sadece ilk cold start'ta)
@@ -247,217 +250,134 @@ const AppRoutes = () => {
   return (
     <>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        } />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route
-          path="/game/:mode"
-          element={
-            <ProtectedRoute>
-              <GamePageWrapper />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/:id"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/market"
-          element={
-            <ProtectedRoute>
-              <MarketPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/test-matchmaking"
-          element={
-            <ProtectedRoute>
-              <TestMatchmakingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sync-test"
-          element={
-            <ProtectedRoute>
-              <SyncTestPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/random-match"
-          element={
-            <ProtectedRoute>
-              <RandomMatchPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/nakama-game"
-          element={
-            <ProtectedRoute>
-              <NakamaGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaderboard"
-          element={
-            <ProtectedRoute>
-              <LeaderboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament"
-          element={
-            <ProtectedRoute>
-              <TournamentPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/waiting/:tournamentId"
-          element={
-            <ProtectedRoute>
-              <TournamentWaitingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/bracket/:tournamentId"
-          element={
-            <ProtectedRoute>
-              <TournamentBracketPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/game/:matchId"
-          element={
-            <ProtectedRoute>
-              <GamePage gameMode="tournament" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/wheel"
-          element={
-            <ProtectedRoute>
-              <WheelPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/private-room/waiting/:roomCode"
-          element={
-            <ProtectedRoute>
-              <PrivateRoomWaitingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/memory-game"
-          element={
-            <ProtectedRoute>
-              <MemoryGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/puzzle-game"
-          element={
-            <ProtectedRoute>
-              <PuzzleGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/grid-simon-says"
-          element={
-            <ProtectedRoute>
-              <GridSimonSaysPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reactor-runner"
-          element={
-            <ProtectedRoute>
-              <ReactorRunnerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/neon-blitz"
-          element={
-            <ProtectedRoute>
-              <NeonBlitzPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/snake-game"
-          element={
-            <ProtectedRoute>
-              <SnakeGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/morles"
-          element={
-            <ProtectedRoute>
-              <MorlesGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/moderator"
-          element={
-            <ModeratorRoute>
-              <ModeratorPage />
-            </ModeratorRoute>
-          }
-        />
+        <Route path="/game/:mode" element={
+          <ProtectedRoute>
+            <GamePageWrapper />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/market" element={
+          <ProtectedRoute>
+            <MarketPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/test-matchmaking" element={
+          <ProtectedRoute>
+            <TestMatchmakingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/sync-test" element={
+          <ProtectedRoute>
+            <SyncTestPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/random-match" element={
+          <ProtectedRoute>
+            <RandomMatchPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/nakama-game" element={
+          <ProtectedRoute>
+            <NakamaGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/leaderboard" element={
+          <ProtectedRoute>
+            <LeaderboardPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament" element={
+          <ProtectedRoute>
+            <TournamentPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/waiting/:tournamentId" element={
+          <ProtectedRoute>
+            <TournamentWaitingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/bracket/:tournamentId" element={
+          <ProtectedRoute>
+            <TournamentBracketPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/tournament/game/:matchId" element={
+          <ProtectedRoute>
+            <GamePage gameMode="tournament" />
+          </ProtectedRoute>
+        } />
+        <Route path="/wheel" element={
+          <ProtectedRoute>
+            <WheelPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/private-room/waiting/:roomCode" element={
+          <ProtectedRoute>
+            <PrivateRoomWaitingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/memory-game" element={
+          <ProtectedRoute>
+            <MemoryGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/puzzle-game" element={
+          <ProtectedRoute>
+            <PuzzleGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/grid-simon-says" element={
+          <ProtectedRoute>
+            <GridSimonSaysPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/reactor-runner" element={
+          <ProtectedRoute>
+            <ReactorRunnerPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/neon-blitz" element={
+          <ProtectedRoute>
+            <NeonBlitzPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/snake-game" element={
+          <ProtectedRoute>
+            <SnakeGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/morles" element={
+          <ProtectedRoute>
+            <MorlesGamePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/moderator" element={
+          <ModeratorRoute>
+            <ModeratorPage />
+          </ModeratorRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <RoomAutoNavigator />
@@ -469,29 +389,29 @@ const AppRoutes = () => {
 // Global Rematch Dialog wrapper
 const GlobalRematchDialogWrapper = () => {
   const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
-
+  
   const handleAccept = async () => {
     try {
       await acceptRematch();
     } catch (error) {
-      console.error("Rematch kabul hatası:", error);
+      console.error('Rematch kabul hatası:', error);
     }
   };
-
+  
   const handleReject = async () => {
     try {
       await rejectRematch();
     } catch (error) {
-      console.error("Rematch reddetme hatası:", error);
+      console.error('Rematch reddetme hatası:', error);
     }
   };
-
+  
   return (
     <RematchDialog
       open={!!incomingRequest}
       onAccept={handleAccept}
       onReject={handleReject}
-      senderName={incomingRequest?.senderName || "Rakip"}
+      senderName={incomingRequest?.senderName || 'Rakip'}
       senderAvatar={incomingRequest?.senderAvatar}
     />
   );
@@ -535,26 +455,26 @@ const App = () => {
   // Native resume event dinle - uygulamayı sıfırdan başlat
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-
+    
     const handleNativeResumeReady = async () => {
       console.log("[App] 📱 native-resume-ready eventi alındı!");
       console.log("[App] 🔄🔄🔄 SESSION RECOVERY BAŞLIYOR (Sayfa korunuyor) 🔄🔄🔄");
-
+      
       // 🔥🔥🔥 KRİTİK: Loading ekranı ATLANACAK flag'i set et
       // Yeni mount'ta bu flag kontrol edilecek
-      sessionStorage.setItem(RESUME_FLAG_KEY, "true");
-      sessionStorage.setItem(APP_LOADED_KEY, "true");
-
+      sessionStorage.setItem(RESUME_FLAG_KEY, 'true');
+      sessionStorage.setItem(APP_LOADED_KEY, 'true');
+      
       // Toast göster
       toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 15000 });
-
+      
       // 🔥 Session recovery başlat (sayfa değişmeden kanalları canlandır)
       try {
         const { performResumeRecoveryDirect } = await import("@/hooks/useForceReloadOnResume");
         const success = await performResumeRecoveryDirect();
-
+        
         toast.dismiss("resume-loading");
-
+        
         if (success) {
           toast.success("Bağlandı!", { duration: 1500 });
         } else {
@@ -566,15 +486,15 @@ const App = () => {
         toast.error("Bağlantı hatası", { duration: 2000 });
       }
     };
-
+    
     window.addEventListener("native-resume-ready", handleNativeResumeReady);
     console.log("[App] ✅ native-resume-ready listener kaydedildi");
-
+    
     return () => {
       window.removeEventListener("native-resume-ready", handleNativeResumeReady);
     };
   }, []);
-
+  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
