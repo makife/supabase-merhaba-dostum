@@ -213,6 +213,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const rafRef = useRef<number | null>(null);
   const soundPlayedRef = useRef<Set<number | string>>(new Set());
   const lastDisplayRef = useRef<number | "start" | null>(null);
+  
+  // 🔒 ServerStartTime değişikliği guard'ı - ilk değer kilitleniyor
+  const lockedServerTimeRef = useRef<string | null>(null);
 
   const playCountdownSound = () => playFromPool(countdownSoundPool, 'countdown');
   const playStartSound = () => playFromPool(startSoundPool, 'start');
@@ -223,6 +226,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     startShownRef.current = false;
     soundPlayedRef.current.clear();
     lastDisplayRef.current = null;
+    // 🔒 Reset yapmıyoruz - lockedServerTimeRef component yeniden mount edilene kadar sabit kalmalı
 
     return () => {
       mountedRef.current = false;
@@ -237,11 +241,18 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     if (completedRef.current) return;
 
     // Eğer sunucudan zaman bilgisi henüz gelmediyse HİÇBİR ŞEY YAPMA.
-    // Legacy (Client-side) modu tamamen kaldırdık.
-    // Bu sayede SQL Buffer'dan gelen ileri tarihi beklemek ZORUNDA kalır.
     if (!serverStartTime) {
         console.log("⏳ GameCountdown: Sunucudan başlama saati bekleniyor...");
         return; 
+    }
+    
+    // 🔒 İLK serverStartTime değerini kilitle - sonraki değişiklikleri yoksay
+    if (!lockedServerTimeRef.current) {
+      lockedServerTimeRef.current = serverStartTime;
+      console.log("🔒 GameCountdown: serverStartTime KİLİTLENDİ:", serverStartTime);
+    } else if (lockedServerTimeRef.current !== serverStartTime) {
+      console.log("⚠️ GameCountdown: serverStartTime değişti ama KİLİTLİ, yoksayılıyor. Kilitli:", lockedServerTimeRef.current, "Yeni:", serverStartTime);
+      return; // Farklı bir değer gelirse yoksay
     }
 
     // Önceki döngüyü temizle
@@ -250,10 +261,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = null;
     }
 
-    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", serverStartTime, "Offset:", serverTimeOffset);
+    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", lockedServerTimeRef.current, "Offset:", serverTimeOffset);
     
-    // Geri sayımın BİTİŞ zamanı = Başlama Zamanı + 5 Saniye
-    const countdownEndTime = new Date(serverStartTime).getTime() + COUNTDOWN_DURATION_MS;
+    // 🔒 Kilitli değeri kullan
+    const countdownEndTime = new Date(lockedServerTimeRef.current).getTime() + COUNTDOWN_DURATION_MS;
     
     // Animasyon Döngüsü (Tick)
     const tick = () => {
