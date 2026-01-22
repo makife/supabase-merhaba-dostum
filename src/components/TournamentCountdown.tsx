@@ -1,49 +1,19 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Users, Bot } from "lucide-react";
-import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 
 interface TournamentCountdownProps {
   timeLeft: number;
   realPlayerCount: number;
   totalParticipants: number;
   isCreator: boolean;
-  expiresAt?: string; // Server'dan gelen bitiş zamanı
 }
 
 export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
-  timeLeft: propTimeLeft,
+  timeLeft,
   realPlayerCount,
   totalParticipants,
   isCreator,
-  expiresAt,
 }) => {
-  const { serverNow, offset, isReady } = useServerTimeContext();
-  const [calculatedTimeLeft, setCalculatedTimeLeft] = useState(propTimeLeft);
-
-  // Server time offset değiştiğinde ve expiresAt varsa, doğru kalan süreyi hesapla
-  useEffect(() => {
-    if (!expiresAt || !isReady) {
-      setCalculatedTimeLeft(propTimeLeft);
-      return;
-    }
-
-    const updateTimeLeft = () => {
-      const expiresAtMs = new Date(expiresAt).getTime();
-      const now = serverNow();
-      const remaining = Math.max(0, Math.floor((expiresAtMs - now) / 1000));
-      setCalculatedTimeLeft(remaining);
-    };
-
-    // Hemen güncelle
-    updateTimeLeft();
-
-    // Her saniye güncelle
-    const interval = setInterval(updateTimeLeft, 1000);
-
-    return () => clearInterval(interval);
-  }, [expiresAt, offset, isReady, serverNow, propTimeLeft]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -85,7 +55,6 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   };
 
   const status = getStatusMessage();
-  const displayTime = expiresAt && isReady ? calculatedTimeLeft : propTimeLeft;
 
   return (
     <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
@@ -93,7 +62,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
         <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-white mb-2">Turnuva Başlıyor!</h2>
 
-        <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(displayTime)}</div>
+        <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(timeLeft)}</div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-center space-x-6">
@@ -124,4 +93,3 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     </Card>
   );
 };
-
