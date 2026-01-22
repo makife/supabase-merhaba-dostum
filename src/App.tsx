@@ -504,6 +504,43 @@ const App = () => {
     // Bağlantı yönetimi artık tamamen ConnectionContext'te
   });
 
+  // 🔥 NATIVE SOFT RECOVERY - MainActivity.java'dan gelen event'i dinle
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const handleSoftRecovery = async () => {
+      console.log("[App] 🔄 native-soft-recovery event alındı - Token yenileniyor...");
+      
+      try {
+        // performResumeRecoveryDirect'i dinamik import et
+        const { performResumeRecoveryDirect } = await import("@/hooks/useForceReloadOnResume");
+        const success = await performResumeRecoveryDirect();
+        
+        if (success) {
+          console.log("[App] ✅ Soft recovery başarılı - Kullanıcı aynı sayfada!");
+        } else {
+          console.log("[App] ⚠️ Soft recovery başarısız - Session yok");
+        }
+      } catch (e) {
+        console.error("[App] ❌ Soft recovery hatası:", e);
+      }
+    };
+
+    window.addEventListener("native-soft-recovery", handleSoftRecovery);
+    
+    // Ayrıca sessionStorage'daki flag'i de kontrol et (sayfa yenilendiyse)
+    const softRecoveryFlag = sessionStorage.getItem("soft-recovery");
+    if (softRecoveryFlag === "true") {
+      console.log("[App] 📦 sessionStorage'da soft-recovery flag bulundu");
+      sessionStorage.removeItem("soft-recovery");
+      handleSoftRecovery();
+    }
+
+    return () => {
+      window.removeEventListener("native-soft-recovery", handleSoftRecovery);
+    };
+  }, []);
+
   // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
