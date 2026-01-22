@@ -1,10 +1,10 @@
 // App.tsx - Main Application Component
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
@@ -13,8 +13,8 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TournamentProvider } from "@/contexts/TournamentContext";
-import { ServerTimeProvider } from "@/contexts/ServerTimeContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
+import { ConnectionProvider, useConnection } from "@/contexts/ConnectionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -48,98 +48,23 @@ import NeonBlitzPage from "@/pages/NeonBlitz";
 import SnakeGamePage from "@/pages/SnakeGame";
 import MorlesGamePage from "@/pages/MorlesGame";
 import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
-import { SafeStatusBar, SafeNavigationBar, SafePushNotifications } from "@/utils/safePluginWrapper";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { useAppForegroundState } from "@/hooks/useAppForegroundState";
+// realtimeManager import kaldırıldı - bağlantı yönetimi ConnectionContext'te
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
+import { StatusBar, Style } from "@capacitor/status-bar";
+// @ts-ignore - Third-party plugin
+import { NavigationBar } from "@ethion/capacitor-navigation-bar";
 import { BackButtonDialog } from "@/hooks/useBackButton";
 import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
-import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
-import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
-import { useSessionRecovery } from "@/hooks/useSessionRecovery";
-import { initEventHub } from "@/utils/foregroundEventHub";
-import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
-import { toast } from "sonner";
 
 const queryClient = new QueryClient();
-
-// 🔥 Resume ve Loading flag'leri
-const RESUME_FLAG_KEY = 'app-resume-restart';
-const APP_LOADED_KEY = 'app-loaded';
-
-// Onboarding/Welcome dialogs wrapper - SADECE GİRİŞ YAPMIS KULLANICILAR İÇİN
-const OnboardingWrapper = () => {
-  const { user, loading } = useAuth();
-  const [showPermissions, setShowPermissions] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  
-  // Kullanıcı giriş yaptığında ve henüz onboarding tamamlanmamışsa göster
-  useEffect(() => {
-    if (loading) return; // Auth loading bitene kadar bekle
-    if (!user) {
-      // User yoksa state'leri resetle
-      setShowPermissions(false);
-      setShowIntro(false);
-      setIsReady(false);
-      return;
-    }
-    
-    // 🔥 User gelince 500ms bekle (auth context stabilize olsun)
-    const timer = setTimeout(() => {
-      const permissionsCompleted = localStorage.getItem('kelimeci-permissions-completed');
-      const introCompleted = localStorage.getItem('kelimeci-intro-completed');
-      
-      setIsReady(true);
-      
-      if (!permissionsCompleted) {
-        setShowPermissions(true);
-      } else if (!introCompleted) {
-        setShowIntro(true);
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [user, loading]);
-  
-  const handlePermissionsComplete = () => {
-    localStorage.setItem('kelimeci-permissions-completed', 'true');
-    setShowPermissions(false);
-    // İzinler tamamlandığında intro göster
-    const introCompleted = localStorage.getItem('kelimeci-intro-completed');
-    if (!introCompleted) {
-      setTimeout(() => setShowIntro(true), 300);
-    }
-  };
-  
-  const handleIntroClose = () => {
-    localStorage.setItem('kelimeci-intro-completed', 'true');
-    setShowIntro(false);
-  };
-  
-  // Kullanıcı giriş yapmamışsa veya henüz hazır değilse gösterme
-  if (!user || !isReady) return null;
-  
-  return (
-    <>
-      <OnboardingPermissions 
-        open={showPermissions} 
-        onComplete={handlePermissionsComplete}
-        onShowIntro={() => setShowIntro(true)}
-      />
-      <WelcomeIntroDialog 
-        open={showIntro} 
-        onClose={handleIntroClose} 
-      />
-    </>
-  );
-};
 
 // Wrapper component to use useNavigate inside Router context
 const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -150,6 +75,7 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
       onMatchFound={(roomId) => {
         console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
         const currentGameType = (window as any).__currentMatchmakingType || "timed";
+        // Use React Router navigate for instant navigation
         navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
       }}
     >
@@ -158,351 +84,550 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
-// 🎮 GamePage wrapper - URL'deki :mode parametresinden gameMode'u alır
-const GamePageWrapper = () => {
-  const { mode } = useParams<{ mode: string }>();
-  
-  // URL'deki mode'u gameMode'a çevir
-  const gameMode = (() => {
-    switch (mode) {
-      case "vs-computer":
-        return "vs-computer";
-      case "private-room":
-        return "private-room";
-      case "random-match":
-        return "random-match";
-      case "tournament":
-        return "tournament";
-      default:
-        return "vs-computer";
-    }
-  })() as "vs-computer" | "private-room" | "random-match" | "tournament";
-  
-  return <GamePage gameMode={gameMode} />;
-};
-
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  
-  // 🔥🔥🔥 Loading kontrolü: Her render'da CANLI kontrol et
-  // sessionStorage.getItem HER RENDER'DA çağrılmalı!
-  const checkShouldShowLoading = (): boolean => {
-    // 1. Resume flag varsa ASLA loading gösterme
-    const resumeFlag = sessionStorage.getItem(RESUME_FLAG_KEY) === 'true';
-    if (resumeFlag) {
-      console.log("[App] ✅ Resume flag aktif - Loading ATLANDI");
-      sessionStorage.setItem(APP_LOADED_KEY, 'true');
-      sessionStorage.removeItem(RESUME_FLAG_KEY); // Flag'i temizle
-      return false;
-    }
-    
-    // 2. Zaten yüklendiyse loading gösterme
-    const alreadyLoaded = sessionStorage.getItem(APP_LOADED_KEY) === 'true';
-    if (alreadyLoaded) {
-      console.log("[App] ✅ Zaten yüklenmişti - Loading atlanıyor");
-      return false;
-    }
-    
-    // 3. İlk açılış - loading göster
-    console.log("[App] 📱 Cold start - Loading gösterilecek");
-    return true;
-  };
-  
-  const [customLoading, setCustomLoading] = useState(checkShouldShowLoading);
-  
-  // App State & Connection Management
-  useAppState();
-  useAppForegroundState();
+  const [customLoading, setCustomLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showIntroDialog, setShowIntroDialog] = useState(false);
+
+  // LocalStorage temizleme hook'unu kullan
   useLocalStorageClear();
-  useScreenOrientation();
-  useImmersiveBars();
-  useSessionRecovery();
-  useForceReloadOnResume();
 
-  // İlk yüklemede audio başlat
+  // Ekran yönlendirmesini kilitle
+  useScreenOrientation();
+
+  // Immersive mode'u aktif et (navigasyon tuşlarını gizle)
+  //useImmersiveMode();
+
   useEffect(() => {
-    if (isNativePlatform()) {
-      initNativeAudio().catch(console.error);
+    const applyImmersiveMode = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // 🔊 Native Audio'yu başlat
+          if (isNativePlatform()) {
+            initNativeAudio()
+              .then(() => {
+                console.log("✅ App: Native Audio başlatıldı");
+              })
+              .catch(console.warn);
+          }
+
+          // Status Bar Rengi ve Stili
+          await StatusBar.setStyle({ style: Style.Dark }); // Style.Dark = Yazılar BEYAZ (iOS/Android farkı kafa karıştırır, Android'de Dark stil light content demektir genelde)
+          await StatusBar.setBackgroundColor({ color: "#000000" });
+          await StatusBar.setOverlaysWebView({ overlay: true });
+
+          // Nav Bar Rengi
+          await NavigationBar.setColor({ color: "#000000", darkButtons: false }); // darkButtons: false = İkonlar BEYAZ
+
+          // Gizle
+          await StatusBar.hide();
+          await NavigationBar.hide();
+        } catch (e) {
+          console.log("Status bar error:", e);
+        }
+      }
+    };
+
+    applyImmersiveMode();
+  }, []);
+
+  // İlk açılış kontrolü
+  useEffect(() => {
+    if (user && !loading) {
+      const onboardingCompleted = localStorage.getItem("kelimeci-onboarding-completed");
+      if (!onboardingCompleted) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const initPush = async () => {
+        try {
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === "prompt") {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive === "granted") {
+            // 👇 KRİTİK NOKTA: SESLİ KANAL OLUŞTURMA
+            await PushNotifications.createChannel({
+              id: "kelimeci_alerts_v2",
+              name: "Oyun Bildirimleri",
+              description: "Oyun davetleri ve sıra bildirimleri",
+              importance: 5,
+              visibility: 1,
+              sound: "default",
+              vibration: true,
+              lights: true,
+            });
+            await PushNotifications.register();
+          }
+        } catch (e) {
+          console.error("Push başlatma hatası:", e);
+        }
+      };
+
+      initPush();
     }
   }, []);
 
-  // Connection monitor başlat
-  useEffect(() => {
-    startConnectionMonitor();
-    initEventHub();
-    
-    return () => {
-      stopConnectionMonitor();
-    };
-  }, []);
-
-  const handleLoadingComplete = () => {
-    console.log('[App] Loading completed');
-    setCustomLoading(false);
-    sessionStorage.setItem(APP_LOADED_KEY, 'true');
-  };
-
-  // 🔥 Loading göster (sadece ilk cold start'ta)
-  if (customLoading) {
-    return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
+  if (loading || customLoading) {
+    return <LoadingScreen onLoadingComplete={() => setCustomLoading(false)} />;
   }
 
   return (
     <>
+      <OnboardingPermissions
+        open={showOnboarding}
+        onComplete={() => setShowOnboarding(false)}
+        onShowIntro={() => setShowIntroDialog(true)}
+      />
+      <WelcomeIntroDialog open={showIntroDialog} onClose={() => setShowIntroDialog(false)} />
       <Routes>
-        <Route path="/" element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/game/:mode" element={
-          <ProtectedRoute>
-            <GamePageWrapper />
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/market" element={
-          <ProtectedRoute>
-            <MarketPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/test-matchmaking" element={
-          <ProtectedRoute>
-            <TestMatchmakingPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/sync-test" element={
-          <ProtectedRoute>
-            <SyncTestPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/random-match" element={
-          <ProtectedRoute>
-            <RandomMatchPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/nakama-game" element={
-          <ProtectedRoute>
-            <NakamaGamePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/leaderboard" element={
-          <ProtectedRoute>
-            <LeaderboardPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/chat" element={
-          <ProtectedRoute>
-            <ChatPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/tournament" element={
-          <ProtectedRoute>
-            <TournamentPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/tournament/waiting/:tournamentId" element={
-          <ProtectedRoute>
-            <TournamentWaitingPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/tournament/bracket/:tournamentId" element={
-          <ProtectedRoute>
-            <TournamentBracketPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/tournament/game/:matchId" element={
-          <ProtectedRoute>
-            <GamePage gameMode="tournament" />
-          </ProtectedRoute>
-        } />
-        <Route path="/wheel" element={
-          <ProtectedRoute>
-            <WheelPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/private-room/waiting/:roomCode" element={
-          <ProtectedRoute>
-            <PrivateRoomWaitingPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/memory-game" element={
-          <ProtectedRoute>
-            <MemoryGamePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/puzzle-game" element={
-          <ProtectedRoute>
-            <PuzzleGamePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/grid-simon-says" element={
-          <ProtectedRoute>
-            <GridSimonSaysPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/reactor-runner" element={
-          <ProtectedRoute>
-            <ReactorRunnerPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/neon-blitz" element={
-          <ProtectedRoute>
-            <NeonBlitzPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/snake-game" element={
-          <ProtectedRoute>
-            <SnakeGamePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/morles" element={
-          <ProtectedRoute>
-            <MorlesGamePage />
-          </ProtectedRoute>
-        } />
-        <Route path="/moderator" element={
-          <ModeratorRoute>
-            <ModeratorPage />
-          </ModeratorRoute>
-        } />
+        <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:id"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/vs-computer"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="vs-computer" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/private-room"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="private-room" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/random-match"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="random-match" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/game/nakama"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Backward-compatible alias to prevent 404s from older links */}
+        <Route
+          path="/game/nakama-game"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nakama-game"
+          element={
+            <ProtectedRoute>
+              <NakamaGamePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/game/:matchId"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/game"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tournament"
+          element={
+            <ProtectedRoute>
+              <TournamentPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/private-room-waiting"
+          element={
+            <ProtectedRoute>
+              <PrivateRoomWaitingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tournament-waiting/:tournamentId"
+          element={
+            <ProtectedRoute>
+              <TournamentWaitingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tournament-bracket/:tournamentId"
+          element={
+            <ProtectedRoute>
+              <TournamentBracketPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/game/tournament"
+          element={
+            <ProtectedRoute>
+              <GamePage gameMode="tournament" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/puzzle-game"
+          element={
+            <ProtectedRoute>
+              <PuzzleGamePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/tournament-game/:matchId" element={<GamePage gameMode="tournament" />} />
+
+        <Route
+          path="/market"
+          element={
+            <ProtectedRoute>
+              <MarketPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/test-matchmaking"
+          element={
+            <ProtectedRoute>
+              <TestMatchmakingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sync-test"
+          element={
+            <ProtectedRoute>
+              <SyncTestPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wheel"
+          element={
+            <ProtectedRoute>
+              <WheelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/memory-game"
+          element={
+            <ProtectedRoute>
+              <MemoryGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/puzzle-game"
+          element={
+            <ProtectedRoute>
+              <PuzzleGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grid-simon-says"
+          element={
+            <ProtectedRoute>
+              <GridSimonSaysPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reactor-runner"
+          element={
+            <ProtectedRoute>
+              <ReactorRunnerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/neon-blitz"
+          element={
+            <ProtectedRoute>
+              <NeonBlitzPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/snake-game"
+          element={
+            <ProtectedRoute>
+              <SnakeGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/morles-game"
+          element={
+            <ProtectedRoute>
+              <MorlesGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/moderator"
+          element={
+            <ModeratorRoute>
+              <ModeratorPage />
+            </ModeratorRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <RoomAutoNavigator />
-      <GlobalRematchDialogWrapper />
     </>
   );
 };
 
-// Global Rematch Dialog wrapper
-const GlobalRematchDialogWrapper = () => {
+// Global Rematch Dialog - artık RematchContext kullanıyor
+const GlobalRematchDialog = () => {
   const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
-  
-  const handleAccept = async () => {
-    try {
-      await acceptRematch();
-    } catch (error) {
-      console.error('Rematch kabul hatası:', error);
-    }
-  };
-  
-  const handleReject = async () => {
-    try {
-      await rejectRematch();
-    } catch (error) {
-      console.error('Rematch reddetme hatası:', error);
-    }
-  };
-  
+  const { profile } = useUser();
+
+  const hasEnoughCredits = (profile?.game_credits ?? 0) >= 1;
+
   return (
     <RematchDialog
       open={!!incomingRequest}
-      onAccept={handleAccept}
-      onReject={handleReject}
-      senderName={incomingRequest?.senderName || 'Rakip'}
+      onAccept={acceptRematch}
+      onReject={rejectRematch}
+      senderName={incomingRequest?.senderName || ""}
       senderAvatar={incomingRequest?.senderAvatar}
+      hasEnoughCredits={hasEnoughCredits}
     />
   );
 };
 
-// 🔥🔥🔥 İÇ PROVIDER AĞACI - key ile kontrol edilir
-// key değişince TÜM context'ler sıfırdan başlar = ilk açılış gibi!
-const AppProviders = () => {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <UserProvider>
-          <ThemeProvider>
-            <ServerTimeProvider>
-              <MusicProvider>
-                <GameProvider>
-                  <TournamentProvider>
-                    <NotificationProvider>
-                      <MatchmakingWrapper>
-                        <RematchProvider>
-                          <Toaster />
-                          <Sonner />
-                          <OnboardingWrapper />
-                          <BackButtonDialog />
-                          <AppRoutes />
-                        </RematchProvider>
-                      </MatchmakingWrapper>
-                    </NotificationProvider>
-                  </TournamentProvider>
-                </GameProvider>
-              </MusicProvider>
-            </ServerTimeProvider>
-          </ThemeProvider>
-        </UserProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  );
-};
-
 const App = () => {
-  // Native resume event dinle - uygulamayı sıfırdan başlat
+  // Initialize foreground state tracking globally
+  useAppForegroundState();
+
+  // 1. Hook'u sadece bir referans almak için kullanıyoruz
+  const { manualHideBars } = useImmersiveBars();
+
+  // 2. Arka plan/ön plan yönetimi (SADECE UI için - bağlantı yönetimi ConnectionContext'te)
+  useAppState({
+    onBackground: () => {
+      console.log("📱 Uygulama arka plana gitti (UI)");
+    },
+    onForeground: () => {
+      // ÖNEMLİ: Uygulama ön plana geldiğinde barları tekrar gizle
+      console.log("▶️ Uygulama ön plana geldi - Immersive modu tazeleniyor");
+      setTimeout(() => {
+        manualHideBars();
+      }, 300);
+    },
+    // NOT: backgroundTimeout ve forceCleanupAll kaldırıldı -
+    // Bağlantı yönetimi artık tamamen ConnectionContext'te
+  });
+
+  // 👇 PUSH NOTIFICATION ENTEGRASYONU BURADA
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    
-    const handleNativeResumeReady = async () => {
-      console.log("[App] 📱 native-resume-ready eventi alındı!");
-      console.log("[App] 🔄🔄🔄 SESSION RECOVERY BAŞLIYOR (Sayfa korunuyor) 🔄🔄🔄");
-      
-      // 🔥🔥🔥 KRİTİK: Loading ekranı ATLANACAK flag'i set et
-      // Yeni mount'ta bu flag kontrol edilecek
-      sessionStorage.setItem(RESUME_FLAG_KEY, 'true');
-      sessionStorage.setItem(APP_LOADED_KEY, 'true');
-      
-      // Toast göster
-      toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 15000 });
-      
-      // 🔥 Session recovery başlat (sayfa değişmeden kanalları canlandır)
-      try {
-        const { performResumeRecoveryDirect } = await import("@/hooks/useForceReloadOnResume");
-        const success = await performResumeRecoveryDirect();
-        
-        toast.dismiss("resume-loading");
-        
-        if (success) {
-          toast.success("Bağlandı!", { duration: 1500 });
-        } else {
-          toast.error("Bağlantı hatası", { duration: 2000 });
+    if (Capacitor.isNativePlatform()) {
+      // Yardımcı Fonksiyon: Token'ı Veritabanına Yaz
+      const saveTokenToSupabase = async (userId: string, tokenValue: string) => {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ push_token: tokenValue } as any)
+          .eq("id", userId as any);
+
+        if (error) console.error("❌ Token kaydedilemedi:", error);
+        else console.log("✅ Token veritabanına başarıyla kaydedildi!");
+      };
+
+      const initPush = async () => {
+        try {
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === "prompt") {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive === "granted") {
+            await PushNotifications.register();
+          }
+        } catch (e) {
+          console.error("Push başlatma hatası:", e);
         }
-      } catch (e) {
-        console.error("[App] Resume recovery hatası:", e);
-        toast.dismiss("resume-loading");
-        toast.error("Bağlantı hatası", { duration: 2000 });
-      }
-    };
-    
-    window.addEventListener("native-resume-ready", handleNativeResumeReady);
-    console.log("[App] ✅ native-resume-ready listener kaydedildi");
-    
-    return () => {
-      window.removeEventListener("native-resume-ready", handleNativeResumeReady);
-    };
+      };
+
+      initPush();
+
+      // 1. Token Gelince Çalışan Listener
+      const registrationListener = PushNotifications.addListener("registration", async (token) => {
+        console.log("🔥🔥🔥 PUSH TOKEN GELDİ:", token.value);
+
+        // Token'ı her ihtimale karşı telefona kaydet (Kullanıcı yoksa bile elimizde olsun)
+        localStorage.setItem("temp_push_token", token.value);
+
+        // Eğer şu an açık bir oturum varsa hemen kaydet
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          await saveTokenToSupabase(user.id, token.value);
+        } else {
+          console.log("⚠️ Kullanıcı henüz giriş yapmamış, token hafızaya alındı.");
+        }
+      });
+
+      // 2. Kullanıcı Giriş Yapınca Çalışan Dinleyici (YENİ EKLENEN KISIM)
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          console.log("👤 Kullanıcı giriş yaptı, token kontrol ediliyor...");
+          // Hafızada bekleyen token var mı?
+          const storedToken = localStorage.getItem("temp_push_token");
+          if (storedToken) {
+            console.log("📦 Hafızadaki token bulundu, veritabanına yazılıyor...");
+            await saveTokenToSupabase(session.user.id, storedToken);
+          }
+        }
+      });
+
+      const notificationListener = PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        console.log("🔔 Bildirim geldi:", notification);
+      });
+
+      const actionListener = PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
+        const data = notification.notification.data;
+        if (data?.roomCode) {
+          window.location.href = `/game?room=${data.roomCode}`;
+        }
+      });
+
+      return () => {
+        registrationListener.then((listener) => listener.remove());
+        notificationListener.then((listener) => listener.remove());
+        actionListener.then((listener) => listener.remove());
+        authListener.subscription.unsubscribe(); // Auth dinleyicisini de kapat
+      };
+    }
   }, []);
-  
+
+  // App.tsx içindeki return kısmı
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AppProviders />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          {/* 1. KADEME: AuthProvider (En Dışta - Kimlik Yönetimi) */}
+          <AuthProvider>
+            {/* 2. KADEME: UserProvider (Profil Verisi) */}
+            <UserProvider>
+              {/* 3. KADEME: ConnectionProvider (Bağlantı Yönetimi) 
+                  ARTIK BURADA OLMALI çünkü üstteki AuthProvider'a muhtaç! */}
+              <ConnectionProvider>
+                <ThemeProvider>
+                  <MusicProvider>
+                    <MatchmakingWrapper>
+                      <GameProvider>
+                        <RematchProvider>
+                          <GlobalRematchDialog />
+                          <BackButtonDialog />
+                          <RoomAutoNavigator />
+                          <TournamentProvider>
+                            <NotificationProvider>
+                              <AppRoutes />
+                            </NotificationProvider>
+                          </TournamentProvider>
+                        </RematchProvider>
+                      </GameProvider>
+                    </MatchmakingWrapper>
+                  </MusicProvider>
+                </ThemeProvider>
+              </ConnectionProvider>
+            </UserProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
