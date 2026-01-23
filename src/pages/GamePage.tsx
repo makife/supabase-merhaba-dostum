@@ -1932,19 +1932,34 @@ const GamePage = ({
       // 🔒 Flag'i HEMEN işaretle (async işlemlerden önce)
       countdownInitiatedRef.current = true;
 
+      // 🎯 KRİTİK: GameCountdown'a geçilecek serverStartTime'ı hesapla
+      // GameCountdown bu timestamp'tan itibaren 5 saniye sayar
+      // Eğer buffer varsa: countdown_started_at + 5s buffer = şimdi (buffer bittiğinde)
+      // Eğer buffer yoksa (skipBuffer): countdown_started_at = orijinal değer
+      
+      const calculateAdjustedTime = (originalTime: string, addBuffer: boolean): string => {
+        if (!addBuffer) return originalTime;
+        // Buffer sonrası countdown başlayacak, o yüzden "şimdi" anını kullan
+        // Bu sayede GameCountdown 5-4-3-2-1 gösterir
+        return new Date(Date.now() + serverTimeOffset).toISOString();
+      };
+
       // Eğer force güncellemesi ise, mevcut state'i güncelle
       if (force) {
-        setCountdownServerTime(serverTime);
+        const adjustedTime = new Date(Date.now() + serverTimeOffset).toISOString();
+        setCountdownServerTime(adjustedTime);
         setShowCountdown(true);
         setGameStarted(false);
         return true;
       }
 
       if (skipBuffer) {
-        // Buffer atla, direkt countdown
+        // Buffer atla, direkt countdown - "şimdi"yi kullan
+        const adjustedTime = new Date(Date.now() + serverTimeOffset).toISOString();
         setPreparingOpponent(null);
-        setCountdownServerTime(serverTime);
+        setCountdownServerTime(adjustedTime);
         setShowCountdown(true);
+        console.log("⏱️ skipBuffer: Countdown hemen başlıyor, adjustedTime:", adjustedTime);
       } else {
         // Buffer animasyonları - timer'ları kaydet
         console.log("🏆 Buffer animasyonu başlatıldı: preparing");
@@ -1967,8 +1982,11 @@ const GamePage = ({
         const t3 = setTimeout(() => {
           if (isMountedRef.current && countdownInitiatedRef.current) {
             console.log("🏆 Countdown gösteriliyor (buffer sonrası)");
-            setCountdownServerTime(serverTime);
+            // 🎯 Buffer tamamlandığında "şimdi"yi kullan - böylece 5'ten başlar
+            const nowWithOffset = new Date(Date.now() + serverTimeOffset).toISOString();
+            setCountdownServerTime(nowWithOffset);
             setShowCountdown(true);
+            console.log("⏱️ Buffer sonrası countdown başlıyor, nowWithOffset:", nowWithOffset);
           }
         }, 5000);
         countdownTimersRef.current.push(t3);
@@ -1976,7 +1994,7 @@ const GamePage = ({
 
       return true;
     },
-    [gameStarted],
+    [gameStarted, serverTimeOffset],
   );
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
