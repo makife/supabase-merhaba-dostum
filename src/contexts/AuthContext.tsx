@@ -37,7 +37,20 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // 🔥 SOFT RECOVERY: Native soft recovery modundaysa loading ATLA!
+  const isSoftRecovery = typeof window !== 'undefined' && (
+    sessionStorage.getItem('soft-recovery') === 'true' ||
+    sessionStorage.getItem('force-reconnect') === 'true'
+  );
+  
+  // Flag'leri hemen temizle (bir kez kullanılmalı)
+  if (isSoftRecovery && typeof window !== 'undefined') {
+    console.log("[Auth] 🔥 SOFT RECOVERY modu tespit edildi - Loading atlanıyor!");
+    // Flag'leri burada TEMİZLEME - App.tsx'de temizlenecek
+  }
+  
+  const [loading, setLoading] = useState(!isSoftRecovery); // Soft recovery'de false başla!
   const { toast } = useToast();
 
   const mounted = useRef(true);
@@ -213,13 +226,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       initCompletedRef.current = true;
 
-      console.log("🔒 Auth Başlatılıyor... isNative:", isNative);
+      // 🔥 SOFT RECOVERY MODU: Loading zaten false, session'ı arka planda yükle
+      const softRecoveryMode = sessionStorage.getItem('soft-recovery') === 'true' ||
+                               sessionStorage.getItem('force-reconnect') === 'true';
+
+      console.log("🔒 Auth Başlatılıyor... isNative:", isNative, "softRecovery:", softRecoveryMode);
 
       if (isNative) {
         // NATIVE: Storage'dan restore
         console.log("[Auth] 📱 Native mod - storage'dan restore başlıyor...");
 
         try {
+          // 🔥 SOFT RECOVERY: Hızlı yükle, loading değiştirme!
+          if (softRecoveryMode) {
+            console.log("[Auth] ⚡ SOFT RECOVERY - Hızlı session yükleme...");
+            
+            // Storage'dan hemen session al
+            const stored = await loadSessionFromStorage();
+            if (stored?.user && stored?.access_token && mounted.current) {
+              setGlobalAccessToken(stored.access_token);
+              setUser(stored.user);
+              setSession(stored);
+              console.log("[Auth] ✅ SOFT RECOVERY - Session hemen yüklendi:", stored.user.email);
+              
+              // Arka planda token yenile (UI'ı bekletme!)
+              supabase.auth.refreshSession({ refresh_token: stored.refresh_token })
+                .then(({ data }) => {
+                  if (data?.session && mounted.current) {
+                    setGlobalAccessToken(data.session.access_token);
+                    setUser(data.session.user);
+                    setSession(data.session);
+                    saveSessionToStorage(data.session);
+                    console.log("[Auth] ✅ SOFT RECOVERY - Token arka planda yenilendi");
+                  }
+                })
+                .catch(e => console.warn("[Auth] ⚠️ Arka plan refresh hatası:", e));
+            }
+            return; // Loading zaten false, bekletme!
+          }
+          
+          // Normal native init
           const restored = await restoreFromStorage();
           console.log("[Auth] 📱 Restore sonucu:", restored);
 

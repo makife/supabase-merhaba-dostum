@@ -86,7 +86,14 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
-  const [customLoading, setCustomLoading] = useState(true);
+  
+  // 🔥 SOFT RECOVERY: Native soft recovery modundaysa loading'i tamamen ATLA!
+  const isSoftRecoveryMode = typeof window !== 'undefined' && (
+    sessionStorage.getItem('soft-recovery') === 'true' ||
+    sessionStorage.getItem('force-reconnect') === 'true'
+  );
+  
+  const [customLoading, setCustomLoading] = useState(!isSoftRecoveryMode); // Soft recovery'de false!
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
 
