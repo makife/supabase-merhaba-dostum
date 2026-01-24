@@ -24,16 +24,7 @@ export function useRealtimeReconnect(
   }, [channelSetup]);
 
   // Kanal oluştur/yeniden oluştur
-  // ⚠️ DEVRE DIŞI: removeChannel çağrısı kaldırıldı - bağlantı koruması
   const createChannel = useCallback(() => {
-    // ❌ DEVRE DIŞI: Eski kanalı temizleme - bağlantıyı öldürüyordu
-    // if (channelRef.current) {
-    //   try {
-    //     getSupabaseClient().removeChannel(channelRef.current);
-    //   } catch (e) {}
-    //   channelRef.current = null;
-    // }
-
     // Sadece yeni kanal oluştur (mevcut yoksa)
     if (!channelRef.current) {
       try {
@@ -48,6 +39,31 @@ export function useRealtimeReconnect(
     }
   }, []);
 
+  // 🔥 Kanalı ZORLA yeniden oluştur - eski kanalı kaldır, yenisini oluştur
+  const forceRecreateChannel = useCallback(() => {
+    console.log("[useRealtimeReconnect] 🔄 ZORLA kanal yeniden oluşturuluyor...");
+    
+    // Eski kanalı temizle
+    if (channelRef.current) {
+      try {
+        console.log("[useRealtimeReconnect] 🗑️ Eski kanal kaldırılıyor...");
+        getSupabaseClient().removeChannel(channelRef.current);
+      } catch (e) {
+        console.warn("[useRealtimeReconnect] ⚠️ Eski kanal kaldırma hatası:", e);
+      }
+      channelRef.current = null;
+    }
+
+    // Yeni kanal oluştur
+    try {
+      const newChannel = setupFnRef.current();
+      channelRef.current = newChannel;
+      console.log("[useRealtimeReconnect] ✅ Yeni kanal başarıyla oluşturuldu!");
+    } catch (e) {
+      console.error("[useRealtimeReconnect] ❌ Yeni kanal oluşturma hatası:", e);
+    }
+  }, []);
+
   // İlk mount ve dependencies değişince
   useEffect(() => {
     createChannel();
@@ -55,24 +71,17 @@ export function useRealtimeReconnect(
     // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       console.log("[useRealtimeReconnect] ⚠️ Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: removeChannel - bağlantıyı öldürüyordu
-      // if (channelRef.current) {
-      //   try {
-      //     getSupabaseClient().removeChannel(channelRef.current);
-      //   } catch (e) {}
-      //   channelRef.current = null;
-      // }
     };
   }, dependencies);
 
-  // Reconnect event'ini dinle
+  // Reconnect event'ini dinle - 🔥 ZORLA yeniden oluştur!
   useEffect(() => {
     const handleReconnect = () => {
-      console.log("[useRealtimeReconnect] 🔄 Reconnect algılandı, kanal yeniden oluşturuluyor...");
+      console.log("[useRealtimeReconnect] 🔄 Reconnect algılandı, kanal ZORLA yeniden oluşturuluyor...");
       
-      // Kısa gecikme ile kanalı yeniden oluştur
+      // Kısa gecikme ile kanalı ZORLA yeniden oluştur
       setTimeout(() => {
-        createChannel();
+        forceRecreateChannel();
       }, 300);
     };
 
@@ -81,7 +90,7 @@ export function useRealtimeReconnect(
     return () => {
       window.removeEventListener("supabase-reconnected", handleReconnect);
     };
-  }, [createChannel]);
+  }, [forceRecreateChannel]);
 
   return channelRef;
 }
