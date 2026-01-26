@@ -85,7 +85,6 @@ const TournamentWaitingPage = () => {
           realPlayerCount={realPlayerCount}
           totalParticipants={participants.length}
           isCreator={isCreator}
-          expiresAt={currentTournament.expires_at}
         />
 
         {/* Participants List */}
