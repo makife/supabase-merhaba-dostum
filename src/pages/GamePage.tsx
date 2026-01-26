@@ -3727,7 +3727,7 @@ const GamePage = ({
           if (matchData.status === "completed") {
             console.log("🚫 Bu maç zaten tamamlanmış, bracket sayfasına sessizce yönlendiriliyor:", matchData.id);
             // Toast gösterme - döngüyü kırmak için sessizce dön
-            navigate(`/tournament-bracket/${finalTournamentId}`, {
+            navigate(`/tournament/bracket/${finalTournamentId}`, {
               replace: true,
               state: { fromCompletedMatch: matchData.id },
             });
@@ -3773,7 +3773,7 @@ const GamePage = ({
 
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
-                    navigate(`/tournament-bracket/${finalTournamentId}`, { replace: true });
+                    navigate(`/tournament/bracket/${finalTournamentId}`, { replace: true });
                   }, 500);
                 }
               },
