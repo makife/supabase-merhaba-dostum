@@ -2002,60 +2002,58 @@ const GamePage = ({
 
   const initiateCountdown = useCallback(
     (serverTime: string, skipBuffer: boolean = false, force: boolean = false) => {
-      // Eğer force=true ise (Realtime update'den geliyorsa), korumayı yoksay ve güncelle
-      if (countdownInitiatedRef.current && !force) {
-        console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi (Force yok)");
-        return false;
-      }
+      // Koruma kontrolleri...
+      if (countdownInitiatedRef.current && !force) return false;
+      if (gameStarted && !force) return false;
 
-      if (gameStarted && !force) {
-        console.log("⏱️ Oyun zaten başladı, countdown atlandı");
-        return false;
-      }
-
-      console.log("⏱️ Countdown başlatılıyor/güncelleniyor:", serverTime, "Force:", force);
-
-      // Flag'i işaretle
+      console.log("⏱️ Countdown başlatılıyor:", serverTime);
       countdownInitiatedRef.current = true;
 
-      // Eğer force güncellemesi ise, mevcut state'i güncelle
-      if (force) {
-        setCountdownServerTime(serverTime);
-        setShowCountdown(true);
-        // Eğer oyun başladıysa geri al (çünkü countdown yeni zamana göre tekrar akmalı)
-        setGameStarted(false);
-        return true;
-      }
+      // Hedef zamanı hesapla
+      const targetTime = new Date(serverTime).getTime();
+      const now = Date.now() + serverTimeOffset;
+      const msUntilShow = targetTime - now; // Ne kadar beklemeliyiz?
 
-      if (skipBuffer) {
+      if (skipBuffer || msUntilShow <= 0) {
+        // Süre zaten geldiyse veya geçtiyse hemen göster
         setCountdownServerTime(serverTime);
         setShowCountdown(true);
         setPreparingOpponent(null);
       } else {
-        // Buffer animasyonları...
-        console.log("🏆 Buffer animasyonu başlatıldı: preparing");
+        // ⏳ DİNAMİK BEKLEME (Sabit 5000ms yerine hesaplanan süre kadar bekle)
+
+        // Animasyonları ayarla
         setPreparingOpponent("preparing");
 
-        setTimeout(() => {
-          if (isMountedRef.current) setPreparingOpponent("ready");
-        }, 3500);
+        // "Hazır" yazısı (Son 1.5 saniye kala)
+        if (msUntilShow > 1500) {
+          setTimeout(() => {
+            if (isMountedRef.current) setPreparingOpponent("ready");
+          }, msUntilShow - 1500);
+        } else {
+          setPreparingOpponent("ready");
+        }
 
-        setTimeout(() => {
-          if (isMountedRef.current) setPreparingOpponent(null);
-        }, 4000);
+        // Yazıyı kaldır (Son 1 saniye kala)
+        if (msUntilShow > 1000) {
+          setTimeout(() => {
+            if (isMountedRef.current) setPreparingOpponent(null);
+          }, msUntilShow - 1000);
+        }
 
+        // Geri sayımı tam hedef zamanda başlat
         setTimeout(() => {
           if (isMountedRef.current) {
-            console.log("🏆 Countdown gösteriliyor");
+            console.log("🏆 Countdown gösteriliyor (Senkronize)");
             setCountdownServerTime(serverTime);
             setShowCountdown(true);
           }
-        }, 5000);
+        }, msUntilShow);
       }
 
       return true;
     },
-    [gameStarted],
+    [gameStarted, serverTimeOffset],
   );
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:
