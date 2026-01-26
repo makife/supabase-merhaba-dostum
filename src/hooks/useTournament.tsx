@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 
 export const useTournament = (tournamentId?: string) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const context = useTournamentContext();
+  const { serverNow, offset } = useServerTimeContext();
 
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCreator, setIsCreator] = useState(false);
@@ -21,17 +23,17 @@ export const useTournament = (tournamentId?: string) => {
   // Reset startingRef when creator changes (e.g., after creator leaves)
   useEffect(() => {
     const currentCreatorId = context.currentTournament?.creator_id || null;
-
+    
     if (lastCreatorIdRef.current !== null && lastCreatorIdRef.current !== currentCreatorId) {
       // Creator changed - reset startingRef so new creator can trigger countdown end
       console.log("🔄 Kurucu değişti, startingRef sıfırlanıyor");
       startingRef.current = false;
     }
-
+    
     lastCreatorIdRef.current = currentCreatorId;
   }, [context.currentTournament?.creator_id]);
 
-  // Countdown timer
+  // Countdown timer - Server time kullanarak
   useEffect(() => {
     if (!context.currentTournament?.expires_at || context.currentTournament?.status !== "waiting") {
       setTimeLeft(0);
@@ -46,7 +48,8 @@ export const useTournament = (tournamentId?: string) => {
     const creatorId = context.currentTournament.creator_id;
 
     const tick = () => {
-      const now = Date.now();
+      // Server time kullanarak doğru kalan süreyi hesapla
+      const now = serverNow();
       const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(remaining);
 
@@ -66,12 +69,7 @@ export const useTournament = (tournamentId?: string) => {
         intervalRef.current = null;
       }
     };
-  }, [
-    context.currentTournament?.expires_at,
-    context.currentTournament?.status,
-    context.currentTournament?.creator_id,
-    user?.id,
-  ]);
+  }, [context.currentTournament?.expires_at, context.currentTournament?.status, context.currentTournament?.creator_id, user?.id, serverNow, offset]);
 
   // Handle countdown end
   const handleCountdownEnd = useCallback(async () => {
@@ -88,30 +86,33 @@ export const useTournament = (tournamentId?: string) => {
       .from("tournament_participants")
       .select("id, user_id, is_bot")
       .eq("tournament_id", tournamentId);
-
+    
     const currentRealPlayers = freshParticipants?.filter((p) => !p.is_bot).length || 0;
     console.log("🎮 Gerçek oyuncu sayısı (DB'den):", currentRealPlayers);
 
     // Minimum 2 gerçek oyuncu gerekli
     if (currentRealPlayers < 2) {
       console.log("❌ Yeterli oyuncu yok (min 2 gerekli), iptal ediliyor");
-      await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
+      await supabase
+        .from("tournaments")
+        .update({ status: "cancelled" })
+        .eq("id", tournamentId);
       return;
     }
 
     console.log("🏆 Kurucu turnuvayı başlatıyor...");
     const success = await context.startTournament(tournamentId);
-
+    
     if (success) {
       // Hemen next_round_starts_at set et - yarı final ile aynı davranış
       const nextRoundStartsAt = new Date();
       nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
-
+      
       await supabase
         .from("tournaments")
         .update({ next_round_starts_at: nextRoundStartsAt.toISOString() })
         .eq("id", tournamentId);
-
+      
       navigate(`/tournament-bracket/${tournamentId}`);
     }
   }, [tournamentId, user, context.currentTournament, context.participants, navigate]);
