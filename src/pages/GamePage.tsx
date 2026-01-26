@@ -6755,6 +6755,8 @@ const GamePage = ({
   const opponent = getOpponentInfo();
 
   const handleCountdownComplete = () => {
+    console.log("🏁 Countdown tamamlandı - oyun başlatılıyor");
+
     setShowCountdown(false);
     countdownCompletedAtRef.current = Date.now();
 
@@ -6767,38 +6769,31 @@ const GamePage = ({
       console.log("🧹 Cleared existing timer before countdown complete");
     }
 
+    // 🔒 KRİTİK: Timer'ı SADECE BİR KERE başlat - endsAtTimestampRef kontrolü
+    if (endsAtTimestampRef.current) {
+      console.log("⏱️ Timer zaten başlatılmış, tekrar başlatma");
+      setGameStarted(true);
+      gameHasStartedRef.current = true;
+      gameStartedRef.current = true;
+      return;
+    }
+
     // Initialize timer to full time for all modes
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
     setDisplayTime(initial);
 
-    // Multiplayer: set authoritative server start time exactly once
-    /*if (isMp && currentRoom?.id) {
-      const serverStartTime = new Date().toISOString();
-      (async () => {
-        try {
-          await supabase
-            .from("game_rooms")
-            .update({ started_at: serverStartTime, status: "active" })
-            .is("started_at", null)
-            .eq("id", currentRoom.id);
-
-          console.log("✅ Server started_at set:", serverStartTime);
-        } catch (e) {
-          console.error("started_at set failed:", e);
-        }
-      })();
-    }*/
-
     // Start game immediately - don't wait for started_at
     setGameStarted(true);
     gameHasStartedRef.current = true;
-    gameStartedRef.current = true; // Arka plan disconnect kontrolü için
+    gameStartedRef.current = true;
 
     // Short suppress for multiplayer (only 1s to prevent initial jitter)
     if (isMp) {
       syncSuppressUntilRef.current = Date.now() + 1000;
     }
+
+    console.log("✅ Oyun başladı - timer otomatik başlatılacak");
   };
 
   return (
