@@ -5740,6 +5740,7 @@ const GamePage = ({
     if (showCountdown || gameStarted || gameHasStartedRef.current) return;
     if (countdownCheckDoneRef.current) return; // Kilit aktifse girme
     if (!serverTimeReady) return; // Server time hazır değilse bekle
+    if (countdownInitiatedRef.current) return; // 🔒 YENİ: Countdown zaten başlatıldıysa girme
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
     if (realPlayers.length < 2) return;
