@@ -28,12 +28,12 @@ const TournamentWaitingPage = () => {
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde turnuva detaylarını otomatik tazele
   const handleResync = useCallback(() => {
     if (tournamentId) {
-      console.log('🔄 [TournamentWaitingPage] Resync triggered');
+      console.log("🔄 [TournamentWaitingPage] Resync triggered");
       fetchTournamentDetails(tournamentId);
     }
   }, [tournamentId, fetchTournamentDetails]);
-  
-  usePageResync(handleResync, 'TournamentWaitingPage', true);
+
+  usePageResync(handleResync, "TournamentWaitingPage", true);
 
   useEffect(() => {
     if (tournamentId) {
@@ -44,7 +44,7 @@ const TournamentWaitingPage = () => {
   // Turnuva başladıysa bracket sayfasına yönlendir
   useEffect(() => {
     if (currentTournament?.status === "in_progress" && tournamentId) {
-      navigate(`/tournament-bracket/${tournamentId}`);
+      navigate(`/tournament/bracket/${tournamentId}`);
     }
   }, [currentTournament?.status, tournamentId, navigate]);
 
