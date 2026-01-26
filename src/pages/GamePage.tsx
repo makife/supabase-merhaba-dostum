@@ -2002,11 +2002,26 @@ const GamePage = ({
 
   const initiateCountdown = useCallback(
     (serverTime: string, skipBuffer: boolean = false, force: boolean = false) => {
-      // Koruma kontrolleri...
-      if (countdownInitiatedRef.current && !force) return false;
-      if (gameStarted && !force) return false;
+      // Eğer force=true ise (Realtime update'den geliyorsa), korumayı yoksay ve güncelle
+      if (countdownInitiatedRef.current && !force) {
+        console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi (Force yok)");
+        return false;
+      }
 
-      console.log("⏱️ Countdown başlatılıyor:", serverTime);
+      if (gameStarted && !force) {
+        console.log("⏱️ Oyun zaten başladı, countdown atlandı");
+        return false;
+      }
+
+      // 🔒 KRİTİK: showCountdown true ise ve force değilse, zaten bir countdown aktif demektir
+      if (showCountdown && !force) {
+        console.log("⏱️ Countdown zaten gösteriliyor, yeniden başlatma engellendi");
+        return false;
+      }
+
+      console.log("⏱️ Countdown başlatılıyor/güncelleniyor:", serverTime, "Force:", force);
+
+      // Flag'i işaretle
       countdownInitiatedRef.current = true;
 
       // Hedef zamanı hesapla
