@@ -1797,7 +1797,7 @@ const GamePage = ({
         console.error("❌ Maç tamamlama hatası:", updateError);
         // Hata olsa bile winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -1817,7 +1817,7 @@ const GamePage = ({
         console.error("❌ Güncellenmiş maç bilgisi alınamadı:", matchError);
         // Winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -1904,7 +1904,7 @@ const GamePage = ({
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
           console.log("🔄 Bracket sayfasına yönlendiriliyor...");
-          navigate(`/tournament-bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
         }, 1500);
       } else {
         console.log(
