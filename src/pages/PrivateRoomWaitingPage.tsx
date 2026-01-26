@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"; // useParams eklendi
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, Home, Users } from "lucide-react";
@@ -11,21 +11,28 @@ import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 
 const PrivateRoomWaitingPage = () => {
+  // 1. useParams ile URL'deki kodu alıyoruz (:roomCode)
+  const { roomCode: paramCode } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { playSound } = useSounds();
   const { user } = useAuth();
-  const { } = useUser();
-
-  const roomCode = searchParams.get("code");
-  const roomId = searchParams.get("roomId");
-  const gameType = searchParams.get("gameType") as "timed" | "score";
+  
+  // URL'den gelen kod (App.tsx'deki :roomCode) veya Query param (yedek)
+  const roomCode = paramCode || searchParams.get("code");
+  
+  // Room verilerini State'te tutuyoruz (URL'de taşıyıp durmamak için)
+  const [roomId, setRoomId] = useState<string | null>(searchParams.get("roomId"));
+  const [gameType, setGameType] = useState<"timed" | "score" | null>(
+    (searchParams.get("gameType") as "timed" | "score") || null
+  );
 
   const [copied, setCopied] = useState(false);
   const [navigated, setNavigated] = useState(false);
-  
-  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const [loading, setLoading] = useState(true); // Yükleniyor durumu eklendi
+
+  // 🔄 Global Resync Hook
   const handleRoomResync = useCallback(async () => {
     if (!roomId || navigated) return;
     
@@ -33,14 +40,17 @@ const PrivateRoomWaitingPage = () => {
       .from("game_participants")
       .select("*")
       .eq("room_id", roomId);
+
     if (parts && parts.length >= 2) {
       const { data: room } = await supabase
         .from("game_rooms")
         .select("game_mode, game_type_new")
         .eq("id", roomId)
         .single();
+        
       const type = room?.game_type_new || (room?.game_mode?.includes('score') ? 'score' : 'timed');
       const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
+      
       setNavigated(true);
       navigate(`${basePath}?room=${roomId}&type=${type}`);
     }
@@ -48,35 +58,64 @@ const PrivateRoomWaitingPage = () => {
 
   usePageResync(handleRoomResync, 'PrivateRoomWaitingPage', true);
 
+  // 1. Oda Bilgilerini Çekme Effect'i
   useEffect(() => {
-    if (!roomCode || !user) {
-      navigate("/");
-      return;
+    if (!user || !roomCode) {
+       // Sadece user veya roomCode yoksa at, roomId henüz gelmemiş olabilir bekle
+       if (!roomCode) navigate("/");
+       return;
     }
 
-    // roomId yoksa room_code üzerinden bul ve URL'i tamamla
-    if (!roomId) {
-      (async () => {
-        const { data: roomRow } = await supabase
+    const fetchRoomDetails = async () => {
+      // Eğer state'te zaten roomId varsa tekrar çekme
+      if (roomId && gameType) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: roomRow, error } = await supabase
           .from("game_rooms")
-          .select("id, game_mode")
-          .eq("room_code", roomCode)
+          .select("id, game_mode, game_type_new")
+          .eq("room_code", roomCode) // roomCode string olduğu için .toUpperCase() gerekebilir veriye göre
           .maybeSingle();
-        if (roomRow?.id) {
-          const typeFromRoom = roomRow?.game_mode?.includes("score") ? "score" : "timed";
-          navigate(`/private-room-waiting?code=${roomCode}&roomId=${roomRow.id}&gameType=${typeFromRoom}`);
-        } else {
+
+        if (error || !roomRow) {
+          console.error("Oda bulunamadı:", error);
+          toast({
+             title: "Hata",
+             description: "Oda bulunamadı veya süresi dolmuş.",
+             variant: "destructive"
+          });
           navigate("/");
+          return;
         }
-      })();
-      return;
-    }
+
+        // State güncelle
+        setRoomId(roomRow.id);
+        const type = roomRow.game_type_new || (roomRow.game_mode?.includes("score") ? "score" : "timed");
+        setGameType(type as "timed" | "score");
+        
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoomDetails();
+  }, [roomCode, user, roomId, gameType, navigate, toast]);
+
+
+  // 2. Katılımcı Ekleme ve Dinleme Effect'i
+  useEffect(() => {
+    // roomId veya user yoksa işlem yapma
+    if (!roomId || !user || !gameType) return;
 
     let unsubscribed = false;
 
-    // Ensure current user is participant (handles rare failed inserts)
+    // Kendini odaya ekle (Eğer ekli değilse)
     const ensureSelfParticipant = async () => {
-      if (!roomId || !user?.id) return;
       try {
         const { data: existing } = await supabase
           .from("game_participants")
@@ -84,6 +123,7 @@ const PrivateRoomWaitingPage = () => {
           .eq("room_id", roomId)
           .eq("user_id", user.id)
           .maybeSingle();
+
         if (!existing) {
           await supabase.from("game_participants").insert({
             room_id: roomId,
@@ -91,11 +131,10 @@ const PrivateRoomWaitingPage = () => {
             score: 0,
             is_bot: false,
           });
-          console.log("✅ Self participant inserted for room", roomId);
+          console.log("✅ Katılımcı eklendi:", roomId);
         }
       } catch (e: any) {
-        // Ignore duplicate
-        if (e?.code !== "23505") {
+        if (e?.code !== "23505") { // Unique violation değilse logla
           console.warn("ensureSelfParticipant warning:", e);
         }
       }
@@ -103,49 +142,39 @@ const PrivateRoomWaitingPage = () => {
 
     ensureSelfParticipant();
 
+    // 2. Oyuncu kontrolü
     const checkAndNavigate = async () => {
       const { data: parts } = await supabase
         .from("game_participants")
         .select("*")
         .eq("room_id", roomId);
+
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
         
-        // Odanın game_mode'unu al ve doğru type parametresiyle yönlendir
-        const { data: room } = await supabase
-          .from("game_rooms")
-          .select("game_mode, game_type_new")
-          .eq("id", roomId)
-          .single();
-        
-        const type = room?.game_type_new || (room?.game_mode?.includes('score') ? 'score' : 'timed');
-        const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
-        
-        console.log('🎮 2. oyuncu katıldı, countdown başlatılıyor...', { roomId, type });
+        console.log('🎮 2. oyuncu katıldı, countdown başlatılıyor...');
         
         // Countdown başlat
-        const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
+        const { data: countdownTime } = await supabase.rpc("start_game_countdown", {
           p_room_id: roomId,
         });
         
-        if (rpcError) {
-          console.warn("⚠️ Countdown RPC error:", rpcError);
-        } else if (countdownTime) {
-          console.log("✅ Countdown başlatıldı:", countdownTime);
+        if (countdownTime) {
           window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
         }
         
-        console.log('🎮 Oyun sayfasına yönlendiriliyor', { type, gameMode: room?.game_mode, target: `${basePath}?room=${roomId}&type=${type}` });
-        navigate(`${basePath}?room=${roomId}&type=${type}`);
+        // Yönlendir
+        const basePath = '/game/private-room'; // Özel oda olduğu için sabit
+        navigate(`${basePath}?room=${roomId}&type=${gameType}`);
       }
     };
 
-    // İlk yüklemede mevcut katılımcıları kontrol et (gecikmeli insert kaçırılabilir)
+    // İlk kontrol
     checkAndNavigate();
 
-    // Realtime ile participants tablosunu dinle
+    // Realtime Dinleme
     const channel = supabase
-      .channel(`room_${roomId}`)
+      .channel(`room_waiting_${roomId}`)
       .on(
         "postgres_changes",
         {
@@ -156,19 +185,18 @@ const PrivateRoomWaitingPage = () => {
         },
         async (payload) => {
           console.log("👥 Yeni katılımcı:", payload);
-          if (navigated) return;
-          await checkAndNavigate();
+          if (!navigated) {
+            await checkAndNavigate();
+          }
         },
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
       unsubscribed = true;
-      console.log("⚠️ [PrivateRoomWaitingPage] Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, [roomCode, roomId, gameType, user, navigate, navigated]);
+  }, [roomId, gameType, user, navigate, navigated]);
 
 
   const copyRoomCode = async () => {
@@ -192,6 +220,14 @@ const PrivateRoomWaitingPage = () => {
     playSound("buttonClick");
     navigate("/");
   };
+
+  if (loading) {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center text-white">
+            <div className="animate-pulse">Oda bilgileri yükleniyor...</div>
+        </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4">
@@ -258,7 +294,7 @@ const PrivateRoomWaitingPage = () => {
                 <p className="text-sm text-gray-400 mb-2">Oyun Türü</p>
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
                   <span className="text-white font-semibold">
-                    {gameType === "timed" ? "⏱️ Zamana Karşı" : "🏆 Puanlı"}
+                    {gameType === "timed" ? "⏱️ Zamana Karşı" : gameType === "score" ? "🏆 Puanlı" : "Yükleniyor..."}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
