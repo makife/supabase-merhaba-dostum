@@ -186,7 +186,7 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
-  
+
   // 🔄 Server Time Context - Tüm uygulama genelinde senkronize offset
   const { offset: contextOffset, serverNow, isReady: contextServerTimeReady, triggerResync } = useServerTimeContext();
   // Geriye uyumluluk için local state'i context'ten al
@@ -1156,9 +1156,9 @@ const GamePage = ({
       console.log("🔄 [GamePage] Oyun bitti, resync atlanıyor");
       return;
     }
-    
+
     console.log("🔄 [GamePage] Bağlantı geri geldi - veri senkronizasyonu başlıyor...");
-    
+
     try {
       // 1. TURNUVA MODU SYNC
       if (gameMode === "tournament" && tournamentMatch?.id) {
@@ -1167,10 +1167,10 @@ const GamePage = ({
           .select("*")
           .eq("id", tournamentMatch.id)
           .single();
-        
+
         if (!error && matchData) {
           console.log("✅ [GamePage Resync] Turnuva maçı güncellendi:", matchData.status);
-          
+
           // Skorları güncelle
           const isPlayer1 = String(matchData.player1_id) === String(user?.id);
           if (isPlayer1) {
@@ -1178,7 +1178,7 @@ const GamePage = ({
           } else {
             setOpponentScore(matchData.player1_score || 0);
           }
-          
+
           // Maç tamamlandıysa UI'ı güncelle
           if (matchData.status === "completed" && matchData.winner_id) {
             const iWon = matchData.winner_id === user?.id;
@@ -1189,7 +1189,7 @@ const GamePage = ({
         }
         return;
       }
-      
+
       // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
       if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
         const { data: roomData, error: roomError } = await supabase
@@ -1197,10 +1197,10 @@ const GamePage = ({
           .select("*")
           .eq("id", currentRoom.id)
           .single();
-        
+
         if (!roomError && roomData) {
           console.log("✅ [GamePage Resync] Oda verisi güncellendi - status:", roomData.status);
-          
+
           // Skorları güncelle
           const isPlayer1 = roomData.player1_id === user?.id;
           if (isPlayer1) {
@@ -1208,7 +1208,7 @@ const GamePage = ({
           } else {
             setOpponentScore(roomData.player1_score || 0);
           }
-          
+
           // Oda bittiyse UI'ı güncelle
           if (roomData.status === "finished" && roomData.winner_id) {
             const iWon = roomData.winner_id === user?.id;
@@ -1216,7 +1216,7 @@ const GamePage = ({
             setGameEnded(true);
             setShowResults(true);
           }
-          
+
           // Grid sync (joker koruması yoksa)
           if (!gridSyncPaused && roomData.current_grid && Array.isArray(roomData.current_grid)) {
             const flat = roomData.current_grid as string[];
@@ -1229,7 +1229,7 @@ const GamePage = ({
           }
         }
       }
-      
+
       // 3. Server time sync yeniden kalibre et (Context üzerinden otomatik yapılıyor)
       try {
         await triggerResync();
@@ -1237,7 +1237,6 @@ const GamePage = ({
       } catch (e) {
         console.warn("⚠️ [GamePage Resync] Server time sync hatası:", e);
       }
-      
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
@@ -1246,9 +1245,11 @@ const GamePage = ({
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
     onResync: handleGameResync,
-    isActive: !gameEndedRef.current && (gameMode === "tournament" || gameMode === "random-match" || gameMode === "private-room"),
+    isActive:
+      !gameEndedRef.current &&
+      (gameMode === "tournament" || gameMode === "random-match" || gameMode === "private-room"),
     isPriority: true,
-    pageName: 'GamePage'
+    pageName: "GamePage",
   });
 
   // 🔒 Server time sync için state ve ref'ler - Context'ten geliyor
@@ -4429,11 +4430,11 @@ const GamePage = ({
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   // 🔒 Çift tetiklemeyi önlemek için: İlk yüklemede ve realtime'da aynı countdown_started_at kontrolü
   const countdownChannelRef = useRef<any>(null);
-  
+
   useEffect(() => {
     if (gameMode === "tournament" || gameMode === "vs-computer") return;
     if (!currentRoom || !user) return;
-    
+
     // 🔒 OYUN BAŞLADIYSA SUBSCRIPTION'I KAPAT VE ÇIKIŞ YAP
     if (gameStarted) {
       if (countdownChannelRef.current) {
@@ -4443,13 +4444,13 @@ const GamePage = ({
       }
       return;
     }
-    
+
     // Countdown zaten gösteriliyorsa yeni subscription açma
     if (showCountdown) return;
-    
+
     // Zaten subscription varsa tekrar açma
     if (countdownChannelRef.current) return;
-    
+
     // 🔒 İLK YÜKLEME: Room'da zaten countdown_started_at varsa HEMEN başlat
     if (currentRoom.countdown_started_at && !countdownInitiatedRef.current) {
       // Bu timestamp daha önce işlendi mi?
@@ -4457,26 +4458,26 @@ const GamePage = ({
         console.log("⏭️ Bu countdown zaten işlendi, atlanıyor:", currentRoom.countdown_started_at);
         return;
       }
-      
+
       const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
       const nowWithOffset = Date.now() + serverTimeOffset;
       const msElapsed = nowWithOffset - countdownStartTime;
-      
+
       console.log("🎯 İlk yükleme countdown kontrolü:", {
         countdownStartedAt: currentRoom.countdown_started_at,
         msElapsed,
         nowWithOffset: new Date(nowWithOffset).toISOString(),
       });
-      
+
       // Buffer (5s) + Countdown (5s) = 10 saniye içindeyse başlat
       if (msElapsed >= 0 && msElapsed < 10000) {
         console.log("🎮 Countdown zaten başlamış, devam ediliyor (msElapsed:", msElapsed, ")");
         processedCountdownRef.current = currentRoom.countdown_started_at;
-        
+
         // Buffer'ın kalan kısmını hesapla
         const originalTime = countdownStartTime;
         const adjustedTime = new Date(originalTime + 5000).toISOString();
-        
+
         if (msElapsed < 5000) {
           // Buffer animasyonu devam ediyor
           initiateCountdown(adjustedTime, false);
@@ -4513,7 +4514,7 @@ const GamePage = ({
             console.log("⚠️ Countdown zaten aktif veya oyun başladı - event ignored");
             return;
           }
-          
+
           const newData = payload.new as any;
 
           // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
@@ -4523,7 +4524,7 @@ const GamePage = ({
               console.log("⏭️ Bu countdown zaten işlendi (realtime), atlanıyor");
               return;
             }
-            
+
             console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
             processedCountdownRef.current = newData.countdown_started_at;
 
@@ -4533,7 +4534,7 @@ const GamePage = ({
 
             // Buffer animasyonlarını göster (skipBuffer = false)
             initiateCountdown(adjustedTime, false);
-            
+
             // 🔒 Subscription'ı hemen kapat - artık countdown tetiklendi
             if (countdownChannelRef.current) {
               console.log("✅ Countdown tetiklendi, subscription kapatılıyor");
@@ -4544,7 +4545,7 @@ const GamePage = ({
         },
       )
       .subscribe();
-    
+
     countdownChannelRef.current = channel;
 
     return () => {
@@ -4555,7 +4556,16 @@ const GamePage = ({
         countdownChannelRef.current = null;
       }
     };
-  }, [gameMode, currentRoom?.id, currentRoom?.countdown_started_at, user, showCountdown, gameStarted, serverTimeOffset, initiateCountdown]);
+  }, [
+    gameMode,
+    currentRoom?.id,
+    currentRoom?.countdown_started_at,
+    user,
+    showCountdown,
+    gameStarted,
+    serverTimeOffset,
+    initiateCountdown,
+  ]);
 
   const handleTournamentExit = async () => {
     if (!user || !tournamentMatch) return;
@@ -5161,7 +5171,7 @@ const GamePage = ({
   // 🏆 Turnuva real-time senkronizasyonu - Ref ile closure sorunu çözümü
   const tournamentChannelRef = useRef<any>(null);
   const tournamentMatchIdRef = useRef<string | null>(null);
-  
+
   useEffect(() => {
     if (gameMode !== "tournament" || !tournamentMatch) {
       // Turnuva modundan çıkıldığında channel'ı temizle
@@ -5173,13 +5183,13 @@ const GamePage = ({
       }
       return;
     }
-    
+
     // Aynı maç için zaten subscription varsa yeni oluşturma
     if (tournamentMatchIdRef.current === tournamentMatch.id && tournamentChannelRef.current) {
       console.log("⏭️ Turnuva subscription zaten aktif:", tournamentMatch.id.slice(-8));
       return;
     }
-    
+
     // Önceki subscription'ı temizle (farklı maç için)
     if (tournamentChannelRef.current) {
       console.log("🔄 Eski turnuva channel temizleniyor, yeni maç için");
@@ -5206,7 +5216,7 @@ const GamePage = ({
           // Rakip skorunu real-time güncelle
           const newMatch = payload.new as any;
           const currentUserId = user?.id;
-          
+
           if (currentUserId) {
             const isPlayer1 = String(newMatch.player1_id) === String(currentUserId);
             const newOpponentScore = isPlayer1 ? (newMatch.player2_score ?? 0) : (newMatch.player1_score ?? 0);
@@ -5219,7 +5229,7 @@ const GamePage = ({
             });
 
             // 🔥 Functional update kullan - closure sorunu yok!
-            setOpponentScore(prev => {
+            setOpponentScore((prev) => {
               if (newOpponentScore !== prev) {
                 console.log("🔄 Rakip skoru güncellendi:", prev, "->", newOpponentScore);
                 return newOpponentScore;
@@ -5235,7 +5245,7 @@ const GamePage = ({
       .subscribe((status) => {
         console.log("🏆 Tournament channel status:", status);
       });
-    
+
     tournamentChannelRef.current = tournamentChannel;
 
     return () => {
@@ -5632,14 +5642,20 @@ const GamePage = ({
 
   // ⏱️ Initial server countdown sync for private/random - 5sn buffer ile
   useEffect(() => {
+    // KORUMA: Realtime zaten tetiklediyse veya oyun başladıysa veya countdown görünüyorsa girme
     if (
       (gameMode === "private-room" || gameMode === "random-match") &&
       currentRoom?.countdown_started_at &&
       !showCountdown &&
       !gameStarted &&
       !countdownServerTime &&
-      serverTimeReady
+      serverTimeReady &&
+      !countdownInitiatedRef.current // <--- BU KONTROLÜ EKLİYORUZ VEYA EMİN OLUYORUZ
     ) {
+      // Eğer bu timestamp daha önce işlendiyse tekrar işleme
+      if (processedCountdownRef.current === currentRoom.countdown_started_at) {
+        return;
+      }
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
       // Server zamanını hesapla - 5sn buffer ekle
@@ -6447,9 +6463,9 @@ const GamePage = ({
           const name = opponentName && opponentName !== "Rakip Aranıyor..." ? opponentName : "Rakip";
           console.log("🛡️ Oyun başladı - fallback rakip:", name);
           const fallbackOpponent = participants.find((p) => String(p.user_id) !== String(user?.id));
-          return { 
-            name, 
-            icon: User, 
+          return {
+            name,
+            icon: User,
             avatar: (fallbackOpponent as any)?.profiles?.avatar_url || null,
             isPremium: isPremiumActive((fallbackOpponent as any)?.profiles?.premium_until),
           };
