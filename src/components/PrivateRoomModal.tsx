@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+// Import listesine DialogDescription eklendi
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
@@ -70,36 +71,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       localStorage.setItem(`room_type_${shortCode}`, "timed");
 
       const letterPool = [
-        "A",
-        "A",
-        "E",
-        "E",
-        "İ",
-        "İ",
-        "I",
-        "O",
-        "U",
-        "L",
-        "L",
-        "N",
-        "R",
-        "K",
-        "M",
-        "T",
-        "S",
-        "D",
-        "Y",
-        "B",
-        "C",
-        "Ç",
-        "F",
-        "G",
-        "Ğ",
-        "H",
-        "P",
-        "Ş",
-        "V",
-        "Z",
+        "A", "A", "E", "E", "İ", "İ", "I", "O", "U", "L", "L", "N", "R", "K", "M", "T", "S", "D", "Y", "B", "C", "Ç", "F", "G", "Ğ", "H", "P", "Ş", "V", "Z",
       ];
       const grid: string[] = [];
       for (let i = 0; i < 16; i++) {
@@ -126,8 +98,9 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(`/private-room-waiting?code=${shortCode}&roomId=${roomId}&gameType=timed`);
-      onClose();
+      // DÜZELTME 1: onClose() kaldırıldı. Sayfa değiştiği için modal zaten kapanacak.
+      navigate(`/private-room/waiting/${shortCode}`);
+      
     } catch (error: any) {
       toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
     } finally {
@@ -156,10 +129,9 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
         user_id: user.id,
       });
 
-      navigate(
-        `/private-room-waiting?code=${joinCode.toUpperCase()}&roomId=${room.id}&gameType=${room.game_type_new || "timed"}`,
-      );
-      onClose();
+      // DÜZELTME 2: onClose() kaldırıldı.
+      navigate(`/private-room/waiting/${joinCode.toUpperCase()}`);
+      
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
     } finally {
@@ -198,7 +170,12 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
               <Users className="w-8 h-8 text-white" />
             </div>
 
-            <h2 className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</h2>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</DialogTitle>
+            
+            {/* DÜZELTME 3: Erişim hatasını gidermek için Description eklendi */}
+            <DialogDescription className="text-zinc-400 text-xs mt-1">
+               Arkadaşlarınla oynamak için oda oluştur veya var olan bir odaya katıl.
+            </DialogDescription>
           </div>
 
           {/* TABS */}
@@ -229,7 +206,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           <div className="px-8 pb-8 space-y-4 z-10 min-h-[300px]">
             {activeTab === "create" ? (
               <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                {/* Tekli Mod Kartı (GameModeSelector ile aynı) */}
                 <div className="flex justify-center">
                   <div className="w-full flex flex-col items-center p-6 rounded-2xl border-2 border-green-500/50 bg-green-500/10 scale-[1.02]">
                     <div className="p-3 rounded-xl mb-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
