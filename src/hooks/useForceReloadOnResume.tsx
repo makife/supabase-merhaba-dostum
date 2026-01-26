@@ -17,8 +17,6 @@ import { supabase, loadSessionFromStorage, setGlobalAccessToken } from "@/integr
 /**
  * App başlangıcında çağrılmalı - resume restart'tan gelip gelmediğini kontrol eder
  * Loading ekranı ATLANIR, session recovery başlatılır
- * 
- * @deprecated App.tsx artık doğrudan performResumeRecoveryDirect kullanıyor
  */
 export function checkResumeReload(): boolean {
   // Native taraftan gelen flag'i kontrol et (MainActivity.java inject ediyor)
@@ -30,6 +28,12 @@ export function checkResumeReload(): boolean {
     // Flag'i temizle (bir kez kullanılmalı)
     sessionStorage.removeItem('app-resume-restart');
     
+    // "Bağlanıyor" toast göster
+    toast.loading("Bağlanıyor...", {
+      id: "resume-connecting",
+      duration: 5000,
+    });
+    
     // 🔥 SESSION RECOVERY VE REALTIME RECONNECT BAŞLAT
     performResumeRecovery();
     
@@ -40,13 +44,11 @@ export function checkResumeReload(): boolean {
 }
 
 /**
- * 🔥🔥🔥 DOĞRUDAN ÇAĞRILACAK SESSION RECOVERY
- * App.tsx bu fonksiyonu direkt çağırır - flag kontrolü DIŞARIDA yapılır
- * 
- * @returns Promise<boolean> - başarılı olup olmadığını döner
+ * 🔥 Resume sonrası session recovery ve realtime reconnect
+ * Bu fonksiyon async olarak çalışır ve tüm bağlantıları yeniden kurar
  */
-export async function performResumeRecoveryDirect(): Promise<boolean> {
-  console.log("[ForceReload] 🔄🔄🔄 RESUME RECOVERY BAŞLIYOR 🔄🔄🔄");
+async function performResumeRecovery(): Promise<void> {
+  console.log("[ForceReload] 🔄 Resume recovery başlıyor...");
   
   try {
     // 1. Session'ı storage'dan yükle
@@ -55,7 +57,8 @@ export async function performResumeRecoveryDirect(): Promise<boolean> {
     
     if (!storedSession?.access_token || !storedSession?.refresh_token) {
       console.log("[ForceReload] ⚠️ Storage'da session yok - auth sayfasına yönlenilecek");
-      return false;
+      toast.dismiss("resume-connecting");
+      return;
     }
     
     console.log("[ForceReload] ✅ Session bulundu:", storedSession.user?.email);
@@ -83,7 +86,9 @@ export async function performResumeRecoveryDirect(): Promise<boolean> {
     
     if (error) {
       console.error("[ForceReload] ❌ Token refresh hatası:", error.message);
-      return false;
+      toast.dismiss("resume-connecting");
+      toast.error("Oturum yenilenemedi");
+      return;
     }
     
     if (data?.session) {
@@ -92,37 +97,20 @@ export async function performResumeRecoveryDirect(): Promise<boolean> {
       // Yeni token'ı global'e set et
       setGlobalAccessToken(data.session.access_token);
       
-      // 5. 🔥🔥🔥 REALTIME RECONNECT - EN KRİTİK KISIM
-      console.log("[ForceReload] 🔌🔌🔌 REALTIME RECONNECT BAŞLIYOR...");
-      
-      // Önce mevcut bağlantıyı kontrol et
-      try {
-        const realtimeState = (supabase.realtime as any).connectionState?.();
-        console.log("[ForceReload] 📡 Mevcut Realtime state:", realtimeState);
-      } catch (e) {
-        console.log("[ForceReload] ⚠️ Realtime state okunamadı");
-      }
-      
-      // Token'ı realtime'a set et
+      // 5. Realtime'ı yeni token ile authenticate et
+      console.log("[ForceReload] 🔌 Realtime reconnect yapılıyor...");
       supabase.realtime.setAuth(data.session.access_token);
-      console.log("[ForceReload] ✅ Realtime auth token set edildi");
       
-      // 🔥 Realtime'ı zorla reconnect et
+      // Realtime'ı zorla reconnect et
       try {
-        // Önce mevcut bağlantıyı kapat
-        console.log("[ForceReload] 🔌 Mevcut bağlantı kapatılıyor...");
-        (supabase.realtime as any).disconnect?.();
+        const state = (supabase.realtime as any).connectionState?.();
+        console.log("[ForceReload] 📡 Realtime state:", state);
         
-        // 500ms bekle
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Yeniden bağlan
-        console.log("[ForceReload] 🔌 Yeniden bağlanılıyor...");
-        (supabase.realtime as any).connect?.();
-        
-        console.log("[ForceReload] ✅ Realtime reconnect komutu gönderildi");
+        if (state !== "open") {
+          (supabase.realtime as any).connect?.();
+        }
       } catch (e) {
-        console.log("[ForceReload] ⚠️ Realtime reconnect hatası:", e);
+        console.log("[ForceReload] ⚠️ Realtime connect hatası:", e);
       }
       
       // 6. auth-ready event dispatch et
@@ -137,11 +125,7 @@ export async function performResumeRecoveryDirect(): Promise<boolean> {
         })
       );
       
-      // 7. supabase-reconnected event dispatch et (kanalların yeniden kurulması için)
-      console.log("[ForceReload] 📢 supabase-reconnected event dispatch ediliyor...");
-      window.dispatchEvent(new CustomEvent("supabase-reconnected"));
-      
-      // 8. 1 saniye bekle, sonra data-ready dispatch et
+      // 7. 500ms bekle, sonra data-ready dispatch et
       setTimeout(() => {
         console.log("[ForceReload] 📢 data-ready event dispatch ediliyor...");
         window.dispatchEvent(
@@ -149,36 +133,16 @@ export async function performResumeRecoveryDirect(): Promise<boolean> {
             detail: { source: "resume-recovery" },
           })
         );
-      }, 1000);
+        
+        // Toast'u başarı ile değiştir
+        toast.dismiss("resume-connecting");
+        toast.success("Bağlandı!", { duration: 1500 });
+      }, 500);
       
-      console.log("[ForceReload] ✅✅✅ RESUME RECOVERY TAMAMLANDI! ✅✅✅");
-      return true;
+      console.log("[ForceReload] ✅ Resume recovery tamamlandı!");
     }
-    
-    return false;
   } catch (e) {
     console.error("[ForceReload] ❌ Resume recovery hatası:", e);
-    return false;
-  }
-}
-
-/**
- * 🔥 Eski performResumeRecovery - toast yönetimi dahil
- * @deprecated Artık App.tsx performResumeRecoveryDirect kullanıyor
- */
-async function performResumeRecovery(): Promise<void> {
-  // Toast göster
-  toast.loading("Bağlanıyor...", {
-    id: "resume-connecting",
-    duration: 15000,
-  });
-  
-  const success = await performResumeRecoveryDirect();
-  
-  if (success) {
-    toast.dismiss("resume-connecting");
-    toast.success("Bağlandı!", { duration: 1500 });
-  } else {
     toast.dismiss("resume-connecting");
     toast.error("Bağlantı hatası");
   }
@@ -199,7 +163,7 @@ export function useForceReloadOnResume() {
     console.log("[ForceReload] 📱 MainActivity.java arka plandan dönüşte Activity'yi yeniden başlatacak");
     
     // JS tarafında hiçbir şey yapmıyoruz - native taraf hallediyor
-    // performResumeRecoveryDirect App.tsx'de çağrılıyor
+    // checkResumeReload() main.tsx'de çağrılıyor
     
   }, []);
 }
