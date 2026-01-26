@@ -175,3 +175,58 @@ export function useForceReloadOnResume() {
 export async function navigateToLastPath(navigate: (path: string) => void): Promise<boolean> {
   return false;
 }
+
+/**
+ * 🔥 Direct resume recovery - App.tsx'den doğrudan çağrılır
+ * Sayfa değişmeden kanalları canlandırır
+ */
+export async function performResumeRecoveryDirect(): Promise<boolean> {
+  console.log("[ForceReload] 🔄 Direct resume recovery başlıyor...");
+  
+  try {
+    // 1. Session'ı storage'dan yükle
+    const storedSession = await loadSessionFromStorage();
+    
+    if (!storedSession?.access_token || !storedSession?.refresh_token) {
+      console.log("[ForceReload] ⚠️ Storage'da session yok");
+      return false;
+    }
+    
+    // 2. Token'ı global'e set et
+    setGlobalAccessToken(storedSession.access_token);
+    
+    // 3. Supabase'e session'ı set et
+    await supabase.auth.setSession({
+      access_token: storedSession.access_token,
+      refresh_token: storedSession.refresh_token,
+    });
+    
+    // 4. Token refresh yap
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: storedSession.refresh_token,
+    });
+    
+    if (error || !data?.session) {
+      console.error("[ForceReload] ❌ Token refresh hatası:", error?.message);
+      return false;
+    }
+    
+    // 5. Yeni token'ı global'e set et
+    setGlobalAccessToken(data.session.access_token);
+    
+    // 6. Realtime'ı yeni token ile authenticate et
+    supabase.realtime.setAuth(data.session.access_token);
+    
+    // 7. supabase-reconnected event'i dispatch et (kanallar bu eventi dinliyor)
+    window.dispatchEvent(new CustomEvent("supabase-reconnected", {
+      detail: { source: "direct-resume-recovery" }
+    }));
+    
+    console.log("[ForceReload] ✅ Direct resume recovery tamamlandı!");
+    return true;
+    
+  } catch (e) {
+    console.error("[ForceReload] ❌ Direct resume recovery hatası:", e);
+    return false;
+  }
+}

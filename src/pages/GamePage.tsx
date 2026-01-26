@@ -177,6 +177,7 @@ const GamePage = ({
   const serverMatchStartRef = useRef<number | null>(null);
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
+  const processedCountdownRef = useRef<string | null>(null); // 🔒 İşlenmiş countdown timestamp'ini sakla - çift tetiklemeyi önler
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
 
@@ -2104,6 +2105,7 @@ const GamePage = ({
     setCountdownServerTime(null);
     setShowCountdown(false);
     countdownInitiatedRef.current = false; // 🔒 Rematch için countdown guard'ı sıfırla
+    processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
     gameEndedRef.current = false; // 🔒 Reset ref too
@@ -4425,7 +4427,7 @@ const GamePage = ({
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
-  // 🔒 Ref kullanarak closure sorununu önle
+  // 🔒 Çift tetiklemeyi önlemek için: İlk yüklemede ve realtime'da aynı countdown_started_at kontrolü
   const countdownChannelRef = useRef<any>(null);
   
   useEffect(() => {
@@ -4447,6 +4449,51 @@ const GamePage = ({
     
     // Zaten subscription varsa tekrar açma
     if (countdownChannelRef.current) return;
+    
+    // 🔒 İLK YÜKLEME: Room'da zaten countdown_started_at varsa HEMEN başlat
+    if (currentRoom.countdown_started_at && !countdownInitiatedRef.current) {
+      // Bu timestamp daha önce işlendi mi?
+      if (processedCountdownRef.current === currentRoom.countdown_started_at) {
+        console.log("⏭️ Bu countdown zaten işlendi, atlanıyor:", currentRoom.countdown_started_at);
+        return;
+      }
+      
+      const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
+      const nowWithOffset = Date.now() + serverTimeOffset;
+      const msElapsed = nowWithOffset - countdownStartTime;
+      
+      console.log("🎯 İlk yükleme countdown kontrolü:", {
+        countdownStartedAt: currentRoom.countdown_started_at,
+        msElapsed,
+        nowWithOffset: new Date(nowWithOffset).toISOString(),
+      });
+      
+      // Buffer (5s) + Countdown (5s) = 10 saniye içindeyse başlat
+      if (msElapsed >= 0 && msElapsed < 10000) {
+        console.log("🎮 Countdown zaten başlamış, devam ediliyor (msElapsed:", msElapsed, ")");
+        processedCountdownRef.current = currentRoom.countdown_started_at;
+        
+        // Buffer'ın kalan kısmını hesapla
+        const originalTime = countdownStartTime;
+        const adjustedTime = new Date(originalTime + 5000).toISOString();
+        
+        if (msElapsed < 5000) {
+          // Buffer animasyonu devam ediyor
+          initiateCountdown(adjustedTime, false);
+        } else {
+          // Buffer bitti, countdown devam ediyor - skipBuffer ile başlat
+          initiateCountdown(adjustedTime, true);
+        }
+        return;
+      } else if (msElapsed >= 10000) {
+        // Countdown tamamen bitmiş - oyun başlamalı
+        console.log("⚡ Countdown süresi geçmiş, oyun başlatılıyor");
+        processedCountdownRef.current = currentRoom.countdown_started_at;
+        setGameStarted(true);
+        gameStartedRef.current = true;
+        return;
+      }
+    }
 
     console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
 
@@ -4467,15 +4514,20 @@ const GamePage = ({
             return;
           }
           
-          console.log("🎮 Game room güncellendi:", payload);
           const newData = payload.new as any;
 
           // 🔒 Merkezi countdown guard - sadece BİR KERE başlat
           if (newData.countdown_started_at && !countdownInitiatedRef.current) {
+            // Bu timestamp daha önce işlendi mi?
+            if (processedCountdownRef.current === newData.countdown_started_at) {
+              console.log("⏭️ Bu countdown zaten işlendi (realtime), atlanıyor");
+              return;
+            }
+            
             console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
+            processedCountdownRef.current = newData.countdown_started_at;
 
             // Buffer animasyonu + countdown için adjusted time hesapla
-            // initiateCountdown içinde 5s buffer var, onun sonunda countdown gösterilecek
             const originalTime = new Date(newData.countdown_started_at).getTime();
             const adjustedTime = new Date(originalTime + 5000).toISOString();
 
@@ -4503,7 +4555,7 @@ const GamePage = ({
         countdownChannelRef.current = null;
       }
     };
-  }, [gameMode, currentRoom?.id, user, showCountdown, gameStarted]);
+  }, [gameMode, currentRoom?.id, currentRoom?.countdown_started_at, user, showCountdown, gameStarted, serverTimeOffset, initiateCountdown]);
 
   const handleTournamentExit = async () => {
     if (!user || !tournamentMatch) return;
