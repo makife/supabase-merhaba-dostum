@@ -5766,22 +5766,25 @@ const GamePage = ({
 
         // B. Veri yoksa RPC ile başlat
         if (!data?.countdown_started_at) {
-          console.log("⚠️ Countdown zamanı yok - RPC ile başlatılıyor...");
-          const { data: rpcDate, error: rpcError } = await supabase.rpc("start_game_countdown", {
-            p_room_id: currentRoom.id,
-          });
+          // KORUMA: Sadece oda sahibi (Host) geri sayımı başlatabilir!
+          if (currentRoom.host_id === user?.id) {
+            console.log("👑 Host yetkisi: Countdown RPC ile başlatılıyor...");
+            const { data: rpcDate, error: rpcError } = await supabase.rpc("start_game_countdown", {
+              p_room_id: currentRoom.id,
+            });
 
-          if (rpcError || !rpcDate) {
-            console.error("❌ RPC hatası:", rpcError);
-            return;
+            if (rpcError || !rpcDate) {
+              console.error("❌ RPC hatası:", rpcError);
+              return;
+            }
+            countdownStartTime = new Date(rpcDate).getTime();
+          } else {
+            console.log("⏳ Misafir oyuncu: Host'un geri sayımı başlatması bekleniyor...");
+            return; // Host değilsek hiçbir şey yapma, bekle.
           }
-
-          // RPC countdown_started_at döndürüyor
-          countdownStartTime = new Date(rpcDate).getTime();
-          console.log("✅ RPC ile countdown başlatıldı:", rpcDate);
         } else {
+          // Zaten başlamışsa veriyi al
           countdownStartTime = new Date(data.countdown_started_at).getTime();
-          console.log("✅ DB'den countdown zamanı alındı:", data.countdown_started_at);
         }
 
         // C. Server time ile senkronize hesapla
