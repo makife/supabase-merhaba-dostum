@@ -19,8 +19,6 @@ export const subscribeToForegroundState = (callback: (inForeground: boolean) => 
 let lastBackgroundTime: number | null = null;
 
 // 🔥 CORE FUNCTION: Foreground state değişikliği yönetimi
-// NOT: Kotlin tarafı artık kendi Activity lifecycle'ını dinliyor (ON_PAUSE/ON_RESUME)
-// JS'e bağımlı değil, bu yüzden burada Kotlin'e bildirim yapmaya GEREK YOK
 const handleForegroundStateChange = (inForeground: boolean) => {
   const previousState = isAppInForeground;
   isAppInForeground = inForeground;
