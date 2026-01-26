@@ -143,25 +143,30 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       // 5 dakika içinde oluşturulan bekleyen odaları ara - SERVER TIME kullan!
       const serverNow = getGlobalServerNow();
       const fiveMinutesAgo = new Date(serverNow - 300000).toISOString();
-      console.log("🔍 Boş oda aranıyor...");
+      console.log("🔍 Boş oda aranıyor... (serverNow:", new Date(serverNow).toISOString(), ")");
 
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
-        .select("id, status, current_grid, host_id, game_type_new")
+        .select("id, status, current_grid, host_id, game_type_new, created_at")
         .eq("game_mode", "random-match")
         .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        .neq("host_id", user.id) // ✅ KRİTİK DÜZELTME: Kendi odalarımızı veritabanından çekerken eliyoruz
-        // .gt("created_at", new Date(Date.now() - 300000).toISOString()) // ⚠️ Test için geçici olarak kapattık (Timezone sorunu olmasın)
-        .order("created_at", { ascending: true }) // En eski odayı önce getir (önce bekleyeni eşleştir)
+        //.gt("created_at", fiveMinutesAgo)
+        .order("created_at", { ascending: true })
         .limit(10);
 
       if (searchError) {
         console.error("❌ Oda arama hatası:", searchError);
       }
 
-      // Uygun oda bul (Sadece banlist kontrolü client-side kalır)
-      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id));
+      console.log(
+        "📋 Bulunan odalar:",
+        existingRooms?.length || 0,
+        existingRooms?.map((r) => r.id.slice(-8)),
+      );
+
+      // Uygun oda bul (banlist dışında ve farklı host)
+      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id) && room.host_id !== user.id);
 
       if (targetRoom) {
         console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
