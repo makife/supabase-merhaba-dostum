@@ -2408,7 +2408,7 @@ const GamePage = ({
         tournamentBtn.addEventListener("click", () => {
           document.body.removeChild(modalDiv);
           // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
-          navigate(`/tournament-bracket/${tournamentId}`);
+          navigate(`/tournament/bracket/${tournamentId}`);
         });
       }
 
@@ -2418,7 +2418,7 @@ const GamePage = ({
           document.body.removeChild(modalDiv);
         }
         // Her durumda bracket sayfasına yönlendir - şampiyonluk kartı burada gösterilecek
-        navigate(`/tournament-bracket/${tournamentId}`);
+        navigate(`/tournament/bracket/${tournamentId}`);
       }, 3000);
     } catch (error) {
       console.error("❌ Turnuva bitiş kartı hatası:", error);
@@ -6615,7 +6615,7 @@ const GamePage = ({
                         console.log("🏆 Tournament ID from URL:", tournamentId);
 
                         // ✅ React Router ile Yönlendirme
-                        navigate(`/tournament-bracket/${tournamentId}`);
+                        navigate(`/tournament/bracket/${tournamentId}`);
                       }}
                       className="w-full"
                     >
