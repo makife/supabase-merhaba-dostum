@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { getActivePrivateChats } from "@/utils/notifications";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
 
 interface NotificationContextType {
   unreadCount: number;
@@ -31,86 +30,20 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const shownNotifications = useRef<Set<string>>(new Set());
+  const shownNotifications = useRef<Set<string>>(new Set()); // ← Gösterilen bildirimleri takip et
 
   useEffect(() => {
     if (!user) return;
 
+    // Sayfa yenilendiğinde temizle
     shownNotifications.current.clear();
 
-    const channelName = `user-notifications-toast-${user.id}`;
-
-    // 🔥 Bildirim işleyici fonksiyonu
-    const handleNotification = (payload: any) => {
-      try {
-        const notification = payload.new || payload;
-        
-        console.log("🔔 Realtime bildirim alındı:", notification);
-
-        if (!notification || !notification.id) {
-          console.log("🚫 Geçersiz bildirim payload");
-          return;
-        }
-
-        const notificationKey = notification.id;
-        if (shownNotifications.current.has(notificationKey)) {
-          console.log("🚫 Bildirim zaten gösterildi:", notificationKey);
-          return;
-        }
-
-        shownNotifications.current.add(notificationKey);
-        console.log("✅ Bildirim işleniyor:", notification.type);
-
-        if (notification.type === "badge_earned") {
-          toast.success(notification.message, {
-            duration: 5000,
-            icon: "🏆",
-            position: "bottom-center",
-          });
-        }
-
-        if (notification.type === "mention") {
-          console.log("📢 Mention toast gösteriliyor");
-          toast.info(`📢 ${notification.message}`, {
-            duration: 5000,
-            position: "bottom-center",
-            action: {
-              label: "Git",
-              onClick: () => navigate("/chat"),
-            },
-          });
-        }
-
-        if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
-          const chatId = notification.related_id;
-          const activeChats = getActivePrivateChats();
-          if (activeChats.includes(chatId)) {
-            console.log("🚫 TOAST GÖSTERİLMEDİ - Sohbet açık:", chatId);
-            return;
-          }
-
-          const userIds = chatId.replace("chat_", "").split("_");
-          const otherUserId = userIds.find((id: string) => id !== user?.id);
-
-          console.log("💬 Private message toast gösteriliyor");
-          toast.info(`💬 ${notification.message}`, {
-            duration: 5000,
-            position: "bottom-center",
-            action: {
-              label: "Git",
-              onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
-            },
-          });
-        }
-      } catch (err) {
-        console.error("Bildirim işlenirken hata:", err);
-      }
-    };
-
     try {
-      console.log("🔔 NotificationContext: Realtime subscription başlatılıyor, user:", user.id);
-
-      // JS SDK channel - Supabase realtime yeterli
+      console.log("🔔 NotificationContext: Realtime subscription başlatılıyor (auto-reconnect), user:", user.id);
+      
+      // Unique channel name
+      const channelName = `user-notifications-toast-${user.id}`;
+      
       autoReconnect.registerChannel(channelName, () =>
         supabase
           .channel(channelName)
@@ -122,7 +55,78 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
               table: "notifications",
               filter: `user_id=eq.${user.id}`,
             },
-            handleNotification,
+            (payload) => {
+              try {
+                const notification = payload.new as any;
+                
+                console.log("🔔 Realtime bildirim alındı:", notification);
+
+                if (!notification || !notification.id) {
+                  console.log("🚫 Geçersiz bildirim payload");
+                  return;
+                }
+
+                // Aynı bildirimi birden fazla göstermeyi önle
+                const notificationKey = notification.id;
+                if (shownNotifications.current.has(notificationKey)) {
+                  console.log("🚫 Bildirim zaten gösterildi:", notificationKey);
+                  return;
+                }
+
+                shownNotifications.current.add(notificationKey);
+                console.log("✅ Bildirim işleniyor:", notification.type);
+
+                // Rozet bildirimi
+                if (notification.type === "badge_earned") {
+                  toast.success(notification.message, {
+                    duration: 5000,
+                    icon: "🏆",
+                    position: "bottom-center",
+                  });
+                }
+
+                // Mention bildirimi
+                if (notification.type === "mention") {
+                  console.log("📢 Mention toast gösteriliyor");
+                  toast.info(`📢 ${notification.message}`, {
+                    duration: 5000,
+                    position: "bottom-center",
+                    action: {
+                      label: "Git",
+                      onClick: () => navigate("/chat"),
+                    },
+                  });
+                }
+
+                // Özel mesaj bildirimi - "message" VEYA "private_message" type'ı
+                if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
+                  const chatId = notification.related_id;
+
+                  // Eğer kullanıcı bu chat'i açmışsa toast gösterme
+                  const activeChats = getActivePrivateChats();
+                  if (activeChats.includes(chatId)) {
+                    console.log("🚫 TOAST GÖSTERİLMEDİ - Sohbet açık:", chatId);
+                    return;
+                  }
+
+                  // chatId formatı: chat_userId1_userId2
+                  const userIds = chatId.replace("chat_", "").split("_");
+                  const otherUserId = userIds.find((id: string) => id !== user?.id);
+
+                  console.log("💬 Private message toast gösteriliyor");
+                  toast.info(`💬 ${notification.message}`, {
+                    duration: 5000,
+                    position: "bottom-center",
+                    action: {
+                      label: "Git",
+                      onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
+                    },
+                  });
+                }
+              } catch (err) {
+                console.error("Bildirim işlenirken hata:", err);
+              }
+            },
           )
           .subscribe((status) => {
             console.log("🔔 Notification channel status:", status);
@@ -138,7 +142,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     } catch (err) {
       console.error("Bildirim kanalı oluşturulurken hata:", err);
     }
-  }, [user, navigate]);
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
