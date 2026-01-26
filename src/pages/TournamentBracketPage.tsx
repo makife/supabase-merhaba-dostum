@@ -23,14 +23,18 @@ import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { toast } from "sonner";
+import { usePageResync } from "@/hooks/useGlobalResync";
+import { useServerTimeContext } from "@/contexts/ServerTimeContext";
+import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { profile, refreshProfile } = useUser();
+  const { profile, refreshProfile, isSystemConnected } = useUser();
   const { playSpecialSound } = useSounds();
+  const { serverNow, offset } = useServerTimeContext();
 
   const {
     currentTournament,
@@ -116,6 +120,15 @@ const TournamentBracketPage = () => {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const matchesStartedRef = useRef<string | null>(null);
   const advancingRef = useRef(false);
+
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  const handleBracketResync = useCallback(async () => {
+    if (tournamentId) {
+      await fetchTournamentDetails(tournamentId);
+    }
+  }, [tournamentId, fetchTournamentDetails]);
+
+  usePageResync(handleBracketResync, 'TournamentBracketPage', true);
 
   useEffect(() => {
     if (tournamentId) {
@@ -320,7 +333,8 @@ const TournamentBracketPage = () => {
     const targetTime = new Date(currentTournament.next_round_starts_at).getTime();
 
     const tick = () => {
-      const now = Date.now();
+      // Server time kullanarak doğru kalan süreyi hesapla
+      const now = serverNow();
       const remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
       setCountdown(remaining);
 
@@ -342,7 +356,7 @@ const TournamentBracketPage = () => {
         countdownRef.current = null;
       }
     };
-  }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches]);
+  }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches, serverNow, offset]);
 
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
 
@@ -350,9 +364,9 @@ const TournamentBracketPage = () => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
-    const navigateToMatch = (match: any, source: string) => {
-      const completedKey = `tournament_match_completed_${match.id}`;
-      const isLocallyCompleted = localStorage.getItem(completedKey);
+    const navigateToMatch = async (match: any, source: string) => {
+      const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${match.id}`;
+      const isLocallyCompleted = await nativeStorage.getItem(completedKey);
 
       if (isLocallyCompleted) return false;
       if (match.status === "completed") return false;
@@ -407,8 +421,10 @@ const TournamentBracketPage = () => {
       )
       .subscribe();
 
+    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      supabase.removeChannel(channel);
+      console.log("⚠️ [TournamentBracketPage] Cleanup ATLANYOR (bağlantı koruması)");
+      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
     };
   }, [matches, user, navigatedToGame, tournamentId, navigate, currentTournament]);
 
@@ -429,41 +445,30 @@ const TournamentBracketPage = () => {
     }
   }, [matches, user, showChampion, showEliminated, playSpecialSound]);
 
-  // 🎁 Şampiyon ödülü - her seferinde GERÇEKTEN rastgele seçilip veritabanına kaydedilir
   const giveChampionReward = async () => {
     if (!user || !profile) return;
 
     const rewardPool = [
-      { type: "ink", value: 5, key: "ink", label: "5 Mürekkep" },
-      { type: "joker", item: "degistir", value: 2, key: "degistir", label: "2 Değiştir Jokeri" },
-      { type: "joker", item: "senyaz", value: 2, key: "senyaz", label: "2 Sen Yaz Jokeri" },
-      { type: "joker", item: "fisilda", value: 2, key: "fisilda", label: "2 Fısılda Jokeri" },
-      { type: "credits", value: 3, key: "credits", label: "3 Oyun Kredisi" },
-      { type: "extra_spin", value: 1, key: "extra_spin", label: "Ekstra Çark Hakkı" },
+      { type: "ink", value: 5, key: "ink", label: "+5 Mürekkep" },
+      { type: "joker", item: "degistir", value: 2, key: "degistir", label: "+2 Değiştir Jokeri" },
+      { type: "joker", item: "senyaz", value: 2, key: "senyaz", label: "+2 Sen Yaz Jokeri" },
+      { type: "joker", item: "fisilda", value: 2, key: "fisilda", label: "+2 Fısılda Jokeri" },
+      { type: "credits", value: 3, key: "credits", label: "+3 Oyun Hakkı" },
+      { type: "extra_spin", value: 1, key: "extra_spin", label: "+1 Çark Hakkı" },
     ];
 
-    // 🎲 Crypto-güçlü rastgele seçim
-    const randomIndex = Math.floor(Math.random() * rewardPool.length);
-    const selected = rewardPool[randomIndex];
-    
-    console.log(`🎁 Şampiyon ödülü seçildi: ${selected.label} (index: ${randomIndex})`);
-    setWonReward(selected);
+    const selected = rewardPool[Math.floor(Math.random() * rewardPool.length)];
+    setWonReward(selected); // State'e kaydet ki ekranda resmi çıksın
 
     try {
+      let updateData: any = {};
+
       if (selected.type === "ink") {
-        // Mürekkep ödülü
-        const newInkCount = (profile.ink_count || 0) + selected.value;
-        await supabase.from("profiles").update({ ink_count: newInkCount }).eq("id", user.id);
-        console.log(`✅ Mürekkep eklendi: ${selected.value}, Yeni toplam: ${newInkCount}`);
-        
+        updateData.ink_count = (profile.ink_count || 0) + selected.value;
       } else if (selected.type === "credits") {
-        // Kredi ödülü
-        const newCredits = (profile.game_credits || 0) + selected.value;
-        await supabase.from("profiles").update({ game_credits: newCredits }).eq("id", user.id);
-        console.log(`✅ Kredi eklendi: ${selected.value}, Yeni toplam: ${newCredits}`);
-        
+        updateData.game_credits = (profile.game_credits || 0) + selected.value;
       } else if (selected.type === "joker" && selected.item) {
-        // Joker ödülü - user_inventory tablosuna upsert
+        // user_inventory tablosuna upsert yap
         const { data: existingItem } = await supabase
           .from("user_inventory")
           .select("quantity")
@@ -472,34 +477,30 @@ const TournamentBracketPage = () => {
           .single();
 
         if (existingItem) {
-          const newQuantity = existingItem.quantity + selected.value;
           await supabase
             .from("user_inventory")
-            .update({ quantity: newQuantity })
+            .update({ quantity: existingItem.quantity + selected.value })
             .eq("user_id", user.id)
             .eq("item_type", selected.item);
-          console.log(`✅ Joker güncellendi: ${selected.item}, Yeni miktar: ${newQuantity}`);
         } else {
           await supabase.from("user_inventory").insert({
             user_id: user.id,
             item_type: selected.item,
             quantity: selected.value,
           });
-          console.log(`✅ Yeni joker eklendi: ${selected.item}, Miktar: ${selected.value}`);
         }
-        
       } else if (selected.type === "extra_spin") {
-        // Ekstra çark hakkı - bugünün spin kaydını sil
         const today = new Date().toISOString().split("T")[0];
         await supabase.from("wheel_spins").delete().eq("user_id", user.id).eq("date", today);
-        console.log(`✅ Ekstra çark hakkı verildi (bugünün kaydı silindi)`);
       }
 
-      // Profili yenile
+      if (selected.type !== "extra_spin") {
+        await supabase.from("profiles").update(updateData).eq("id", user.id);
+      }
+
       refreshProfile?.();
-      console.log("🏆 Şampiyon ödülü başarıyla verildi!");
     } catch (error) {
-      console.error("❌ Ödül hatası:", error);
+      console.error("Ödül hatası:", error);
     }
   };
 
@@ -547,51 +548,108 @@ const TournamentBracketPage = () => {
         {/* Arka Plan Görseli (Sabit) */}
         <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
 
-        {/* İçerik Katmanı - Taşmayı önlemek için padding ve max boyutlar */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full bg-black/20 p-4 overflow-hidden">
+        {/* Konfeti Parçacıkları */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(30)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-3 h-3 rounded-full"
+              style={{
+                background: ['#FFD700', '#FF6B6B', '#4ECDC4', '#A855F7', '#F59E0B', '#10B981'][i % 6],
+                left: `${Math.random() * 100}%`,
+                top: '-20px',
+              }}
+              animate={{
+                y: ['0vh', '110vh'],
+                x: [0, (Math.random() - 0.5) * 200],
+                rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1)],
+                scale: [1, 0.5],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                delay: Math.random() * 2,
+                repeat: Infinity,
+                ease: 'linear',
+              }}
+            />
+          ))}
+        </div>
+
+        {/* İçerik Katmanı */}
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full bg-black/20">
           <AnimatePresence>
             {wonReward && (
               <motion.div
-                initial={{ scale: 0, rotate: -20, opacity: 0 }}
-                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                initial={{ scale: 0, rotate: -180, opacity: 0, y: 100 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1, y: 0 }}
                 transition={{
                   type: "spring",
-                  stiffness: 260,
-                  damping: 20,
-                  delay: 0.5,
+                  stiffness: 200,
+                  damping: 15,
+                  delay: 0.8,
                 }}
-                className="relative group flex flex-col items-center max-w-[90vw] max-h-[80vh]"
+                className="relative"
               >
-                {/* Parlama Efekti */}
-                <div className="absolute -inset-4 bg-yellow-500/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
-
-                {/* Ödül Kartı Görseli - Responsive ve taşmayan */}
-                <img
-                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                  className="w-48 sm:w-64 md:w-72 max-w-[70vw] max-h-[50vh] h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                  alt="Kazanılan Ödül"
+                {/* Çoklu Parlama Efektleri */}
+                <motion.div 
+                  className="absolute -inset-8 bg-gradient-to-r from-yellow-500/50 via-orange-500/50 to-yellow-500/50 rounded-full blur-3xl"
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <motion.div 
+                  className="absolute -inset-4 bg-white/30 rounded-full blur-2xl"
+                  animate={{ 
+                    scale: [1.1, 1.3, 1.1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
                 />
 
-                {/* Ödül Açıklaması */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="text-white text-lg sm:text-xl font-bold mt-3 text-center drop-shadow-lg"
-                >
-                  🎁 {wonReward.label}
-                </motion.p>
-
+                {/* Dönen Işık Halkası */}
                 <motion.div
-                  initial={{ y: 20, opacity: 0 }}
+                  className="absolute -inset-6 rounded-full border-4 border-dashed border-yellow-400/60"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                />
+
+                {/* Ödül Kartı Görseli */}
+                <motion.img
+                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
+                  className="w-64 sm:w-80 h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
+                  alt="Kazanılan Ödül"
+                  animate={{ 
+                    y: [0, -10, 0],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+
+                {/* Ödül Etiketi */}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 1.5, type: "spring" }}
+                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-2 rounded-full shadow-lg"
+                >
+                  <span className="text-white font-bold text-lg whitespace-nowrap">
+                    {wonReward.label}
+                  </span>
+                </motion.div>
+
+                {/* Buton */}
+                <motion.div
+                  initial={{ y: 40, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 1.2 }}
-                  className="text-center mt-4"
+                  transition={{ delay: 2 }}
+                  className="text-center mt-12"
                 >
                   <Button
                     onClick={() => navigate("/tournament")}
-                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-6 py-4 sm:px-8 sm:py-6 rounded-2xl text-base sm:text-xl shadow-lg hover:scale-105 transition-transform"
+                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-8 py-6 rounded-2xl text-xl shadow-lg hover:scale-105 transition-transform"
                   >
+                    <Trophy className="w-6 h-6 mr-2" />
                     ÖDÜLÜ AL VE DEVAM ET
                   </Button>
                 </motion.div>
