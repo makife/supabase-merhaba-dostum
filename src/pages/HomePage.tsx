@@ -3,7 +3,6 @@ import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,20 +24,13 @@ import {
   Trophy,
   Clock,
   Target,
-  User,
   Crown,
   Zap,
   Gift,
-  Infinity,
   Star,
   Flame,
-  Play,
   Gamepad2,
-  ChevronRight,
   Sparkles,
-  Activity,
-  Ghost,
-  Crosshair,
 } from "lucide-react";
 
 // --- YARDIMCI SABİTLER ---
@@ -81,7 +73,6 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
-  // STAT WIDGET: Border rengi slate-600 yapıldı (Füme)
   <div className="flex-1 bg-white border border-slate-600 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-sm">
     <Icon className={`w-5 h-5 mb-1 text-${colorClass}-500`} />
     <span className="text-lg font-bold text-slate-800 tracking-tight">{value}</span>
@@ -92,9 +83,8 @@ const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
 const GameModeCard = ({ mode, onClick }: any) => (
   <div
     onClick={onClick}
-    // GAME MODE CARD: Border rengi slate-600 yapıldı (Füme)
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
-    style={{ transform: 'translateZ(0)' }}
+    style={{ transform: "translateZ(0)" }}
   >
     <div
       className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
@@ -126,12 +116,10 @@ const HomePage = () => {
   const { profile, isPremium, refreshProfile, getTotalCredits } = useUser();
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { startBackgroundMusic } = useMusic();
+  // 🔥 DÜZELTME: startBackgroundMusic ARTIK YOK. Native otomatik hallediyor.
+  // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
-  
-  // 🆕 Event Hub artık merkezi yönetim yapıyor - usePageResync kaldırıldı
-  
-  // Premium kullanıcılar için günlük joker kontrolü
+
   usePremiumDailyRewards();
 
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
@@ -296,9 +284,12 @@ const HomePage = () => {
     }
   }, [profile, isPremium]);
 
+  // 🔥 DÜZELTME: Bu useEffect ARTIK GEREKSİZ. SİLİNDİ.
+  /*
   useEffect(() => {
     startBackgroundMusic();
   }, [startBackgroundMusic]);
+  */
 
   useEffect(() => {
     const checkDailyReset = async () => {
@@ -312,9 +303,8 @@ const HomePage = () => {
     checkDailyReset();
   }, [user, profile?.last_daily_reset]);
 
-  // 🆕 Sayfa mount olduğunda ilk yükleme - Event Hub otomatik yönetecek
   useEffect(() => {
-    console.log('🏠 [HomePage] Mount - ilk veri yüklemesi...');
+    console.log("🏠 [HomePage] Mount - ilk veri yüklemesi...");
     refreshProfile(true);
     loadJokers();
   }, []);
@@ -399,29 +389,57 @@ const HomePage = () => {
     { id: "puzzle", title: "Puzzle", icon: "🧩", color: "blue", route: "/puzzle-game" },
   ];
 
-  // Toplam hakkı hesapla (Normal + Bonus)
   const totalCredits = getTotalCredits();
 
   // Seviyeye göre arka plan rengi
   const getLevelBackgroundColor = () => {
     const level = levelData.level;
-    if (level >= 70) return { bg: "#F8F8F8", gradient: "from-slate-100/60" }; // Siyah tema - çok açık gri
-    if (level >= 40) return { bg: "#F0F7FF", gradient: "from-blue-100/60" }; // Mavi tema - çok açık mavi
-    if (level >= 25) return { bg: "#F0FDF4", gradient: "from-emerald-100/60" }; // Yeşil tema - çok açık yeşil
-    if (level >= 10) return { bg: "#FAF5FF", gradient: "from-purple-100/60" }; // Mor tema - çok açık mor
-    return { bg: "#FFFDF5", gradient: "from-orange-100/40" }; // Turuncu tema (varsayılan) - krem
+
+    // Level 70+ (Siyah/Gri Tema)
+    if (level >= 70) 
+      return { 
+        bg: "#E2E8F0", 
+        gradient: "from-slate-300/50" 
+      }; 
+
+    // Level 40+ (Mavi Tema)
+    if (level >= 40) 
+      return { 
+        bg: "#DBEAFE", 
+        gradient: "from-blue-200/50" 
+      }; 
+
+    // Level 25+ (Yeşil Tema)
+    if (level >= 25) 
+      return { 
+        bg: "#DCFCE7", 
+        gradient: "from-emerald-200/50" 
+      }; 
+
+    // Level 10+ (Mor Tema)
+    if (level >= 10) 
+      return { 
+        bg: "#F3E8FF", 
+        gradient: "from-purple-200/50" 
+      }; 
+
+    // Varsayılan (Turuncu/Krem Tema)
+    return { 
+      bg: "#FEF3C7", 
+      gradient: "from-orange-200/40" 
+    }; 
   };
 
   const levelBgColors = getLevelBackgroundColor();
 
   return (
-    <div 
+    <div
       className="fixed inset-0 flex flex-col text-slate-800 font-sans selection:bg-amber-200 overflow-hidden transition-colors duration-500"
       style={{ backgroundColor: levelBgColors.bg }}
     >
       {/* Light Effects */}
-      <div 
-        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`} 
+      <div
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`}
       />
 
       {/* --------------------------------------------------------
@@ -429,7 +447,7 @@ const HomePage = () => {
         flex-none ve z-30 kullanarak bu alanı yukarı sabitledik.
         --------------------------------------------------------
       */}
-      <div 
+      <div
         className="flex-none z-30 pb-2 relative shadow-sm border-b border-slate-200 transition-colors duration-500"
         style={{ backgroundColor: levelBgColors.bg }}
       >
@@ -461,7 +479,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Mürekkep - İKON BÜYÜTÜLDÜ & Çerçeve Füme */}
+          {/* Mürekkep */}
           <div
             onClick={() => {
               playSound("buttonClick");
@@ -469,9 +487,7 @@ const HomePage = () => {
             }}
             className="flex items-center gap-2 bg-white border border-slate-600 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-transform shadow-md cursor-pointer"
           >
-            {/* Mürekkep İkonu Container Büyüdü (w-10 h-10) */}
             <div className="w-10 h-10 bg-indigo-50/50 rounded-full flex items-center justify-center">
-              {/* İkon Resmi Büyüdü (w-8 h-8) */}
               <img src="/murekkepikon.png" alt="ink" className="w-8 h-8 object-contain drop-shadow-sm" />
             </div>
             <span className="text-base font-bold text-slate-800">{profile?.ink_count || 0}</span>
@@ -483,10 +499,9 @@ const HomePage = () => {
 
         {/* --- LEVEL VE XP KARTI --- */}
         <div className="px-5 mt-2">
-          {/* Renk Mantığını Belirleyelim */}
           {(() => {
             const level = levelData.level;
-            let starGradient = "from-amber-400 to-orange-500"; // Varsayılan (1-9)
+            let starGradient = "from-amber-400 to-orange-500"; 
             let shadowColor = "shadow-orange-200";
 
             if (level >= 70) {
@@ -506,7 +521,6 @@ const HomePage = () => {
             return (
               <div className="bg-white border border-slate-600 rounded-xl p-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                  {/* Dinamik Renkli Yıldız İkon Kutusu */}
                   <div
                     className={`w-10 h-10 rounded-lg bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-md ${shadowColor}`}
                   >
@@ -521,10 +535,9 @@ const HomePage = () => {
                       </span>
                     </div>
 
-                    {/* Siyah Çerçeveli Seviye Barı */}
                     <div className="h-2.5 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden border border-black">
                       <div
-                        className={`h-full bg-gradient-to-r ${starGradient}`} // Bar rengi de yıldızla uyumlu olsun istersen
+                        className={`h-full bg-gradient-to-r ${starGradient}`}
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
@@ -544,7 +557,6 @@ const HomePage = () => {
 
         {/* --- JOKERLER --- */}
         <div className="px-5 mt-3">
-          {/* JOKER KARTI: Border füme (slate-600) */}
           <div className="bg-white rounded-xl p-3 border border-slate-600 flex justify-around shadow-sm">
             {[
               { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
@@ -556,7 +568,6 @@ const HomePage = () => {
                 className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition-transform cursor-pointer"
                 onClick={() => navigate("/market")}
               >
-                {/* JOKER İKONLARI BÜYÜTÜLDÜ (w-10 h-10) */}
                 <img src={j.img} className="w-10 h-10 object-contain drop-shadow-sm" alt={j.name} />
                 <span className="text-xs font-bold text-slate-500">x{j.count}</span>
               </div>
@@ -565,51 +576,67 @@ const HomePage = () => {
         </div>
 
         {/* INFO PANELS (SÜRE & HAK) */}
-
         <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
-            // VIP HEADER: Yıllık altın, aylık mavi
-            <div className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
-              vipType === "yearly" 
-                ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600" 
-                : vipType === "monthly"
-                  ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
-                  : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
-            }`}>
+            <div
+              className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+                vipType === "yearly"
+                  ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
+                  : vipType === "monthly"
+                    ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                    : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
+              }`}
+            >
               <div className="flex items-center gap-2">
-                <div className={`p-1.5 rounded-full ${
-                  vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
-                }`}>
-                  <Crown className={`w-5 h-5 ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
-                  }`} />
+                <div
+                  className={`p-1.5 rounded-full ${
+                    vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                  }`}
+                >
+                  <Crown
+                    className={`w-5 h-5 ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
+                    }`}
+                  />
                 </div>
                 <div className="flex flex-col">
-                  <span className={`text-sm font-bold ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
-                  }`}>
-                    {vipType === "yearly" ? "⭐ VIP Yazar (Yıllık)" : vipType === "monthly" ? "💎 VIP Yazar (Aylık)" : "VIP Yazar"}
+                  <span
+                    className={`text-sm font-bold ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                    }`}
+                  >
+                    {vipType === "yearly"
+                      ? "⭐ VIP Yazar (Yıllık)"
+                      : vipType === "monthly"
+                        ? "💎 VIP Yazar (Aylık)"
+                        : "VIP Yazar"}
                   </span>
-                  <span className={`text-[10px] ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
-                  }`}>
+                  <span
+                    className={`text-[10px] ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
+                    }`}
+                  >
                     Sınırsız hak • Günlük joker • 2x XP
                   </span>
                 </div>
               </div>
-              <div className={`px-2 py-1 rounded-lg ${
-                vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
-              }`}>
-                <span className={`text-xs font-mono font-bold ${
-                  vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
-                }`}>{premiumTimeLeft}</span>
+              <div
+                className={`px-2 py-1 rounded-lg ${
+                  vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
+                }`}
+              >
+                <span
+                  className={`text-xs font-mono font-bold ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
+                  }`}
+                >
+                  {premiumTimeLeft}
+                </span>
               </div>
             </div>
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            // LIVES INFO: Border füme (slate-600)
-
             <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
               <span className="text-xs text-slate-500 font-medium">
                 {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
@@ -620,7 +647,6 @@ const HomePage = () => {
                   {unlimitedTimeLeft ? (
                     <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
                       <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
-
                       <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
                         {unlimitedTimeLeft}
                       </span>
@@ -628,7 +654,6 @@ const HomePage = () => {
                   ) : (
                     <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
                   )}
-
                   <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
                     Sınırsız
                   </Badge>
@@ -642,7 +667,6 @@ const HomePage = () => {
                           <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
                         ))}
                       </div>
-
                       <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
                         + {totalCredits - 5} Sayfa
                       </Badge>
@@ -687,11 +711,9 @@ const HomePage = () => {
           </div>
         )}
       </div>
-      {/* SABİT ALAN SONU */}
 
       {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
-        Buradan sonrası aşağıya doğru kayar.
         --------------------------------------------------------
       */}
       <div
@@ -729,7 +751,6 @@ const HomePage = () => {
                 }}
                 className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
               >
-                {/* MINI GAME CARD: Border füme (slate-600) */}
                 <div
                   className={`w-16 h-16 rounded-2xl bg-white border border-slate-600 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden group-active:scale-95 transition-transform`}
                 >
@@ -749,7 +770,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* İSTATİSTİKLER (Açık Tema) */}
+        {/* İSTATİSTİKLER */}
         <div className="px-5 mt-2 pb-6">
           <div className="flex gap-3">
             <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="indigo" />
