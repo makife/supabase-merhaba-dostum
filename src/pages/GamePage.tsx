@@ -4738,20 +4738,20 @@ const GamePage = ({
 
     let syncInterval: NodeJS.Timeout | null = null;
 
-    // For tournament matches, sync timer with database using countdown_started_at
-
-    // ⚠️ Gereksiz game_rooms timer sync subscription kaldırıldı
-    // Timestamp-based timer zaten ends_at'i database'den okuyor, started_at sync'e gerek yok
-
     // ⚠️ GUARD: Oyun bittiyse timer başlatma
     if (gameEnded) {
       console.log("🛑 Timer başlatılmadı - oyun zaten bitti");
       return;
     }
 
+    // 🔒 KRİTİK: Timer zaten başlatıldıysa (endsAtTimestampRef dolu), başlatma
+    if (endsAtTimestampRef.current) {
+      console.log("⏱️ Timer zaten başlatılmış, yeniden başlatma atlandı");
+      return;
+    }
+
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     console.log("⏱️ Starting TIMESTAMP-BASED timer (no more setInterval decrement)");
-    // Fetch ends_at from database
     // ⏱️ TIMESTAMP-BASED TIMER - Prevents jumps and glitches
     const initializeTimer = async () => {
       // 🔒 KRİTİK: Timer zaten başlatıldıysa, tekrar başlatma!
