@@ -4772,10 +4772,10 @@ const GamePage = ({
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
-          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
+          // Countdown 5 saniye sürüyor (buffer artık countdown içinde)
           if (tournamentMatch.countdown_started_at) {
             const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra
+            gameStartTimestamp = countdownStartTime + 5000; // 5 saniye sonra
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
             console.log("🏆 Tournament timer: Server timing", {
@@ -6754,7 +6754,7 @@ const GamePage = ({
 
   const opponent = getOpponentInfo();
 
-  const handleCountdownComplete = () => {
+  const handleCountdownComplete = async () => {
     console.log("🏁 Countdown tamamlandı - oyun başlatılıyor");
 
     setShowCountdown(false);
@@ -6776,6 +6776,13 @@ const GamePage = ({
       gameHasStartedRef.current = true;
       gameStartedRef.current = true;
       return;
+    }
+
+    // 🎯 KRİTİK: Multiplayer modlarında started_at'ı set et
+    if (isMp && currentRoom?.id) {
+      const startTime = new Date().toISOString();
+      await supabase.from("game_rooms").update({ started_at: startTime }).eq("id", currentRoom.id);
+      console.log("✅ started_at set edildi:", startTime);
     }
 
     // Initialize timer to full time for all modes
