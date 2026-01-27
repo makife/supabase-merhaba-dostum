@@ -6741,11 +6741,58 @@ const GamePage = ({
       return;
     }
 
-    // 🎯 KRİTİK: Multiplayer modlarında started_at'ı set et
+    // 🎯 KRİTİK: Multiplayer modlarında started_at'ı set et VE timer'ı manuel başlat
     if (isMp && currentRoom?.id) {
       const startTime = new Date().toISOString();
       await supabase.from("game_rooms").update({ started_at: startTime }).eq("id", currentRoom.id);
       console.log("✅ started_at set edildi:", startTime);
+
+      // 🎯 Timer'ı MANUEL başlat - currentRoom güncellenmesini bekleme
+      const gameStartTimestamp = new Date(startTime).getTime();
+      const endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+      endsAtTimestampRef.current = endsAtTimestamp;
+
+      console.log("⏱️ Multiplayer timer manuel başlatıldı:", {
+        start: startTime,
+        end: new Date(endsAtTimestamp).toISOString(),
+      });
+
+      // 🎯 Timer interval'ını başlat
+      timerRef.current = setInterval(() => {
+        if (!endsAtTimestampRef.current || !isMountedRef.current) return;
+        if (gameEndedRef.current) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          return;
+        }
+
+        const currentServerTime = Date.now() + serverTimeOffset;
+        const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
+        const remainingSeconds = Math.floor(remainingMs / 1000);
+
+        timeLeftRef.current = remainingSeconds;
+        setDisplayTime(remainingSeconds);
+
+        if (remainingSeconds <= 0 && !gameEndedRef.current) {
+          console.log("⏰ Multiplayer timer: Time reached 0 - ending game");
+          gameEndedRef.current = true;
+
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+
+          handleGameEnd();
+          setTimeout(() => {
+            setGameEnded(true);
+            checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+          }, 50);
+        }
+      }, 1000);
+
+      console.log("✅ Timer interval başlatıldı");
     }
 
     // Initialize timer to full time for all modes
@@ -6763,7 +6810,7 @@ const GamePage = ({
       syncSuppressUntilRef.current = Date.now() + 1000;
     }
 
-    console.log("✅ Oyun başladı - timer otomatik başlatılacak");
+    console.log("✅ Oyun başladı - timer çalışıyor");
   };
 
   return (
