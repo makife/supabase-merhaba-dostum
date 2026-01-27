@@ -125,7 +125,15 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
   // Supabase Realtime ile matchmaking başlat
   const startSearch = async (gameType: "timed" | "score") => {
-    if (!user) return;
+    if (!user) {
+      console.error("❌ Matchmaking başlatılamadı: Kullanıcı yok!");
+      toast({
+        title: "Giriş Yapılmalı",
+        description: "Eşleşme aramak için giriş yapmalısınız",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setIsSearching(true);
@@ -136,7 +144,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       // Store current game type globally for App.tsx callback
       (window as any).__currentMatchmakingType = gameType;
 
-      console.log("🔍 Supabase Realtime matchmaking başlatıldı:", gameType);
+      console.log("🔍 ===== MATCHMAKING START =====");
+      console.log("🔍 Game Type:", gameType);
+      console.log("🔍 User ID:", user.id?.slice(-8));
       startProgressTimer();
 
       // 1️⃣ ÖNCELİKLE BOŞ ODA ARA (matchBanlist kontrollü)
@@ -144,6 +154,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       const serverNow = getGlobalServerNow();
       const fiveMinutesAgo = new Date(serverNow - 300000).toISOString();
       console.log("🔍 Boş oda aranıyor... (serverNow:", new Date(serverNow).toISOString(), ")");
+      console.log("🔍 5 dakika önce:", fiveMinutesAgo);
 
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
@@ -151,7 +162,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .eq("game_mode", "random-match")
         .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        //.gt("created_at", fiveMinutesAgo)
+        .gt("created_at", fiveMinutesAgo)
         .order("created_at", { ascending: true })
         .limit(10);
 
@@ -160,9 +171,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       }
 
       console.log(
-        "📋 Bulunan odalar:",
+        "📋 Bulunan bekleyen odalar:",
         existingRooms?.length || 0,
-        existingRooms?.map((r) => r.id.slice(-8)),
+        existingRooms?.map((r) => ({ id: r.id.slice(-8), host: r.host_id?.slice(-8), created: r.created_at })),
       );
 
       // Uygun oda bul (banlist dışında ve farklı host)
@@ -355,7 +366,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       const gridArray = generateRandomGrid();
       const newRoomId = crypto.randomUUID();
 
-      const { error: roomError } = await supabase.from("game_rooms").insert({
+      console.log("🏠 Yeni oda oluşturuluyor...");
+      console.log("🏠 Oda ID:", newRoomId.slice(-8));
+      console.log("🏠 Host ID:", user.id.slice(-8));
+      console.log("🏠 Game Type:", gameType);
+
+      const { data: roomData, error: roomError } = await supabase.from("game_rooms").insert({
         id: newRoomId,
         room_code: newRoomId,
         host_id: user.id,
@@ -366,25 +382,29 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         time_limit: gameType === "timed" ? 120 : 0,
         max_score: gameType === "score" ? 500 : 0,
         current_grid: gridArray,
-      });
+      }).select();
 
       if (roomError) {
         console.error("❌ Oda oluşturma hatası:", roomError);
+        console.error("❌ Hata detayı:", JSON.stringify(roomError));
         throw roomError;
       }
 
       console.log("✅ Yeni oda oluşturuldu:", newRoomId.slice(-8));
+      console.log("✅ Oda verisi:", roomData);
 
       // Kendini katılımcı olarak ekle
-      const { error: participantError } = await supabase.from("game_participants").insert({
+      const { data: participantData, error: participantError } = await supabase.from("game_participants").insert({
         room_id: newRoomId,
         user_id: user.id,
         score: 0,
         is_bot: false,
-      });
+      }).select();
 
       if (participantError && participantError.code !== "23505") {
         console.error("❌ Katılımcı ekleme hatası:", participantError);
+      } else {
+        console.log("✅ Katılımcı eklendi:", participantData);
       }
 
       setCurrentRoom({
