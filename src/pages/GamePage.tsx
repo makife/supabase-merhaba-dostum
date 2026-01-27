@@ -4772,10 +4772,10 @@ const GamePage = ({
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
-          // Countdown 5 saniye sürüyor (buffer artık countdown içinde)
+          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
           if (tournamentMatch.countdown_started_at) {
             const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStartTime + 5000; // 5 saniye sonra
+            gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
             console.log("🏆 Tournament timer: Server timing", {
@@ -4812,6 +4812,15 @@ const GamePage = ({
           // Eğer unmount olduysa veya ends_at yoksa dur
           if (!endsAtTimestampRef.current || !isMountedRef.current) return;
 
+          // Oyun bittiyse timer'ı durdur
+          if (gameEndedRef.current) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            return;
+          }
+
           const currentServerTime = Date.now() + serverTimeOffset;
 
           // 🔒 KİLİT MEKANİZMASI: Oyun Henüz Başlamadıysa (Buffer Time)
@@ -4823,7 +4832,7 @@ const GamePage = ({
 
           // 🔓 OYUN BAŞLADI: Normal Geri Sayım
           const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
-          const remainingSeconds = Math.ceil(remainingMs / 1000);
+          const remainingSeconds = Math.floor(remainingMs / 1000); // Math.ceil yerine Math.floor - 0'a düzgün insin
 
           // State güncelle
           timeLeftRef.current = remainingSeconds;
@@ -4908,64 +4917,18 @@ const GamePage = ({
   // Bu ekstra listener ve fetch titreme yapıyordu
 
   // Timer sync for private-room and random-match games using server started_at
+  // ⚠️ DİKKAT: Bu sync timer'ı DEVRE DIŞI - timestamp-based timer zaten server sync'li çalışıyor
+  // İki timer aynı anda çalışınca 3'er 3'er atlıyor
   const startedAtRef = useRef<string | null>(null);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (gameType !== "timed" || !gameStarted || gameEnded) return;
-    if (gameMode !== "private-room" && gameMode !== "random-match") return;
-    if (!currentRoom?.started_at) return;
-
-    // Eğer started_at değişmemişse, sync'i yeniden başlatma
-    if (startedAtRef.current === currentRoom.started_at) return;
-
-    // İlk kez veya değiştiyse kaydet
-    startedAtRef.current = currentRoom.started_at;
-
-    // Önceki sync'i temizle
-    if (syncIntervalRef.current) {
-      clearInterval(syncIntervalRef.current);
-      syncIntervalRef.current = null;
-    }
-
-    const syncTimer = () => {
-      // Short suppress to prevent jitter right after countdown
-      if (Date.now() < syncSuppressUntilRef.current) {
-        return;
-      }
-
-      const startTs = new Date(currentRoom.started_at!).getTime();
-      const elapsed = Math.floor((Date.now() + serverTimeOffset - startTs) / 1000);
-      let remaining = Math.max(0, (currentRoom.time_limit || 120) - elapsed);
-
-      // 🛡️ Early-finish guard: first 3s after start should never be <= 0
-      if (Date.now() - startTs < 3000 && remaining <= 0) {
-        remaining = 5;
-      }
-
-      // 🛡️ 1 saniye toleransla senkronize et
-      if (Math.abs(timeLeftRef.current - remaining) > 1) {
-        console.log(`🔄 ${gameMode} timer syncing - current: ${timeLeftRef.current}s, server: ${remaining}s`);
-        timeLeftRef.current = remaining;
-        if (isMountedRef.current) {
-          setDisplayTime(remaining);
-        }
-      }
-    };
-
-    console.log("⏱️ Timer sync başlatılıyor - mode:", gameMode, "started_at:", currentRoom.started_at);
-
-    // Start syncing immediately after 1s suppress period ends
-    setTimeout(() => syncTimer(), 1500);
-    console.log("🕒 Scheduled sync interval started (1.5s)");
-    syncIntervalRef.current = setInterval(syncTimer, 1500);
-
+    // ❌ SYNC TIMER DEVRE DIŞI - timestamp-based timer yeterli
     return () => {
-      console.log("🧹 Sync interval cleanup triggered");
+      console.log("🧹 Sync interval cleanup (disabled)");
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
         syncIntervalRef.current = null;
-        console.log("✅ Sync interval cleared");
       }
     };
   }, [gameType, gameMode, gameStarted, gameEnded, currentRoom?.started_at, currentRoom?.time_limit, currentRoom?.id]);
@@ -5854,7 +5817,7 @@ const GamePage = ({
           );
         } else if (msUntilCountdown > -5000) {
           // Countdown zaten başlamış olmalı ama 5 saniye geçmemiş, countdown göster
-          console.log("⏰ Countdown başlamış, devam ediliyor");
+          console.log("⏰ Countdown başlamış, kalan kısım gösteriliyor");
           setPreparingOpponent(null);
           setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
           setShowCountdown(true);
