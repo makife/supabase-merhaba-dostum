@@ -18,14 +18,14 @@ const PrivateRoomWaitingPage = () => {
   const { toast } = useToast();
   const { playSound } = useSounds();
   const { user } = useAuth();
-  
+
   // URL'den gelen kod (App.tsx'deki :roomCode) veya Query param (yedek)
   const roomCode = paramCode || searchParams.get("code");
-  
+
   // Room verilerini State'te tutuyoruz (URL'de taşıyıp durmamak için)
   const [roomId, setRoomId] = useState<string | null>(searchParams.get("roomId"));
   const [gameType, setGameType] = useState<"timed" | "score" | null>(
-    (searchParams.get("gameType") as "timed" | "score") || null
+    (searchParams.get("gameType") as "timed" | "score") || null,
   );
 
   const [copied, setCopied] = useState(false);
@@ -35,11 +35,8 @@ const PrivateRoomWaitingPage = () => {
   // 🔄 Global Resync Hook
   const handleRoomResync = useCallback(async () => {
     if (!roomId || navigated) return;
-    
-    const { data: parts } = await supabase
-      .from("game_participants")
-      .select("*")
-      .eq("room_id", roomId);
+
+    const { data: parts } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
 
     if (parts && parts.length >= 2) {
       const { data: room } = await supabase
@@ -47,23 +44,23 @@ const PrivateRoomWaitingPage = () => {
         .select("game_mode, game_type_new")
         .eq("id", roomId)
         .single();
-        
-      const type = room?.game_type_new || (room?.game_mode?.includes('score') ? 'score' : 'timed');
-      const basePath = room?.game_mode?.includes('random-match') ? '/game/random-match' : '/game/private-room';
-      
+
+      const type = room?.game_type_new || (room?.game_mode?.includes("score") ? "score" : "timed");
+      const basePath = room?.game_mode?.includes("random-match") ? "/game/random-match" : "/game/private-room";
+
       setNavigated(true);
       navigate(`${basePath}?room=${roomId}&type=${type}`);
     }
   }, [roomId, navigated, navigate]);
 
-  usePageResync(handleRoomResync, 'PrivateRoomWaitingPage', true);
+  usePageResync(handleRoomResync, "PrivateRoomWaitingPage", true);
 
   // 1. Oda Bilgilerini Çekme Effect'i
   useEffect(() => {
     if (!user || !roomCode) {
-       // Sadece user veya roomCode yoksa at, roomId henüz gelmemiş olabilir bekle
-       if (!roomCode) navigate("/");
-       return;
+      // Sadece user veya roomCode yoksa at, roomId henüz gelmemiş olabilir bekle
+      if (!roomCode) navigate("/");
+      return;
     }
 
     const fetchRoomDetails = async () => {
@@ -83,9 +80,9 @@ const PrivateRoomWaitingPage = () => {
         if (error || !roomRow) {
           console.error("Oda bulunamadı:", error);
           toast({
-             title: "Hata",
-             description: "Oda bulunamadı veya süresi dolmuş.",
-             variant: "destructive"
+            title: "Hata",
+            description: "Oda bulunamadı veya süresi dolmuş.",
+            variant: "destructive",
           });
           navigate("/");
           return;
@@ -95,7 +92,6 @@ const PrivateRoomWaitingPage = () => {
         setRoomId(roomRow.id);
         const type = roomRow.game_type_new || (roomRow.game_mode?.includes("score") ? "score" : "timed");
         setGameType(type as "timed" | "score");
-        
       } catch (err) {
         console.error(err);
       } finally {
@@ -105,7 +101,6 @@ const PrivateRoomWaitingPage = () => {
 
     fetchRoomDetails();
   }, [roomCode, user, roomId, gameType, navigate, toast]);
-
 
   // 2. Katılımcı Ekleme ve Dinleme Effect'i
   useEffect(() => {
@@ -134,7 +129,8 @@ const PrivateRoomWaitingPage = () => {
           console.log("✅ Katılımcı eklendi:", roomId);
         }
       } catch (e: any) {
-        if (e?.code !== "23505") { // Unique violation değilse logla
+        if (e?.code !== "23505") {
+          // Unique violation değilse logla
           console.warn("ensureSelfParticipant warning:", e);
         }
       }
@@ -144,30 +140,22 @@ const PrivateRoomWaitingPage = () => {
 
     // 2. Oyuncu kontrolü
     const checkAndNavigate = async () => {
-      const { data: parts } = await supabase
-        .from("game_participants")
-        .select("*")
-        .eq("room_id", roomId);
+      const { data: parts } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
 
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
-        
-        console.log('🎮 2. oyuncu katıldı, countdown başlatılıyor...');
-        
+
+        console.log("🎮 2. oyuncu katıldı, countdown başlatılıyor...");
+
         // Countdown başlat (veritabanında countdown_started_at güncellenir)
         await supabase.rpc("start_game_countdown", {
           p_room_id: roomId,
         });
-        
-        console.log('✅ Countdown başlatıldı, GamePage\'e yönlendiriliyorsunuz...');
-        
+
+        console.log("✅ Countdown başlatıldı, GamePage'e yönlendiriliyorsunuz...");
+
         // Yönlendir - GamePage countdown_started_at'ı otomatik olarak okuyacak
-        const basePath = '/game/private-room'; // Özel oda olduğu için sabit
-        navigate(`${basePath}?room=${roomId}&type=${gameType}`);
-      }
-        
-        // Yönlendir
-        const basePath = '/game/private-room'; // Özel oda olduğu için sabit
+        const basePath = "/game/private-room"; // Özel oda olduğu için sabit
         navigate(`${basePath}?room=${roomId}&type=${gameType}`);
       }
     };
@@ -201,7 +189,6 @@ const PrivateRoomWaitingPage = () => {
     };
   }, [roomId, gameType, user, navigate, navigated]);
 
-
   const copyRoomCode = async () => {
     if (roomCode) {
       try {
@@ -226,9 +213,9 @@ const PrivateRoomWaitingPage = () => {
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center text-white">
-            <div className="animate-pulse">Oda bilgileri yükleniyor...</div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 flex items-center justify-center text-white">
+        <div className="animate-pulse">Oda bilgileri yükleniyor...</div>
+      </div>
     );
   }
 
