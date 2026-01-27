@@ -434,7 +434,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/morles"
+          path="/morles-game"
           element={
             <ProtectedRoute>
               <MorlesGamePage />
