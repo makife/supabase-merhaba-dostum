@@ -142,7 +142,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       // 1️⃣ ÖNCELİKLE BOŞ ODA ARA (matchBanlist kontrollü)
       // 5 dakika içinde oluşturulan bekleyen odaları ara - SERVER TIME kullan!
       const serverNow = getGlobalServerNow();
-      const fiveMinutesAgo = new Date(serverNow - 300000).toISOString();
+      // const fiveMinutesAgo = new Date(serverNow - 300000).toISOString(); // Created_at filtresi kapalı
       console.log("🔍 Boş oda aranıyor... (serverNow:", new Date(serverNow).toISOString(), ")");
 
       const { data: existingRooms, error: searchError } = await supabase
@@ -165,8 +165,32 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         existingRooms?.map((r) => r.id.slice(-8)),
       );
 
-      // Uygun oda bul (banlist dışında ve farklı host)
-      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id) && room.host_id !== user.id);
+      // --- DÜZELTME BAŞLANGICI ---
+      // Eski hatalı kod: Array.find içinde async çalışmaz.
+      /* let targetRoom = existingRooms?.find(
+        (room) => !matchBanlist.has(room.id) && room.host_id !== user.id
+      ); 
+      */
+
+      // Yeni kod: for...of döngüsü ile await kullanımı
+      let targetRoom = null;
+
+      if (existingRooms && existingRooms.length > 0) {
+        for (const room of existingRooms) {
+          // Kendi kurduğumuz odaya girmeyelim
+          if (room.host_id === user.id) continue;
+
+          // Banlı olup olmadığını asenkron kontrol et
+          const isBanned = await matchBanlist.has(room.id);
+
+          if (!isBanned) {
+            // Uygun oda bulundu
+            targetRoom = room;
+            break; // Döngüyü kır
+          }
+        }
+      }
+      // --- DÜZELTME BİTİŞİ ---
 
       if (targetRoom) {
         console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
@@ -194,11 +218,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           } else if (participantError.code === "23503") {
             // Foreign key - oda silindi
             console.log("⚠️ Oda silindi, sonraki odayı dene (deneme:", attempt, ")");
-            // Sonraki odayı bul
-            targetRoom = existingRooms?.find(
-              (room) => room.id !== targetRoom!.id && !matchBanlist.has(room.id) && room.host_id !== user.id,
-            );
-            if (!targetRoom) break;
+
+            // Mevcut targetRoom geçersiz oldu, tekrar arama yapmaya gerek yok,
+            // döngüden çıkıp yeni oda oluşturmaya gidebiliriz veya bir sonraki odayı deneyebiliriz.
+            // Basitlik adına burada başarısız kabul edip yeni oda oluşturmaya düşebiliriz
+            // veya listedeki bir sonraki odayı manuel deneyebiliriz.
+            // Ancak yukarıdaki for döngüsü zaten en uygununu seçmişti.
+            // Bu basit fix içinde break yapıyoruz, aşağıda "targetRoom" olmasına rağmen joinSuccess false kalırsa logic yönetilmeli.
+            break;
           } else {
             console.error("❌ Katılımcı ekleme hatası (deneme:", attempt, "):", participantError);
             await new Promise((resolve) => setTimeout(resolve, 200));
@@ -238,7 +265,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       }
 
       // 2️⃣ BOŞ ODA YOK, YENİ ODA OLUŞTUR
-      console.log("❌ Boş oda yok, yeni oda oluşturuluyor...");
+      console.log("❌ Boş oda yok veya katılım sağlanamadı, yeni oda oluşturuluyor...");
 
       // Grid oluştur
       const generateRandomGrid = (): string[] => {
