@@ -1,7 +1,12 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Capacitor } from "@capacitor/core";
-import { initNativeAudio, playNativeSound, isNativePlatform, isNativeAudioReady } from "@/services/nativeAudioService";
+import { Capacitor } from '@capacitor/core';
+import { 
+  initNativeAudio, 
+  playNativeSound, 
+  isNativePlatform,
+  isNativeAudioReady
+} from "@/services/nativeAudioService";
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -37,14 +42,14 @@ let nativeAudioReady = false;
 const initNativeCountdownAudio = async () => {
   if (!isNativePlatform()) return;
   if (nativeAudioReady) return;
-
+  
   // Zaten hazırsa direkt kullan
   if (isNativeAudioReady()) {
     nativeAudioReady = true;
     console.log("✅ GameCountdown: Native Audio zaten hazır");
     return;
   }
-
+  
   try {
     await initNativeAudio();
     nativeAudioReady = true;
@@ -57,14 +62,14 @@ const initNativeCountdownAudio = async () => {
 // Mobil tarayıcılar ve Capacitor için güçlendirilmiş ses kilidi açma
 const unlockAudio = () => {
   if (audioUnlocked) return;
-
+  
   // Native platform için Native Audio kullan
   if (isNativePlatform()) {
     initNativeCountdownAudio();
     audioUnlocked = true;
     return;
   }
-
+  
   // Web için AudioContext oluştur ve resume et
   if (!audioContext) {
     try {
@@ -73,44 +78,38 @@ const unlockAudio = () => {
       console.warn("GameCountdown: AudioContext oluşturulamadı:", e);
     }
   }
-
-  if (audioContext && audioContext.state === "suspended") {
-    audioContext
-      .resume()
-      .then(() => {
-        console.log("✅ GameCountdown: AudioContext resumed");
-      })
-      .catch(() => {});
+  
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume().then(() => {
+      console.log("✅ GameCountdown: AudioContext resumed");
+    }).catch(() => {});
   }
-
+  
   // Tüm ses dosyalarını unlock et
-  [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach((audio) => {
+  [...countdownSoundPool.sounds, ...startSoundPool.sounds].forEach(audio => {
     const originalVolume = audio.volume;
     audio.volume = 0.01;
-    audio
-      .play()
-      .then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = originalVolume;
-        console.log("✅ GameCountdown: Audio element unlocked");
-      })
-      .catch(() => {});
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = originalVolume;
+      console.log("✅ GameCountdown: Audio element unlocked");
+    }).catch(() => {});
   });
-
+  
   audioUnlocked = true;
   console.log("✅ GameCountdown: Audio unlocked");
 };
 
 // Event Listenerları ekle - Capacitor için genişletilmiş
 if (typeof window !== "undefined") {
-  const unlockEvents = ["touchstart", "touchend", "click", "keydown", "pointerdown", "mousedown"];
+  const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown', 'pointerdown', 'mousedown'];
   const handleUnlock = () => {
     unlockAudio();
-    unlockEvents.forEach((e) => document.removeEventListener(e, handleUnlock));
+    unlockEvents.forEach(e => document.removeEventListener(e, handleUnlock));
   };
-  unlockEvents.forEach((e) => document.addEventListener(e, handleUnlock, { passive: true }));
-
+  unlockEvents.forEach(e => document.addEventListener(e, handleUnlock, { passive: true }));
+  
   // Native için erken başlat
   if (isNativePlatform()) {
     initNativeCountdownAudio();
@@ -128,7 +127,7 @@ const initAudioPool = () => {
 
   // Web için Capacitor ortamında base URL'den yükle
   const basePath = window.location.origin;
-
+  
   for (let i = 0; i < COUNTDOWN_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
     audio.src = `${basePath}/gerisayim.mp3`;
@@ -137,7 +136,7 @@ const initAudioPool = () => {
     audio.load();
     countdownSoundPool.sounds.push(audio);
   }
-
+  
   for (let i = 0; i < START_SOUND_POOL_SIZE; i++) {
     const audio = new Audio();
     audio.src = `${basePath}/basla.mp3`;
@@ -146,36 +145,36 @@ const initAudioPool = () => {
     audio.load();
     startSoundPool.sounds.push(audio);
   }
-
+  
   audioPoolInitialized = true;
 };
 
 // Ses çalma fonksiyonu - Native ve Web için ayrı yönetim
-const playFromPool = async (pool: AudioPool, soundType: "countdown" | "start") => {
+const playFromPool = async (pool: AudioPool, soundType: 'countdown' | 'start') => {
   // Native platform için Native Audio kullan
   if (isNativePlatform()) {
     try {
-      await playNativeSound(soundType, soundType === "countdown" ? 0.6 : 0.7);
+      await playNativeSound(soundType, soundType === 'countdown' ? 0.6 : 0.7);
       console.log(`🔊 GameCountdown: Native ${soundType} sesi çalındı`);
     } catch (e) {
       console.warn(`GameCountdown: Native ${soundType} sesi çalınamadı:`, e);
     }
     return;
   }
-
+  
   // Web için HTML5 Audio
   if (pool.sounds.length === 0) return;
-
+  
   // Her çalmadan önce unlock dene
   if (!audioUnlocked) {
     unlockAudio();
   }
-
+  
   // AudioContext'i resume et
-  if (audioContext && audioContext.state === "suspended") {
+  if (audioContext && audioContext.state === 'suspended') {
     audioContext.resume().catch(() => {});
   }
-
+  
   const audio = pool.sounds[pool.currentIndex];
   pool.currentIndex = (pool.currentIndex + 1) % pool.sounds.length;
   audio.currentTime = 0;
@@ -186,29 +185,17 @@ const playFromPool = async (pool: AudioPool, soundType: "countdown" | "start") =
 };
 
 // Resim ve Sesleri Yükle
-const preloadPromise =
-  typeof window !== "undefined"
-    ? Promise.all([
-        ...IMAGE_PATHS.map(
-          (src) =>
-            new Promise<void>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                preloadedImages.set(src, img);
-                resolve();
-              };
-              img.onerror = () => resolve();
-              img.src = src;
-            }),
-        ),
-        new Promise<void>((resolve) => {
-          initAudioPool();
-          resolve();
-        }),
-      ]).then(() => {
-        imagesPreloaded = true;
-      })
-    : Promise.resolve();
+const preloadPromise = typeof window !== "undefined" 
+  ? Promise.all([
+      ...IMAGE_PATHS.map((src) => new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => { preloadedImages.set(src, img); resolve(); };
+          img.onerror = () => resolve();
+          img.src = src;
+        })),
+      new Promise<void>((resolve) => { initAudioPool(); resolve(); })
+    ]).then(() => { imagesPreloaded = true; })
+  : Promise.resolve();
 
 export const ensureImagesLoaded = () => preloadPromise;
 
@@ -218,7 +205,7 @@ const START_DISPLAY_DURATION_MS = 800; // "BAŞLA" yazısının ekranda kalma s�
 // --- ANA COMPONENT ---
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
   const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
-
+  
   // Refs
   const completedRef = useRef(false);
   const mountedRef = useRef(true);
@@ -226,12 +213,12 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   const rafRef = useRef<number | null>(null);
   const soundPlayedRef = useRef<Set<number | string>>(new Set());
   const lastDisplayRef = useRef<number | "start" | null>(null);
-
+  
   // 🔒 ServerStartTime değişikliği guard'ı - ilk değer kilitleniyor
   const lockedServerTimeRef = useRef<string | null>(null);
 
-  const playCountdownSound = () => playFromPool(countdownSoundPool, "countdown");
-  const playStartSound = () => playFromPool(startSoundPool, "start");
+  const playCountdownSound = () => playFromPool(countdownSoundPool, 'countdown');
+  const playStartSound = () => playFromPool(startSoundPool, 'start');
 
   useEffect(() => {
     mountedRef.current = true;
@@ -255,17 +242,18 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
 
     // Eğer sunucudan zaman bilgisi henüz gelmediyse HİÇBİR ŞEY YAPMA.
     if (!serverStartTime) {
-      console.log("⏳ GameCountdown: Sunucudan başlama saati bekleniyor...");
-      return;
+        console.log("⏳ GameCountdown: Sunucudan başlama saati bekleniyor...");
+        return; 
     }
-
-    // 🔒 KRİTİK: Aynı timestamp için sadece BİR KERE başlat
-    const timestampKey = serverStartTime;
-    if (soundPlayedRef.current.has(`init-${timestampKey}`)) {
-      console.log("⭐️ GameCountdown: Bu timestamp zaten işlendi:", timestampKey);
-      return;
+    
+    // 🔒 İLK serverStartTime değerini kilitle - sonraki değişiklikleri yoksay
+    if (!lockedServerTimeRef.current) {
+      lockedServerTimeRef.current = serverStartTime;
+      console.log("🔒 GameCountdown: serverStartTime KİLİTLENDİ:", serverStartTime);
+    } else if (lockedServerTimeRef.current !== serverStartTime) {
+      console.log("⚠️ GameCountdown: serverStartTime değişti ama KİLİTLİ, yoksayılıyor. Kilitli:", lockedServerTimeRef.current, "Yeni:", serverStartTime);
+      return; // Farklı bir değer gelirse yoksay
     }
-    soundPlayedRef.current.add(`init-${timestampKey}`);
 
     // Önceki döngüyü temizle
     if (rafRef.current) {
@@ -273,18 +261,18 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = null;
     }
 
-    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", serverStartTime, "Offset:", serverTimeOffset);
-
+    console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", lockedServerTimeRef.current, "Offset:", serverTimeOffset);
+    
     // 🔒 Kilitli değeri kullan
     const countdownEndTime = new Date(lockedServerTimeRef.current).getTime() + COUNTDOWN_DURATION_MS;
-
+    
     // Animasyon Döngüsü (Tick)
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
 
       const serverNow = Date.now() + serverTimeOffset;
       const remaining = countdownEndTime - serverNow;
-
+      
       // 1. Durum: Süre tamamen bitti ("Başla" yazısı da kalkmalı)
       if (remaining <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
@@ -294,7 +282,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         }
         return;
       }
-
+      
       // 2. Durum: Süre doldu, "BAŞLA!" göster
       if (remaining <= 0) {
         if (!startShownRef.current) {
@@ -306,20 +294,20 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
             playStartSound();
           }
         }
-      }
+      } 
       // 3. Durum: Geri sayım devam ediyor (veya tampon süresindeyiz)
       else {
         const seconds = Math.ceil(remaining / 1000);
-
+        
         // Burası kritik: Eğer SQL'den +20sn geldiyse 'seconds' 15-20 arası çıkabilir.
         // Math.min(5, ...) sayesinde ekranda hep "5" görürüz.
         const display = Math.min(5, Math.max(1, seconds));
-
+        
         // Ekrana basma işlemi (Gereksiz render önleme)
         if (lastDisplayRef.current !== display) {
           lastDisplayRef.current = display;
           setDisplayValue(display);
-
+          
           // Ses çalma (sadece rakam değişince)
           if (!soundPlayedRef.current.has(display)) {
             soundPlayedRef.current.add(display);
@@ -327,10 +315,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
           }
         }
       }
-
+      
       rafRef.current = requestAnimationFrame(tick);
     };
-
+    
     // İlk render'ın oturması için minik bir gecikme ile başlat
     setTimeout(() => {
       if (mountedRef.current && !completedRef.current) {
@@ -351,7 +339,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     if (displayValue === 3) return "/uc.png";
     if (displayValue === 2) return "/iki.png";
     if (displayValue === 1) return "/bir.png";
-    return "/bes.png";
+    return "/bes.png"; 
   };
 
   // Eğer değer yoksa hiçbir şey gösterme

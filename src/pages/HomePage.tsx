@@ -132,18 +132,9 @@ const HomePage = () => {
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
 
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const { startSearch, searchProgress, cancelSearch, isSearching, currentRoom } = useMatchmaking();
+  const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // 🔧 Eşleşme bulunduğunda SlotMatchmaking'i kapat
-  useEffect(() => {
-    // currentRoom set edildi ve artık arama yapmıyorsak = eşleşme bulundu
-    if (currentRoom && !isSearching && showMatchmaking) {
-      console.log("✅ Eşleşme bulundu, SlotMatchmaking kapatılıyor...");
-      setShowMatchmaking(false);
-    }
-  }, [currentRoom, isSearching, showMatchmaking]);
 
   const [greeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem("sessionGreeting");
