@@ -154,14 +154,17 @@ const PrivateRoomWaitingPage = () => {
         
         console.log('🎮 2. oyuncu katıldı, countdown başlatılıyor...');
         
-        // Countdown başlat
-        const { data: countdownTime } = await supabase.rpc("start_game_countdown", {
+        // Countdown başlat (veritabanında countdown_started_at güncellenir)
+        await supabase.rpc("start_game_countdown", {
           p_room_id: roomId,
         });
         
-        if (countdownTime) {
-          window.dispatchEvent(new CustomEvent("countdownStarted", { detail: { serverTime: countdownTime } }));
-        }
+        console.log('✅ Countdown başlatıldı, GamePage\'e yönlendiriliyorsunuz...');
+        
+        // Yönlendir - GamePage countdown_started_at'ı otomatik olarak okuyacak
+        const basePath = '/game/private-room'; // Özel oda olduğu için sabit
+        navigate(`${basePath}?room=${roomId}&type=${gameType}`);
+      }
         
         // Yönlendir
         const basePath = '/game/private-room'; // Özel oda olduğu için sabit
