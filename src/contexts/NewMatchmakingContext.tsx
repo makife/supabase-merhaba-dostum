@@ -177,17 +177,42 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       );
 
       // Uygun oda bul (banlist dışında ve farklı host)
-      let targetRoom = existingRooms?.find((room) => !matchBanlist.has(room.id) && room.host_id !== user.id);
+      // 🔧 ASYNC FIX: matchBanlist.has() async olduğu için ayrı kontrol
+      let targetRoom: typeof existingRooms extends (infer T)[] | null | undefined ? T | undefined : never = undefined;
+      
+      if (existingRooms && existingRooms.length > 0) {
+        for (const room of existingRooms) {
+          // Host kendisi olmamalı
+          if (room.host_id === user.id) {
+            console.log("⏭️ Oda atlandı (kendi odası):", room.id.slice(-8));
+            continue;
+          }
+          
+          // Banlist kontrolü (async)
+          const isBanned = await matchBanlist.has(room.id);
+          if (isBanned) {
+            console.log("⏭️ Oda atlandı (banlist):", room.id.slice(-8));
+            continue;
+          }
+          
+          // Uygun oda bulundu!
+          targetRoom = room;
+          console.log("✅ Uygun boş oda bulundu:", room.id.slice(-8), "host:", room.host_id?.slice(-8));
+          break;
+        }
+      }
 
       if (targetRoom) {
-        console.log("✅ Uygun boş oda bulundu:", targetRoom.id.slice(-8));
-
         // 🔧 RACE CONDITION FIX: 3 deneme, 200ms aralıkla
         let joinSuccess = false;
+        let currentTargetRoom = targetRoom;
+        
         for (let attempt = 1; attempt <= 3; attempt++) {
+          console.log("🔄 Odaya katılma deneniyor (deneme:", attempt, "):", currentTargetRoom.id.slice(-8));
+          
           // Odaya katıl
           const { error: participantError } = await supabase.from("game_participants").insert({
-            room_id: targetRoom.id,
+            room_id: currentTargetRoom.id,
             user_id: user.id,
             score: 0,
             is_bot: false,
@@ -205,33 +230,45 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           } else if (participantError.code === "23503") {
             // Foreign key - oda silindi
             console.log("⚠️ Oda silindi, sonraki odayı dene (deneme:", attempt, ")");
-            // Sonraki odayı bul
-            targetRoom = existingRooms?.find(
-              (room) => room.id !== targetRoom!.id && !matchBanlist.has(room.id) && room.host_id !== user.id,
-            );
-            if (!targetRoom) break;
+            // Sonraki uygun odayı bul
+            let nextRoom = undefined;
+            if (existingRooms) {
+              for (const room of existingRooms) {
+                if (room.id === currentTargetRoom.id) continue;
+                if (room.host_id === user.id) continue;
+                const isBanned = await matchBanlist.has(room.id);
+                if (isBanned) continue;
+                nextRoom = room;
+                break;
+              }
+            }
+            if (nextRoom) {
+              currentTargetRoom = nextRoom;
+            } else {
+              break;
+            }
           } else {
             console.error("❌ Katılımcı ekleme hatası (deneme:", attempt, "):", participantError);
             await new Promise((resolve) => setTimeout(resolve, 200));
           }
         }
 
-        if (joinSuccess && targetRoom) {
+        if (joinSuccess && currentTargetRoom) {
           console.log("✅ Odaya başarıyla katıldı! Countdown başlatılıyor...");
 
-          // Countdown başlat (Player 1)
+          // Countdown başlat (Player 2 katıldı)
           const { data: countdownTime, error: rpcError } = await supabase.rpc("start_game_countdown", {
-            p_room_id: targetRoom.id,
+            p_room_id: currentTargetRoom.id,
           });
 
           if (rpcError) {
             console.error("❌ Countdown RPC error:", rpcError);
           } else if (countdownTime) {
-            console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
+            console.log("✅ Countdown başlatıldı - real-time subscription event'i bekleyeceğiz");
           }
 
           setCurrentRoom({
-            id: targetRoom.id,
+            id: currentTargetRoom.id,
             game_type: gameType,
             status: "waiting",
             current_players: 2,
@@ -243,7 +280,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           clearProgressTimer();
           setSearchProgress(100);
           setIsSearching(false);
-          onMatchFound?.(targetRoom.id);
+          onMatchFound?.(currentTargetRoom.id);
           return;
         }
       }
