@@ -6,7 +6,7 @@ const CELL_SIZE_PERCENT = 100 / GRID_SIZE;
 
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const INITIAL_DIRECTION = { x: 0, y: -1 };
-const FALLBACK_WORDS = ["REACT", "KODLAMA", "YAZILIM", "FRONTEND", "SNAKE", "TASARIM", "MOBIL", "OYUN"];
+const FALLBACK_WORDS = ["YAZICI", "KLAVYE", "EKRANI", "SİSTEM", "PİYASA", "MEYDAN", "KARTAL", "SİNCAP"];
 
 // --- ÖZEL HOOK: useInterval ---
 // Bu hook, React state'i değişse bile sayacı sıfırlamaz.
@@ -73,13 +73,16 @@ const SnakeGame = () => {
         const words = text
           .split("\n")
           .map((w) => w.trim().toUpperCase())
-          .filter((w) => w.length > 0);
+          // BURAYI DÜZELTİYORUZ: Sadece 6 harfli olanları al
+          .filter((w) => w.length === 6);
+
         if (words.length > 0) {
           setWordList(words);
           const randomWord = words[Math.floor(Math.random() * words.length)];
           setTargetWord(randomWord);
           setFood((prev) => ({ ...prev, letter: randomWord[0] }));
         } else {
+          // Eğer 6 harfli hiç kelime bulamazsa yedeğe dön
           setWordList(FALLBACK_WORDS);
           setTargetWord(FALLBACK_WORDS[0]);
           setFood((prev) => ({ ...prev, letter: FALLBACK_WORDS[0][0] }));
