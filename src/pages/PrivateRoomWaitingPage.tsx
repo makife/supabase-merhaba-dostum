@@ -145,17 +145,13 @@ const PrivateRoomWaitingPage = () => {
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
 
-        console.log("🎮 2. oyuncu katıldı, countdown başlatılıyor...");
+        console.log("🎮 2. oyuncu katıldı, GamePage'e yönlendiriliyor...");
 
-        // Countdown başlat (veritabanında countdown_started_at güncellenir)
-        await supabase.rpc("start_game_countdown", {
-          p_room_id: roomId,
-        });
+        // ❌ KALDIRILDI: Countdown başlatma - GamePage her iki oyuncu için de başlatacak
+        // await supabase.rpc("start_game_countdown", { p_room_id: roomId });
 
-        console.log("✅ Countdown başlatıldı, GamePage'e yönlendiriliyorsunuz...");
-
-        // Yönlendir - GamePage countdown_started_at'ı otomatik olarak okuyacak
-        const basePath = "/game/private-room"; // Özel oda olduğu için sabit
+        // Yönlendir - GamePage countdown'u başlatacak
+        const basePath = "/game/private-room";
         navigate(`${basePath}?room=${roomId}&type=${gameType}`);
       }
     };
