@@ -15,7 +15,7 @@ import { SwipeToDeleteCard } from "@/components/SwipeToDeleteCard";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,7 +62,7 @@ export default function ChatPage() {
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde otomatik veri tazeleme
   const handleChatResync = useCallback(() => {
     if (user?.id) {
-      console.log('🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...');
+      console.log("🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...");
       fetchAllUsers();
       fetchUnreadCounts();
       refreshUnreadCounts();
@@ -70,32 +70,32 @@ export default function ChatPage() {
   }, [user?.id]);
 
   // PrivateChat kritik sayfa - öncelikli resync
-  usePageResync(handleChatResync, 'ChatPage', true);
+  usePageResync(handleChatResync, "ChatPage", true);
 
   // Yasak kontrolü
   useEffect(() => {
     const checkBanStatus = async () => {
       if (!user?.id) return;
-      
+
       try {
-        const { data, error } = await supabase.rpc('check_user_ban_status', {
-          p_user_id: user.id
+        const { data, error } = await supabase.rpc("check_user_ban_status", {
+          p_user_id: user.id,
         });
-        
+
         if (error) {
-          console.error('Ban check error:', error);
+          console.error("Ban check error:", error);
           return;
         }
-        
+
         if (data && data.length > 0 && data[0].is_banned) {
           setBanInfo(data[0]);
           setShowBanDialog(true);
         }
       } catch (err) {
-        console.error('Ban status check failed:', err);
+        console.error("Ban status check failed:", err);
       }
     };
-    
+
     checkBanStatus();
   }, [user?.id]);
 
@@ -258,7 +258,11 @@ export default function ChatPage() {
   const startPrivateChat = async (targetUser: SelectedUser) => {
     // Engellenen kullanıcı kontrolü
     if (isUserBlocked(targetUser.id)) {
-      toast.error("Bu kullanıcıyı engellemişsiniz");
+      toast({
+        title: "Hata",
+        description: "Bu kullanıcıyı engellemişsiniz",
+        variant: "destructive",
+      });
       return;
     }
     if (!user) return;
@@ -326,10 +330,18 @@ export default function ChatPage() {
         return updated;
       });
 
-      toast.success("Özel sohbet silindi");
+      toast({
+        title: "Başarılı",
+        description: "Özel sohbet silindi",
+        variant: "success",
+      });
     } catch (error) {
       console.error("Error deleting private chat:", error);
-      toast.error("Sohbet silinirken hata oluştu");
+      toast({
+        title: "Hata",
+        description: "Sohbet silinirken hata oluştu",
+        variant: "destructive",
+      });
     }
   };
 
@@ -490,10 +502,18 @@ export default function ChatPage() {
                             e.stopPropagation();
                             if (isUserBlocked(targetUser.id)) {
                               unblockUser(targetUser.id);
-                              toast.success("Kullanıcı engeli kaldırıldı");
+                              toast({
+                                title: "Başarılı",
+                                description: "Kullanıcı engeli kaldırıldı",
+                                variant: "success",
+                              });
                             } else {
                               blockUser(targetUser.id);
-                              toast.success("Kullanıcı engellendi");
+                              toast({
+                                title: "Başarılı",
+                                description: "Kullanıcı engellendi",
+                                variant: "success",
+                              });
                             }
                           }}
                           className={`p-1 h-7 w-7 ${isUserBlocked(targetUser.id) ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
@@ -561,7 +581,11 @@ export default function ChatPage() {
                     variant="outline"
                     onClick={() => {
                       unblockUser(blockedUser.id);
-                      toast.success(`${blockedUser.username} engellemeden kaldırıldı`);
+                      toast({
+                        title: "Başarılı",
+                        description: `${blockedUser.username} engellemeden kaldırıldı`,
+                        variant: "success",
+                      });
                     }}
                     className="text-xs px-3 py-1 h-8 text-green-600 border-green-600 hover:bg-green-50"
                   >
@@ -676,12 +700,12 @@ export default function ChatPage() {
             <AlertDialogDescription className="space-y-3">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-2">
                 <p className="font-semibold text-red-800 mb-2">Yasak Sebebi:</p>
-                <p className="text-red-700">{banInfo?.ban_reason || 'Uygunsuz davranış'}</p>
+                <p className="text-red-700">{banInfo?.ban_reason || "Uygunsuz davranış"}</p>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <p className="font-semibold text-orange-800 mb-2">Kalan Süre:</p>
                 <p className="text-orange-700 text-lg font-bold">
-                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ''}
+                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ""}
                 </p>
               </div>
               <p className="text-sm text-gray-600 mt-4">
@@ -690,10 +714,10 @@ export default function ChatPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => {
                 setShowBanDialog(false);
-                navigate('/');
+                navigate("/");
               }}
               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
             >
