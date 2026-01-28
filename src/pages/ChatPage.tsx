@@ -62,7 +62,7 @@ export default function ChatPage() {
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde otomatik veri tazeleme
   const handleChatResync = useCallback(() => {
     if (user?.id) {
-      console.log("🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...");
+      console.log('🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...');
       fetchAllUsers();
       fetchUnreadCounts();
       refreshUnreadCounts();
@@ -70,32 +70,32 @@ export default function ChatPage() {
   }, [user?.id]);
 
   // PrivateChat kritik sayfa - öncelikli resync
-  usePageResync(handleChatResync, "ChatPage", true);
+  usePageResync(handleChatResync, 'ChatPage', true);
 
   // Yasak kontrolü
   useEffect(() => {
     const checkBanStatus = async () => {
       if (!user?.id) return;
-
+      
       try {
-        const { data, error } = await supabase.rpc("check_user_ban_status", {
-          p_user_id: user.id,
+        const { data, error } = await supabase.rpc('check_user_ban_status', {
+          p_user_id: user.id
         });
-
+        
         if (error) {
-          console.error("Ban check error:", error);
+          console.error('Ban check error:', error);
           return;
         }
-
+        
         if (data && data.length > 0 && data[0].is_banned) {
           setBanInfo(data[0]);
           setShowBanDialog(true);
         }
       } catch (err) {
-        console.error("Ban status check failed:", err);
+        console.error('Ban status check failed:', err);
       }
     };
-
+    
     checkBanStatus();
   }, [user?.id]);
 
@@ -676,12 +676,12 @@ export default function ChatPage() {
             <AlertDialogDescription className="space-y-3">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-2">
                 <p className="font-semibold text-red-800 mb-2">Yasak Sebebi:</p>
-                <p className="text-red-700">{banInfo?.ban_reason || "Uygunsuz davranış"}</p>
+                <p className="text-red-700">{banInfo?.ban_reason || 'Uygunsuz davranış'}</p>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <p className="font-semibold text-orange-800 mb-2">Kalan Süre:</p>
                 <p className="text-orange-700 text-lg font-bold">
-                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ""}
+                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ''}
                 </p>
               </div>
               <p className="text-sm text-gray-600 mt-4">
@@ -690,10 +690,10 @@ export default function ChatPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction
+            <AlertDialogAction 
               onClick={() => {
                 setShowBanDialog(false);
-                navigate("/");
+                navigate('/');
               }}
               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
             >
