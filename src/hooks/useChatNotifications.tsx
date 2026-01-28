@@ -15,10 +15,10 @@ export function useChatNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
 
-  // 🔥 Subscription guard - aynı user için tekrar oluşturma
+  // ðŸ”¥ Subscription guard - aynÄ± user iÃ§in tekrar oluÅŸturma
   const subscriptionUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<any>(null);
-  // navigate'i ref'te tut - dependency'den çıkar
+  // navigate'i ref'te tut - dependency'den Ã§Ä±kar
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
@@ -93,7 +93,7 @@ export function useChatNotifications() {
     setGlobalMentionCount(mentionCount);
   }, [user?.id, profile?.username]);
 
-  // Uygulama içi bildirim gösterme - ref kullan
+  // Uygulama iÃ§i bildirim gÃ¶sterme - ref kullan
   const showInAppNotification = useCallback(
     (title: string, description: string, navigateTo?: string) => {
       if (!getIsAppInForeground()) {
@@ -107,26 +107,26 @@ export function useChatNotifications() {
         duration: 5000,
         action: navigateTo ? (
           <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
-            Git
+            GÃ¶rÃ¼ntÃ¼le
           </Button>
         ) : undefined,
       });
     },
-    [], // 🔥 Boş dependency - navigateRef kullandığımız için
+    [], // ðŸ”¥ BoÅŸ dependency - navigateRef kullandÄ±ÄŸÄ±mÄ±z iÃ§in
   );
 
   // --- REAL-TIME LISTENER ---
   useEffect(() => {
     if (!user?.id) return;
 
-    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
+    // ðŸ”¥ GUARD: AynÄ± user iÃ§in zaten subscription varsa atla
     if (subscriptionUserIdRef.current === user.id && channelRef.current) {
-      console.log("[ChatNotif] ⏭️ Subscription zaten aktif, atlanıyor...");
-      refreshUnreadCounts(); // Sadece count'ları yenile
+      console.log("[ChatNotif] â­ï¸ Subscription zaten aktif, atlanÄ±yor...");
+      refreshUnreadCounts(); // Sadece count'larÄ± yenile
       return;
     }
 
-    console.log("[ChatNotif] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
+    console.log("[ChatNotif] ðŸ”Œ Yeni subscription oluÅŸturuluyor:", user.id.slice(-8));
     subscriptionUserIdRef.current = user.id;
 
     refreshUnreadCounts();
@@ -145,7 +145,7 @@ export function useChatNotifications() {
           const newMsg: any = payload.new;
           if (!newMsg) return;
 
-          console.log("📨 [ChatNotif] Yeni özel mesaj alındı:", newMsg.chat_id);
+          console.log("ðŸ“¨ [ChatNotif] Yeni Ã¶zel mesaj alÄ±ndÄ±:", newMsg.chat_id);
 
           refreshUnreadCounts();
 
@@ -153,7 +153,7 @@ export function useChatNotifications() {
           const isInActiveChat = activeChats.includes(newMsg.chat_id);
 
           if (isInActiveChat) {
-            console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
+            console.log("ðŸ’¬ [ChatNotif] KullanÄ±cÄ± zaten bu sohbette, toast gÃ¶sterilmiyor");
             return;
           }
 
@@ -164,7 +164,7 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
-          showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
+          showInAppNotification("ðŸ’¬ Yeni Ã–zel Mesaj", `${senderName} sana mesaj gÃ¶nderdi`, "/chat");
         },
       )
       .on(
@@ -181,20 +181,37 @@ export function useChatNotifications() {
 
           if (notif.type === "mention") {
             refreshUnreadCounts();
-            showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
+            showInAppNotification("ðŸ“¢ Senden Bahsedildi", notif.message, "/chat");
           }
 
           if (notif.type === "message") {
             refreshUnreadCounts();
-            showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
+            showInAppNotification("ðŸ’¬ Yeni Ã–zel Mesaj", notif.message, "/chat");
           }
 
           if (notif.type === "tournament_opponent_left") {
-            showInAppNotification("🏆 Hükmen Galibiyet!", notif.message);
+            toast({
+              title: "ðŸ† HÃ¼kmen Galibiyet!",
+              description: notif.message,
+              duration: 6000,
+            });
           }
 
           if (notif.type === "tournament_end") {
-            showInAppNotification("🏆 Turnuva Sona Erdi!", notif.message, `/tournament-bracket/${notif.related_id}`);
+            toast({
+              title: "ðŸ† Turnuva Sona Erdi!",
+              description: notif.message,
+              duration: 8000,
+              action: (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}
+                >
+                  SonuÃ§lar
+                </Button>
+              ),
+            });
           }
         },
       )
@@ -212,7 +229,7 @@ export function useChatNotifications() {
 
     channelRef.current = channel;
 
-    // Cleanup - channel'ı koruyoruz
+    // Cleanup - channel'Ä± koruyoruz
     return () => {
       // Channel korunuyor, sadece log
       console.log("[ChatNotif] Cleanup - channel korunuyor");
