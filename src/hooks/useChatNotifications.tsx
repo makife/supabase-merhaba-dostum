@@ -105,7 +105,6 @@ export function useChatNotifications() {
         title,
         description,
         duration: 5000,
-        position: "bottom-right", // 🔥 Toast'ı ekranın altına taşı
         action: navigateTo ? (
           <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
             Git
