@@ -7,7 +7,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { useMusic } from "@/contexts/MusicContext";
 import { Button } from "@/components/ui/button";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -143,11 +143,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
-      toast({
-        title: "Sohbet Yasağı 🚫",
-        description: `Kalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`,
-        variant: "destructive",
+      toast.error(`Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`, {
         duration: 7000,
+        icon: "⏰",
       });
       return;
     }
