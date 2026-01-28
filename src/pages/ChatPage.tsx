@@ -15,7 +15,7 @@ import { SwipeToDeleteCard } from "@/components/SwipeToDeleteCard";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -258,11 +258,7 @@ export default function ChatPage() {
   const startPrivateChat = async (targetUser: SelectedUser) => {
     // Engellenen kullanıcı kontrolü
     if (isUserBlocked(targetUser.id)) {
-      toast({
-        title: "Hata",
-        description: "Bu kullanıcıyı engellemişsiniz",
-        variant: "destructive",
-      });
+      toast.error("Bu kullanıcıyı engellemişsiniz");
       return;
     }
     if (!user) return;
@@ -330,18 +326,10 @@ export default function ChatPage() {
         return updated;
       });
 
-      toast({
-        title: "Başarılı",
-        description: "Özel sohbet silindi",
-        variant: "success",
-      });
+      toast.success("Özel sohbet silindi");
     } catch (error) {
       console.error("Error deleting private chat:", error);
-      toast({
-        title: "Hata",
-        description: "Sohbet silinirken hata oluştu",
-        variant: "destructive",
-      });
+      toast.error("Sohbet silinirken hata oluştu");
     }
   };
 
@@ -502,18 +490,10 @@ export default function ChatPage() {
                             e.stopPropagation();
                             if (isUserBlocked(targetUser.id)) {
                               unblockUser(targetUser.id);
-                              toast({
-                                title: "Başarılı",
-                                description: "Kullanıcı engeli kaldırıldı",
-                                variant: "success",
-                              });
+                              toast.success("Kullanıcı engeli kaldırıldı");
                             } else {
                               blockUser(targetUser.id);
-                              toast({
-                                title: "Başarılı",
-                                description: "Kullanıcı engellendi",
-                                variant: "success",
-                              });
+                              toast.success("Kullanıcı engellendi");
                             }
                           }}
                           className={`p-1 h-7 w-7 ${isUserBlocked(targetUser.id) ? "text-green-500 hover:text-green-600" : "text-red-500 hover:text-red-600"}`}
@@ -581,11 +561,7 @@ export default function ChatPage() {
                     variant="outline"
                     onClick={() => {
                       unblockUser(blockedUser.id);
-                      toast({
-                        title: "Başarılı",
-                        description: `${blockedUser.username} engellemeden kaldırıldı`,
-                        variant: "success",
-                      });
+                      toast.success(`${blockedUser.username} engellemeden kaldırıldı`);
                     }}
                     className="text-xs px-3 py-1 h-8 text-green-600 border-green-600 hover:bg-green-50"
                   >
