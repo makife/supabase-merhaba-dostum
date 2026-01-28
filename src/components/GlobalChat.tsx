@@ -13,7 +13,8 @@ import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag } from
 import { UserAvatar } from "@/components/UserAvatar";
 import { PrivateChat } from "@/components/PrivateChat";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from "@/utils/chatBot";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { playSound } = useSounds();
   const { isUserBlocked, blockUser, unblockUser, blockedUsers } = useUserBlocking();
   const navigate = useNavigate();
+  const { sendMentionNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -231,12 +233,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         console.log("🤖 Bot hoşgeldin mesajı gösteriliyor (sadece kullanıcıya özel)...");
 
         // Global chat'e mesaj göndermek yerine toast ile göster
-        toast({
-          title: "Hoşgeldiniz! 🤖🎉",
-          description:
-            "Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
-          duration: 8000,
-        });
+        toast.info(
+          "🤖 Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
+          {
+            duration: 8000,
+            position: "top-center",
+          },
+        );
 
         // Son bot mesajı zamanını kaydet
         localStorage.setItem(lastBotMessageKey, now.toString());
@@ -360,17 +363,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     const isBanned = await isUserBanned(user.id);
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
-      toast({
-        title: "Hata",
-        description: `Sohbet yasağınız var! Kalan süre: ${timeLeft}`,
-        variant: "destructive",
-      });
+      toast.error(`Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
       return;
     }
 
     const trimmedMessage = newMessage.trim();
     if (trimmedMessage.length > 200) {
-      toast({ title: "Hata", description: "Mesaj 200 karakterden uzun olamaz", variant: "destructive" });
+      toast.error("Mesaj 200 karakterden uzun olamaz");
       return;
     }
 
@@ -380,18 +379,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       console.log(`🚫 KÜFÜR TESPİT EDİLDİ: "${bannedCheck.word}" - Severity: ${bannedCheck.severity}`);
 
       if (bannedCheck.severity === "high") {
-        toast({
-          title: "Hata",
-          description: `Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`,
-          variant: "destructive",
-        });
+        toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
         await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
       } else {
-        toast({
-          title: "Hata",
-          description: "Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.",
-          variant: "destructive",
-        });
+        toast.error("Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.");
         await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
       }
       setNewMessage("");
@@ -409,17 +400,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         const result = moderationResult[0];
         if (!result.is_appropriate) {
           if (result.should_ban) {
-            toast({
-              title: "Hata",
-              description: `${result.reason} - 2 gün sohbet yasağı aldınız!`,
-              variant: "destructive",
-            });
+            toast.error(`${result.reason} - 2 gün sohbet yasağı aldınız!`);
             await banUser(user.id, result.reason, 48);
           } else {
-            toast({
-              title: "Uyarı",
-              description: `${result.reason} - Lütfen daha dikkatli olun.`,
-            });
+            toast.warning(`${result.reason} - Lütfen daha dikkatli olun.`);
           }
           setNewMessage("");
           return;
@@ -469,7 +453,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
       );
 
-      // Mention kontrolü ve bildirim gönderimi
+      // Mention kontrolü (mevcut kodunuz)
       const mentionRegex = /@(\w+)/g;
       let match;
 
@@ -483,24 +467,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           .single();
 
         if (mentionedUser && mentionedUser.id !== user.id) {
-          // 🔥 Supabase notifications tablosuna kaydet
-          try {
-            const { error: notifError } = await supabase.from("notifications").insert({
-              user_id: mentionedUser.id,
-              type: "mention",
-              message: `${username} senden bahsetti: "${trimmedMessage}"`,
-              related_id: user.id, // Mention eden kişinin ID'si
-              is_read: false,
-            });
-
-            if (notifError) {
-              console.error("❌ Mention notification error:", notifError);
-            } else {
-              console.log("✅ Mention notification created for:", mentionedUsername);
-            }
-          } catch (error) {
-            console.error("❌ Error creating mention notification:", error);
-          }
+          await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }
 
@@ -512,7 +479,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       setNewMessage(trimmedMessage); // Mesajı geri koy
 
-      toast({ title: "Hata", description: "Mesaj gönderilirken hata oluştu", variant: "destructive" });
+      toast.error("Mesaj gönderilirken hata oluştu");
     } finally {
       setIsLoading(false);
     }
@@ -569,10 +536,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     const existingReaction = messageReactions[messageId]?.find((r) => r.user_id === user.id && r.emoji === emoji);
 
     if (existingReaction) {
-      toast({
-        title: "Bilgi",
-        description: "Bu emoji reaksiyonunu zaten vermişsiniz",
-      });
+      toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
       setShowEmojiPicker(null);
       return;
     }
@@ -607,10 +571,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
         // Handle duplicate key error
         if (error.code === "23505") {
-          toast({
-            title: "Bilgi",
-            description: "Bu emoji reaksiyonunu zaten vermişsiniz",
-          });
+          toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
         } else {
           throw error;
         }
@@ -621,7 +582,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       setShowEmojiPicker(null);
     } catch (error) {
       console.error("Error adding reaction:", error);
-      toast({ title: "Hata", description: "Reaksiyon eklenirken hata oluştu", variant: "destructive" });
+      toast.error("Reaksiyon eklenirken hata oluştu");
     }
   };
 
@@ -641,7 +602,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       playSound("buttonClick");
     } catch (error) {
       console.error("Error removing reaction:", error);
-      toast({ title: "Hata", description: "Reaksiyon kaldırılırken hata oluştu", variant: "destructive" });
+      toast.error("Reaksiyon kaldırılırken hata oluştu");
     }
   };
 
@@ -661,15 +622,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   // Report message
   const handleReportMessage = (messageId: string, userId: string, username: string) => {
     if (!user) {
-      toast({ title: "Hata", description: "Rapor göndermek için giriş yapmalısınız", variant: "destructive" });
+      toast.error("Rapor göndermek için giriş yapmalısınız");
       return;
     }
 
     if (userId === user.id) {
-      toast({
-        title: "Bilgi",
-        description: "Kendi mesajınızı raporlayamazsınız",
-      });
+      toast.info("Kendi mesajınızı raporlayamazsınız");
       return;
     }
 
@@ -690,10 +648,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       if (error) throw error;
 
       playSound("buttonClick");
-      toast({ title: "Başarılı", description: "Mesaj silindi", variant: "success" });
+      toast.success("Mesaj silindi");
     } catch (error) {
       console.error("Error deleting message:", error);
-      toast({ title: "Hata", description: "Mesaj silinirken hata oluştu", variant: "destructive" });
+      toast.error("Mesaj silinirken hata oluştu");
     }
   };
 
@@ -753,19 +711,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       setActiveChatId(chatId);
       setViewMode("private-chat");
 
-      toast({
-        title: "Başarılı 💛",
-        description: `${targetUser.username} ile özel sohbet başlatıldı`,
-        variant: "success",
+      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`, {
+        icon: "💛",
         duration: 2000,
       });
     } catch (error) {
       console.error("Error starting private chat:", error);
-      toast({
-        title: "Hata",
-        description: "Özel sohbet başlatılırken hata oluştu",
-        variant: "destructive",
-      });
+      toast.error("Özel sohbet başlatılırken hata oluştu");
     }
   };
 
