@@ -106,7 +106,16 @@ export function useChatNotifications() {
         description,
         duration: 5000,
         action: navigateTo ? (
-          <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("🔔 [ChatNotif] Git butonu tıklandı, navigate:", navigateTo);
+              navigateRef.current(navigateTo);
+            }}
+          >
             Git
           </Button>
         ) : undefined,
@@ -164,12 +173,16 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
+          const navigateUrl = `/chat?openPrivateChat=${newMsg.sender_id}`;
+
+          console.log("🔔 [ChatNotif] Özel mesaj toast gösteriliyor:", {
+            senderName,
+            senderId: newMsg.sender_id,
+            navigateUrl,
+          });
+
           // 🔥 sender_id'yi URL parametresi olarak geç
-          showInAppNotification(
-            "💬 Yeni Özel Mesaj",
-            `${senderName} sana mesaj gönderdi`,
-            `/chat?openPrivateChat=${newMsg.sender_id}`,
-          );
+          showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, navigateUrl);
         },
       )
       .on(
@@ -184,14 +197,22 @@ export function useChatNotifications() {
           const notif: any = payload.new;
           if (!notif) return;
 
+          console.log("🔔 [ChatNotif] Notification alındı:", {
+            type: notif.type,
+            message: notif.message,
+            related_id: notif.related_id,
+          });
+
           if (notif.type === "mention") {
             refreshUnreadCounts();
+            console.log("📢 [ChatNotif] Mention bildirimi gösteriliyor");
             // Global chat'i aç (mention genelde global'de olur)
             showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
           }
 
           if (notif.type === "message") {
             refreshUnreadCounts();
+            console.log("💬 [ChatNotif] Message bildirimi gösteriliyor");
             // Eğer related_id varsa o kullanıcıyla sohbeti aç
             const navigateTo = notif.related_id ? `/chat?openPrivateChat=${notif.related_id}` : "/chat";
             showInAppNotification("💬 Yeni Özel Mesaj", notif.message, navigateTo);
