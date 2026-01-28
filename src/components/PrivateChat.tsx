@@ -294,13 +294,8 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       playSound("buttonClick");
       refreshUnreadCounts();
 
-      // 🔔 BİLDİRİM GÖNDER - Artık akıllı bildirim sistemi var
-      await sendMessageNotification(
-        otherUserId, // Alıcının ID'si
-        profile?.username || "Anonim", // Gönderenin kullanıcı adı
-        chatId, // Chat ID
-      );
-      console.log("✅ Notification sent to:", otherUser.username);
+      // ✅ Bildirim otomatik gönderiliyor (useChatNotifications realtime listener)
+      console.log("✅ Message sent to:", otherUser.username);
     } catch (error) {
       console.error("❌ Error sending private message:", error);
 
