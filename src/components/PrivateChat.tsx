@@ -14,10 +14,9 @@ import { Separator } from "@/components/ui/separator";
 import { Send, ArrowLeft, Flag } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { setLastChatId, getLastChatId } from "@/utils/persistentState";
 // NativeRealtime kaldırıldı
 
@@ -45,7 +44,6 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
   const { profile, isSystemConnected, loading: userLoading } = useUser(); // Hepsini tek seferde alıyoruz
   const { playSound } = useSounds();
-  const { sendMessageNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +69,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
     console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
     setActivePrivateChat(chatId);
-    
+
     // 🆕 Native Storage'a kaydet
     setLastChatId(chatId);
 
@@ -310,7 +308,11 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       setNewMessage(trimmedMessage); // Mesajı geri koy
 
-      toast.error("Mesaj gönderilirken hata oluştu");
+      toast({
+        title: "Hata",
+        description: "Mesaj gönderilirken hata oluştu",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -325,12 +327,19 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
   const handleReportMessage = (messageId: string, senderId: string) => {
     if (!user) {
-      toast.error("Rapor göndermek için giriş yapmalısınız");
+      toast({
+        title: "Hata",
+        description: "Rapor göndermek için giriş yapmalısınız",
+        variant: "destructive",
+      });
       return;
     }
 
     if (senderId === user.id) {
-      toast.info("Kendi mesajınızı raporlayamazsınız");
+      toast({
+        title: "Bilgi",
+        description: "Kendi mesajınızı raporlayamazsınız",
+      });
       return;
     }
 
