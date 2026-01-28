@@ -1,25 +1,25 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useSounds } from '@/hooks/useSounds';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag } from 'lucide-react';
-import { UserAvatar } from '@/components/UserAvatar';
-import { PrivateChat } from '@/components/PrivateChat';
-import { ReportMessageDialog } from '@/components/ReportMessageDialog';
-import { toast } from "@/hooks/use-toast";
-import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from '@/utils/chatBot';
-import { useUserBlocking } from '@/hooks/useUserBlocking';
-import { useNavigate } from 'react-router-dom';
-import { autoReconnect } from '@/utils/supabaseAutoReconnect';
-import { usePageResync } from '@/hooks/useGlobalResync';
-
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useSounds } from "@/hooks/useSounds";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag } from "lucide-react";
+import { UserAvatar } from "@/components/UserAvatar";
+import { PrivateChat } from "@/components/PrivateChat";
+import { ReportMessageDialog } from "@/components/ReportMessageDialog";
+import { toast } from "sonner";
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from "@/utils/chatBot";
+import { useUserBlocking } from "@/hooks/useUserBlocking";
+import { useNavigate } from "react-router-dom";
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
+import { usePageResync } from "@/hooks/useGlobalResync";
 
 interface ChatMessage {
   id: string;
@@ -45,7 +45,7 @@ interface GlobalChatProps {
   onStartPrivateChat?: (user: SelectedUser) => void;
 }
 
-type ViewMode = 'global' | 'users' | 'private-chat' | 'blocked-users';
+type ViewMode = "global" | "users" | "private-chat" | "blocked-users";
 
 interface SelectedUser {
   id: string;
@@ -59,16 +59,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const { playSound } = useSounds();
   const { isUserBlocked, blockUser, unblockUser, blockedUsers } = useUserBlocking();
   const navigate = useNavigate();
+  const { sendMentionNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentChannel, setCurrentChannel] = useState<any>(null);
-  const [messageReactions, setMessageReactions] = useState<{[messageId: string]: MessageReaction[]}>({});
+  const [messageReactions, setMessageReactions] = useState<{ [messageId: string]: MessageReaction[] }>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
-  const [userAvatars, setUserAvatars] = useState<{[userId: string]: string}>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('global');
+  const [userAvatars, setUserAvatars] = useState<{ [userId: string]: string }>({});
+  const [viewMode, setViewMode] = useState<ViewMode>("global");
   const [privateChatEnabled, setPrivateChatEnabled] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -89,8 +90,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [isOpen, user?.id, refreshOnlineUsers]);
 
-  usePageResync(handleGlobalChatResync, 'GlobalChat', true);
-  
+  usePageResync(handleGlobalChatResync, "GlobalChat", true);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -101,99 +101,97 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     scrollToBottom();
   }, [messages]);
 
-// GlobalChat.tsx - fetchReactions fonksiyonu
-const fetchReactions = async () => {
-  try {
-    // Sadece gerçek UUID'leri filtrele (temp- ile başlamayanlar)
-    const realMessageIds = messages
-      .filter(m => !m.id.startsWith('temp-'))
-      .map(m => m.id);
-    
-    if (realMessageIds.length === 0) return;
+  // GlobalChat.tsx - fetchReactions fonksiyonu
+  const fetchReactions = async () => {
+    try {
+      // Sadece gerçek UUID'leri filtrele (temp- ile başlamayanlar)
+      const realMessageIds = messages.filter((m) => !m.id.startsWith("temp-")).map((m) => m.id);
 
-    const { data, error } = await supabase
-      .from('message_reactions')
-      .select('*')
-      .in('message_id', realMessageIds as any);
+      if (realMessageIds.length === 0) return;
 
-    if (error) throw error;
+      const { data, error } = await supabase
+        .from("message_reactions")
+        .select("*")
+        .in("message_id", realMessageIds as any);
 
-    const reactionsByMessage: {[messageId: string]: MessageReaction[]} = {};
-    (data as any[])?.forEach((reaction: any) => {
-      if (!reactionsByMessage[reaction.message_id]) {
-        reactionsByMessage[reaction.message_id] = [];
-      }
-      reactionsByMessage[reaction.message_id].push(reaction as MessageReaction);
-    });
+      if (error) throw error;
 
-    setMessageReactions(reactionsByMessage);
-  } catch (error) {
-    console.error('Error fetching reactions:', error);
-  }
-};
+      const reactionsByMessage: { [messageId: string]: MessageReaction[] } = {};
+      (data as any[])?.forEach((reaction: any) => {
+        if (!reactionsByMessage[reaction.message_id]) {
+          reactionsByMessage[reaction.message_id] = [];
+        }
+        reactionsByMessage[reaction.message_id].push(reaction as MessageReaction);
+      });
+
+      setMessageReactions(reactionsByMessage);
+    } catch (error) {
+      console.error("Error fetching reactions:", error);
+    }
+  };
 
   // Fetch user avatars
- const fetchUserAvatars = async (userIds: string[]) => {
-  // Null, undefined ve geçersiz UUID'leri filtrele
-  const validUserIds = userIds.filter(id => {
-    if (!id || id === 'null' || id === 'undefined') return false;
-    // UUID formatını kontrol et (36 karakter, tire'ler dahil)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(id);
-  });
-
-  if (validUserIds.length === 0) return;
-
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, avatar_url')
-      .in('id', validUserIds as any);
-
-    if (error) throw error;
-
-    const avatarMap: {[userId: string]: string} = {};
-    (data as any[])?.forEach((profile: any) => {
-      if (profile.avatar_url) {
-        avatarMap[profile.id] = profile.avatar_url;
-      }
+  const fetchUserAvatars = async (userIds: string[]) => {
+    // Null, undefined ve geçersiz UUID'leri filtrele
+    const validUserIds = userIds.filter((id) => {
+      if (!id || id === "null" || id === "undefined") return false;
+      // UUID formatını kontrol et (36 karakter, tire'ler dahil)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(id);
     });
 
-    setUserAvatars(prev => ({ ...prev, ...avatarMap }));
-  } catch (error) {
-    console.error('Error fetching user avatars:', error);
-  }
-};
+    if (validUserIds.length === 0) return;
 
-// Fetch avatars when messages change - düzeltilmiş versiyon
-useEffect(() => {
-  if (messages.length > 0) {
-    // User ID'leri toplarken null/undefined kontrolü yap
-    const userIds = messages
-      .map(m => m.user_id)
-      .filter(id => id && id !== 'null' && id !== 'undefined')
-      .filter((id, index, arr) => arr.indexOf(id) === index); // Duplicate'leri kaldır
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, avatar_url")
+        .in("id", validUserIds as any);
 
-    if (userIds.length > 0) {
-      fetchUserAvatars(userIds);
+      if (error) throw error;
+
+      const avatarMap: { [userId: string]: string } = {};
+      (data as any[])?.forEach((profile: any) => {
+        if (profile.avatar_url) {
+          avatarMap[profile.id] = profile.avatar_url;
+        }
+      });
+
+      setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+    } catch (error) {
+      console.error("Error fetching user avatars:", error);
     }
-  }
-}, [messages]);
+  };
+
+  // Fetch avatars when messages change - düzeltilmiş versiyon
+  useEffect(() => {
+    if (messages.length > 0) {
+      // User ID'leri toplarken null/undefined kontrolü yap
+      const userIds = messages
+        .map((m) => m.user_id)
+        .filter((id) => id && id !== "null" && id !== "undefined")
+        .filter((id, index, arr) => arr.indexOf(id) === index); // Duplicate'leri kaldır
+
+      if (userIds.length > 0) {
+        fetchUserAvatars(userIds);
+      }
+    }
+  }, [messages]);
 
   // Fetch all users for private chat
   const fetchAllUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, email, avatar_url')
-        .neq('id', user?.id as any)
-        .order('username', { ascending: true })
+        .from("profiles")
+        .select("id, username, email, avatar_url")
+        .neq("id", user?.id as any)
+        .order("username", { ascending: true })
         .limit(50);
 
       if (error) throw error;
       setAllUsers((data || []) as SelectedUser[]);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
     }
   };
 
@@ -210,62 +208,61 @@ useEffect(() => {
     }
   }, [messages]);
 
+  // Bot hoşgeldin mesajı - sadece kullanıcıya özel toast olarak göster
+  useEffect(() => {
+    const showBotWelcome = () => {
+      if (!user?.id || !isOpen) return;
 
-// Bot hoşgeldin mesajı - sadece kullanıcıya özel toast olarak göster
-useEffect(() => {
-  const showBotWelcome = () => {
-    if (!user?.id || !isOpen) return;
-    
-    try {
-      // Son bot mesajı zamanını kontrol et
-      const lastBotMessageKey = `lastBotWelcome_${user.id}`;
-      const lastBotTime = localStorage.getItem(lastBotMessageKey);
-      const now = Date.now();
-      const thirtyMinutes = 30 * 60 * 1000; // 30 dakika milisaniye cinsinden
-      
-      // Eğer 30 dakika geçmemişse bot mesajı gösterme
-      if (lastBotTime) {
-        const timeDiff = now - parseInt(lastBotTime);
-        if (timeDiff < thirtyMinutes) {
-          const remainingMinutes = Math.ceil((thirtyMinutes - timeDiff) / 60000);
-          console.log(`🤖 Bot hoşgeldin için ${remainingMinutes} dakika daha beklenmeli`);
-          return;
+      try {
+        // Son bot mesajı zamanını kontrol et
+        const lastBotMessageKey = `lastBotWelcome_${user.id}`;
+        const lastBotTime = localStorage.getItem(lastBotMessageKey);
+        const now = Date.now();
+        const thirtyMinutes = 30 * 60 * 1000; // 30 dakika milisaniye cinsinden
+
+        // Eğer 30 dakika geçmemişse bot mesajı gösterme
+        if (lastBotTime) {
+          const timeDiff = now - parseInt(lastBotTime);
+          if (timeDiff < thirtyMinutes) {
+            const remainingMinutes = Math.ceil((thirtyMinutes - timeDiff) / 60000);
+            console.log(`🤖 Bot hoşgeldin için ${remainingMinutes} dakika daha beklenmeli`);
+            return;
+          }
         }
+
+        console.log("🤖 Bot hoşgeldin mesajı gösteriliyor (sadece kullanıcıya özel)...");
+
+        // Global chat'e mesaj göndermek yerine toast ile göster
+        toast.info(
+          "🤖 Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
+          {
+            duration: 8000,
+            position: "top-center",
+          },
+        );
+
+        // Son bot mesajı zamanını kaydet
+        localStorage.setItem(lastBotMessageKey, now.toString());
+        console.log("✅ Bot hoşgeldin mesajı gösterildi (toast)!");
+      } catch (error) {
+        console.error("❌ Bot hoşgeldin hatası:", error);
       }
-      
-      console.log('🤖 Bot hoşgeldin mesajı gösteriliyor (sadece kullanıcıya özel)...');
-      
-      // Global chat'e mesaj göndermek yerine toast ile göster
-      toast({
-        title: "Hoşgeldiniz! 🤖🎉",
-        description: "Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
-        duration: 8000,
-      });
-      
-      // Son bot mesajı zamanını kaydet
-      localStorage.setItem(lastBotMessageKey, now.toString());
-      console.log('✅ Bot hoşgeldin mesajı gösterildi (toast)!');
-    } catch (error) {
-      console.error('❌ Bot hoşgeldin hatası:', error);
+    };
+
+    // Chat açıldığında bot mesajı kontrolü yap
+    if (isOpen && user?.id) {
+      setTimeout(() => {
+        showBotWelcome();
+      }, 1000); // 1 saniye gecikme ile
     }
-  };
+  }, [isOpen, user?.id]);
 
-  // Chat açıldığında bot mesajı kontrolü yap
-  if (isOpen && user?.id) {
-    setTimeout(() => {
-      showBotWelcome();
-    }, 1000); // 1 saniye gecikme ile
-  }
-}, [isOpen, user?.id]);
-
-
-
-// Real-time subscription için ayrı bir useEffect (auto-reconnect destekli)
-useEffect(() => {
+  // Real-time subscription için ayrı bir useEffect (auto-reconnect destekli)
+  useEffect(() => {
     if (!isOpen || !user?.id) return;
 
-    console.log('🔄 Setting up Global Chat real-time subscription (auto-reconnect)');
-    
+    console.log("🔄 Setting up Global Chat real-time subscription (auto-reconnect)");
+
     // İlk mesajları ve online kullanıcıları yükle
     fetchMessages();
     refreshOnlineUsers();
@@ -274,105 +271,105 @@ useEffect(() => {
     const channelName = `global-chat-realtime-${user.id}`;
     autoReconnect.registerChannel(channelName, () =>
       supabase
-        .channel('global-chat-realtime', {
+        .channel("global-chat-realtime", {
           config: {
             broadcast: { self: false }, // Kendi mesajlarını tekrar alma
-          }
+          },
         })
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'global_chat'
+            event: "INSERT",
+            schema: "public",
+            table: "global_chat",
           },
           (payload) => {
-            console.log('📨 New global message received:', payload.new);
-            
+            console.log("📨 New global message received:", payload.new);
+
             const newMessage = payload.new as ChatMessage;
-            
-            setMessages(prev => {
+
+            setMessages((prev) => {
               // Duplicate kontrolü
-              const exists = prev.some(msg => msg.id === newMessage.id);
+              const exists = prev.some((msg) => msg.id === newMessage.id);
               if (exists) {
-                console.log('⚠️ Message already exists, skipping');
+                console.log("⚠️ Message already exists, skipping");
                 return prev;
               }
-              
-              console.log('✅ Adding new message to state');
-              return [...prev, newMessage].sort((a, b) => 
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+
+              console.log("✅ Adding new message to state");
+              return [...prev, newMessage].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
               );
             });
-            
+
             // Sadece başkalarının mesajları için ses çal
             if (newMessage.user_id !== user?.id) {
-              playSound('correctWord');
+              playSound("correctWord");
             }
-          }
+          },
         )
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'global_chat'
+            event: "DELETE",
+            schema: "public",
+            table: "global_chat",
           },
           (payload) => {
-            console.log('🗑️ Message deleted:', payload.old);
-            setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
-          }
+            console.log("🗑️ Message deleted:", payload.old);
+            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+          },
         )
         .subscribe((status) => {
-          console.log('📡 Global subscription status:', status);
-          
-          if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Channel error detected - auto-reconnect will handle');
+          console.log("📡 Global subscription status:", status);
+
+          if (status === "CHANNEL_ERROR") {
+            console.error("❌ Channel error detected - auto-reconnect will handle");
           }
-        })
+        }),
     );
 
     return () => {
-      console.log('🧹 Cleaning up global real-time channel');
+      console.log("🧹 Cleaning up global real-time channel");
       autoReconnect.unregisterChannel(channelName);
     };
   }, [isOpen, user?.id]);
 
-const fetchMessages = async () => {
+  const fetchMessages = async () => {
     try {
-      console.log('📥 Fetching global messages...');
-      
+      console.log("📥 Fetching global messages...");
+
       const { data, error } = await supabase
-        .from('global_chat')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("global_chat")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      
+
       const reversedData = data ? [...data].reverse() : [];
       setMessages(reversedData as ChatMessage[]);
-      
+
       console.log(`✅ Loaded ${reversedData.length} global messages`);
     } catch (error) {
-      console.error('❌ Error fetching global messages:', error);
+      console.error("❌ Error fetching global messages:", error);
     }
   };
 
-const sendMessage = async () => {
+  const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
     // Ban kontrolü
     const isBanned = await isUserBanned(user.id);
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
-      toast({ title: "Hata", description: `Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
+      toast.error(`Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
       return;
     }
 
     const trimmedMessage = newMessage.trim();
     if (trimmedMessage.length > 200) {
-      toast({ title: "Hata", description: 'Mesaj 200 karakterden uzun olamaz');
+      toast.error("Mesaj 200 karakterden uzun olamaz");
       return;
     }
 
@@ -380,46 +377,45 @@ const sendMessage = async () => {
     const bannedCheck = containsBannedWords(trimmedMessage);
     if (bannedCheck.found) {
       console.log(`🚫 KÜFÜR TESPİT EDİLDİ: "${bannedCheck.word}" - Severity: ${bannedCheck.severity}`);
-      
-      if (bannedCheck.severity === 'high') {
-        toast({ title: "Hata", description: `Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
+
+      if (bannedCheck.severity === "high") {
+        toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
         await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
       } else {
-        toast({ title: "Hata", description: 'Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.');
+        toast.error("Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.");
         await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
       }
-      setNewMessage('');
+      setNewMessage("");
       return;
     }
 
     // İsteğe bağlı: Server-side ek kontrol (varsa)
     try {
-      const { data: moderationResult, error: moderationError } = await supabase
-        .rpc('moderate_message_advanced', {
-          p_user_id: user.id,
-          p_message: trimmedMessage
-        });
+      const { data: moderationResult, error: moderationError } = await supabase.rpc("moderate_message_advanced", {
+        p_user_id: user.id,
+        p_message: trimmedMessage,
+      });
 
       if (!moderationError && moderationResult && moderationResult.length > 0) {
         const result = moderationResult[0];
         if (!result.is_appropriate) {
           if (result.should_ban) {
-            toast({ title: "Hata", description: `${result.reason} - 2 gün sohbet yasağı aldınız!`);
+            toast.error(`${result.reason} - 2 gün sohbet yasağı aldınız!`);
             await banUser(user.id, result.reason, 48);
           } else {
-            toast({ title: "Uyarı", description: `${result.reason} - Lütfen daha dikkatli olun.`);
+            toast.warning(`${result.reason} - Lütfen daha dikkatli olun.`);
           }
-          setNewMessage('');
+          setNewMessage("");
           return;
         }
       }
     } catch (error) {
-      console.log('Server-side moderation skipped:', error);
+      console.log("Server-side moderation skipped:", error);
       // Client-side kontrol zaten yapıldı, devam et
     }
 
-    const username = profile.username || user.email?.split('@')[0] || 'Anonim';
-    
+    const username = profile.username || user.email?.split("@")[0] || "Anonim";
+
     // OPTIMISTIC UPDATE - Mesajı hemen göster
     const tempMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
@@ -427,128 +423,127 @@ const sendMessage = async () => {
       username,
       message: trimmedMessage,
       created_at: new Date().toISOString(),
-      avatar_url: profile.avatar_url
+      avatar_url: profile.avatar_url,
     };
 
-    setMessages(prev => [...prev, tempMessage]);
-    setNewMessage('');
+    setMessages((prev) => [...prev, tempMessage]);
+    setNewMessage("");
     setIsLoading(true);
-    
+
     try {
-      console.log('📤 Sending global message...');
-      
+      console.log("📤 Sending global message...");
+
       const { data: insertData, error: insertError } = await supabase
-        .from('global_chat')
+        .from("global_chat")
         .insert({
           user_id: user.id,
           username: username,
           message: trimmedMessage,
-          avatar_url: profile.avatar_url
+          avatar_url: profile.avatar_url,
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      console.log('✅ Global message sent successfully');
+      console.log("✅ Global message sent successfully");
 
       // Temp mesajı gerçek mesajla değiştir
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempMessage.id 
-          ? { ...insertData, id: insertData.id }
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
+      );
 
       // Mention kontrolü ve bildirim gönderimi
       const mentionRegex = /@(\w+)/g;
       let match;
-      
+
       while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
         const mentionedUsername = match[1];
-        
+
         const { data: mentionedUser } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .eq('username', mentionedUsername)
+          .from("profiles")
+          .select("id, username")
+          .eq("username", mentionedUsername)
           .single();
-        
+
         if (mentionedUser && mentionedUser.id !== user.id) {
           // 🔥 Supabase notifications tablosuna kaydet
           try {
-            const { error: notifError } = await supabase
-              .from('notifications')
-              .insert({
-                user_id: mentionedUser.id,
-                type: 'mention',
-                message: `${username} senden bahsetti: "${trimmedMessage}"`,
-                related_id: user.id, // Mention eden kişinin ID'si
-                is_read: false
-              });
-            
+            const { error: notifError } = await supabase.from("notifications").insert({
+              user_id: mentionedUser.id,
+              type: "mention",
+              message: `${username} senden bahsetti: "${trimmedMessage}"`,
+              related_id: user.id, // Mention eden kişinin ID'si
+              is_read: false,
+            });
+
             if (notifError) {
-              console.error('❌ Mention notification error:', notifError);
+              console.error("❌ Mention notification error:", notifError);
             } else {
-              console.log('✅ Mention notification created for:', mentionedUsername);
+              console.log("✅ Mention notification created for:", mentionedUsername);
             }
           } catch (error) {
-            console.error('❌ Error creating mention notification:', error);
+            console.error("❌ Error creating mention notification:", error);
           }
+
+          // Mobil bildirim (eski sistem)
+          await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }
 
-      playSound('buttonClick');
+      playSound("buttonClick");
     } catch (error) {
-      console.error('❌ Error sending global message:', error);
-      
+      console.error("❌ Error sending global message:", error);
+
       // Hata durumunda temp mesajı kaldır
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       setNewMessage(trimmedMessage); // Mesajı geri koy
-      
-      toast({ title: "Hata", description: 'Mesaj gönderilirken hata oluştu');
+
+      toast.error("Mesaj gönderilirken hata oluştu");
     } finally {
       setIsLoading(false);
     }
   };
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  setNewMessage(e.target.value);
-  
-  if (user && currentChannel && currentChannel.state === 'joined') {
-    try {
-      const displayName = profile?.username || user.email?.split('@')[0] || 'Anonim';
-      
-      // Typing durumunu güncelle
-      await currentChannel.track({
-        user_id: user.id,
-        username: displayName,
-        typing: e.target.value.length > 0, // Yazı yazılıyorsa true
-        online_at: new Date().toISOString(),
-      });
-      
-      // Timeout'u temizle ve yeniden kur
-      if (typingTimeout) {
-        clearTimeout(typingTimeout);
-      }
-      
-      const timeout = setTimeout(async () => {
-        if (currentChannel && currentChannel.state === 'joined') {
-          await currentChannel.track({
-            user_id: user.id,
-            username: displayName,
-            typing: false, // Yazma durduruldu
-            online_at: new Date().toISOString(),
-          });
+    setNewMessage(e.target.value);
+
+    if (user && currentChannel && currentChannel.state === "joined") {
+      try {
+        const displayName = profile?.username || user.email?.split("@")[0] || "Anonim";
+
+        // Typing durumunu güncelle
+        await currentChannel.track({
+          user_id: user.id,
+          username: displayName,
+          typing: e.target.value.length > 0, // Yazı yazılıyorsa true
+          online_at: new Date().toISOString(),
+        });
+
+        // Timeout'u temizle ve yeniden kur
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
         }
-      }, 2000);
-      
-      setTypingTimeout(timeout);
-    } catch (error) {
-      console.error('Error handling typing indicator:', error);
+
+        const timeout = setTimeout(async () => {
+          if (currentChannel && currentChannel.state === "joined") {
+            await currentChannel.track({
+              user_id: user.id,
+              username: displayName,
+              typing: false, // Yazma durduruldu
+              online_at: new Date().toISOString(),
+            });
+          }
+        }, 2000);
+
+        setTypingTimeout(timeout);
+      } catch (error) {
+        console.error("Error handling typing indicator:", error);
+      }
     }
-  }
-};
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -558,12 +553,10 @@ const sendMessage = async () => {
     if (!user) return;
 
     // Check if user already has this reaction
-    const existingReaction = messageReactions[messageId]?.find(
-      r => r.user_id === user.id && r.emoji === emoji
-    );
+    const existingReaction = messageReactions[messageId]?.find((r) => r.user_id === user.id && r.emoji === emoji);
 
     if (existingReaction) {
-      toast({ title: "Bilgi", description: 'Bu emoji reaksiyonunu zaten vermişsiniz');
+      toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
       setShowEmojiPicker(null);
       return;
     }
@@ -575,46 +568,41 @@ const sendMessage = async () => {
         message_id: messageId,
         user_id: user.id,
         emoji: emoji,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
-      setMessageReactions(prev => ({
+      setMessageReactions((prev) => ({
         ...prev,
-        [messageId]: [
-          ...(prev[messageId] || []),
-          tempReaction
-        ]
+        [messageId]: [...(prev[messageId] || []), tempReaction],
       }));
 
-      const { error } = await supabase
-        .from('message_reactions')
-        .insert({
-          message_id: messageId,
-          user_id: user.id,
-          emoji: emoji
-        });
+      const { error } = await supabase.from("message_reactions").insert({
+        message_id: messageId,
+        user_id: user.id,
+        emoji: emoji,
+      });
 
       if (error) {
         // Remove optimistic update on error
-        setMessageReactions(prev => ({
+        setMessageReactions((prev) => ({
           ...prev,
-          [messageId]: (prev[messageId] || []).filter(r => r.id !== tempReaction.id)
+          [messageId]: (prev[messageId] || []).filter((r) => r.id !== tempReaction.id),
         }));
-        
+
         // Handle duplicate key error
-        if (error.code === '23505') {
-          toast({ title: "Bilgi", description: 'Bu emoji reaksiyonunu zaten vermişsiniz');
+        if (error.code === "23505") {
+          toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
         } else {
           throw error;
         }
         return;
       }
 
-      playSound('buttonClick');
+      playSound("buttonClick");
       setShowEmojiPicker(null);
     } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast({ title: "Hata", description: 'Reaksiyon eklenirken hata oluştu');
+      console.error("Error adding reaction:", error);
+      toast.error("Reaksiyon eklenirken hata oluştu");
     }
   };
 
@@ -624,17 +612,17 @@ const sendMessage = async () => {
 
     try {
       const { error } = await supabase
-        .from('message_reactions')
+        .from("message_reactions")
         .delete()
-        .eq('message_id', messageId)
-        .eq('user_id', user.id)
-        .eq('emoji', emoji);
+        .eq("message_id", messageId)
+        .eq("user_id", user.id)
+        .eq("emoji", emoji);
 
       if (error) throw error;
-      playSound('buttonClick');
+      playSound("buttonClick");
     } catch (error) {
-      console.error('Error removing reaction:', error);
-      toast({ title: "Hata", description: 'Reaksiyon kaldırılırken hata oluştu');
+      console.error("Error removing reaction:", error);
+      toast.error("Reaksiyon kaldırılırken hata oluştu");
     }
   };
 
@@ -642,9 +630,7 @@ const sendMessage = async () => {
   const toggleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
-    const userReaction = messageReactions[messageId]?.find(
-      r => r.user_id === user.id && r.emoji === emoji
-    );
+    const userReaction = messageReactions[messageId]?.find((r) => r.user_id === user.id && r.emoji === emoji);
 
     if (userReaction) {
       await removeReaction(messageId, emoji);
@@ -656,12 +642,12 @@ const sendMessage = async () => {
   // Report message
   const handleReportMessage = (messageId: string, userId: string, username: string) => {
     if (!user) {
-      toast({ title: "Hata", description: 'Rapor göndermek için giriş yapmalısınız');
+      toast.error("Rapor göndermek için giriş yapmalısınız");
       return;
     }
-    
+
     if (userId === user.id) {
-      toast({ title: "Bilgi", description: 'Kendi mesajınızı raporlayamazsınız');
+      toast.info("Kendi mesajınızı raporlayamazsınız");
       return;
     }
 
@@ -673,37 +659,33 @@ const sendMessage = async () => {
   const deleteMessage = async (messageId: string) => {
     if (!user) return;
 
-    const confirmed = window.confirm('Bu mesajı silmek istediğinizden emin misiniz?');
+    const confirmed = window.confirm("Bu mesajı silmek istediğinizden emin misiniz?");
     if (!confirmed) return;
 
     try {
-      const { error } = await supabase
-        .from('global_chat')
-        .delete()
-        .eq('id', messageId)
-        .eq('user_id', user.id); // Sadece kendi mesajlarını silebilir
+      const { error } = await supabase.from("global_chat").delete().eq("id", messageId).eq("user_id", user.id); // Sadece kendi mesajlarını silebilir
 
       if (error) throw error;
-      
-      playSound('buttonClick');
-      toast({ title: "Başarılı", description: 'Mesaj silindi');
+
+      playSound("buttonClick");
+      toast.success("Mesaj silindi");
     } catch (error) {
-      console.error('Error deleting message:', error);
-      toast({ title: "Hata", description: 'Mesaj silinirken hata oluştu');
+      console.error("Error deleting message:", error);
+      toast.error("Mesaj silinirken hata oluştu");
     }
   };
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(timestamp).toLocaleTimeString("tr-TR", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Group reactions by emoji
   const groupReactions = (reactions: MessageReaction[]) => {
-    const grouped: {[emoji: string]: MessageReaction[]} = {};
-    reactions.forEach(reaction => {
+    const grouped: { [emoji: string]: MessageReaction[] } = {};
+    reactions.forEach((reaction) => {
       if (!grouped[reaction.emoji]) {
         grouped[reaction.emoji] = [];
       }
@@ -712,71 +694,62 @@ const sendMessage = async () => {
     return grouped;
   };
 
-const startPrivateChat = async (targetUser: SelectedUser) => {
-  if (!user) return;
-  
-  try {
-    playSound('buttonClick');
-    
-    // Chat ID oluştur
-    const participants = [user.id, targetUser.id].sort();
-    const chatId = `private_${participants.join('_')}`;
+  const startPrivateChat = async (targetUser: SelectedUser) => {
+    if (!user) return;
 
-    // Chat var mı kontrol et
-    const { data: existingChat, error: chatError } = await supabase
-      .from('private_chats')
-      .select('id')
-      .eq('id', chatId)
-      .single();
+    try {
+      playSound("buttonClick");
 
-    if (chatError && chatError.code !== 'PGRST116') {
-      throw chatError;
-    }
+      // Chat ID oluştur
+      const participants = [user.id, targetUser.id].sort();
+      const chatId = `private_${participants.join("_")}`;
 
-    // Yeni chat oluştur
-    if (!existingChat) {
-      const { error: createError } = await supabase
-        .from('private_chats')
-        .insert({
+      // Chat var mı kontrol et
+      const { data: existingChat, error: chatError } = await supabase
+        .from("private_chats")
+        .select("id")
+        .eq("id", chatId)
+        .single();
+
+      if (chatError && chatError.code !== "PGRST116") {
+        throw chatError;
+      }
+
+      // Yeni chat oluştur
+      if (!existingChat) {
+        const { error: createError } = await supabase.from("private_chats").insert({
           id: chatId,
           user1_id: participants[0],
           user2_id: participants[1],
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         });
 
-      if (createError) throw createError;
-    }
+        if (createError) throw createError;
+      }
 
-    setSelectedUser(targetUser);
-    setActiveChatId(chatId);
-    setViewMode('private-chat');
-    
-    toast({
-      title: "Başarılı 💛",
-      description: `${targetUser.username} ile özel sohbet başlatıldı`,
-      variant: "success",
-      duration: 2000,
-    });
-    
-  } catch (error) {
-    console.error('Error starting private chat:', error);
-    toast({
-      title: "Hata",
-      description: "Özel sohbet başlatılırken hata oluştu",
-      variant: "destructive",
-    });
-  }
-};
+      setSelectedUser(targetUser);
+      setActiveChatId(chatId);
+      setViewMode("private-chat");
+
+      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`, {
+        icon: "💛",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Error starting private chat:", error);
+      toast.error("Özel sohbet başlatılırken hata oluştu");
+    }
+  };
 
   // Render different views
   const renderContent = () => {
-    if (viewMode === 'private-chat' && selectedUser && activeChatId) {
+    if (viewMode === "private-chat" && selectedUser && activeChatId) {
       return (
         <PrivateChat
           chatId={activeChatId}
           otherUser={selectedUser}
           onBack={() => {
-            setViewMode('global');
+            setViewMode("global");
             setSelectedUser(null);
             setActiveChatId(null);
           }}
@@ -784,11 +757,11 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
       );
     }
 
-    if (viewMode === 'users') {
+    if (viewMode === "users") {
       return renderUsersList();
     }
 
-    if (viewMode === 'blocked-users') {
+    if (viewMode === "blocked-users") {
       return renderBlockedUsersList();
     }
 
@@ -796,162 +769,172 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
   };
 
   const renderUsersList = () => (
-  <>
-    {/* Header */}
-    <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
-      <div className="flex items-center space-x-2">
-        <Users className="w-6 h-6" />
-        <div>
-          <h3 className="font-semibold text-lg">Kullanıcılar</h3>
-          {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
-          {/* <p className="text-chat-100 text-sm">
+    <>
+      {/* Header */}
+      <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Users className="w-6 h-6" />
+          <div>
+            <h3 className="font-semibold text-lg">Kullanıcılar</h3>
+            {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
+            {/* <p className="text-chat-100 text-sm">
             {onlineUsers.length} kişi çevrimiçi
           </p> */}
+          </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setViewMode("global")}
+          className="text-white hover:bg-chat-600 p-2 rounded-full"
+        >
+          <X className="w-5 h-5" />
+        </Button>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setViewMode('global')}
-        className="text-white hover:bg-chat-600 p-2 rounded-full"
-      >
-        <X className="w-5 h-5" />
-      </Button>
-    </div>
 
-    {/* Online Users */}
-    {onlineUsers.length > 0 && (
-      <div className="p-4 bg-chat-50 border-b border-chat-200">
-        <div className="flex items-center space-x-2 mb-3">
-          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
+      {/* Online Users */}
+      {onlineUsers.length > 0 && (
+        <div className="p-4 bg-chat-50 border-b border-chat-200">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
+          </div>
+          <div className="space-y-2">
+            {onlineUsers.map((targetUser) => (
+              <Card
+                key={targetUser.id}
+                className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
+                onClick={() => startPrivateChat(targetUser)}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <UserAvatar
+                      src={targetUser.avatar_url}
+                      alt={targetUser.username}
+                      fallback={targetUser.username?.charAt(0).toUpperCase()}
+                      size="sm"
+                      className={`border-2 ${isUserBlocked(targetUser.id) ? "border-red-300 opacity-60" : "border-green-400"}`}
+                    />
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isUserBlocked(targetUser.id) ? "bg-red-500" : "bg-green-500"}`}
+                    ></div>
+                  </div>
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/profile/${targetUser.id}`);
+                    }}
+                  >
+                    <div
+                      className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-600 line-through" : "text-gray-800"} hover:text-blue-600 transition-colors`}
+                    >
+                      {targetUser.username}
+                    </div>
+                    <div className={`text-xs ${isUserBlocked(targetUser.id) ? "text-red-600" : "text-green-600"}`}>
+                      {isUserBlocked(targetUser.id) ? "Engellendi" : "Çevrimiçi"}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id);
+                      }}
+                      className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? "text-green-600 border-green-600 hover:bg-green-50" : "text-red-600 border-red-600 hover:bg-red-50"}`}
+                    >
+                      {isUserBlocked(targetUser.id) ? "Engeli Kaldır" : "Engelle"}
+                    </Button>
+                    <MessageCircle className="w-5 h-5 text-chat-500" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
-        <div className="space-y-2">
-          {onlineUsers.map((targetUser) => (
-            <Card 
-              key={targetUser.id} 
-              className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
+      )}
+
+      {/* All Users */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          <div className="flex items-center space-x-2 mb-3">
+            <Users className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Tüm Kullanıcılar</span>
+          </div>
+
+          {allUsers.map((targetUser) => (
+            <Card
+              key={targetUser.id}
+              className="p-4 hover:shadow-md transition-all cursor-pointer border-chat-100"
               onClick={() => startPrivateChat(targetUser)}
             >
               <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <UserAvatar 
-                    src={targetUser.avatar_url}
-                    alt={targetUser.username}
-                    fallback={targetUser.username?.charAt(0).toUpperCase()}
-                    size="sm"
-                    className={`border-2 ${isUserBlocked(targetUser.id) ? 'border-red-300 opacity-60' : 'border-green-400'}`}
-                  />
-                  <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isUserBlocked(targetUser.id) ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                </div>
-                <div 
-                  className="flex-1 cursor-pointer"
+                <UserAvatar
+                  src={targetUser.avatar_url}
+                  alt={targetUser.username}
+                  fallback={targetUser.username.charAt(0).toUpperCase()}
+                  size="sm"
+                  className="border-2 border-chat-300"
+                />
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/profile/${targetUser.id}`);
                   }}
                 >
-                  <div className={`font-medium ${isUserBlocked(targetUser.id) ? 'text-red-600 line-through' : 'text-gray-800'} hover:text-blue-600 transition-colors`}>{targetUser.username}</div>
-                  <div className={`text-xs ${isUserBlocked(targetUser.id) ? 'text-red-600' : 'text-green-600'}`}>{isUserBlocked(targetUser.id) ? 'Engellendi' : 'Çevrimiçi'}</div>
+                  <p className="font-medium text-gray-800 truncate hover:text-blue-600 transition-colors">
+                    {targetUser.username}
+                  </p>
+                  <p className="text-sm text-gray-500">Özel mesaj gönder</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id);
-                    }}
-                    className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? 'text-green-600 border-green-600 hover:bg-green-50' : 'text-red-600 border-red-600 hover:bg-red-50'}`}
-                  >
-                    {isUserBlocked(targetUser.id) ? 'Engeli Kaldır' : 'Engelle'}
-                  </Button>
-                  <MessageCircle className="w-5 h-5 text-chat-500" />
+                  {isUserOnline(targetUser.id) && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                  )}
+                  {isUserBlocked(targetUser.id) ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unblockUser(targetUser.id);
+                      }}
+                      className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      Engeli Kaldır
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        blockUser(targetUser.id);
+                      }}
+                      className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
+                    >
+                      Engelle
+                    </Button>
+                  )}
+                  <Mail className="w-5 h-5 text-chat-500" />
                 </div>
               </div>
             </Card>
           ))}
-        </div>
-      </div>
-    )}
 
-    {/* All Users */}
-    <ScrollArea className="flex-1">
-      <div className="p-4 space-y-3">
-        <div className="flex items-center space-x-2 mb-3">
-          <Users className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Tüm Kullanıcılar</span>
-        </div>
-        
-        {allUsers.map((targetUser) => (
-          <Card
-            key={targetUser.id}
-            className="p-4 hover:shadow-md transition-all cursor-pointer border-chat-100"
-            onClick={() => startPrivateChat(targetUser)}
-          >
-            <div className="flex items-center space-x-3">
-              <UserAvatar
-                src={targetUser.avatar_url}
-                alt={targetUser.username}
-                fallback={targetUser.username.charAt(0).toUpperCase()}
-                size="sm"
-                className="border-2 border-chat-300"
-              />
-              <div 
-                className="flex-1 min-w-0 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/profile/${targetUser.id}`);
-                }}
-              >
-                <p className="font-medium text-gray-800 truncate hover:text-blue-600 transition-colors">{targetUser.username}</p>
-                <p className="text-sm text-gray-500">Özel mesaj gönder</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                {isUserOnline(targetUser.id) && (
-                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
-                )}
-                {isUserBlocked(targetUser.id) ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      unblockUser(targetUser.id);
-                    }}
-                    className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
-                  >
-                    Engeli Kaldır
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      blockUser(targetUser.id);
-                    }}
-                    className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    Engelle
-                  </Button>
-                )}
-                <Mail className="w-5 h-5 text-chat-500" />
-              </div>
+          {allUsers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-50 text-chat-300" />
+              <p>Henüz kullanıcı bulunamadı</p>
             </div>
-          </Card>
-        ))}
-        
-        {allUsers.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-50 text-chat-300" />
-            <p>Henüz kullanıcı bulunamadı</p>
-          </div>
-        )}
-      </div>
-    </ScrollArea>
-  </>
-);
+          )}
+        </div>
+      </ScrollArea>
+    </>
+  );
 
   const renderBlockedUsersList = () => (
     <>
@@ -961,15 +944,13 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
           <UserX className="w-6 h-6" />
           <div>
             <h3 className="font-semibold text-lg">Engellediklerim</h3>
-            <p className="text-red-100 text-sm">
-              {blockedUsers.length} kişi engellendi
-            </p>
+            <p className="text-red-100 text-sm">{blockedUsers.length} kişi engellendi</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setViewMode('global')}
+          onClick={() => setViewMode("global")}
           className="text-white hover:bg-red-600 p-2 rounded-full"
         >
           <X className="w-5 h-5" />
@@ -987,16 +968,13 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
             </div>
           ) : (
             allUsers
-              .filter(user => blockedUsers.includes(user.id))
+              .filter((user) => blockedUsers.includes(user.id))
               .map((blockedUser) => (
-                <Card
-                  key={blockedUser.id}
-                  className="p-4 border-red-200 bg-red-50"
-                >
+                <Card key={blockedUser.id} className="p-4 border-red-200 bg-red-50">
                   <div className="flex items-center space-x-3">
-                    <div 
+                    <div
                       className="cursor-pointer"
-                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
+                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: "/chat" } })}
                     >
                       <UserAvatar
                         src={blockedUser.avatar_url}
@@ -1006,9 +984,9 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
                         className="border-2 border-red-300 opacity-60"
                       />
                     </div>
-                    <div 
+                    <div
                       className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: '/chat' } })}
+                      onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: "/chat" } })}
                     >
                       <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
                         {blockedUser.username}
@@ -1032,169 +1010,185 @@ const startPrivateChat = async (targetUser: SelectedUser) => {
     </>
   );
   // GlobalChat.tsx - Yeni tasarım
-const renderGlobalChat = () => (
-  <>
-    {/* Messages */}
-    <ScrollArea className="flex-1 p-4 bg-chat-50">
-      <div className="space-y-3">
-        {messages.filter(message => !message.user_id || !isUserBlocked(message.user_id)).map((message) => (
-          <div key={message.id} className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: '/chat' } })}
-                >
-                  <UserAvatar
-                    src={message.user_id ? userAvatars[message.user_id] : '/bot-avatar.png'} // Bot için özel avatar
-                    alt={message.username}
-                    fallback={message.username.charAt(0).toUpperCase()}
-                    size="xs"
-                    className={`border-2 ${message.username === 'kelimeciBot' ? 'border-blue-500' : 'border-chat-300'}`}
-                  />
-                </div>
-                <span 
-                  className={`text-sm font-medium cursor-pointer hover:text-blue-600 transition-colors ${
-                    message.username === 'kelimeciBot' 
-                      ? 'text-blue-600 font-bold' // Bot için özel stil
-                      : message.user_id === user?.id 
-                      ? 'text-chat-600' 
-                      : 'text-gray-700'
-                  }`}
-                  onClick={() => message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: '/chat' } })}
-                >
-                  {message.username}
-                  {message.username === 'kelimeciBot' && ' 🤖'}
-                </span>
-                
-                {/* Online indicator - sadece gerçek kullanıcılar için */}
-                {message.user_id && message.username !== 'kelimeciBot' && isUserOnline(message.user_id) && (
-                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
-                )}
-                
-                <span className="text-xs text-gray-500">
-                  {formatTime(message.created_at)}
-                </span>
-                
-                {/* Private message button - sadece gerçek kullanıcılar için */}
-                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && onStartPrivateChat && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      onStartPrivateChat({
-                        id: message.user_id,
-                        username: message.username,
-                        avatar_url: userAvatars[message.user_id]
-                      });
-                    }}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
-                    title="Özel mesaj gönder"
-                  >
-                    <Mail className="w-3 h-3 text-chat-600" />
-                  </Button>
-                )}
-              </div>
-              
-              {/* Action buttons */}
-              <div className="flex items-center space-x-1">
-                {/* Report button - başkalarının mesajları için */}
-                {message.user_id && message.user_id !== user?.id && message.username !== 'kelimeciBot' && (
-                  <button
-                    onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
-                    className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
-                    title="Mesajı bildir"
-                  >
-                    <Flag className="w-3 h-3 text-orange-500" />
-                  </button>
-                )}
-                
-                {/* Delete button - sadece kendi mesajları için */}
-                {message.user_id === user?.id && (
-                  <button
-                    onClick={() => deleteMessage(message.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
-                    title="Mesajı sil"
-                  >
-                    <Trash2 className="w-3 h-3 text-red-500" />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            <div className={`text-gray-800 break-words ${
-              message.username === 'kelimeciBot' ? 'font-medium text-blue-800' : ''
-            }`}>
-              {message.message}
-            </div>
-            
-            {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
-            {!message.id.startsWith('temp-') && message.username !== 'kelimeciBot' && messageReactions[message.id] && (
-              <div className="flex items-center space-x-2 mt-2">
-                {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
-                  <button
-                    key={emoji}
-                    onClick={() => toggleReaction(message.id, emoji)}
-                    className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-                      reactions.some(r => r.user_id === user?.id)
-                        ? 'bg-chat-100 text-chat-700 border border-chat-300'
-                        : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span>{emoji}</span>
-                    <span>{reactions.length}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {/* Typing indicator */}
-        {typingUsers.size > 0 && (
-          <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-            <span>
-              {Array.from(typingUsers).slice(0, 2).join(', ')} yazıyor...
-            </span>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
-    </ScrollArea>
+  const renderGlobalChat = () => (
+    <>
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4 bg-chat-50">
+        <div className="space-y-3">
+          {messages
+            .filter((message) => !message.user_id || !isUserBlocked(message.user_id))
+            .map((message) => (
+              <div
+                key={message.id}
+                className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() =>
+                        message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
+                      }
+                    >
+                      <UserAvatar
+                        src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"} // Bot için özel avatar
+                        alt={message.username}
+                        fallback={message.username.charAt(0).toUpperCase()}
+                        size="xs"
+                        className={`border-2 ${message.username === "kelimeciBot" ? "border-blue-500" : "border-chat-300"}`}
+                      />
+                    </div>
+                    <span
+                      className={`text-sm font-medium cursor-pointer hover:text-blue-600 transition-colors ${
+                        message.username === "kelimeciBot"
+                          ? "text-blue-600 font-bold" // Bot için özel stil
+                          : message.user_id === user?.id
+                            ? "text-chat-600"
+                            : "text-gray-700"
+                      }`}
+                      onClick={() =>
+                        message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
+                      }
+                    >
+                      {message.username}
+                      {message.username === "kelimeciBot" && " 🤖"}
+                    </span>
 
-    {/* Message Input */}
-    <div className="p-4 bg-white border-t border-chat-200">
-      <div className="flex space-x-2">
-        <Input
-          value={newMessage}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          placeholder="Mesajınızı yazın..."
-          maxLength={200}
-          disabled={isLoading}
-          className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
-        />
-        <Button
-          onClick={sendMessage}
-          disabled={!newMessage.trim() || isLoading}
-          size="sm"
-          className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
-        >
-          <Send className="w-4 h-4" />
-        </Button>
+                    {/* Online indicator - sadece gerçek kullanıcılar için */}
+                    {message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                    )}
+
+                    <span className="text-xs text-gray-500">{formatTime(message.created_at)}</span>
+
+                    {/* Private message button - sadece gerçek kullanıcılar için */}
+                    {message.user_id &&
+                      message.user_id !== user?.id &&
+                      message.username !== "kelimeciBot" &&
+                      onStartPrivateChat && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            onStartPrivateChat({
+                              id: message.user_id,
+                              username: message.username,
+                              avatar_url: userAvatars[message.user_id],
+                            });
+                          }}
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                          title="Özel mesaj gönder"
+                        >
+                          <Mail className="w-3 h-3 text-chat-600" />
+                        </Button>
+                      )}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center space-x-1">
+                    {/* Report button - başkalarının mesajları için */}
+                    {message.user_id && message.user_id !== user?.id && message.username !== "kelimeciBot" && (
+                      <button
+                        onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
+                        className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
+                        title="Mesajı bildir"
+                      >
+                        <Flag className="w-3 h-3 text-orange-500" />
+                      </button>
+                    )}
+
+                    {/* Delete button - sadece kendi mesajları için */}
+                    {message.user_id === user?.id && (
+                      <button
+                        onClick={() => deleteMessage(message.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        title="Mesajı sil"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-500" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className={`text-gray-800 break-words ${
+                    message.username === "kelimeciBot" ? "font-medium text-blue-800" : ""
+                  }`}
+                >
+                  {message.message}
+                </div>
+
+                {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
+                {!message.id.startsWith("temp-") &&
+                  message.username !== "kelimeciBot" &&
+                  messageReactions[message.id] && (
+                    <div className="flex items-center space-x-2 mt-2">
+                      {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+                        <button
+                          key={emoji}
+                          onClick={() => toggleReaction(message.id, emoji)}
+                          className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+                            reactions.some((r) => r.user_id === user?.id)
+                              ? "bg-chat-100 text-chat-700 border border-chat-300"
+                              : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          <span>{emoji}</span>
+                          <span>{reactions.length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            ))}
+
+          {/* Typing indicator */}
+          {typingUsers.size > 0 && (
+            <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
+                <div
+                  className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></div>
+              </div>
+              <span>{Array.from(typingUsers).slice(0, 2).join(", ")} yazıyor...</span>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Message Input */}
+      <div className="p-4 bg-white border-t border-chat-200">
+        <div className="flex space-x-2">
+          <Input
+            value={newMessage}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder="Mesajınızı yazın..."
+            maxLength={200}
+            disabled={isLoading}
+            className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || isLoading}
+            size="sm"
+            className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="text-xs text-gray-500 mt-1 text-right">{newMessage.length}/200</div>
       </div>
-      <div className="text-xs text-gray-500 mt-1 text-right">
-        {newMessage.length}/200
-      </div>
-    </div>
-  </>
-);
+    </>
+  );
 
   // Report Dialog - her zaman render et
   const reportDialog = reportingMessage && (
@@ -1217,9 +1211,7 @@ const renderGlobalChat = () => (
   if (isFullPage) {
     return (
       <>
-        <div className="h-full w-full flex flex-col">
-          {renderGlobalChat()}
-        </div>
+        <div className="h-full w-full flex flex-col">{renderGlobalChat()}</div>
         {reportDialog}
       </>
     );
