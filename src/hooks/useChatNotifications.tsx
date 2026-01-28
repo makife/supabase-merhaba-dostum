@@ -164,7 +164,12 @@ export function useChatNotifications() {
             .single();
 
           const senderName = senderProfile?.username || "Birisi";
-          showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
+          // 🔥 sender_id'yi URL parametresi olarak geç
+          showInAppNotification(
+            "💬 Yeni Özel Mesaj",
+            `${senderName} sana mesaj gönderdi`,
+            `/chat?openPrivateChat=${newMsg.sender_id}`,
+          );
         },
       )
       .on(
@@ -181,12 +186,15 @@ export function useChatNotifications() {
 
           if (notif.type === "mention") {
             refreshUnreadCounts();
+            // Global chat'i aç (mention genelde global'de olur)
             showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
           }
 
           if (notif.type === "message") {
             refreshUnreadCounts();
-            showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
+            // Eğer related_id varsa o kullanıcıyla sohbeti aç
+            const navigateTo = notif.related_id ? `/chat?openPrivateChat=${notif.related_id}` : "/chat";
+            showInAppNotification("💬 Yeni Özel Mesaj", notif.message, navigateTo);
           }
 
           if (notif.type === "tournament_opponent_left") {
