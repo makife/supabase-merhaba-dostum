@@ -71,7 +71,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
     console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
     setActivePrivateChat(chatId);
-
+    
     // 🆕 Native Storage'a kaydet
     setLastChatId(chatId);
 

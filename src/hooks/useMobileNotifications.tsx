@@ -3,9 +3,9 @@ import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SafePushNotifications } from "@/utils/safePluginWrapper";
 
 // Dinamik import için tipler
-type PushNotificationsType = typeof import("@capacitor/push-notifications").PushNotifications;
 type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
 
 export const useMobileNotifications = () => {
@@ -17,17 +17,7 @@ export const useMobileNotifications = () => {
   // Check if we're on a mobile platform
   const isMobile = Capacitor.isNativePlatform();
 
-  // Güvenli plugin yükleme
-  const getPushNotifications = async (): Promise<PushNotificationsType | null> => {
-    try {
-      if (!isMobile) return null;
-      const module = await import("@capacitor/push-notifications");
-      return module.PushNotifications;
-    } catch (error) {
-      console.log("PushNotifications plugin yüklenemedi:", error);
-      return null;
-    }
-  };
+  // getPushNotifications KALDIRILDI - SafePushNotifications kullanılıyor
 
   const getLocalNotifications = async (): Promise<LocalNotificationsType | null> => {
     try {
@@ -40,7 +30,7 @@ export const useMobileNotifications = () => {
     }
   };
 
-  // Initialize push notifications
+  // Initialize push notifications - SafePushNotifications kullanılıyor
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
       // Web bildirim izinlerini kontrol et
@@ -57,56 +47,50 @@ export const useMobileNotifications = () => {
     }
 
     try {
-      const PushNotifications = await getPushNotifications();
-      if (!PushNotifications) {
+      console.log("📱 Push bildirimleri başlatılıyor (SafePushNotifications)...");
+
+      // SafePushNotifications kullanarak izin kontrolü
+      const permissionStatus = await SafePushNotifications.checkPermissions();
+      if (!permissionStatus) {
         console.log("PushNotifications plugin not available");
         return;
       }
-
-      console.log("📱 Push bildirimleri başlatılıyor...");
-
-      // Request permission to use push notifications
-      const permissionStatus = await PushNotifications.checkPermissions();
       console.log("📱 İzin durumu:", permissionStatus.receive);
 
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
 
-        // Önce listener'ları kur
-        PushNotifications.addListener("registration", async (token) => {
-          console.log("✅ Push registration success, token:", token.value.substring(0, 30) + "...");
+        // 🔥 KRİTİK: SafePushNotifications.addListener kullan - .then() YOK!
+        SafePushNotifications.addListener("registration", async (token: any) => {
+          console.log("✅ Push registration success, token:", token.value?.substring(0, 30) + "...");
           setPushToken(token.value);
 
           // Save token to database for the user
           if (user?.id) {
             await savePushToken(user.id, token.value);
           } else {
-            // User yoksa localStorage'a kaydet, sonra kullanılır
             console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
             localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
           }
         });
 
-        // Some issue with the setup and push will not work
-        PushNotifications.addListener("registrationError", (error: any) => {
-          console.error("❌ Push registration error:", error.error);
+        SafePushNotifications.addListener("registrationError", (error: any) => {
+          console.error("❌ Push registration error:", error?.error);
         });
 
-        // Show us the notification payload if the app is open on iOS
-        PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        SafePushNotifications.addListener("pushNotificationReceived", (notification: any) => {
           console.log("📬 Push notification received:", notification);
           showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
         });
 
-        // Method called when tapping on a notification
-        PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
+        SafePushNotifications.addListener("pushNotificationActionPerformed", (notification: any) => {
           console.log("👆 Push notification action performed:", notification);
           handleNotificationAction(notification);
         });
 
-        // Register with Apple / Google to receive push via APNS/FCM
+        // Register - SafePushNotifications ile
         console.log("📱 Register çağrılıyor...");
-        await PushNotifications.register();
+        await SafePushNotifications.register();
         console.log("✅ Register başarılı");
       } else {
         setIsPermissionGranted(false);
@@ -395,33 +379,29 @@ export const useMobileNotifications = () => {
       console.log("📱 Platform:", isMobile ? "Native" : "Web");
 
       if (isMobile) {
-        const PushNotifications = await getPushNotifications();
-        console.log("📱 PushNotifications plugin:", PushNotifications ? "Yüklendi" : "Yüklenemedi");
+        // SafePushNotifications ile izin kontrolü
+        const currentStatus = await SafePushNotifications.checkPermissions();
+        console.log("📱 Mevcut izin durumu:", currentStatus?.receive);
         
-        if (PushNotifications) {
-          // 1. Önce mevcut izin durumunu kontrol et
-          const currentStatus = await PushNotifications.checkPermissions();
-          console.log("📱 Mevcut izin durumu:", currentStatus.receive);
-          
-          // 2. İzin iste (Pencere burada açılacak)
-          console.log("📱 İzin isteniyor...");
-          const permission = await PushNotifications.requestPermissions();
-          console.log("📱 İzin sonucu:", permission.receive);
-
-          if (permission.receive === "granted") {
-            // 3. İzin verildiyse servisleri başlat
-            console.log("✅ İzin verildi, servisler başlatılıyor...");
-            await initializePushNotifications();
-            await initializeLocalNotifications();
-            setIsPermissionGranted(true);
-            return true;
-          } else {
-            console.log("❌ İzin reddedildi veya prompt kapatıldı");
-            setIsPermissionGranted(false);
-            return false;
-          }
-        } else {
+        if (!currentStatus) {
           console.error("❌ PushNotifications plugin yüklenemedi!");
+          return false;
+        }
+        
+        // İzin iste
+        console.log("📱 İzin isteniyor...");
+        const permission = await SafePushNotifications.requestPermissions();
+        console.log("📱 İzin sonucu:", permission?.receive);
+
+        if (permission?.receive === "granted") {
+          console.log("✅ İzin verildi, servisler başlatılıyor...");
+          await initializePushNotifications();
+          await initializeLocalNotifications();
+          setIsPermissionGranted(true);
+          return true;
+        } else {
+          console.log("❌ İzin reddedildi veya prompt kapatıldı");
+          setIsPermissionGranted(false);
           return false;
         }
       } else {
@@ -442,16 +422,15 @@ export const useMobileNotifications = () => {
     }
   };
 
-  // Check current permission status
+  // Check current permission status - SafePushNotifications ile
   const checkPermissionStatus = useCallback(async () => {
     try {
       if (isMobile) {
-        const PushNotifications = await getPushNotifications();
-        if (!PushNotifications) {
+        const permissionStatus = await SafePushNotifications.checkPermissions();
+        if (!permissionStatus) {
           console.log("PushNotifications.checkPermissions not available");
           return;
         }
-        const permissionStatus = await PushNotifications.checkPermissions();
         console.log("📱 İzin durumu kontrol:", permissionStatus.receive);
         setIsPermissionGranted(permissionStatus.receive === "granted");
       } else {
