@@ -366,13 +366,17 @@ const sendMessage = async () => {
     const isBanned = await isUserBanned(user.id);
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
-      toast({ title: "Hata", description: `Sohbet yasağınız var! Kalan süre: ${timeLeft}`);
+      toast({
+        title: "Hata",
+        description: `Sohbet yasağınız var! Kalan süre: ${timeLeft}`,
+        variant: "destructive",
+      });
       return;
     }
 
     const trimmedMessage = newMessage.trim();
     if (trimmedMessage.length > 200) {
-      toast({ title: "Hata", description: 'Mesaj 200 karakterden uzun olamaz');
+      toast({ title: "Hata", description: 'Mesaj 200 karakterden uzun olamaz', variant: "destructive" });
       return;
     }
 
@@ -382,10 +386,10 @@ const sendMessage = async () => {
       console.log(`🚫 KÜFÜR TESPİT EDİLDİ: "${bannedCheck.word}" - Severity: ${bannedCheck.severity}`);
       
       if (bannedCheck.severity === 'high') {
-        toast({ title: "Hata", description: `Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
+        toast({ title: "Hata", description: `Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`, variant: "destructive" });
         await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
       } else {
-        toast({ title: "Hata", description: 'Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.');
+        toast({ title: "Hata", description: 'Yasaklı kelime kullandınız! 2 gün sohbet yasağı aldınız.', variant: "destructive" });
         await banUser(user.id, `Yasaklı kelime: ${bannedCheck.word}`, 48);
       }
       setNewMessage('');
@@ -404,10 +408,17 @@ const sendMessage = async () => {
         const result = moderationResult[0];
         if (!result.is_appropriate) {
           if (result.should_ban) {
-            toast({ title: "Hata", description: `${result.reason} - 2 gün sohbet yasağı aldınız!`);
+            toast({
+              title: "Hata",
+              description: `${result.reason} - 2 gün sohbet yasağı aldınız!`,
+              variant: "destructive",
+            });
             await banUser(user.id, result.reason, 48);
           } else {
-            toast({ title: "Uyarı", description: `${result.reason} - Lütfen daha dikkatli olun.`);
+            toast({
+              title: "Uyarı",
+              description: `${result.reason} - Lütfen daha dikkatli olun.`,
+            });
           }
           setNewMessage('');
           return;
@@ -504,7 +515,7 @@ const sendMessage = async () => {
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       setNewMessage(trimmedMessage); // Mesajı geri koy
       
-      toast({ title: "Hata", description: 'Mesaj gönderilirken hata oluştu');
+      toast({ title: "Hata", description: 'Mesaj gönderilirken hata oluştu', variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -564,7 +575,7 @@ const sendMessage = async () => {
 
     if (existingReaction) {
       toast({ title: "Bilgi", description: 'Bu emoji reaksiyonunu zaten vermişsiniz');
-      setShowEmojiPicker(null);
+      setShowEmojiPicker(null });
       return;
     }
 
@@ -603,7 +614,7 @@ const sendMessage = async () => {
         
         // Handle duplicate key error
         if (error.code === '23505') {
-          toast({ title: "Bilgi", description: 'Bu emoji reaksiyonunu zaten vermişsiniz');
+          toast({ title: "Bilgi", description: 'Bu emoji reaksiyonunu zaten vermişsiniz' });
         } else {
           throw error;
         }
@@ -614,7 +625,7 @@ const sendMessage = async () => {
       setShowEmojiPicker(null);
     } catch (error) {
       console.error('Error adding reaction:', error);
-      toast({ title: "Hata", description: 'Reaksiyon eklenirken hata oluştu');
+      toast({ title: "Hata", description: 'Reaksiyon eklenirken hata oluştu', variant: "destructive" });
     }
   };
 
@@ -634,7 +645,7 @@ const sendMessage = async () => {
       playSound('buttonClick');
     } catch (error) {
       console.error('Error removing reaction:', error);
-      toast({ title: "Hata", description: 'Reaksiyon kaldırılırken hata oluştu');
+      toast({ title: "Hata", description: 'Reaksiyon kaldırılırken hata oluştu', variant: "destructive" });
     }
   };
 
@@ -656,12 +667,12 @@ const sendMessage = async () => {
   // Report message
   const handleReportMessage = (messageId: string, userId: string, username: string) => {
     if (!user) {
-      toast({ title: "Hata", description: 'Rapor göndermek için giriş yapmalısınız');
+      toast({ title: "Hata", description: 'Rapor göndermek için giriş yapmalısınız', variant: "destructive" });
       return;
     }
     
     if (userId === user.id) {
-      toast({ title: "Bilgi", description: 'Kendi mesajınızı raporlayamazsınız');
+      toast({ title: "Bilgi", description: 'Kendi mesajınızı raporlayamazsınız' });
       return;
     }
 
@@ -686,10 +697,10 @@ const sendMessage = async () => {
       if (error) throw error;
       
       playSound('buttonClick');
-      toast({ title: "Başarılı", description: 'Mesaj silindi');
+      toast({ title: "Başarılı", description: 'Mesaj silindi', variant: "success" });
     } catch (error) {
       console.error('Error deleting message:', error);
-      toast({ title: "Hata", description: 'Mesaj silinirken hata oluştu');
+      toast({ title: "Hata", description: 'Mesaj silinirken hata oluştu', variant: "destructive" });
     }
   };
 
