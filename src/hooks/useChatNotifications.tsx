@@ -87,8 +87,19 @@ export function useChatNotifications() {
   };
 
   const refreshUnreadCounts = useCallback(async () => {
+    if (!user?.id) return;
+
+    console.log("🔄 [ChatNotif] Badge sayacı güncelleniyor...");
+
     const privateCount = await loadUnreadMessages();
     const mentionCount = await loadGlobalMentions();
+
+    console.log("📊 [ChatNotif] Yeni sayaçlar:", {
+      privateCount,
+      mentionCount,
+      total: privateCount + mentionCount,
+    });
+
     setUnreadCount(privateCount);
     setGlobalMentionCount(mentionCount);
   }, [user?.id, profile?.username]);
@@ -138,7 +149,14 @@ export function useChatNotifications() {
     console.log("[ChatNotif] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
     subscriptionUserIdRef.current = user.id;
 
+    // İlk yükleme
     refreshUnreadCounts();
+
+    // 🔄 Periyodik güncelleme - her 30 saniyede bir (real-time kaçırırsa diye)
+    const intervalId = setInterval(() => {
+      console.log("[ChatNotif] ⏰ Periyodik badge güncellemesi");
+      refreshUnreadCounts();
+    }, 30000); // 30 saniye
 
     const channel = supabase
       .channel("notifications-channel")
@@ -183,6 +201,19 @@ export function useChatNotifications() {
 
           // 🔥 sender_id'yi URL parametresi olarak geç
           showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, navigateUrl);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "private_messages",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          console.log("🔄 [ChatNotif] Özel mesaj güncellendi (okundu)");
+          refreshUnreadCounts();
         },
       )
       .on(
@@ -241,10 +272,10 @@ export function useChatNotifications() {
 
     channelRef.current = channel;
 
-    // Cleanup - channel'ı koruyoruz
+    // Cleanup - interval ve channel
     return () => {
-      // Channel korunuyor, sadece log
-      console.log("[ChatNotif] Cleanup - channel korunuyor");
+      clearInterval(intervalId);
+      console.log("[ChatNotif] Cleanup - interval temizlendi, channel korunuyor");
     };
   }, [user?.id, refreshUnreadCounts, showInAppNotification]);
 
