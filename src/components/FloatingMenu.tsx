@@ -118,6 +118,11 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
 
+  // 🔍 Badge debug
+  useEffect(() => {
+    console.log("🔔 [FloatingMenu] Badge değeri:", totalNotifications);
+  }, [totalNotifications]);
+
   const handleToggle = () => {
     playSound("buttonClick");
     const newState = !isOpen;
