@@ -14,7 +14,7 @@ export function useChatNotifications() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
-  
+
   // 🔥 Subscription guard - aynı user için tekrar oluşturma
   const subscriptionUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<any>(null);
@@ -105,9 +105,10 @@ export function useChatNotifications() {
         title,
         description,
         duration: 5000,
+        position: "bottom-right", // 🔥 Toast'ı ekranın altına taşı
         action: navigateTo ? (
           <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
-            Görüntüle
+            Git
           </Button>
         ) : undefined,
       });
@@ -151,7 +152,7 @@ export function useChatNotifications() {
 
           const activeChats = getActivePrivateChats();
           const isInActiveChat = activeChats.includes(newMsg.chat_id);
-          
+
           if (isInActiveChat) {
             console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
             return;
@@ -190,24 +191,11 @@ export function useChatNotifications() {
           }
 
           if (notif.type === "tournament_opponent_left") {
-            toast({
-              title: "🏆 Hükmen Galibiyet!",
-              description: notif.message,
-              duration: 6000,
-            });
+            showInAppNotification("🏆 Hükmen Galibiyet!", notif.message);
           }
 
           if (notif.type === "tournament_end") {
-            toast({
-              title: "🏆 Turnuva Sona Erdi!",
-              description: notif.message,
-              duration: 8000,
-              action: (
-                <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
-                  Sonuçlar
-                </Button>
-              ),
-            });
+            showInAppNotification("🏆 Turnuva Sona Erdi!", notif.message, `/tournament-bracket/${notif.related_id}`);
           }
         },
       )
@@ -222,7 +210,7 @@ export function useChatNotifications() {
         refreshUnreadCounts,
       )
       .subscribe();
-    
+
     channelRef.current = channel;
 
     // Cleanup - channel'ı koruyoruz
