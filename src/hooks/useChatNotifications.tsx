@@ -14,7 +14,7 @@ export function useChatNotifications() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
-  
+
   // navigate'i ref'te tut - dependency'den çıkar
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
@@ -91,24 +91,23 @@ export function useChatNotifications() {
   }, [loadUnreadMessages, loadGlobalMentions]);
 
   // Uygulama içi bildirim gösterme
-  const showInAppNotification = useCallback(
-    (title: string, description: string, navigateTo?: string) => {
-      if (!getIsAppInForeground()) {
-        console.log("[ChatNotif] App in background, skipping in-app toast");
-        return;
-      }
+  const showInAppNotification = useCallback((title: string, description: string, navigateTo?: string) => {
+    if (!getIsAppInForeground()) {
+      console.log("[ChatNotif] App in background, skipping in-app toast");
+      return;
+    }
 
-      toast.info(title, {
-        description,
-        duration: 5000,
-        action: navigateTo ? {
-          label: "Git",
-          onClick: () => navigateRef.current(navigateTo),
-        } : undefined,
-      });
-    },
-    [],
-  );
+    toast.info(title, {
+      description,
+      duration: 5000,
+      action: navigateTo
+        ? {
+            label: "Git",
+            onClick: () => navigateRef.current(navigateTo),
+          }
+        : undefined,
+    });
+  }, []);
 
   // --- REAL-TIME LISTENER (autoReconnect ile) ---
   useEffect(() => {
@@ -148,7 +147,7 @@ export function useChatNotifications() {
 
             const activeChats = getActivePrivateChats();
             const isInActiveChat = activeChats.includes(newMsg.chat_id);
-            
+
             if (isInActiveChat) {
               console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
               return;
@@ -172,12 +171,25 @@ export function useChatNotifications() {
             table: "notifications",
             filter: `user_id=eq.${user.id}`,
           },
-          (payload) => {
+          async (payload) => {
             const notif: any = payload.new;
             if (!notif) return;
 
+            console.log("📢 [ChatNotif] Yeni bildirim alındı:", notif.type, notif);
+
             if (notif.type === "mention") {
               refreshUnreadCounts();
+
+              // 👇 KULLANICI GLOBAL CHAT'TE Mİ KONTROLÜ
+              const isInGlobalChat = window.location.pathname === "/chat";
+
+              if (isInGlobalChat && getIsAppInForeground()) {
+                console.log("💬 [ChatNotif] Kullanıcı zaten global chat'te, toast gösterilmiyor");
+                // Sadece count'u güncelle, toast gösterme
+                return;
+              }
+
+              // Toast göster
               showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
             }
 
@@ -219,7 +231,7 @@ export function useChatNotifications() {
         )
         .subscribe((status) => {
           console.log("[ChatNotif] 📡 Subscription status:", status);
-        })
+        }),
     );
 
     // Cleanup - autoReconnect'ten kayıt sil
