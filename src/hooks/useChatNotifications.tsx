@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
 import { getActivePrivateChats } from "@/utils/notifications";
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 export function useChatNotifications() {
   const { user } = useAuth();
@@ -15,14 +16,11 @@ export function useChatNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [globalMentionCount, setGlobalMentionCount] = useState(0);
   
-  // 🔥 Subscription guard - aynı user için tekrar oluşturma
-  const subscriptionUserIdRef = useRef<string | null>(null);
-  const channelRef = useRef<any>(null);
   // navigate'i ref'te tut - dependency'den çıkar
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
-  const loadUnreadMessages = async () => {
+  const loadUnreadMessages = useCallback(async () => {
     if (!user?.id) return 0;
     try {
       const { count } = await supabase
@@ -36,9 +34,9 @@ export function useChatNotifications() {
       console.error("Error loading unread messages:", error);
       return 0;
     }
-  };
+  }, [user?.id]);
 
-  const loadGlobalMentions = async () => {
+  const loadGlobalMentions = useCallback(async () => {
     if (!user?.id || !profile?.username) return 0;
     try {
       const { data } = await supabase
@@ -53,7 +51,7 @@ export function useChatNotifications() {
       console.error("Error loading global mentions:", error);
       return 0;
     }
-  };
+  }, [user?.id, profile?.username]);
 
   const markPrivateMessagesAsRead = async () => {
     if (!user?.id) return;
@@ -91,9 +89,9 @@ export function useChatNotifications() {
     const mentionCount = await loadGlobalMentions();
     setUnreadCount(privateCount);
     setGlobalMentionCount(mentionCount);
-  }, [user?.id, profile?.username]);
+  }, [loadUnreadMessages, loadGlobalMentions]);
 
-  // Uygulama içi bildirim gösterme - ref kullan
+  // Uygulama içi bildirim gösterme
   const showInAppNotification = useCallback(
     (title: string, description: string, navigateTo?: string) => {
       if (!getIsAppInForeground()) {
@@ -112,123 +110,128 @@ export function useChatNotifications() {
         ) : undefined,
       });
     },
-    [], // 🔥 Boş dependency - navigateRef kullandığımız için
+    [],
   );
 
-  // --- REAL-TIME LISTENER ---
+  // --- REAL-TIME LISTENER (autoReconnect ile) ---
   useEffect(() => {
     if (!user?.id) return;
 
-    // 🔥 GUARD: Aynı user için zaten subscription varsa atla
-    if (subscriptionUserIdRef.current === user.id && channelRef.current) {
-      console.log("[ChatNotif] ⏭️ Subscription zaten aktif, atlanıyor...");
-      refreshUnreadCounts(); // Sadece count'ları yenile
-      return;
-    }
+    console.log("[ChatNotif] 🔌 Setting up notification subscription:", user.id.slice(-8));
 
-    console.log("[ChatNotif] 🔌 Yeni subscription oluşturuluyor:", user.id.slice(-8));
-    subscriptionUserIdRef.current = user.id;
-
+    // İlk yükleme
     refreshUnreadCounts();
 
-    const channel = supabase
-      .channel("notifications-channel")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "private_messages",
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          const newMsg: any = payload.new;
-          if (!newMsg) return;
+    // Unique channel name for this user
+    const channelName = `chat-notifications-${user.id}`;
 
-          console.log("📨 [ChatNotif] Yeni özel mesaj alındı:", newMsg.chat_id);
+    // autoReconnect ile kaydet
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel(channelName, {
+          config: {
+            broadcast: { self: false },
+          },
+        })
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "private_messages",
+            filter: `recipient_id=eq.${user.id}`,
+          },
+          async (payload) => {
+            const newMsg: any = payload.new;
+            if (!newMsg) return;
 
-          refreshUnreadCounts();
+            console.log("📨 [ChatNotif] Yeni özel mesaj alındı:", newMsg.chat_id);
 
-          const activeChats = getActivePrivateChats();
-          const isInActiveChat = activeChats.includes(newMsg.chat_id);
-          
-          if (isInActiveChat) {
-            console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
-            return;
-          }
-
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", newMsg.sender_id)
-            .single();
-
-          const senderName = senderProfile?.username || "Birisi";
-          showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const notif: any = payload.new;
-          if (!notif) return;
-
-          if (notif.type === "mention") {
             refreshUnreadCounts();
-            showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
-          }
 
-          if (notif.type === "message") {
+            const activeChats = getActivePrivateChats();
+            const isInActiveChat = activeChats.includes(newMsg.chat_id);
+            
+            if (isInActiveChat) {
+              console.log("💬 [ChatNotif] Kullanıcı zaten bu sohbette, toast gösterilmiyor");
+              return;
+            }
+
+            const { data: senderProfile } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("id", newMsg.sender_id)
+              .single();
+
+            const senderName = senderProfile?.username || "Birisi";
+            showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const notif: any = payload.new;
+            if (!notif) return;
+
+            if (notif.type === "mention") {
+              refreshUnreadCounts();
+              showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
+            }
+
+            if (notif.type === "message") {
+              refreshUnreadCounts();
+              showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
+            }
+
+            if (notif.type === "tournament_opponent_left") {
+              toast({
+                title: "🏆 Hükmen Galibiyet!",
+                description: notif.message,
+                duration: 6000,
+              });
+            }
+
+            if (notif.type === "tournament_end") {
+              toast({
+                title: "🏆 Turnuva Sona Erdi!",
+                description: notif.message,
+                duration: 8000,
+                action: (
+                  <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
+                    Sonuçlar
+                  </Button>
+                ),
+              });
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
             refreshUnreadCounts();
-            showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
-          }
+          },
+        )
+        .subscribe((status) => {
+          console.log("[ChatNotif] 📡 Subscription status:", status);
+        })
+    );
 
-          if (notif.type === "tournament_opponent_left") {
-            toast({
-              title: "🏆 Hükmen Galibiyet!",
-              description: notif.message,
-              duration: 6000,
-            });
-          }
-
-          if (notif.type === "tournament_end") {
-            toast({
-              title: "🏆 Turnuva Sona Erdi!",
-              description: notif.message,
-              duration: 8000,
-              action: (
-                <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
-                  Sonuçlar
-                </Button>
-              ),
-            });
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        refreshUnreadCounts,
-      )
-      .subscribe();
-    
-    channelRef.current = channel;
-
-    // Cleanup - channel'ı koruyoruz
+    // Cleanup - autoReconnect'ten kayıt sil
     return () => {
-      // Channel korunuyor, sadece log
-      console.log("[ChatNotif] Cleanup - channel korunuyor");
+      console.log("[ChatNotif] 🧹 Cleaning up notification channel");
+      autoReconnect.unregisterChannel(channelName);
     };
   }, [user?.id, refreshUnreadCounts, showInAppNotification]);
 

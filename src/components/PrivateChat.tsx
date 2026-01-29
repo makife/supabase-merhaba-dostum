@@ -1,4 +1,4 @@
-// PrivateChat.tsx - Real-time düzeltmeleri
+// PrivateChat.tsx - Real-time düzeltmeleri (autoReconnect ile)
 import { setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
 import { useUser } from "@/contexts/UserContext";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -19,7 +19,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { setLastChatId, getLastChatId } from "@/utils/persistentState";
-// NativeRealtime kaldırıldı
+import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 interface PrivateMessage {
   id: string;
@@ -157,7 +157,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     }
   };
 
-  // TEK BİR REAL-TIME SUBSCRIPTION
+  // TEK BİR REAL-TIME SUBSCRIPTION (autoReconnect ile)
   useEffect(() => {
     if (!chatId || !user?.id) return;
 
@@ -166,82 +166,82 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     // İlk mesajları yükle
     fetchMessages();
 
-    // Real-time subscription kur - DAHA KISA CHANNEL ADI
-    const channelName = `private-${chatId.replace("chat_", "").substring(0, 20)}`; // Kısalt
+    // Unique channel name
+    const channelName = `private-chat-${chatId.substring(0, 30)}`;
 
-    const channel = supabase
-      .channel(channelName, {
-        config: {
-          broadcast: { self: false },
-        },
-      })
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "private_messages",
-          filter: `chat_id=eq.${chatId}`,
-        },
-        (payload) => {
-          console.log("📨 New private message received:", payload.new);
+    // autoReconnect ile kaydet
+    autoReconnect.registerChannel(channelName, () =>
+      supabase
+        .channel(channelName, {
+          config: {
+            broadcast: { self: false },
+          },
+        })
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "private_messages",
+            filter: `chat_id=eq.${chatId}`,
+          },
+          (payload) => {
+            console.log("📨 New private message received:", payload.new);
 
-          const newMessage = payload.new as PrivateMessage;
+            const newMessage = payload.new as PrivateMessage;
 
-          setMessages((prev) => {
-            // Duplicate kontrolü
-            const exists = prev.some((msg) => msg.id === newMessage.id);
-            if (exists) {
-              console.log("⚠️ Private message already exists, skipping");
-              return prev;
+            setMessages((prev) => {
+              // Duplicate kontrolü
+              const exists = prev.some((msg) => msg.id === newMessage.id);
+              if (exists) {
+                console.log("⚠️ Private message already exists, skipping");
+                return prev;
+              }
+
+              console.log("✅ Adding new private message to state");
+              return [...prev, newMessage].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+              );
+            });
+
+            // Sadece başkalarından gelen mesajlar için ses çal
+            if (newMessage.sender_id !== user?.id) {
+              playSound("correctWord");
+              // Mesajı okundu olarak işaretle
+              setTimeout(markMessagesAsRead, 1000);
             }
 
-            console.log("✅ Adding new private message to state");
-            return [...prev, newMessage].sort(
-              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-            );
-          });
+            // Unread count'u güncelle
+            refreshUnreadCounts();
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "private_messages",
+            filter: `chat_id=eq.${chatId}`,
+          },
+          (payload) => {
+            console.log("📝 Private message updated:", payload.new);
 
-          // Sadece başkalarından gelen mesajlar için ses çal
-          if (newMessage.sender_id !== user?.id) {
-            playSound("correctWord");
-            // Mesajı okundu olarak işaretle
-            setTimeout(markMessagesAsRead, 1000);
+            setMessages((prev) => prev.map((msg) => (msg.id === payload.new.id ? { ...msg, ...payload.new } : msg)));
+          },
+        )
+        .subscribe((status) => {
+          console.log("📡 Private subscription status:", status);
+
+          if (status === "SUBSCRIBED") {
+            console.log("✅ Private chat subscription active");
           }
+        })
+    );
 
-          // Unread count'u güncelle
-          refreshUnreadCounts();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "private_messages",
-          filter: `chat_id=eq.${chatId}`,
-        },
-        (payload) => {
-          console.log("📝 Private message updated:", payload.new);
-
-          setMessages((prev) => prev.map((msg) => (msg.id === payload.new.id ? { ...msg, ...payload.new } : msg)));
-        },
-      )
-      .subscribe((status) => {
-        console.log("📡 Private subscription status:", status);
-
-        if (status === "SUBSCRIBED") {
-          console.log("✅ Private chat subscription active");
-        } else if (status === "CLOSED" && isSystemConnected) {
-          // İŞTE KRİTİK NOKTA: JS kapandı ama Native bağlıysa kullanıcıya hissettirme!
-          console.log("🤫 JS kanalı kapandı ama Native (Kotlin) hala bağlı. UI korunuyor.");
-        }
-      });
-
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
+    // Cleanup - autoReconnect'ten kayıt sil
     return () => {
-      console.log("⚠️ [PrivateChat] Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("🧹 [PrivateChat] Cleaning up channel:", channelName);
+      autoReconnect.unregisterChannel(channelName);
     };
   }, [chatId, user?.id]);
 
