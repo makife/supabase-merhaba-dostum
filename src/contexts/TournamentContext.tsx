@@ -335,7 +335,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       // 2. ŞİMDİ KREDİLERİ DÜŞ (Yeni Yazdığımız RPC)
       // Bu işlem sunucuda yapılacak, kimin başlattığı önemli değil.
-      const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits", {
+      const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits" as any, {
         p_tournament_id: tournamentId,
       });
 
