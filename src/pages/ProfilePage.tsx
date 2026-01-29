@@ -30,6 +30,10 @@ import {
   Award,
   Users,
   User,
+  Star,
+  Flame,
+  Shield,
+  Sparkles,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -62,14 +66,13 @@ const ProfilePage = () => {
     nextLevelExp: 1000,
     averageScore: 0,
     premiumUntil: null as string | null,
-    // Yeni turnuva istatistikleri
     tournamentsWon: 0,
     tournamentsLost: 0,
     tournamentsPlayed: 0,
     tournamentWinRate: 0,
   });
 
-  const [badges, setBadges] = useState<
+  const [badges, setBadges] = useState
     Array<{
       id: string;
       name: string;
@@ -82,7 +85,6 @@ const ProfilePage = () => {
     }>
   >([]);
 
-  // Badge ilerleme için kullanıcı istatistikleri
   const [userStats, setUserStats] = useState<{
     total_games?: number;
     total_score?: number;
@@ -100,7 +102,9 @@ const ProfilePage = () => {
     fastest_word_time?: number;
   }>({});
 
-  // Calculate level from total score (same as LevelProgress component)
+  // ... TÜM MEVCUT FONKSİYONLAR AYNI KALACAK ...
+  // (calculateLevel, fetchBadges, fetchTournamentStats, vs. - hiçbir değişiklik yok)
+
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -125,7 +129,6 @@ const ProfilePage = () => {
     if (!viewedUserId) return;
 
     try {
-      // Get all badges with user's earned status
       const { data: allBadges, error: badgesError } = await supabase.from("badges").select("*").order("name");
 
       if (badgesError) {
@@ -133,7 +136,6 @@ const ProfilePage = () => {
         return;
       }
 
-      // Get viewed user's earned badges
       const { data: userBadges, error: userBadgesError } = await supabase
         .from("user_badges")
         .select("badge_id, earned_at")
@@ -144,7 +146,6 @@ const ProfilePage = () => {
         return;
       }
 
-      // Combine badges with earned status
       const earnedBadgeIds = new Set(userBadges?.map((ub) => ub.badge_id) || []);
       const badgesWithStatus =
         allBadges?.map((badge) => ({
@@ -168,7 +169,6 @@ const ProfilePage = () => {
     if (!viewedUserId) return { won: 0, lost: 0, played: 0, winRate: 0 };
 
     try {
-      // Sadece final maçlarını getir (şampiyonluk)
       const { data: finalMatches, error } = await supabase
         .from("tournament_matches")
         .select("winner_id, player1_id, player2_id, status, tournament_id, round")
@@ -184,7 +184,6 @@ const ProfilePage = () => {
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
-      // Her turnuvanın max round'unu bul
       const tournamentMaxRounds: Record<string, number> = {};
       finalMatches.forEach((match) => {
         if (match.tournament_id) {
@@ -195,12 +194,10 @@ const ProfilePage = () => {
         }
       });
 
-      // Sadece final maçlarını say (şampiyonluklar)
       let won = 0;
       let lost = 0;
 
       finalMatches.forEach((match) => {
-        // Sadece final round'larını say
         if (match.tournament_id && match.round === tournamentMaxRounds[match.tournament_id]) {
           if (match.winner_id === viewedUserId) {
             won++;
@@ -226,7 +223,6 @@ const ProfilePage = () => {
 
       const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle();
 
-      // Turnuva istatistiklerini al
       const tournamentStats = await fetchTournamentStats();
 
       if (data) {
@@ -251,14 +247,12 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
-          // Turnuva istatistikleri
           tournamentsWon: tournamentStats.won,
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
         }));
 
-        // Badge ilerleme için kullanıcı istatistiklerini güncelle
         setUserStats({
           total_games: data.total_games || 0,
           total_score: data.total_score || 0,
@@ -281,7 +275,6 @@ const ProfilePage = () => {
     fetchProfile();
   }, [viewedUserId]);
 
-  // Listen for real-time updates only for own profile
   useEffect(() => {
     if (!user || !isOwnProfile) return;
 
@@ -327,7 +320,6 @@ const ProfilePage = () => {
             };
           });
 
-          // Badge ilerleme için userStats'ı da güncelle
           setUserStats((prev) => ({
             ...prev,
             total_games: newData.total_games ?? prev.total_games,
@@ -346,10 +338,8 @@ const ProfilePage = () => {
             fastest_word_time: newData.fastest_word_time ?? prev.fastest_word_time,
           }));
 
-          // Profilde bir güncelleme olduğunda rozetleri de tazele ve kontrol et
           fetchBadges();
 
-          // Rozet kontrolü yap
           if (user) {
             checkBadges(user.id);
           }
@@ -381,7 +371,6 @@ const ProfilePage = () => {
           fetchBadges();
         },
       )
-      // Turnuva maçları değişikliklerini dinle
       .on(
         "postgres_changes",
         {
@@ -402,7 +391,6 @@ const ProfilePage = () => {
               tournamentWinRate: tournamentStats.winRate,
             }));
 
-            // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
@@ -429,7 +417,6 @@ const ProfilePage = () => {
               tournamentWinRate: tournamentStats.winRate,
             }));
 
-            // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
@@ -438,9 +425,7 @@ const ProfilePage = () => {
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
       console.log("⚠️ [ProfilePage] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [user, isOwnProfile]);
@@ -449,7 +434,6 @@ const ProfilePage = () => {
     fetchBadges();
   }, [viewedUserId]);
 
-  // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil verilerini otomatik tazele
   const refreshProfileData = useCallback(async () => {
     if (!viewedUserId) return;
     
@@ -491,7 +475,6 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
         }));
 
-        // Badge ilerleme için userStats'ı da güncelle
         setUserStats({
           total_games: data.total_games || 0,
           total_score: data.total_score || 0,
@@ -510,7 +493,6 @@ const ProfilePage = () => {
         });
       }
       
-      // Rozetleri de yeniden yükle
       await fetchBadges();
       console.log('✅ [ProfilePage] Resync tamamlandı - rozetler dahil');
     } catch (error) {
@@ -530,7 +512,6 @@ const ProfilePage = () => {
   const handleSaveProfile = async () => {
     if (!user || !isOwnProfile) return;
 
-    // Rumuz uzunluk kontrolü
     if (editedUsername.length > 15) {
       toast.error("Rumuz en fazla 15 karakter olabilir");
       return;
@@ -555,7 +536,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Helper function to get subscription info
   const getSubscriptionInfo = () => {
     if (!profileData.premiumUntil) return null;
 
@@ -588,7 +568,6 @@ const ProfilePage = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
 
-  // checkBadges fonksiyonunu ekle
   const checkBadges = async (userId: string) => {
     try {
       console.log("Rozet kontrolu yapiliyor:", userId);
@@ -682,7 +661,6 @@ const ProfilePage = () => {
 
       await fetchBadges();
 
-      // Rozet kontrolü yap (sadece kendi profilinde)
       if (isOwnProfile && user) {
         await checkBadges(user.id);
       }
@@ -694,10 +672,17 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col">
-      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
-        {/* Fixed Header */}
-        <div className="p-3 pt-6 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col relative overflow-hidden">
+      {/* Animated Background Particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-40 h-40 bg-purple-300/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-20 w-56 h-56 bg-blue-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-20 left-1/4 w-48 h-48 bg-pink-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-3xl mx-auto w-full flex flex-col min-h-screen relative z-10">
+        {/* Header with Glassmorphism */}
+        <div className="p-4 pt-6 bg-white/40 backdrop-blur-xl border-b border-white/50 shadow-2xl sticky top-0 z-20">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="outline"
@@ -710,58 +695,77 @@ const ProfilePage = () => {
                   navigate("/");
                 }
               }}
-              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10"
+              className="bg-white/60 backdrop-blur-sm border-white/80 hover:bg-white/80 hover:shadow-lg transition-all duration-300"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
             </Button>
 
-            <div className="relative inline-block">
-              {/* Stroke Background */}
-              <img
-                src="/stroke.png"
-                alt="Stroke Background"
-                className="absolute inset-0 w-full h-full object-contain opacity-50"
-              />
-              {/* Profile Title */}
-              <h1 className="text-3xl font-bold flex items-center text-blue-600 relative z-10 px-6 py-3">
-                <User className="w-6 h-6 mr-3 text-blue-500" />
-                {isOwnProfile ? "Profil" : `${profileData.username} Profili`}
+            {/* Animated Title */}
+            <div className="relative">
+              <h1 className="text-3xl font-black flex items-center bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <User className="w-7 h-7 mr-3 text-purple-600 drop-shadow-lg" />
+                {isOwnProfile ? "Profil" : `${profileData.username}`}
               </h1>
+              <div className="absolute -inset-2 bg-gradient-to-r from-purple-400/20 to-pink-400/20 blur-xl -z-10 animate-pulse"></div>
             </div>
 
             <div className="w-16 flex justify-end">
               {isOwnProfile &&
                 (isEditing ? (
-                  <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleSaveProfile}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-none hover:shadow-lg"
+                  >
                     Kaydet
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={handleEditToggle} className="p-2">
-                    <Edit className="w-5 h-5 text-red-500" />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleEditToggle} 
+                    className="p-2 hover:bg-purple-100 transition-colors"
+                  >
+                    <Edit className="w-5 h-5 text-purple-600" />
                   </Button>
                 ))}
             </div>
           </div>
 
-          {/* Profile Header in Fixed Area */}
-          <Card>
+          {/* Profile Header Card with Premium Design */}
+          <Card className="border-2 border-white/50 bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl shadow-2xl">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
+                {/* Avatar with Glowing Ring */}
                 <div className="flex flex-col items-center">
                   <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
-                    <Avatar className="w-20 h-20 ring-2 ring-primary/20">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full blur opacity-75 animate-pulse"></div>
+                    <Avatar className={`relative w-24 h-24 ${
+                      subscriptionInfo 
+                        ? "ring-4 ring-yellow-400/80 ring-offset-4 ring-offset-yellow-100/50 shadow-[0_0_20px_rgba(250,204,21,0.6)]"
+                        : "ring-4 ring-purple-400/50 ring-offset-4 ring-offset-purple-100/50"
+                    }`}>
                       <AvatarImage
                         src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
                         alt={profileData.username}
                       />
-                      <AvatarFallback className="text-2xl">
+                      <AvatarFallback className="text-3xl bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold">
                         {profileData.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+                    
+                    {/* Premium Crown Badge */}
+                    {subscriptionInfo && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2 shadow-lg animate-bounce">
+                        <Crown className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                    
                     {uploading && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
                       </div>
                     )}
                   </div>
@@ -770,199 +774,261 @@ const ProfilePage = () => {
                       variant="outline"
                       size="sm"
                       onClick={handleAvatarClick}
-                      className="mt-2 text-xs px-3 py-1 h-7 border-blue-300 hover:bg-blue-50"
+                      className="mt-3 text-xs px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:shadow-lg transition-all"
                       disabled={uploading}
                     >
-                      {uploading ? "Yükleniyor..." : "Yükle/Değiştir"}
+                      {uploading ? (
+                        <span className="flex items-center">
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Yükleniyor...
+                        </span>
+                      ) : (
+                        "Yükle/Değiştir"
+                      )}
                     </Button>
                   )}
                 </div>
+
+                {/* User Info */}
                 <div className="flex-1">
                   {isEditing && isOwnProfile ? (
                     <Input
                       value={editedUsername}
                       onChange={(e) => setEditedUsername(e.target.value)}
-                      className="text-2xl font-bold mb-2"
+                      className="text-2xl font-bold mb-2 bg-white/50 backdrop-blur-sm border-purple-300 focus:border-purple-500"
                       placeholder="Kullanıcı adınız"
                       maxLength={15}
                     />
                   ) : (
-                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                    <h2 className="text-3xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      {profileData.username}
+                    </h2>
                   )}
-                  {!isOwnProfile && <p className="text-sm text-muted-foreground">Oyuncu Profili</p>}
+                  {!isOwnProfile && <p className="text-sm text-purple-600 font-medium">Oyuncu Profili</p>}
                   {isOwnProfile && user?.email && (
-                    <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
+                    <p className="text-xs text-gray-600 truncate max-w-xs mt-1">{user.email}</p>
                   )}
-                  <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
-                    <Badge variant="secondary">Seviye {profileData.level}</Badge>
-                    <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
+                  
+                  {/* Badges Row */}
+                  <div className="flex items-center space-x-2 mt-3 flex-wrap gap-2">
+                    <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none shadow-lg px-3 py-1">
+                      <Star className="w-3 h-3 mr-1" />
+                      Seviye {profileData.level}
+                    </Badge>
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-none shadow-lg px-3 py-1">
+                      <Target className="w-3 h-3 mr-1" />
+                      {profileData.winRate}% Kazanma
+                    </Badge>
                     {profileData.tournamentWinRate > 0 && (
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-none shadow-lg px-3 py-1 animate-pulse">
                         <Trophy className="w-3 h-3 mr-1" />
                         {profileData.tournamentWinRate}% Turnuva
                       </Badge>
                     )}
                     {subscriptionInfo && (
-                      <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                        <Crown className="w-3 h-3 mr-1" />
+                      <Badge className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white border-none shadow-xl px-3 py-1 animate-shimmer">
+                        <Crown className="w-4 h-4 mr-1 animate-bounce" />
                         Premium
+                        <Sparkles className="w-3 h-3 ml-1" />
                       </Badge>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Level Progress */}
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Seviye İlerlemesi</span>
-                  <span>
-                    {profileData.experience}/{profileData.nextLevelExp} EXP
+              {/* Level Progress with Gradient */}
+              <div className="mt-6">
+                <div className="flex justify-between text-sm mb-2 font-medium">
+                  <span className="text-purple-700">Seviye İlerlemesi</span>
+                  <span className="text-pink-600">
+                    {profileData.experience.toLocaleString()}/{profileData.nextLevelExp.toLocaleString()} EXP
                   </span>
                 </div>
-                <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
+                <div className="relative h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full overflow-hidden">
+                  <div 
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                    style={{ width: `${(profileData.experience / profileData.nextLevelExp) * 100}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-shimmer"></div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Scrollable Content */}
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="flex-1 px-4 py-6">
           <div className="space-y-6 pb-6">
-            {/* Premium Subscription Info */}
+            {/* Premium Subscription Card */}
             {subscriptionInfo && (
-              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-700">
-                    <Crown className="w-5 h-5 mr-2" />
-                    Premium Abonelik
-                  </CardTitle>
-                  <CardDescription>Aktif premium üyeliğinizin detayları</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-yellow-100 p-2 rounded-lg">
-                        <Calendar className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-yellow-800">Abonelik Türü</p>
-                        <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
+              <Card className="border-2 border-yellow-300/50 bg-gradient-to-br from-yellow-50/90 via-amber-50/90 to-orange-50/90 backdrop-blur-xl shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-orange-400/10 animate-pulse"></div>
+                <CardHeader className="relative">
+                  <CardTitle className="flex items-center text-amber-700 text-xl">
+                    <div className="relative">
+                      <Crown className="w-6 h-6 mr-3 animate-bounce" />
+                      <div className="absolute inset-0 animate-ping">
+                        <Crown className="w-6 h-6 text-yellow-400 opacity-75" />
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-orange-100 p-2 rounded-lg">
-                        <Clock className="w-5 h-5 text-orange-600" />
+                    Premium Abonelik
+                    <Sparkles className="w-5 h-5 ml-2 text-orange-500" />
+                  </CardTitle>
+                  <CardDescription className="text-amber-600">Aktif premium üyeliğinizin detayları</CardDescription>
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-3 rounded-lg">
+                        <Calendar className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className="font-medium text-orange-800">Kalan Süre</p>
-                        <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
+                        <p className="font-bold text-yellow-800">Abonelik Türü</p>
+                        <p className="text-sm text-yellow-700">{subscriptionInfo.subscriptionType} Premium</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="bg-gradient-to-br from-orange-400 to-red-500 p-3 rounded-lg">
+                        <Clock className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-orange-800">Kalan Süre</p>
+                        <p className="text-sm text-orange-700">{subscriptionInfo.timeLeft}</p>
                       </div>
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="flex justify-between text-sm mb-2">
+                    <div className="flex justify-between text-sm mb-2 font-medium">
                       <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
-                      <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
+                      <span className="font-bold text-yellow-800">{subscriptionInfo.diffDays} gün</span>
                     </div>
-                    <Progress
-                      value={Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}
-                      className="bg-yellow-100"
-                    />
+                    <div className="relative h-3 bg-yellow-200 rounded-full overflow-hidden">
+                      <div 
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg"
+                        style={{ width: `${Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white/30 animate-shimmer"></div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Statistics */}
+            {/* Statistics Grid with Modern Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Target className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-2xl font-bold">{profileData.totalGames}</p>
-                  <p className="text-sm text-muted-foreground">Toplam Oyun</p>
+              <Card className="bg-gradient-to-br from-blue-100/80 to-cyan-100/80 backdrop-blur-xl border-2 border-blue-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-5 text-center">
+                  <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                    <Target className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-black text-blue-700 mb-1">{profileData.totalGames}</p>
+                  <p className="text-sm text-blue-600 font-semibold">Toplam Oyun</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Trophy className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-2xl font-bold">{profileData.wins}</p>
-                  <p className="text-sm text-muted-foreground">Kazanma</p>
+              
+              <Card className="bg-gradient-to-br from-green-100/80 to-emerald-100/80 backdrop-blur-xl border-2 border-green-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-5 text-center">
+                  <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                    <Trophy className="w-8 h-8 text-green-600" />
+                  </div>
+                  <p className="text-3xl font-black text-green-700 mb-1">{profileData.wins}</p>
+                  <p className="text-sm text-green-600 font-semibold">Kazanma</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Zap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-                  <p className="text-2xl font-bold">{profileData.currentStreak}</p>
-                  <p className="text-sm text-muted-foreground">Seri</p>
+              
+              <Card className="bg-gradient-to-br from-purple-100/80 to-pink-100/80 backdrop-blur-xl border-2 border-purple-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-5 text-center">
+                  <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                    <Flame className="w-8 h-8 text-purple-600 animate-pulse" />
+                  </div>
+                  <p className="text-3xl font-black text-purple-700 mb-1">{profileData.currentStreak}</p>
+                  <p className="text-sm text-purple-600 font-semibold">Seri</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
-                  <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
-                  <p className="text-sm text-muted-foreground">Ort. Puan</p>
+              
+              <Card className="bg-gradient-to-br from-cyan-100/80 to-blue-100/80 backdrop-blur-xl border-2 border-cyan-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-5 text-center">
+                  <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                    <TrendingUp className="w-8 h-8 text-cyan-600" />
+                  </div>
+                  <p className="text-3xl font-black text-cyan-700 mb-1">{Math.round(profileData.averageScore)}</p>
+                  <p className="text-sm text-cyan-600 font-semibold">Ort. Puan</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Tournament Statistics */}
             {profileData.tournamentsPlayed > 0 && (
-              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
+              <Card className="border-2 border-yellow-300/50 bg-gradient-to-br from-yellow-50/90 via-amber-50/90 to-orange-50/90 backdrop-blur-xl shadow-2xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-700">
-                    <Trophy className="w-5 h-5 mr-2" />
+                  <CardTitle className="flex items-center text-amber-700 text-xl">
+                    <Trophy className="w-6 h-6 mr-3 text-yellow-500 drop-shadow-lg" />
                     Turnuva İstatistikleri
                   </CardTitle>
-                  <CardDescription>Turnuva performansınız</CardDescription>
+                  <CardDescription className="text-amber-600">Turnuva performansınız</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Users className="w-6 h-6 text-amber-600" />
+                    <div className="text-center bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-3">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-amber-800">{profileData.tournamentsPlayed}</p>
-                      <p className="text-sm text-amber-600">Katılım</p>
+                      <p className="text-2xl font-black text-amber-800">{profileData.tournamentsPlayed}</p>
+                      <p className="text-sm text-amber-600 font-semibold">Katılım</p>
                     </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Award className="w-6 h-6 text-green-600" />
+                    <div className="text-center bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-full p-3">
+                          <Award className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-green-800">{profileData.tournamentsWon}</p>
-                      <p className="text-sm text-green-600">Kazanma</p>
+                      <p className="text-2xl font-black text-green-800">{profileData.tournamentsWon}</p>
+                      <p className="text-sm text-green-600 font-semibold">Kazanma</p>
                     </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Target className="w-6 h-6 text-red-500" />
+                    <div className="text-center bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="bg-gradient-to-br from-red-400 to-rose-500 rounded-full p-3">
+                          <Target className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-red-700">{profileData.tournamentsLost}</p>
-                      <p className="text-sm text-red-500">Kaybetme</p>
+                      <p className="text-2xl font-black text-red-700">{profileData.tournamentsLost}</p>
+                      <p className="text-sm text-red-500 font-semibold">Kaybetme</p>
                     </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <TrendingUp className="w-6 h-6 text-purple-600" />
+                    <div className="text-center bg-white/60 backdrop-blur-sm p-4 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                      <div className="flex items-center justify-center mb-3">
+                        <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-full p-3">
+                          <TrendingUp className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-purple-800">{profileData.tournamentWinRate}%</p>
-                      <p className="text-sm text-purple-600">Başarı</p>
+                      <p className="text-2xl font-black text-purple-800">{profileData.tournamentWinRate}%</p>
+                      <p className="text-sm text-purple-600 font-semibold">Başarı</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Achievements / Badges */}
-            <Card>
+            {/* Badges Section */}
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/50 shadow-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center">
-                      <Crown className="w-5 h-5 mr-2" />
+                    <CardTitle className="flex items-center text-xl">
+                      <Shield className="w-6 h-6 mr-3 text-indigo-600" />
                       Rozetler
                     </CardTitle>
                     <CardDescription>Oyun içi başarılarınız ve rozetleriniz</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowBadgesDialog(true)}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowBadgesDialog(true)}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none hover:shadow-lg"
+                  >
                     Tümünü Gör
                   </Button>
                 </div>
@@ -972,53 +1038,59 @@ const ProfilePage = () => {
                   {badges
                     .filter((b) => b.earned)
                     .slice(0, 4)
-                    .map((badge) => (
+                    .map((badge, index) => (
                       <div
                         key={badge.id}
-                        className="flex items-center space-x-3 p-3 rounded-lg border bg-accent/50 border-accent"
+                        className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-br from-white/80 to-indigo-50/80 backdrop-blur-sm border-2 border-indigo-200/50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                        style={{ animationDelay: `${index * 100}ms` }}
                       >
-                        <div className="text-2xl">{badge.icon}</div>
+                        <div className="text-3xl drop-shadow-lg">{badge.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{badge.name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{badge.description}</p>
+                          <p className="font-bold truncate text-indigo-900">{badge.name}</p>
+                          <p className="text-sm text-indigo-600 truncate">{badge.description}</p>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-none shadow-lg">
+                          <Star className="w-3 h-3 mr-1" />
                           Kazanıldı
                         </Badge>
                       </div>
                     ))}
                   {badges.filter((b) => b.earned).length === 0 && (
-                    <div className="col-span-2 text-center py-8 text-muted-foreground">Henüz kazanılmış rozet yok</div>
+                    <div className="col-span-2 text-center py-12 text-gray-500">
+                      <Shield className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                      <p className="text-lg font-semibold">Henüz kazanılmış rozet yok</p>
+                      <p className="text-sm">Oyna ve rozetleri kazan! 🏆</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Joker Envanteri */}
+            {/* Joker Inventory */}
             {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
-              <Card>
+              <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/50 shadow-2xl">
                 <CardHeader>
-                  <CardTitle>🃏 Joker Envanteri</CardTitle>
+                  <CardTitle className="flex items-center text-xl">
+                    <Zap className="w-6 h-6 mr-3 text-yellow-600" />
+                    🃏 Joker Envanteri
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                      {/* Değiştir İkonu */}
-                      <img src="/degistirIkon.png" alt="Değiştir" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Değiştir</div>
-                      <div className="text-lg font-bold">{jokers.degistir}</div>
+                    <div className="text-center p-5 bg-gradient-to-br from-blue-100/80 to-cyan-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                      <img src="/degistirIkon.png" alt="Değiştir" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <div className="text-sm text-blue-700 font-semibold mb-1">Değiştir</div>
+                      <div className="text-2xl font-black text-blue-800">{jokers.degistir}</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                      {/* Fısılda İkonu */}
-                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Fısılda</div>
-                      <div className="text-lg font-bold">{jokers.fisilida}</div>
+                    <div className="text-center p-5 bg-gradient-to-br from-green-100/80 to-emerald-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <div className="text-sm text-green-700 font-semibold mb-1">Fısılda</div>
+                      <div className="text-2xl font-black text-green-800">{jokers.fisilida}</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                      {/* Sen Yaz İkonu */}
-                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Sen Yaz</div>
-                      <div className="text-lg font-bold">{jokers.senYaz}</div>
+                    <div className="text-center p-5 bg-gradient-to-br from-purple-100/80 to-pink-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <div className="text-sm text-purple-700 font-semibold mb-1">Sen Yaz</div>
+                      <div className="text-2xl font-black text-purple-800">{jokers.senYaz}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -1026,18 +1098,18 @@ const ProfilePage = () => {
             )}
 
             {/* Detailed Stats */}
-            <Card>
+            <Card className="bg-white/70 backdrop-blur-xl border-2 border-white/50 shadow-2xl">
               <CardHeader>
-                <CardTitle>Detaylı İstatistikler</CardTitle>
+                <CardTitle className="text-xl">Detaylı İstatistikler</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Toplam Puan:</span>
-                  <span className="font-bold">{profileData.totalScore.toLocaleString()}</span>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg hover:shadow-md transition-all">
+                  <span className="font-medium text-gray-700">Toplam Puan:</span>
+                  <span className="font-black text-purple-700">{profileData.totalScore.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>En Uzun Kelime:</span>
-                  <span className="font-bold">
+                <div className="flex justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg hover:shadow-md transition-all">
+                  <span className="font-medium text-gray-700">En Uzun Kelime:</span>
+                  <span className="font-black text-blue-700">
                     {profileData.longestWord
                       ? `${profileData.longestWord} (${profileData.longestWordLength} harf)`
                       : profileData.longestWordLength > 0
@@ -1045,37 +1117,40 @@ const ProfilePage = () => {
                         : "Henüz yok"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Kaybetme:</span>
-                  <span className="font-bold">{profileData.losses}</span>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-red-50 to-rose-50 rounded-lg hover:shadow-md transition-all">
+                  <span className="font-medium text-gray-700">Kaybetme:</span>
+                  <span className="font-black text-red-700">{profileData.losses}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Kazanma Oranı:</span>
-                  <span className="font-bold">{profileData.winRate}%</span>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg hover:shadow-md transition-all">
+                  <span className="font-medium text-gray-700">Kazanma Oranı:</span>
+                  <span className="font-black text-green-700">{profileData.winRate}%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Ortalama Puan:</span>
-                  <span className="font-bold">{Math.round(profileData.averageScore)}</span>
+                <div className="flex justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg hover:shadow-md transition-all">
+                  <span className="font-medium text-gray-700">Ortalama Puan:</span>
+                  <span className="font-black text-indigo-700">{Math.round(profileData.averageScore)}</span>
                 </div>
                 {profileData.tournamentsPlayed > 0 && (
                   <>
-                    <hr className="my-4" />
-                    <div className="text-sm font-semibold text-muted-foreground mb-2">Turnuva Performansı</div>
-                    <div className="flex justify-between">
-                      <span>Kazanılan Turnuva:</span>
-                      <span className="font-bold text-green-600">{profileData.tournamentsWon}</span>
+                    <hr className="my-4 border-purple-200" />
+                    <div className="text-sm font-bold text-purple-700 mb-3 flex items-center">
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Turnuva Performansı
                     </div>
-                    <div className="flex justify-between">
-                      <span>Kaybedilen Turnuva:</span>
-                      <span className="font-bold text-red-600">{profileData.tournamentsLost}</span>
+                    <div className="flex justify-between p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg hover:shadow-md transition-all">
+                      <span className="font-medium text-gray-700">Kazanılan Turnuva:</span>
+                      <span className="font-black text-green-700">{profileData.tournamentsWon}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Toplam Turnuva:</span>
-                      <span className="font-bold">{profileData.tournamentsPlayed}</span>
+                    <div className="flex justify-between p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg hover:shadow-md transition-all">
+                      <span className="font-medium text-gray-700">Kaybedilen Turnuva:</span>
+                      <span className="font-black text-red-700">{profileData.tournamentsLost}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Turnuva Başarı Oranı:</span>
-                      <span className="font-bold text-yellow-600">{profileData.tournamentWinRate}%</span>
+                    <div className="flex justify-between p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg hover:shadow-md transition-all">
+                      <span className="font-medium text-gray-700">Toplam Turnuva:</span>
+                      <span className="font-black text-amber-700">{profileData.tournamentsPlayed}</span>
+                    </div>
+                    <div className="flex justify-between p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg hover:shadow-md transition-all">
+                      <span className="font-medium text-gray-700">Turnuva Başarı Oranı:</span>
+                      <span className="font-black text-yellow-700">{profileData.tournamentWinRate}%</span>
                     </div>
                   </>
                 )}
@@ -1084,7 +1159,7 @@ const ProfilePage = () => {
           </div>
         </ScrollArea>
 
-        {/* Avatar Options Dialog */}
+        {/* Dialogs */}
         <AvatarOptionsDialog
           open={showAvatarOptions}
           onOpenChange={setShowAvatarOptions}
@@ -1094,7 +1169,6 @@ const ProfilePage = () => {
           onDelete={handleDeleteAvatar}
         />
 
-        {/* Badges Dialog */}
         <BadgesDialog
           open={showBadgesDialog}
           onOpenChange={setShowBadgesDialog}
@@ -1102,6 +1176,29 @@ const ProfilePage = () => {
           userStats={userStats}
         />
       </div>
+
+      {/* Custom CSS for animations */}
+      <style>{`
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        .animate-shimmer {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.5),
+            transparent
+          );
+          background-size: 1000px 100%;
+          animation: shimmer 3s infinite;
+        }
+      `}</style>
     </div>
   );
 };
