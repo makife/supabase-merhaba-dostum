@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { getIsAppInForeground } from "./useAppForegroundState";
 import { getActivePrivateChats } from "@/utils/notifications";
@@ -99,15 +98,13 @@ export function useChatNotifications() {
         return;
       }
 
-      toast({
-        title,
+      toast(title, {
         description,
         duration: 5000,
-        action: navigateTo ? (
-          <Button variant="outline" size="sm" onClick={() => navigateRef.current(navigateTo)}>
-            Görüntüle
-          </Button>
-        ) : undefined,
+        action: navigateTo ? {
+          label: "Görüntüle",
+          onClick: () => navigateRef.current(navigateTo),
+        } : undefined,
       });
     },
     [],
@@ -190,23 +187,20 @@ export function useChatNotifications() {
             }
 
             if (notif.type === "tournament_opponent_left") {
-              toast({
-                title: "🏆 Hükmen Galibiyet!",
+              toast.success("🏆 Hükmen Galibiyet!", {
                 description: notif.message,
                 duration: 6000,
               });
             }
 
             if (notif.type === "tournament_end") {
-              toast({
-                title: "🏆 Turnuva Sona Erdi!",
+              toast.success("🏆 Turnuva Sona Erdi!", {
                 description: notif.message,
                 duration: 8000,
-                action: (
-                  <Button variant="outline" size="sm" onClick={() => navigateRef.current(`/tournament-bracket/${notif.related_id}`)}>
-                    Sonuçlar
-                  </Button>
-                ),
+                action: {
+                  label: "Sonuçlar",
+                  onClick: () => navigateRef.current(`/tournament-bracket/${notif.related_id}`),
+                },
               });
             }
           },
