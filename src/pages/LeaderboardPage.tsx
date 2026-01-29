@@ -22,9 +22,6 @@ import {
   TrendingUp,
   CalendarRange,
   TrendingDown,
-  Flame,
-  Zap,
-  Award,
 } from "lucide-react";
 
 interface LeaderboardEntry {
@@ -61,7 +58,6 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
 
-  // ... TÜM MEVCUT FONKSİYONLAR AYNI KALACAK (fetchAllTimeLeaders, fetchWeeklyLeaders, vb.) ...
   // Genel sıralama (tüm zamanlar)
   const fetchAllTimeLeaders = async () => {
     try {
@@ -84,7 +80,7 @@ const LeaderboardPage = () => {
           best_word: null,
           best_word_score: 0,
           rank: index + 1,
-          change: 0,
+          change: 0, // Genel sıralamada değişim göstermiyoruz ama veri tutarlılığı için
         })) || [];
 
       setAllTimeLeaders(allTimeData);
@@ -103,14 +99,20 @@ const LeaderboardPage = () => {
     }
   };
 
+  // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli haftayı kullanır)
+      console.log("Haftalık sorgu tarihi: (server default)");
+
       const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
       if (error) {
         console.error("Weekly leaderboard RPC error:", error);
         setWeeklyLeaders([]);
         return;
       }
+
+      console.log("Haftalık veri geldi:", data);
 
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -139,14 +141,20 @@ const LeaderboardPage = () => {
     }
   };
 
+  // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
+      // Tarih argümanı göndermeden (sunucu tarafı geçerli ayı kullanır)
+      console.log("Aylık sorgu tarihi: (server default)");
+
       const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
       if (error) {
         console.error("Monthly leaderboard RPC error:", error);
         setMonthlyLeaders([]);
         return;
       }
+
+      console.log("Aylık veri geldi:", data);
 
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -175,10 +183,12 @@ const LeaderboardPage = () => {
     }
   };
 
+  // Ana resync fonksiyonu
   const handleLeaderboardResync = useCallback(async () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
 
+  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
 
   useEffect(() => {
@@ -187,9 +197,11 @@ const LeaderboardPage = () => {
       await handleLeaderboardResync();
       setLoading(false);
     };
+
     loadData();
   }, [user]);
 
+  // Aktif sekme değiştiğinde ilgili listeyi tazele
   useEffect(() => {
     const refetchActive = async () => {
       if (activeTab === "all-time") await fetchAllTimeLeaders();
@@ -199,6 +211,7 @@ const LeaderboardPage = () => {
     refetchActive();
   }, [activeTab]);
 
+  // Sayfa tekrar görünür olduğunda tüm verileri tazele (oyun sonrası geri dönünce güncellensin)
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
@@ -209,41 +222,33 @@ const LeaderboardPage = () => {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [handleLeaderboardResync]);
 
-  // 🎨 YENİ GÖRSEL FONKSİYONLAR
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return (
-          <div className="relative">
-            <Crown className="w-8 h-8 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse" />
-            <div className="absolute inset-0 animate-ping">
-              <Crown className="w-8 h-8 text-yellow-400 opacity-75" />
-            </div>
-          </div>
-        );
+        return <Crown className="w-6 h-6 text-yellow-500" />;
       case 2:
-        return <Medal className="w-7 h-7 text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]" />;
+        return <Medal className="w-6 h-6 text-gray-400" />;
       case 3:
-        return <Medal className="w-7 h-7 text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]" />;
+        return <Medal className="w-6 h-6 text-amber-700" />;
       default:
         return (
-          <div className="w-8 h-8 flex items-center justify-center">
-            <span className="text-sm font-bold text-gray-600">#{rank}</span>
-          </div>
+          <span className="w-6 h-6 flex items-center justify-center text-sm font-bold text-muted-foreground">
+            #{rank}
+          </span>
         );
     }
   };
 
-  const getRankCardStyle = (rank: number) => {
+  const getRankColor = (rank: number) => {
     switch (rank) {
       case 1:
-        return "bg-gradient-to-br from-yellow-400/20 via-amber-300/20 to-yellow-500/20 border-2 border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:shadow-[0_0_30px_rgba(250,204,21,0.5)] backdrop-blur-sm";
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
       case 2:
-        return "bg-gradient-to-br from-gray-300/20 via-slate-200/20 to-gray-400/20 border-2 border-gray-300/50 shadow-[0_0_15px_rgba(209,213,219,0.3)] hover:shadow-[0_0_25px_rgba(209,213,219,0.5)] backdrop-blur-sm";
+        return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
       case 3:
-        return "bg-gradient-to-br from-amber-600/20 via-orange-500/20 to-amber-700/20 border-2 border-amber-600/50 shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_25px_rgba(217,119,6,0.5)] backdrop-blur-sm";
+        return "bg-gradient-to-r from-amber-700 to-amber-900 text-white";
       default:
-        return "bg-white/60 backdrop-blur-md border border-gray-200/50 hover:bg-white/80 hover:shadow-lg";
+        return "bg-muted";
     }
   };
 
@@ -251,144 +256,84 @@ const LeaderboardPage = () => {
     if (!change || change === 0) return null;
     if (change > 0) {
       return (
-        <div className="flex items-center gap-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce">
-          <TrendingUp className="w-4 h-4" />
+        <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+          <TrendingUp className="w-3.5 h-3.5" />
           <span>+{change}</span>
-          <Zap className="w-3 h-3" />
         </div>
       );
-    } else {
+    } else if (change < 0) {
       return (
-        <div className="flex items-center gap-1 bg-gradient-to-r from-red-400 to-rose-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-          <TrendingDown className="w-4 h-4" />
+        <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+          <TrendingDown className="w-3.5 h-3.5" />
           <span>{change}</span>
         </div>
       );
     }
+    return null;
   };
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {leaders.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <div className="relative inline-block mb-4">
-            <Trophy className="w-20 h-20 mx-auto opacity-20" />
-            <div className="absolute inset-0 animate-ping">
-              <Trophy className="w-20 h-20 mx-auto opacity-10" />
-            </div>
-          </div>
-          <p className="text-lg font-semibold">Henüz oyun oynayan yok</p>
-          <p className="text-sm">İlk sen ol ve zirvede yerini al! 🚀</p>
+        <div className="text-center py-8 text-muted-foreground">
+          <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <p>Henüz oyun oynayan yok</p>
+          <p className="text-sm">İlk sen ol!</p>
         </div>
       ) : (
-        leaders.map((leader, index) => (
-          <Card
-            key={leader.user_id}
-            className={`transition-all duration-300 transform hover:scale-[1.02] ${getRankCardStyle(leader.rank)} ${
-              index < 3 ? "animate-fadeIn" : ""
-            }`}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-4">
-                {/* Rank Icon */}
+        leaders.map((leader) => (
+          <Card key={leader.user_id} className={`transition-all hover:shadow-md ${getRankColor(leader.rank)}`}>
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
-
-                {/* Avatar with Ring Effect */}
-                <div className="relative">
-                  <Avatar
-                    className={`w-14 h-14 cursor-pointer transition-all duration-300 ${
-                      leader.rank === 1
-                        ? "ring-4 ring-yellow-400/50 ring-offset-2 ring-offset-yellow-100/50 hover:ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]"
-                        : leader.rank === 2
-                          ? "ring-4 ring-gray-300/50 ring-offset-2 hover:ring-gray-400"
-                          : leader.rank === 3
-                            ? "ring-4 ring-amber-500/50 ring-offset-2 hover:ring-amber-600"
-                            : "ring-2 ring-gray-200 hover:ring-blue-400"
-                    }`}
-                    onClick={() => navigate(`/profile/${leader.user_id}`)}
-                  >
-                    <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white font-bold">
-                      {leader.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Fire effect for top 3 */}
-                  {leader.rank <= 3 && (
-                    <div className="absolute -top-1 -right-1">
-                      <Flame
-                        className={`w-5 h-5 ${
-                          leader.rank === 1
-                            ? "text-yellow-400 animate-pulse"
-                            : leader.rank === 2
-                              ? "text-gray-400"
-                              : "text-amber-600"
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* User Info */}
+                <Avatar
+                  className="w-10 h-10 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                  onClick={() => navigate(`/profile/${leader.user_id}`)}
+                >
+                  <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                  <AvatarFallback>{leader.username.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
                       <h3
-                        className={`font-bold truncate cursor-pointer transition-colors ${
-                          leader.rank === 1
-                            ? "text-xl text-yellow-600 hover:text-yellow-700"
-                            : leader.rank === 2
-                              ? "text-lg text-gray-700 hover:text-gray-800"
-                              : leader.rank === 3
-                                ? "text-lg text-amber-700 hover:text-amber-800"
-                                : "text-base text-gray-700 hover:text-blue-600"
+                        className={`font-semibold truncate text-sm cursor-pointer transition-colors ${
+                          leader.rank <= 3 ? "text-white hover:text-blue-200" : "text-foreground hover:text-blue-600"
                         }`}
                         onClick={() => navigate(`/profile/${leader.user_id}`)}
                       >
                         {leader.username}
                       </h3>
                       {leader.user_id === user?.id && (
-                        <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-none shadow-lg animate-pulse">
-                          <Star className="w-3 h-3 mr-1" />
+                        <Badge className="text-xs px-1.5 py-0 h-4 bg-white/20 text-white border-white/50 flex-shrink-0">
                           Sen
                         </Badge>
                       )}
                     </div>
                     {showChange && <div className="flex-shrink-0 ml-2">{getRankChangeIcon(leader.change)}</div>}
                   </div>
-
-                  {/* Stats with Icons */}
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div
-                      className={`flex items-center space-x-1 px-3 py-1 rounded-full ${
-                        leader.rank <= 3 ? "bg-white/50 backdrop-blur-sm" : "bg-gray-100"
-                      }`}
+                  <div className="flex items-center space-x-3 text-xs">
+                    <span
+                      className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
                     >
-                      <Target className={`w-4 h-4 ${leader.rank === 1 ? "text-yellow-600" : "text-blue-500"}`} />
-                      <span className="font-bold text-gray-700">{leader.score.toLocaleString()}</span>
-                    </div>
-
+                      <Target className="w-3 h-3 mr-1" />
+                      {leader.score}
+                    </span>
                     {leader.games_played > 0 && (
-                      <div
-                        className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
-                          leader.rank <= 3 ? "bg-white/50 backdrop-blur-sm" : "bg-gray-100"
-                        }`}
+                      <span
+                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
                       >
-                        <Users className="w-3.5 h-3.5 text-purple-500" />
-                        <span className="text-gray-600">{leader.games_played}</span>
-                      </div>
+                        <Users className="w-3 h-3 mr-1" />
+                        {leader.games_played}
+                      </span>
                     )}
-
                     {leader.wins > 0 && (
-                      <div
-                        className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
-                          leader.rank <= 3 ? "bg-white/50 backdrop-blur-sm" : "bg-gray-100"
-                        }`}
+                      <span
+                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
                       >
-                        <Award className="w-3.5 h-3.5 text-green-500" />
-                        <span className="text-gray-600">{leader.wins}</span>
-                      </div>
+                        <Star className="w-3 h-3 mr-1" />
+                        {leader.wins}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -414,23 +359,21 @@ const LeaderboardPage = () => {
   const getTabDescription = (tab: string) => {
     switch (tab) {
       case "weekly":
-        return "🔥 Son 7 günün şampiyonları";
+        return "Son 7 günün en iyileri";
       case "monthly":
-        return "⭐ Bu ayın yıldızları";
+        return "Bu ayın en iyileri";
       default:
-        return "👑 Tüm zamanların efsaneleri";
+        return "Tüm zamanların en iyileri";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative inline-block">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
-            <Trophy className="absolute inset-0 m-auto w-8 h-8 text-blue-500 animate-pulse" />
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
-          <p className="mt-4 text-gray-600 font-semibold">Liderler yükleniyor...</p>
         </div>
       </div>
     );
@@ -439,110 +382,102 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col overflow-hidden relative">
-      {/* Animated Background Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-300/20 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute top-40 right-20 w-40 h-40 bg-purple-300/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute bottom-20 left-1/3 w-36 h-36 bg-blue-300/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
-
-      <div className="max-w-2xl mx-auto w-full flex flex-col h-full relative z-10">
-        {/* Header with Glassmorphism */}
-        <div className="flex-shrink-0 bg-white/40 backdrop-blur-xl border-b border-white/50 shadow-xl p-4 pt-6">
+    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col overflow-hidden">
+      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
+        {/* Sabit Header */}
+        <div className="flex-shrink-0 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3 pt-6">
           <div className="space-y-4">
-            {/* Top Bar */}
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/")}
-                className="bg-white/60 backdrop-blur-sm border-white/80 hover:bg-white/80 hover:shadow-lg transition-all duration-300"
+                className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Geri
               </Button>
 
-              {/* Animated Title */}
-              <div className="relative">
-                <h1 className="text-4xl font-black flex items-center bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 bg-clip-text text-transparent animate-gradient">
-                  <Trophy className="w-8 h-8 mr-3 text-yellow-500 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)] animate-bounce" />
+              <div className="relative inline-block">
+                {/* Stroke Background */}
+                <img
+                  src="/stroke.png"
+                  alt="Stroke Background"
+                  className="absolute inset-0 w-full h-full object-contain opacity-50"
+                />
+                {/* Liderlik Title */}
+                <h1 className="text-3xl font-bold flex items-center text-yellow-600 relative z-10 px-6 py-3">
+                  <Trophy className="w-6 h-6 mr-3 text-yellow-500" />
                   Liderlik
                 </h1>
-                <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 blur-xl -z-10 animate-pulse"></div>
               </div>
 
               <div className="w-16" />
             </div>
-
-            {/* User Stats Card */}
             {currentStats && (
-              <Card className="border-2 border-white/50 bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
+              <Card className="border-primary">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center text-purple-700">
-                      <Zap className="w-5 h-5 mr-2 animate-pulse" />
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2" />
                       Senin Performansın
                     </div>
-                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-none shadow-lg">
-                      {activeTab === "weekly" ? "🔥 Bu Hafta" : activeTab === "monthly" ? "⭐ Bu Ay" : "👑 Genel"}
+                    <Badge variant="outline" className="text-xs">
+                      {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Genel"}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                      <div className="text-2xl font-black text-yellow-600 mb-1">#{currentStats.rank || "—"}</div>
-                      <div className="text-xs text-yellow-700 font-semibold">Sıralama</div>
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.rank || "—"}</div>
+                      <div className="text-xs text-muted-foreground">Sıralama</div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                      <div className="text-2xl font-black text-blue-600 mb-1">{currentStats.score}</div>
-                      <div className="text-xs text-blue-700 font-semibold">Puan</div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.score}</div>
+                      <div className="text-xs text-muted-foreground">Puan</div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                      <div className="text-2xl font-black text-purple-600 mb-1">{currentStats.games_played}</div>
-                      <div className="text-xs text-purple-700 font-semibold">Oyun</div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
+                      <div className="text-xs text-muted-foreground">Oyun</div>
                     </div>
-                    <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                      <div className="text-2xl font-black text-green-600 mb-1">{currentStats.wins}</div>
-                      <div className="text-xs text-green-700 font-semibold">Galibiyet</div>
+                    <div className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
+                      <div className="text-xs text-muted-foreground">Galibiyet</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Tabs with Modern Design */}
+            {/* Liderlik Sıralaması Başlık ve Tablar - Sabit */}
             <div className="pt-2">
-              <h2 className="text-xl font-bold mb-3 text-gray-800">🏆 Liderlik Sıralaması</h2>
+              <h2 className="text-lg font-semibold mb-3">Liderlik Sıralaması</h2>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-12 bg-white/60 backdrop-blur-sm rounded-xl p-1 shadow-lg">
+                <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
                   <TabsTrigger
                     value="all-time"
-                    className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                    className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
                   >
-                    <Trophy className="w-4 h-4 mr-2" />
-                    <span className="font-semibold">Genel</span>
+                    <Trophy className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Genel</span>
+                    <span className="xs:hidden">Tümü</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="weekly"
-                    className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                    className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
                   >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span className="font-semibold">Haftalık</span>
+                    <Calendar className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Haftalık</span>
+                    <span className="xs:hidden">Hafta</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="monthly"
-                    className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                    className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
                   >
-                    <CalendarRange className="w-4 h-4 mr-2" />
-                    <span className="font-semibold">Aylık</span>
+                    <CalendarRange className="w-3 h-3 mr-1" />
+                    <span className="hidden xs:inline">Aylık</span>
+                    <span className="xs:hidden">Ay</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -550,62 +485,15 @@ const LeaderboardPage = () => {
           </div>
         </div>
 
-        {/* Scrollable Leaderboard List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-transparent">
-          <CardDescription className="text-center text-lg font-semibold text-gray-700 mb-2">
-            {getTabDescription(activeTab)}
-          </CardDescription>
+        {/* Scroll edilebilir Liste İçeriği */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          <CardDescription className="text-center">{getTabDescription(activeTab)}</CardDescription>
 
           {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
           {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
           {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
         </div>
       </div>
-
-      {/* Custom CSS for animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes gradient {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .scrollbar-thumb-purple-300::-webkit-scrollbar-thumb {
-          background-color: rgba(216, 180, 254, 0.5);
-          border-radius: 3px;
-        }
-
-        .scrollbar-track-transparent::-webkit-scrollbar-track {
-          background: transparent;
-        }
-      `}</style>
     </div>
   );
 };
