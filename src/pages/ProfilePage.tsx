@@ -17,6 +17,7 @@ import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { BadgesDialog } from "@/components/BadgesDialog";
+import { RealtimeClient } from "@supabase/supabase-js";
 import {
   ArrowLeft,
   Trophy,
@@ -38,7 +39,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { jokers } = useJokerInventory();
-  const { uploadFromCamera, uploadFromGallery, uploadGameAvatar, deleteAvatar, uploading } = useAvatarUpload();
+  const { captureFromCamera, uploadAvatar } = useAvatarUpload();
   const { id: routeId } = useParams();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
@@ -47,6 +48,7 @@ const ProfilePage = () => {
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
+  const [pendingAvatarBlob, setPendingAvatarBlob] = useState<Blob | null>(null);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
@@ -217,6 +219,85 @@ const ProfilePage = () => {
     } catch (error) {
       console.error("Turnuva istatistikleri fetch hatası:", error);
       return { won: 0, lost: 0, played: 0, winRate: 0 };
+    }
+  };
+
+  // 📡 NATIVE SOFT RECOVERY DİNLEYİCİSİ (Senin Java kodun burayı tetikler)
+  useEffect(() => {
+    const handleNativeRecovery = async () => {
+      console.log("📡 [ProfilePage] Native Soft Recovery sinyali alındı!");
+
+      // Eğer bekleyen bir avatar yüklemesi varsa ve elimizde veri varsa
+      const wasUploading = localStorage.getItem("is_uploading_avatar") === "true";
+
+      if (wasUploading && pendingAvatarBlob) {
+        console.log("📸 [ProfilePage] Bekleyen avatar yüklemesi bulundu, bağlantı bekleniyor...");
+
+        // Supabase bağlantısını kontrol et, değilse biraz bekle
+        const waitForConnection = async (retries = 0) => {
+          const isConnected = supabase.realtime.isConnected(); // Veya connectionState kontrolü
+
+          if (isConnected) {
+            console.log("✅ [ProfilePage] Bağlantı hazır, yükleme başlatılıyor...");
+            await processPendingUpload(pendingAvatarBlob);
+          } else if (retries < 10) {
+            // Bağlantı yoksa 500ms bekle tekrar dene (toplam 5sn)
+            console.log(`⏳ [ProfilePage] Bağlantı bekleniyor (${retries}/10)...`);
+            setTimeout(() => waitForConnection(retries + 1), 500);
+          } else {
+            toast.error("İnternet bağlantısı kurulamadı, lütfen tekrar deneyin.");
+            localStorage.removeItem("is_uploading_avatar");
+            setPendingAvatarBlob(null);
+          }
+        };
+
+        waitForConnection();
+      }
+    };
+
+    // Senin MainActivity.java'da gönderdiğin event isimleri:
+    window.addEventListener("native-soft-recovery", handleNativeRecovery);
+    window.addEventListener("app-foreground", handleNativeRecovery); // Yedek olarak bunu da dinle
+
+    return () => {
+      window.removeEventListener("native-soft-recovery", handleNativeRecovery);
+      window.removeEventListener("app-foreground", handleNativeRecovery);
+    };
+  }, [pendingAvatarBlob]); // pendingAvatarBlob değişince listener güncellensin
+
+  // 📤 BEKLEYEN RESMİ YÜKLEME FONKSİYONU
+  const processPendingUpload = async (blob: Blob) => {
+    try {
+      // useAvatarUpload hook'unun içindeki yükleme mantığını buraya adapte etmelisin
+      // Veya hook'tan sadece "uploadFile" fonksiyonunu dışarı açmalısın.
+      // Örnek manuel yükleme:
+      const fileName = `${user?.id}/${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, blob, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // URL al
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
+
+      // Profili güncelle
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user?.id);
+
+      if (updateError) throw updateError;
+
+      setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
+      toast.success("Profil fotoğrafı güncellendi!");
+    } catch (error) {
+      console.error("Yükleme hatası:", error);
+      toast.error("Fotoğraf yüklenirken hata oluştu.");
+    } finally {
+      // Temizlik
+      localStorage.removeItem("is_uploading_avatar");
+      setPendingAvatarBlob(null);
     }
   };
 
@@ -615,9 +696,23 @@ const ProfilePage = () => {
 
   const handleCameraSelect = async () => {
     setShowAvatarOptions(false);
-    const avatarUrl = await uploadFromCamera();
-    if (avatarUrl) {
-      setProfileData((prev) => ({ ...prev, avatar_url: avatarUrl }));
+
+    // 1. İşaret fişeğini at: "Kameraya gidiyorum"
+    localStorage.setItem("is_uploading_avatar", "true");
+
+    // 2. Sadece resmi çek
+    const file = await captureFromCamera();
+
+    if (file) {
+      // 3. Resim elimizde! Ama hemen yükleme.
+      // State'e at ve bekle (useEffect'teki native-soft-recovery bunu yakalayacak)
+      setPendingAvatarBlob(file);
+
+      // Eğer şanslıysak ve internet gitmediyse useEffect hemen tetiklenip yükler.
+      // Gitmişse de recovery sinyalini bekler.
+    } else {
+      // Kullanıcı iptal ettiyse flag'i temizle
+      localStorage.removeItem("is_uploading_avatar");
     }
   };
 
