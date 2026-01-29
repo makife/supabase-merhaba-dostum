@@ -701,19 +701,22 @@ const ProfilePage = () => {
     // 1. İşaret fişeğini at: "Kameraya gidiyorum"
     localStorage.setItem("is_uploading_avatar", "true");
 
-    // 2. Sadece resmi çek
-    const file = await captureFromCamera();
+    // 2. Sadece resmi çek (Artık bize obje dönüyor: { file, webPath })
+    const result = await captureFromCamera();
 
-    if (file) {
-      // 3. Resim elimizde! Ama hemen yükleme.
-      // State'e at ve bekle (useEffect'teki native-soft-recovery bunu yakalayacak)
-      setPendingAvatarBlob(file);
+    if (result) {
+      console.log("💾 [ProfilePage] Kamera resmi çekildi, yol kaydediliyor:", result.webPath);
+
+      // 3. KRİTİK: Hem State'e at (Soft Recovery için) Hem Path'i kaydet (Cold Restart için)
+      setPendingAvatarBlob(result.file); // HATA BURADAYDI: result.file diyerek içindeki dosyayı alıyoruz
+      localStorage.setItem("pending_avatar_path", result.webPath);
 
       // Eğer şanslıysak ve internet gitmediyse useEffect hemen tetiklenip yükler.
       // Gitmişse de recovery sinyalini bekler.
     } else {
       // Kullanıcı iptal ettiyse flag'i temizle
       localStorage.removeItem("is_uploading_avatar");
+      localStorage.removeItem("pending_avatar_path");
     }
   };
 
