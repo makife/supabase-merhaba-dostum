@@ -72,7 +72,7 @@ const ProfilePage = () => {
     tournamentWinRate: 0,
   });
 
-  const [badges, setBadges] = useState
+  const [badges, setBadges] = useState<
     Array<{
       id: string;
       name: string;
@@ -436,23 +436,23 @@ const ProfilePage = () => {
 
   const refreshProfileData = useCallback(async () => {
     if (!viewedUserId) return;
-    
-    console.log('🔄 [ProfilePage] Resync triggered - profil verileri yeniden yükleniyor...');
-    
+
+    console.log("🔄 [ProfilePage] Resync triggered - profil verileri yeniden yükleniyor...");
+
     try {
       const [profileResult, tournamentStats] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle(),
-        fetchTournamentStats()
+        fetchTournamentStats(),
       ]);
-      
+
       const { data } = profileResult;
-      
+
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
         setViewedProfile({ avatar_url: data.avatar_url });
-        
+
         setProfileData((prev) => ({
           ...prev,
           username: username,
@@ -492,15 +492,15 @@ const ProfilePage = () => {
           fastest_word_time: data.fastest_word_time || 0,
         });
       }
-      
+
       await fetchBadges();
-      console.log('✅ [ProfilePage] Resync tamamlandı - rozetler dahil');
+      console.log("✅ [ProfilePage] Resync tamamlandı - rozetler dahil");
     } catch (error) {
-      console.error('❌ [ProfilePage] Resync hatası:', error);
+      console.error("❌ [ProfilePage] Resync hatası:", error);
     }
   }, [viewedUserId, user?.email]);
 
-  usePageResync(refreshProfileData, 'ProfilePage', false);
+  usePageResync(refreshProfileData, "ProfilePage", false);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -676,8 +676,14 @@ const ProfilePage = () => {
       {/* Animated Background Particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-40 h-40 bg-purple-300/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/3 right-20 w-56 h-56 bg-blue-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-20 left-1/4 w-48 h-48 bg-pink-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div
+          className="absolute top-1/3 right-20 w-56 h-56 bg-blue-300/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+        <div
+          className="absolute bottom-20 left-1/4 w-48 h-48 bg-pink-300/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        ></div>
       </div>
 
       <div className="max-w-3xl mx-auto w-full flex flex-col min-h-screen relative z-10">
@@ -713,19 +719,19 @@ const ProfilePage = () => {
             <div className="w-16 flex justify-end">
               {isOwnProfile &&
                 (isEditing ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={handleSaveProfile}
                     className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-none hover:shadow-lg"
                   >
                     Kaydet
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleEditToggle} 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditToggle}
                     className="p-2 hover:bg-purple-100 transition-colors"
                   >
                     <Edit className="w-5 h-5 text-purple-600" />
@@ -742,11 +748,13 @@ const ProfilePage = () => {
                 <div className="flex flex-col items-center">
                   <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                     <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full blur opacity-75 animate-pulse"></div>
-                    <Avatar className={`relative w-24 h-24 ${
-                      subscriptionInfo 
-                        ? "ring-4 ring-yellow-400/80 ring-offset-4 ring-offset-yellow-100/50 shadow-[0_0_20px_rgba(250,204,21,0.6)]"
-                        : "ring-4 ring-purple-400/50 ring-offset-4 ring-offset-purple-100/50"
-                    }`}>
+                    <Avatar
+                      className={`relative w-24 h-24 ${
+                        subscriptionInfo
+                          ? "ring-4 ring-yellow-400/80 ring-offset-4 ring-offset-yellow-100/50 shadow-[0_0_20px_rgba(250,204,21,0.6)]"
+                          : "ring-4 ring-purple-400/50 ring-offset-4 ring-offset-purple-100/50"
+                      }`}
+                    >
                       <AvatarImage
                         src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
                         alt={profileData.username}
@@ -755,14 +763,14 @@ const ProfilePage = () => {
                         {profileData.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     {/* Premium Crown Badge */}
                     {subscriptionInfo && (
                       <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2 shadow-lg animate-bounce">
                         <Crown className="w-5 h-5 text-white" />
                       </div>
                     )}
-                    
+
                     {uploading && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
                         <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -808,7 +816,7 @@ const ProfilePage = () => {
                   {isOwnProfile && user?.email && (
                     <p className="text-xs text-gray-600 truncate max-w-xs mt-1">{user.email}</p>
                   )}
-                  
+
                   {/* Badges Row */}
                   <div className="flex items-center space-x-2 mt-3 flex-wrap gap-2">
                     <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none shadow-lg px-3 py-1">
@@ -845,7 +853,7 @@ const ProfilePage = () => {
                   </span>
                 </div>
                 <div className="relative h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out shadow-lg"
                     style={{ width: `${(profileData.experience / profileData.nextLevelExp) * 100}%` }}
                   >
@@ -904,9 +912,11 @@ const ProfilePage = () => {
                       <span className="font-bold text-yellow-800">{subscriptionInfo.diffDays} gün</span>
                     </div>
                     <div className="relative h-3 bg-yellow-200 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg"
-                        style={{ width: `${Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}%` }}
+                        style={{
+                          width: `${Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}%`,
+                        }}
                       >
                         <div className="absolute inset-0 bg-white/30 animate-shimmer"></div>
                       </div>
@@ -927,7 +937,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-blue-600 font-semibold">Toplam Oyun</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-green-100/80 to-emerald-100/80 backdrop-blur-xl border-2 border-green-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
                 <CardContent className="p-5 text-center">
                   <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
@@ -937,7 +947,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-green-600 font-semibold">Kazanma</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-purple-100/80 to-pink-100/80 backdrop-blur-xl border-2 border-purple-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
                 <CardContent className="p-5 text-center">
                   <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
@@ -947,7 +957,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-purple-600 font-semibold">Seri</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-cyan-100/80 to-blue-100/80 backdrop-blur-xl border-2 border-cyan-200/50 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
                 <CardContent className="p-5 text-center">
                   <div className="bg-white/60 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3 shadow-lg">
@@ -1023,9 +1033,9 @@ const ProfilePage = () => {
                     </CardTitle>
                     <CardDescription>Oyun içi başarılarınız ve rozetleriniz</CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowBadgesDialog(true)}
                     className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none hover:shadow-lg"
                   >
@@ -1078,17 +1088,29 @@ const ProfilePage = () => {
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-5 bg-gradient-to-br from-blue-100/80 to-cyan-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                      <img src="/degistirIkon.png" alt="Değiştir" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <img
+                        src="/degistirIkon.png"
+                        alt="Değiştir"
+                        className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg"
+                      />
                       <div className="text-sm text-blue-700 font-semibold mb-1">Değiştir</div>
                       <div className="text-2xl font-black text-blue-800">{jokers.degistir}</div>
                     </div>
                     <div className="text-center p-5 bg-gradient-to-br from-green-100/80 to-emerald-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <img
+                        src="/fisildaIkon.png"
+                        alt="Fısılda"
+                        className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg"
+                      />
                       <div className="text-sm text-green-700 font-semibold mb-1">Fısılda</div>
                       <div className="text-2xl font-black text-green-800">{jokers.fisilida}</div>
                     </div>
                     <div className="text-center p-5 bg-gradient-to-br from-purple-100/80 to-pink-100/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg" />
+                      <img
+                        src="/senyazIkon.png"
+                        alt="Sen Yaz"
+                        className="w-12 h-12 mx-auto mb-3 object-contain drop-shadow-lg"
+                      />
                       <div className="text-sm text-purple-700 font-semibold mb-1">Sen Yaz</div>
                       <div className="text-2xl font-black text-purple-800">{jokers.senYaz}</div>
                     </div>
