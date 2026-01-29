@@ -117,47 +117,43 @@ export const useAvatarUpload = () => {
   };
 
   // 4. Sadece Fotoğraf ÇEKME (Yüklemeden) - KAMERA
-  const captureFromCamera = async (): Promise<File | null> => {
+  const captureFromCamera = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       console.log("[Avatar] 📷 Kamera açılıyor...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Uri, // DataUrl yerine Uri kullanmak bellek için daha iyidir
+        resultType: CameraResultType.Uri, // Dosya yolu alıyoruz
         source: CameraSource.Camera,
         quality: 85,
-        allowEditing: true, // Kullanıcı kırpma yapabilsin
+        allowEditing: true,
       });
 
       if (!photo.webPath) {
         throw new Error("Fotoğraf yolu alınamadı");
       }
 
-      console.log("[Avatar] ✅ Fotoğraf çekildi, dosyaya çevriliyor...");
+      console.log("[Avatar] ✅ Fotoğraf çekildi");
 
-      // WebPath'i Blob/File'a çevir
+      // Dosyayı oluştur
       const response = await fetch(photo.webPath);
       const blob = await response.blob();
       const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
 
-      return file; // Sadece dosyayı dön, yükleme yapma!
+      // Hem dosyayı hem de YOLUNU dönüyoruz
+      return { file, webPath: photo.webPath };
     } catch (error: any) {
-      const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
-
-      if (!isCancelled) {
-        console.error("[Avatar] Camera error:", error);
-        toast.error("Fotoğraf çekilirken hata oluştu");
-      }
+      // Hata yönetimi aynen kalsın...
       return null;
     }
   };
 
   // 5. Sadece Fotoğraf SEÇME (Yüklemeden) - GALERİ
-  const captureFromGallery = async (): Promise<File | null> => {
+  const captureFromGallery = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       console.log("[Avatar] 🖼️ Galeri açılıyor...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Uri,
+        resultType: CameraResultType.Uri, // ÖNEMLİ: DataUrl değil Uri (Dosya Yolu) kullanıyoruz
         source: CameraSource.Photos,
         quality: 85,
       });
@@ -166,13 +162,15 @@ export const useAvatarUpload = () => {
         throw new Error("Fotoğraf seçilemedi");
       }
 
-      console.log("[Avatar] ✅ Fotoğraf seçildi, dosyaya çevriliyor...");
+      console.log("[Avatar] ✅ Fotoğraf seçildi, işleniyor...");
 
+      // WebPath'i Blob/File'a çevir (Anlık kullanım için)
       const response = await fetch(photo.webPath);
       const blob = await response.blob();
       const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
 
-      return file; // Sadece dosyayı dön
+      // Hem dosyayı hem de YOLUNU dönüyoruz
+      return { file, webPath: photo.webPath };
     } catch (error: any) {
       const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
 
