@@ -85,7 +85,6 @@ const ProfilePage = () => {
     }>
   >([]);
 
-  // ✅ DÜZELTİLMİŞ HALİ
   const [userStats, setUserStats] = useState<{
     total_games?: number;
     total_score?: number;
