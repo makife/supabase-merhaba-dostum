@@ -228,54 +228,43 @@ const ProfilePage = () => {
     const handleNativeRecovery = async () => {
       console.log("📡 [ProfilePage] Native Soft Recovery sinyali alındı!");
 
-      // LocalStorage'dan "Ben yükleme yapıyordum" bilgisini VE resmin yolunu al
+      // Eğer bekleyen bir avatar yüklemesi varsa ve elimizde veri varsa
       const wasUploading = localStorage.getItem("is_uploading_avatar") === "true";
-      const savedImageWebPath = localStorage.getItem("pending_avatar_path");
 
-      if (wasUploading && savedImageWebPath) {
-        console.log("📸 [ProfilePage] Bekleyen resim yolu bulundu:", savedImageWebPath);
+      if (wasUploading && pendingAvatarBlob) {
+        console.log("📸 [ProfilePage] Bekleyen avatar yüklemesi bulundu, bağlantı bekleniyor...");
 
-        const tryUpload = async () => {
-          try {
-            // 1. Dosya yolundan (Path) tekrar Blob oluştur
-            const response = await fetch(savedImageWebPath);
-            const blob = await response.blob();
-            const file = new File([blob], "recovered_image.jpg", { type: "image/jpeg" });
+        // Supabase bağlantısını kontrol et, değilse biraz bekle
+        const waitForConnection = async (retries = 0) => {
+          const isConnected = supabase.realtime.isConnected(); // Veya connectionState kontrolü
 
-            // 2. Yüklemeyi başlat
-            const publicUrl = await uploadAvatar(file);
-
-            if (publicUrl) {
-              setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
-              toast.success("Profil fotoğrafı başarıyla yüklendi!");
-
-              // Temizlik
-              localStorage.removeItem("is_uploading_avatar");
-              localStorage.removeItem("pending_avatar_path");
-            }
-          } catch (error) {
-            console.error("Kurtarma sırasında yükleme hatası:", error);
-            // Hemen pes etme, belki internet 1-2 saniye sonra gelir, retry mantığı burada da olabilir
+          if (isConnected) {
+            console.log("✅ [ProfilePage] Bağlantı hazır, yükleme başlatılıyor...");
+            await processPendingUpload(pendingAvatarBlob);
+          } else if (retries < 10) {
+            // Bağlantı yoksa 500ms bekle tekrar dene (toplam 5sn)
+            console.log(`⏳ [ProfilePage] Bağlantı bekleniyor (${retries}/10)...`);
+            setTimeout(() => waitForConnection(retries + 1), 500);
+          } else {
+            toast.error("İnternet bağlantısı kurulamadı, lütfen tekrar deneyin.");
+            localStorage.removeItem("is_uploading_avatar");
+            setPendingAvatarBlob(null);
           }
         };
 
-        // Bağlantı oturana kadar ufak bir gecikme iyidir
-        setTimeout(tryUpload, 500);
+        waitForConnection();
       }
     };
 
+    // Senin MainActivity.java'da gönderdiğin event isimleri:
     window.addEventListener("native-soft-recovery", handleNativeRecovery);
-    // app-foreground eventini de dinle (bazı telefonlarda recovery tetiklenmeyebilir)
-    window.addEventListener("app-foreground", handleNativeRecovery);
-
-    // Sayfa ilk açıldığında (Cold Start) da kontrol et (WebView tamamen ölüp dirildiyse burası çalışır)
-    handleNativeRecovery();
+    window.addEventListener("app-foreground", handleNativeRecovery); // Yedek olarak bunu da dinle
 
     return () => {
       window.removeEventListener("native-soft-recovery", handleNativeRecovery);
       window.removeEventListener("app-foreground", handleNativeRecovery);
     };
-  }, []); // pendingAvatarBlob değişince listener güncellensin
+  }, [pendingAvatarBlob]); // pendingAvatarBlob değişince listener güncellensin
 
   // 📤 BEKLEYEN RESMİ YÜKLEME FONKSİYONU
   const processPendingUpload = async (blob: Blob) => {
@@ -730,25 +719,40 @@ const ProfilePage = () => {
 
   const handleGallerySelect = async () => {
     setShowAvatarOptions(false);
+
+    // 1. İşaret fişeğini at
     localStorage.setItem("is_uploading_avatar", "true");
 
-    const file = await captureFromGallery();
+    // 2. Galeri fonksiyonunu çağır
+    const result = await captureFromGallery();
 
-    if (file) {
-      setPendingAvatarBlob(file);
+    if (result && result.webPath) {
+      console.log("💾 [ProfilePage] Galeri resmi seçildi, yol kaydediliyor:", result.webPath);
 
+      // 🔥 KRİTİK NOKTA: Resmin yolunu diske kaydet (Recovery için)
+      localStorage.setItem("pending_avatar_path", result.webPath);
+
+      // Fallback: Eğer uygulama ölmediyse hemen yüklemeyi dene
       if (navigator.onLine) {
         setTimeout(async () => {
+          // Yolu kullanarak dosyayı tekrar oluştur ve yükle
+          const response = await fetch(result.webPath);
+          const blob = await response.blob();
+          const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
+
           const publicUrl = await uploadAvatar(file);
           if (publicUrl) {
             setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
+            // Başarılı olursa temizle
             localStorage.removeItem("is_uploading_avatar");
-            setPendingAvatarBlob(null);
+            localStorage.removeItem("pending_avatar_path");
           }
         }, 500);
       }
     } else {
+      // İptal edildiyse temizle
       localStorage.removeItem("is_uploading_avatar");
+      localStorage.removeItem("pending_avatar_path");
     }
   };
 
