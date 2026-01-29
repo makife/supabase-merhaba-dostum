@@ -39,7 +39,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { jokers } = useJokerInventory();
-  const { captureFromCamera, uploadAvatar } = useAvatarUpload();
+  const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
+    useAvatarUpload();
   const { id: routeId } = useParams();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
@@ -718,9 +719,25 @@ const ProfilePage = () => {
 
   const handleGallerySelect = async () => {
     setShowAvatarOptions(false);
-    const avatarUrl = await uploadFromGallery();
-    if (avatarUrl) {
-      setProfileData((prev) => ({ ...prev, avatar_url: avatarUrl }));
+    localStorage.setItem("is_uploading_avatar", "true");
+
+    const file = await captureFromGallery();
+
+    if (file) {
+      setPendingAvatarBlob(file);
+
+      if (navigator.onLine) {
+        setTimeout(async () => {
+          const publicUrl = await uploadAvatar(file);
+          if (publicUrl) {
+            setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
+            localStorage.removeItem("is_uploading_avatar");
+            setPendingAvatarBlob(null);
+          }
+        }, 500);
+      }
+    } else {
+      localStorage.removeItem("is_uploading_avatar");
     }
   };
 
