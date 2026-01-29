@@ -44,7 +44,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [leftTournaments, setLeftTournaments] = useState<string[]>([]);
-  
+
   const fetchingRef = useRef(false);
 
   // Ayrılan turnuva kontrolü
@@ -64,7 +64,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   // Fetch active tournaments
   const fetchTournaments = async () => {
     if (!user || fetchingRef.current) return;
-    
+
     try {
       fetchingRef.current = true;
       setLoading(true);
@@ -74,7 +74,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       // Sadece beklemedeki turnuvaları getir (in_progress olan turnuvalar bracket'ta gösterilmeli)
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      
+
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
@@ -108,14 +108,18 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (profile) {
         const now = new Date();
-        const isPremium = 
+        const isPremium =
           (profile.premium_until && new Date(profile.premium_until) > now) ||
           (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
 
         if (!isPremium) {
           const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
           if (totalCredits < 3) {
-            toast({ title: "Yetersiz Kredi", description: "Turnuvaya katılmak için en az 3 kredi gerekli", variant: "destructive" });
+            toast({
+              title: "Yetersiz Kredi",
+              description: "Turnuvaya katılmak için en az 3 kredi gerekli",
+              variant: "destructive",
+            });
             return null;
           }
         }
@@ -144,13 +148,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       if (error) throw error;
 
       // Add creator as participant
-      const { error: participantError } = await supabase
-        .from("tournament_participants")
-        .insert({
-          tournament_id: tournament.id,
-          user_id: user.id,
-          is_bot: false,
-        });
+      const { error: participantError } = await supabase.from("tournament_participants").insert({
+        tournament_id: tournament.id,
+        user_id: user.id,
+        is_bot: false,
+      });
 
       if (participantError) throw participantError;
 
@@ -195,26 +197,28 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (profile) {
         const now = new Date();
-        const isPremium = 
+        const isPremium =
           (profile.premium_until && new Date(profile.premium_until) > now) ||
           (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
 
         if (!isPremium) {
           const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
           if (totalCredits < 3) {
-            toast({ title: "Yetersiz Kredi", description: "Turnuvaya katılmak için en az 3 kredi gerekli", variant: "destructive" });
+            toast({
+              title: "Yetersiz Kredi",
+              description: "Turnuvaya katılmak için en az 3 kredi gerekli",
+              variant: "destructive",
+            });
             return false;
           }
         }
       }
 
-      const { error } = await supabase
-        .from("tournament_participants")
-        .insert({
-          tournament_id: tournamentId,
-          user_id: user.id,
-          is_bot: false,
-        });
+      const { error } = await supabase.from("tournament_participants").insert({
+        tournament_id: tournamentId,
+        user_id: user.id,
+        is_bot: false,
+      });
 
       if (error) throw error;
 
@@ -277,35 +281,29 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       console.log("✅ Katılımcı kaydı silindi");
 
       // 3. Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
-      if (isCreator && tournament.status === 'waiting') {
-        const otherPlayers = allParticipants?.filter(p => p.user_id !== user.id && !p.is_bot);
+      if (isCreator && tournament.status === "waiting") {
+        const otherPlayers = allParticipants?.filter((p) => p.user_id !== user.id && !p.is_bot);
 
         if (otherPlayers && otherPlayers.length > 0) {
           const newCreatorId = otherPlayers[0].user_id;
-          await supabase
-            .from("tournaments")
-            .update({ creator_id: newCreatorId })
-            .eq("id", tournamentId);
+          await supabase.from("tournaments").update({ creator_id: newCreatorId }).eq("id", tournamentId);
           console.log("✅ Kuruculuk devredildi:", newCreatorId);
         } else {
-          await supabase
-            .from("tournaments")
-            .update({ status: "cancelled" })
-            .eq("id", tournamentId);
+          await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
           console.log("🚫 Turnuva iptal edildi");
         }
       }
 
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
-      
+
       // Ayrılan turnuvayı kaydet (tekrar katılmasın)
-      setLeftTournaments(prev => [...prev, tournamentId]);
-      
+      setLeftTournaments((prev) => [...prev, tournamentId]);
+
       // Context'i temizle
       setCurrentTournament(null);
       setParticipants([]);
       setMatches([]);
-      
+
       return true;
     } catch (error: any) {
       console.error("❌ Ayrılma hatası:", error);
@@ -322,117 +320,30 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       setLoading(true);
       console.log("🏆 Turnuva başlatılıyor:", tournamentId);
 
-      // Server-side RPC fonksiyonu kullan (RLS bypass için)
+      // 1. Önce maçları ve botları oluşturan RPC
       const { data, error } = await supabase.rpc("start_tournament_with_bots_v2", {
         p_tournament_id: tournamentId,
       });
 
-      if (error) {
-        console.error("❌ RPC hatası:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       const result = data as { success: boolean; error?: string; bots_added?: number };
-      
       if (!result.success) {
-        console.error("❌ Turnuva başlatılamadı:", result.error);
         toast({ title: "Turnuva İptal", description: result.error || "Yeterli oyuncu yok" });
         return false;
       }
 
-      console.log(`✅ Turnuva başladı, ${result.bots_added} bot eklendi`);
+      // 2. ŞİMDİ KREDİLERİ DÜŞ (Yeni Yazdığımız RPC)
+      // Bu işlem sunucuda yapılacak, kimin başlattığı önemli değil.
+      const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits", {
+        p_tournament_id: tournamentId,
+      });
 
-      // 🎫 Turnuva başladı - tüm gerçek oyuncuların kredisini düş
-      const { data: realParticipants } = await supabase
-        .from("tournament_participants")
-        .select("user_id")
-        .eq("tournament_id", tournamentId)
-        .eq("is_bot", false);
-
-      if (realParticipants && realParticipants.length > 0) {
-        console.log(`💰 ${realParticipants.length} oyuncunun kredisi düşülüyor...`);
-        
-        // Tüm oyuncuların kredilerini paralel olarak düş
-        const creditPromises = realParticipants.map(async (participant) => {
-          if (!participant.user_id) {
-            console.warn("⚠️ Katılımcının user_id'si yok, atlanıyor");
-            return;
-          }
-
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from("profiles")
-              .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
-              .eq("id", participant.user_id)
-              .maybeSingle();
-
-            if (profileError) {
-              console.error(`❌ Profil getirme hatası (${participant.user_id}):`, profileError);
-              return;
-            }
-
-            if (!profile) {
-              console.warn(`⚠️ Profil bulunamadı: ${participant.user_id}`);
-              return;
-            }
-
-            const now = new Date();
-            const isPremium = 
-              (profile.premium_until && new Date(profile.premium_until) > now) ||
-              (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
-
-            if (isPremium) {
-              console.log(`👑 Premium kullanıcı, kredi düşürülmedi: ${participant.user_id}`);
-              return;
-            }
-
-            let gameCredits = profile.game_credits || 0;
-            let bonusCredits = profile.bonus_credits || 0;
-            const originalGameCredits = gameCredits;
-            let creditsToDeduct = 3;
-
-            // Önce bonus kredilerden düş
-            if (bonusCredits >= creditsToDeduct) {
-              bonusCredits -= creditsToDeduct;
-              creditsToDeduct = 0;
-            } else {
-              creditsToDeduct -= bonusCredits;
-              bonusCredits = 0;
-            }
-
-            // Kalan varsa normal kredilerden düş
-            if (creditsToDeduct > 0) {
-              gameCredits = Math.max(0, gameCredits - creditsToDeduct);
-            }
-
-            const updateData: { game_credits: number; bonus_credits: number; last_credit_refresh?: string } = {
-              game_credits: gameCredits,
-              bonus_credits: bonusCredits,
-            };
-            
-            // Sadece ilk defa 5'in altına düşerse refresh timer'ı başlat
-            if (gameCredits < 5 && originalGameCredits >= 5) {
-              updateData.last_credit_refresh = new Date().toISOString();
-            }
-
-            const { error: updateError } = await supabase
-              .from("profiles")
-              .update(updateData)
-              .eq("id", participant.user_id);
-
-            if (updateError) {
-              console.error(`❌ Kredi güncelleme hatası (${participant.user_id}):`, updateError);
-            } else {
-              console.log(`✅ 3 kredi düşürüldü: ${participant.user_id} (${originalGameCredits} -> ${gameCredits})`);
-            }
-          } catch (error) {
-            console.error(`❌ Kredi düşüm hatası (${participant.user_id}):`, error);
-          }
-        });
-
-        // Tüm kredi işlemlerinin tamamlanmasını bekle
-        await Promise.all(creditPromises);
-        console.log(`✅ Tüm oyuncuların kredi işlemleri tamamlandı`);
+      if (creditError) {
+        console.error("❌ Kredi düşme hatası:", creditError);
+        // Kritik bir hata değil, turnuva başlasın ama logla.
+      } else {
+        console.log("💰 Krediler düşüldü:", creditResult);
       }
 
       await fetchTournamentDetails(tournamentId);
@@ -484,14 +395,14 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           .from("tournaments")
           .update({ status: "completed", finished_at: new Date().toISOString() })
           .eq("id", tournamentId);
-        
+
         console.log("🏆 Turnuva tamamlandı!");
         return true;
       }
 
       // Create next round matches from winners
       const winners = completedMatches.map((m) => m.winner_id);
-      
+
       const nextRoundMatches = [];
       for (let i = 0; i < winners.length; i += 2) {
         nextRoundMatches.push({
@@ -506,9 +417,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         });
       }
 
-      const { error: insertError } = await supabase
-        .from("tournament_matches")
-        .insert(nextRoundMatches);
+      const { error: insertError } = await supabase.from("tournament_matches").insert(nextRoundMatches);
 
       if (insertError) throw insertError;
 
@@ -574,7 +483,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             .single();
 
           return { ...p, profiles: profile || undefined };
-        })
+        }),
       );
 
       // Get matches with player info
@@ -591,16 +500,20 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
         return {
           ...match,
-          player1: player1 ? {
-            username: player1.profiles?.username || "Oyuncu",
-            avatar_url: player1.profiles?.avatar_url,
-            is_bot: player1.is_bot,
-          } : null,
-          player2: player2 ? {
-            username: player2.profiles?.username || "Oyuncu",
-            avatar_url: player2.profiles?.avatar_url,
-            is_bot: player2.is_bot,
-          } : null,
+          player1: player1
+            ? {
+                username: player1.profiles?.username || "Oyuncu",
+                avatar_url: player1.profiles?.avatar_url,
+                is_bot: player1.is_bot,
+              }
+            : null,
+          player2: player2
+            ? {
+                username: player2.profiles?.username || "Oyuncu",
+                avatar_url: player2.profiles?.avatar_url,
+                is_bot: player2.is_bot,
+              }
+            : null,
         };
       });
 
@@ -627,13 +540,13 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .on("postgres_changes", { event: "*", schema: "public", table: "tournaments" }, () => {
           fetchTournaments();
         })
-        .subscribe()
+        .subscribe(),
     );
 
     // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
     const handleAppResumed = () => {
       console.log("🔄 [Tournament] 🎯 App resumed eventi alındı!");
-      fetchTournaments().catch(e => {
+      fetchTournaments().catch((e) => {
         console.error("[Tournament] ❌ Resume turnuva yenileme hatası:", e);
       });
     };
@@ -657,64 +570,84 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
     // Son bilinen maç durumlarını cache'le
     const matchStatusCache = new Map<string, string>();
-    matches.forEach(m => matchStatusCache.set(m.id, m.status));
+    matches.forEach((m) => matchStatusCache.set(m.id, m.status));
 
     autoReconnect.registerChannel(channelName, () =>
       supabase
         .channel(channelName)
-        .on("postgres_changes", {
-          event: "*",
-          schema: "public",
-          table: "tournament_participants",
-          filter: `tournament_id=eq.${tournamentId}`,
-        }, () => {
-          fetchTournamentDetails(tournamentId);
-        })
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `tournament_id=eq.${tournamentId}`,
-        }, (payload) => {
-          const newMatch = payload.new as any;
-          const oldMatch = payload.old as any;
-          
-          // Sadece durum veya kazanan değiştiyse bracket'i yenile
-          // Skor güncellemeleri (kelime girişleri) bracket'i yeniden yüklememeli
-          const statusChanged = oldMatch?.status !== newMatch?.status;
-          const winnerChanged = oldMatch?.winner_id !== newMatch?.winner_id;
-          const countdownChanged = !oldMatch?.countdown_started_at && newMatch?.countdown_started_at;
-          
-          if (statusChanged || winnerChanged || countdownChanged) {
-            console.log(`🔄 Bracket yenileniyor: status=${statusChanged}, winner=${winnerChanged}, countdown=${countdownChanged}`);
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "tournament_participants",
+            filter: `tournament_id=eq.${tournamentId}`,
+          },
+          () => {
             fetchTournamentDetails(tournamentId);
-          } else {
-            // Sadece lokal state'i güncelle (skor için)
-            setMatches(prev => prev.map(m => 
-              m.id === newMatch.id 
-                ? { ...m, player1_score: newMatch.player1_score, player2_score: newMatch.player2_score }
-                : m
-            ));
-          }
-        })
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "tournament_matches",
-          filter: `tournament_id=eq.${tournamentId}`,
-        }, () => {
-          // Yeni maç oluşturuldu (yeni round) - bracket'i yenile
-          fetchTournamentDetails(tournamentId);
-        })
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournaments",
-          filter: `id=eq.${tournamentId}`,
-        }, (payload) => {
-          setCurrentTournament((prev) => prev ? { ...prev, ...payload.new } as Tournament : null);
-        })
-        .subscribe()
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tournament_matches",
+            filter: `tournament_id=eq.${tournamentId}`,
+          },
+          (payload) => {
+            const newMatch = payload.new as any;
+            const oldMatch = payload.old as any;
+
+            // Sadece durum veya kazanan değiştiyse bracket'i yenile
+            // Skor güncellemeleri (kelime girişleri) bracket'i yeniden yüklememeli
+            const statusChanged = oldMatch?.status !== newMatch?.status;
+            const winnerChanged = oldMatch?.winner_id !== newMatch?.winner_id;
+            const countdownChanged = !oldMatch?.countdown_started_at && newMatch?.countdown_started_at;
+
+            if (statusChanged || winnerChanged || countdownChanged) {
+              console.log(
+                `🔄 Bracket yenileniyor: status=${statusChanged}, winner=${winnerChanged}, countdown=${countdownChanged}`,
+              );
+              fetchTournamentDetails(tournamentId);
+            } else {
+              // Sadece lokal state'i güncelle (skor için)
+              setMatches((prev) =>
+                prev.map((m) =>
+                  m.id === newMatch.id
+                    ? { ...m, player1_score: newMatch.player1_score, player2_score: newMatch.player2_score }
+                    : m,
+                ),
+              );
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "tournament_matches",
+            filter: `tournament_id=eq.${tournamentId}`,
+          },
+          () => {
+            // Yeni maç oluşturuldu (yeni round) - bracket'i yenile
+            fetchTournamentDetails(tournamentId);
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tournaments",
+            filter: `id=eq.${tournamentId}`,
+          },
+          (payload) => {
+            setCurrentTournament((prev) => (prev ? ({ ...prev, ...payload.new } as Tournament) : null));
+          },
+        )
+        .subscribe(),
     );
 
     return () => {
