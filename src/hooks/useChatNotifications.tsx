@@ -98,11 +98,11 @@ export function useChatNotifications() {
         return;
       }
 
-      toast(title, {
+      toast.info(title, {
         description,
         duration: 5000,
         action: navigateTo ? {
-          label: "Görüntüle",
+          label: "Git",
           onClick: () => navigateRef.current(navigateTo),
         } : undefined,
       });

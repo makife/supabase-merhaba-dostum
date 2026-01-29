@@ -65,7 +65,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           toast.success(notification.message, {
             duration: 5000,
             icon: "🏆",
-            position: "bottom-center",
           });
         }
 
@@ -73,7 +72,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           console.log("📢 Mention toast gösteriliyor");
           toast.info(`📢 ${notification.message}`, {
             duration: 5000,
-            position: "bottom-center",
             action: {
               label: "Git",
               onClick: () => navigate("/chat"),
@@ -95,7 +93,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           console.log("💬 Private message toast gösteriliyor");
           toast.info(`💬 ${notification.message}`, {
             duration: 5000,
-            position: "bottom-center",
             action: {
               label: "Git",
               onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),

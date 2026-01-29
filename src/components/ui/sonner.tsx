@@ -10,10 +10,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      position="bottom-center"
+      expand={false}
+      richColors
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-card/98 group-[.toaster]:text-card-foreground dark:group-[.toaster]:text-white group-[.toaster]:border-2 group-[.toaster]:border-primary/30 group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.12)] group-[.toaster]:backdrop-blur-xl group-[.toaster]:rounded-2xl group-[.toaster]:font-sans group-[.toaster]:font-medium",
+            "group toast group-[.toaster]:bg-card/98 group-[.toaster]:text-card-foreground dark:group-[.toaster]:text-white group-[.toaster]:border-2 group-[.toaster]:border-primary/30 group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.12)] group-[.toaster]:backdrop-blur-xl group-[.toaster]:rounded-2xl group-[.toaster]:font-sans group-[.toaster]:font-medium group-[.toaster]:animate-[slide-in-from-bottom_0.4s_ease-out]",
           description: "group-[.toast]:text-card-foreground dark:group-[.toast]:text-gray-200 group-[.toast]:font-medium group-[.toast]:opacity-85",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-semibold group-[.toast]:rounded-xl group-[.toast]:px-4",
