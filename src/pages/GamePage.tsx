@@ -2022,10 +2022,17 @@ const GamePage = ({
         return false;
       }
 
-      console.log("⏱️ Countdown başlatılıyor/güncelleniyor:", countdownStartedAt, "skipBuffer:", skipBuffer, "Force:", force);
+      console.log(
+        "⏱️ Countdown başlatılıyor/güncelleniyor:",
+        countdownStartedAt,
+        "skipBuffer:",
+        skipBuffer,
+        "Force:",
+        force,
+      );
 
       // 🔒 Eski zamanlayıcıları temizle
-      countdownTimersRef.current.forEach(t => clearTimeout(t));
+      countdownTimersRef.current.forEach((t) => clearTimeout(t));
       countdownTimersRef.current = [];
 
       // Flag'i işaretle
@@ -2036,7 +2043,7 @@ const GamePage = ({
       const countdownStartTime = new Date(countdownStartedAt).getTime();
       const BUFFER_MS = 5000; // 5 saniyelik buffer (preparing -> ready -> blank -> countdown)
       const actualCountdownStart = countdownStartTime + BUFFER_MS; // Countdown'ın görsel olarak başlayacağı zaman
-      
+
       const now = Date.now() + serverTimeOffset;
       const msElapsedSinceStart = now - countdownStartTime; // countdown_started_at'tan bu yana geçen süre
       const msUntilCountdown = actualCountdownStart - now; // Countdown'a ne kadar kaldı?
@@ -2063,11 +2070,11 @@ const GamePage = ({
 
       // 🎯 SENARYO 2: Buffer süresi içindeyiz - animasyonları göster
       // Buffer animasyonları: 0-3500ms preparing, 3500-4000ms ready, 4000-5000ms blank, 5000+ countdown
-      
+
       if (msElapsedSinceStart < 3500) {
         // Henüz preparing aşamasındayız
         setPreparingOpponent("preparing");
-        
+
         // Ready'ye geçiş (3500ms'de)
         const readyTimer = setTimeout(() => {
           if (isMountedRef.current) {
@@ -2076,7 +2083,7 @@ const GamePage = ({
           }
         }, 3500 - msElapsedSinceStart);
         countdownTimersRef.current.push(readyTimer);
-        
+
         // Blank'e geçiş (4000ms'de)
         const blankTimer = setTimeout(() => {
           if (isMountedRef.current) {
@@ -2085,11 +2092,10 @@ const GamePage = ({
           }
         }, 4000 - msElapsedSinceStart);
         countdownTimersRef.current.push(blankTimer);
-        
       } else if (msElapsedSinceStart < 4000) {
         // Ready aşamasındayız
         setPreparingOpponent("ready");
-        
+
         // Blank'e geçiş
         const blankTimer = setTimeout(() => {
           if (isMountedRef.current) {
@@ -2098,7 +2104,6 @@ const GamePage = ({
           }
         }, 4000 - msElapsedSinceStart);
         countdownTimersRef.current.push(blankTimer);
-        
       } else if (msElapsedSinceStart < 5000) {
         // Blank aşamasındayız - animasyon gösterme
         setPreparingOpponent(null);
@@ -2139,7 +2144,7 @@ const GamePage = ({
     }
 
     // 🔒 Countdown zamanlayıcılarını temizle
-    countdownTimersRef.current.forEach(t => clearTimeout(t));
+    countdownTimersRef.current.forEach((t) => clearTimeout(t));
     countdownTimersRef.current = [];
 
     // Reset server time tracking
@@ -4469,6 +4474,70 @@ const GamePage = ({
       gameStartedRef.current = true; // Arka plan disconnect kontrolü için
     }
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
+
+  // 🆕 TÜM MODLAR İÇİN OTOMATİK HAZIR DURUMU VE COUNTDOWN BAŞLATMA
+  // AI modundaki gibi: Her iki oyuncu da hazır olunca otomatik countdown başlat
+  useEffect(() => {
+    if (!currentRoom?.id || !user?.id) return;
+    if (!participants || participants.length < 2) return;
+
+    // Countdown zaten başlamışsa bir şey yapma
+    if (currentRoom.countdown_started_at) return;
+
+    // Oyun zaten başlamışsa bir şey yapma
+    if (gameStarted) return;
+
+    const currentParticipant = participants.find((p) => p.user_id === user.id);
+    const otherParticipant = participants.find((p) => p.user_id !== user.id);
+
+    if (!currentParticipant || !otherParticipant) return;
+
+    console.log("🔍 Hazır durumu kontrolü:", {
+      gameMode,
+      currentReady: currentParticipant.ready,
+      otherReady: otherParticipant.ready,
+      otherIsAI: otherParticipant.is_ai,
+    });
+
+    // Mevcut oyuncuyu otomatik hazır yap (eğer henüz hazır değilse)
+    if (!currentParticipant.ready) {
+      console.log("✅ Oyuncu otomatik hazır hale getiriliyor...");
+      supabase
+        .from("game_participants")
+        .update({ ready: true })
+        .eq("id", currentParticipant.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error("❌ Oyuncu hazır yapılamadı:", error);
+          } else {
+            console.log("✅ Oyuncu hazır duruma getirildi");
+          }
+        });
+      return; // Güncelleme yapıldı, bir sonraki render'da kontrol devam edecek
+    }
+
+    // Her iki oyuncu da hazırsa countdown başlat
+    if (currentParticipant.ready && otherParticipant.ready) {
+      const nowTs = Date.now();
+
+      console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - countdown başlatılıyor...`);
+
+      supabase
+        .from("game_rooms")
+        .update({
+          countdown_started_at: new Date(nowTs).toISOString(),
+          updated_at: new Date(nowTs).toISOString(),
+        })
+        .eq("id", currentRoom.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error("❌ Countdown başlatma hatası:", error);
+          } else {
+            console.log(`✅ ${gameMode} modunda countdown otomatik başlatıldı:`, nowTs);
+          }
+        });
+    }
+  }, [currentRoom?.id, currentRoom?.countdown_started_at, participants, user?.id, gameMode, gameStarted]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   // 🔒 Çift tetiklemeyi önlemek için: İlk yüklemede ve realtime'da aynı countdown_started_at kontrolü
