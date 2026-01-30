@@ -317,45 +317,28 @@ export const useMobileNotifications = () => {
     return success;
   };
   
-  // Mention Bildirimi - Veritabanına kaydet + Push gönder
+  // Mention Bildirimi - SADECE Push gönder (DB kaydı GlobalChat.tsx'te yapılıyor)
   const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId: string) => {
     const title = "Biri senden bahsetti!";
     // Mesaj çok uzunsa keselim
     const shortMessage = message.length > 50 ? message.substring(0, 47) + "..." : message;
     const body = `${senderUsername}: "${shortMessage}"`;
 
-    console.log("📢 MENTION NOTIFICATION - Saving to DB and sending push to:", receiverId);
+    console.log("📢 MENTION NOTIFICATION - Sending push only to:", receiverId);
     
     try {
-      // 1. Veritabanına bildirim kaydı oluştur (Realtime tetikleyecek)
-      const notificationMessage = `${senderUsername} seni bir mesajda etiketledi: "${shortMessage}"`;
-      
-      const { error: dbError } = await supabase.from("notifications").insert({
-        user_id: receiverId,
-        type: "mention",
-        message: notificationMessage,
-        related_id: messageId,
-        is_read: false,
-      });
-
-      if (dbError) {
-        console.error("❌ Mention DB notification error:", dbError);
-      } else {
-        console.log("✅ Mention notification saved to DB");
-      }
-
-      // 2. Push bildirim gönder (sunucu token kontrolü yapacak)
+      // Push bildirim gönder (sunucu token kontrolü yapacak)
+      // DB kaydı GlobalChat.tsx'te yapılıyor - duplicate önlemek için burada yapmıyoruz
       const success = await sendPushNotification(receiverId, title, body, {
         type: "mention",
         messageId,
         roomId: "global"
       });
 
-      console.log("📢 MENTION NOTIFICATION SENT:", {
+      console.log("📢 MENTION PUSH SENT:", {
         to: receiverId,
         from: senderUsername,
         message: shortMessage,
-        dbSaved: !dbError,
         pushSent: success,
       });
       

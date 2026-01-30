@@ -463,6 +463,7 @@ const sendMessage = async () => {
       // Mention kontrolü - case-insensitive
       const mentionRegex = /@(\w+)/g;
       let match;
+      const processedUsers = new Set<string>(); // Aynı kullanıcıya birden fazla bildirim göndermeyi önle
       
       while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
         const mentionedUsername = match[1];
@@ -474,8 +475,23 @@ const sendMessage = async () => {
           .ilike('username', mentionedUsername)
           .single();
         
-        if (mentionedUser && mentionedUser.id !== user.id) {
+        if (mentionedUser && mentionedUser.id !== user.id && !processedUsers.has(mentionedUser.id)) {
+          processedUsers.add(mentionedUser.id);
           console.log("📢 Mention detected, sending notification to:", mentionedUser.username, mentionedUser.id);
+          
+          // 1. Veritabanına bildirim kaydı oluştur (Realtime tetikleyecek - in-app toast için)
+          const shortMessage = trimmedMessage.length > 50 ? trimmedMessage.substring(0, 47) + "..." : trimmedMessage;
+          const notificationMessage = `${username} seni bir mesajda etiketledi: "${shortMessage}"`;
+          
+          await supabase.from("notifications").insert({
+            user_id: mentionedUser.id,
+            type: "mention",
+            message: notificationMessage,
+            related_id: insertData.id,
+            is_read: false,
+          });
+          
+          // 2. Push bildirim gönder (background için)
           await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }

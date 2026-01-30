@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck, Ban } from "lucide-react";
+import { ChatMiniMenu } from "@/components/ChatMiniMenu";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GlobalChat } from "@/components/GlobalChat";
 import { PrivateChat } from "@/components/PrivateChat";
@@ -333,7 +334,7 @@ export default function ChatPage() {
     }
   };
 
-  // Ortak header bileşeni - güncellenmiş versiyon
+  // Ortak header bileşeni - Mini floating menü ile güncellenmiş versiyon
   const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
     <div className="bg-gradient-to-r from-chat-500 via-chat-600 to-chat-500 text-white p-6 border-b-2 border-chat-300 shadow-lg h-[120px]">
       <div className="flex flex-col h-full justify-end">
@@ -361,47 +362,20 @@ export default function ChatPage() {
               <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
                 {title}
               </h1>
-              {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
-              {/* <p className="text-chat-100 text-sm font-medium">{subtitle}</p> */}
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {viewMode === "global" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleViewChange("global")}
-                  className="px-2 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white border-2 border-blue-300 hover:from-blue-600 hover:to-blue-700 hover:border-blue-200 transition-all duration-200 shadow-lg hover:shadow-blue-500/30 font-semibold sm:px-3"
-                >
-                  <Hash className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
-                  <span className="text-xs hidden sm:inline">Global</span>
-                </Button>
+          {/* Mini Floating Menu - Sadece global view'da göster */}
+          {viewMode === "global" && (
+            <ChatMiniMenu
+              onViewChange={handleViewChange}
+              onGoHome={handleBackToMenu}
+              currentView={viewMode}
+            />
+          )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleViewChange("users")}
-                  className="px-2 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-300 hover:from-green-600 hover:to-green-700 hover:border-green-200 transition-all duration-200 shadow-lg hover:shadow-green-500/30 font-semibold sm:px-3"
-                >
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
-                  <span className="text-xs hidden sm:inline">Özel</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleViewChange("blocked-users")}
-                  className="px-2 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-300 hover:from-red-600 hover:to-red-700 hover:border-red-200 transition-all duration-200 shadow-lg hover:shadow-red-500/30 font-semibold sm:px-3"
-                  title="Engelliler"
-                >
-                  <UserX className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
-                  <span className="text-xs hidden sm:inline">Engelli</span>
-                </Button>
-              </>
-            )}
-
+          {/* Diğer view'larda sadece Ana Sayfa butonu */}
+          {viewMode !== "global" && (
             <Button
               variant="ghost"
               size="sm"
@@ -411,7 +385,7 @@ export default function ChatPage() {
               <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
               <span className="text-xs hidden sm:inline">Ana Sayfa</span>
             </Button>
-          </div>
+          )}
         </div>
       </div>
     </div>
