@@ -4907,15 +4907,14 @@ const GamePage = ({
           }
         } else if (currentRoom?.countdown_started_at) {
           // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
-          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
-          const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
-          gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
+          // ✅ KRİTİK: Oyun ŞU AN başlıyor (countdown zaten bitti)
+          gameStartTimestamp = Date.now() + serverTimeOffset;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
-          console.log("🎮 Normal game timer: Server timing", {
-            countdownStart: new Date(countdownStartTime).toISOString(),
+          console.log("🎮 Normal game timer: Starting NOW (countdown completed)", {
             gameStart: new Date(gameStartTimestamp).toISOString(),
             endsAt: new Date(endsAtTimestamp).toISOString(),
+            countdown_started_at: currentRoom.countdown_started_at,
           });
         } else if (currentRoom?.started_at) {
           // Fallback: started_at kullan (eski oyunlar için)
@@ -4925,8 +4924,7 @@ const GamePage = ({
           console.log("⚠️ Using started_at fallback (countdown_started_at not found)");
         } else {
           // Final Fallback: vs-computer için
-          const buffer = gameMode === "vs-computer" ? 10000 : 10000; // Her durumda 10 saniye buffer
-          gameStartTimestamp = Date.now() + serverTimeOffset + buffer;
+          gameStartTimestamp = Date.now() + serverTimeOffset;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
           console.log("⚠️ Using immediate start fallback");
@@ -4955,14 +4953,9 @@ const GamePage = ({
 
           const currentServerTime = Date.now() + serverTimeOffset;
 
-          // 🔒 KİLİT MEKANİZMASI: Oyun Henüz Başlamadıysa (Buffer Time)
-          if (gameStartTimestamp > 0 && currentServerTime < gameStartTimestamp) {
-            timeLeftRef.current = 120;
-            setDisplayTime(120);
-            return;
-          }
-
           // 🔓 OYUN BAŞLADI: Normal Geri Sayım
+          // NOT: Buffer kontrolü YOK - çünkü bu timer zaten gameStarted=true olduktan sonra çalışıyor
+          // gameStarted=true ise countdown zaten bitmiş demektir
           const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
           const remainingSeconds = Math.floor(remainingMs / 1000); // Math.ceil yerine Math.floor - 0'a düzgün insin
 
