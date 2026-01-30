@@ -160,7 +160,8 @@ export function useChatNotifications() {
               .single();
 
             const senderName = senderProfile?.username || "Birisi";
-            showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, "/chat");
+            // Doğru özel sohbete yönlendir
+            showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, `/chat?openPrivateChat=${newMsg.sender_id}`);
           },
         )
         .on(
@@ -193,9 +194,13 @@ export function useChatNotifications() {
               showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
             }
 
-            if (notif.type === "message") {
+            if (notif.type === "message" && notif.related_id) {
               refreshUnreadCounts();
-              showInAppNotification("💬 Yeni Özel Mesaj", notif.message, "/chat");
+              // related_id = chat_id formatı: chat_userId1_userId2
+              const chatId = notif.related_id;
+              const userIds = chatId.replace("chat_", "").split("_");
+              const otherUserId = userIds.find((id: string) => id !== user.id);
+              showInAppNotification("💬 Yeni Özel Mesaj", notif.message, `/chat?openPrivateChat=${otherUserId}`);
             }
 
             if (notif.type === "tournament_opponent_left") {
