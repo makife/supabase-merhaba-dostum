@@ -195,7 +195,7 @@ export function useChatNotifications() {
               }
 
               // Toast göster
-              showInAppNotification("📢 Senden Bahsedildi@@@@@", notif.message, "/chat");
+              showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
             }
 
             if (notif.type === "message" && notif.related_id) {
