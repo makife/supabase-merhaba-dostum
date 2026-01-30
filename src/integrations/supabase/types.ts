@@ -1771,6 +1771,10 @@ export type Database = {
         Args: { p_round: number; p_tournament_id: string }
         Returns: undefined
       }
+      deduct_tournament_credits: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       delete_tournament_participant: {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: boolean
