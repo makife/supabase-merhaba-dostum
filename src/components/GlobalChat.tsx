@@ -482,7 +482,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             user_id: mentionedUser.id,
             type: "mention",
             // HATA ALMAMAK İÇİN BURAYA DOĞRUDAN METNİ YAZMALISIN:
-            message: `${username} seni bir mesajda etiketledi: "${shortMessage}"`,
+            //message: `${username} seni bir mesajda etiketledi: "${shortMessage}"`,
             related_id: insertData.id,
             is_read: false,
           });
