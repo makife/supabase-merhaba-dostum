@@ -454,7 +454,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       );
 
       // Mention kontrolü - case-insensitive
-      const mentionRegex = /@(\w+)/g;
+      /*const mentionRegex = /@(\w+)/g;
       let match;
       const processedUsers = new Set<string>(); // Aynı kullanıcıya birden fazla bildirim göndermeyi önle
 
@@ -482,7 +482,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             user_id: mentionedUser.id,
             type: "mention",
             // HATA ALMAMAK İÇİN BURAYA DOĞRUDAN METNİ YAZMALISIN:
-            //message: `${username} seni bir mesajda etiketledi: "${shortMessage}"`,
+            message: `${username} seni bir mesajda etiketledi: "${shortMessage}"`,
             related_id: insertData.id,
             is_read: false,
           });
@@ -490,7 +490,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           // 2. Push bildirim gönder (background için)
           await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
-      }
+      }*/
 
       playSound("buttonClick");
     } catch (error) {
