@@ -161,7 +161,11 @@ export function useChatNotifications() {
 
             const senderName = senderProfile?.username || "Birisi";
             // Doğru özel sohbete yönlendir
-            showInAppNotification("💬 Yeni Özel Mesaj", `${senderName} sana mesaj gönderdi`, `/chat?openPrivateChat=${newMsg.sender_id}`);
+            showInAppNotification(
+              "💬 Yeni Özel Mesaj",
+              `${senderName} sana mesaj gönderdi`,
+              `/chat?openPrivateChat=${newMsg.sender_id}`,
+            );
           },
         )
         .on(
@@ -191,7 +195,7 @@ export function useChatNotifications() {
               }
 
               // Toast göster
-              showInAppNotification("📢 Senden Bahsedildi", notif.message, "/chat");
+              showInAppNotification("📢 Senden Bahsedildi@@@@@", notif.message, "/chat");
             }
 
             if (notif.type === "message" && notif.related_id) {
