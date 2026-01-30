@@ -211,7 +211,7 @@ BEGIN
   ) VALUES (
     p_receiver_id,
     'mention',
-    p_sender_username || ' seni bir mesajda etiketledi: "' || substring(p_message, 1, 50) || '..."',
+    p_sender_username || ' seni bir mesajda etiketledi: @@@@ "' || substring(p_message, 1, 50) || '..."',
     false,
     p_message_id,
     NOW()
