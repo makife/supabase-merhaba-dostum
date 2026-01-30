@@ -460,20 +460,22 @@ const sendMessage = async () => {
           : msg
       ));
 
-      // Mention kontrolü (mevcut kodunuz)
+      // Mention kontrolü - case-insensitive
       const mentionRegex = /@(\w+)/g;
       let match;
       
       while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
         const mentionedUsername = match[1];
         
+        // Case-insensitive arama için ilike kullan
         const { data: mentionedUser } = await supabase
           .from('profiles')
           .select('id, username')
-          .eq('username', mentionedUsername)
+          .ilike('username', mentionedUsername)
           .single();
         
         if (mentionedUser && mentionedUser.id !== user.id) {
+          console.log("📢 Mention detected, sending notification to:", mentionedUser.username, mentionedUser.id);
           await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }
