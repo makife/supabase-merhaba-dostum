@@ -65,7 +65,7 @@ export const sendMentionNotification = async (
 // Özel mesaj bildirimi - Her zaman veritabanına kaydet
 export const sendMessageNotification = async (userId: string, senderUsername: string, chatId: string) => {
   try {
-    const notificationMessage = `${senderUsername} sana özel mesaj gönderdi`;
+    const notificationMessage = `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`;
 
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
