@@ -29,7 +29,7 @@ export const sendMentionNotification = async (
   messageId?: string,
 ) => {
   try {
-    //const notificationMessage = `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`;
+    const notificationMessage = `${senderUsername} seni bir mesajda etiketledi: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`;
 
     const { error } = await supabase.from("notifications").insert({
       user_id: userId,
