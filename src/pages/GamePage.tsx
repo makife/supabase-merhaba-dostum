@@ -4517,27 +4517,51 @@ const GamePage = ({
     }
 
     // Her iki oyuncu da hazırsa countdown başlat
+    // 🔒 ÖNEMLİ: Race condition önleme - sadece ilk katılan (joined_at küçük olan) countdown başlatır
     if (currentParticipant.is_ready && otherParticipant.is_ready) {
-      const nowTs = Date.now();
+      const sortedParticipants = [...participants].sort((a, b) => {
+        const timeA = new Date(a.joined_at || 0).getTime();
+        const timeB = new Date(b.joined_at || 0).getTime();
+        return timeA - timeB;
+      });
 
-      console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - countdown başlatılıyor...`);
+      const firstJoined = sortedParticipants[0];
+
+      // Sadece ilk katılan oyuncu countdown başlatır
+      if (firstJoined.user_id !== user.id) {
+        console.log("⏳ Diğer oyuncu countdown başlatacak, bekleniyor...");
+        return;
+      }
+
+      console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - countdown başlatılıyor (ilk katılan olarak)...`);
+
+      // Server time kullanarak countdown başlat
+      const nowServerTime = Date.now() + serverTimeOffset;
 
       supabase
         .from("game_rooms")
         .update({
-          countdown_started_at: new Date(nowTs).toISOString(),
-          updated_at: new Date(nowTs).toISOString(),
+          countdown_started_at: new Date(nowServerTime).toISOString(),
+          updated_at: new Date(nowServerTime).toISOString(),
         })
         .eq("id", currentRoom.id)
         .then(({ error }) => {
           if (error) {
             console.error("❌ Countdown başlatma hatası:", error);
           } else {
-            console.log(`✅ ${gameMode} modunda countdown otomatik başlatıldı:`, nowTs);
+            console.log(`✅ ${gameMode} modunda countdown otomatik başlatıldı:`, new Date(nowServerTime).toISOString());
           }
         });
     }
-  }, [currentRoom?.id, currentRoom?.countdown_started_at, participants, user?.id, gameMode, gameStarted]);
+  }, [
+    currentRoom?.id,
+    currentRoom?.countdown_started_at,
+    participants,
+    user?.id,
+    gameMode,
+    gameStarted,
+    serverTimeOffset,
+  ]);
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   // 🔒 Çift tetiklemeyi önlemek için: İlk yüklemede ve realtime'da aynı countdown_started_at kontrolü
@@ -4881,15 +4905,31 @@ const GamePage = ({
             gameStartTimestamp = Date.now() + serverTimeOffset;
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
           }
+        } else if (currentRoom?.countdown_started_at) {
+          // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
+          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
+          const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
+          gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
+          endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+
+          console.log("🎮 Normal game timer: Server timing", {
+            countdownStart: new Date(countdownStartTime).toISOString(),
+            gameStart: new Date(gameStartTimestamp).toISOString(),
+            endsAt: new Date(endsAtTimestamp).toISOString(),
+          });
         } else if (currentRoom?.started_at) {
-          // Normal oyunlar (Private/Random) için started_at kullan
+          // Fallback: started_at kullan (eski oyunlar için)
           gameStartTimestamp = new Date(currentRoom.started_at).getTime();
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+
+          console.log("⚠️ Using started_at fallback (countdown_started_at not found)");
         } else {
-          // Fallback: vs-computer için
-          const buffer = gameMode === "vs-computer" ? 0 : 5000;
+          // Final Fallback: vs-computer için
+          const buffer = gameMode === "vs-computer" ? 10000 : 10000; // Her durumda 10 saniye buffer
           gameStartTimestamp = Date.now() + serverTimeOffset + buffer;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+
+          console.log("⚠️ Using immediate start fallback");
         }
 
         // Hesaplanan değeri ref'e ata
@@ -6815,94 +6855,20 @@ const GamePage = ({
     setShowCountdown(false);
     countdownCompletedAtRef.current = Date.now();
 
-    const isMp = gameMode === "private-room" || gameMode === "random-match";
+    // Timer'ın başlamasına izin ver - endsAtTimestampRef zaten countdown_started_at'tan hesaplanmış
+    // Multiplayer için started_at set etmeye gerek YOK - countdown_started_at + 10s = oyun başlangıcı
 
-    // Clear any existing timer before reinitializing
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-      console.log("🧹 Cleared existing timer before countdown complete");
-    }
-
-    // 🔒 KRİTİK: Timer'ı SADECE BİR KERE başlat - endsAtTimestampRef kontrolü
-    if (endsAtTimestampRef.current) {
-      console.log("⏱️ Timer zaten başlatılmış, tekrar başlatma");
-      setGameStarted(true);
-      gameHasStartedRef.current = true;
-      gameStartedRef.current = true;
-      return;
-    }
-
-    // 🎯 KRİTİK: Multiplayer modlarında started_at'ı set et VE timer'ı manuel başlat
-    if (isMp && currentRoom?.id) {
-      const startTime = new Date().toISOString();
-      await supabase.from("game_rooms").update({ started_at: startTime }).eq("id", currentRoom.id);
-      console.log("✅ started_at set edildi:", startTime);
-
-      // 🎯 Timer'ı MANUEL başlat - currentRoom güncellenmesini bekleme
-      const gameStartTimestamp = new Date(startTime).getTime();
-      const endsAtTimestamp = gameStartTimestamp + 120 * 1000;
-      endsAtTimestampRef.current = endsAtTimestamp;
-
-      console.log("⏱️ Multiplayer timer manuel başlatıldı:", {
-        start: startTime,
-        end: new Date(endsAtTimestamp).toISOString(),
-      });
-
-      // 🎯 Timer interval'ını başlat
-      timerRef.current = setInterval(() => {
-        if (!endsAtTimestampRef.current || !isMountedRef.current) return;
-        if (gameEndedRef.current) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          return;
-        }
-
-        const currentServerTime = Date.now() + serverTimeOffset;
-        const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
-        const remainingSeconds = Math.floor(remainingMs / 1000);
-
-        timeLeftRef.current = remainingSeconds;
-        setDisplayTime(remainingSeconds);
-
-        if (remainingSeconds <= 0 && !gameEndedRef.current) {
-          console.log("⏰ Multiplayer timer: Time reached 0 - ending game");
-          gameEndedRef.current = true;
-
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-
-          handleGameEnd();
-          setTimeout(() => {
-            setGameEnded(true);
-            checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
-          }, 50);
-        }
-      }, 1000);
-
-      console.log("✅ Timer interval başlatıldı");
-    }
-
-    // Initialize timer to full time for all modes
+    // Initialize timer to full time
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
     setDisplayTime(initial);
 
-    // Start game immediately - don't wait for started_at
+    // Start game immediately
     setGameStarted(true);
     gameHasStartedRef.current = true;
     gameStartedRef.current = true;
 
-    // Short suppress for multiplayer (only 1s to prevent initial jitter)
-    if (isMp) {
-      syncSuppressUntilRef.current = Date.now() + 1000;
-    }
-
-    console.log("✅ Oyun başladı - timer çalışıyor");
+    console.log("✅ Oyun başladı - timer otomatik çalışacak (useEffect'ten)");
   };
 
   return (
