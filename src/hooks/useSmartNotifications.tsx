@@ -90,7 +90,7 @@ export function useSmartNotifications() {
     async (receiverId: string, senderUsername: string, message: string) => {
       await sendPushNotification(
         receiverId,
-        "📢 Senden Bahsedildi",
+        "📢 Senden Bahsedildi@@@@@",
         `${senderUsername}: ${message.substring(0, 50)}...`,
         { type: "mention" },
         true,
