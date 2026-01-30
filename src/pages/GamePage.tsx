@@ -4494,17 +4494,17 @@ const GamePage = ({
 
     console.log("🔍 Hazır durumu kontrolü:", {
       gameMode,
-      currentReady: currentParticipant.ready,
-      otherReady: otherParticipant.ready,
+      currentReady: currentParticipant.is_ready,
+      otherReady: otherParticipant.is_ready,
       otherIsAI: otherParticipant.is_ai,
     });
 
     // Mevcut oyuncuyu otomatik hazır yap (eğer henüz hazır değilse)
-    if (!currentParticipant.ready) {
+    if (!currentParticipant.is_ready) {
       console.log("✅ Oyuncu otomatik hazır hale getiriliyor...");
       supabase
         .from("game_participants")
-        .update({ ready: true })
+        .update({ is_ready: true })
         .eq("id", currentParticipant.id)
         .then(({ error }) => {
           if (error) {
@@ -4517,7 +4517,7 @@ const GamePage = ({
     }
 
     // Her iki oyuncu da hazırsa countdown başlat
-    if (currentParticipant.ready && otherParticipant.ready) {
+    if (currentParticipant.is_ready && otherParticipant.is_ready) {
       const nowTs = Date.now();
 
       console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - countdown başlatılıyor...`);
