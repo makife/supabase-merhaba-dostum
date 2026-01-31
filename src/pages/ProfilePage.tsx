@@ -647,7 +647,9 @@ const ProfilePage = () => {
     if (premiumDate <= now) return null;
 
     const diffTime = premiumDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // 🔧 FIX: Math.floor kullanarak HomePage ile tutarlı hesaplama
+    // Kalan tam günleri göster (1.5 gün = 1 gün kaldı)
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     const isYearly = diffDays > 40;
     const subscriptionType = isYearly ? "Yıllık" : "Aylık";
