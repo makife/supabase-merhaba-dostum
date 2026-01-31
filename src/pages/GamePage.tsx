@@ -4907,11 +4907,14 @@ const GamePage = ({
           }
         } else if (currentRoom?.countdown_started_at) {
           // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
-          // ✅ KRİTİK: Oyun ŞU AN başlıyor (countdown zaten bitti)
-          gameStartTimestamp = Date.now() + serverTimeOffset;
+          // ✅ KRİTİK: Senkronize timer için countdown_started_at + 10s (5s buffer + 5s countdown) kullan
+          // Bu sayede her iki oyuncu da aynı anda timer'ı başlatır
+          const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
+          gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
-          console.log("🎮 Normal game timer: Starting NOW (countdown completed)", {
+          console.log("🎮 Random/Private game timer: Server-synchronized timing", {
+            countdownStart: new Date(countdownStartTime).toISOString(),
             gameStart: new Date(gameStartTimestamp).toISOString(),
             endsAt: new Date(endsAtTimestamp).toISOString(),
             countdown_started_at: currentRoom.countdown_started_at,
@@ -6848,20 +6851,24 @@ const GamePage = ({
     setShowCountdown(false);
     countdownCompletedAtRef.current = Date.now();
 
-    // Timer'ın başlamasına izin ver - endsAtTimestampRef zaten countdown_started_at'tan hesaplanmış
-    // Multiplayer için started_at set etmeye gerek YOK - countdown_started_at + 10s = oyun başlangıcı
+    // 🔒 KRİTİK: Timer'ın başlamasına izin ver - endsAtTimestampRef countdown_started_at'tan hesaplanacak
+    // Multiplayer için senkronize timer: countdown_started_at + 10s = oyun başlangıcı
 
-    // Initialize timer to full time
+    // Initialize timer to full time (120 saniye)
     const initial = currentRoom?.time_limit || 120;
     timeLeftRef.current = initial;
     setDisplayTime(initial);
 
-    // Start game immediately
+    // 🔒 endsAtTimestampRef'i temizle - initializeTimer yeniden hesaplasın
+    // Bu sayede senkronize başlangıç garantilenir
+    endsAtTimestampRef.current = null;
+
+    // Start game immediately - timer useEffect'te başlatılacak
     setGameStarted(true);
     gameHasStartedRef.current = true;
     gameStartedRef.current = true;
 
-    console.log("✅ Oyun başladı - timer otomatik çalışacak (useEffect'ten)");
+    console.log("✅ Oyun başladı - timer senkronize olarak countdown_started_at'tan hesaplanacak");
   };
 
   return (
