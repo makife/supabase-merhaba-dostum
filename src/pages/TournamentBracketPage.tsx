@@ -575,13 +575,13 @@ const TournamentBracketPage = () => {
         <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-32">
           {wonReward && (
             <div className="text-center">
-              {/* Ödülünüz Başlığı */}
-              <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
+              {/* Ödülünüz Başlığı - 4 satır aşağı */}
+              <h2 className="text-white text-2xl font-bold mb-8">Ödülünüz</h2>
               
-              {/* Ödül Kartı Görseli */}
+              {/* Ödül Kartı Görseli - 2 satır aşağı */}
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                className="w-48 h-auto mx-auto drop-shadow-2xl"
+                className="w-48 h-auto mx-auto drop-shadow-2xl mt-8"
                 alt="Kazanılan Ödül"
               />
             </div>
