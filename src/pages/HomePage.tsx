@@ -49,7 +49,8 @@ const isGiftPremium = (profile: any) => {
   if (!profile?.premium_until) return false;
   const premiumUntil = new Date(profile.premium_until);
   const createdAt = new Date(profile.created_at);
-  const daysDiff = Math.ceil((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  // 🔧 FIX: Math.floor kullanarak tutarlı hesaplama
+  const daysDiff = Math.floor((premiumUntil.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
   return daysDiff >= 6 && daysDiff <= 8 && premiumUntil > new Date();
 };
 
@@ -64,7 +65,8 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   const now = new Date();
   const premiumUntil = new Date(profile.premium_until);
   if (premiumUntil <= now) return null;
-  const daysRemaining = Math.ceil((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  // 🔧 FIX: Math.floor kullanarak tutarlı hesaplama
+  const daysRemaining = Math.floor((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   if (daysRemaining >= 300) return "yearly";
   if (daysRemaining >= 25) return "monthly";
   return "short";
@@ -204,12 +206,21 @@ const HomePage = () => {
     if (now >= expiry) return setPremiumTimeLeft("");
 
     const timeDiff = expiry.getTime() - now.getTime();
+    // 🔧 FIX: Tutarlı hesaplama - kalan tam günleri göster
     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-    if (days > 0) setPremiumTimeLeft(`${days} Gün`);
-    else {
-      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const remainingHours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    // Eğer 1+ gün kaldıysa, gün ve saat olarak göster
+    if (days > 0) {
+      if (remainingHours > 0) {
+        setPremiumTimeLeft(`${days} Gün ${remainingHours}s`);
+      } else {
+        setPremiumTimeLeft(`${days} Gün`);
+      }
+    } else {
+      // Son gün - saat ve dakika göster
       const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      setPremiumTimeLeft(`${hours}s ${minutes}d`);
+      setPremiumTimeLeft(`${remainingHours}s ${minutes}d`);
     }
   };
 
