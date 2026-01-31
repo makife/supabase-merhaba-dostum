@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, LogOut, Clock, Crown, Check } from "lucide-react"; // Check ikonu eklendi
+import { Trophy, LogOut, Clock, Crown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -494,20 +494,24 @@ const TournamentBracketPage = () => {
         // new Date().toISOString() UTC verdiği için gece saatlerinde tarih kayıyordu.
         const dateObj = new Date();
         const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, "0"); // Aylar 0'dan başlar
-        const day = String(dateObj.getDate()).padStart(2, "0");
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Aylar 0'dan başlar
+        const day = String(dateObj.getDate()).padStart(2, '0');
         const today = `${year}-${month}-${day}`;
-
+        
         console.log("Çark hakkı tanımlanıyor. Silinecek tarih (Yerel):", today);
 
         // Kullanıcının bugünkü çevirme kaydını siliyoruz
-        const { error, count } = await supabase.from("wheel_spins").delete().eq("user_id", user.id).eq("date", today);
+        const { error, count } = await supabase
+          .from("wheel_spins")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("date", today);
 
         if (error) {
-          console.error("Çark kaydı silinirken hata:", error);
-          toast.error("Çark hakkı verilirken bir sorun oluştu.");
+           console.error("Çark kaydı silinirken hata:", error);
+           toast.error("Çark hakkı verilirken bir sorun oluştu.");
         } else {
-          console.log(`Çark hakkı verildi. Silinen kayıt sayısı: ${count}`);
+           console.log(`Çark hakkı verildi. Silinen kayıt sayısı: ${count}`);
         }
       }
 
@@ -561,7 +565,123 @@ const TournamentBracketPage = () => {
     );
   }
 
-  // ELENME DURUMU (Early Return)
+  if (showChampion) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+        {/* Arka Plan Görseli (Sabit) */}
+        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
+
+        {/* Konfeti Parçacıkları */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(30)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-3 h-3 rounded-full"
+              style={{
+                background: ["#FFD700", "#FF6B6B", "#4ECDC4", "#A855F7", "#F59E0B", "#10B981"][i % 6],
+                left: `${Math.random() * 100}%`,
+                top: "-20px",
+              }}
+              animate={{
+                y: ["0vh", "110vh"],
+                x: [0, (Math.random() - 0.5) * 200],
+                rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1)],
+                scale: [1, 0.5],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                delay: Math.random() * 2,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* İçerik Katmanı */}
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full bg-black/20">
+          <AnimatePresence>
+            {wonReward && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180, opacity: 0, y: 100 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1, y: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15,
+                  delay: 0.8,
+                }}
+                className="relative"
+              >
+                {/* Çoklu Parlama Efektleri */}
+                <motion.div
+                  className="absolute -inset-8 bg-gradient-to-r from-yellow-500/50 via-orange-500/50 to-yellow-500/50 rounded-full blur-3xl"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <motion.div
+                  className="absolute -inset-4 bg-white/30 rounded-full blur-2xl"
+                  animate={{
+                    scale: [1.1, 1.3, 1.1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                />
+
+                {/* Dönen Işık Halkası */}
+                <motion.div
+                  className="absolute -inset-6 rounded-full border-4 border-dashed border-yellow-400/60"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                />
+
+                {/* Ödül Kartı Görseli */}
+                <motion.img
+                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
+                  className="w-64 sm:w-80 h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
+                  alt="Kazanılan Ödül"
+                  animate={{
+                    y: [0, -10, 0],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+
+                {/* Ödül Etiketi */}
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 1.5, type: "spring" }}
+                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-2 rounded-full shadow-lg"
+                >
+                  <span className="text-white font-bold text-lg whitespace-nowrap">{wonReward.label}</span>
+                </motion.div>
+
+                {/* Buton */}
+                <motion.div
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 2 }}
+                  className="text-center mt-12"
+                >
+                  <Button
+                    onClick={() => navigate("/tournament")}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-8 py-6 rounded-2xl text-xl shadow-lg hover:scale-105 transition-transform"
+                  >
+                    <Trophy className="w-6 h-6 mr-2" />
+                    ÖDÜLÜ AL VE DEVAM ET
+                  </Button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  }
+
   if (showEliminated) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-red-700 to-purple-800 p-4 flex items-center justify-center">
@@ -650,7 +770,7 @@ const TournamentBracketPage = () => {
           </div>
         )}
 
-        <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4 pb-20">
+        <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4">
           {[1, 2, 3].map((round) => {
             const roundInfo = {
               1: { name: "Çeyrek Final", icon: "⚔️", color: "bg-purple-700", border: "border-purple-500" },
@@ -668,12 +788,12 @@ const TournamentBracketPage = () => {
                 </div>
 
                 {matchesByRound[round]?.length ? (
-                  matchesByRound[round].map((match) => (
-                    <MatchCard key={match.id} match={match} roundInfo={roundInfo} />
-                  ))
+                  matchesByRound[round].map((match) => <MatchCard key={match.id} match={match} roundInfo={roundInfo} />)
                 ) : (
                   <Card className="bg-white/5 border-white/10 mb-3">
-                    <CardContent className="p-3 text-center text-gray-400 text-sm">Maçlar henüz oluşturulmadı</CardContent>
+                    <CardContent className="p-3 text-center text-gray-400 text-sm">
+                      Maçlar henüz oluşturulmadı
+                    </CardContent>
                   </Card>
                 )}
               </div>
@@ -681,43 +801,6 @@ const TournamentBracketPage = () => {
           })}
         </div>
       </div>
-
-      {/* SADELEŞTİRİLMİŞ ŞAMPİYONLUK VE ÖDÜL KARTI (Alt Ortada) */}
-      <AnimatePresence>
-        {showChampion && wonReward && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xs px-4"
-          >
-            <Card className="bg-slate-900/95 border border-yellow-500/50 shadow-2xl backdrop-blur-md">
-              <CardContent className="p-4 flex flex-col items-center">
-                <div className="text-yellow-400 text-sm font-bold mb-1">ŞAMPİYON!</div>
-                
-                {/* Görsel Boyutu Yarıya İndirildi (w-32) ve Efektler Kaldırıldı */}
-                <img 
-                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]} 
-                  className="w-32 h-auto object-contain mb-2 drop-shadow-md" 
-                  alt="Ödül" 
-                />
-                
-                <span className="text-white font-bold text-base mb-3">{wonReward.label}</span>
-                
-                {/* Buton Yazısı Kaldırıldı, Sadece İkon */}
-                <Button 
-                  onClick={() => navigate("/tournament")} 
-                  size="icon"
-                  className="rounded-full w-10 h-10 bg-green-600 hover:bg-green-700 text-white shadow-lg"
-                >
-                  <Check className="w-6 h-6" />
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
