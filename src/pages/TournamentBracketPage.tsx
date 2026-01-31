@@ -571,112 +571,21 @@ const TournamentBracketPage = () => {
         {/* Arka Plan Görseli (Sabit) */}
         <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
 
-        {/* Konfeti Parçacıkları */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(30)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-3 h-3 rounded-full"
-              style={{
-                background: ["#FFD700", "#FF6B6B", "#4ECDC4", "#A855F7", "#F59E0B", "#10B981"][i % 6],
-                left: `${Math.random() * 100}%`,
-                top: "-20px",
-              }}
-              animate={{
-                y: ["0vh", "110vh"],
-                x: [0, (Math.random() - 0.5) * 200],
-                rotate: [0, 360 * (Math.random() > 0.5 ? 1 : -1)],
-                scale: [1, 0.5],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                delay: Math.random() * 2,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          ))}
-        </div>
-
         {/* İçerik Katmanı */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full bg-black/20">
-          <AnimatePresence>
-            {wonReward && (
-              <motion.div
-                initial={{ scale: 0, rotate: -180, opacity: 0, y: 100 }}
-                animate={{ scale: 1, rotate: 0, opacity: 1, y: 0 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 15,
-                  delay: 0.8,
-                }}
-                className="relative"
-              >
-                {/* Çoklu Parlama Efektleri */}
-                <motion.div
-                  className="absolute -inset-8 bg-gradient-to-r from-yellow-500/50 via-orange-500/50 to-yellow-500/50 rounded-full blur-3xl"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <motion.div
-                  className="absolute -inset-4 bg-white/30 rounded-full blur-2xl"
-                  animate={{
-                    scale: [1.1, 1.3, 1.1],
-                    opacity: [0.3, 0.6, 0.3],
-                  }}
-                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                />
-
-                {/* Dönen Işık Halkası */}
-                <motion.div
-                  className="absolute -inset-6 rounded-full border-4 border-dashed border-yellow-400/60"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                />
-
-                {/* Ödül Kartı Görseli */}
-                <motion.img
-                  src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                  className="w-64 sm:w-80 h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
-                  alt="Kazanılan Ödül"
-                  animate={{
-                    y: [0, -10, 0],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* Ödül Etiketi */}
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 1.5, type: "spring" }}
-                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-2 rounded-full shadow-lg"
-                >
-                  <span className="text-white font-bold text-lg whitespace-nowrap">{wonReward.label}</span>
-                </motion.div>
-
-                {/* Buton */}
-                <motion.div
-                  initial={{ y: 40, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 2 }}
-                  className="text-center mt-12"
-                >
-                  <Button
-                    onClick={() => navigate("/tournament")}
-                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold px-8 py-6 rounded-2xl text-xl shadow-lg hover:scale-105 transition-transform"
-                  >
-                    <Trophy className="w-6 h-6 mr-2" />
-                    ÖDÜLÜ AL VE DEVAM ET
-                  </Button>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-32">
+          {wonReward && (
+            <div className="text-center">
+              {/* Ödülünüz Başlığı */}
+              <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
+              
+              {/* Ödül Kartı Görseli */}
+              <img
+                src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
+                className="w-48 h-auto mx-auto drop-shadow-2xl"
+                alt="Kazanılan Ödül"
+              />
+            </div>
+          )}
         </div>
       </div>
     );
