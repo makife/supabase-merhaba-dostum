@@ -49,6 +49,7 @@ interface GameParticipant {
   profiles?: {
     username: string;
     avatar_url: string | null;
+    premium_until?: string | null;
   };
 }
 
@@ -235,7 +236,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // Participants'ları da çek
         const { data: parts } = await supabase
           .from("game_participants")
-          .select("*, profiles:user_id(username, avatar_url)")
+          .select("*, profiles:user_id(username, avatar_url, premium_until)")
           .eq("room_id", room.id);
 
         if (parts) {
@@ -1989,7 +1990,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           .select(
             `
           *,
-          profiles:user_id (username, avatar_url)
+          profiles:user_id (username, avatar_url, premium_until)
         `,
           )
           .eq("room_id", roomId);
@@ -2555,7 +2556,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // Katılımcıları yeniden fetch et
         const { data: parts } = await supabase
           .from("game_participants")
-          .select("*, profiles:user_id(id, username, avatar_url)")
+          .select("*, profiles:user_id(id, username, avatar_url, premium_until)")
           .eq("room_id", currentRoom.id);
 
         if (parts) {
