@@ -4940,7 +4940,11 @@ const GamePage = ({
           end: new Date(endsAtTimestamp).toISOString(),
         });
 
-        // 2. ADIM: Sayacı Başlat (Saniyede bir kontrol)
+        // 2. ADIM: Sayacı Başlat
+        // 🔧 FIX: 200ms interval ile smooth güncelleme - saniye atlamayı önler
+        // Sadece saniye değiştiğinde state güncellenir (performans için)
+        let lastDisplayedSecond = -1;
+        
         timerRef.current = setInterval(() => {
           // Eğer unmount olduysa veya ends_at yoksa dur
           if (!endsAtTimestampRef.current || !isMountedRef.current) return;
@@ -4960,11 +4964,15 @@ const GamePage = ({
           // NOT: Buffer kontrolü YOK - çünkü bu timer zaten gameStarted=true olduktan sonra çalışıyor
           // gameStarted=true ise countdown zaten bitmiş demektir
           const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
-          const remainingSeconds = Math.floor(remainingMs / 1000); // Math.ceil yerine Math.floor - 0'a düzgün insin
+          const remainingSeconds = Math.floor(remainingMs / 1000);
 
-          // State güncelle
-          timeLeftRef.current = remainingSeconds;
-          setDisplayTime(remainingSeconds);
+          // 🔧 FIX: Sadece saniye değiştiğinde state güncelle
+          // Bu sayede 2:00 → 1:59 → 1:58 sırayla gider, atlama olmaz
+          if (remainingSeconds !== lastDisplayedSecond) {
+            lastDisplayedSecond = remainingSeconds;
+            timeLeftRef.current = remainingSeconds;
+            setDisplayTime(remainingSeconds);
+          }
 
           // Süre Bitti Kontrolü
           if (remainingSeconds <= 0 && !gameEndedRef.current) {
@@ -4997,7 +5005,7 @@ const GamePage = ({
               }, 50);
             }
           }
-        }, 1000);
+        }, 200); // 🔧 FIX: 200ms interval - smooth timer, saniye atlamayı önler
       } catch (error) {
         console.error("❌ Timer initialization error:", error);
         endsAtTimestampRef.current = Date.now() + 120 * 1000;
