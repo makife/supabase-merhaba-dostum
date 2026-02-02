@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
-import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { Capacitor } from "@capacitor/core";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
@@ -54,7 +54,6 @@ const WheelPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
-  const { playSpecialSound } = useSounds();
   const navigate = useNavigate();
 
   const [isSpinning, setIsSpinning] = useState(false);
@@ -63,6 +62,10 @@ const WheelPage = () => {
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [transitionDuration, setTransitionDuration] = useState(0);
   const [totalSpins, setTotalSpins] = useState(0); // Toplam çevirme hakkı (günlük + bonus)
+  const [isLoading, setIsLoading] = useState(true); // UI'ı hemen göster, veriyi arka planda çek
+  
+  // useSounds lazy load - sadece spin sırasında yükle
+  const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
   // Bezier eğrisini state'te tutmaya gerek yok, sabit bir string
   const timingFunction = "cubic-bezier(0.2, 0, 0.1, 1)";
@@ -103,8 +106,40 @@ const WheelPage = () => {
 
   usePageResync(handleWheelResync, "WheelPage", false);
 
+  // 🔥 OPTİMİZASYON: useSounds'ı lazy load et - sayfa açılışını yavaşlatmasın
+  useEffect(() => {
+    // Ses modülünü arka planda yükle
+    const loadSounds = async () => {
+      try {
+        const { useSounds } = await import("@/hooks/useSounds");
+        // Hook'u component dışında çağıramayız, bu yüzden doğrudan fonksiyon kullan
+        soundsRef.current = {
+          playSpecialSound: (path: string, volume = 0.7) => {
+            // Native platformda NativeAudio kullan
+            if (Capacitor.isNativePlatform()) {
+              import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
+                playSpecialNativeSound(path, volume);
+              });
+            } else {
+              // Web'de basit Audio kullan
+              const audio = new Audio(path);
+              audio.volume = volume;
+              audio.play().catch(() => {});
+            }
+          }
+        };
+      } catch (e) {
+        console.warn("Ses modülü yüklenemedi:", e);
+      }
+    };
+    loadSounds();
+  }, []);
+
+  // Spin availability kontrolünü arka planda yap
   useEffect(() => {
     if (user && profile) {
+      // Önce UI'ı göster, sonra veriyi kontrol et
+      setIsLoading(false);
       checkDailySpinAvailability();
     }
   }, [user, profile?.bonus_spins]);
@@ -140,7 +175,11 @@ const WheelPage = () => {
     if (!user || !canSpin || isSpinning) return;
 
     // Sesi asenkron başlatmayı dene, UI'ı bloklamasın
-    setTimeout(() => playSpecialSound("/carkSesi.mp3", 0.8), 0);
+    setTimeout(() => {
+      if (soundsRef.current) {
+        soundsRef.current.playSpecialSound("/carkSesi.mp3", 0.8);
+      }
+    }, 0);
 
     setIsSpinning(true);
 
@@ -177,7 +216,11 @@ const WheelPage = () => {
       setCanSpin(totalSpins > 1); // 1'den fazla hak varsa hâlâ çevirebilir
       
       showRewardToast(reward);
-      playSpecialSound("/win.mp3", 0.6);
+      
+      // Kazanma sesini çal
+      if (soundsRef.current) {
+        soundsRef.current.playSpecialSound("/win.mp3", 0.6);
+      }
       refreshProfile(); // Profile'ı güncelle (bonus_spins değişmiş olabilir)
     }, 8500);
   };
