@@ -227,18 +227,20 @@ const ProfilePage = () => {
   // 🔥 Avatar URL state - local override for immediate UI update
   // Yeni yüklenen avatar URL'ini tutar, UI'ı anında günceller
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
-  const localAvatarTimestampRef = useRef<number>(0);
+  // 🔥 Force re-render trigger - useMemo'nun yeniden hesaplanmasını zorlar
+  const [avatarUpdateTrigger, setAvatarUpdateTrigger] = useState(0);
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
-    // Timestamp kaydet - bu URL en güncel
-    localAvatarTimestampRef.current = Date.now();
-    // Local state'i hemen güncelle - UI anında yansınsın
+    
+    // 🔥 KRİTİK: Tüm state'leri AYNI ANDA güncelle
     setLocalAvatarUrl(url);
-    // Profile state'lerini de güncelle
+    setAvatarUpdateTrigger(prev => prev + 1); // Force re-render
     setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
+    
+    console.log('[ProfilePage] 🔄 Tüm avatar state\'leri güncellendi');
   }, []);
 
   const { 
@@ -246,21 +248,22 @@ const ProfilePage = () => {
     captureFromGalleryWithRecovery 
   } = usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Effective avatar URL - local override varsa onu kullan (5 saniye içinde)
-  // Local override 5 saniye boyunca öncelikli kalır, sonra profile'dan al
+  // 🔥 Effective avatar URL - local override HERZAMAN öncelikli (yüklendiği sürece)
   const effectiveAvatarUrl = useMemo(() => {
-    const isLocalRecent = (Date.now() - localAvatarTimestampRef.current) < 10000; // 10 saniye
+    // avatarUpdateTrigger dependency olarak eklendi - her güncelleme yeniden hesaplar
+    console.log('[ProfilePage] 🔄 effectiveAvatarUrl hesaplanıyor, trigger:', avatarUpdateTrigger);
     
-    if (localAvatarUrl && isLocalRecent) {
-      console.log('[ProfilePage] 🔄 effectiveAvatarUrl: localAvatarUrl kullanılıyor');
+    // 🔥 KRİTİK: localAvatarUrl varsa HERZAMAN onu kullan
+    if (localAvatarUrl) {
+      console.log('[ProfilePage] ✅ effectiveAvatarUrl: localAvatarUrl kullanılıyor:', localAvatarUrl.substring(0, 60));
       return localAvatarUrl;
     }
     
     // Profile'dan avatar URL al
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
-    console.log('[ProfilePage] 🔄 effectiveAvatarUrl: profileUrl kullanılıyor:', profileUrl?.substring(0, 50) + '...');
+    console.log('[ProfilePage] 🔄 effectiveAvatarUrl: profileUrl kullanılıyor');
     return profileUrl || '';
-  }, [localAvatarUrl, isOwnProfile, profile?.avatar_url, viewedProfile?.avatar_url]);
+  }, [localAvatarUrl, avatarUpdateTrigger, isOwnProfile, profile?.avatar_url, viewedProfile?.avatar_url]);
 
   useEffect(() => {
     const fetchProfile = async () => {
