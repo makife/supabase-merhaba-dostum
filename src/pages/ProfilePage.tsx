@@ -225,13 +225,18 @@ const ProfilePage = () => {
   };
 
   // 🔥 Avatar URL state - local override for immediate UI update
+  // Yeni yüklenen avatar URL'ini tutar, UI'ı anında günceller
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const localAvatarTimestampRef = useRef<number>(0);
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
-    console.log('[ProfilePage] ✅ Avatar yüklendi:', url);
+    console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
+    // Timestamp kaydet - bu URL en güncel
+    localAvatarTimestampRef.current = Date.now();
     // Local state'i hemen güncelle - UI anında yansınsın
     setLocalAvatarUrl(url);
+    // Profile state'lerini de güncelle
     setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
   }, []);
@@ -241,11 +246,20 @@ const ProfilePage = () => {
     captureFromGalleryWithRecovery 
   } = usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Effective avatar URL - local override varsa onu kullan, yoksa profile'dan al
+  // 🔥 Effective avatar URL - local override varsa onu kullan (5 saniye içinde)
+  // Local override 5 saniye boyunca öncelikli kalır, sonra profile'dan al
   const effectiveAvatarUrl = useMemo(() => {
-    if (localAvatarUrl) return localAvatarUrl;
-    if (isOwnProfile) return profile?.avatar_url || '';
-    return viewedProfile?.avatar_url || '';
+    const isLocalRecent = (Date.now() - localAvatarTimestampRef.current) < 10000; // 10 saniye
+    
+    if (localAvatarUrl && isLocalRecent) {
+      console.log('[ProfilePage] 🔄 effectiveAvatarUrl: localAvatarUrl kullanılıyor');
+      return localAvatarUrl;
+    }
+    
+    // Profile'dan avatar URL al
+    const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
+    console.log('[ProfilePage] 🔄 effectiveAvatarUrl: profileUrl kullanılıyor:', profileUrl?.substring(0, 50) + '...');
+    return profileUrl || '';
   }, [localAvatarUrl, isOwnProfile, profile?.avatar_url, viewedProfile?.avatar_url]);
 
   useEffect(() => {
