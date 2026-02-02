@@ -490,29 +490,14 @@ const TournamentBracketPage = () => {
           });
         }
       } else if (selected.type === "extra_spin") {
-        // DÜZELTME: UTC yerine Yerel Tarihi alıyoruz.
-        // new Date().toISOString() UTC verdiği için gece saatlerinde tarih kayıyordu.
-        const dateObj = new Date();
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Aylar 0'dan başlar
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const today = `${year}-${month}-${day}`;
+        // Bonus çark hakkını profiles tablosuna ekle
+        const currentBonusSpins = profile?.bonus_spins || 0;
+        await supabase
+          .from("profiles")
+          .update({ bonus_spins: currentBonusSpins + selected.value })
+          .eq("id", user.id);
         
-        console.log("Çark hakkı tanımlanıyor. Silinecek tarih (Yerel):", today);
-
-        // Kullanıcının bugünkü çevirme kaydını siliyoruz
-        const { error, count } = await supabase
-          .from("wheel_spins")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("date", today);
-
-        if (error) {
-           console.error("Çark kaydı silinirken hata:", error);
-           toast.error("Çark hakkı verilirken bir sorun oluştu.");
-        } else {
-           console.log(`Çark hakkı verildi. Silinen kayıt sayısı: ${count}`);
-        }
+        console.log(`Bonus çark hakkı verildi. Yeni toplam: ${currentBonusSpins + selected.value}`);
       }
 
       // Sadece profil verisi değiştiyse (mürekkep/kredi) profili güncelle
