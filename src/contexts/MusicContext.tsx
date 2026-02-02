@@ -200,7 +200,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   // Initialize and manage background music
+  // 🔥 Native platformda NativeMusicPlugin kullanılır, HTML5 Audio kullanılmaz
   useEffect(() => {
+    // Native platformda HTML5 Audio oluşturma - NativeMusicPlugin zaten yönetiyor
+    if (isNative) {
+      console.log("🎵 [MusicContext] Native platform - HTML5 Audio atlanıyor, NativeMusicPlugin kullanılacak");
+      return;
+    }
+
     const initMusic = () => {
       // Stop current music if playing
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
@@ -262,17 +269,37 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, [musicPack, currentTrackIndex]);
+  }, [musicPack, currentTrackIndex, isNative]);
 
-  const startBackgroundMusic = () => {
-    if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
+  const startBackgroundMusic = async () => {
+    if (!musicEnabled) return;
+
+    // 🔥 Native platformda NativeMusicPlugin kullan
+    if (isNative) {
+      try {
+        const { registerPlugin } = await import('@capacitor/core');
+        const NativeMusic = registerPlugin<{
+          setPack: (opts: { pack: string }) => Promise<void>;
+          setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+        }>('NativeMusic');
+        
+        await NativeMusic.setPack({ pack: musicPack });
+        await NativeMusic.setMusicEnabled({ enabled: true });
+        setIsPlaying(true);
+        console.log("🎵 [MusicContext] Native müzik başlatıldı");
+      } catch (e) {
+        console.warn("🎵 Native müzik başlatılamadı:", e);
+      }
+      return;
+    }
+
+    // Web platformu için HTML5 Audio
+    if (!backgroundMusicRef.current || isStartingRef.current) return;
 
     // Müzik zaten çalıyorsa tekrar başlatma
     if (!backgroundMusicRef.current.paused) return;
 
     isStartingRef.current = true;
-
-    // Kaldığı yerden devam et (currentTime = 0 kaldırıldı)
 
     // Try to play with better error handling
     const playPromise = backgroundMusicRef.current.play();
@@ -290,7 +317,25 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const stopBackgroundMusic = () => {
+  const stopBackgroundMusic = async () => {
+    // 🔥 Native platformda NativeMusicPlugin kullan
+    if (isNative) {
+      try {
+        const { registerPlugin } = await import('@capacitor/core');
+        const NativeMusic = registerPlugin<{
+          setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+        }>('NativeMusic');
+        
+        await NativeMusic.setMusicEnabled({ enabled: false });
+        setIsPlaying(false);
+        console.log("🎵 [MusicContext] Native müzik durduruldu");
+      } catch (e) {
+        console.warn("🎵 Native müzik durdurulamadı:", e);
+      }
+      return;
+    }
+
+    // Web platformu için HTML5 Audio
     // Clear any ongoing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
@@ -299,7 +344,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
-      // Kaldığı yerden devam etsin diye currentTime = 0 kaldırıldı
       backgroundMusicRef.current.volume = originalVolumeRef.current;
     }
     isStartingRef.current = false;
