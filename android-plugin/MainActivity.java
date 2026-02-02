@@ -84,29 +84,48 @@ public class MainActivity extends BridgeActivity {
     
     /**
      * 🎵 Arka plana giderken müziği ANINDA durdur
-     * WebView hazır olmasa bile çalışacak şekilde tasarlandı
+     * Event dispatch YERINE doğrudan tüm audio elementlerini durdurur
+     * WebView suspend olmadan ÖNCE çalışması gerekiyor
      */
     private void pauseMusicImmediately() {
-    Log.d(TAG, "🎵 pauseMusicImmediately() çağrıldı - Sinyal gönderiliyor");
-    
-    try {
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().evaluateJavascript(
-                "(function() {" +
-                "  try {" +
-                "    console.log('[Native] 🔔 app-background eventi gönderiliyor...');" +
-                "    window.dispatchEvent(new CustomEvent('app-background'));" +
-                "  } catch(e) {" +
-                "    console.error('[Native] Event hatası:', e);" +
-                "  }" +
-                "})()",
-                null
-            );
+        Log.d(TAG, "🎵 pauseMusicImmediately() çağrıldı - Tüm audio'lar durduruluyor");
+        
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                // 🔥 Event dispatch etmek yerine DOĞRUDAN tüm audio'ları durdur
+                // Bu sayede JS çalışmasa bile audio'lar duracak
+                getBridge().getWebView().evaluateJavascript(
+                    "(function() {" +
+                    "  try {" +
+                    "    console.log('[Native] 🎵 Tüm audio elementleri durduruluyor...');" +
+                    // Çalan audio'ları kaydet (foreground'da devam için)
+                    "    window.__nativePausedAudios = [];" +
+                    "    var audios = document.getElementsByTagName('audio');" +
+                    "    for (var i = 0; i < audios.length; i++) {" +
+                    "      if (!audios[i].paused) {" +
+                    "        window.__nativePausedAudios.push({" +
+                    "          element: audios[i]," +
+                    "          currentTime: audios[i].currentTime," +
+                    "          volume: audios[i].volume" +
+                    "        });" +
+                    "        audios[i].pause();" +
+                    "        console.log('[Native] Audio durdu: ' + (audios[i].src || 'unknown'));" +
+                    "      }" +
+                    "    }" +
+                    // Event da gönder (JS tarafı için)
+                    "    window.dispatchEvent(new CustomEvent('app-background'));" +
+                    "    console.log('[Native] ✅ ' + window.__nativePausedAudios.length + ' audio durduruldu');" +
+                    "  } catch(e) {" +
+                    "    console.error('[Native] Audio durdurma hatası:', e);" +
+                    "  }" +
+                    "})()",
+                    null
+                );
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Audio durdurma hatası: " + e.getMessage());
         }
-    } catch (Exception e) {
-        Log.e(TAG, "❌ Event gönderme hatası: " + e.getMessage());
     }
-}
     
     @Override
     public void onResume() {
@@ -208,28 +227,45 @@ public class MainActivity extends BridgeActivity {
     
     /**
      * 🎵 Ön plana geldiğinde müziği devam ettir
+     * Kaydedilen audio'ları kaldığı yerden başlatır
      */
     private void dispatchForegroundEvent() {
-    Log.d(TAG, "🎵 dispatchForegroundEvent() çağrıldı - Sinyal gönderiliyor");
-    
-    try {
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().evaluateJavascript(
-                "(function() {" +
-                "  try {" +
-                "    console.log('[Native] 🔔 app-foreground eventi gönderiliyor...');" +
-                "    window.dispatchEvent(new CustomEvent('app-foreground'));" +
-                "  } catch(e) {" +
-                "    console.error('[Native] Event hatası:', e);" +
-                "  }" +
-                "})()",
-                null
-            );
+        Log.d(TAG, "🎵 dispatchForegroundEvent() çağrıldı - Audio'lar devam ettiriliyor");
+        
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().evaluateJavascript(
+                    "(function() {" +
+                    "  try {" +
+                    "    console.log('[Native] 🎵 Kaydedilen audio\\'lar devam ettiriliyor...');" +
+                    // Kaydedilen audio'ları devam ettir
+                    "    if (window.__nativePausedAudios && window.__nativePausedAudios.length > 0) {" +
+                    "      for (var i = 0; i < window.__nativePausedAudios.length; i++) {" +
+                    "        var item = window.__nativePausedAudios[i];" +
+                    "        if (item.element) {" +
+                    "          item.element.volume = item.volume;" +
+                    "          item.element.play().catch(function(e) {" +
+                    "            console.warn('[Native] Audio resume hatası:', e);" +
+                    "          });" +
+                    "          console.log('[Native] Audio devam: ' + (item.element.src || 'unknown'));" +
+                    "        }" +
+                    "      }" +
+                    "      console.log('[Native] ✅ ' + window.__nativePausedAudios.length + ' audio devam ettirildi');" +
+                    "      window.__nativePausedAudios = [];" +
+                    "    }" +
+                    // Event da gönder
+                    "    window.dispatchEvent(new CustomEvent('app-foreground'));" +
+                    "  } catch(e) {" +
+                    "    console.error('[Native] Audio resume hatası:', e);" +
+                    "  }" +
+                    "})()",
+                    null
+                );
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Audio resume hatası: " + e.getMessage());
         }
-    } catch (Exception e) {
-        Log.e(TAG, "❌ Event gönderme hatası: " + e.getMessage());
     }
-}
     
     /**
      * Activity'yi yeniden başlatır.
