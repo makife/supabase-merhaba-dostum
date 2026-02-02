@@ -28,7 +28,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView }: ChatMiniMe
 
   const menuItems = [
     {
-      title: "Özel Mesajlar",
+      title: "Özel Sohbetlerim",
       icon: Users,
       action: () => onViewChange("users"),
       color: "from-green-500 to-green-600",
@@ -36,7 +36,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView }: ChatMiniMe
       isActive: currentView === "users",
     },
     {
-      title: "Engelliler",
+      title: "Engellediklerim",
       icon: UserX,
       action: () => onViewChange("blocked-users"),
       color: "from-red-500 to-red-600",
