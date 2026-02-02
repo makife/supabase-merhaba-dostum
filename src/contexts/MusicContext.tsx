@@ -205,7 +205,31 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Native platformda HTML5 Audio oluşturma - NativeMusicPlugin zaten yönetiyor
     if (isNative) {
       console.log("🎵 [MusicContext] Native platform - HTML5 Audio atlanıyor, NativeMusicPlugin kullanılacak");
-      return;
+      
+      // 🔥 Native'de müziği otomatik başlat
+      const initNativeMusic = async () => {
+        if (!musicEnabled) return;
+        
+        try {
+          const { registerPlugin } = await import('@capacitor/core');
+          const NativeMusic = registerPlugin<{
+            setPack: (opts: { pack: string }) => Promise<void>;
+            setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+          }>('NativeMusic');
+          
+          console.log("🎵 [MusicContext] Native müzik başlatılıyor, pack:", musicPack);
+          await NativeMusic.setPack({ pack: musicPack });
+          await NativeMusic.setMusicEnabled({ enabled: true });
+          setIsPlaying(true);
+          console.log("🎵 [MusicContext] Native müzik başlatıldı!");
+        } catch (e) {
+          console.warn("🎵 Native müzik başlatılamadı:", e);
+        }
+      };
+      
+      // Kısa gecikme ile başlat (plugin'in hazır olması için)
+      const timer = setTimeout(initNativeMusic, 500);
+      return () => clearTimeout(timer);
     }
 
     const initMusic = () => {
@@ -269,7 +293,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, [musicPack, currentTrackIndex, isNative]);
+  }, [musicPack, currentTrackIndex, isNative, musicEnabled]);
 
   const startBackgroundMusic = async () => {
     if (!musicEnabled) return;
@@ -434,7 +458,31 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn("Failed to save music setting:", e);
     }
 
-    // Control music based on setting
+    // 🔥 Native platformda NativeMusicPlugin kullan
+    if (isNative) {
+      try {
+        const { registerPlugin } = await import('@capacitor/core');
+        const NativeMusic = registerPlugin<{
+          setPack: (opts: { pack: string }) => Promise<void>;
+          setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+        }>('NativeMusic');
+        
+        if (enabled) {
+          await NativeMusic.setPack({ pack: musicPack });
+          await NativeMusic.setMusicEnabled({ enabled: true });
+          setIsPlaying(true);
+        } else {
+          await NativeMusic.setMusicEnabled({ enabled: false });
+          setIsPlaying(false);
+        }
+        console.log("🎵 [MusicContext] Native müzik:", enabled ? "AÇILDI" : "KAPANDI");
+      } catch (e) {
+        console.warn("🎵 Native müzik ayarı değiştirilemedi:", e);
+      }
+      return;
+    }
+
+    // Web platformu için HTML5 Audio kontrolü
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
       // Kaldığı yerden devam et
       isStartingRef.current = true;
@@ -452,13 +500,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } else if (!enabled && backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
-      // Kaldığı yerden devam etsin diye currentTime = 0 kaldırıldı
       isStartingRef.current = false;
     }
   };
 
   const setMusicPack = async (pack: string) => {
-    const wasPlaying = backgroundMusicRef.current && !backgroundMusicRef.current.paused;
+    const wasPlaying = isNative ? isPlaying : (backgroundMusicRef.current && !backgroundMusicRef.current.paused);
 
     // Stop current music if playing
     if (wasPlaying) {
@@ -478,7 +525,26 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn("Failed to save music pack setting:", e);
     }
 
-    // Restart music with new pack if it was playing and music is enabled
+    // 🔥 Native platformda NativeMusicPlugin kullan
+    if (isNative && musicEnabled) {
+      try {
+        const { registerPlugin } = await import('@capacitor/core');
+        const NativeMusic = registerPlugin<{
+          setPack: (opts: { pack: string }) => Promise<void>;
+          setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+        }>('NativeMusic');
+        
+        await NativeMusic.setPack({ pack: pack });
+        await NativeMusic.setMusicEnabled({ enabled: true });
+        setIsPlaying(true);
+        console.log("🎵 [MusicContext] Native müzik paketi değişti:", pack);
+      } catch (e) {
+        console.warn("🎵 Native müzik paketi değiştirilemedi:", e);
+      }
+      return;
+    }
+
+    // Web: Restart music with new pack if it was playing and music is enabled
     if (wasPlaying && musicEnabled) {
       // Small delay to allow audio element to update
       setTimeout(() => {
