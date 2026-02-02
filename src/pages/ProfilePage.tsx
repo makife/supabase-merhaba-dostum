@@ -14,9 +14,11 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { BadgesDialog } from "@/components/BadgesDialog";
+import { Capacitor } from "@capacitor/core";
 import { RealtimeClient } from "@supabase/supabase-js";
 import {
   ArrowLeft,
@@ -49,7 +51,6 @@ const ProfilePage = () => {
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
-  const [pendingAvatarBlob, setPendingAvatarBlob] = useState<Blob | null>(null);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
@@ -223,84 +224,17 @@ const ProfilePage = () => {
     }
   };
 
-  // 📡 NATIVE SOFT RECOVERY DİNLEYİCİSİ (Senin Java kodun burayı tetikler)
-  useEffect(() => {
-    const handleNativeRecovery = async () => {
-      console.log("📡 [ProfilePage] Native Soft Recovery sinyali alındı!");
+  // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
+  const handleAvatarUploaded = useCallback((url: string) => {
+    console.log('[ProfilePage] ✅ Avatar yüklendi:', url);
+    setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
+    setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
+  }, []);
 
-      // Eğer bekleyen bir avatar yüklemesi varsa ve elimizde veri varsa
-      const wasUploading = localStorage.getItem("is_uploading_avatar") === "true";
-
-      if (wasUploading && pendingAvatarBlob) {
-        console.log("📸 [ProfilePage] Bekleyen avatar yüklemesi bulundu, bağlantı bekleniyor...");
-
-        // Supabase bağlantısını kontrol et, değilse biraz bekle
-        const waitForConnection = async (retries = 0) => {
-          const isConnected = supabase.realtime.isConnected(); // Veya connectionState kontrolü
-
-          if (isConnected) {
-            console.log("✅ [ProfilePage] Bağlantı hazır, yükleme başlatılıyor...");
-            await processPendingUpload(pendingAvatarBlob);
-          } else if (retries < 10) {
-            // Bağlantı yoksa 500ms bekle tekrar dene (toplam 5sn)
-            console.log(`⏳ [ProfilePage] Bağlantı bekleniyor (${retries}/10)...`);
-            setTimeout(() => waitForConnection(retries + 1), 500);
-          } else {
-            toast.error("İnternet bağlantısı kurulamadı, lütfen tekrar deneyin.");
-            localStorage.removeItem("is_uploading_avatar");
-            setPendingAvatarBlob(null);
-          }
-        };
-
-        waitForConnection();
-      }
-    };
-
-    // Senin MainActivity.java'da gönderdiğin event isimleri:
-    window.addEventListener("native-soft-recovery", handleNativeRecovery);
-    window.addEventListener("app-foreground", handleNativeRecovery); // Yedek olarak bunu da dinle
-
-    return () => {
-      window.removeEventListener("native-soft-recovery", handleNativeRecovery);
-      window.removeEventListener("app-foreground", handleNativeRecovery);
-    };
-  }, [pendingAvatarBlob]); // pendingAvatarBlob değişince listener güncellensin
-
-  // 📤 BEKLEYEN RESMİ YÜKLEME FONKSİYONU
-  const processPendingUpload = async (blob: Blob) => {
-    try {
-      // useAvatarUpload hook'unun içindeki yükleme mantığını buraya adapte etmelisin
-      // Veya hook'tan sadece "uploadFile" fonksiyonunu dışarı açmalısın.
-      // Örnek manuel yükleme:
-      const fileName = `${user?.id}/${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, blob, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // URL al
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(fileName);
-
-      // Profili güncelle
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", user?.id);
-
-      if (updateError) throw updateError;
-
-      setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
-      toast.success("Profil fotoğrafı güncellendi!");
-    } catch (error) {
-      console.error("Yükleme hatası:", error);
-      toast.error("Fotoğraf yüklenirken hata oluştu.");
-    } finally {
-      // Temizlik
-      localStorage.removeItem("is_uploading_avatar");
-      setPendingAvatarBlob(null);
-    }
-  };
+  const { 
+    captureFromCameraWithRecovery, 
+    captureFromGalleryWithRecovery 
+  } = usePendingAvatarRecovery(handleAvatarUploaded);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -700,64 +634,42 @@ const ProfilePage = () => {
   const handleCameraSelect = async () => {
     setShowAvatarOptions(false);
 
-    // 1. İşaret fişeğini at: "Kameraya gidiyorum"
-    localStorage.setItem("is_uploading_avatar", "true");
+    // 🔥 Native platformda yeni recovery sistemini kullan
+    if (Capacitor.isNativePlatform()) {
+      console.log('[ProfilePage] 📷 Native kamera recovery modu aktif');
+      await captureFromCameraWithRecovery();
+      return;
+    }
 
-    // 2. Sadece resmi çek (Artık bize obje dönüyor: { file, webPath })
+    // Web platformu için eski mantık
     const result = await captureFromCamera();
-
     if (result) {
-      console.log("💾 [ProfilePage] Kamera resmi çekildi, yol kaydediliyor:", result.webPath);
-
-      // 3. KRİTİK: Hem State'e at (Soft Recovery için) Hem Path'i kaydet (Cold Restart için)
-      setPendingAvatarBlob(result.file); // HATA BURADAYDI: result.file diyerek içindeki dosyayı alıyoruz
-      localStorage.setItem("pending_avatar_path", result.webPath);
-
-      // Eğer şanslıysak ve internet gitmediyse useEffect hemen tetiklenip yükler.
-      // Gitmişse de recovery sinyalini bekler.
-    } else {
-      // Kullanıcı iptal ettiyse flag'i temizle
-      localStorage.removeItem("is_uploading_avatar");
-      localStorage.removeItem("pending_avatar_path");
+      const publicUrl = await uploadAvatar(result.file);
+      if (publicUrl) {
+        setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
+        setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+      }
     }
   };
 
   const handleGallerySelect = async () => {
     setShowAvatarOptions(false);
 
-    // 1. İşaret fişeğini at
-    localStorage.setItem("is_uploading_avatar", "true");
+    // 🔥 Native platformda yeni recovery sistemini kullan
+    if (Capacitor.isNativePlatform()) {
+      console.log('[ProfilePage] 🖼️ Native galeri recovery modu aktif');
+      await captureFromGalleryWithRecovery();
+      return;
+    }
 
-    // 2. Galeri fonksiyonunu çağır
+    // Web platformu için eski mantık
     const result = await captureFromGallery();
-
-    if (result && result.webPath) {
-      console.log("💾 [ProfilePage] Galeri resmi seçildi, yol kaydediliyor:", result.webPath);
-
-      // 🔥 KRİTİK NOKTA: Resmin yolunu diske kaydet (Recovery için)
-      localStorage.setItem("pending_avatar_path", result.webPath);
-
-      // Fallback: Eğer uygulama ölmediyse hemen yüklemeyi dene
-      if (navigator.onLine) {
-        setTimeout(async () => {
-          // Yolu kullanarak dosyayı tekrar oluştur ve yükle
-          const response = await fetch(result.webPath);
-          const blob = await response.blob();
-          const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
-
-          const publicUrl = await uploadAvatar(file);
-          if (publicUrl) {
-            setProfileData((prev) => ({ ...prev, avatar_url: publicUrl }));
-            // Başarılı olursa temizle
-            localStorage.removeItem("is_uploading_avatar");
-            localStorage.removeItem("pending_avatar_path");
-          }
-        }, 500);
+    if (result) {
+      const publicUrl = await uploadAvatar(result.file);
+      if (publicUrl) {
+        setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
+        setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
       }
-    } else {
-      // İptal edildiyse temizle
-      localStorage.removeItem("is_uploading_avatar");
-      localStorage.removeItem("pending_avatar_path");
     }
   };
 
