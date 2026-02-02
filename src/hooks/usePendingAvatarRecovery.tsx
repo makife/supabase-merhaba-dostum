@@ -164,7 +164,8 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
         throw new Error(`Sıkıştırılmış dosya çok küçük: ${compressedFile.size} bytes`);
       }
       
-      const fileName = `${user.id}/${Date.now()}.webp`;
+      const timestamp = Date.now();
+      const fileName = `${user.id}/${timestamp}.webp`;
 
       // Eski avatarları sil
       const { data: existingFiles } = await supabase.storage.from('avatars').list(user.id);
@@ -190,14 +191,15 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
       console.log('[PendingAvatar] ✅ Storage upload başarılı:', uploadData?.path);
 
-      // Public URL al
+      // Public URL al - cache busting için timestamp ekle
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      console.log('[PendingAvatar] 🔗 Public URL:', publicUrl);
+      const urlWithCacheBust = `${publicUrl}?t=${timestamp}`;
+      console.log('[PendingAvatar] 🔗 Public URL (cache-busted):', urlWithCacheBust);
 
-      // Profili güncelle
+      // Profili güncelle - cache-busted URL ile
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: urlWithCacheBust })
         .eq('id', user.id);
 
       if (updateError) {
@@ -206,7 +208,7 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       }
 
       console.log('[PendingAvatar] ✅ Avatar başarıyla yüklendi ve profil güncellendi');
-      return publicUrl;
+      return urlWithCacheBust;
     } catch (error) {
       console.error('[PendingAvatar] ❌ Avatar yükleme hatası:', error);
       throw error;

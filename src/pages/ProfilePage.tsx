@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -224,9 +224,14 @@ const ProfilePage = () => {
     }
   };
 
+  // 🔥 Avatar URL state - local override for immediate UI update
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log('[ProfilePage] ✅ Avatar yüklendi:', url);
+    // Local state'i hemen güncelle - UI anında yansınsın
+    setLocalAvatarUrl(url);
     setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
   }, []);
@@ -235,6 +240,13 @@ const ProfilePage = () => {
     captureFromCameraWithRecovery, 
     captureFromGalleryWithRecovery 
   } = usePendingAvatarRecovery(handleAvatarUploaded);
+
+  // 🔥 Effective avatar URL - local override varsa onu kullan, yoksa profile'dan al
+  const effectiveAvatarUrl = useMemo(() => {
+    if (localAvatarUrl) return localAvatarUrl;
+    if (isOwnProfile) return profile?.avatar_url || '';
+    return viewedProfile?.avatar_url || '';
+  }, [localAvatarUrl, isOwnProfile, profile?.avatar_url, viewedProfile?.avatar_url]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -793,11 +805,12 @@ const ProfilePage = () => {
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
-                  <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
+                <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                     <Avatar className="w-20 h-20 ring-2 ring-primary/20">
                       <AvatarImage
-                        src={(isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url) || ""}
+                        src={effectiveAvatarUrl}
                         alt={profileData.username}
+                        key={effectiveAvatarUrl} // Force re-render on URL change
                       />
                       <AvatarFallback className="text-2xl">
                         {profileData.username.charAt(0).toUpperCase()}
