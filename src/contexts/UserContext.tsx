@@ -45,6 +45,7 @@ interface UserProfile {
   last_disconnect?: string;
   last_win?: string;
   banned_until?: string | null;
+  bonus_spins?: number;
 }
 
 interface UserContextType {

@@ -878,6 +878,7 @@ export type Database = {
           banned_until: string | null
           best_streak: number | null
           bonus_credits: number | null
+          bonus_spins: number
           created_at: string | null
           daily_games: number | null
           daily_wins: number | null
@@ -927,6 +928,7 @@ export type Database = {
           banned_until?: string | null
           best_streak?: number | null
           bonus_credits?: number | null
+          bonus_spins?: number
           created_at?: string | null
           daily_games?: number | null
           daily_wins?: number | null
@@ -976,6 +978,7 @@ export type Database = {
           banned_until?: string | null
           best_streak?: number | null
           bonus_credits?: number | null
+          bonus_spins?: number
           created_at?: string | null
           daily_games?: number | null
           daily_wins?: number | null

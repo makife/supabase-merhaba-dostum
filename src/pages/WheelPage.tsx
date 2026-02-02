@@ -62,6 +62,7 @@ const WheelPage = () => {
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [transitionDuration, setTransitionDuration] = useState(0);
+  const [totalSpins, setTotalSpins] = useState(0); // Toplam çevirme hakkı (günlük + bonus)
 
   // Bezier eğrisini state'te tutmaya gerek yok, sabit bir string
   const timingFunction = "cubic-bezier(0.2, 0, 0.1, 1)";
@@ -103,24 +104,36 @@ const WheelPage = () => {
   usePageResync(handleWheelResync, "WheelPage", false);
 
   useEffect(() => {
-    if (user) {
+    if (user && profile) {
       checkDailySpinAvailability();
     }
-  }, [user]);
+  }, [user, profile?.bonus_spins]);
 
   const checkDailySpinAvailability = async () => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
+    
+    // Yerel tarih kullan (UTC problemi çözümü)
+    const dateObj = new Date();
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
 
-    // maybeSingle daha hafiftir
-    const { data } = await supabase
+    // Bugünkü çevirme yapılmış mı kontrol et
+    const { data: spinData } = await supabase
       .from("wheel_spins")
-      .select("id") // Sadece ID çekmek daha hızlıdır
+      .select("id")
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle();
 
-    setCanSpin(!data);
+    const dailySpinAvailable = !spinData; // Bugün çevirilmediyse 1 hak var
+    const bonusSpins = profile?.bonus_spins || 0;
+    
+    // Toplam hak = günlük (eğer kullanılmadıysa 1) + bonus
+    const total = (dailySpinAvailable ? 1 : 0) + bonusSpins;
+    setTotalSpins(total);
+    setCanSpin(total > 0);
   };
 
   const spinWheel = async () => {
@@ -152,27 +165,63 @@ const WheelPage = () => {
 
     setTimeout(async () => {
       setLastReward(reward);
-      // Veritabanı işlemlerini arka planda yap, UI güncellemesini bekletme
-      saveWheelSpin(reward);
+      
+      // Hangi hak kullanıldığını belirle ve kaydet
+      await consumeSpinAndSave(reward);
+      
       giveReward(reward);
 
       setIsSpinning(false);
-      setCanSpin(false);
+      // Kalan hakları güncelle
+      setTotalSpins(prev => Math.max(0, prev - 1));
+      setCanSpin(totalSpins > 1); // 1'den fazla hak varsa hâlâ çevirebilir
+      
       showRewardToast(reward);
       playSpecialSound("/win.mp3", 0.6);
+      refreshProfile(); // Profile'ı güncelle (bonus_spins değişmiş olabilir)
     }, 8500);
   };
 
-  const saveWheelSpin = async (reward: WheelReward) => {
+  // Çevirme hakkını tüket ve kaydı yap
+  const consumeSpinAndSave = async (reward: WheelReward) => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
-    await supabase.from("wheel_spins").insert({
-      user_id: user.id,
-      date: today,
-      reward_type: reward.type,
-      reward_value: reward.value,
-      reward_item: reward.item || null,
-    });
+    
+    // Yerel tarih kullan
+    const dateObj = new Date();
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    // Bugün çevirme yapılmış mı kontrol et
+    const { data: spinData } = await supabase
+      .from("wheel_spins")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle();
+
+    const dailySpinAvailable = !spinData;
+
+    if (dailySpinAvailable) {
+      // Günlük hakkı kullan - wheel_spins'e kaydet
+      await supabase.from("wheel_spins").insert({
+        user_id: user.id,
+        date: today,
+        reward_type: reward.type,
+        reward_value: reward.value,
+        reward_item: reward.item || null,
+      });
+    } else {
+      // Bonus hakkı kullan - bonus_spins'i azalt
+      const currentBonusSpins = profile?.bonus_spins || 0;
+      if (currentBonusSpins > 0) {
+        await supabase
+          .from("profiles")
+          .update({ bonus_spins: currentBonusSpins - 1 })
+          .eq("id", user.id);
+      }
+    }
   };
 
   const giveReward = async (reward: WheelReward) => {
@@ -289,6 +338,15 @@ const WheelPage = () => {
         </div>
 
         <div className="flex flex-col items-center gap-4 mt-2">
+          {/* Çevirme Hakkı Sayacı */}
+          {totalSpins > 0 && !isSpinning && (
+            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-2 rounded-full border border-yellow-500/30">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-yellow-300 font-bold text-lg">x{totalSpins}</span>
+              <span className="text-gray-400 text-sm">çevirme hakkı</span>
+            </div>
+          )}
+          
           <Button
             onClick={spinWheel}
             disabled={!canSpin || isSpinning}
