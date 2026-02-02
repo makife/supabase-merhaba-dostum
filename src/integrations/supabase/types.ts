@@ -1820,46 +1820,19 @@ export type Database = {
         Args: { p_message_id: string; p_message_type: string }
         Returns: number
       }
-      get_monthly_leaderboard:
-        | {
-            Args: never
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              monthly_score: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-            }[]
-          }
-        | {
-            Args: { limit_count?: number }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              monthly_score: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-            }[]
-          }
-        | {
-            Args: { target_month_start?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              monthly_score: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-            }[]
-          }
+      get_monthly_leaderboard: {
+        Args: { limit_count?: number }
+        Returns: {
+          avatar_url: string
+          games_played: number
+          games_won: number
+          monthly_score: number
+          rank_change: number
+          rank_position: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_or_create_private_chat: {
         Args: { other_user_id: string }
         Returns: string
@@ -1886,46 +1859,19 @@ export type Database = {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
       }
-      get_weekly_leaderboard:
-        | {
-            Args: never
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-              weekly_score: number
-            }[]
-          }
-        | {
-            Args: { limit_count?: number }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-              weekly_score: number
-            }[]
-          }
-        | {
-            Args: { target_week_start?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_change: number
-              rank_position: number
-              user_id: string
-              username: string
-              weekly_score: number
-            }[]
-          }
+      get_weekly_leaderboard: {
+        Args: { limit_count?: number }
+        Returns: {
+          avatar_url: string
+          games_played: number
+          games_won: number
+          rank_change: number
+          rank_position: number
+          user_id: string
+          username: string
+          weekly_score: number
+        }[]
+      }
       give_tournament_champion_reward: {
         Args: { p_reward_amount?: number; p_user_id: string }
         Returns: Json
