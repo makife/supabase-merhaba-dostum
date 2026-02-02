@@ -42,6 +42,12 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
   // Base64 string'i File objesine çevir
   const base64ToFile = (base64: string, mimeType: string): File => {
+    console.log(`[PendingAvatar] 🔄 Base64 to File converting... Length: ${base64.length}`);
+    
+    if (!base64 || base64.length < 100) {
+      throw new Error(`Base64 verisi çok kısa veya boş: ${base64?.length || 0} karakter`);
+    }
+    
     const byteString = atob(base64);
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
@@ -49,7 +55,15 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       ia[i] = byteString.charCodeAt(i);
     }
     const blob = new Blob([ab], { type: mimeType });
-    return new File([blob], `avatar-${Date.now()}.jpg`, { type: mimeType });
+    const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: mimeType });
+    
+    console.log(`[PendingAvatar] ✅ File oluşturuldu: ${(file.size / 1024).toFixed(0)}KB`);
+    
+    if (file.size < 1000) {
+      throw new Error(`Dosya çok küçük (${file.size} bytes), muhtemelen bozuk`);
+    }
+    
+    return file;
   };
 
   // Resmi sıkıştır
@@ -127,35 +141,58 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       return null;
     }
 
+    // 🔥 Base64 validasyonu
+    if (!data.base64 || data.base64.length < 1000) {
+      console.error('[PendingAvatar] ❌ Base64 verisi geçersiz veya çok kısa:', data.base64?.length || 0);
+      throw new Error('Fotoğraf verisi geçersiz veya bozuk');
+    }
+
+    console.log(`[PendingAvatar] 📤 Bekleyen avatar yükleniyor... Base64 length: ${data.base64.length}`);
+
     try {
-      console.log('[PendingAvatar] 📤 Bekleyen avatar yükleniyor...');
-      
       // Base64'ten File oluştur
       const file = base64ToFile(data.base64, data.mimeType);
       
+      console.log(`[PendingAvatar] 📦 Orijinal dosya boyutu: ${(file.size / 1024).toFixed(0)}KB`);
+      
       // Sıkıştır
       const compressedFile = await compressImage(file);
+      console.log(`[PendingAvatar] 📦 Sıkıştırılmış dosya boyutu: ${(compressedFile.size / 1024).toFixed(0)}KB`);
+      
+      // 🔥 Sıkıştırma sonrası da kontrol
+      if (compressedFile.size < 500) {
+        throw new Error(`Sıkıştırılmış dosya çok küçük: ${compressedFile.size} bytes`);
+      }
+      
       const fileName = `${user.id}/${Date.now()}.webp`;
 
       // Eski avatarları sil
       const { data: existingFiles } = await supabase.storage.from('avatars').list(user.id);
       if (existingFiles && existingFiles.length > 0) {
         const filesToDelete = existingFiles.map((f) => `${user.id}/${f.name}`);
+        console.log('[PendingAvatar] 🗑️ Eski avatarlar siliniyor:', filesToDelete.length);
         await supabase.storage.from('avatars').remove(filesToDelete);
       }
 
       // Yeni avatarı yükle
-      const { error: uploadError } = await supabase.storage
+      console.log('[PendingAvatar] ⬆️ Supabase Storage\'a yükleniyor...');
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(fileName, compressedFile, {
           cacheControl: '3600',
           upsert: true,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[PendingAvatar] ❌ Storage upload hatası:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('[PendingAvatar] ✅ Storage upload başarılı:', uploadData?.path);
 
       // Public URL al
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      console.log('[PendingAvatar] 🔗 Public URL:', publicUrl);
 
       // Profili güncelle
       const { error: updateError } = await supabase
@@ -163,9 +200,12 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('[PendingAvatar] ❌ Profil güncelleme hatası:', updateError);
+        throw updateError;
+      }
 
-      console.log('[PendingAvatar] ✅ Avatar başarıyla yüklendi:', publicUrl);
+      console.log('[PendingAvatar] ✅ Avatar başarıyla yüklendi ve profil güncellendi');
       return publicUrl;
     } catch (error) {
       console.error('[PendingAvatar] ❌ Avatar yükleme hatası:', error);
@@ -227,20 +267,29 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
       // 🔥 KRİTİK: DataUrl (Base64) formatında al - URI değil!
       // Bu sayede JS kapansa bile base64 string elimizde kalır
+      // ⚠️ allowEditing: false - Düzenleme ekranından X ile çıkış sorununu önle
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.Base64, // ÖNEMLİ: Base64 formatı!
         source: CameraSource.Camera,
-        quality: 80, // Biraz düşür, storage için
-        allowEditing: true,
+        quality: 85, // Kalite ayarı
+        allowEditing: false, // 🔥 DÜZELTME: Edit ekranı devre dışı - X ile çıkış sorunu
         width: 800, // Max genişlik
         height: 800, // Max yükseklik
+        correctOrientation: true, // Oryantasyon düzelt
       });
 
       if (!photo.base64String) {
-        throw new Error('Base64 data alınamadı');
+        console.error('[PendingAvatar] ❌ Kamera base64 verisi boş döndü');
+        throw new Error('Fotoğraf verisi alınamadı - lütfen tekrar deneyin');
       }
 
-      console.log('[PendingAvatar] ✅ Fotoğraf çekildi, native storage\'a kaydediliyor...');
+      // 🔥 Base64 boyut kontrolü - çok küçükse muhtemelen bozuk
+      if (photo.base64String.length < 1000) {
+        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', photo.base64String.length);
+        throw new Error('Fotoğraf verisi çok küçük veya bozuk');
+      }
+
+      console.log(`[PendingAvatar] ✅ Fotoğraf çekildi! Base64 length: ${photo.base64String.length}, Format: ${photo.format}`);
       
       // Base64'ü native storage'a kaydet
       const mimeType = photo.format === 'png' ? 'image/png' : 'image/jpeg';
@@ -282,16 +331,24 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.Base64, // ÖNEMLİ: Base64 formatı!
         source: CameraSource.Photos,
-        quality: 80,
+        quality: 85,
         width: 800,
         height: 800,
+        correctOrientation: true,
       });
 
       if (!photo.base64String) {
-        throw new Error('Base64 data alınamadı');
+        console.error('[PendingAvatar] ❌ Galeri base64 verisi boş döndü');
+        throw new Error('Fotoğraf verisi alınamadı - lütfen tekrar deneyin');
       }
 
-      console.log('[PendingAvatar] ✅ Fotoğraf seçildi, native storage\'a kaydediliyor...');
+      // 🔥 Base64 boyut kontrolü
+      if (photo.base64String.length < 1000) {
+        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', photo.base64String.length);
+        throw new Error('Fotoğraf verisi çok küçük veya bozuk');
+      }
+
+      console.log(`[PendingAvatar] ✅ Fotoğraf seçildi! Base64 length: ${photo.base64String.length}, Format: ${photo.format}`);
       
       // Base64'ü native storage'a kaydet
       const mimeType = photo.format === 'png' ? 'image/png' : 'image/jpeg';
