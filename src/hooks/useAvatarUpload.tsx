@@ -117,60 +117,90 @@ export const useAvatarUpload = () => {
   };
 
   // 4. Sadece Fotoğraf ÇEKME (Yüklemeden) - KAMERA
+  // Base64 kullanarak geçici dosya sorunlarını önlüyoruz
   const captureFromCamera = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
-      console.log("[Avatar] 📷 Kamera açılıyor...");
+      console.log("[Avatar] 📷 Kamera açılıyor (Base64 mode)...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Uri, // Dosya yolu alıyoruz
+        resultType: CameraResultType.Base64, // Base64 kullanarak dosya erişim sorunlarını önlüyoruz
         source: CameraSource.Camera,
-        quality: 85,
-        allowEditing: true,
+        quality: 80,
+        allowEditing: false, // Düzenleme ekranı veri kaybına neden olabilir
+        saveToGallery: true, // Fotoğrafı galeriye de kaydedelim
+        width: 800,
+        height: 800,
       });
 
-      if (!photo.webPath) {
-        throw new Error("Fotoğraf yolu alınamadı");
+      if (!photo.base64String) {
+        throw new Error("Fotoğraf verisi alınamadı");
       }
 
-      console.log("[Avatar] ✅ Fotoğraf çekildi");
+      console.log("[Avatar] ✅ Fotoğraf çekildi, Base64 uzunluk:", photo.base64String.length);
 
-      // Dosyayı oluştur
-      const response = await fetch(photo.webPath);
-      const blob = await response.blob();
+      // Base64'ü Blob'a çevir
+      const byteCharacters = atob(photo.base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
       const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
 
-      // Hem dosyayı hem de YOLUNU dönüyoruz
-      return { file, webPath: photo.webPath };
+      // webPath olarak data URL oluştur (önizleme için)
+      const webPath = `data:image/jpeg;base64,${photo.base64String}`;
+
+      console.log("[Avatar] ✅ File oluşturuldu, boyut:", (file.size / 1024).toFixed(0), "KB");
+
+      return { file, webPath };
     } catch (error: any) {
-      // Hata yönetimi aynen kalsın...
+      const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
+      
+      if (!isCancelled) {
+        console.error("[Avatar] Camera error:", error);
+        toast.error("Fotoğraf çekilirken hata oluştu");
+      }
       return null;
     }
   };
 
   // 5. Sadece Fotoğraf SEÇME (Yüklemeden) - GALERİ
+  // Base64 kullanarak geçici dosya sorunlarını önlüyoruz
   const captureFromGallery = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
-      console.log("[Avatar] 🖼️ Galeri açılıyor...");
+      console.log("[Avatar] 🖼️ Galeri açılıyor (Base64 mode)...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Uri, // ÖNEMLİ: DataUrl değil Uri (Dosya Yolu) kullanıyoruz
+        resultType: CameraResultType.Base64, // Base64 kullanarak dosya erişim sorunlarını önlüyoruz
         source: CameraSource.Photos,
-        quality: 85,
+        quality: 80,
+        width: 800,
+        height: 800,
       });
 
-      if (!photo.webPath) {
-        throw new Error("Fotoğraf seçilemedi");
+      if (!photo.base64String) {
+        throw new Error("Fotoğraf verisi alınamadı");
       }
 
-      console.log("[Avatar] ✅ Fotoğraf seçildi, işleniyor...");
+      console.log("[Avatar] ✅ Fotoğraf seçildi, Base64 uzunluk:", photo.base64String.length);
 
-      // WebPath'i Blob/File'a çevir (Anlık kullanım için)
-      const response = await fetch(photo.webPath);
-      const blob = await response.blob();
+      // Base64'ü Blob'a çevir
+      const byteCharacters = atob(photo.base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
       const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
 
-      // Hem dosyayı hem de YOLUNU dönüyoruz
-      return { file, webPath: photo.webPath };
+      // webPath olarak data URL oluştur (önizleme için)
+      const webPath = `data:image/jpeg;base64,${photo.base64String}`;
+
+      console.log("[Avatar] ✅ File oluşturuldu, boyut:", (file.size / 1024).toFixed(0), "KB");
+
+      return { file, webPath };
     } catch (error: any) {
       const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
 
