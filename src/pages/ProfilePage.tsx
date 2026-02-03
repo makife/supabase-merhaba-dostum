@@ -224,23 +224,22 @@ const ProfilePage = () => {
     }
   };
 
-  // 🔥 Avatar URL state - local override for immediate UI update
-  // Yeni yüklenen avatar URL'ini tutar, UI'ı anında günceller
-  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
-  // 🔥 Force re-render trigger - useMemo'nun yeniden hesaplanmasını zorlar
-  const [avatarUpdateTrigger, setAvatarUpdateTrigger] = useState(0);
+  // 🔥 Avatar URL state - useMemo KULLANMIYORUZ çünkü React bazen yeniden hesaplamıyor
+  // Bunun yerine doğrudan state kullanıyoruz - daha güvenilir
+  const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('');
+  const [avatarKey, setAvatarKey] = useState(0); // Force re-render için
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
     
-    // 🔥 KRİTİK: Tüm state'leri AYNI ANDA güncelle
-    setLocalAvatarUrl(url);
-    setAvatarUpdateTrigger(prev => prev + 1); // Force re-render
+    // 🔥 KRİTİK: State'leri AYNI ANDA güncelle
+    setDisplayAvatarUrl(url);
+    setAvatarKey(prev => prev + 1); // Force image reload
     setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
     
-    console.log('[ProfilePage] 🔄 Tüm avatar state\'leri güncellendi');
+    console.log('[ProfilePage] 🔄 displayAvatarUrl SET EDİLDİ:', url.substring(0, 60));
   }, []);
 
   const { 
@@ -248,22 +247,25 @@ const ProfilePage = () => {
     captureFromGalleryWithRecovery 
   } = usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Effective avatar URL - local override HERZAMAN öncelikli (yüklendiği sürece)
-  const effectiveAvatarUrl = useMemo(() => {
-    // avatarUpdateTrigger dependency olarak eklendi - her güncelleme yeniden hesaplar
-    console.log('[ProfilePage] 🔄 effectiveAvatarUrl hesaplanıyor, trigger:', avatarUpdateTrigger);
-    
-    // 🔥 KRİTİK: localAvatarUrl varsa HERZAMAN onu kullan
-    if (localAvatarUrl) {
-      console.log('[ProfilePage] ✅ effectiveAvatarUrl: localAvatarUrl kullanılıyor:', localAvatarUrl.substring(0, 60));
-      return localAvatarUrl;
-    }
-    
-    // Profile'dan avatar URL al
+  // 🔥 Profile yüklendiğinde displayAvatarUrl'i güncelle (sadece henüz set edilmemişse)
+  useEffect(() => {
+    // Sadece displayAvatarUrl boşsa ve profile'dan URL geliyorsa güncelle
+    // Bu şekilde local upload'dan gelen URL korunur
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
-    console.log('[ProfilePage] 🔄 effectiveAvatarUrl: profileUrl kullanılıyor');
-    return profileUrl || '';
-  }, [localAvatarUrl, avatarUpdateTrigger, isOwnProfile, profile?.avatar_url, viewedProfile?.avatar_url]);
+    
+    if (!displayAvatarUrl && profileUrl) {
+      console.log('[ProfilePage] 📷 Initial avatar URL set from profile:', profileUrl?.substring(0, 50));
+      setDisplayAvatarUrl(profileUrl);
+    }
+  }, [profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile, displayAvatarUrl]);
+
+  // 🔥 Component mount'ta veya profile değiştiğinde initial URL'i set et
+  useEffect(() => {
+    const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
+    if (profileUrl && !displayAvatarUrl) {
+      setDisplayAvatarUrl(profileUrl);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -825,9 +827,9 @@ const ProfilePage = () => {
                 <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                     <Avatar className="w-20 h-20 ring-2 ring-primary/20">
                       <AvatarImage
-                        src={effectiveAvatarUrl}
+                        src={displayAvatarUrl}
                         alt={profileData.username}
-                        key={effectiveAvatarUrl} // Force re-render on URL change
+                        key={`avatar-${avatarKey}-${displayAvatarUrl}`}
                       />
                       <AvatarFallback className="text-2xl">
                         {profileData.username.charAt(0).toUpperCase()}
