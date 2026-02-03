@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    📷 FileProvider Paths
+    
+    Bu dosya android/app/src/main/res/xml/ klasörüne kopyalanmalıdır.
+    NativeCameraPlugin'in fotoğraf dosyalarını paylaşabilmesi için gereklidir.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Uygulama'nın özel Pictures klasörü -->
+    <external-files-path name="my_images" path="Pictures/" />
+    
+    <!-- Harici depolama alanı (galeri) -->
+    <external-path name="external_files" path="." />
+    
+    <!-- Cache klasörü (geçici dosyalar) -->
+    <cache-path name="cache" path="." />
+</paths>
