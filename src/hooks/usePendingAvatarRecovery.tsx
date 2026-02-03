@@ -245,8 +245,25 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       
       if (publicUrl) {
         await clearPendingAvatar();
+        
+        // 🔥 KRİTİK: Callback'i çağır VE bir custom event dispatch et
+        // Bu sayede ProfilePage her durumda güncellenecek
+        console.log('[PendingAvatar] 🎯 Callback çağrılıyor ve event dispatch ediliyor...');
+        
+        // 1. Callback'i çağır (eğer varsa)
+        if (onAvatarUploaded) {
+          console.log('[PendingAvatar] ✅ onAvatarUploaded callback çağrılıyor');
+          onAvatarUploaded(publicUrl);
+        } else {
+          console.warn('[PendingAvatar] ⚠️ onAvatarUploaded callback YOK!');
+        }
+        
+        // 2. Custom event dispatch et - ProfilePage bunu da dinleyebilir
+        window.dispatchEvent(new CustomEvent('avatar-uploaded', { 
+          detail: { url: publicUrl } 
+        }));
+        
         toast.success('Profil fotoğrafı güncellendi!');
-        onAvatarUploaded?.(publicUrl);
       }
     } catch (error) {
       console.error('[PendingAvatar] ❌ İşlem hatası:', error);
