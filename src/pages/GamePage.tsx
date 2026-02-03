@@ -4886,31 +4886,34 @@ const GamePage = ({
         let gameStartTimestamp = 0;
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
+        // 🔧 FIX: Timer 2:04'ten başlıyordu (4 saniye fazla). 
+        // Sebep: Buffer(5s) + Countdown(5s) = 10s offset kullanılıyordu ama timer daha erken init oluyordu
+        // Çözüm: GAME_START_OFFSET'i 10000'den 14000'e çıkar (4s düzeltme = 120+4 = 124s sonra bitecek şekilde)
+        // Böylece ends_at ileri kaydırılır ve timer 2:00'dan başlar
+        const GAME_START_OFFSET_MS = 14000; // 🔧 FIX: 10s + 4s düzeltme = 14s offset
+        
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
-          // Buffer (5s) + Countdown (5s) = 10 saniye sonra oyun başlar
           if (tournamentMatch.countdown_started_at) {
             const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
+            gameStartTimestamp = countdownStartTime + GAME_START_OFFSET_MS;
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
             console.log("🏆 Tournament timer: Server timing", {
               countdownStart: new Date(countdownStartTime).toISOString(),
               gameStart: new Date(gameStartTimestamp).toISOString(),
               endsAt: new Date(endsAtTimestamp).toISOString(),
+              offsetUsed: GAME_START_OFFSET_MS,
             });
           } else {
-            // Fallback: countdown_started_at yoksa (olmaması lazım ama güvenlik için)
             console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
             gameStartTimestamp = Date.now() + serverTimeOffset;
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
           }
         } else if (currentRoom?.countdown_started_at) {
           // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
-          // ✅ KRİTİK: Senkronize timer için countdown_started_at + 10s (5s buffer + 5s countdown) kullan
-          // Bu sayede her iki oyuncu da aynı anda timer'ı başlatır
           const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
-          gameStartTimestamp = countdownStartTime + 10000; // 10 saniye sonra (buffer 5s + countdown 5s)
+          gameStartTimestamp = countdownStartTime + GAME_START_OFFSET_MS;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
           console.log("🎮 Random/Private game timer: Server-synchronized timing", {
@@ -4918,6 +4921,7 @@ const GamePage = ({
             gameStart: new Date(gameStartTimestamp).toISOString(),
             endsAt: new Date(endsAtTimestamp).toISOString(),
             countdown_started_at: currentRoom.countdown_started_at,
+            offsetUsed: GAME_START_OFFSET_MS,
           });
         } else if (currentRoom?.started_at) {
           // Fallback: started_at kullan (eski oyunlar için)
