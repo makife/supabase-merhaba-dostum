@@ -234,17 +234,24 @@ const ProfilePage = () => {
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
     
+    // 🔥 KRİTİK: URL'e timestamp ekle (cache busting)
+    const cacheBustedUrl = url.includes('?') 
+      ? `${url.split('?')[0]}?t=${Date.now()}`
+      : `${url}?t=${Date.now()}`;
+    
+    console.log('[ProfilePage] 🔗 Cache-busted URL:', cacheBustedUrl);
+    
     // 🔥 KRİTİK: Local override set et - 10 saniye boyunca bu URL kullanılacak
-    localAvatarOverrideRef.current = { url, timestamp: Date.now() };
+    localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
     
     // Force image reload
     setAvatarKey(prev => prev + 1);
     
-    // State'leri de güncelle
-    setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
-    setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
+    // 🔥 KRİTİK: viewedProfile'ı güncelle (Context DEĞİL!)
+    setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
+    setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
     
-    console.log('[ProfilePage] 🔄 localAvatarOverride SET EDİLDİ:', url.substring(0, 60));
+    console.log('[ProfilePage] 🔄 localAvatarOverride SET EDİLDİ:', cacheBustedUrl.substring(0, 80));
   }, []);
 
   const { 
@@ -279,15 +286,23 @@ const ProfilePage = () => {
     const handleAvatarUploadedEvent = (event: CustomEvent<{ url: string }>) => {
       console.log('[ProfilePage] 📡 avatar-uploaded event alındı:', event.detail.url);
       
+      // 🔥 URL'e timestamp ekle (cache busting)
+      const originalUrl = event.detail.url;
+      const cacheBustedUrl = originalUrl.includes('?') 
+        ? `${originalUrl.split('?')[0]}?t=${Date.now()}`
+        : `${originalUrl}?t=${Date.now()}`;
+      
+      console.log('[ProfilePage] 📡 Cache-busted URL (event):', cacheBustedUrl);
+      
       // Local override set et
-      localAvatarOverrideRef.current = { url: event.detail.url, timestamp: Date.now() };
+      localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
       
       // Force re-render
       setAvatarKey(prev => prev + 1);
       
-      // State'leri güncelle
-      setViewedProfile((prev) => ({ ...prev, avatar_url: event.detail.url }));
-      setProfileData((prev: any) => ({ ...prev, avatar_url: event.detail.url }));
+      // 🔥 viewedProfile'ı güncelle (Context DEĞİL!)
+      setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
+      setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
     };
     
     window.addEventListener('avatar-uploaded', handleAvatarUploadedEvent as EventListener);
