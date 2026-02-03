@@ -290,9 +290,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               duration: 1000,
             });
 
-            navigate(
-              `/private-room-waiting?code=${existingFromOpponent.room_code}&roomId=${room.id}&gameType=${gameType}`,
-            );
+            navigate(`/private-room/waiting/${existingFromOpponent.room_code}`);
             return true;
           }
         }
@@ -466,7 +464,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIncomingRequest(null);
 
       // Navigate
-      navigate(`/private-room-waiting?code=${incomingRequest.roomCode}&roomId=${room.id}&gameType=${gameType}`);
+      navigate(`/private-room/waiting/${incomingRequest.roomCode}`);
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
@@ -602,7 +600,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   duration: 1000,
                 });
 
-                navigate(`/private-room-waiting?code=${request.room_code}&roomId=${room.id}&gameType=${gameType}`);
+                navigate(`/private-room/waiting/${request.room_code}`);
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
