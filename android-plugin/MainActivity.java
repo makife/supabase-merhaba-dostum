@@ -42,6 +42,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 		registerPlugin(NativeMusicPlugin.class);
+		registerPlugin(NativeCameraPlugin.class); // 📷 Avatar kamera plugin'i
         super.onCreate(savedInstanceState);
         hideSystemUI();
         checkNotificationPermission();

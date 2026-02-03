@@ -4,6 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import imageCompression from "browser-image-compression";
+import { 
+  captureFromNativeCamera, 
+  pickFromNativeGallery, 
+  isNativePlatform 
+} from "@/services/nativeCameraService";
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -117,17 +122,28 @@ export const useAvatarUpload = () => {
   };
 
   // 4. Sadece Fotoğraf ÇEKME (Yüklemeden) - KAMERA
-  // Base64 kullanarak geçici dosya sorunlarını önlüyoruz
+  // Native platformda kendi plugin'imizi kullanıyoruz
   const captureFromCamera = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
-      console.log("[Avatar] 📷 Kamera açılıyor (Base64 mode)...");
+      // 🔥 Native platformda kendi plugin'imizi kullan
+      if (isNativePlatform()) {
+        console.log("[Avatar] 📷 Native Camera Plugin kullanılıyor...");
+        const result = await captureFromNativeCamera();
+        if (result) {
+          console.log("[Avatar] ✅ Native kamera başarılı, boyut:", (result.file.size / 1024).toFixed(0), "KB");
+        }
+        return result;
+      }
+
+      // Web platformda Capacitor Camera kullan (fallback)
+      console.log("[Avatar] 📷 Web kamera açılıyor...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Base64, // Base64 kullanarak dosya erişim sorunlarını önlüyoruz
+        resultType: CameraResultType.Base64,
         source: CameraSource.Camera,
         quality: 80,
-        allowEditing: false, // Düzenleme ekranı veri kaybına neden olabilir
-        saveToGallery: true, // Fotoğrafı galeriye de kaydedelim
+        allowEditing: false,
+        saveToGallery: true,
         width: 800,
         height: 800,
       });
@@ -138,7 +154,6 @@ export const useAvatarUpload = () => {
 
       console.log("[Avatar] ✅ Fotoğraf çekildi, Base64 uzunluk:", photo.base64String.length);
 
-      // Base64'ü Blob'a çevir
       const byteCharacters = atob(photo.base64String);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -147,15 +162,15 @@ export const useAvatarUpload = () => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
       const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
-
-      // webPath olarak data URL oluştur (önizleme için)
       const webPath = `data:image/jpeg;base64,${photo.base64String}`;
 
       console.log("[Avatar] ✅ File oluşturuldu, boyut:", (file.size / 1024).toFixed(0), "KB");
 
       return { file, webPath };
     } catch (error: any) {
-      const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
+      const isCancelled = error.message?.includes("cancelled") || 
+                          error.message?.includes("User cancelled") ||
+                          error.message?.includes("iptal");
       
       if (!isCancelled) {
         console.error("[Avatar] Camera error:", error);
@@ -166,13 +181,24 @@ export const useAvatarUpload = () => {
   };
 
   // 5. Sadece Fotoğraf SEÇME (Yüklemeden) - GALERİ
-  // Base64 kullanarak geçici dosya sorunlarını önlüyoruz
+  // Native platformda kendi plugin'imizi kullanıyoruz
   const captureFromGallery = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
-      console.log("[Avatar] 🖼️ Galeri açılıyor (Base64 mode)...");
+      // 🔥 Native platformda kendi plugin'imizi kullan
+      if (isNativePlatform()) {
+        console.log("[Avatar] 🖼️ Native Gallery Plugin kullanılıyor...");
+        const result = await pickFromNativeGallery();
+        if (result) {
+          console.log("[Avatar] ✅ Native galeri başarılı, boyut:", (result.file.size / 1024).toFixed(0), "KB");
+        }
+        return result;
+      }
+
+      // Web platformda Capacitor Camera kullan (fallback)
+      console.log("[Avatar] 🖼️ Web galeri açılıyor...");
 
       const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Base64, // Base64 kullanarak dosya erişim sorunlarını önlüyoruz
+        resultType: CameraResultType.Base64,
         source: CameraSource.Photos,
         quality: 80,
         width: 800,
@@ -185,7 +211,6 @@ export const useAvatarUpload = () => {
 
       console.log("[Avatar] ✅ Fotoğraf seçildi, Base64 uzunluk:", photo.base64String.length);
 
-      // Base64'ü Blob'a çevir
       const byteCharacters = atob(photo.base64String);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -194,15 +219,15 @@ export const useAvatarUpload = () => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
       const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
-
-      // webPath olarak data URL oluştur (önizleme için)
       const webPath = `data:image/jpeg;base64,${photo.base64String}`;
 
       console.log("[Avatar] ✅ File oluşturuldu, boyut:", (file.size / 1024).toFixed(0), "KB");
 
       return { file, webPath };
     } catch (error: any) {
-      const isCancelled = error.message?.includes("cancelled") || error.message?.includes("User cancelled");
+      const isCancelled = error.message?.includes("cancelled") || 
+                          error.message?.includes("User cancelled") ||
+                          error.message?.includes("iptal");
 
       if (!isCancelled) {
         console.error("[Avatar] Gallery error:", error);
