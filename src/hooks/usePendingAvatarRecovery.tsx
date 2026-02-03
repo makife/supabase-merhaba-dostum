@@ -13,13 +13,17 @@
  */
 
 import { useEffect, useCallback, useRef } from 'react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { nativeStorage } from '@/utils/nativeStorage';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
+import { 
+  captureFromNativeCamera, 
+  pickFromNativeGallery, 
+  isNativePlatform 
+} from '@/services/nativeCameraService';
 
 // Storage keys
 const PENDING_AVATAR_KEY = 'pending_avatar_base64';
@@ -64,6 +68,21 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     }
     
     return file;
+  };
+
+  // File'ı Base64 string'e çevir (data: prefix'i olmadan)
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // data:image/jpeg;base64, kısmını kaldır
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
   };
 
   // Resmi sıkıştır
@@ -275,44 +294,38 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     }
   }, [user, onAvatarUploaded]);
 
-  // 🔥 KAMERA AÇMA - Base64 formatında resim al ve kaydet
+  // 🔥 KAMERA AÇMA - Native plugin kullanarak Base64 formatında resim al
   const captureFromCameraWithRecovery = async (): Promise<boolean> => {
     try {
-      console.log('[PendingAvatar] 📷 Kamera açılıyor (recovery modunda)...');
+      console.log('[PendingAvatar] 📷 Native kamera açılıyor (recovery modunda)...');
       
       // Action flag'ini kaydet
       await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, 'camera');
       await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
 
-      // 🔥 KRİTİK: DataUrl (Base64) formatında al - URI değil!
-      // Bu sayede JS kapansa bile base64 string elimizde kalır
-      // ⚠️ allowEditing: false - Düzenleme ekranından X ile çıkış sorununu önle
-      const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Base64, // ÖNEMLİ: Base64 formatı!
-        source: CameraSource.Camera,
-        quality: 85, // Kalite ayarı
-        allowEditing: false, // 🔥 DÜZELTME: Edit ekranı devre dışı - X ile çıkış sorunu
-        width: 800, // Max genişlik
-        height: 800, // Max yükseklik
-        correctOrientation: true, // Oryantasyon düzelt
-      });
+      // 🔥 Native Camera Plugin kullan
+      const result = await captureFromNativeCamera();
 
-      if (!photo.base64String) {
-        console.error('[PendingAvatar] ❌ Kamera base64 verisi boş döndü');
-        throw new Error('Fotoğraf verisi alınamadı - lütfen tekrar deneyin');
+      if (!result || !result.file) {
+        console.log('[PendingAvatar] ❌ Kamera iptal edildi veya başarısız');
+        // Temizlik
+        await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
+        await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
+        return false;
       }
 
-      // 🔥 Base64 boyut kontrolü - çok küçükse muhtemelen bozuk
-      if (photo.base64String.length < 1000) {
-        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', photo.base64String.length);
+      // File'dan base64 oluştur
+      const base64 = await fileToBase64(result.file);
+      
+      if (!base64 || base64.length < 1000) {
+        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', base64?.length || 0);
         throw new Error('Fotoğraf verisi çok küçük veya bozuk');
       }
 
-      console.log(`[PendingAvatar] ✅ Fotoğraf çekildi! Base64 length: ${photo.base64String.length}, Format: ${photo.format}`);
+      console.log(`[PendingAvatar] ✅ Fotoğraf çekildi! Base64 length: ${base64.length}`);
       
       // Base64'ü native storage'a kaydet
-      const mimeType = photo.format === 'png' ? 'image/png' : 'image/jpeg';
-      await savePendingAvatar(photo.base64String, mimeType);
+      await savePendingAvatar(base64, 'image/jpeg');
 
       // Eğer uygulama hala ön plandaysa hemen yüklemeyi dene
       setTimeout(async () => {
@@ -322,7 +335,9 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
       return true;
     } catch (error: any) {
-      const isCancelled = error.message?.includes('cancelled') || error.message?.includes('User cancelled');
+      const isCancelled = error.message?.includes('cancelled') || 
+                          error.message?.includes('User cancelled') ||
+                          error.message?.includes('iptal');
       
       if (!isCancelled) {
         console.error('[PendingAvatar] ❌ Kamera hatası:', error);
@@ -337,41 +352,38 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     }
   };
 
-  // 🔥 GALERİ AÇMA - Base64 formatında resim al ve kaydet
+  // 🔥 GALERİ AÇMA - Native plugin kullanarak Base64 formatında resim al
   const captureFromGalleryWithRecovery = async (): Promise<boolean> => {
     try {
-      console.log('[PendingAvatar] 🖼️ Galeri açılıyor (recovery modunda)...');
+      console.log('[PendingAvatar] 🖼️ Native galeri açılıyor (recovery modunda)...');
       
       // Action flag'ini kaydet
       await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, 'gallery');
       await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
 
-      // 🔥 KRİTİK: DataUrl (Base64) formatında al
-      const photo = await Camera.getPhoto({
-        resultType: CameraResultType.Base64, // ÖNEMLİ: Base64 formatı!
-        source: CameraSource.Photos,
-        quality: 85,
-        width: 800,
-        height: 800,
-        correctOrientation: true,
-      });
+      // 🔥 Native Gallery Plugin kullan
+      const result = await pickFromNativeGallery();
 
-      if (!photo.base64String) {
-        console.error('[PendingAvatar] ❌ Galeri base64 verisi boş döndü');
-        throw new Error('Fotoğraf verisi alınamadı - lütfen tekrar deneyin');
+      if (!result || !result.file) {
+        console.log('[PendingAvatar] ❌ Galeri seçimi iptal edildi veya başarısız');
+        // Temizlik
+        await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
+        await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
+        return false;
       }
 
-      // 🔥 Base64 boyut kontrolü
-      if (photo.base64String.length < 1000) {
-        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', photo.base64String.length);
+      // File'dan base64 oluştur
+      const base64 = await fileToBase64(result.file);
+      
+      if (!base64 || base64.length < 1000) {
+        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', base64?.length || 0);
         throw new Error('Fotoğraf verisi çok küçük veya bozuk');
       }
 
-      console.log(`[PendingAvatar] ✅ Fotoğraf seçildi! Base64 length: ${photo.base64String.length}, Format: ${photo.format}`);
+      console.log(`[PendingAvatar] ✅ Fotoğraf seçildi! Base64 length: ${base64.length}`);
       
       // Base64'ü native storage'a kaydet
-      const mimeType = photo.format === 'png' ? 'image/png' : 'image/jpeg';
-      await savePendingAvatar(photo.base64String, mimeType);
+      await savePendingAvatar(base64, 'image/jpeg');
 
       // Hemen yüklemeyi dene
       setTimeout(async () => {
@@ -381,7 +393,9 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
       return true;
     } catch (error: any) {
-      const isCancelled = error.message?.includes('cancelled') || error.message?.includes('User cancelled');
+      const isCancelled = error.message?.includes('cancelled') || 
+                          error.message?.includes('User cancelled') ||
+                          error.message?.includes('iptal');
       
       if (!isCancelled) {
         console.error('[PendingAvatar] ❌ Galeri hatası:', error);
