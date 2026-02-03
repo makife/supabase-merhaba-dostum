@@ -4886,11 +4886,10 @@ const GamePage = ({
         let gameStartTimestamp = 0;
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
-        // 🔧 FIX: Timer 2:04'ten başlıyordu (4 saniye fazla). 
-        // Sebep: Buffer(5s) + Countdown(5s) = 10s offset kullanılıyordu ama timer daha erken init oluyordu
-        // Çözüm: GAME_START_OFFSET'i 10000'den 14000'e çıkar (4s düzeltme = 120+4 = 124s sonra bitecek şekilde)
-        // Böylece ends_at ileri kaydırılır ve timer 2:00'dan başlar
-        const GAME_START_OFFSET_MS = 14000; // 🔧 FIX: 10s + 4s düzeltme = 14s offset
+        // Geri sayım 5 saniye + START animasyonu ~1 saniye = 6 saniye offset
+        // Timer init olduğunda remaining = endsAt - now hesaplanır
+        // Eğer offset çok büyükse timer 2:00'dan fazla gösterir
+        const GAME_START_OFFSET_MS = 6000; // 5s countdown + 1s start animation
         
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
