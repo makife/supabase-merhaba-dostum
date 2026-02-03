@@ -224,22 +224,27 @@ const ProfilePage = () => {
     }
   };
 
-  // 🔥 Avatar URL state - useMemo KULLANMIYORUZ çünkü React bazen yeniden hesaplamıyor
-  // Bunun yerine doğrudan state kullanıyoruz - daha güvenilir
-  const [displayAvatarUrl, setDisplayAvatarUrl] = useState<string>('');
-  const [avatarKey, setAvatarKey] = useState(0); // Force re-render için
+  // 🔥 Avatar Key - image reload zorlamak için
+  const [avatarKey, setAvatarKey] = useState(0);
+  
+  // 🔥 Local override ref - yeni yüklenen avatar için 10 saniyelik öncelik
+  const localAvatarOverrideRef = useRef<{ url: string; timestamp: number } | null>(null);
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
     
-    // 🔥 KRİTİK: State'leri AYNI ANDA güncelle
-    setDisplayAvatarUrl(url);
-    setAvatarKey(prev => prev + 1); // Force image reload
+    // 🔥 KRİTİK: Local override set et - 10 saniye boyunca bu URL kullanılacak
+    localAvatarOverrideRef.current = { url, timestamp: Date.now() };
+    
+    // Force image reload
+    setAvatarKey(prev => prev + 1);
+    
+    // State'leri de güncelle
     setViewedProfile((prev) => ({ ...prev, avatar_url: url }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: url }));
     
-    console.log('[ProfilePage] 🔄 displayAvatarUrl SET EDİLDİ:', url.substring(0, 60));
+    console.log('[ProfilePage] 🔄 localAvatarOverride SET EDİLDİ:', url.substring(0, 60));
   }, []);
 
   const { 
@@ -247,24 +252,49 @@ const ProfilePage = () => {
     captureFromGalleryWithRecovery 
   } = usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Profile yüklendiğinde displayAvatarUrl'i güncelle (sadece henüz set edilmemişse)
-  useEffect(() => {
-    // Sadece displayAvatarUrl boşsa ve profile'dan URL geliyorsa güncelle
-    // Bu şekilde local upload'dan gelen URL korunur
-    const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
+  // 🔥 Effective Avatar URL - hesaplanmış değer (useMemo DEĞİL - her render'da hesaplanır)
+  const getEffectiveAvatarUrl = (): string => {
+    // Local override varsa ve 10 saniyeden yeniyse onu kullan
+    if (localAvatarOverrideRef.current) {
+      const { url, timestamp } = localAvatarOverrideRef.current;
+      if (Date.now() - timestamp < 10000) {
+        console.log('[ProfilePage] 🎯 Local override kullanılıyor');
+        return url;
+      } else {
+        // Expire olmuş, temizle
+        localAvatarOverrideRef.current = null;
+      }
+    }
     
-    if (!displayAvatarUrl && profileUrl) {
-      console.log('[ProfilePage] 📷 Initial avatar URL set from profile:', profileUrl?.substring(0, 50));
-      setDisplayAvatarUrl(profileUrl);
-    }
-  }, [profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile, displayAvatarUrl]);
-
-  // 🔥 Component mount'ta veya profile değiştiğinde initial URL'i set et
-  useEffect(() => {
+    // Profile'dan URL al
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
-    if (profileUrl && !displayAvatarUrl) {
-      setDisplayAvatarUrl(profileUrl);
-    }
+    return profileUrl || '';
+  };
+  
+  // Her render'da hesapla
+  const effectiveAvatarUrl = getEffectiveAvatarUrl();
+
+  // 🔥 BACKUP: Custom event listener - callback çalışmazsa bu devreye girer
+  useEffect(() => {
+    const handleAvatarUploadedEvent = (event: CustomEvent<{ url: string }>) => {
+      console.log('[ProfilePage] 📡 avatar-uploaded event alındı:', event.detail.url);
+      
+      // Local override set et
+      localAvatarOverrideRef.current = { url: event.detail.url, timestamp: Date.now() };
+      
+      // Force re-render
+      setAvatarKey(prev => prev + 1);
+      
+      // State'leri güncelle
+      setViewedProfile((prev) => ({ ...prev, avatar_url: event.detail.url }));
+      setProfileData((prev: any) => ({ ...prev, avatar_url: event.detail.url }));
+    };
+    
+    window.addEventListener('avatar-uploaded', handleAvatarUploadedEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('avatar-uploaded', handleAvatarUploadedEvent as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -827,9 +857,9 @@ const ProfilePage = () => {
                 <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                     <Avatar className="w-20 h-20 ring-2 ring-primary/20">
                       <AvatarImage
-                        src={displayAvatarUrl}
+                        src={effectiveAvatarUrl}
                         alt={profileData.username}
-                        key={`avatar-${avatarKey}-${displayAvatarUrl}`}
+                        key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
                       />
                       <AvatarFallback className="text-2xl">
                         {profileData.username.charAt(0).toUpperCase()}
