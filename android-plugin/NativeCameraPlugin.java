@@ -123,7 +123,8 @@ public class NativeCameraPlugin extends Plugin {
         launchGallery(call);
     }
     
-    private boolean hasRequiredPermissions() {
+    @Override
+    public boolean hasRequiredPermissions() {
         return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) 
             == PackageManager.PERMISSION_GRANTED;
     }
