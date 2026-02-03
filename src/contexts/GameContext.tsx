@@ -775,10 +775,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             type,
           });
 
-          setTimeout(
-            () => navigate(`/private-room-waiting?code=${request.room_code}&roomId=${roomRow.id}&gameType=${type}`),
-            100,
-          );
+          setTimeout(() => navigate(`/private-room/waiting/${request.room_code}`), 100);
         }
       } catch (error) {
         console.error("❌ Tekrar oyun yanıt hatası:", error);
