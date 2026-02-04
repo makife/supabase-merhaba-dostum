@@ -596,7 +596,7 @@ const TournamentBracketPage = () => {
         <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
 
         {/* İçerik Katmanı */}
-        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-32">
+        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-24">
           {wonReward && (
             <div className="text-center">
               {/* Ödülünüz Başlığı - 4 satır aşağı */}
