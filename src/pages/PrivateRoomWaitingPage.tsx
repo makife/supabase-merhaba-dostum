@@ -138,19 +138,35 @@ const PrivateRoomWaitingPage = () => {
 
     ensureSelfParticipant();
 
-    // 2. Oyuncu kontrolü
+    // 2. Oyuncu kontrolü VE COUNTDOWN BAŞLATMA
     const checkAndNavigate = async () => {
       const { data: parts } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
 
       if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
         setNavigated(true);
 
-        console.log("🎮 2. oyuncu katıldı, GamePage'e yönlendiriliyor...");
+        console.log("🎮 2. oyuncu katıldı, countdown başlatılıp GamePage'e yönlendiriliyor...");
 
-        // ❌ KALDIRILDI: Countdown başlatma - GamePage her iki oyuncu için de başlatacak
-        // await supabase.rpc("start_game_countdown", { p_room_id: roomId });
+        // 🎯 COUNTDOWN BAŞLATMA: GamePage'e yönlendirmeden ÖNCE countdown başlat
+        // Bu sayede her iki oyuncu da GamePage'e geldiğinde buffer animasyonları senkronize çalışır
+        try {
+          // Önce mevcut countdown_started_at'ı kontrol et
+          const { data: roomCheck } = await supabase
+            .from("game_rooms")
+            .select("countdown_started_at")
+            .eq("id", roomId)
+            .single();
 
-        // Yönlendir - GamePage countdown'u başlatacak
+          // Eğer countdown henüz başlamamışsa RPC ile başlat
+          if (!roomCheck?.countdown_started_at) {
+            console.log("⏱️ Countdown RPC ile başlatılıyor...");
+            await supabase.rpc("start_game_countdown", { p_room_id: roomId });
+          }
+        } catch (err) {
+          console.warn("Countdown başlatma hatası (devam ediliyor):", err);
+        }
+
+        // Yönlendir - GamePage countdown'ı alacak ve buffer animasyonlarını gösterecek
         const basePath = "/game/private-room";
         navigate(`${basePath}?room=${roomId}&type=${gameType}`);
       }
