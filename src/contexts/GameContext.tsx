@@ -208,8 +208,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           return;
         }
 
-        // 🔒 KRİTİK: Banlist'te olan odayı geri yükleme
-        if (matchBanlist.has(lastRoomId)) {
+        // 🔒 KRİTİK: Banlist'te olan odayı geri yükleme (ASYNC!)
+        const isBanned = await matchBanlist.has(lastRoomId);
+        if (isBanned) {
           console.log("[GameContext] 🚫 Room banlist'te, geri yükleme atlanıyor:", lastRoomId.slice(-8));
           await setLastRoomId(null);
           return;
