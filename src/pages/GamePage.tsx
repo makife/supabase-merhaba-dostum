@@ -4887,20 +4887,23 @@ const GamePage = ({
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         // Timer 2:00'dan başlaması için offset ayarı
+        // Normal oyunlar: 2000ms (5s countdown + 1s start animasyonu zaten hesaba katılmış)
+        // Turnuva: 6000ms (5s countdown + 1s start animasyonu)
         const GAME_START_OFFSET_MS = 2000;
+        const TOURNAMENT_START_OFFSET_MS = 6000;
         
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
           if (tournamentMatch.countdown_started_at) {
             const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
-            gameStartTimestamp = countdownStartTime + GAME_START_OFFSET_MS;
+            gameStartTimestamp = countdownStartTime + TOURNAMENT_START_OFFSET_MS;
             endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
             console.log("🏆 Tournament timer: Server timing", {
               countdownStart: new Date(countdownStartTime).toISOString(),
               gameStart: new Date(gameStartTimestamp).toISOString(),
               endsAt: new Date(endsAtTimestamp).toISOString(),
-              offsetUsed: GAME_START_OFFSET_MS,
+              offsetUsed: TOURNAMENT_START_OFFSET_MS,
             });
           } else {
             console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
