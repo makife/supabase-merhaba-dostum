@@ -2065,9 +2065,13 @@ const GamePage = ({
         skipBuffer,
       });
 
-      // 🎯 SENARYO 1: Buffer atlanacak VEYA countdown süresi tamamen geçmiş
-      if (skipBuffer || msUntilCountdown <= 0) {
-        console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş, hemen countdown gösteriliyor");
+      // 🎯 SENARYO 1: Buffer açıkça atlanacaksa (skipBuffer=true) VEYA buffer süresi tamamen geçmişse
+      // 🔒 KRİTİK: msUntilCountdown <= -500 kontrolü - küçük saat farklarında buffer'ı atlamamak için
+      // Eğer sadece birkaç yüz ms geçmişse, buffer'ı göstermeye devam et
+      const bufferExpired = msUntilCountdown <= -500; // 500ms tolerans
+      
+      if (skipBuffer || bufferExpired) {
+        console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", { skipBuffer, bufferExpired, msUntilCountdown });
         setPreparingOpponent(null);
         // 🔒 KRİTİK: GameCountdown'a countdownStartedAt + 5000ms (countdown başlangıç zamanı) geçir
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
@@ -4605,6 +4609,12 @@ const GamePage = ({
     // Zaten subscription varsa tekrar açma
     if (countdownChannelRef.current) return;
 
+    // 🔒 Server time hazır değilse bekle - yanlış hesaplama yapılmasın
+    if (!serverTimeReady) {
+      console.log("⏳ Server time henüz hazır değil, countdown bekleniyor...");
+      return;
+    }
+
     // 🔒 İLK YÜKLEME: Room'da zaten countdown_started_at varsa HEMEN başlat
     if (currentRoom.countdown_started_at && !countdownInitiatedRef.current) {
       // Bu timestamp daha önce işlendi mi?
@@ -4711,6 +4721,7 @@ const GamePage = ({
     showCountdown,
     gameStarted,
     serverTimeOffset,
+    serverTimeReady,
     initiateCountdown,
   ]);
 
