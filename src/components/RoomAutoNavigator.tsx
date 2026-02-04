@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGame } from '@/contexts/GameContext';
+import { matchBanlist } from '@/utils/matchBanlist';
 
 // Oda state'i oluştuğunda kullanıcıyı doğru oyun sayfasına yönlendirir.
 // Rematch kabul edilip oda gerçekten hazır olduğunda currentRoom set edildiği için
@@ -32,9 +33,23 @@ const RoomAutoNavigator = () => {
       return;
     }
 
-    // ⚠️ KRİTİK: Bitmiş (finished) odalara yönlendirme yapma
-    if (currentRoom?.status === 'finished') {
-      console.log('🚫 RoomAutoNavigator: Room status is finished, skipping navigation');
+    // ⚠️ KRİTİK: Bitmiş (finished/completed) veya aktif olmayan odalara yönlendirme yapma
+    const roomStatus = currentRoom?.status || '';
+    if (roomStatus === 'finished' || roomStatus === 'completed' || roomStatus === 'cancelled') {
+      console.log('🚫 RoomAutoNavigator: Room status is', roomStatus, '- skipping navigation');
+      return;
+    }
+
+    // 🔒 KRİTİK: Banlist'teki odalara yönlendirme yapma
+    if (matchBanlist.has(roomId)) {
+      console.log('🚫 RoomAutoNavigator: Room is in banlist, skipping navigation:', roomId.slice(-8));
+      return;
+    }
+
+    // 🔒 KRİTİK: Zaten game sayfasındaysak ve aynı odaysa, navigasyon yapma
+    const isAlreadyOnGamePage = location.pathname.includes('/game/');
+    if (isAlreadyOnGamePage && location.search.includes(`room=${roomId}`)) {
+      console.log('🚫 RoomAutoNavigator: Already on game page with same room, skipping');
       return;
     }
 
@@ -53,10 +68,10 @@ const RoomAutoNavigator = () => {
     const currentUrl = `${location.pathname}${location.search}`;
     if (currentUrl === target) return;
 
-    console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl, gameMode });
+    console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl, gameMode, status: roomStatus });
     lastNavigatedRoomRef.current = roomId;
     navigate(target, { replace: true });
-  }, [currentRoom?.id, currentRoom?.game_mode, currentRoom?.max_score, location.pathname, location.search, navigate]);
+  }, [currentRoom?.id, currentRoom?.game_mode, currentRoom?.status, currentRoom?.max_score, location.pathname, location.search, navigate]);
 
   return null;
 };
