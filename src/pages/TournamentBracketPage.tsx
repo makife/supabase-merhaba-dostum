@@ -200,9 +200,9 @@ const TournamentBracketPage = () => {
         } else {
         const now = new Date();
           const countdownStartedAt = now.toISOString();
-          // 5s countdown + 5s animasyon + 120s oyun = 130s
-          // GamePage TOURNAMENT_START_OFFSET_MS (10000ms) ile tutarlı olmalı
-          const endsAt = new Date(now.getTime() + 130 * 1000).toISOString();
+          // 5s countdown + 5s animasyon + 120s oyun = 132s
+          // GamePage TOURNAMENT_START_OFFSET_MS (12000ms) ile tutarlı olmalı
+          const endsAt = new Date(now.getTime() + 132 * 1000).toISOString();
 
           await supabase
             .from("tournament_matches")
