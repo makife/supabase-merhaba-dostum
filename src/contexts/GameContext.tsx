@@ -208,6 +208,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           return;
         }
 
+        // 🔒 KRİTİK: Banlist'te olan odayı geri yükleme
+        if (matchBanlist.has(lastRoomId)) {
+          console.log("[GameContext] 🚫 Room banlist'te, geri yükleme atlanıyor:", lastRoomId.slice(-8));
+          await setLastRoomId(null);
+          return;
+        }
+
         console.log("[GameContext] 📖 Cached room ID bulundu:", lastRoomId.slice(-8));
 
         // Room'u DB'den çek
@@ -224,7 +231,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         }
 
         // Eğer room bitmiş veya kapatılmışsa skip
-        if (room.status === "finished" || room.status === "cancelled") {
+        if (room.status === "finished" || room.status === "cancelled" || room.status === "completed") {
           console.log("[GameContext] ⚠️ Room bitmiş/iptal, temizleniyor");
           await setLastRoomId(null);
           return;
