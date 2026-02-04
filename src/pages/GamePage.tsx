@@ -5812,10 +5812,12 @@ const GamePage = ({
   ]);
 
   // 🔍 GÜNCELLENMİŞ SÜRE YÖNETİMİ - Server Time Sync + 5sn Buffer
-  // 🔒 Bu useEffect RPC ile countdown başlatıyor ve initiateCountdown fonksiyonunu kullanıyor
+  // 🔒 Bu useEffect SADECE RANDOM-MATCH için RPC ile countdown başlatıyor
+  // 🎯 ÖZEL ODA için countdown satır 4500-4580'deki useEffect tarafından başlatılıyor
   useEffect(() => {
     // 1. GEREKSİZ DURUMLARDA ÇIK
-    if (gameMode !== "private-room" && gameMode !== "random-match") return;
+    // 🎯 KRİTİK: SADECE RANDOM-MATCH için bu yolu kullan - Özel oda ayrı bir mekanizma kullanıyor
+    if (gameMode !== "random-match") return;
     if (showCountdown || gameStarted || gameHasStartedRef.current) return;
     if (countdownCheckDoneRef.current) return; // Kilit aktifse girme
     if (!serverTimeReady) return; // Server time hazır değilse bekle
@@ -5831,7 +5833,7 @@ const GamePage = ({
       if (!currentRoom?.id) return;
 
       try {
-        console.log("🔒 Senkronizasyon kontrolü (Server Time Sync)...");
+        console.log("🔒 Senkronizasyon kontrolü (Server Time Sync) - RANDOM MATCH...");
 
         // A. Veritabanından zamanı çek
         const { data } = await supabase
