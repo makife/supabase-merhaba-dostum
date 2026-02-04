@@ -4905,7 +4905,7 @@ const GamePage = ({
         // Normal oyunlar: 2000ms (5s countdown + 1s start animasyonu zaten hesaba katılmış)
         // Turnuva: 6000ms (5s countdown + 1s start animasyonu)
         const GAME_START_OFFSET_MS = 2000;
-        const TOURNAMENT_START_OFFSET_MS = 6000;
+        const TOURNAMENT_START_OFFSET_MS = 100;
         
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
