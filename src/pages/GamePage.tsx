@@ -5806,24 +5806,43 @@ const GamePage = ({
       });
 
       const timers: NodeJS.Timeout[] = [];
+      
+      // Buffer başlangıcından itibaren geçen süre
+      const msElapsed = serverNow - originalCountdownTime;
+      
+      console.log("⏰ Room state buffer animasyon durumu:", {
+        msElapsed,
+        msUntilCountdown,
+        phase: msElapsed < 3500 ? "preparing" : msElapsed < 4000 ? "ready" : msElapsed < 5000 ? "blank" : "countdown"
+      });
 
       if (msUntilCountdown > 0) {
         // Buffer period aktif - animasyonları göster
-
-        if (msUntilCountdown > 3500) {
+        
+        if (msElapsed < 3500) {
+          // Henüz "Hazırlanıyor" aşamasındayız
           setPreparingOpponent("preparing");
-
-          const timeToReady = msUntilCountdown - 1500;
-          timers.push(setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady - 500)));
-          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000)));
-        } else if (msUntilCountdown > 1500) {
+          
+          // 3.5s'de "Hazır"a geç
+          const timeToReady = 3500 - msElapsed;
+          timers.push(setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady)));
+          
+          // 4s'de animasyonu kaldır
+          const timeToBlank = 4000 - msElapsed;
+          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank)));
+        } else if (msElapsed < 4000) {
+          // "Hazır" aşamasındayız
           setPreparingOpponent("ready");
-          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000)));
+          
+          // 4s'de animasyonu kaldır
+          const timeToBlank = 4000 - msElapsed;
+          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank)));
         } else {
+          // Blank aşaması veya countdown'a çok yakın
           setPreparingOpponent(null);
         }
 
-        // Countdown'ı tam zamanında başlat
+        // Countdown'ı tam zamanında başlat (buffer sonunda, 5s'de)
         timers.push(
           setTimeout(
             () => {
@@ -5937,31 +5956,44 @@ const GamePage = ({
         });
 
         // D. BUFFER PERIOD ANIMASYONLARI (5 saniye)
-        // 0-3s: "Hazırlanıyor" | 3-3.5s: "Hazır" | 3.5-5s: boş | 5s+: Countdown
+        // 0-3.5s: "Hazırlanıyor" | 3.5-4s: "Hazır" | 4-5s: boş | 5s+: Countdown
+        
+        // Buffer başlangıcından itibaren geçen süre
+        const msElapsed = serverNow - countdownStartTime;
+        
+        console.log("⏳ Buffer animasyon durumu:", {
+          msElapsed,
+          msUntilCountdown,
+          phase: msElapsed < 3500 ? "preparing" : msElapsed < 4000 ? "ready" : msElapsed < 5000 ? "blank" : "countdown"
+        });
 
         if (msUntilCountdown > 0) {
           // Buffer period aktif - animasyonları göster
-
-          // 3.5 saniyeden fazla varsa "Hazırlanıyor" göster
-          if (msUntilCountdown > 3500) {
+          
+          if (msElapsed < 3500) {
+            // Henüz "Hazırlanıyor" aşamasındayız
             setPreparingOpponent("preparing");
-
-            // 1.5 saniye kala "Hazır" göster
-            const timeToReady = msUntilCountdown - 1500;
-            setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady - 500));
-
-            // 1 saniye kala yazıyı kaldır
-            setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000));
-          } else if (msUntilCountdown > 1500) {
-            // Az vakit var, direkt "Hazır" göster
+            
+            // 3.5s'de "Hazır"a geç
+            const timeToReady = 3500 - msElapsed;
+            setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady));
+            
+            // 4s'de animasyonu kaldır
+            const timeToBlank = 4000 - msElapsed;
+            setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank));
+          } else if (msElapsed < 4000) {
+            // "Hazır" aşamasındayız
             setPreparingOpponent("ready");
-            setTimeout(() => setPreparingOpponent(null), Math.max(0, msUntilCountdown - 1000));
+            
+            // 4s'de animasyonu kaldır
+            const timeToBlank = 4000 - msElapsed;
+            setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank));
           } else {
-            // Çok az vakit, animasyon atla
+            // Blank aşaması veya countdown'a çok yakın
             setPreparingOpponent(null);
           }
 
-          // Countdown'ı tam zamanında başlat (buffer sonunda)
+          // Countdown'ı tam zamanında başlat (buffer sonunda, 5s'de)
           setTimeout(
             () => {
               console.log("🎯 Countdown başlatılıyor (buffer sonrası)");
