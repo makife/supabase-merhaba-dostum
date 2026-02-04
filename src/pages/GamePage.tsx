@@ -2012,6 +2012,18 @@ const GamePage = ({
 
   const initiateCountdown = useCallback(
     (countdownStartedAt: string, skipBuffer: boolean = false, force: boolean = false) => {
+      // 🔧 FIX: Server time hazır değilse countdown başlatma - yanlış timing önleme
+      if (!contextServerTimeReady && !force) {
+        console.log("⏱️ Server time henüz hazır değil, countdown erteleniyor...");
+        // Server time hazır olunca tekrar dene
+        setTimeout(() => {
+          if (isMountedRef.current && contextServerTimeReady) {
+            initiateCountdown(countdownStartedAt, skipBuffer, true);
+          }
+        }, 500);
+        return false;
+      }
+      
       // Eğer force=true ise (Realtime update'den geliyorsa), korumayı yoksay ve güncelle
       if (countdownInitiatedRef.current && !force) {
         console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi (Force yok)");
@@ -2036,6 +2048,8 @@ const GamePage = ({
         skipBuffer,
         "Force:",
         force,
+        "serverTimeOffset:",
+        serverTimeOffset,
       );
 
       // 🔒 Eski zamanlayıcıları temizle
@@ -2066,14 +2080,23 @@ const GamePage = ({
       });
 
       // 🎯 SENARYO 1: Buffer açıkça atlanacaksa (skipBuffer=true) VEYA buffer süresi tamamen geçmişse
-      // 🔒 KRİTİK: msUntilCountdown <= -500 kontrolü - küçük saat farklarında buffer'ı atlamamak için
-      // Eğer sadece birkaç yüz ms geçmişse, buffer'ı göstermeye devam et
-      const bufferExpired = msUntilCountdown <= -500; // 500ms tolerans
+      // 🔒 KRİTİK: msUntilCountdown kontrolü - cihazlar arası saat farkı toleransı
+      // 🔧 FIX: 500ms → 2000ms tolerans - mobil ve web arasındaki clock drift'e karşı koruma
+      const bufferExpired = msUntilCountdown <= -2000; // 2 saniye tolerans
       
       if (skipBuffer || bufferExpired) {
         console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", { skipBuffer, bufferExpired, msUntilCountdown });
         setPreparingOpponent(null);
         // 🔒 KRİTİK: GameCountdown'a countdownStartedAt + 5000ms (countdown başlangıç zamanı) geçir
+        setCountdownServerTime(new Date(actualCountdownStart).toISOString());
+        setShowCountdown(true);
+        return true;
+      }
+      
+      // 🔧 FIX: Eğer az önce buffer bitmişse (0 ile -2000ms arası), kalan buffer animasyonlarını atla ve direkt countdown göster
+      if (msUntilCountdown <= 0 && msUntilCountdown > -2000) {
+        console.log("⚡ Buffer süresi yeni geçti, direkt countdown başlatılıyor:", { msUntilCountdown });
+        setPreparingOpponent(null);
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
         setShowCountdown(true);
         return true;
@@ -2134,7 +2157,7 @@ const GamePage = ({
 
       return true;
     },
-    [gameStarted, serverTimeOffset, showCountdown],
+    [gameStarted, serverTimeOffset, showCountdown, contextServerTimeReady],
   );
 
   // 4. resetGameForRematch fonksiyonunu ekleyin:

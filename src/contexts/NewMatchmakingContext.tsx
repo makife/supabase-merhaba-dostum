@@ -140,10 +140,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       startProgressTimer();
 
       // 1️⃣ ÖNCELİKLE BOŞ ODA ARA (matchBanlist kontrollü)
-      // 5 dakika içinde oluşturulan bekleyen odaları ara - SERVER TIME kullan!
+      // 🔧 FIX: 2 dakika içinde oluşturulan bekleyen odaları ara (5dk → 2dk) - SERVER TIME kullan!
       const serverNow = getGlobalServerNow();
-      const fiveMinutesAgo = new Date(serverNow - 300000).toISOString();
-      console.log("🔍 Boş oda aranıyor... (serverNow:", new Date(serverNow).toISOString(), ", 5dk önce:", fiveMinutesAgo, ")");
+      const twoMinutesAgo = new Date(serverNow - 120000).toISOString(); // 2 dakika = 120000ms
+      console.log("🔍 Boş oda aranıyor... (serverNow:", new Date(serverNow).toISOString(), ", 2dk önce:", twoMinutesAgo, ")");
 
       const { data: existingRooms, error: searchError } = await supabase
         .from("game_rooms")
@@ -151,7 +151,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .eq("game_mode", "random-match")
         .eq("game_type_new", gameType)
         .eq("status", "waiting")
-        .gt("created_at", fiveMinutesAgo)
+        .gt("created_at", twoMinutesAgo)
         .order("created_at", { ascending: true })
         .limit(10);
 
