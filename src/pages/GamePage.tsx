@@ -326,7 +326,7 @@ const GamePage = ({
           })
           .eq("id", tournamentMatch.id);
         console.log("✅ Turnuva maçı rakip kazandı olarak güncellendi:", opponentUserId?.slice(-8));
-        
+
         // 🔒 Bu maçı tamamlanmış olarak işaretle - tekrar oyun sayfası açılmasını önle
         const completedMatchKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${tournamentMatch.id}`;
         await nativeStorage.setItem(completedMatchKey, "true");
@@ -3862,7 +3862,10 @@ const GamePage = ({
 
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
-                    navigate(`/tournament/bracket/${finalTournamentId}`, { replace: true, state: { fromCompletedMatch: completedMatchId } });
+                    navigate(`/tournament/bracket/${finalTournamentId}`, {
+                      replace: true,
+                      state: { fromCompletedMatch: completedMatchId },
+                    });
                   }, 500);
                 }
               },
@@ -4905,9 +4908,9 @@ const GamePage = ({
         // Normal oyunlar (Random/Private): 5s buffer + 5s countdown = 10000ms
         // Turnuva: 12000ms (daha uzun animasyon süresi)
         // NOT: TournamentBracketPage ends_at hesaplaması ile tutarlı olmalı (132s)
-        const GAME_START_OFFSET_MS = 10000;
+        const GAME_START_OFFSET_MS = 6000;
         const TOURNAMENT_START_OFFSET_MS = 12000;
-        
+
         if (gameMode === "tournament" && tournamentMatch) {
           // 🔒 SERVER TIME SYNC - countdown_started_at kullan
           if (tournamentMatch.countdown_started_at) {
@@ -4964,7 +4967,7 @@ const GamePage = ({
         // 🔧 FIX: 200ms interval ile smooth güncelleme - saniye atlamayı önler
         // Sadece saniye değiştiğinde state güncellenir (performans için)
         let lastDisplayedSecond = -1;
-        
+
         timerRef.current = setInterval(() => {
           // Eğer unmount olduysa veya ends_at yoksa dur
           if (!endsAtTimestampRef.current || !isMountedRef.current) return;
@@ -5790,10 +5793,10 @@ const GamePage = ({
         return;
       }
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
-      
+
       // 🔒 İşlenmiş olarak işaretle
       processedCountdownRef.current = currentRoom.countdown_started_at;
-      
+
       // 🎯 Merkezi initiateCountdown fonksiyonunu kullan
       initiateCountdown(currentRoom.countdown_started_at, false);
     }
@@ -5865,20 +5868,30 @@ const GamePage = ({
         }
 
         console.log("🎯 Countdown başlatılıyor (RPC/DB sonrası):", countdownStartedAt);
-        
+
         // 🔒 İşlenmiş olarak işaretle
         processedCountdownRef.current = countdownStartedAt;
-        
+
         // 🎯 Merkezi initiateCountdown fonksiyonunu kullan - duplicate mantık yok!
         initiateCountdown(countdownStartedAt, false);
-        
       } catch (error) {
         console.error("❌ Countdown hatası:", error);
       }
     };
 
     checkCountdown();
-  }, [gameMode, participants.length, showCountdown, gameStarted, currentRoom?.id, serverTimeReady, serverTimeOffset, initiateCountdown, currentRoom?.host_id, user?.id]);
+  }, [
+    gameMode,
+    participants.length,
+    showCountdown,
+    gameStarted,
+    currentRoom?.id,
+    serverTimeReady,
+    serverTimeOffset,
+    initiateCountdown,
+    currentRoom?.host_id,
+    user?.id,
+  ]);
 
   // Multiplayer (private-room & random-match) waiting/start logic
   useEffect(() => {
