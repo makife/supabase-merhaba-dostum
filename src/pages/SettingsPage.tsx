@@ -104,7 +104,7 @@ const SettingsPage = () => {
         };
       }
     };
-    
+
     loadSettings();
   }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
@@ -571,50 +571,11 @@ const SettingsPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-destructive">
                 <AlertTriangle className="w-5 h-5 mr-2" />
-                Hesap İşlemleri
+                Hesap Silme
               </CardTitle>
-              <CardDescription>Hesabınızı yönetin ve verilerinizi kontrol edin (KVKK)</CardDescription>
+              <CardDescription>Buradan hesabınızı kalıcı olarak silebilirsiniz</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={async () => {
-                  try {
-                    const { data, error } = await supabase.rpc("export_user_data");
-
-                    if (error) throw error;
-
-                    // JSON dosyası olarak indir
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `kelimeci-verilerin-${new Date().toISOString().split("T")[0]}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                    toast({
-                      title: "Başarılı",
-                      description: "Verileriniz indirildi.",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Hata",
-                      description: "Veriler indirilemedi.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Verilerimi İndir (KVKK)
-              </Button>
-
-              <Separator />
-
               <Button variant="destructive" className="w-full justify-start" onClick={() => setDeleteConfirmOpen(true)}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Hesabımı Sil
