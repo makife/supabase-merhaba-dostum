@@ -5773,6 +5773,7 @@ const GamePage = ({
   }, [showCountdown, countdownServerTime, gameStarted]);
 
   // ⏱️ Initial server countdown sync for private/random - 5sn buffer ile
+  // 🔒 Bu useEffect artık initiateCountdown fonksiyonunu kullanıyor - duplicate mantık yok
   useEffect(() => {
     // KORUMA: Realtime zaten tetiklediyse veya oyun başladıysa veya countdown görünüyorsa girme
     if (
@@ -5782,98 +5783,19 @@ const GamePage = ({
       !gameStarted &&
       !countdownServerTime &&
       serverTimeReady &&
-      !countdownInitiatedRef.current // <--- BU KONTROLÜ EKLİYORUZ VEYA EMİN OLUYORUZ
+      !countdownInitiatedRef.current
     ) {
       // Eğer bu timestamp daha önce işlendiyse tekrar işleme
       if (processedCountdownRef.current === currentRoom.countdown_started_at) {
         return;
       }
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
-
-      // Server zamanını hesapla - 5sn buffer ekle
-      const originalCountdownTime = new Date(currentRoom.countdown_started_at).getTime();
-      const BUFFER_MS = 5000;
-      const adjustedCountdownStart = originalCountdownTime + BUFFER_MS;
-
-      const serverNow = Date.now() + serverTimeOffset;
-      const msUntilCountdown = adjustedCountdownStart - serverNow;
-
-      console.log("⏰ Countdown timing (5s buffer):", {
-        originalTime: new Date(originalCountdownTime).toISOString(),
-        adjustedStart: new Date(adjustedCountdownStart).toISOString(),
-        serverNow: new Date(serverNow).toISOString(),
-        msUntilCountdown,
-      });
-
-      const timers: NodeJS.Timeout[] = [];
       
-      // Buffer başlangıcından itibaren geçen süre
-      const msElapsed = serverNow - originalCountdownTime;
+      // 🔒 İşlenmiş olarak işaretle
+      processedCountdownRef.current = currentRoom.countdown_started_at;
       
-      console.log("⏰ Room state buffer animasyon durumu:", {
-        msElapsed,
-        msUntilCountdown,
-        phase: msElapsed < 3500 ? "preparing" : msElapsed < 4000 ? "ready" : msElapsed < 5000 ? "blank" : "countdown"
-      });
-
-      if (msUntilCountdown > 0) {
-        // Buffer period aktif - animasyonları göster
-        
-        if (msElapsed < 3500) {
-          // Henüz "Hazırlanıyor" aşamasındayız
-          setPreparingOpponent("preparing");
-          
-          // 3.5s'de "Hazır"a geç
-          const timeToReady = 3500 - msElapsed;
-          timers.push(setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady)));
-          
-          // 4s'de animasyonu kaldır
-          const timeToBlank = 4000 - msElapsed;
-          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank)));
-        } else if (msElapsed < 4000) {
-          // "Hazır" aşamasındayız
-          setPreparingOpponent("ready");
-          
-          // 4s'de animasyonu kaldır
-          const timeToBlank = 4000 - msElapsed;
-          timers.push(setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank)));
-        } else {
-          // Blank aşaması veya countdown'a çok yakın
-          setPreparingOpponent(null);
-        }
-
-        // Countdown'ı tam zamanında başlat (buffer sonunda, 5s'de)
-        timers.push(
-          setTimeout(
-            () => {
-              console.log("⏰ Countdown başlatılıyor (buffer sonrası)");
-              setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-              setShowCountdown(true);
-              setGameStarted(false);
-            },
-            Math.max(0, msUntilCountdown),
-          ),
-        );
-      } else if (msUntilCountdown > -5000) {
-        // Countdown başlamış ama 5 saniye geçmemiş
-        console.log("⏰ Countdown başlamış, devam ediliyor");
-        setPreparingOpponent(null);
-        setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-        setShowCountdown(true);
-        setGameStarted(false);
-      } else {
-        // Countdown tamamen geçmiş
-        console.log("⏰ Countdown geçmiş, oyun direkt başlatılıyor");
-        setPreparingOpponent(null);
-        setShowCountdown(false);
-        setGameStarted(true);
-        gameHasStartedRef.current = true;
-        gameStartedRef.current = true; // Arka plan disconnect kontrolü için
-      }
-
-      return () => {
-        timers.forEach((timer) => clearTimeout(timer));
-      };
+      // 🎯 Merkezi initiateCountdown fonksiyonunu kullan
+      initiateCountdown(currentRoom.countdown_started_at, false);
     }
   }, [
     gameMode,
@@ -5883,17 +5805,18 @@ const GamePage = ({
     serverTimeOffset,
     countdownServerTime,
     serverTimeReady,
+    initiateCountdown,
   ]);
 
   // 🔍 GÜNCELLENMİŞ SÜRE YÖNETİMİ - Server Time Sync + 5sn Buffer
-  // RandomMatchPage'deki mantık ile senkronize
+  // 🔒 Bu useEffect RPC ile countdown başlatıyor ve initiateCountdown fonksiyonunu kullanıyor
   useEffect(() => {
     // 1. GEREKSİZ DURUMLARDA ÇIK
     if (gameMode !== "private-room" && gameMode !== "random-match") return;
     if (showCountdown || gameStarted || gameHasStartedRef.current) return;
     if (countdownCheckDoneRef.current) return; // Kilit aktifse girme
     if (!serverTimeReady) return; // Server time hazır değilse bekle
-    if (countdownInitiatedRef.current) return; // 🔒 YENİ: Countdown zaten başlatıldıysa girme
+    if (countdownInitiatedRef.current) return; // 🔒 Countdown zaten başlatıldıysa girme
 
     const realPlayers = participants.filter((p) => !p.is_bot && p.user_id !== null);
     if (realPlayers.length < 2) return;
@@ -5914,7 +5837,7 @@ const GamePage = ({
           .eq("id", currentRoom.id)
           .single();
 
-        let countdownStartTime: number;
+        let countdownStartedAt: string;
 
         // B. Veri yoksa RPC ile başlat
         if (!data?.countdown_started_at) {
@@ -5929,102 +5852,33 @@ const GamePage = ({
               console.error("❌ RPC hatası:", rpcError);
               return;
             }
-            countdownStartTime = new Date(rpcDate).getTime();
+            countdownStartedAt = rpcDate;
           } else {
             console.log("⏳ Misafir oyuncu: Host'un geri sayımı başlatması bekleniyor...");
-            return; // Host değilsek hiçbir şey yapma, bekle.
+            // 🔒 Kilidi geri aç ki realtime event'i yakalayabilsin
+            countdownCheckDoneRef.current = false;
+            return;
           }
         } else {
           // Zaten başlamışsa veriyi al
-          countdownStartTime = new Date(data.countdown_started_at).getTime();
+          countdownStartedAt = data.countdown_started_at;
         }
 
-        // C. Server time ile senkronize hesapla
-        const serverNow = Date.now() + serverTimeOffset;
-
-        // 🎯 5 saniyelik buffer: countdown_started_at + 5000ms = gerçek countdown başlangıcı
-        const BUFFER_MS = 5000;
-        const adjustedCountdownStart = countdownStartTime + BUFFER_MS;
-        const msUntilCountdown = adjustedCountdownStart - serverNow;
-
-        console.log(`⏳ Server Time Sync:`, {
-          countdownStartTime: new Date(countdownStartTime).toISOString(),
-          adjustedStart: new Date(adjustedCountdownStart).toISOString(),
-          serverNow: new Date(serverNow).toISOString(),
-          msUntilCountdown,
-          serverTimeOffset,
-        });
-
-        // D. BUFFER PERIOD ANIMASYONLARI (5 saniye)
-        // 0-3.5s: "Hazırlanıyor" | 3.5-4s: "Hazır" | 4-5s: boş | 5s+: Countdown
+        console.log("🎯 Countdown başlatılıyor (RPC/DB sonrası):", countdownStartedAt);
         
-        // Buffer başlangıcından itibaren geçen süre
-        const msElapsed = serverNow - countdownStartTime;
+        // 🔒 İşlenmiş olarak işaretle
+        processedCountdownRef.current = countdownStartedAt;
         
-        console.log("⏳ Buffer animasyon durumu:", {
-          msElapsed,
-          msUntilCountdown,
-          phase: msElapsed < 3500 ? "preparing" : msElapsed < 4000 ? "ready" : msElapsed < 5000 ? "blank" : "countdown"
-        });
-
-        if (msUntilCountdown > 0) {
-          // Buffer period aktif - animasyonları göster
-          
-          if (msElapsed < 3500) {
-            // Henüz "Hazırlanıyor" aşamasındayız
-            setPreparingOpponent("preparing");
-            
-            // 3.5s'de "Hazır"a geç
-            const timeToReady = 3500 - msElapsed;
-            setTimeout(() => setPreparingOpponent("ready"), Math.max(0, timeToReady));
-            
-            // 4s'de animasyonu kaldır
-            const timeToBlank = 4000 - msElapsed;
-            setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank));
-          } else if (msElapsed < 4000) {
-            // "Hazır" aşamasındayız
-            setPreparingOpponent("ready");
-            
-            // 4s'de animasyonu kaldır
-            const timeToBlank = 4000 - msElapsed;
-            setTimeout(() => setPreparingOpponent(null), Math.max(0, timeToBlank));
-          } else {
-            // Blank aşaması veya countdown'a çok yakın
-            setPreparingOpponent(null);
-          }
-
-          // Countdown'ı tam zamanında başlat (buffer sonunda, 5s'de)
-          setTimeout(
-            () => {
-              console.log("🎯 Countdown başlatılıyor (buffer sonrası)");
-              // adjustedCountdownStart zamanını ISO string olarak gönder
-              setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-              setShowCountdown(true);
-            },
-            Math.max(0, msUntilCountdown),
-          );
-        } else if (msUntilCountdown > -5000) {
-          // Countdown zaten başlamış olmalı ama 5 saniye geçmemiş, countdown göster
-          console.log("⏰ Countdown başlamış, kalan kısım gösteriliyor");
-          setPreparingOpponent(null);
-          setCountdownServerTime(new Date(adjustedCountdownStart).toISOString());
-          setShowCountdown(true);
-        } else {
-          // Countdown tamamen geçmiş (5+ saniye önce), direkt oyunu başlat
-          console.log("⏰ Countdown geçmiş, oyun direkt başlatılıyor");
-          setPreparingOpponent(null);
-          setShowCountdown(false);
-          setGameStarted(true);
-          gameHasStartedRef.current = true;
-          gameStartedRef.current = true; // Arka plan disconnect kontrolü için
-        }
+        // 🎯 Merkezi initiateCountdown fonksiyonunu kullan - duplicate mantık yok!
+        initiateCountdown(countdownStartedAt, false);
+        
       } catch (error) {
         console.error("❌ Countdown hatası:", error);
       }
     };
 
     checkCountdown();
-  }, [gameMode, participants.length, showCountdown, gameStarted, currentRoom?.id, serverTimeReady, serverTimeOffset]);
+  }, [gameMode, participants.length, showCountdown, gameStarted, currentRoom?.id, serverTimeReady, serverTimeOffset, initiateCountdown, currentRoom?.host_id, user?.id]);
 
   // Multiplayer (private-room & random-match) waiting/start logic
   useEffect(() => {
