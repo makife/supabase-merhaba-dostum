@@ -40,11 +40,8 @@ const RoomAutoNavigator = () => {
       return;
     }
 
-    // 🔒 KRİTİK: Banlist'teki odalara yönlendirme yapma
-    if (matchBanlist.has(roomId)) {
-      console.log('🚫 RoomAutoNavigator: Room is in banlist, skipping navigation:', roomId.slice(-8));
-      return;
-    }
+    // Aynı odaya tekrar tekrar yönlendirme yapmayalım
+    if (lastNavigatedRoomRef.current === roomId) return;
 
     // 🔒 KRİTİK: Zaten game sayfasındaysak ve aynı odaysa, navigasyon yapma
     const isAlreadyOnGamePage = location.pathname.includes('/game/');
@@ -53,24 +50,33 @@ const RoomAutoNavigator = () => {
       return;
     }
 
-    // Aynı odaya tekrar tekrar yönlendirme yapmayalım
-    if (lastNavigatedRoomRef.current === roomId) return;
+    // 🔒 ASYNC: Banlist kontrolünü async olarak yap
+    const checkBanlistAndNavigate = async () => {
+      // 🔒 KRİTİK: Banlist'teki odalara yönlendirme yapma
+      const isBanned = await matchBanlist.has(roomId);
+      if (isBanned) {
+        console.log('🚫 RoomAutoNavigator: Room is in banlist, skipping navigation:', roomId.slice(-8));
+        return;
+      }
 
-    const isRandom = gameMode.includes('random-match');
-    const basePath = isRandom ? '/game/random-match' : '/game/private-room';
+      const isRandom = gameMode.includes('random-match');
+      const basePath = isRandom ? '/game/random-match' : '/game/private-room';
 
-    // Tipi sadece game_mode'dan çıkar (tek otorite)
-    const type = gameMode.includes('score') ? 'score' : 'timed';
+      // Tipi sadece game_mode'dan çıkar (tek otorite)
+      const type = gameMode.includes('score') ? 'score' : 'timed';
 
-    const target = `${basePath}?room=${roomId}&type=${type}`;
+      const target = `${basePath}?room=${roomId}&type=${type}`;
 
-    // Zaten hedefteysek yönlendirme yapma
-    const currentUrl = `${location.pathname}${location.search}`;
-    if (currentUrl === target) return;
+      // Zaten hedefteysek yönlendirme yapma
+      const currentUrl = `${location.pathname}${location.search}`;
+      if (currentUrl === target) return;
 
-    console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl, gameMode, status: roomStatus });
-    lastNavigatedRoomRef.current = roomId;
-    navigate(target, { replace: true });
+      console.log('🚀 RoomAutoNavigator: navigating to game page', { target, from: currentUrl, gameMode, status: roomStatus });
+      lastNavigatedRoomRef.current = roomId;
+      navigate(target, { replace: true });
+    };
+
+    checkBanlistAndNavigate();
   }, [currentRoom?.id, currentRoom?.game_mode, currentRoom?.status, currentRoom?.max_score, location.pathname, location.search, navigate]);
 
   return null;
