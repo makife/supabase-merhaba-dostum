@@ -4902,10 +4902,10 @@ const GamePage = ({
 
         // 1. ADIM: Başlangıç ve Bitiş Zamanlarını Belirle
         // Timer 2:00'dan başlaması için offset ayarı
-        // Normal oyunlar: 2000ms (hızlı oyun başlangıcı)
-        // Turnuva: 10000ms (5s countdown + 5s animasyon = 10s)
+        // Normal oyunlar (Random/Private): 5s buffer + 5s countdown = 10000ms
+        // Turnuva: 12000ms (daha uzun animasyon süresi)
         // NOT: TournamentBracketPage ends_at hesaplaması ile tutarlı olmalı (132s)
-        const GAME_START_OFFSET_MS = 2000;
+        const GAME_START_OFFSET_MS = 10000;
         const TOURNAMENT_START_OFFSET_MS = 12000;
         
         if (gameMode === "tournament" && tournamentMatch) {
