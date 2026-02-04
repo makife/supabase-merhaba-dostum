@@ -326,6 +326,11 @@ const GamePage = ({
           })
           .eq("id", tournamentMatch.id);
         console.log("✅ Turnuva maçı rakip kazandı olarak güncellendi:", opponentUserId?.slice(-8));
+        
+        // 🔒 Bu maçı tamamlanmış olarak işaretle - tekrar oyun sayfası açılmasını önle
+        const completedMatchKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${tournamentMatch.id}`;
+        await nativeStorage.setItem(completedMatchKey, "true");
+        console.log("✅ Turnuva maçı local olarak tamamlandı işaretlendi:", tournamentMatch.id.slice(-8));
       } catch (err) {
         console.error("❌ Turnuva maç güncelleme hatası:", err);
       }
@@ -336,6 +341,8 @@ const GamePage = ({
         variant: "destructive",
       });
 
+      // 🔒 isMatchFinishing flag'ini set et - tekrar render'ı önle
+      setIsMatchFinishing(true);
       setWinner("opponent");
       setGameEnded(true);
       setShowResults(true);
@@ -3823,10 +3830,18 @@ const GamePage = ({
               (payload) => {
                 console.log("📡 Match status update received:", payload.new);
                 const newStatus = (payload.new as any)?.status;
+                const completedMatchId = (payload.new as any)?.id;
 
                 // 🚨 STRICT: Status 'completed' ise HEMEN unmount ve yönlendir
                 if (newStatus === "completed") {
                   console.log("🚫 STRICT: Match status changed to COMPLETED - forcing unmount and redirect");
+
+                  // 🔒 Bu maçı tamamlanmış olarak işaretle - tekrar oyun sayfası açılmasını önle
+                  if (completedMatchId) {
+                    const completedMatchKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${completedMatchId}`;
+                    nativeStorage.setItem(completedMatchKey, "true");
+                    console.log("✅ Match marked as completed in storage:", completedMatchId);
+                  }
 
                   // Optimistic flag set et
                   setIsMatchFinishing(true);
@@ -3847,7 +3862,7 @@ const GamePage = ({
 
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
-                    navigate(`/tournament/bracket/${finalTournamentId}`, { replace: true });
+                    navigate(`/tournament/bracket/${finalTournamentId}`, { replace: true, state: { fromCompletedMatch: completedMatchId } });
                   }, 500);
                 }
               },
