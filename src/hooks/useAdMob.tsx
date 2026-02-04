@@ -1,10 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
-// Lovable.dev ortamı kontrolü
-const isLovableEnv = typeof window !== "undefined" && window.location.hostname.includes("lovable");
 
 // Runtime import fonksiyonu
 const importModule = (moduleName: string) => {
@@ -16,67 +13,91 @@ export const useAdMob = () => {
   const [isAdReady, setIsAdReady] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const isNativePlatformRef = useRef<boolean | null>(null);
 
-  // Initialize AdMob
-  const initializeAdMob = useCallback(async () => {
-    if (isLovableEnv) {
-      console.log("AdMob not available in Lovable.dev environment");
-      return;
+  // Check if running on native platform
+  const checkNativePlatform = useCallback(async (): Promise<boolean> => {
+    if (isNativePlatformRef.current !== null) {
+      return isNativePlatformRef.current;
     }
 
     try {
       const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) return;
+      if (!capacitorModule) {
+        isNativePlatformRef.current = false;
+        return false;
+      }
       const { Capacitor } = capacitorModule;
+      const isNative = Capacitor.isNativePlatform();
+      isNativePlatformRef.current = isNative;
+      console.log("[AdMob] Platform check:", isNative ? "NATIVE" : "WEB");
+      return isNative;
+    } catch (error) {
+      console.error("[AdMob] Platform check error:", error);
+      isNativePlatformRef.current = false;
+      return false;
+    }
+  }, []);
 
-      if (!Capacitor.isNativePlatform()) return;
+  // Initialize AdMob
+  const initializeAdMob = useCallback(async () => {
+    const isNative = await checkNativePlatform();
+    if (!isNative) {
+      console.log("[AdMob] Skipping init - not native platform");
+      return;
+    }
 
+    try {
       const admobModule = await importModule("@capacitor-community/admob");
-      if (!admobModule) return;
+      if (!admobModule) {
+        console.error("[AdMob] AdMob module not found");
+        return;
+      }
 
       await admobModule.AdMob.initialize({
         testingDevices: [],
         initializeForTesting: false,
       });
-      console.log("AdMob initialized successfully");
+      console.log("[AdMob] ✅ Initialized successfully");
     } catch (error) {
-      console.error("AdMob initialization failed:", error);
+      console.error("[AdMob] ❌ Initialization failed:", error);
     }
-  }, [toast]);
+  }, [checkNativePlatform]);
 
   // Load rewarded ad
-  const loadRewardedAd = useCallback(async () => {
-    if (isAdLoading) return;
+  const loadRewardedAd = useCallback(async (): Promise<boolean> => {
+    if (isAdLoading) {
+      console.log("[AdMob] Already loading an ad");
+      return false;
+    }
 
-    if (isLovableEnv) {
-      console.log("AdMob not available in Lovable.dev environment");
+    const isNative = await checkNativePlatform();
+    if (!isNative) {
+      console.log("[AdMob] Not native - cannot load ad");
       toast({
         title: "Bilgi",
         description: "Reklamlar sadece mobil uygulamada çalışır",
       });
-      return;
+      return false;
     }
 
     setIsAdLoading(true);
+    setIsAdReady(false);
 
     try {
-      // 🔥 DÜZELTME BURADA: Capacitor Core modülünü import ediyoruz
-      const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) return;
-
-      // 🔥 DÜZELTME BURADA: Capacitor değişkenini tanımlıyoruz
-      const { Capacitor } = capacitorModule;
-
-      if (!Capacitor.isNativePlatform()) {
-        toast({
-          title: "Bilgi",
-          description: "Reklamlar sadece mobil uygulamada çalışır",
-        });
-        return;
+      const admobModule = await importModule("@capacitor-community/admob");
+      if (!admobModule) {
+        console.error("[AdMob] AdMob module not found");
+        setIsAdLoading(false);
+        return false;
       }
 
-      const admobModule = await importModule("@capacitor-community/admob");
-      if (!admobModule) return;
+      const capacitorModule = await importModule("@capacitor/core");
+      if (!capacitorModule) {
+        setIsAdLoading(false);
+        return false;
+      }
+      const { Capacitor } = capacitorModule;
 
       // 👇 GELİŞTİRME MODU AYARI (Test reklamları için TRUE yap)
       const IS_DEVELOPMENT_MODE = true;
@@ -84,54 +105,66 @@ export const useAdMob = () => {
       const isIOS = Capacitor.getPlatform() === "ios";
 
       // Gerçek ID'ler
-      const REAL_AD_ID = isIOS ? "ca-app-pub-4768026665961339/6383991586" : "ca-app-pub-4768026665961339/4806604463";
+      const REAL_AD_ID = isIOS 
+        ? "ca-app-pub-4768026665961339/6383991586" 
+        : "ca-app-pub-4768026665961339/4806604463";
 
-      // Google Test ID
+      // Google Test ID - HER ZAMAN ÇALIŞMALI
       const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
 
       // Mod'a göre ID seç
       const adIdToUse = IS_DEVELOPMENT_MODE ? TEST_AD_ID : REAL_AD_ID;
 
-      console.log(`Loading ad... Mode: ${IS_DEVELOPMENT_MODE ? "TEST" : "REAL"}`);
+      console.log(`[AdMob] 📺 Loading ad... Platform: ${isIOS ? "iOS" : "Android"}, Mode: ${IS_DEVELOPMENT_MODE ? "TEST" : "REAL"}`);
+      console.log(`[AdMob] 📺 Ad ID: ${adIdToUse}`);
 
       await admobModule.AdMob.prepareRewardVideoAd({
         adId: adIdToUse,
         isTesting: IS_DEVELOPMENT_MODE,
       });
 
-      console.log("Rewarded ad prepared successfully");
+      console.log("[AdMob] ✅ Rewarded ad prepared successfully");
       setIsAdReady(true);
-    } catch (error) {
-      console.error("Failed to load rewarded ad:", error);
-      setIsAdReady(false);
-      // Hata detayını kullanıcıya gösterme, konsola bas
-    } finally {
       setIsAdLoading(false);
+      return true;
+    } catch (error: any) {
+      console.error("[AdMob] ❌ Failed to load rewarded ad:", error);
+      console.error("[AdMob] ❌ Error details:", JSON.stringify(error));
+      setIsAdReady(false);
+      setIsAdLoading(false);
+      return false;
     }
-  }, [isAdLoading, toast]);
+  }, [isAdLoading, checkNativePlatform, toast]);
 
   // Give reward to user
   const giveReward = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("[AdMob] No user - cannot give reward");
+      return;
+    }
 
     try {
-      const { data: profile } = await supabase.from("profiles").select("game_credits").eq("id", user.id).single();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("ink_count")
+        .eq("id", user.id)
+        .single();
 
-      // +1 Mürekkep ver (veya oyun mantığına göre değiştir)
-      const newCredits = (profile?.game_credits || 0) + 1;
+      // +1 Mürekkep ver
+      const newInkCount = (profile?.ink_count || 0) + 1;
 
       const { error } = await supabase
         .from("profiles")
         .update({
-          game_credits: newCredits,
-          last_credit_refresh: new Date().toISOString(),
+          ink_count: newInkCount,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
 
       if (error) throw error;
-      console.log("Reward given successfully");
+      console.log("[AdMob] ✅ Reward given successfully, new ink:", newInkCount);
     } catch (error) {
-      console.error("Failed to give reward:", error);
+      console.error("[AdMob] ❌ Failed to give reward:", error);
       toast({
         title: "Ödül Hatası",
         description: "Ödül verilirken bir hata oluştu.",
@@ -141,69 +174,116 @@ export const useAdMob = () => {
   }, [user, toast]);
 
   // Show rewarded ad
-  const showRewardedAd = useCallback(async () => {
-    if (isLovableEnv) {
+  const showRewardedAd = useCallback(async (): Promise<boolean> => {
+    const isNative = await checkNativePlatform();
+    if (!isNative) {
       toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
-      return;
+      return false;
     }
 
     try {
-      const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) return;
-      const { Capacitor } = capacitorModule;
-
-      if (!Capacitor.isNativePlatform()) {
-        toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
-        return;
-      }
-
       const admobModule = await importModule("@capacitor-community/admob");
-      if (!admobModule) return;
+      if (!admobModule) {
+        console.error("[AdMob] AdMob module not found");
+        return false;
+      }
 
       const { AdMob, RewardAdPluginEvents } = admobModule;
 
-      const adDismissedListener = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-        console.log("Rewarded ad dismissed");
-        setIsAdReady(false);
-        loadRewardedAd(); // Bir sonraki reklamı önceden yükle
-      });
+      return new Promise<boolean>((resolve) => {
+        let resolved = false;
+        
+        const cleanup = async (listeners: any[]) => {
+          for (const listener of listeners) {
+            try {
+              await listener.remove();
+            } catch (e) {
+              // ignore
+            }
+          }
+        };
 
-      const adFailedToShowListener = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (error: any) => {
-        console.error("Rewarded ad failed to show:", error);
-        setIsAdReady(false);
-        toast({
-          title: "Reklam Gösterilemedi",
-          description: "Lütfen daha sonra tekrar deneyin.",
-          variant: "destructive",
+        const setupListeners = async () => {
+          const listeners: any[] = [];
+
+          const dismissedListener = await AdMob.addListener(
+            RewardAdPluginEvents.Dismissed,
+            () => {
+              console.log("[AdMob] 📺 Ad dismissed");
+              setIsAdReady(false);
+              if (!resolved) {
+                resolved = true;
+                cleanup(listeners);
+                resolve(true);
+              }
+            }
+          );
+          listeners.push(dismissedListener);
+
+          const failedListener = await AdMob.addListener(
+            RewardAdPluginEvents.FailedToShow,
+            (error: any) => {
+              console.error("[AdMob] ❌ Ad failed to show:", error);
+              setIsAdReady(false);
+              toast({
+                title: "Reklam Gösterilemedi",
+                description: "Lütfen daha sonra tekrar deneyin.",
+                variant: "destructive",
+              });
+              if (!resolved) {
+                resolved = true;
+                cleanup(listeners);
+                resolve(false);
+              }
+            }
+          );
+          listeners.push(failedListener);
+
+          const rewardedListener = await AdMob.addListener(
+            RewardAdPluginEvents.Rewarded,
+            async (reward: any) => {
+              console.log("[AdMob] 🎉 User earned reward:", reward);
+              await giveReward();
+              toast({ 
+                title: "Tebrikler! 🎉", 
+                description: "+1 Mürekkep kazandınız!" 
+              });
+            }
+          );
+          listeners.push(rewardedListener);
+
+          // Timeout cleanup
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              cleanup(listeners);
+              resolve(false);
+            }
+          }, 120000); // 2 dakika timeout
+        };
+
+        setupListeners();
+
+        console.log("[AdMob] 📺 Showing rewarded ad...");
+        AdMob.showRewardVideoAd().catch((error: any) => {
+          console.error("[AdMob] ❌ Show ad error:", error);
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
         });
       });
-
-      const adRewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, async (reward: any) => {
-        console.log("User earned reward:", reward);
-        await giveReward();
-        toast({ title: "Tebrikler! 🎉", description: "Ödülünüzü kazandınız." });
-      });
-
-      await AdMob.showRewardVideoAd();
-
-      // Listener temizliği (Memory leak önlemek için)
-      setTimeout(() => {
-        adDismissedListener.remove();
-        adFailedToShowListener.remove();
-        adRewardedListener.remove();
-      }, 60000); // 1 dakika sonra listenerları temizle
     } catch (error) {
-      console.error("Failed to show rewarded ad:", error);
+      console.error("[AdMob] ❌ Failed to show rewarded ad:", error);
       setIsAdReady(false);
       toast({
         title: "Reklam Hazır Değil",
-        description: "Reklam yükleniyor, lütfen biraz bekleyip tekrar deneyin.",
+        description: "Reklam yüklenemedi, lütfen tekrar deneyin.",
         variant: "destructive",
       });
-      // Hata alınca tekrar yüklemeyi dene
-      loadRewardedAd();
+      return false;
     }
-  }, [loadRewardedAd, giveReward, toast]);
+  }, [checkNativePlatform, giveReward, toast]);
 
   return {
     isAdLoading,

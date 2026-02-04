@@ -363,24 +363,37 @@ const MarketPage = () => {
     }
 
     try {
-      // 🔧 Önce reklamı yükle
-      await loadRewardedAd();
+      console.log("[Market] 📺 Reklam yükleniyor...");
       
-      // 🔧 Kısa gecikme - state güncellemesi için bekle
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 🔧 Önce reklamı yükle - başarısız olursa devam etme
+      const adLoaded = await loadRewardedAd();
+      
+      if (!adLoaded) {
+        console.log("[Market] ❌ Reklam yüklenemedi");
+        return; // Toast zaten useAdMob'da gösteriliyor
+      }
+      
+      console.log("[Market] ✅ Reklam yüklendi, gösteriliyor...");
       
       // 🔧 Reklamı göster
-      await showRewardedAd();
+      const adShown = await showRewardedAd();
 
-      if (storedDate !== today) {
-        await nativeStorage.setItem(STORAGE_KEYS.LAST_AD_DATE, today);
-        await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, "1");
-      } else {
-        await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, (storedCount + 1).toString());
+      if (adShown) {
+        // Sadece reklam başarıyla gösterildiyse sayacı güncelle
+        if (storedDate !== today) {
+          await nativeStorage.setItem(STORAGE_KEYS.LAST_AD_DATE, today);
+          await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, "1");
+        } else {
+          await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, (storedCount + 1).toString());
+        }
+        
+        // Profili yenile
+        refreshProfile();
+        console.log("[Market] ✅ Reklam izlendi, sayaç güncellendi");
       }
     } catch (e) {
-      console.error("Reklam hatası:", e);
-      toast({ title: "Reklam Hatası", description: "Reklam yüklenemedi.", variant: "destructive" });
+      console.error("[Market] ❌ Reklam hatası:", e);
+      toast({ title: "Reklam Hatası", description: "Bir hata oluştu, tekrar deneyin.", variant: "destructive" });
     }
   };
 
