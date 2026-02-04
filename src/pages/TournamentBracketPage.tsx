@@ -358,6 +358,7 @@ const TournamentBracketPage = () => {
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches, serverNow, offset]);
 
+  // 🔒 Tamamlanmış maçları takip et - tekrar navigation'ı önle
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -365,13 +366,43 @@ const TournamentBracketPage = () => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
     const navigateToMatch = async (match: any, source: string) => {
+      // 🔒 GUARD 1: fromCompletedMatch kontrolü - ayrıldığımız maça geri dönmeyi önle
+      if (fromCompletedMatchRef.current === match.id) {
+        console.log(`🚫 [${source}] Blocking navigation - came from this completed match:`, match.id);
+        return false;
+      }
+
+      // 🔒 GUARD 2: Daha önce tamamlandığını bildiğimiz maçları atla
+      if (completedMatchIdsRef.current.has(match.id)) {
+        console.log(`🚫 [${source}] Blocking navigation - match already completed in this session:`, match.id);
+        return false;
+      }
+
       const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${match.id}`;
       const isLocallyCompleted = await nativeStorage.getItem(completedKey);
 
-      if (isLocallyCompleted) return false;
-      if (match.status === "completed") return false;
-      if (navigatedMatchIdRef.current === match.id) return false;
-      if (match.winner_id) return false;
+      if (isLocallyCompleted) {
+        completedMatchIdsRef.current.add(match.id);
+        console.log(`🚫 [${source}] Blocking navigation - locally marked as completed:`, match.id);
+        return false;
+      }
+      
+      if (match.status === "completed") {
+        completedMatchIdsRef.current.add(match.id);
+        console.log(`🚫 [${source}] Blocking navigation - status is completed:`, match.id);
+        return false;
+      }
+      
+      if (navigatedMatchIdRef.current === match.id) {
+        console.log(`🚫 [${source}] Blocking navigation - already navigating to this match:`, match.id);
+        return false;
+      }
+      
+      if (match.winner_id) {
+        completedMatchIdsRef.current.add(match.id);
+        console.log(`🚫 [${source}] Blocking navigation - winner already set:`, match.id);
+        return false;
+      }
 
       console.log(`🎮 [${source}] My match started, navigating:`, match.id);
       navigatedMatchIdRef.current = match.id;
@@ -410,6 +441,14 @@ const TournamentBracketPage = () => {
         },
         (payload) => {
           const newMatch = payload.new as any;
+          
+          // 🔒 Tamamlanan maçları takip listesine ekle
+          if (newMatch.status === "completed" || newMatch.winner_id) {
+            completedMatchIdsRef.current.add(newMatch.id);
+            console.log(`📝 Match marked as completed:`, newMatch.id);
+            return;
+          }
+          
           if (
             newMatch.status === "in_progress" &&
             newMatch.countdown_started_at &&
