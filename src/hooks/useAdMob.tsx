@@ -1,11 +1,20 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
 
-// Runtime import fonksiyonu
-const importModule = (moduleName: string) => {
-  return import(/* @vite-ignore */ moduleName).catch(() => null);
+// AdMob modülü dinamik import (sadece native'de yüklenir)
+let admobModuleCache: any = null;
+const getAdMobModule = async () => {
+  if (admobModuleCache) return admobModuleCache;
+  try {
+    admobModuleCache = await import("@capacitor-community/admob");
+    return admobModuleCache;
+  } catch (e) {
+    console.error("[AdMob] Module import failed:", e);
+    return null;
+  }
 };
 
 export const useAdMob = () => {
@@ -13,42 +22,22 @@ export const useAdMob = () => {
   const [isAdReady, setIsAdReady] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const isNativePlatformRef = useRef<boolean | null>(null);
 
-  // Check if running on native platform
-  const checkNativePlatform = useCallback(async (): Promise<boolean> => {
-    if (isNativePlatformRef.current !== null) {
-      return isNativePlatformRef.current;
-    }
-
-    try {
-      const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) {
-        isNativePlatformRef.current = false;
-        return false;
-      }
-      const { Capacitor } = capacitorModule;
-      const isNative = Capacitor.isNativePlatform();
-      isNativePlatformRef.current = isNative;
-      console.log("[AdMob] Platform check:", isNative ? "NATIVE" : "WEB");
-      return isNative;
-    } catch (error) {
-      console.error("[AdMob] Platform check error:", error);
-      isNativePlatformRef.current = false;
-      return false;
-    }
-  }, []);
+  // ✅ Senkron platform kontrolü - dinamik import KULLANMA
+  const isNativePlatform = Capacitor.isNativePlatform();
+  const platform = Capacitor.getPlatform();
+  
+  console.log("[AdMob] Platform:", platform, "isNative:", isNativePlatform);
 
   // Initialize AdMob
   const initializeAdMob = useCallback(async () => {
-    const isNative = await checkNativePlatform();
-    if (!isNative) {
+    if (!isNativePlatform) {
       console.log("[AdMob] Skipping init - not native platform");
       return;
     }
 
     try {
-      const admobModule = await importModule("@capacitor-community/admob");
+      const admobModule = await getAdMobModule();
       if (!admobModule) {
         console.error("[AdMob] AdMob module not found");
         return;
@@ -62,7 +51,7 @@ export const useAdMob = () => {
     } catch (error) {
       console.error("[AdMob] ❌ Initialization failed:", error);
     }
-  }, [checkNativePlatform]);
+  }, [isNativePlatform]);
 
   // Load rewarded ad
   const loadRewardedAd = useCallback(async (): Promise<boolean> => {
@@ -71,9 +60,8 @@ export const useAdMob = () => {
       return false;
     }
 
-    const isNative = await checkNativePlatform();
-    if (!isNative) {
-      console.log("[AdMob] Not native - cannot load ad");
+    if (!isNativePlatform) {
+      console.log("[AdMob] Not native platform - cannot load ad");
       toast({
         title: "Bilgi",
         description: "Reklamlar sadece mobil uygulamada çalışır",
@@ -85,24 +73,17 @@ export const useAdMob = () => {
     setIsAdReady(false);
 
     try {
-      const admobModule = await importModule("@capacitor-community/admob");
+      const admobModule = await getAdMobModule();
       if (!admobModule) {
         console.error("[AdMob] AdMob module not found");
         setIsAdLoading(false);
         return false;
       }
 
-      const capacitorModule = await importModule("@capacitor/core");
-      if (!capacitorModule) {
-        setIsAdLoading(false);
-        return false;
-      }
-      const { Capacitor } = capacitorModule;
-
       // 👇 GELİŞTİRME MODU AYARI (Test reklamları için TRUE yap)
       const IS_DEVELOPMENT_MODE = true;
 
-      const isIOS = Capacitor.getPlatform() === "ios";
+      const isIOS = platform === "ios";
 
       // Gerçek ID'ler
       const REAL_AD_ID = isIOS 
@@ -134,7 +115,7 @@ export const useAdMob = () => {
       setIsAdLoading(false);
       return false;
     }
-  }, [isAdLoading, checkNativePlatform, toast]);
+  }, [isAdLoading, isNativePlatform, platform, toast]);
 
   // Give reward to user
   const giveReward = useCallback(async () => {
@@ -175,14 +156,13 @@ export const useAdMob = () => {
 
   // Show rewarded ad
   const showRewardedAd = useCallback(async (): Promise<boolean> => {
-    const isNative = await checkNativePlatform();
-    if (!isNative) {
+    if (!isNativePlatform) {
       toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
       return false;
     }
 
     try {
-      const admobModule = await importModule("@capacitor-community/admob");
+      const admobModule = await getAdMobModule();
       if (!admobModule) {
         console.error("[AdMob] AdMob module not found");
         return false;
@@ -283,7 +263,7 @@ export const useAdMob = () => {
       });
       return false;
     }
-  }, [checkNativePlatform, giveReward, toast]);
+  }, [isNativePlatform, giveReward, toast]);
 
   return {
     isAdLoading,
