@@ -289,7 +289,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0,
 
     console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", serverStartTime, "Offset:", serverTimeOffset);
     
-    // serverStartTime = countdown'ın başlaması gereken sunucu zamanı
+    // 🔧 KRİTİK: serverStartTime = countdown'ın BAŞLAMASI gereken sunucu zamanı (buffer SONRASI)
+    // Yani countdown (5-4-3-2-1) bu anda başlıyor
+    // countdownEndTime = serverStartTime + 5000ms
     const countdownStartTime = new Date(serverStartTime).getTime();
     const countdownEndTime = countdownStartTime + COUNTDOWN_DURATION_MS;
     countdownEndTimeRef.current = countdownEndTime;
@@ -325,15 +327,19 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0,
             playStartSound();
           }
           
+          // 🔧 FIX: setTimeout ile güvenilir tamamlama - turnuva mantığıyla aynı
           completeTimeoutRef.current = setTimeout(() => {
             triggerComplete();
           }, START_DISPLAY_DURATION_MS);
         }
-        return;
+        return; // RAF döngüsünü durdur
       } 
       
-      // Geri sayım devam ediyor - sunucu zamanına göre
+      // 🔧 KRİTİK: Geri sayım devam ediyor - sunucu zamanına göre
+      // serverStartTime zaten countdown'ın başlangıç zamanı (buffer SONRASI)
+      // Dolayısıyla remaining = 5000ms'den başlayıp 0'a düşüyor
       const serverSeconds = Math.ceil(remaining / 1000);
+      // 🔧 FIX: Değer her zaman 1-5 arasında olmalı
       const display = Math.min(5, Math.max(1, serverSeconds));
       
       if (lastDisplayRef.current !== display) {
@@ -354,6 +360,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0,
     const serverNowInitial = Date.now() + serverTimeOffset;
     const remainingInitial = countdownEndTime - serverNowInitial;
     
+    // 🔧 FIX: Countdown zaten bitmiş mi kontrol et
     if (remainingInitial <= 0) {
       console.log("⚡ GameCountdown: Countdown zaten bitmiş, direkt tamamlanıyor");
       setDisplayValue("start");
@@ -367,8 +374,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0,
       return;
     }
     
-    // İlk değeri göster - sunucu zamanına göre hesapla
+    // 🔧 KRİTİK: İlk değeri göster - sunucu zamanına göre hesapla
+    // remaining 5000ms civarından başlamalı (buffer zaten geçmiş)
     const initialSeconds = Math.ceil(remainingInitial / 1000);
+    // 🔧 FIX: Her zaman 5'ten başla ama geç katılımda kalan süreden devam et
     const displayInitial = Math.min(5, Math.max(1, initialSeconds));
     
     setDisplayValue(displayInitial);
