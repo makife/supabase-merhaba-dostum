@@ -2129,15 +2129,20 @@ const GamePage = ({
       }
 
       // 🎯 SENARYO 2: Buffer süresi geçmiş ama countdown devam ediyor
-      // Countdown'a geçirilen serverStartTime = actualCountdownStart (buffer SONRASI)
+      // GameCountdown'a countdown'ın NE ZAMAN başlayacağını söylememiz gerek
       if (skipBuffer || msUntilCountdown <= 0) {
         console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Buffer atlandı veya süresi doldu):", {
           skipBuffer,
           msUntilCountdown,
+          actualCountdownStart: new Date(actualCountdownStart).toISOString(),
+          now: new Date(now).toISOString(),
         });
         setPreparingOpponent(null);
-        // 🔧 KRİTİK: GameCountdown'a actualCountdownStart geçir (buffer SONRASI)
-        // Bu sayede countdown her zaman 5'ten başlar
+        
+        // 🔧 KRİTİK FIX: actualCountdownStart zaten geçmişte olabilir (geç katılım)
+        // GameCountdown component'i serverStartTime'dan itibaren countdown bitiş zamanını hesaplıyor
+        // Eğer actualCountdownStart geçmişte ise, GameCountdown remaining time'ı doğru hesaplasın
+        // Bu sayede geç katılan oyuncular kalan süreyi görür (örn: 3-2-1 yerine tam 5-4-3-2-1)
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
         setShowCountdown(true);
         return true;
@@ -4457,9 +4462,15 @@ const GamePage = ({
           // 🎯 1. COUNTDOWN MANTIĞI - SADECE OYUN BAŞLAMADIYSA (random-match ile aynı mantık)
           // ------------------------------------------------------------
           // 🔒 Countdown zaten başlatıldıysa hiçbir şey yapma
-          if (countdownInitiatedRef.current) {
-            console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı");
+          if (countdownInitiatedRef.current && processedCountdownRef.current === newData.countdown_started_at) {
+            console.log("⚠️ Countdown zaten başlatıldı - real-time event yok sayıldı:", newData.countdown_started_at);
           } else if (newData.countdown_started_at && !preparingOpponent && !showCountdown) {
+            // 🔒 KRİTİK: Aynı countdown_started_at zaten işlenmişse atla
+            if (processedCountdownRef.current === newData.countdown_started_at) {
+              console.log("⚠️ Bu countdown zaten işlendi (tournament realtime), atlanıyor:", newData.countdown_started_at);
+              return;
+            }
+
             const countdownStartTime = new Date(newData.countdown_started_at).getTime();
             const BUFFER_MS = 5000;
             const serverNow = Date.now() + serverTimeOffset;
@@ -4750,6 +4761,12 @@ const GamePage = ({
           const newData = payload.new as any;
 
           if (newData.countdown_started_at) {
+            // 🔒 KRİTİK: Aynı countdown_started_at zaten işlenmişse atla
+            if (processedCountdownRef.current === newData.countdown_started_at) {
+              console.log("⚠️ Bu countdown zaten işlendi (realtime), atlanıyor:", newData.countdown_started_at);
+              return;
+            }
+
             const countdownStartTime = new Date(newData.countdown_started_at).getTime();
             const BUFFER_MS = 5000;
             const COUNTDOWN_MS = 5000;
@@ -4765,6 +4782,7 @@ const GamePage = ({
             if (msUntilGameStart <= 0) {
               console.log("⚡ Countdown süresi geçmiş (realtime), oyun başlatılıyor");
               countdownInitiatedRef.current = true;
+              processedCountdownRef.current = newData.countdown_started_at;
               setGameStarted(true);
               gameStartedRef.current = true;
               gameHasStartedRef.current = true;
@@ -6903,8 +6921,8 @@ const GamePage = ({
                         playSound("buttonClick");
                         resetGameForRematch();
                         // resetGameForRematch zaten gerekli tüm state'leri sıfırlıyor
-                        // Duplicate state update'leri kaldırıldı
-                        setCountdownServerTime(new Date().toISOString());
+                        // Multiplayer modlarda countdown server'dan gelecek (countdown_started_at)
+                        // vs-computer modunda ise otomatik başlatılacak
                         setButtonsEnabled(false);
                       }}
                       className="w-full"
