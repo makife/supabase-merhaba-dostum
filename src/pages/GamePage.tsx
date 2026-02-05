@@ -1862,12 +1862,12 @@ const GamePage = ({
       if (!statsUpdatedRef.current) {
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
-        
+
         console.log("📊 Turnuva istatistikleri güncelleniyor:", {
           userId: user.id,
           score: finalUserScore,
           isWinner: userIsWinner,
-          gameMode: "tournament"
+          gameMode: "tournament",
         });
 
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
@@ -2053,7 +2053,7 @@ const GamePage = ({
         }, 500);
         return false;
       }
-      
+
       // Eğer force=true ise (Realtime update'den geliyorsa), korumayı yoksay ve güncelle
       if (countdownInitiatedRef.current && !force) {
         console.log("⏱️ Countdown zaten başlatıldı, yeniden başlatma engellendi (Force yok)");
@@ -2113,16 +2113,20 @@ const GamePage = ({
       // 🔒 KRİTİK: msUntilCountdown kontrolü - cihazlar arası saat farkı toleransı
       // 🔧 FIX: 500ms → 2000ms tolerans - mobil ve web arasındaki clock drift'e karşı koruma
       const bufferExpired = msUntilCountdown <= -2000; // 2 saniye tolerans
-      
+
       if (skipBuffer || bufferExpired) {
-        console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", { skipBuffer, bufferExpired, msUntilCountdown });
+        console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", {
+          skipBuffer,
+          bufferExpired,
+          msUntilCountdown,
+        });
         setPreparingOpponent(null);
         // 🔒 KRİTİK: GameCountdown'a countdownStartedAt + 5000ms (countdown başlangıç zamanı) geçir
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
         setShowCountdown(true);
         return true;
       }
-      
+
       // 🔧 FIX: Eğer az önce buffer bitmişse (0 ile -2000ms arası), kalan buffer animasyonlarını atla ve direkt countdown göster
       if (msUntilCountdown <= 0 && msUntilCountdown > -2000) {
         console.log("⚡ Buffer süresi yeni geçti, direkt countdown başlatılıyor:", { msUntilCountdown });
@@ -4972,7 +4976,7 @@ const GamePage = ({
         // 🔒 KRİTİK: Buffer (5s) + Countdown (5s) = 10000ms toplam
         // Normal oyunlar (Random/Private): 10000ms (5s buffer animasyonu + 5s geri sayım)
         // Turnuva: 12000ms (daha uzun animasyon süresi)
-        const GAME_START_OFFSET_MS = 10000; // 🔧 FIX: 6000 → 10000 (buffer + countdown)
+        const GAME_START_OFFSET_MS = 12000; // 🔧 FIX: 6000 → 10000 (buffer + countdown)
         const TOURNAMENT_START_OFFSET_MS = 12000;
 
         if (gameMode === "tournament" && tournamentMatch) {
