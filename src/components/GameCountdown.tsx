@@ -200,7 +200,7 @@ const preloadPromise = typeof window !== "undefined"
 export const ensureImagesLoaded = () => preloadPromise;
 
 const COUNTDOWN_DURATION_MS = 5000; // Geri sayım süresi (5 saniye)
-const START_DISPLAY_DURATION_MS = 800; // "BAŞLA" yazısının ekranda kalma süresi
+const START_DISPLAY_DURATION_MS = 600; // "BAŞLA" yazısının ekranda kalma süresi (hızlandırıldı)
 
 // --- ANA COMPONENT ---
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
@@ -301,7 +301,8 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
         
         // Burası kritik: Eğer SQL'den +20sn geldiyse 'seconds' 15-20 arası çıkabilir.
         // Math.min(5, ...) sayesinde ekranda hep "5" görürüz.
-        const display = Math.min(5, Math.max(1, seconds));
+        // 🔧 FIX: 0 veya negatif değerleri de handle et
+        const display = Math.min(5, Math.max(1, Math.abs(seconds)));
         
         // Ekrana basma işlemi (Gereksiz render önleme)
         if (lastDisplayRef.current !== display) {
