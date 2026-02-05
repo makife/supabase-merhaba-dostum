@@ -2120,7 +2120,6 @@ const GamePage = ({
           now: new Date(now).toISOString(),
           countdownEndTime: new Date(countdownEndTime).toISOString(),
         });
-        setPreparingOpponent(null);
         setShowCountdown(false);
         setGameStarted(true);
         gameStartedRef.current = true;
@@ -2137,7 +2136,6 @@ const GamePage = ({
           actualCountdownStart: new Date(actualCountdownStart).toISOString(),
           now: new Date(now).toISOString(),
         });
-        setPreparingOpponent(null);
 
         // 🔧 KRİTİK FIX: actualCountdownStart zaten geçmişte olabilir (geç katılım)
         // GameCountdown component'i serverStartTime'dan itibaren countdown bitiş zamanını hesaplıyor
@@ -2148,50 +2146,17 @@ const GamePage = ({
         return true;
       }
 
-      // 🎯 SENARYO 3: Buffer süresi içindeyiz - animasyonları göster
-      // 0-3.5s: "Hazırlanıyor..."
-      // 3.5-4s: "Hazır"
-      // 4-5s: Boş (blank)
-      // 5s+: Countdown (5-4-3-2-1)
+      // 🎯 SENARYO 3: Buffer süresi içindeyiz
+      // ARTIK buffer animasyonlarını burada göstermiyoruz!
+      // Buffer animasyonları participant is_ready state'ine göre gösterilecek
+      // Sadece countdown'ın başlamasını zamanında tetiklemeliyiz
 
-      if (msElapsedSinceStart < 3500) {
-        setPreparingOpponent("preparing");
-        console.log("🎯 'Hazırlanıyor...' gösteriliyor, kalan:", 3500 - msElapsedSinceStart, "ms");
-
-        const readyTimer = setTimeout(() => {
-          if (isMountedRef.current) {
-            console.log("🎯 Oyuncu Hazır gösteriliyor");
-            setPreparingOpponent("ready");
-          }
-        }, 3500 - msElapsedSinceStart);
-        countdownTimersRef.current.push(readyTimer);
-
-        const blankTimer = setTimeout(() => {
-          if (isMountedRef.current) {
-            setPreparingOpponent(null);
-          }
-        }, 4000 - msElapsedSinceStart);
-        countdownTimersRef.current.push(blankTimer);
-      } else if (msElapsedSinceStart < 4000) {
-        setPreparingOpponent("ready");
-        console.log("🎯 'Hazır' gösteriliyor, kalan:", 4000 - msElapsedSinceStart, "ms");
-
-        const blankTimer = setTimeout(() => {
-          if (isMountedRef.current) {
-            setPreparingOpponent(null);
-          }
-        }, 4000 - msElapsedSinceStart);
-        countdownTimersRef.current.push(blankTimer);
-      } else if (msElapsedSinceStart < 5000) {
-        setPreparingOpponent(null);
-        console.log("🎯 Blank gösteriliyor (countdown'a geçiş), kalan:", 5000 - msElapsedSinceStart, "ms");
-      }
+      console.log("⏰ Buffer süresi içinde, countdown zamanlanıyor. msUntilCountdown:", msUntilCountdown);
 
       // 🎯 Countdown'ı tam zamanında başlat - buffer bitince
       const countdownTimer = setTimeout(() => {
         if (isMountedRef.current) {
           console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Buffer süresi doldu)");
-          setPreparingOpponent(null);
           // 🔧 KRİTİK: GameCountdown'a actualCountdownStart geçir (buffer SONRASI)
           setCountdownServerTime(new Date(actualCountdownStart).toISOString());
           setShowCountdown(true);
@@ -4585,6 +4550,56 @@ const GamePage = ({
       initiateCountdown(tournamentMatch.countdown_started_at, true);
     }
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
+
+  // 🎯 YENİ: Participant is_ready state'ine göre "Oyuncu Hazırlanıyor" / "Oyuncu Hazır" overlay'ini göster
+  // Bu overlay sadece countdown başlamadan önce gösterilir
+  useEffect(() => {
+    // Sadece multiplayer modlar için (vs-computer için AI logic ayrı)
+    if (gameMode === "vs-computer" || gameMode === "tournament") return;
+
+    // Countdown başladıysa overlay'i gizle
+    if (showCountdown || gameStarted) {
+      if (preparingOpponent) {
+        setPreparingOpponent(null);
+      }
+      return;
+    }
+
+    // Participants yoksa veya yetersizse atla
+    if (!participants || participants.length < 2) return;
+
+    const otherParticipant = participants.find((p) => p.user_id !== user?.id);
+    if (!otherParticipant) return;
+
+    // Diğer oyuncunun hazır durumuna göre overlay göster
+    if (!otherParticipant.is_ready) {
+      // Oyuncu henüz hazır değil
+      if (preparingOpponent !== "preparing") {
+        console.log("👤 Oyuncu hazırlanıyor overlay gösteriliyor");
+        setPreparingOpponent("preparing");
+      }
+    } else {
+      // Oyuncu hazır ama countdown henüz başlamadı
+      if (preparingOpponent !== "ready" && !currentRoom?.countdown_started_at) {
+        console.log("✅ Oyuncu hazır overlay gösteriliyor");
+        setPreparingOpponent("ready");
+      } else if (currentRoom?.countdown_started_at) {
+        // Countdown başladıysa overlay'i kaldır
+        if (preparingOpponent) {
+          console.log("🎯 Countdown başladı, overlay kaldırılıyor");
+          setPreparingOpponent(null);
+        }
+      }
+    }
+  }, [
+    gameMode,
+    participants,
+    user?.id,
+    showCountdown,
+    gameStarted,
+    preparingOpponent,
+    currentRoom?.countdown_started_at,
+  ]);
 
   // 🆕 TÜM MODLAR İÇİN OTOMATİK HAZIR DURUMU VE COUNTDOWN BAŞLATMA
   // AI modundaki gibi: Her iki oyuncu da hazır olunca otomatik countdown başlat
