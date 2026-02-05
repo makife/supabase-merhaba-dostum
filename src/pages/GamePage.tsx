@@ -5038,15 +5038,37 @@ const GamePage = ({
         } else if (currentRoom?.countdown_started_at) {
           // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
           const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
-          gameStartTimestamp = countdownStartTime + GAME_START_OFFSET_MS;
+          
+          // 🔧 FIX: Buffer (5s) + Countdown (5s) = 10s offset
+          // Oyun her zaman countdown_started_at + 10s'de başlamalı
+          // Timer her zaman 2:00'dan başlamalı
+          const BUFFER_MS = 5000;
+          const COUNTDOWN_MS = 5000;
+          const TOTAL_OFFSET_MS = BUFFER_MS + COUNTDOWN_MS; // 10000ms
+          
+          gameStartTimestamp = countdownStartTime + TOTAL_OFFSET_MS;
           endsAtTimestamp = gameStartTimestamp + 120 * 1000;
+          
+          // 🔧 FIX: Mevcut sunucu zamanını kontrol et
+          // Eğer oyun zaten başlamışsa, kalan süreyi hesapla
+          const currentServerTime = Date.now() + serverTimeOffset;
+          const msUntilGameStart = gameStartTimestamp - currentServerTime;
+          
+          // Eğer oyun başlama zamanı geçmişse (geç katılım), timer kalan süreden başlamalı
+          if (msUntilGameStart < 0) {
+            console.log("⚠️ Geç katılım tespit edildi, timer kalan süreden başlıyor:", {
+              geçenSüre: Math.abs(msUntilGameStart),
+              kalanSüre: Math.max(0, (endsAtTimestamp - currentServerTime) / 1000),
+            });
+          }
 
           console.log("🎮 Random/Private game timer: Server-synchronized timing", {
             countdownStart: new Date(countdownStartTime).toISOString(),
             gameStart: new Date(gameStartTimestamp).toISOString(),
             endsAt: new Date(endsAtTimestamp).toISOString(),
             countdown_started_at: currentRoom.countdown_started_at,
-            offsetUsed: GAME_START_OFFSET_MS,
+            offsetUsed: TOTAL_OFFSET_MS,
+            msUntilGameStart,
           });
         } else if (currentRoom?.started_at) {
           // Fallback: started_at kullan (eski oyunlar için)
@@ -5068,6 +5090,35 @@ const GamePage = ({
           start: new Date(gameStartTimestamp).toISOString(),
           end: new Date(endsAtTimestamp).toISOString(),
         });
+
+        // 🔧 FIX: Timer başlatıldığında ilk değeri HEMEN hesapla
+        // Bu sayede 2:05 veya 2:08 gibi yanlış değerler gösterilmez
+        const nowForInitial = Date.now() + serverTimeOffset;
+        const initialRemainingMs = Math.max(0, endsAtTimestamp - nowForInitial);
+        const initialRemainingSeconds = Math.min(120, Math.floor(initialRemainingMs / 1000));
+        
+        // 🔒 KRİTİK: Başlangıç değeri 120'yi geçmemeli
+        // Eğer countdown henüz bitmemişse, timer 120'den başlamalı
+        // Eğer geç katılımsa, kalan süreden başlamalı
+        const displayInitial = Math.min(120, initialRemainingSeconds);
+        timeLeftRef.current = displayInitial;
+        setDisplayTime(displayInitial);
+        
+        console.log("⏱️ Timer başlangıç değeri:", {
+          hesaplanan: initialRemainingSeconds,
+          gösterilen: displayInitial,
+          nowForInitial: new Date(nowForInitial).toISOString(),
+          endsAt: new Date(endsAtTimestamp).toISOString(),
+        });
+
+        // 🔧 FIX: Eğer oyun başlama zamanı henüz gelmemişse (countdown devam ediyor)
+        // ilk tick'i bekle, bu arada displayTime 120 olarak göster
+        const msUntilGameActualStart = gameStartTimestamp - nowForInitial;
+        if (msUntilGameActualStart > 0) {
+          console.log("⏱️ Countdown hala devam ediyor, timer 120 ile başlatılıyor. Kalan:", msUntilGameActualStart, "ms");
+          timeLeftRef.current = 120;
+          setDisplayTime(120);
+        }
 
         // 2. ADIM: Sayacı Başlat
         // 🔧 FIX: 200ms interval ile smooth güncelleme - saniye atlamayı önler
@@ -5093,7 +5144,8 @@ const GamePage = ({
           // NOT: Buffer kontrolü YOK - çünkü bu timer zaten gameStarted=true olduktan sonra çalışıyor
           // gameStarted=true ise countdown zaten bitmiş demektir
           const remainingMs = Math.max(0, endsAtTimestampRef.current - currentServerTime);
-          const remainingSeconds = Math.floor(remainingMs / 1000);
+          // 🔧 FIX: remainingSeconds 120'yi geçmemeli - countdown henüz bitmemişse clamp et
+          const remainingSeconds = Math.min(120, Math.floor(remainingMs / 1000));
 
           // 🔧 FIX: Sadece saniye değiştiğinde state güncelle
           // Bu sayede 2:00 → 1:59 → 1:58 sırayla gider, atlama olmaz
