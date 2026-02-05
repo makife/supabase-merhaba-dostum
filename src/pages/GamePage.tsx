@@ -1858,6 +1858,36 @@ const GamePage = ({
 
       console.log("✅ Turnuva maçı tamamlandı, winner:", userIsWinner ? "player" : "opponent");
 
+      // 🎯 TURNUVA PUANLARINI LİDERLİK SIRALAMASINA YANSIT
+      if (!statsUpdatedRef.current) {
+        statsUpdatedRef.current = true;
+        const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+        
+        console.log("📊 Turnuva istatistikleri güncelleniyor:", {
+          userId: user.id,
+          score: finalUserScore,
+          isWinner: userIsWinner,
+          gameMode: "tournament"
+        });
+
+        const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
+          p_user_id: user.id,
+          p_score: finalUserScore,
+          p_words: playerWordsWithScores,
+          p_is_winner: userIsWinner,
+          p_game_duration: gameDuration,
+          p_first_word_time: firstWordTime,
+          p_game_mode: "tournament",
+        });
+
+        if (statsError) {
+          console.error("❌ Turnuva istatistik güncelleme hatası:", statsError);
+        } else {
+          console.log("✅ Turnuva puanları liderlik sıralamasına yansıtıldı");
+          await forceRefreshProfile?.();
+        }
+      }
+
       // Aynı turdaki TÜM maçları kontrol et
       const { data: allRoundMatches } = await supabase
         .from("tournament_matches")
