@@ -17,6 +17,12 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
+// 🔧 FIX: Görsel countdown HER ZAMAN 5'ten başlar
+// Ama bitiş zamanı server timestamp'e göre hesaplanır
+// Bu sayede:
+// - Her iki oyuncu da 5-4-3-2-1 görür (görsel tutarlılık)
+// - Oyun başlangıcı server time ile senkronize kalır
+
 // --- ASSET YÖNETİMİ (PRELOAD) ---
 const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
@@ -216,6 +222,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   
   // 🔒 ServerStartTime değişikliği guard'ı - ilk değer kilitleniyor
   const lockedServerTimeRef = useRef<string | null>(null);
+  
+  // 🔧 FIX: Görsel countdown başlangıç zamanı - component mount olduğunda kaydedilir
+  const visualStartTimeRef = useRef<number | null>(null);
 
   const playCountdownSound = () => playFromPool(countdownSoundPool, 'countdown');
   const playStartSound = () => playFromPool(startSoundPool, 'start');
@@ -266,6 +275,12 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
     // 🔒 Kilitli değeri kullan
     const countdownEndTime = new Date(lockedServerTimeRef.current).getTime() + COUNTDOWN_DURATION_MS;
     
+    // 🔧 FIX: Görsel countdown başlangıç zamanını kaydet (component ilk yüklendiğinde)
+    if (!visualStartTimeRef.current) {
+      visualStartTimeRef.current = Date.now() + serverTimeOffset;
+      console.log("🎯 Görsel countdown başlangıcı kaydedildi:", new Date(visualStartTimeRef.current).toISOString());
+    }
+    
     // Animasyon Döngüsü (Tick)
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
@@ -273,8 +288,13 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       const serverNow = Date.now() + serverTimeOffset;
       const remaining = countdownEndTime - serverNow;
       
+      // 🔧 FIX: Görsel countdown için geçen süre (component mount'tan bu yana)
+      const visualElapsed = serverNow - visualStartTimeRef.current!;
+      const visualRemaining = COUNTDOWN_DURATION_MS - visualElapsed;
+      
       // 1. Durum: Süre tamamen bitti ("Başla" yazısı da kalkmalı)
-      if (remaining <= -START_DISPLAY_DURATION_MS) {
+      // Server time'a göre kontrol et - her iki oyuncu aynı anda bitirir
+      if (remaining <= -START_DISPLAY_DURATION_MS || visualRemaining <= -START_DISPLAY_DURATION_MS) {
         if (!completedRef.current) {
           completedRef.current = true;
           console.log("🏁 Geri sayım tamamlandı, oyun başlıyor.");
@@ -284,7 +304,8 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       }
       
       // 2. Durum: Süre doldu, "BAŞLA!" göster
-      if (remaining <= 0) {
+      // Server time'a göre kontrol et - her iki oyuncu aynı anda "BAŞLA" görür
+      if (remaining <= 0 || visualRemaining <= 0) {
         if (!startShownRef.current) {
           startShownRef.current = true;
           setDisplayValue("start");
@@ -297,12 +318,23 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       } 
       // 3. Durum: Geri sayım devam ediyor (veya tampon süresindeyiz)
       else {
-        const seconds = Math.ceil(remaining / 1000);
+        // 🔧 FIX: GÖRSEL countdown için kendi başlangıç zamanımızı kullan
+        // Bu sayede HER ZAMAN 5'ten başlar
+        // Ama bitiş zamanı server time'a göre olduğu için senkronizasyon korunur
+        const visualSeconds = Math.ceil(visualRemaining / 1000);
+        const serverSeconds = Math.ceil(remaining / 1000);
         
-        // Burası kritik: Eğer SQL'den +20sn geldiyse 'seconds' 15-20 arası çıkabilir.
-        // Math.min(5, ...) sayesinde ekranda hep "5" görürüz.
-        // 🔧 FIX: 0 veya negatif değerleri de handle et
-        const display = Math.min(5, Math.max(1, Math.abs(seconds)));
+        // 🔧 HER ZAMAN görsel countdown kullan - 5'ten başlar
+        // Bitiş zamanı yukarıdaki remaining kontrolü ile server'a göre olur
+        // Böylece:
+        // - Görsel: 5-4-3-2-1 (tutarlı)
+        // - Bitiş: Server time'a göre (senkronize)
+        const display = Math.min(5, Math.max(1, visualSeconds));
+        
+        // Debug: Eğer server ve visual arasında büyük fark varsa logla
+        if (Math.abs(visualSeconds - serverSeconds) > 1) {
+          console.log("⚠️ Countdown sync farkı:", { visualSeconds, serverSeconds, fark: visualSeconds - serverSeconds });
+        }
         
         // Ekrana basma işlemi (Gereksiz render önleme)
         if (lastDisplayRef.current !== display) {
