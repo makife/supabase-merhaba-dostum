@@ -4646,8 +4646,17 @@ const GamePage = ({
 
       console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - countdown başlatılıyor (ilk katılan olarak)...`);
 
-      // Server time kullanarak countdown başlat
+      // 🔧 KRİTİK FIX: countdown_started_at = ŞİMDİ (buffer başlangıcı)
+      // Buffer time: countdown_started_at → countdown_started_at + 5s
+      // Countdown: countdown_started_at + 5s → countdown_started_at + 10s
       const nowServerTime = Date.now() + serverTimeOffset;
+
+      console.log("⏰ Countdown zamanlaması:", {
+        now: new Date(nowServerTime).toISOString(),
+        countdown_started_at: new Date(nowServerTime).toISOString(),
+        bufferEndsAt: new Date(nowServerTime + 5000).toISOString(),
+        gameStartsAt: new Date(nowServerTime + 10000).toISOString(),
+      });
 
       supabase
         .from("game_rooms")
