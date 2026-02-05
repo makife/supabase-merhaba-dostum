@@ -4976,7 +4976,7 @@ const GamePage = ({
         // 🔒 KRİTİK: Buffer (5s) + Countdown (5s) = 10000ms toplam
         // Normal oyunlar (Random/Private): 10000ms (5s buffer animasyonu + 5s geri sayım)
         // Turnuva: 12000ms (daha uzun animasyon süresi)
-        const GAME_START_OFFSET_MS = 12000; // 🔧 FIX: 6000 → 10000 (buffer + countdown)
+        const GAME_START_OFFSET_MS = 6000; // 🔧 FIX: 6000 → 10000 (buffer + countdown)
         const TOURNAMENT_START_OFFSET_MS = 12000;
 
         if (gameMode === "tournament" && tournamentMatch) {
