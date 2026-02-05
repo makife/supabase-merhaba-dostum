@@ -2109,17 +2109,11 @@ const GamePage = ({
         skipBuffer,
       });
 
-      // 🎯 SENARYO 1: Buffer açıkça atlanacaksa (skipBuffer=true) VEYA buffer süresi tamamen geçmişse
-      // 🔒 KRİTİK: msUntilCountdown kontrolü - cihazlar arası saat farkı toleransı
-      // 🔧 FIX: 2000ms → 3000ms tolerans - mobil ve web arasındaki clock drift'e karşı koruma
-      // Ayrıca countdown süresi (5s) geçmişse de expired kabul et
       const COUNTDOWN_DURATION_MS = 5000;
-      const bufferExpired = msUntilCountdown <= -3000; // 3 saniye tolerans
-      // Countdown bitmiş mi? Buffer bitişinden (actualCountdownStart) + countdown süresi (5s) geçmiş mi kontrol et
       const countdownEndTime = actualCountdownStart + COUNTDOWN_DURATION_MS;
-      const countdownExpired = now >= countdownEndTime; // Countdown tamamen bittiyse
 
-      // 🎯 Countdown tamamen bitmişse direkt oyunu başlat, countdown gösterme
+      // 🎯 SENARYO 1: Countdown tamamen bitmişse direkt oyunu başlat
+      const countdownExpired = now >= countdownEndTime;
       if (countdownExpired) {
         console.log("⚡ Countdown tamamen bitmiş, direkt oyun başlatılıyor:", {
           now: new Date(now).toISOString(),
@@ -2133,8 +2127,12 @@ const GamePage = ({
         return true;
       }
 
+      // 🎯 SENARYO 2: Buffer süresi geçmiş ama countdown devam ediyor
+      // 🔧 FIX: Tolerans kaldırıldı - kesin zamanlama kullanılıyor
+      const bufferExpired = msUntilCountdown <= 0;
+      
       if (skipBuffer || bufferExpired) {
-        console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", {
+        console.log("⚡ Buffer atlanıyor veya buffer süresi geçmiş, countdown başlatılıyor:", {
           skipBuffer,
           bufferExpired,
           msUntilCountdown,
@@ -2146,21 +2144,13 @@ const GamePage = ({
         return true;
       }
 
-      // 🔧 FIX: Eğer az önce buffer bitmişse (0 ile -3000ms arası), kalan buffer animasyonlarını atla ve direkt countdown göster
-      if (msUntilCountdown <= 0 && msUntilCountdown > -3000) {
-        console.log("⚡ Buffer süresi yeni geçti, direkt countdown başlatılıyor:", { msUntilCountdown });
-        setPreparingOpponent(null);
-        setCountdownServerTime(new Date(actualCountdownStart).toISOString());
-        setShowCountdown(true);
-        return true;
-      }
-
-      // 🎯 SENARYO 2: Buffer süresi içindeyiz - animasyonları göster
+      // 🎯 SENARYO 3: Buffer süresi içindeyiz - animasyonları göster
       // Buffer animasyonları: 0-3500ms preparing, 3500-4000ms ready, 4000-5000ms blank, 5000+ countdown
 
       if (msElapsedSinceStart < 3500) {
         // Henüz preparing aşamasındayız
         setPreparingOpponent("preparing");
+        console.log("🎯 'Hazırlanıyor...' gösteriliyor, kalan:", 3500 - msElapsedSinceStart, "ms");
 
         // Ready'ye geçiş (3500ms'de)
         const readyTimer = setTimeout(() => {
@@ -2182,6 +2172,7 @@ const GamePage = ({
       } else if (msElapsedSinceStart < 4000) {
         // Ready aşamasındayız
         setPreparingOpponent("ready");
+        console.log("🎯 'Hazır!' gösteriliyor, kalan:", 4000 - msElapsedSinceStart, "ms");
 
         // Blank'e geçiş
         const blankTimer = setTimeout(() => {
@@ -2194,12 +2185,13 @@ const GamePage = ({
       } else if (msElapsedSinceStart < 5000) {
         // Blank aşamasındayız - animasyon gösterme
         setPreparingOpponent(null);
+        console.log("🎯 Blank aşaması, countdown'a kalan:", 5000 - msElapsedSinceStart, "ms");
       }
 
       // 🎯 Countdown'ı tam zamanında başlat
       const countdownTimer = setTimeout(() => {
         if (isMountedRef.current) {
-          console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Senkronize)");
+          console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Buffer süresi doldu)");
           setPreparingOpponent(null);
           // 🔒 KRİTİK: GameCountdown'a actualCountdownStart zamanını geç
           setCountdownServerTime(new Date(actualCountdownStart).toISOString());
@@ -5111,19 +5103,28 @@ const GamePage = ({
           endsAt: new Date(endsAtTimestamp).toISOString(),
         });
 
-        // 🔧 FIX: Eğer oyun başlama zamanı henüz gelmemişse (countdown devam ediyor)
-        // ilk tick'i bekle, bu arada displayTime 120 olarak göster
-        const msUntilGameActualStart = gameStartTimestamp - nowForInitial;
-        if (msUntilGameActualStart > 0) {
-          console.log("⏱️ Countdown hala devam ediyor, timer 120 ile başlatılıyor. Kalan:", msUntilGameActualStart, "ms");
+        // 🔧 FIX: Timer HER ZAMAN 120 saniyeden başlamalı (countdown bittiğinde)
+        // gameStarted=true olması demek countdown bitmiş demek
+        // Dolayısıyla timer 120'den başlayıp HEMEN düşmeye başlamalı
+        // Eğer hesaplanan değer 120'den fazlaysa (henüz oyun başlamamış), 120 göster
+        // Eğer hesaplanan değer 120'den azsa (geç katılım), o değeri göster
+        
+        // Timer hemen 120'den başlamalı, beklememeli
+        if (displayInitial === 120) {
+          console.log("⏱️ Timer 120 saniyeden başlıyor (tam zamanında)");
+        } else if (displayInitial > 120) {
+          // Bu durum olmamalı ama safety için
+          console.log("⚠️ Timer değeri 120'den büyük, 120'ye clamp ediliyor");
           timeLeftRef.current = 120;
           setDisplayTime(120);
+        } else {
+          console.log("⚠️ Geç katılım - timer", displayInitial, "saniyeden başlıyor");
         }
 
         // 2. ADIM: Sayacı Başlat
         // 🔧 FIX: 200ms interval ile smooth güncelleme - saniye atlamayı önler
         // Sadece saniye değiştiğinde state güncellenir (performans için)
-        let lastDisplayedSecond = -1;
+        let lastDisplayedSecond = displayInitial;
 
         timerRef.current = setInterval(() => {
           // Eğer unmount olduysa veya ends_at yoksa dur
