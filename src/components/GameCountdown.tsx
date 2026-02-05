@@ -17,10 +17,10 @@ interface GameCountdownProps {
   serverTimeOffset?: number;
 }
 
-// 🔧 FIX: Countdown tamamen sunucu zamanına göre çalışır
-// serverStartTime = countdown'ın görsel olarak başlaması gereken sunucu zamanı
-// Her iki oyuncu da aynı sunucu zamanında aynı rakamı görür
-// Görsel tutarlılık için: HER ZAMAN 5'ten başlar, gerekirse hızlanır
+// 🔧 REFACTORED: Turnuva mantığıyla aynı - basit ve güvenilir
+// serverStartTime = countdown'ın başlaması gereken sunucu zamanı
+// countdownEndTime = serverStartTime + 5000ms
+// remaining <= 0 olduğunda "BAŞLA" göster, 600ms sonra onComplete çağır
 
 // --- ASSET YÖNETİMİ (PRELOAD) ---
 const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
@@ -205,7 +205,7 @@ const preloadPromise = typeof window !== "undefined"
 export const ensureImagesLoaded = () => preloadPromise;
 
 const COUNTDOWN_DURATION_MS = 5000; // Geri sayım süresi (5 saniye)
-const START_DISPLAY_DURATION_MS = 500; // "BAŞLA" yazısının ekranda kalma süresi
+const START_DISPLAY_DURATION_MS = 600; // "BAŞLA" yazısının ekranda kalma süresi (biraz arttırıldı)
 
 // --- ANA COMPONENT ---
 const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 }: GameCountdownProps) => {
@@ -221,6 +221,9 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
   
   // 🔒 ServerStartTime değişikliği guard'ı - ilk değer kilitleniyor
   const lockedServerTimeRef = useRef<string | null>(null);
+  
+  // 🔧 FIX: onComplete için timeout ref - cleanup için
+  const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const playCountdownSound = () => playFromPool(countdownSoundPool, 'countdown');
   const playStartSound = () => playFromPool(startSoundPool, 'start');
@@ -238,6 +241,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
+      }
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
       }
     };
   }, []);
@@ -265,6 +272,10 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    if (completeTimeoutRef.current) {
+      clearTimeout(completeTimeoutRef.current);
+      completeTimeoutRef.current = null;
+    }
 
     console.log("⏱️ GameCountdown: Server Modu Aktif. Başlama:", lockedServerTimeRef.current, "Offset:", serverTimeOffset);
     
@@ -279,6 +290,14 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       serverNow: new Date(Date.now() + serverTimeOffset).toISOString(),
     });
     
+    // 🔧 FIX: "BAŞLA" gösterildikten sonra onComplete çağırmak için fonksiyon
+    const triggerComplete = () => {
+      if (completedRef.current || !mountedRef.current) return;
+      completedRef.current = true;
+      console.log("🏁 Geri sayım tamamlandı, oyun başlıyor.");
+      onComplete();
+    };
+    
     // Animasyon Döngüsü (Tick)
     const tick = () => {
       if (!mountedRef.current || completedRef.current) return;
@@ -286,17 +305,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       const serverNow = Date.now() + serverTimeOffset;
       const remaining = countdownEndTime - serverNow;
       
-      // 1. Durum: Süre tamamen bitti ("Başla" yazısı da kalkmalı)
-      if (remaining <= -START_DISPLAY_DURATION_MS) {
-        if (!completedRef.current) {
-          completedRef.current = true;
-          console.log("🏁 Geri sayım tamamlandı, oyun başlıyor.");
-          onComplete();
-        }
-        return;
-      }
-      
-      // 2. Durum: Süre doldu, "BAŞLA!" göster
+      // 🔧 FIX: Süre dolduğunda "BAŞLA" göster ve timeout ile onComplete çağır
       if (remaining <= 0) {
         if (!startShownRef.current) {
           startShownRef.current = true;
@@ -306,16 +315,23 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
             soundPlayedRef.current.add("start");
             playStartSound();
           }
+          
+          // 🔧 FIX: "BAŞLA" gösterildikten sonra belirli süre bekleyip onComplete çağır
+          // setTimeout kullanarak garantili tetikleme
+          completeTimeoutRef.current = setTimeout(() => {
+            triggerComplete();
+          }, START_DISPLAY_DURATION_MS);
         }
+        // "BAŞLA" gösterildikten sonra animasyon döngüsünü durdur
+        return;
       } 
-      // 3. Durum: Geri sayım devam ediyor (veya tampon süresindeyiz)
-      else {
+      
+      // Geri sayım devam ediyor
+      {
         // 🔧 FIX: Sunucu zamanına göre kalan saniyeyi hesapla
         const serverSeconds = Math.ceil(remaining / 1000);
         
-        // 🔧 FIX: Görsel için 5'i geçmesin, 1'in altına düşmesin
-        // Eğer sunucu zamanı 5'ten fazla gösteriyorsa (erken giriş), 5 göster
-        // Eğer sunucu zamanı 1'den azsa ama henüz 0 değilse, 1 göster
+        // Görsel için 5'i geçmesin, 1'in altına düşmesin
         const display = Math.min(5, Math.max(1, serverSeconds));
         
         // Ekrana basma işlemi (Gereksiz render önleme)
@@ -335,24 +351,40 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
       rafRef.current = requestAnimationFrame(tick);
     };
     
-    // 🔧 FIX: İlk tick'i HEMEN başlat (gecikme olmadan)
-    // Görsel tutarlılık için ilk değeri hemen set et
+    // İlk tick'i hemen başlat
     const serverNowInitial = Date.now() + serverTimeOffset;
     const remainingInitial = countdownEndTime - serverNowInitial;
+    
+    // 🔧 FIX: Eğer countdown zaten bitmişse direkt onComplete çağır
+    if (remainingInitial <= 0) {
+      console.log("⚡ GameCountdown: Countdown zaten bitmiş, direkt tamamlanıyor");
+      setDisplayValue("start");
+      if (!soundPlayedRef.current.has("start")) {
+        soundPlayedRef.current.add("start");
+        playStartSound();
+      }
+      // Kısa delay ile onComplete
+      completeTimeoutRef.current = setTimeout(() => {
+        triggerComplete();
+      }, 300);
+      return;
+    }
+    
+    // İlk değeri hemen göster - HER ZAMAN 5'ten başla
     const serverSecondsInitial = Math.ceil(remainingInitial / 1000);
     const displayInitial = Math.min(5, Math.max(1, serverSecondsInitial));
     
-    // İlk değeri hemen göster
-    if (remainingInitial > 0) {
-      setDisplayValue(displayInitial);
-      lastDisplayRef.current = displayInitial;
-      console.log(`🔢 Countdown başlangıç: ${displayInitial} (remaining: ${remainingInitial}ms)`);
-      
-      // İlk ses
-      if (!soundPlayedRef.current.has(displayInitial)) {
-        soundPlayedRef.current.add(displayInitial);
-        playCountdownSound();
-      }
+    // 🔧 FIX: Görsel tutarlılık için her zaman 5'ten başla
+    // Ama sunucu zamanına göre hızlı geç
+    const visualStart = 5;
+    setDisplayValue(visualStart);
+    lastDisplayRef.current = visualStart;
+    console.log(`🔢 Countdown başlangıç: görsel=${visualStart}, hesaplanan=${displayInitial} (remaining: ${remainingInitial}ms)`);
+    
+    // İlk ses
+    if (!soundPlayedRef.current.has(visualStart)) {
+      soundPlayedRef.current.add(visualStart);
+      playCountdownSound();
     }
     
     // Animasyon döngüsünü başlat
@@ -360,6 +392,7 @@ const GameCountdown = memo(({ onComplete, serverStartTime, serverTimeOffset = 0 
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current);
     };
   }, [onComplete, serverStartTime, serverTimeOffset]);
 
