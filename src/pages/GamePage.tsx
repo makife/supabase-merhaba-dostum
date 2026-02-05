@@ -2111,8 +2111,27 @@ const GamePage = ({
 
       // 🎯 SENARYO 1: Buffer açıkça atlanacaksa (skipBuffer=true) VEYA buffer süresi tamamen geçmişse
       // 🔒 KRİTİK: msUntilCountdown kontrolü - cihazlar arası saat farkı toleransı
-      // 🔧 FIX: 500ms → 2000ms tolerans - mobil ve web arasındaki clock drift'e karşı koruma
-      const bufferExpired = msUntilCountdown <= -2000; // 2 saniye tolerans
+      // 🔧 FIX: 2000ms → 3000ms tolerans - mobil ve web arasındaki clock drift'e karşı koruma
+      // Ayrıca countdown süresi (5s) geçmişse de expired kabul et
+      const COUNTDOWN_DURATION_MS = 5000;
+      const bufferExpired = msUntilCountdown <= -3000; // 3 saniye tolerans
+      // Countdown bitmiş mi? Buffer bitişinden (actualCountdownStart) + countdown süresi (5s) geçmiş mi kontrol et
+      const countdownEndTime = actualCountdownStart + COUNTDOWN_DURATION_MS;
+      const countdownExpired = now >= countdownEndTime; // Countdown tamamen bittiyse
+
+      // 🎯 Countdown tamamen bitmişse direkt oyunu başlat, countdown gösterme
+      if (countdownExpired) {
+        console.log("⚡ Countdown tamamen bitmiş, direkt oyun başlatılıyor:", {
+          now: new Date(now).toISOString(),
+          countdownEndTime: new Date(countdownEndTime).toISOString(),
+        });
+        // Countdown gösterme, direkt oyun başlasın
+        setPreparingOpponent(null);
+        setShowCountdown(false);
+        setGameStarted(true);
+        gameStartedRef.current = true;
+        return true;
+      }
 
       if (skipBuffer || bufferExpired) {
         console.log("⚡ Buffer atlanıyor veya countdown zamanı geçmiş:", {
@@ -2127,8 +2146,8 @@ const GamePage = ({
         return true;
       }
 
-      // 🔧 FIX: Eğer az önce buffer bitmişse (0 ile -2000ms arası), kalan buffer animasyonlarını atla ve direkt countdown göster
-      if (msUntilCountdown <= 0 && msUntilCountdown > -2000) {
+      // 🔧 FIX: Eğer az önce buffer bitmişse (0 ile -3000ms arası), kalan buffer animasyonlarını atla ve direkt countdown göster
+      if (msUntilCountdown <= 0 && msUntilCountdown > -3000) {
         console.log("⚡ Buffer süresi yeni geçti, direkt countdown başlatılıyor:", { msUntilCountdown });
         setPreparingOpponent(null);
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
@@ -4743,11 +4762,30 @@ const GamePage = ({
               return;
             }
 
-            console.log("🎯 Game room countdown başlatılıyor (buffer animasyonu ile):", newData.countdown_started_at);
+            // 🔧 FIX: Timing kontrolü - countdown süresini hesapla
+            const countdownStartTime = new Date(newData.countdown_started_at).getTime();
+            const nowWithOffset = Date.now() + serverTimeOffset;
+            const msElapsed = nowWithOffset - countdownStartTime;
+
+            console.log("🎯 Game room countdown başlatılıyor (realtime):", {
+              countdownStartedAt: newData.countdown_started_at,
+              msElapsed,
+            });
             processedCountdownRef.current = newData.countdown_started_at;
 
-            // 🔒 Orijinal timestamp'i geç - initiateCountdown içinde buffer hesaplanacak
-            initiateCountdown(newData.countdown_started_at, false);
+            // Buffer (5s) + Countdown (5s) = 10 saniye içindeyse başlat
+            if (msElapsed >= 10000) {
+              // Countdown tamamen bitmiş - direkt oyun başlat
+              console.log("⚡ Countdown süresi geçmiş (realtime), oyun başlatılıyor");
+              setGameStarted(true);
+              gameStartedRef.current = true;
+            } else if (msElapsed >= 5000) {
+              // Buffer bitti, countdown devam ediyor - skipBuffer ile başlat
+              initiateCountdown(newData.countdown_started_at, true);
+            } else {
+              // Buffer animasyonu devam ediyor
+              initiateCountdown(newData.countdown_started_at, false);
+            }
 
             // 🔒 Subscription'ı hemen kapat - artık countdown tetiklendi
             if (countdownChannelRef.current) {
@@ -4976,7 +5014,7 @@ const GamePage = ({
         // 🔒 KRİTİK: Buffer (5s) + Countdown (5s) = 10000ms toplam
         // Normal oyunlar (Random/Private): 10000ms (5s buffer animasyonu + 5s geri sayım)
         // Turnuva: 12000ms (daha uzun animasyon süresi)
-        const GAME_START_OFFSET_MS = 6000; // 🔧 FIX: 6000 → 10000 (buffer + countdown)
+      const GAME_START_OFFSET_MS = 10000; // 🔧 FIXED: 5s buffer + 5s countdown = 10000ms
         const TOURNAMENT_START_OFFSET_MS = 12000;
 
         if (gameMode === "tournament" && tournamentMatch) {
