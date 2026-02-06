@@ -1,6 +1,7 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
 import { initNativeAudio, playNativeSound, isNativePlatform, isNativeAudioReady } from "@/services/nativeAudioService";
+import { useMusic } from "@/contexts/MusicContext";
 
 interface GameCountdownProps {
   onComplete: () => void;
@@ -193,6 +194,7 @@ export const ensureImagesLoaded = () => preloadPromise;
 const GameCountdown = memo(
   ({ onComplete, serverStartTime, serverTimeOffset = 0, countdownKey }: GameCountdownProps) => {
     const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
+    const { fadeOutBackgroundMusic } = useMusic();
 
     // Refs - tüm state management ref üzerinden
     const completedRef = useRef(false);
@@ -204,6 +206,7 @@ const GameCountdown = memo(
     const hasInitializedRef = useRef(false);
     const currentValueRef = useRef<number>(5);
     const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
+    const musicFadedRef = useRef(false);
 
     const playCountdownSound = () => playFromPool(countdownSoundPool, "countdown");
     const playStartSound = () => playFromPool(startSoundPool, "start");
@@ -300,6 +303,13 @@ const GameCountdown = memo(
       const startCountdownFrom5 = () => {
         console.log(`🔢 [${instanceId}] 5'ten countdown başlıyor!`);
         let currentNum = 5;
+        
+        // 🎵 Arka plan müziğini fade out yap (5 saniyede)
+        if (!musicFadedRef.current) {
+          musicFadedRef.current = true;
+          console.log(`🎵 [${instanceId}] Arka plan müziği fade out başlıyor...`);
+          fadeOutBackgroundMusic(4500); // 4.5 saniyede fade out (countdown 5 saniye)
+        }
         
         // İlk sayıyı hemen göster (5)
         setDisplayValue(currentNum);
