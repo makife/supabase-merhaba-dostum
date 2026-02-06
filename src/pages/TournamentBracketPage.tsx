@@ -198,7 +198,7 @@ const TournamentBracketPage = () => {
 
           console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
         } else {
-        const now = new Date();
+          const now = new Date();
           const countdownStartedAt = now.toISOString();
           // 5s countdown + 5s animasyon + 120s oyun = 132s
           // GamePage TOURNAMENT_START_OFFSET_MS (12000ms) ile tutarlı olmalı
@@ -388,18 +388,18 @@ const TournamentBracketPage = () => {
         console.log(`🚫 [${source}] Blocking navigation - locally marked as completed:`, match.id);
         return false;
       }
-      
+
       if (match.status === "completed") {
         completedMatchIdsRef.current.add(match.id);
         console.log(`🚫 [${source}] Blocking navigation - status is completed:`, match.id);
         return false;
       }
-      
+
       if (navigatedMatchIdRef.current === match.id) {
         console.log(`🚫 [${source}] Blocking navigation - already navigating to this match:`, match.id);
         return false;
       }
-      
+
       if (match.winner_id) {
         completedMatchIdsRef.current.add(match.id);
         console.log(`🚫 [${source}] Blocking navigation - winner already set:`, match.id);
@@ -443,14 +443,14 @@ const TournamentBracketPage = () => {
         },
         (payload) => {
           const newMatch = payload.new as any;
-          
+
           // 🔒 Tamamlanan maçları takip listesine ekle
           if (newMatch.status === "completed" || newMatch.winner_id) {
             completedMatchIdsRef.current.add(newMatch.id);
             console.log(`📝 Match marked as completed:`, newMatch.id);
             return;
           }
-          
+
           if (
             newMatch.status === "in_progress" &&
             newMatch.countdown_started_at &&
@@ -537,7 +537,7 @@ const TournamentBracketPage = () => {
           .from("profiles")
           .update({ bonus_spins: currentBonusSpins + selected.value })
           .eq("id", user.id);
-        
+
         console.log(`Bonus çark hakkı verildi. Yeni toplam: ${currentBonusSpins + selected.value}`);
       }
 
@@ -602,8 +602,8 @@ const TournamentBracketPage = () => {
           {wonReward && (
             <div className="text-center">
               {/* Ödülünüz Başlığı - 4 satır aşağı */}
-              <h2 className="text-white text-2xl font-bold mb-8">Ödülünüz</h2>
-              
+              <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
+
               {/* Ödül Kartı Görseli - 2 satır aşağı */}
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
