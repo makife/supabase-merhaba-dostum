@@ -1,9 +1,9 @@
 /**
  * 🔥 PENDING AVATAR RECOVERY HOOK
- * 
+ *
  * Bu hook, kamera/galeri açıldığında uygulama arka plana düştüğünde
  * çekilen resmin kaybolmasını önler.
- * 
+ *
  * AKIŞ:
  * 1. Kamera açılmadan önce "pending_avatar_action" flag'i native storage'a kaydedilir
  * 2. Capacitor Camera plugin'i Base64 formatında resim döner
@@ -12,23 +12,19 @@
  * 5. Bekleyen resim varsa Supabase'e yüklenir ve avatar olarak ayarlanır
  */
 
-import { useEffect, useCallback, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { nativeStorage } from '@/utils/nativeStorage';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import imageCompression from 'browser-image-compression';
-import { 
-  captureFromNativeCamera, 
-  pickFromNativeGallery, 
-  isNativePlatform 
-} from '@/services/nativeCameraService';
+import { useEffect, useCallback, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
+import { nativeStorage } from "@/utils/nativeStorage";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import imageCompression from "browser-image-compression";
+import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
 
 // Storage keys
-const PENDING_AVATAR_KEY = 'pending_avatar_base64';
-const PENDING_AVATAR_ACTION_KEY = 'pending_avatar_action';
-const PENDING_AVATAR_TIMESTAMP_KEY = 'pending_avatar_timestamp';
+const PENDING_AVATAR_KEY = "pending_avatar_base64";
+const PENDING_AVATAR_ACTION_KEY = "pending_avatar_action";
+const PENDING_AVATAR_TIMESTAMP_KEY = "pending_avatar_timestamp";
 
 // 24 saat sonra expire olsun (stale data temizliği)
 const EXPIRATION_MS = 24 * 60 * 60 * 1000;
@@ -47,11 +43,11 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
   // Base64 string'i File objesine çevir
   const base64ToFile = (base64: string, mimeType: string): File => {
     console.log(`[PendingAvatar] 🔄 Base64 to File converting... Length: ${base64.length}`);
-    
+
     if (!base64 || base64.length < 100) {
       throw new Error(`Base64 verisi çok kısa veya boş: ${base64?.length || 0} karakter`);
     }
-    
+
     const byteString = atob(base64);
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
@@ -60,13 +56,13 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     }
     const blob = new Blob([ab], { type: mimeType });
     const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: mimeType });
-    
+
     console.log(`[PendingAvatar] ✅ File oluşturuldu: ${(file.size / 1024).toFixed(0)}KB`);
-    
+
     if (file.size < 1000) {
       throw new Error(`Dosya çok küçük (${file.size} bytes), muhtemelen bozuk`);
     }
-    
+
     return file;
   };
 
@@ -78,7 +74,7 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       reader.onload = () => {
         const result = reader.result as string;
         // data:image/jpeg;base64, kısmını kaldır
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = (error) => reject(error);
@@ -91,17 +87,17 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       maxSizeMB: 0.3,
       maxWidthOrHeight: 800,
       useWebWorker: true,
-      fileType: 'image/webp' as const,
+      fileType: "image/webp" as const,
     };
 
     try {
       const compressedFile = await imageCompression(file, options);
       console.log(
-        `[PendingAvatar] Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB`
+        `[PendingAvatar] Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB`,
       );
       return compressedFile;
     } catch (error) {
-      console.error('[PendingAvatar] Compression error:', error);
+      console.error("[PendingAvatar] Compression error:", error);
       return file;
     }
   };
@@ -113,13 +109,13 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       mimeType,
       timestamp: Date.now(),
     };
-    
+
     try {
       // Base64 çok büyük olabilir, chunk'lamaya gerek yok çünkü Capacitor Preferences bunu handle eder
       await nativeStorage.setJSON(PENDING_AVATAR_KEY, data);
-      console.log('[PendingAvatar] ✅ Base64 avatar native storage\'a kaydedildi');
+      console.log("[PendingAvatar] ✅ Base64 avatar native storage'a kaydedildi");
     } catch (error) {
-      console.error('[PendingAvatar] ❌ Native storage kaydetme hatası:', error);
+      console.error("[PendingAvatar] ❌ Native storage kaydetme hatası:", error);
       throw error;
     }
   };
@@ -128,19 +124,19 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
   const getPendingAvatar = async (): Promise<PendingAvatarData | null> => {
     try {
       const data = await nativeStorage.getJSON<PendingAvatarData>(PENDING_AVATAR_KEY);
-      
+
       if (!data) return null;
-      
+
       // Expire kontrolü
       if (Date.now() - data.timestamp > EXPIRATION_MS) {
-        console.log('[PendingAvatar] ⏰ Bekleyen avatar expire olmuş, temizleniyor...');
+        console.log("[PendingAvatar] ⏰ Bekleyen avatar expire olmuş, temizleniyor...");
         await clearPendingAvatar();
         return null;
       }
-      
+
       return data;
     } catch (error) {
-      console.error('[PendingAvatar] ❌ Native storage okuma hatası:', error);
+      console.error("[PendingAvatar] ❌ Native storage okuma hatası:", error);
       return null;
     }
   };
@@ -150,20 +146,20 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     await nativeStorage.removeItem(PENDING_AVATAR_KEY);
     await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
     await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
-    console.log('[PendingAvatar] 🧹 Bekleyen avatar temizlendi');
+    console.log("[PendingAvatar] 🧹 Bekleyen avatar temizlendi");
   };
 
   // Bekleyen avatar'ı Supabase'e yükle
   const uploadPendingAvatar = async (data: PendingAvatarData): Promise<string | null> => {
     if (!user) {
-      console.warn('[PendingAvatar] ❌ Kullanıcı oturumu yok');
+      console.warn("[PendingAvatar] ❌ Kullanıcı oturumu yok");
       return null;
     }
 
     // 🔥 Base64 validasyonu
     if (!data.base64 || data.base64.length < 1000) {
-      console.error('[PendingAvatar] ❌ Base64 verisi geçersiz veya çok kısa:', data.base64?.length || 0);
-      throw new Error('Fotoğraf verisi geçersiz veya bozuk');
+      console.error("[PendingAvatar] ❌ Base64 verisi geçersiz veya çok kısa:", data.base64?.length || 0);
+      throw new Error("Fotoğraf verisi geçersiz veya bozuk");
     }
 
     console.log(`[PendingAvatar] 📤 Bekleyen avatar yükleniyor... Base64 length: ${data.base64.length}`);
@@ -171,65 +167,67 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     try {
       // Base64'ten File oluştur
       const file = base64ToFile(data.base64, data.mimeType);
-      
+
       console.log(`[PendingAvatar] 📦 Orijinal dosya boyutu: ${(file.size / 1024).toFixed(0)}KB`);
-      
+
       // Sıkıştır
       const compressedFile = await compressImage(file);
       console.log(`[PendingAvatar] 📦 Sıkıştırılmış dosya boyutu: ${(compressedFile.size / 1024).toFixed(0)}KB`);
-      
+
       // 🔥 Sıkıştırma sonrası da kontrol
       if (compressedFile.size < 500) {
         throw new Error(`Sıkıştırılmış dosya çok küçük: ${compressedFile.size} bytes`);
       }
-      
+
       const timestamp = Date.now();
       const fileName = `${user.id}/${timestamp}.webp`;
 
       // Eski avatarları sil
-      const { data: existingFiles } = await supabase.storage.from('avatars').list(user.id);
+      const { data: existingFiles } = await supabase.storage.from("avatars").list(user.id);
       if (existingFiles && existingFiles.length > 0) {
         const filesToDelete = existingFiles.map((f) => `${user.id}/${f.name}`);
-        console.log('[PendingAvatar] 🗑️ Eski avatarlar siliniyor:', filesToDelete.length);
-        await supabase.storage.from('avatars').remove(filesToDelete);
+        console.log("[PendingAvatar] 🗑️ Eski avatarlar siliniyor:", filesToDelete.length);
+        await supabase.storage.from("avatars").remove(filesToDelete);
       }
 
       // Yeni avatarı yükle
-      console.log('[PendingAvatar] ⬆️ Supabase Storage\'a yükleniyor...');
+      console.log("[PendingAvatar] ⬆️ Supabase Storage'a yükleniyor...");
       const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('avatars')
+        .from("avatars")
         .upload(fileName, compressedFile, {
-          cacheControl: '3600',
+          cacheControl: "3600",
           upsert: true,
         });
 
       if (uploadError) {
-        console.error('[PendingAvatar] ❌ Storage upload hatası:', uploadError);
+        console.error("[PendingAvatar] ❌ Storage upload hatası:", uploadError);
         throw uploadError;
       }
 
-      console.log('[PendingAvatar] ✅ Storage upload başarılı:', uploadData?.path);
+      console.log("[PendingAvatar] ✅ Storage upload başarılı:", uploadData?.path);
 
       // Public URL al - cache busting için timestamp ekle
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(fileName);
       const urlWithCacheBust = `${publicUrl}?t=${timestamp}`;
-      console.log('[PendingAvatar] 🔗 Public URL (cache-busted):', urlWithCacheBust);
+      console.log("[PendingAvatar] 🔗 Public URL (cache-busted):", urlWithCacheBust);
 
       // Profili güncelle - cache-busted URL ile
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ avatar_url: urlWithCacheBust })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (updateError) {
-        console.error('[PendingAvatar] ❌ Profil güncelleme hatası:', updateError);
+        console.error("[PendingAvatar] ❌ Profil güncelleme hatası:", updateError);
         throw updateError;
       }
 
-      console.log('[PendingAvatar] ✅ Avatar başarıyla yüklendi ve profil güncellendi');
+      console.log("[PendingAvatar] ✅ Avatar başarıyla yüklendi ve profil güncellendi");
       return urlWithCacheBust;
     } catch (error) {
-      console.error('[PendingAvatar] ❌ Avatar yükleme hatası:', error);
+      console.error("[PendingAvatar] ❌ Avatar yükleme hatası:", error);
       throw error;
     }
   };
@@ -238,12 +236,12 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
   const checkAndProcessPendingAvatar = useCallback(async (): Promise<void> => {
     // Çift işlemi önle
     if (isProcessingRef.current) {
-      console.log('[PendingAvatar] ⏳ Zaten işleniyor, atlanıyor...');
+      console.log("[PendingAvatar] ⏳ Zaten işleniyor, atlanıyor...");
       return;
     }
 
     if (!user) {
-      console.log('[PendingAvatar] ⏳ Kullanıcı henüz yüklenmedi');
+      console.log("[PendingAvatar] ⏳ Kullanıcı henüz yüklenmedi");
       return;
     }
 
@@ -251,42 +249,44 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
     try {
       const pendingData = await getPendingAvatar();
-      
+
       if (!pendingData) {
-        console.log('[PendingAvatar] ℹ️ Bekleyen avatar yok');
+        console.log("[PendingAvatar] ℹ️ Bekleyen avatar yok");
         return;
       }
 
-      console.log('[PendingAvatar] 🔍 Bekleyen avatar bulundu, yükleme başlatılıyor...');
-      toast.info('Bekleyen fotoğraf yükleniyor...', { duration: 2000 });
+      console.log("[PendingAvatar] 🔍 Bekleyen avatar bulundu, yükleme başlatılıyor...");
+      toast.info("Bekleyen fotoğraf yükleniyor...", { duration: 2000 });
 
       const publicUrl = await uploadPendingAvatar(pendingData);
-      
+
       if (publicUrl) {
         await clearPendingAvatar();
-        
+
         // 🔥 KRİTİK: Callback'i çağır VE bir custom event dispatch et
         // Bu sayede ProfilePage her durumda güncellenecek
-        console.log('[PendingAvatar] 🎯 Callback çağrılıyor ve event dispatch ediliyor...');
-        
+        console.log("[PendingAvatar] 🎯 Callback çağrılıyor ve event dispatch ediliyor...");
+
         // 1. Callback'i çağır (eğer varsa)
         if (onAvatarUploaded) {
-          console.log('[PendingAvatar] ✅ onAvatarUploaded callback çağrılıyor');
+          console.log("[PendingAvatar] ✅ onAvatarUploaded callback çağrılıyor");
           onAvatarUploaded(publicUrl);
         } else {
-          console.warn('[PendingAvatar] ⚠️ onAvatarUploaded callback YOK!');
+          console.warn("[PendingAvatar] ⚠️ onAvatarUploaded callback YOK!");
         }
-        
+
         // 2. Custom event dispatch et - ProfilePage bunu da dinleyebilir
-        window.dispatchEvent(new CustomEvent('avatar-uploaded', { 
-          detail: { url: publicUrl } 
-        }));
-        
-        toast.success('Profil fotoğrafı güncellendi!');
+        window.dispatchEvent(
+          new CustomEvent("avatar-uploaded", {
+            detail: { url: publicUrl },
+          }),
+        );
+
+        toast.success("Profil fotoğrafı güncellendi!");
       }
     } catch (error) {
-      console.error('[PendingAvatar] ❌ İşlem hatası:', error);
-      toast.error('Fotoğraf yüklenirken hata oluştu');
+      console.error("[PendingAvatar] ❌ İşlem hatası:", error);
+      toast.error("Fotoğraf yüklenirken hata oluştu");
       // Hata durumunda da temizle ki sürekli denemesin
       await clearPendingAvatar();
     } finally {
@@ -297,57 +297,49 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
   // 🔥 KAMERA AÇMA - Native plugin kullanarak Base64 formatında resim al
   const captureFromCameraWithRecovery = async (): Promise<boolean> => {
     try {
-      console.log('[PendingAvatar] 📷 Native kamera açılıyor (recovery modunda)...');
-      
-      // Action flag'ini kaydet
-      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, 'camera');
+      console.log("[PendingAvatar] 📷 Native kamera açılıyor (recovery modunda)...");
+
+      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "camera");
       await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
 
-      // 🔥 Native Camera Plugin kullan
       const result = await captureFromNativeCamera();
 
       if (!result || !result.file) {
-        console.log('[PendingAvatar] ❌ Kamera iptal edildi veya başarısız');
-        // Temizlik
+        console.log("[PendingAvatar] ❌ Kamera iptal edildi");
         await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
         await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
         return false;
       }
 
-      // File'dan base64 oluştur
       const base64 = await fileToBase64(result.file);
-      
+
       if (!base64 || base64.length < 1000) {
-        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', base64?.length || 0);
-        throw new Error('Fotoğraf verisi çok küçük veya bozuk');
+        throw new Error("Fotoğraf verisi çok küçük veya bozuk");
       }
 
       console.log(`[PendingAvatar] ✅ Fotoğraf çekildi! Base64 length: ${base64.length}`);
-      
-      // Base64'ü native storage'a kaydet
-      await savePendingAvatar(base64, 'image/jpeg');
 
-      // Eğer uygulama hala ön plandaysa hemen yüklemeyi dene
-      setTimeout(async () => {
-        console.log('[PendingAvatar] 🚀 Hemen yükleme deneniyor...');
-        await checkAndProcessPendingAvatar();
-      }, 500);
+      await savePendingAvatar(base64, "image/jpeg");
+
+      // 🔥 FIX: setTimeout KALDIRILDI - HEMEN YÜKLE
+      console.log("[PendingAvatar] 🚀 Hemen yükleme başlıyor...");
+      await checkAndProcessPendingAvatar(); // ✅ AWAIT İLE BEKLİYOR!
 
       return true;
     } catch (error: any) {
-      const isCancelled = error.message?.includes('cancelled') || 
-                          error.message?.includes('User cancelled') ||
-                          error.message?.includes('iptal');
-      
+      const isCancelled =
+        error.message?.includes("cancelled") ||
+        error.message?.includes("User cancelled") ||
+        error.message?.includes("iptal");
+
       if (!isCancelled) {
-        console.error('[PendingAvatar] ❌ Kamera hatası:', error);
-        toast.error('Fotoğraf çekilirken hata oluştu');
+        console.error("[PendingAvatar] ❌ Kamera hatası:", error);
+        toast.error("Fotoğraf çekilirken hata oluştu");
       }
-      
-      // Temizlik
+
       await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
       await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
-      
+
       return false;
     }
   };
@@ -355,17 +347,17 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
   // 🔥 GALERİ AÇMA - Native plugin kullanarak Base64 formatında resim al
   const captureFromGalleryWithRecovery = async (): Promise<boolean> => {
     try {
-      console.log('[PendingAvatar] 🖼️ Native galeri açılıyor (recovery modunda)...');
-      
+      console.log("[PendingAvatar] 🖼️ Native galeri açılıyor (recovery modunda)...");
+
       // Action flag'ini kaydet
-      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, 'gallery');
+      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "gallery");
       await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
 
       // 🔥 Native Gallery Plugin kullan
       const result = await pickFromNativeGallery();
 
       if (!result || !result.file) {
-        console.log('[PendingAvatar] ❌ Galeri seçimi iptal edildi veya başarısız');
+        console.log("[PendingAvatar] ❌ Galeri seçimi iptal edildi veya başarısız");
         // Temizlik
         await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
         await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
@@ -374,38 +366,37 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
 
       // File'dan base64 oluştur
       const base64 = await fileToBase64(result.file);
-      
+
       if (!base64 || base64.length < 1000) {
-        console.error('[PendingAvatar] ❌ Base64 verisi çok küçük:', base64?.length || 0);
-        throw new Error('Fotoğraf verisi çok küçük veya bozuk');
+        console.error("[PendingAvatar] ❌ Base64 verisi çok küçük:", base64?.length || 0);
+        throw new Error("Fotoğraf verisi çok küçük veya bozuk");
       }
 
       console.log(`[PendingAvatar] ✅ Fotoğraf seçildi! Base64 length: ${base64.length}`);
-      
-      // Base64'ü native storage'a kaydet
-      await savePendingAvatar(base64, 'image/jpeg');
 
-      // Hemen yüklemeyi dene
-      setTimeout(async () => {
-        console.log('[PendingAvatar] 🚀 Hemen yükleme deneniyor...');
-        await checkAndProcessPendingAvatar();
-      }, 500);
+      // Base64'ü native storage'a kaydet
+      await savePendingAvatar(base64, "image/jpeg");
+
+      // 🔥 FIX: setTimeout KALDIRILDI - HEMEN YÜKLE
+      console.log("[PendingAvatar] 🚀 Hemen yükleme başlıyor...");
+      await checkAndProcessPendingAvatar(); // ✅ AWAIT İLE BEKLİYOR!
 
       return true;
     } catch (error: any) {
-      const isCancelled = error.message?.includes('cancelled') || 
-                          error.message?.includes('User cancelled') ||
-                          error.message?.includes('iptal');
-      
+      const isCancelled =
+        error.message?.includes("cancelled") ||
+        error.message?.includes("User cancelled") ||
+        error.message?.includes("iptal");
+
       if (!isCancelled) {
-        console.error('[PendingAvatar] ❌ Galeri hatası:', error);
-        toast.error('Fotoğraf seçilirken hata oluştu');
+        console.error("[PendingAvatar] ❌ Galeri hatası:", error);
+        toast.error("Fotoğraf seçilirken hata oluştu");
       }
-      
+
       // Temizlik
       await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
       await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
-      
+
       return false;
     }
   };
@@ -418,34 +409,34 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     // Mount'ta bir kez kontrol et
     if (!hasCheckedOnMountRef.current) {
       hasCheckedOnMountRef.current = true;
-      console.log('[PendingAvatar] 🔍 Mount kontrolü yapılıyor...');
+      console.log("[PendingAvatar] 🔍 Mount kontrolü yapılıyor...");
       setTimeout(() => checkAndProcessPendingAvatar(), 1000);
     }
 
     // Event listener'ları kur
     const handleAppResumed = () => {
-      console.log('[PendingAvatar] 📱 app-resumed eventi alındı, kontrol ediliyor...');
+      console.log("[PendingAvatar] 📱 app-resumed eventi alındı, kontrol ediliyor...");
       setTimeout(() => checkAndProcessPendingAvatar(), 500);
     };
 
     const handleDataReady = () => {
-      console.log('[PendingAvatar] 📡 data-ready eventi alındı, kontrol ediliyor...');
+      console.log("[PendingAvatar] 📡 data-ready eventi alındı, kontrol ediliyor...");
       setTimeout(() => checkAndProcessPendingAvatar(), 500);
     };
 
     const handleNativeSoftRecovery = () => {
-      console.log('[PendingAvatar] 🔄 native-soft-recovery eventi alındı, kontrol ediliyor...');
+      console.log("[PendingAvatar] 🔄 native-soft-recovery eventi alındı, kontrol ediliyor...");
       setTimeout(() => checkAndProcessPendingAvatar(), 500);
     };
 
-    window.addEventListener('app-resumed', handleAppResumed);
-    window.addEventListener('data-ready', handleDataReady);
-    window.addEventListener('native-soft-recovery', handleNativeSoftRecovery);
+    window.addEventListener("app-resumed", handleAppResumed);
+    window.addEventListener("data-ready", handleDataReady);
+    window.addEventListener("native-soft-recovery", handleNativeSoftRecovery);
 
     return () => {
-      window.removeEventListener('app-resumed', handleAppResumed);
-      window.removeEventListener('data-ready', handleDataReady);
-      window.removeEventListener('native-soft-recovery', handleNativeSoftRecovery);
+      window.removeEventListener("app-resumed", handleAppResumed);
+      window.removeEventListener("data-ready", handleDataReady);
+      window.removeEventListener("native-soft-recovery", handleNativeSoftRecovery);
     };
   }, [user, checkAndProcessPendingAvatar]);
 
