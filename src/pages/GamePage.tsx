@@ -2092,7 +2092,7 @@ const GamePage = ({
       // countdown_started_at = buffer animasyonlarının başlaması gereken zaman
       // actualCountdownStart = countdown'ın (5-4-3-2-1) görsel olarak başlayacağı zaman
       const countdownStartTime = new Date(countdownStartedAt).getTime();
-      const BUFFER_MS = 5000; // 5 saniyelik buffer (preparing -> ready -> blank)
+      const BUFFER_MS = 5000; // 5 saniyelik buffer (preparing -> ready)
       const COUNTDOWN_DURATION_MS = 5000; // 5 saniyelik geri sayım
       const actualCountdownStart = countdownStartTime + BUFFER_MS;
       const countdownEndTime = actualCountdownStart + COUNTDOWN_DURATION_MS;
@@ -2120,6 +2120,7 @@ const GamePage = ({
           now: new Date(now).toISOString(),
           countdownEndTime: new Date(countdownEndTime).toISOString(),
         });
+        setPreparingOpponent(null);
         setShowCountdown(false);
         setGameStarted(true);
         gameStartedRef.current = true;
@@ -2128,7 +2129,7 @@ const GamePage = ({
       }
 
       // 🎯 SENARYO 2: Buffer süresi geçmiş ama countdown devam ediyor
-      // GameCountdown'a countdown'ın NE ZAMAN başlayacağını söylememiz gerek
+      // Direkt countdown göster (5-4-3-2-1)
       if (skipBuffer || msUntilCountdown <= 0) {
         console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Buffer atlandı veya süresi doldu):", {
           skipBuffer,
@@ -2137,27 +2138,56 @@ const GamePage = ({
           now: new Date(now).toISOString(),
         });
 
-        // 🔧 KRİTİK FIX: actualCountdownStart zaten geçmişte olabilir (geç katılım)
-        // GameCountdown component'i serverStartTime'dan itibaren countdown bitiş zamanını hesaplıyor
-        // Eğer actualCountdownStart geçmişte ise, GameCountdown remaining time'ı doğru hesaplasın
-        // Bu sayede geç katılan oyuncular kalan süreyi görür (örn: 3-2-1 yerine tam 5-4-3-2-1)
+        // 🔧 KRİTİK: Önce buffer animasyonlarını kapat, sonra countdown göster
+        setPreparingOpponent(null);
         setCountdownServerTime(new Date(actualCountdownStart).toISOString());
         setShowCountdown(true);
         return true;
       }
 
       // 🎯 SENARYO 3: Buffer süresi içindeyiz
-      // ARTIK buffer animasyonlarını burada göstermiyoruz!
-      // Buffer animasyonları participant is_ready state'ine göre gösterilecek
-      // Sadece countdown'ın başlamasını zamanında tetiklemeliyiz
+      // Buffer animasyonlarını göster (Hazırlanıyor -> Hazır)
+      // Countdown'u buffer bitince başlat
 
-      console.log("⏰ Buffer süresi içinde, countdown zamanlanıyor. msUntilCountdown:", msUntilCountdown);
+      console.log("⏰ Buffer süresi içinde:", {
+        msElapsedSinceStart,
+        msUntilCountdown,
+        kalan: `${Math.ceil(msUntilCountdown / 1000)} saniye`,
+      });
 
-      // 🎯 Countdown'ı tam zamanında başlat - buffer bitince
+      // 🎯 Buffer animasyonlarını göster
+      // İlk 3.5 saniye: "Hazırlanıyor..."
+      // Son 1.5 saniye: "Hazır!"
+      const PREPARING_DURATION = 3500;
+      const READY_DURATION = 1500;
+
+      if (msElapsedSinceStart < PREPARING_DURATION) {
+        // Henüz "Hazırlanıyor" süresi içindeyiz
+        const remainingPreparing = PREPARING_DURATION - msElapsedSinceStart;
+        console.log("🎯 'Hazırlanıyor...' gösteriliyor, kalan:", remainingPreparing, "ms");
+        setPreparingOpponent("preparing");
+
+        // "Hazır" gösterme zamanı
+        const readyTimer = setTimeout(() => {
+          if (isMountedRef.current) {
+            console.log("🎯 Oyuncu Hazır gösteriliyor");
+            setPreparingOpponent("ready");
+          }
+        }, remainingPreparing);
+        countdownTimersRef.current.push(readyTimer);
+      } else if (msElapsedSinceStart < BUFFER_MS) {
+        // "Hazır" süresi içindeyiz
+        console.log("🎯 Oyuncu Hazır gösteriliyor (geç katılım)");
+        setPreparingOpponent("ready");
+      }
+
+      // 🎯 Buffer bitince countdown başlat
       const countdownTimer = setTimeout(() => {
         if (isMountedRef.current) {
-          console.log("🏆 5-4-3-2-1 Countdown gösteriliyor (Buffer süresi doldu)");
-          // 🔧 KRİTİK: GameCountdown'a actualCountdownStart geçir (buffer SONRASI)
+          console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
+          // Önce buffer animasyonunu kapat
+          setPreparingOpponent(null);
+          // Sonra countdown göster
           setCountdownServerTime(new Date(actualCountdownStart).toISOString());
           setShowCountdown(true);
         }
@@ -4551,17 +4581,27 @@ const GamePage = ({
     }
   }, [gameMode, tournamentMatch?.countdown_started_at, serverTimeOffset, initiateCountdown]);
 
-  // 🎯 YENİ: Participant is_ready state'ine göre "Oyuncu Hazırlanıyor" / "Oyuncu Hazır" overlay'ini göster
-  // Bu overlay sadece countdown başlamadan önce gösterilir
+  // 🎯 Participant is_ready state'ine göre "Oyuncu Hazırlanıyor" / "Oyuncu Hazır" overlay'ini göster
+  // 🔧 FIX: Bu overlay initiateCountdown tarafından yönetiliyor
+  // Bu effect sadece countdown başlamadan ÖNCE (countdown_started_at yok iken) is_ready state'ine göre gösterir
+  // countdown_started_at varsa initiateCountdown buffer animasyonlarını yönetiyor
   useEffect(() => {
     // Sadece multiplayer modlar için (vs-computer için AI logic ayrı)
     if (gameMode === "vs-computer" || gameMode === "tournament") return;
 
-    // Countdown başladıysa overlay'i gizle
+    // 🔧 KRİTİK: Görsel countdown (5-4-3-2-1) başladıysa veya oyun başladıysa overlay'i gizle
+    // showCountdown = görsel countdown aktif
     if (showCountdown || gameStarted) {
       if (preparingOpponent) {
+        console.log("🎯 Görsel countdown başladı, overlay kapatılıyor");
         setPreparingOpponent(null);
       }
+      return;
+    }
+
+    // 🔧 FIX: countdown_started_at varsa initiateCountdown buffer animasyonlarını yönetiyor
+    // Bu effect'in araya girmesine gerek yok - çakışma yaratır
+    if (currentRoom?.countdown_started_at) {
       return;
     }
 
@@ -4571,24 +4611,19 @@ const GamePage = ({
     const otherParticipant = participants.find((p) => p.user_id !== user?.id);
     if (!otherParticipant) return;
 
-    // Diğer oyuncunun hazır durumuna göre overlay göster
+    // 🎯 countdown_started_at yok - is_ready state'ine göre overlay göster
+    // Bu, eşleşme bulundu ama henüz ikisi de hazır değil durumu için
     if (!otherParticipant.is_ready) {
       // Oyuncu henüz hazır değil
       if (preparingOpponent !== "preparing") {
-        console.log("👤 Oyuncu hazırlanıyor overlay gösteriliyor");
+        console.log("👤 Oyuncu hazırlanıyor overlay gösteriliyor (is_ready=false)");
         setPreparingOpponent("preparing");
       }
     } else {
-      // Oyuncu hazır ama countdown henüz başlamadı
-      if (preparingOpponent !== "ready" && !currentRoom?.countdown_started_at) {
-        console.log("✅ Oyuncu hazır overlay gösteriliyor");
+      // Oyuncu hazır - countdown_started_at bekliyor
+      if (preparingOpponent !== "ready") {
+        console.log("✅ Oyuncu hazır overlay gösteriliyor (is_ready=true, countdown bekleniyor)");
         setPreparingOpponent("ready");
-      } else if (currentRoom?.countdown_started_at) {
-        // Countdown başladıysa overlay'i kaldır
-        if (preparingOpponent) {
-          console.log("🎯 Countdown başladı, overlay kaldırılıyor");
-          setPreparingOpponent(null);
-        }
       }
     }
   }, [
