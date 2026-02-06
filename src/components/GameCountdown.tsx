@@ -189,67 +189,27 @@ const preloadPromise =
 export const ensureImagesLoaded = () => preloadPromise;
 
 // --- ANA COMPONENT ---
-// 🔧 TAMAMEN YENİDEN YAZILDI - BASIT VE GÜVENİLİR
-// serverStartTime = countdown'ın başlaması gereken sunucu zamanı
-// Her zaman 5-4-3-2-1 sayar, sunucu zamanıyla senkronize
+// 🔧 BASİT VE STABIL INTERVAL-BASED COUNTDOWN
 const GameCountdown = memo(
   ({ onComplete, serverStartTime, serverTimeOffset = 0, countdownKey }: GameCountdownProps) => {
-    // 🔧 BASİT YAKLAŞIM: Her zaman 5'ten başla ve 1 saniye aralıklarla say
     const [displayValue, setDisplayValue] = useState<number | "start" | null>(null);
 
-    // Refs
+    // Refs - tüm state management ref üzerinden
     const completedRef = useRef(false);
     const mountedRef = useRef(true);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const startTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const soundPlayedRef = useRef<Set<number | string>>(new Set());
-    const startedRef = useRef(false);
+    const hasInitializedRef = useRef(false);
+    const currentValueRef = useRef<number>(5);
     const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
 
     const playCountdownSound = () => playFromPool(countdownSoundPool, "countdown");
     const playStartSound = () => playFromPool(startSoundPool, "start");
 
-    // 🔒 countdownKey veya serverStartTime değiştiğinde TAMAMEN SIFIRLA
-    useEffect(() => {
-      const instanceId = instanceIdRef.current;
-      console.log(`🔄 [${instanceId}] GameCountdown mount/reset - key: ${countdownKey}, time: ${serverStartTime}`);
-      
-      mountedRef.current = true;
-      completedRef.current = false;
-      startedRef.current = false;
-      soundPlayedRef.current.clear();
-      setDisplayValue(null);
-
-      return () => {
-        console.log(`🔄 [${instanceId}] GameCountdown unmount`);
-        mountedRef.current = false;
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (completeTimeoutRef.current) {
-          clearTimeout(completeTimeoutRef.current);
-          completeTimeoutRef.current = null;
-        }
-      };
-    }, [countdownKey, serverStartTime]);
-
-    // 🎯 ANA COUNTDOWN MANTIK - BASİT VE GÜVENİLİR
-    useEffect(() => {
-      if (completedRef.current) return;
-      if (!serverStartTime) {
-        console.log("⏳ GameCountdown: serverStartTime bekleniyor...");
-        return;
-      }
-      if (startedRef.current) {
-        console.log("⏳ GameCountdown: Zaten başladı, atlanıyor...");
-        return;
-      }
-
-      const instanceId = instanceIdRef.current;
-      startedRef.current = true;
-
-      // Eski timer'ları temizle
+    // Cleanup helper
+    const cleanupAllTimers = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -258,49 +218,60 @@ const GameCountdown = memo(
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
       }
+      if (startTimeoutRef.current) {
+        clearTimeout(startTimeoutRef.current);
+        startTimeoutRef.current = null;
+      }
+    };
 
-      // 🔧 ZAMANLAMA:
-      // serverStartTime = countdown'ın BAŞLAMASI gereken an
-      // 5 saniye boyunca 5-4-3-2-1 göster, sonra "BAŞLA"
+    // Mount/Unmount lifecycle
+    useEffect(() => {
+      const instanceId = instanceIdRef.current;
+      console.log(`🔄 [${instanceId}] GameCountdown MOUNT`);
+      
+      mountedRef.current = true;
+      completedRef.current = false;
+      hasInitializedRef.current = false;
+      soundPlayedRef.current.clear();
+      currentValueRef.current = 5;
+      setDisplayValue(null);
+
+      return () => {
+        console.log(`🔄 [${instanceId}] GameCountdown UNMOUNT`);
+        mountedRef.current = false;
+        cleanupAllTimers();
+      };
+    }, []);
+
+    // Key veya serverStartTime değiştiğinde reset
+    useEffect(() => {
+      if (!serverStartTime) return;
+      
+      const instanceId = instanceIdRef.current;
+      
+      // Zaten bu timestamp ile başlatıldıysa atla
+      if (hasInitializedRef.current) {
+        return;
+      }
+
+      console.log(`🎯 [${instanceId}] Countdown başlatılıyor - time: ${serverStartTime}`);
+      
+      // Önce her şeyi temizle
+      cleanupAllTimers();
+      completedRef.current = false;
+      soundPlayedRef.current.clear();
+      currentValueRef.current = 5;
+      hasInitializedRef.current = true;
+
       const startTime = new Date(serverStartTime).getTime();
       const serverNow = Date.now() + serverTimeOffset;
       const msUntilStart = startTime - serverNow;
 
-      console.log(`⏱️ [${instanceId}] Countdown timing:`, {
-        serverStartTime,
-        startTime: new Date(startTime).toISOString(),
-        serverNow: new Date(serverNow).toISOString(),
-        msUntilStart,
-      });
+      console.log(`⏱️ [${instanceId}] Timing: msUntilStart=${msUntilStart}ms`);
 
-      // 🎯 SENARYO 1: Countdown henüz başlamadı - bekle
-      if (msUntilStart > 100) {
-        console.log(`⏳ [${instanceId}] Countdown ${msUntilStart}ms sonra başlayacak...`);
-        
-        // İlk değeri 5 olarak göster (bekleme sırasında)
-        setDisplayValue(5);
-        
-        // Başlama zamanı gelince countdown'ı başlat
-        const startTimer = setTimeout(() => {
-          if (mountedRef.current && !completedRef.current) {
-            console.log(`✅ [${instanceId}] Bekleme bitti, countdown başlıyor`);
-            startCountdownSequence();
-          }
-        }, msUntilStart);
-
-        return () => clearTimeout(startTimer);
-      }
-
-      // 🎯 SENARYO 2: Countdown zaten başlamış olmalı
-      // Kalan süreyi hesapla ve oradan devam et
-      const elapsed = -msUntilStart; // Geçen süre (ms)
-      const remainingSeconds = Math.max(0, 5 - Math.floor(elapsed / 1000));
-
-      console.log(`⚡ [${instanceId}] Countdown devam ediyor: ${remainingSeconds} saniye kaldı (${elapsed}ms geçti)`);
-
-      if (remainingSeconds <= 0) {
-        // Countdown zaten bitti - hemen "BAŞLA" göster ve bitir
-        console.log(`🏁 [${instanceId}] Countdown zaten bitmiş, hemen tamamlanıyor`);
+      // Countdown zaten bitmişse
+      if (msUntilStart < -5500) {
+        console.log(`🏁 [${instanceId}] Countdown zaten bitmiş, hemen tamamla`);
         setDisplayValue("start");
         if (!soundPlayedRef.current.has("start")) {
           soundPlayedRef.current.add("start");
@@ -309,88 +280,119 @@ const GameCountdown = memo(
         completeTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current && !completedRef.current) {
             completedRef.current = true;
-            console.log(`🏁 [${instanceId}] Countdown TAMAMLANDI (geç katılım)`);
             onComplete();
           }
-        }, 400);
+        }, 300);
         return;
       }
 
-      // Kalan sayıdan devam et
-      startCountdownSequence(remainingSeconds);
+      // Kalan sayıyı hesapla
+      let startFrom = 5;
+      let initialDelay = 0;
 
-      // 🔧 COUNTDOWN SEKANS BAŞLATICI
-      function startCountdownSequence(startFrom: number = 5) {
-        let currentNumber = startFrom;
-        
-        console.log(`🔢 [${instanceId}] Countdown sekansı başlıyor: ${currentNumber}`);
-        
-        // İlk sayıyı göster ve ses çal
-        setDisplayValue(currentNumber);
-        if (!soundPlayedRef.current.has(currentNumber)) {
-          soundPlayedRef.current.add(currentNumber);
-          playCountdownSound();
-        }
-        currentNumber--;
+      if (msUntilStart > 0) {
+        // Henüz başlamamış - bekle
+        initialDelay = msUntilStart;
+        startFrom = 5;
+      } else {
+        // Devam eden countdown
+        const elapsed = -msUntilStart;
+        const secondsElapsed = Math.floor(elapsed / 1000);
+        startFrom = Math.max(1, 5 - secondsElapsed);
+        // Sonraki tam saniyeye kadar bekle
+        initialDelay = 1000 - (elapsed % 1000);
+      }
 
-        // Her saniye bir sonraki sayıyı göster
-        intervalRef.current = setInterval(() => {
-          if (!mountedRef.current || completedRef.current) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
+      console.log(`🔢 [${instanceId}] startFrom=${startFrom}, initialDelay=${initialDelay}ms`);
+
+      // İlk değeri göster
+      currentValueRef.current = startFrom;
+      setDisplayValue(startFrom);
+      if (!soundPlayedRef.current.has(startFrom)) {
+        soundPlayedRef.current.add(startFrom);
+        playCountdownSound();
+      }
+
+      // Eğer 1'den başladıysak, hemen BAŞLA'ya geç
+      if (startFrom === 1) {
+        startTimeoutRef.current = setTimeout(() => {
+          if (!mountedRef.current || completedRef.current) return;
+          
+          setDisplayValue("start");
+          if (!soundPlayedRef.current.has("start")) {
+            soundPlayedRef.current.add("start");
+            playStartSound();
+          }
+          
+          completeTimeoutRef.current = setTimeout(() => {
+            if (mountedRef.current && !completedRef.current) {
+              completedRef.current = true;
+              console.log(`🏁 [${instanceId}] Countdown TAMAMLANDI`);
+              onComplete();
             }
+          }, 600);
+        }, initialDelay);
+        return;
+      }
+
+      // Interval başlat
+      startTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current || completedRef.current) return;
+
+        // Bir sonraki sayıya geç
+        currentValueRef.current--;
+        
+        const tickNext = () => {
+          if (!mountedRef.current || completedRef.current) {
+            cleanupAllTimers();
             return;
           }
 
-          if (currentNumber > 0) {
-            // Sayıyı göster ve ses çal
-            console.log(`🔢 [${instanceId}] Countdown: ${currentNumber}`);
-            setDisplayValue(currentNumber);
-            if (!soundPlayedRef.current.has(currentNumber)) {
-              soundPlayedRef.current.add(currentNumber);
+          const val = currentValueRef.current;
+          
+          if (val > 0) {
+            console.log(`🔢 [${instanceIdRef.current}] ${val}`);
+            setDisplayValue(val);
+            if (!soundPlayedRef.current.has(val)) {
+              soundPlayedRef.current.add(val);
               playCountdownSound();
             }
-            currentNumber--;
-          } else if (currentNumber === 0) {
-            // "BAŞLA" göster
-            console.log(`🏁 [${instanceId}] BAŞLA gösteriliyor`);
+            currentValueRef.current--;
+          } else if (val === 0) {
+            console.log(`🏁 [${instanceIdRef.current}] BAŞLA`);
             setDisplayValue("start");
             if (!soundPlayedRef.current.has("start")) {
               soundPlayedRef.current.add("start");
               playStartSound();
             }
-            currentNumber--;
-          } else {
-            // Countdown tamamlandı
+            currentValueRef.current--;
+            
+            // Interval'ı durdur
             if (intervalRef.current) {
               clearInterval(intervalRef.current);
               intervalRef.current = null;
             }
             
-            // 600ms "BAŞLA" göster, sonra tamamla
+            // Tamamla
             completeTimeoutRef.current = setTimeout(() => {
               if (mountedRef.current && !completedRef.current) {
                 completedRef.current = true;
-                console.log(`🏁 [${instanceId}] Countdown TAMAMLANDI`);
+                console.log(`🏁 [${instanceIdRef.current}] Countdown TAMAMLANDI`);
                 onComplete();
               }
             }, 600);
           }
-        }, 1000);
-      }
+        };
 
-      return () => {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        if (completeTimeoutRef.current) {
-          clearTimeout(completeTimeoutRef.current);
-          completeTimeoutRef.current = null;
-        }
-      };
-    }, [onComplete, serverStartTime, serverTimeOffset]);
+        // İlk tick
+        tickNext();
+        
+        // Interval başlat
+        intervalRef.current = setInterval(tickNext, 1000);
+        
+      }, initialDelay);
+
+    }, [serverStartTime, serverTimeOffset, onComplete]);
 
     // Görsel Seçimi
     const getImageSrc = () => {
