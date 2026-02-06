@@ -5176,6 +5176,7 @@ const GamePage = ({
           endsAtTimestamp = Date.now() + 120 * 1000;
           endsAtTimestampRef.current = endsAtTimestamp;
         }
+      }
 
       // 🔧 FIX: Timer başlatıldığında ilk değeri HEMEN hesapla
       // Bu sayede 2:05 veya 2:08 gibi yanlış değerler gösterilmez
