@@ -44,6 +44,8 @@ import java.util.Locale;
  * Capacitor Camera plugin'i yerine kullanılacak native çözüm.
  * Fotoğraf çekip/seçip Base64 olarak JS'e gönderir.
  * Geçici dosya sorunlarını tamamen ortadan kaldırır.
+ * 
+ * Android 13+ (API 33+) için READ_MEDIA_IMAGES kullanılır.
  */
 @CapacitorPlugin(
     name = "NativeCamera",
@@ -53,11 +55,8 @@ import java.util.Locale;
             strings = { Manifest.permission.CAMERA }
         ),
         @Permission(
-            alias = "storage",
-            strings = { 
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE 
-            }
+            alias = "photos",
+            strings = { "android.permission.READ_MEDIA_IMAGES" }
         )
     }
 )
@@ -79,10 +78,10 @@ public class NativeCameraPlugin extends Plugin {
     public void captureFromCamera(PluginCall call) {
         Log.d(TAG, "📷 captureFromCamera çağrıldı");
         
-        // İzin kontrolü
-        if (!hasRequiredPermissions()) {
-            Log.d(TAG, "📷 İzinler isteniyor...");
-            requestAllPermissions(call, "cameraPermissionCallback");
+        // Kamera izni kontrolü - sadece CAMERA izni gerekli
+        if (!hasCameraPermission()) {
+            Log.d(TAG, "📷 Kamera izni isteniyor...");
+            requestPermissionForAlias("camera", call, "cameraPermissionCallback");
             return;
         }
         
@@ -96,21 +95,47 @@ public class NativeCameraPlugin extends Plugin {
     public void pickFromGallery(PluginCall call) {
         Log.d(TAG, "🖼️ pickFromGallery çağrıldı");
         
-        // Android 13+ için izin gerekmez (READ_MEDIA_IMAGES)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        // Android 13+ için READ_MEDIA_IMAGES gerekli, önceki sürümler için READ_EXTERNAL_STORAGE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ - READ_MEDIA_IMAGES
+            if (ContextCompat.checkSelfPermission(getContext(), "android.permission.READ_MEDIA_IMAGES") 
+                != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "🖼️ READ_MEDIA_IMAGES izni isteniyor...");
+                requestPermissionForAlias("photos", call, "galleryPermissionCallback");
+                return;
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Android 6-12 - READ_EXTERNAL_STORAGE
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
                 != PackageManager.PERMISSION_GRANTED) {
-                requestAllPermissions(call, "galleryPermissionCallback");
+                Log.d(TAG, "🖼️ READ_EXTERNAL_STORAGE izni isteniyor...");
+                ActivityCompat.requestPermissions(
+                    getActivity(),
+                    new String[] { Manifest.permission.READ_EXTERNAL_STORAGE },
+                    REQUEST_GALLERY
+                );
+                // Basitleştirilmiş: izin istendikten sonra galeriyi aç
+                launchGallery(call);
                 return;
             }
         }
+        // Android 5 ve altı - izin gerekmez
         
         launchGallery(call);
     }
     
+    /**
+     * Kamera izni var mı?
+     */
+    private boolean hasCameraPermission() {
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) 
+            == PackageManager.PERMISSION_GRANTED;
+    }
+    
     @PermissionCallback
     private void cameraPermissionCallback(PluginCall call) {
-        if (hasRequiredPermissions()) {
+        if (hasCameraPermission()) {
+            Log.d(TAG, "✅ Kamera izni verildi");
             launchCamera(call);
         } else {
             Log.e(TAG, "❌ Kamera izni reddedildi");
@@ -120,13 +145,10 @@ public class NativeCameraPlugin extends Plugin {
     
     @PermissionCallback
     private void galleryPermissionCallback(PluginCall call) {
+        Log.d(TAG, "📷 Galeri izin callback çağrıldı");
+        // İzin verilsin veya verilmesin galeriyi açmayı dene
+        // Çünkü bazı durumlarda sistem zaten izin verebilir
         launchGallery(call);
-    }
-    
-    @Override
-    public boolean hasRequiredPermissions() {
-        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA) 
-            == PackageManager.PERMISSION_GRANTED;
     }
     
     private void launchCamera(PluginCall call) {
@@ -175,7 +197,17 @@ public class NativeCameraPlugin extends Plugin {
         Log.d(TAG, "🖼️ Galeri başlatılıyor...");
         
         try {
-            Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            // Modern galeri seçici kullan
+            Intent pickIntent;
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13+ için Photo Picker
+                pickIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            } else {
+                // Eski sürümler için klasik galeri
+                pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            }
+            
             pickIntent.setType("image/*");
             
             saveCall(call);
@@ -185,7 +217,15 @@ public class NativeCameraPlugin extends Plugin {
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Galeri başlatma hatası: " + e.getMessage(), e);
-            call.reject("Galeri açılamadı: " + e.getMessage());
+            // Fallback: Klasik galeri seçiciyi dene
+            try {
+                Intent fallbackIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                fallbackIntent.setType("image/*");
+                saveCall(call);
+                startActivityForResult(call, fallbackIntent, "galleryResultCallback");
+            } catch (Exception e2) {
+                call.reject("Galeri açılamadı: " + e2.getMessage());
+            }
         }
     }
     
@@ -216,8 +256,12 @@ public class NativeCameraPlugin extends Plugin {
                 String base64 = processAndEncodeImage(bitmap);
                 bitmap.recycle();
                 
-                // Fotoğrafı galeriye kaydet
-                saveToGallery(currentPhotoPath);
+                // Fotoğrafı galeriye kaydet (opsiyonel, hata verse de devam et)
+                try {
+                    saveToGallery(currentPhotoPath);
+                } catch (Exception e) {
+                    Log.w(TAG, "Galeriye kaydetme atlandı: " + e.getMessage());
+                }
                 
                 // JS'e gönder
                 JSObject ret = new JSObject();

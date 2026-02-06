@@ -4,7 +4,7 @@ Bu klasördeki dosyalar Android projesine manuel olarak kopyalanmalıdır.
 
 ---
 
-## 📷 NativeCameraPlugin (YENİ!)
+## 📷 NativeCameraPlugin
 
 Avatar fotoğrafı çekme/seçme için native plugin. Capacitor Camera plugin'inin yaşadığı geçici dosya sorunlarını çözer.
 
@@ -40,12 +40,34 @@ cp android-plugin/file_paths.xml android/app/src/main/res/xml/
 </provider>
 ```
 
-#### 4. Kamera izinlerini kontrol et:
+#### 4. 🔴 ÖNEMLİ: AndroidManifest.xml İzinleri
+
+**Android 13+ (API 33+) için:**
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 <uses-feature android:name="android.hardware.camera" android:required="false" />
+```
+
+**Android 12 ve altı için ek izinler (maxSdkVersion ile sınırlandır):**
+```xml
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+```
+
+**Tam AndroidManifest.xml izin bloğu:**
+```xml
+<!-- Kamera -->
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+
+<!-- Android 13+ için medya izinleri -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+<!-- Android 12 ve altı için (geriye uyumluluk) -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 ```
 
 ### Özellikler
@@ -53,6 +75,8 @@ cp android-plugin/file_paths.xml android/app/src/main/res/xml/
 - ✅ Geçici dosya erişim sorunları yok
 - ✅ EXIF rotasyonu otomatik düzeltilir
 - ✅ Fotoğraflar galeriye de kaydedilir
+- ✅ Android 13+ Photo Picker desteği
+- ✅ Geriye dönük uyumluluk (Android 6+)
 
 ---
 
@@ -133,6 +157,17 @@ dependencies {
 ## 🚀 Genel Kurulum Sırası
 
 1. Tüm dosyaları kopyala
-2. AndroidManifest.xml güncellemelerini yap
+2. AndroidManifest.xml güncellemelerini yap (özellikle izinler!)
 3. `npx cap sync android`
 4. AAB oluştur: `cd android && ./gradlew bundleRelease`
+
+---
+
+## ⚠️ Sık Karşılaşılan Hatalar
+
+### "Missing permissions in AndroidManifest.xml" hatası
+Bu hata AndroidManifest.xml'de izinlerin eksik olduğu anlamına gelir. Yukarıdaki izin bloğunu ekleyin.
+
+### Android 13+ için özel durum
+Android 13 ve üzeri sürümlerde `READ_EXTERNAL_STORAGE` ve `WRITE_EXTERNAL_STORAGE` izinleri çalışmaz!
+Bunların yerine `READ_MEDIA_IMAGES` kullanılmalıdır.
