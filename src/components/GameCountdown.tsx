@@ -263,15 +263,22 @@ const GameCountdown = memo(
       currentValueRef.current = 5;
       hasInitializedRef.current = true;
 
+      // 🔧 BÜYÜK FIX: Basit ve stabil countdown mantığı
+      // serverStartTime = countdown'ın BAŞLAMASI gereken an
+      // Eğer şu an veya çok yakınsa, doğrudan 5'ten başla
       const startTime = new Date(serverStartTime).getTime();
       const serverNow = Date.now() + serverTimeOffset;
-      const msUntilStart = startTime - serverNow;
+      const timeDiff = startTime - serverNow;
 
-      console.log(`⏱️ [${instanceId}] Timing: msUntilStart=${msUntilStart}ms`);
+      console.log(`⏱️ [${instanceId}] Timing check: startTime=${startTime}, serverNow=${serverNow}, diff=${timeDiff}ms`);
 
-      // Countdown zaten bitmişse
-      if (msUntilStart < -5500) {
-        console.log(`🏁 [${instanceId}] Countdown zaten bitmiş, hemen tamamla`);
+      // 🔒 Eğer zaman farkı -500ms ile +500ms arasındaysa "şu an" kabul et
+      // Bu, ağ gecikmelerini tolere eder
+      const isNow = Math.abs(timeDiff) < 500;
+      
+      // 🔒 Eğer çok geç kalmışsak (5 saniyeden fazla geçmiş), hemen bitir
+      if (timeDiff < -5500) {
+        console.log(`🏁 [${instanceId}] Countdown zaten bitmiş (${timeDiff}ms geçmiş), hemen tamamla`);
         setDisplayValue("start");
         if (!soundPlayedRef.current.has("start")) {
           soundPlayedRef.current.add("start");
@@ -286,86 +293,46 @@ const GameCountdown = memo(
         return;
       }
 
-      // Kalan sayıyı hesapla
-      let startFrom = 5;
-      let initialDelay = 0;
-
-      if (msUntilStart > 0) {
-        // Henüz başlamamış - bekle
-        initialDelay = msUntilStart;
-        startFrom = 5;
-      } else {
-        // Devam eden countdown
-        const elapsed = -msUntilStart;
-        const secondsElapsed = Math.floor(elapsed / 1000);
-        startFrom = Math.max(1, 5 - secondsElapsed);
-        // Sonraki tam saniyeye kadar bekle
-        initialDelay = 1000 - (elapsed % 1000);
-      }
-
-      console.log(`🔢 [${instanceId}] startFrom=${startFrom}, initialDelay=${initialDelay}ms`);
-
-      // İlk değeri göster
-      currentValueRef.current = startFrom;
-      setDisplayValue(startFrom);
-      if (!soundPlayedRef.current.has(startFrom)) {
-        soundPlayedRef.current.add(startFrom);
-        playCountdownSound();
-      }
-
-      // Eğer 1'den başladıysak, hemen BAŞLA'ya geç
-      if (startFrom === 1) {
-        startTimeoutRef.current = setTimeout(() => {
-          if (!mountedRef.current || completedRef.current) return;
-          
-          setDisplayValue("start");
-          if (!soundPlayedRef.current.has("start")) {
-            soundPlayedRef.current.add("start");
-            playStartSound();
-          }
-          
-          completeTimeoutRef.current = setTimeout(() => {
-            if (mountedRef.current && !completedRef.current) {
-              completedRef.current = true;
-              console.log(`🏁 [${instanceId}] Countdown TAMAMLANDI`);
-              onComplete();
-            }
-          }, 600);
-        }, initialDelay);
-        return;
-      }
-
-      // Interval başlat
-      startTimeoutRef.current = setTimeout(() => {
-        if (!mountedRef.current || completedRef.current) return;
-
-        // Bir sonraki sayıya geç
-        currentValueRef.current--;
+      // 🎯 BASIT COUNTDOWN: Her zaman 5'ten başla, her saniye 1 azalt
+      // "isNow" veya timeDiff < 500ms ise direkt 5'ten başla
+      // Değilse bekleme süresi sonra 5'ten başla
+      
+      const startCountdownFrom5 = () => {
+        console.log(`🔢 [${instanceId}] 5'ten countdown başlıyor!`);
+        let currentNum = 5;
         
-        const tickNext = () => {
+        // İlk sayıyı hemen göster (5)
+        setDisplayValue(currentNum);
+        if (!soundPlayedRef.current.has(currentNum)) {
+          soundPlayedRef.current.add(currentNum);
+          playCountdownSound();
+        }
+        
+        // 1 saniye sonra 4, 2 saniye sonra 3, vs.
+        intervalRef.current = setInterval(() => {
           if (!mountedRef.current || completedRef.current) {
             cleanupAllTimers();
             return;
           }
-
-          const val = currentValueRef.current;
           
-          if (val > 0) {
-            console.log(`🔢 [${instanceIdRef.current}] ${val}`);
-            setDisplayValue(val);
-            if (!soundPlayedRef.current.has(val)) {
-              soundPlayedRef.current.add(val);
+          currentNum--;
+          currentValueRef.current = currentNum;
+          
+          if (currentNum > 0) {
+            console.log(`🔢 [${instanceIdRef.current}] ${currentNum}`);
+            setDisplayValue(currentNum);
+            if (!soundPlayedRef.current.has(currentNum)) {
+              soundPlayedRef.current.add(currentNum);
               playCountdownSound();
             }
-            currentValueRef.current--;
-          } else if (val === 0) {
-            console.log(`🏁 [${instanceIdRef.current}] BAŞLA`);
+          } else if (currentNum === 0) {
+            // BAŞLA!
+            console.log(`🏁 [${instanceIdRef.current}] BAŞLA!`);
             setDisplayValue("start");
             if (!soundPlayedRef.current.has("start")) {
               soundPlayedRef.current.add("start");
               playStartSound();
             }
-            currentValueRef.current--;
             
             // Interval'ı durdur
             if (intervalRef.current) {
@@ -373,7 +340,7 @@ const GameCountdown = memo(
               intervalRef.current = null;
             }
             
-            // Tamamla
+            // 600ms sonra tamamla
             completeTimeoutRef.current = setTimeout(() => {
               if (mountedRef.current && !completedRef.current) {
                 completedRef.current = true;
@@ -382,15 +349,22 @@ const GameCountdown = memo(
               }
             }, 600);
           }
-        };
+        }, 1000);
+      };
 
-        // İlk tick
-        tickNext();
-        
-        // Interval başlat
-        intervalRef.current = setInterval(tickNext, 1000);
-        
-      }, initialDelay);
+      // Eğer şu an veya çok yakınsa, hemen başla
+      if (isNow || timeDiff <= 0) {
+        console.log(`⚡ [${instanceId}] Hemen başlıyor (timeDiff=${timeDiff}ms)`);
+        startCountdownFrom5();
+      } else {
+        // Gelecekte başlayacaksa bekle
+        console.log(`⏳ [${instanceId}] ${timeDiff}ms bekleyip başlayacak`);
+        startTimeoutRef.current = setTimeout(() => {
+          if (mountedRef.current && !completedRef.current) {
+            startCountdownFrom5();
+          }
+        }, timeDiff);
+      }
 
     }, [serverStartTime, serverTimeOffset, onComplete]);
 
