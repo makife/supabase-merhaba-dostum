@@ -260,27 +260,35 @@ const GameCountdown = memo(
       };
     }, []);
 
-    // serverStartTime veya countdownKey değiştiğinde state'i sıfırla
-    useEffect(() => {
-      if (serverStartTime) {
-        // Yeni countdown başlıyor - state'i sıfırla
-        completedRef.current = false;
-        startShownRef.current = false;
-        soundPlayedRef.current.clear();
-        lastDisplayRef.current = null;
-        countdownEndTimeRef.current = null;
-        setDisplayValue(null);
+  // 🔒 KRİTİK: countdownKey değiştiğinde (rematch) state'i sıfırla
+  // serverStartTime değiştiğinde SADECE countdownKey de değiştiyse sıfırla
+  // Bu sayede aynı component içinde timestamp güncellemesi countdown'ı resetlemez
+  const lastProcessedKeyRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    // Sadece countdownKey değiştiyse (rematch) veya ilk mount'ta sıfırla
+    if (countdownKey && lastProcessedKeyRef.current !== countdownKey) {
+      console.log("🔄 GameCountdown: Yeni key algılandı, state sıfırlanıyor:", countdownKey);
+      lastProcessedKeyRef.current = countdownKey;
+      
+      // State'i sıfırla
+      completedRef.current = false;
+      startShownRef.current = false;
+      soundPlayedRef.current.clear();
+      lastDisplayRef.current = null;
+      countdownEndTimeRef.current = null;
+      setDisplayValue(null);
 
-        if (completeTimeoutRef.current) {
-          clearTimeout(completeTimeoutRef.current);
-          completeTimeoutRef.current = null;
-        }
-        if (rafRef.current) {
-          cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
       }
-    }, [serverStartTime, countdownKey]);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    }
+  }, [countdownKey]);
 
     useEffect(() => {
       if (completedRef.current) return;
