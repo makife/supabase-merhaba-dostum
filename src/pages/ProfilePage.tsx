@@ -226,89 +226,82 @@ const ProfilePage = () => {
 
   // 🔥 Avatar Key - image reload zorlamak için
   const [avatarKey, setAvatarKey] = useState(0);
-  
+
   // 🔥 Local override ref - yeni yüklenen avatar için 10 saniyelik öncelik
   const localAvatarOverrideRef = useRef<{ url: string; timestamp: number } | null>(null);
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
-    console.log('[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:', url);
-    
+    console.log("[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:", url);
+
     // 🔥 KRİTİK: URL'e timestamp ekle (cache busting)
-    const cacheBustedUrl = url.includes('?') 
-      ? `${url.split('?')[0]}?t=${Date.now()}`
-      : `${url}?t=${Date.now()}`;
-    
-    console.log('[ProfilePage] 🔗 Cache-busted URL:', cacheBustedUrl);
-    
+    const cacheBustedUrl = url.includes("?") ? `${url.split("?")[0]}?t=${Date.now()}` : `${url}?t=${Date.now()}`;
+
+    console.log("[ProfilePage] 🔗 Cache-busted URL:", cacheBustedUrl);
+
     // 🔥 KRİTİK: Local override set et - 10 saniye boyunca bu URL kullanılacak
     localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
-    
+
     // Force image reload
-    setAvatarKey(prev => prev + 1);
-    
+    setAvatarKey((prev) => prev + 1);
+
     // 🔥 KRİTİK: viewedProfile'ı güncelle (Context DEĞİL!)
     setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
-    
-    console.log('[ProfilePage] 🔄 localAvatarOverride SET EDİLDİ:', cacheBustedUrl.substring(0, 80));
+
+    console.log("[ProfilePage] 🔄 localAvatarOverride SET EDİLDİ:", cacheBustedUrl.substring(0, 80));
   }, []);
 
-  const { 
-    captureFromCameraWithRecovery, 
-    captureFromGalleryWithRecovery 
-  } = usePendingAvatarRecovery(handleAvatarUploaded);
+  const { captureFromCameraWithRecovery, captureFromGalleryWithRecovery } =
+    usePendingAvatarRecovery(handleAvatarUploaded);
 
   // 🔥 Effective Avatar URL - hesaplanmış değer (useMemo DEĞİL - her render'da hesaplanır)
-  const getEffectiveAvatarUrl = (): string => {
+  const effectiveAvatarUrl = useMemo(() => {
     // Local override varsa ve 10 saniyeden yeniyse onu kullan
     if (localAvatarOverrideRef.current) {
       const { url, timestamp } = localAvatarOverrideRef.current;
       if (Date.now() - timestamp < 10000) {
-        console.log('[ProfilePage] 🎯 Local override kullanılıyor');
+        console.log("[ProfilePage] 🎯 Local override kullanılıyor");
         return url;
       } else {
         // Expire olmuş, temizle
         localAvatarOverrideRef.current = null;
       }
     }
-    
+
     // Profile'dan URL al
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
-    return profileUrl || '';
-  };
-  
-  // Her render'da hesapla
-  const effectiveAvatarUrl = getEffectiveAvatarUrl();
+    return profileUrl || "";
+  }, [avatarKey, profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile]);
 
   // 🔥 BACKUP: Custom event listener - callback çalışmazsa bu devreye girer
   useEffect(() => {
     const handleAvatarUploadedEvent = (event: CustomEvent<{ url: string }>) => {
-      console.log('[ProfilePage] 📡 avatar-uploaded event alındı:', event.detail.url);
-      
+      console.log("[ProfilePage] 📡 avatar-uploaded event alındı:", event.detail.url);
+
       // 🔥 URL'e timestamp ekle (cache busting)
       const originalUrl = event.detail.url;
-      const cacheBustedUrl = originalUrl.includes('?') 
-        ? `${originalUrl.split('?')[0]}?t=${Date.now()}`
+      const cacheBustedUrl = originalUrl.includes("?")
+        ? `${originalUrl.split("?")[0]}?t=${Date.now()}`
         : `${originalUrl}?t=${Date.now()}`;
-      
-      console.log('[ProfilePage] 📡 Cache-busted URL (event):', cacheBustedUrl);
-      
+
+      console.log("[ProfilePage] 📡 Cache-busted URL (event):", cacheBustedUrl);
+
       // Local override set et
       localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
-      
+
       // Force re-render
-      setAvatarKey(prev => prev + 1);
-      
+      setAvatarKey((prev) => prev + 1);
+
       // 🔥 viewedProfile'ı güncelle (Context DEĞİL!)
       setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
       setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
     };
-    
-    window.addEventListener('avatar-uploaded', handleAvatarUploadedEvent as EventListener);
-    
+
+    window.addEventListener("avatar-uploaded", handleAvatarUploadedEvent as EventListener);
+
     return () => {
-      window.removeEventListener('avatar-uploaded', handleAvatarUploadedEvent as EventListener);
+      window.removeEventListener("avatar-uploaded", handleAvatarUploadedEvent as EventListener);
     };
   }, []);
 
@@ -712,7 +705,7 @@ const ProfilePage = () => {
 
     // 🔥 Native platformda yeni recovery sistemini kullan
     if (Capacitor.isNativePlatform()) {
-      console.log('[ProfilePage] 📷 Native kamera recovery modu aktif');
+      console.log("[ProfilePage] 📷 Native kamera recovery modu aktif");
       await captureFromCameraWithRecovery();
       return;
     }
@@ -733,7 +726,7 @@ const ProfilePage = () => {
 
     // 🔥 Native platformda yeni recovery sistemini kullan
     if (Capacitor.isNativePlatform()) {
-      console.log('[ProfilePage] 🖼️ Native galeri recovery modu aktif');
+      console.log("[ProfilePage] 🖼️ Native galeri recovery modu aktif");
       await captureFromGalleryWithRecovery();
       return;
     }
@@ -869,7 +862,7 @@ const ProfilePage = () => {
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
-                <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
+                  <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
                     <Avatar className="w-20 h-20 ring-2 ring-primary/20">
                       <AvatarImage
                         src={effectiveAvatarUrl}
