@@ -227,8 +227,9 @@ const ProfilePage = () => {
   // 🔥 Avatar Key - image reload zorlamak için
   const [avatarKey, setAvatarKey] = useState(0);
 
-  // 🔥 Local override ref - yeni yüklenen avatar için 10 saniyelik öncelik
-  const localAvatarOverrideRef = useRef<{ url: string; timestamp: number } | null>(null);
+  // 🔥 KRİTİK FIX: State olarak tutulacak - ref yerine state kullan!
+  // Ref kullandığımızda useMemo değişikliği algılamıyordu ve eski değer kalıyordu
+  const [localAvatarOverride, setLocalAvatarOverride] = useState<{ url: string; timestamp: number } | null>(null);
 
   // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
@@ -239,8 +240,8 @@ const ProfilePage = () => {
 
     console.log("[ProfilePage] 🔗 Cache-busted URL:", cacheBustedUrl);
 
-    // 🔥 KRİTİK: Local override set et - 10 saniye boyunca bu URL kullanılacak
-    localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
+    // 🔥 KRİTİK FIX: State ile override set et - artık useMemo değişikliği algılayacak!
+    setLocalAvatarOverride({ url: cacheBustedUrl, timestamp: Date.now() });
 
     // Force image reload
     setAvatarKey((prev) => prev + 1);
@@ -255,24 +256,23 @@ const ProfilePage = () => {
   const { captureFromCameraWithRecovery, captureFromGalleryWithRecovery } =
     usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Effective Avatar URL - hesaplanmış değer (useMemo DEĞİL - her render'da hesaplanır)
+  // 🔥 Effective Avatar URL - hesaplanmış değer
   const effectiveAvatarUrl = useMemo(() => {
     // Local override varsa ve 10 saniyeden yeniyse onu kullan
-    if (localAvatarOverrideRef.current) {
-      const { url, timestamp } = localAvatarOverrideRef.current;
+    if (localAvatarOverride) {
+      const { url, timestamp } = localAvatarOverride;
       if (Date.now() - timestamp < 10000) {
-        console.log("[ProfilePage] 🎯 Local override kullanılıyor");
+        console.log("[ProfilePage] 🎯 Local override kullanılıyor:", url.substring(0, 60));
         return url;
-      } else {
-        // Expire olmuş, temizle
-        localAvatarOverrideRef.current = null;
       }
+      // Expire olmuş - state güncellemesi bir sonraki render'da yapılacak
     }
 
     // Profile'dan URL al
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
+    console.log("[ProfilePage] 📸 Profile URL kullanılıyor:", profileUrl?.substring(0, 60) || "(boş)");
     return profileUrl || "";
-  }, [avatarKey, profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile]);
+  }, [avatarKey, localAvatarOverride, profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile]);
 
   // 🔥 BACKUP: Custom event listener - callback çalışmazsa bu devreye girer
   useEffect(() => {
@@ -287,8 +287,8 @@ const ProfilePage = () => {
 
       console.log("[ProfilePage] 📡 Cache-busted URL (event):", cacheBustedUrl);
 
-      // Local override set et
-      localAvatarOverrideRef.current = { url: cacheBustedUrl, timestamp: Date.now() };
+      // 🔥 KRİTİK FIX: State ile override set et
+      setLocalAvatarOverride({ url: cacheBustedUrl, timestamp: Date.now() });
 
       // Force re-render
       setAvatarKey((prev) => prev + 1);
