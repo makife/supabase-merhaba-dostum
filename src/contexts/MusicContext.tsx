@@ -433,7 +433,47 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 50);
   };
 
-  const fadeInBackgroundMusic = (duration: number = 2000) => {
+  const fadeInBackgroundMusic = async (duration: number = 2000) => {
+    console.log(`🎵 [MusicContext] fadeInBackgroundMusic çağrıldı: ${duration}ms`);
+
+    // 🔥 NATIVE PLATFORM İÇİN
+    if (isNative) {
+      if (!musicEnabled) {
+        console.log("🎵 [MusicContext] Native müzik devre dışı");
+        return;
+      }
+
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const NativeMusic = registerPlugin<{
+          fadeIn: (opts: { duration: number }) => Promise<void>;
+          setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+          setPack: (opts: { pack: string }) => Promise<void>;
+        }>("NativeMusic");
+
+        console.log(`🎵 [MusicContext] Native fade in başlıyor: ${duration}ms`);
+        
+        // Önce müziği başlat, sonra fade in yap
+        await NativeMusic.setPack({ pack: musicPack });
+        await NativeMusic.setMusicEnabled({ enabled: true });
+        
+        // Fade in varsa kullan, yoksa direkt başlat
+        try {
+          await NativeMusic.fadeIn({ duration: duration / 1000 }); // ms'yi saniyeye çevir
+        } catch (fadeError) {
+          // fadeIn metodu yoksa sorun değil, müzik zaten başladı
+          console.log("🎵 [MusicContext] Native fadeIn metodu yok, müzik direkt başlatıldı");
+        }
+        
+        setIsPlaying(true);
+        console.log("🎵 [MusicContext] Native fade in tamamlandı");
+      } catch (e) {
+        console.warn("🎵 Native fade in hatası:", e);
+      }
+      return;
+    }
+
+    // 🔥 WEB PLATFORM İÇİN (mevcut kod)
     if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
 
     // Clear any existing fade
