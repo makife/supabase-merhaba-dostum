@@ -305,6 +305,16 @@ const ProfilePage = () => {
     };
   }, []);
 
+  // 🔥 KRİTİK: UserContext profile değiştiğinde viewedProfile'ı senkronize et (kendi profil için)
+  useEffect(() => {
+    if (isOwnProfile && profile?.avatar_url) {
+      console.log("[ProfilePage] 🔄 UserContext profile değişti, viewedProfile güncelleniyor:", profile.avatar_url);
+      setViewedProfile((prev) => ({ ...prev, avatar_url: profile.avatar_url }));
+      // avatarKey'i artırarak image'ı force refresh et
+      setAvatarKey((prev) => prev + 1);
+    }
+  }, [isOwnProfile, profile?.avatar_url]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!viewedUserId) return;
