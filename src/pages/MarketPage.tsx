@@ -54,9 +54,14 @@ const MarketPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
   const { playSound } = useSounds();
-  const { isAdLoading, loadRewardedAd, showRewardedAd } = useAdMob();
+  const { isAdLoading, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription, restoreSubscriptions } = useNativeSubscriptions();
   const { isLoading: isRestoreLoading, purchasePackage } = useNativePurchases();
+  
+  // AdMob'u sayfa yüklendiğinde initialize et
+  useEffect(() => {
+    initializeAdMob();
+  }, [initializeAdMob]);
 
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil verilerini otomatik tazele
   usePageResync(refreshProfile, 'MarketPage', false);
