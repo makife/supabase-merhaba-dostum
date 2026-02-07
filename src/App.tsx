@@ -460,6 +460,11 @@ const AppRoutes = () => {
 // Global Rematch Dialog wrapper
 const GlobalRematchDialogWrapper = () => {
   const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
+  const { profile } = useUser();
+
+  // Kullanıcının yeterli hakkı var mı kontrol et
+  const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+  const hasEnoughCredits = totalCredits >= 1;
 
   const handleAccept = async () => {
     try {
@@ -484,6 +489,7 @@ const GlobalRematchDialogWrapper = () => {
       onReject={handleReject}
       senderName={incomingRequest?.senderName || "Rakip"}
       senderAvatar={incomingRequest?.senderAvatar}
+      hasEnoughCredits={hasEnoughCredits}
     />
   );
 };

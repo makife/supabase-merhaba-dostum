@@ -408,12 +408,55 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [userId, toast, navigate],
   );
 
-  // Accept rematch
+  // Accept rematch - HAK KONTROLÜ EKLENDİ
   const acceptRematch = useCallback(async () => {
     if (!userId || !incomingRequest) return;
 
     try {
       console.log("✅ Rematch kabul ediliyor:", incomingRequest.id);
+
+      // 🔒 HAK KONTROLÜ: Kabul etmeden önce yeterli hak var mı kontrol et
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits")
+        .eq("id", userId)
+        .single();
+
+      if (profileError || !profile) {
+        toast({
+          title: "Hata",
+          description: "Profil bilgileri alınamadı",
+          variant: "destructive",
+          duration: 1000,
+        });
+        setIncomingRequest(null);
+        return;
+      }
+
+      const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
+      
+      if (totalCredits < 1) {
+        console.log("❌ Yetersiz hak, rematch kabul edilemiyor");
+        toast({
+          title: "Yetersiz Hak",
+          description: "Oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        
+        // Rematch'i reddet
+        await supabase
+          .from("rematch_requests")
+          .update({
+            status: "rejected",
+            responded_at: new Date().toISOString(),
+          })
+          .eq("id", incomingRequest.id);
+        
+        setIncomingRequest(null);
+        navigate("/market");
+        return;
+      }
 
       // Update status
       await supabase
