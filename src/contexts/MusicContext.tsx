@@ -71,7 +71,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.pause();
       }
     };
-    
+
     const handleForeground = () => {
       if (backgroundFadeRef.current) {
         clearInterval(backgroundFadeRef.current);
@@ -85,29 +85,29 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.play().catch(console.warn);
       }
     };
-    
+
     // Global event'leri dinle
-    window.addEventListener('app-background', handleBackground);
-    window.addEventListener('app-foreground', handleForeground);
-    
+    window.addEventListener("app-background", handleBackground);
+    window.addEventListener("app-foreground", handleForeground);
+
     return () => {
-      window.removeEventListener('app-background', handleBackground);
-      window.removeEventListener('app-foreground', handleForeground);
+      window.removeEventListener("app-background", handleBackground);
+      window.removeEventListener("app-foreground", handleForeground);
     };
   }, [musicEnabled]);
 
   // Native appStateChange için doğrudan dinleme
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    
+
     let removeListener: (() => void) | null = null;
-    
+
     const setupListener = async () => {
       try {
-        const { App } = await import('@capacitor/app');
-        const listener = await App.addListener('appStateChange', ({ isActive }) => {
-          console.log(`🎵 [Music] appStateChange: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
-          
+        const { App } = await import("@capacitor/app");
+        const listener = await App.addListener("appStateChange", ({ isActive }) => {
+          console.log(`🎵 [Music] appStateChange: ${isActive ? "ACTIVE" : "INACTIVE"}`);
+
           if (!isActive) {
             // Arka plana gitti
             if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
@@ -127,20 +127,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         removeListener = () => listener.remove();
       } catch (e) {
-        console.warn('🎵 App listener kurulumu başarısız:', e);
+        console.warn("🎵 App listener kurulumu başarısız:", e);
       }
     };
-    
+
     setupListener();
-    
+
     return () => {
       if (removeListener) removeListener();
     };
   }, [musicEnabled]);
-  
+
   // Eski useAppState'i kaldır - artık doğrudan listener kullanıyoruz
   const isNative = Capacitor.isNativePlatform();
-
 
   // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [
@@ -205,18 +204,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Native platformda HTML5 Audio oluşturma - NativeMusicPlugin zaten yönetiyor
     if (isNative) {
       console.log("🎵 [MusicContext] Native platform - HTML5 Audio atlanıyor, NativeMusicPlugin kullanılacak");
-      
+
       // 🔥 Native'de müziği otomatik başlat
       const initNativeMusic = async () => {
         if (!musicEnabled) return;
-        
+
         try {
-          const { registerPlugin } = await import('@capacitor/core');
+          const { registerPlugin } = await import("@capacitor/core");
           const NativeMusic = registerPlugin<{
             setPack: (opts: { pack: string }) => Promise<void>;
             setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
-          }>('NativeMusic');
-          
+          }>("NativeMusic");
+
           console.log("🎵 [MusicContext] Native müzik başlatılıyor, pack:", musicPack);
           await NativeMusic.setPack({ pack: musicPack });
           await NativeMusic.setMusicEnabled({ enabled: true });
@@ -226,7 +225,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           console.warn("🎵 Native müzik başlatılamadı:", e);
         }
       };
-      
+
       // Kısa gecikme ile başlat (plugin'in hazır olması için)
       const timer = setTimeout(initNativeMusic, 500);
       return () => clearTimeout(timer);
@@ -301,12 +300,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative) {
       try {
-        const { registerPlugin } = await import('@capacitor/core');
+        const { registerPlugin } = await import("@capacitor/core");
         const NativeMusic = registerPlugin<{
           setPack: (opts: { pack: string }) => Promise<void>;
           setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
-        }>('NativeMusic');
-        
+        }>("NativeMusic");
+
         await NativeMusic.setPack({ pack: musicPack });
         await NativeMusic.setMusicEnabled({ enabled: true });
         setIsPlaying(true);
@@ -345,11 +344,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative) {
       try {
-        const { registerPlugin } = await import('@capacitor/core');
+        const { registerPlugin } = await import("@capacitor/core");
         const NativeMusic = registerPlugin<{
           setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
-        }>('NativeMusic');
-        
+        }>("NativeMusic");
+
         await NativeMusic.setMusicEnabled({ enabled: false });
         setIsPlaying(false);
         console.log("🎵 [MusicContext] Native müzik durduruldu");
@@ -373,8 +372,39 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isStartingRef.current = false;
   };
 
-  const fadeOutBackgroundMusic = (duration: number = 2000) => {
-    if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
+  const fadeOutBackgroundMusic = async (duration: number = 2000) => {
+    console.log(`🎵 [MusicContext] fadeOutBackgroundMusic çağrıldı: ${duration}ms`);
+
+    // 🔥 NATIVE PLATFORM İÇİN
+    if (isNative) {
+      if (!isPlaying) {
+        console.log("🎵 [MusicContext] Native müzik zaten durmuş");
+        return;
+      }
+
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const NativeMusic = registerPlugin<{
+          fadeOut: (opts: { duration: number }) => Promise<void>;
+        }>("NativeMusic");
+
+        console.log(`🎵 [MusicContext] Native fade out başlıyor: ${duration}ms`);
+        await NativeMusic.fadeOut({ duration: duration / 1000 }); // ms'yi saniyeye çevir
+        setIsPlaying(false);
+        console.log("🎵 [MusicContext] Native fade out tamamlandı");
+      } catch (e) {
+        console.warn("🎵 Native fade out hatası, direkt durduruluyor:", e);
+        // Fallback: direkt durdur
+        stopBackgroundMusic();
+      }
+      return;
+    }
+
+    // 🔥 WEB PLATFORM İÇİN (mevcut kodun devamı)
+    if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) {
+      console.log("🎵 [MusicContext] Web müzik yok veya durmuş");
+      return;
+    }
 
     // Clear any existing fade
     if (fadeIntervalRef.current) {
@@ -384,6 +414,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = backgroundMusicRef.current;
     const startVolume = audio.volume;
     const fadeStep = startVolume / (duration / 50); // 50ms intervals
+
+    console.log(`🎵 [MusicContext] Web fade out başlıyor: ${startVolume} → 0`);
 
     fadeIntervalRef.current = setInterval(() => {
       if (audio.volume > fadeStep) {
@@ -396,6 +428,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
         }
+        console.log("🎵 [MusicContext] Web fade out tamamlandı");
       }
     }, 50);
   };
@@ -461,12 +494,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative) {
       try {
-        const { registerPlugin } = await import('@capacitor/core');
+        const { registerPlugin } = await import("@capacitor/core");
         const NativeMusic = registerPlugin<{
           setPack: (opts: { pack: string }) => Promise<void>;
           setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
-        }>('NativeMusic');
-        
+        }>("NativeMusic");
+
         if (enabled) {
           await NativeMusic.setPack({ pack: musicPack });
           await NativeMusic.setMusicEnabled({ enabled: true });
@@ -505,7 +538,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setMusicPack = async (pack: string) => {
-    const wasPlaying = isNative ? isPlaying : (backgroundMusicRef.current && !backgroundMusicRef.current.paused);
+    const wasPlaying = isNative ? isPlaying : backgroundMusicRef.current && !backgroundMusicRef.current.paused;
 
     // Stop current music if playing
     if (wasPlaying) {
@@ -528,12 +561,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative && musicEnabled) {
       try {
-        const { registerPlugin } = await import('@capacitor/core');
+        const { registerPlugin } = await import("@capacitor/core");
         const NativeMusic = registerPlugin<{
           setPack: (opts: { pack: string }) => Promise<void>;
           setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
-        }>('NativeMusic');
-        
+        }>("NativeMusic");
+
         await NativeMusic.setPack({ pack: pack });
         await NativeMusic.setMusicEnabled({ enabled: true });
         setIsPlaying(true);
