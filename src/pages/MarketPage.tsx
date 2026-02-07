@@ -367,6 +367,12 @@ const MarketPage = () => {
       return;
     }
 
+    // Kullanıcıya yükleniyor bildirimi göster
+    toast({
+      title: "Reklam Yükleniyor...",
+      description: "Lütfen bekleyin",
+    });
+
     try {
       console.log("[Market] 📺 Reklam yükleniyor...");
       
@@ -375,7 +381,12 @@ const MarketPage = () => {
       
       if (!adLoaded) {
         console.log("[Market] ❌ Reklam yüklenemedi");
-        return; // Toast zaten useAdMob'da gösteriliyor
+        toast({
+          title: "Reklam Yüklenemedi",
+          description: "Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.",
+          variant: "destructive",
+        });
+        return;
       }
       
       console.log("[Market] ✅ Reklam yüklendi, gösteriliyor...");
@@ -395,6 +406,12 @@ const MarketPage = () => {
         // Profili yenile
         refreshProfile();
         console.log("[Market] ✅ Reklam izlendi, sayaç güncellendi");
+      } else {
+        toast({
+          title: "Reklam Gösterilemedi",
+          description: "Bir sorun oluştu, tekrar deneyin.",
+          variant: "destructive",
+        });
       }
     } catch (e) {
       console.error("[Market] ❌ Reklam hatası:", e);
