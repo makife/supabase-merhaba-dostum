@@ -878,6 +878,9 @@ const ProfilePage = () => {
                         src={effectiveAvatarUrl}
                         alt={profileData.username}
                         key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
+                        onLoadingStatusChange={(status) => {
+                          console.log("[ProfilePage] 🖼️ Avatar loading status:", status, effectiveAvatarUrl?.substring(0, 60));
+                        }}
                       />
                       <AvatarFallback className="text-2xl">
                         {profileData.username.charAt(0).toUpperCase()}
