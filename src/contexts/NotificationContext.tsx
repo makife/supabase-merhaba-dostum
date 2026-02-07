@@ -67,16 +67,11 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             icon: "🏆",
           });
         }
-
+        // 🔥 MENTION TOAST KALDIRILDI - useChatNotifications.tsx zaten bunu yapıyor
+        // Duplicate toast'ları önlemek için burada mention işlenmez
         if (notification.type === "mention") {
-          console.log("📢 Mention toast gösteriliyor");
-          toast.info(`📢 ${notification.message}`, {
-            duration: 5000,
-            action: {
-              label: "Git",
-              onClick: () => navigate("/chat"),
-            },
-          });
+          console.log("📢 [NotificationContext] Mention alındı - useChatNotifications'a bırakılıyor");
+          return; // Toast gösterme, useChatNotifications hallediyor
         }
 
         if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
