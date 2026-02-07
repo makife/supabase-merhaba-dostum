@@ -192,13 +192,18 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
         await supabase.storage.from("avatars").remove(filesToDelete);
       }
 
-      // Yeni avatarı yükle
+      // Yeni avatarı yükle - ArrayBuffer olarak gönder (daha güvenilir)
       console.log("[PendingAvatar] ⬆️ Supabase Storage'a yükleniyor...");
+      
+      // 🔥 FIX: File'ı ArrayBuffer'a çevir ve contentType açıkça belirt
+      const arrayBuffer = await compressedFile.arrayBuffer();
+      
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("avatars")
-        .upload(fileName, compressedFile, {
+        .upload(fileName, arrayBuffer, {
           cacheControl: "3600",
           upsert: true,
+          contentType: "image/jpeg", // 🔥 Content-Type açıkça belirtildi
         });
 
       if (uploadError) {
