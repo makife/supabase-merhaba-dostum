@@ -230,14 +230,20 @@ const AuthPage = () => {
                 {showEmailConfirmation ? (
                   <div className="text-center space-y-4 py-4">
                     <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-8 h-8 text-green-500" />
+                      <Mail className="w-8 h-8 text-green-500" />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-foreground">
-                        Kayıt Başarılı!
+                        E-posta Doğrulama Gerekli!
                       </h3>
                       <p className="text-muted-foreground text-sm">
-                        Lütfen <span className="font-medium text-primary">"Giriş Yap"</span> sekmesinden e-posta adresiniz ve şifrenizle giriş yapın.
+                        <span className="font-medium text-primary">{registeredEmail}</span> adresine bir doğrulama linki gönderdik.
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Lütfen e-postanızı kontrol edin ve linke tıklayarak hesabınızı doğrulayın. Ardından giriş yapabilirsiniz.
+                      </p>
+                      <p className="text-xs text-muted-foreground/70 mt-2">
+                        (Spam/Gereksiz klasörünü de kontrol edin)
                       </p>
                     </div>
                     <Button 
