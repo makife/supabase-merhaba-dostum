@@ -83,19 +83,19 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     });
   };
 
-  // Resmi sıkıştır
+  // Resmi sıkıştır - JPEG formatı daha güvenilir (webp native android'de sorun çıkarabiliyor)
   const compressImage = async (file: File): Promise<File> => {
     const options = {
       maxSizeMB: 0.3,
       maxWidthOrHeight: 800,
       useWebWorker: true,
-      fileType: "image/webp" as const,
+      fileType: "image/jpeg" as const, // 🔥 JPEG kullan - WebP yerine (daha güvenilir)
     };
 
     try {
       const compressedFile = await imageCompression(file, options);
       console.log(
-        `[PendingAvatar] Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB`,
+        `[PendingAvatar] Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB (JPEG)`,
       );
       return compressedFile;
     } catch (error) {
@@ -182,7 +182,7 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       }
 
       const timestamp = Date.now();
-      const fileName = `${user.id}/${timestamp}.webp`;
+      const fileName = `${user.id}/${timestamp}.jpg`; // 🔥 JPEG uzantısı kullan
 
       // Eski avatarları sil
       const { data: existingFiles } = await supabase.storage.from("avatars").list(user.id);
