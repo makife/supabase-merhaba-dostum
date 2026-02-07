@@ -2345,6 +2345,7 @@ const GamePage = ({
     setGameEnded(false);
     gameEndedRef.current = false; // 🔒 Reset ref too
     gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
+    gameHasStartedRef.current = false; // 🔒 KRİTİK: Bu ref sıfırlanmazsa handleCountdownComplete çalışmaz!
     setWinner(null);
     setShowResults(false); // ⚠️ KRİTİK: Skor kartını kapat
     setTimeWarningPlayed(false);
