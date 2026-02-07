@@ -17,6 +17,7 @@ import { Capacitor } from "@capacitor/core";
 import { nativeStorage } from "@/utils/nativeStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import imageCompression from "browser-image-compression";
 import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
@@ -37,6 +38,7 @@ interface PendingAvatarData {
 
 export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => void) => {
   const { user } = useAuth();
+  const { refreshProfile } = useUser();
   const isProcessingRef = useRef(false);
   const hasCheckedOnMountRef = useRef(false);
 
@@ -282,6 +284,16 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
           }),
         );
 
+        // 🔥 KRİTİK FIX: UserContext'teki profili yeniden yükle
+        // Bu sayede 10 saniyelik localOverride expire olduktan sonra da doğru URL gösterilir
+        console.log("[PendingAvatar] 🔄 UserContext profil refetch ediliyor...");
+        try {
+          await refreshProfile();
+          console.log("[PendingAvatar] ✅ Profil refetch başarılı");
+        } catch (refetchError) {
+          console.warn("[PendingAvatar] ⚠️ Profil refetch hatası:", refetchError);
+        }
+
         toast.success("Profil fotoğrafı güncellendi!");
       }
     } catch (error) {
@@ -292,7 +304,7 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     } finally {
       isProcessingRef.current = false;
     }
-  }, [user, onAvatarUploaded]);
+  }, [user, onAvatarUploaded, refreshProfile]);
 
   // 🔥 KAMERA AÇMA - Native plugin kullanarak Base64 formatında resim al
   const captureFromCameraWithRecovery = async (): Promise<boolean> => {
