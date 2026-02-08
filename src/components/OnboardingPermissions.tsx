@@ -89,7 +89,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
               sahipsiniz.
             </p>
 
-            <p className="text-xs text-muted-foreground mt-4">İletişim: info@kelimele.com.tr</p>
+            <p className="text-xs text-muted-foreground mt-4">İletişim: info@kelimele.site</p>
           </div>
 
           <div
