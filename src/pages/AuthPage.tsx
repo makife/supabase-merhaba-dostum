@@ -137,12 +137,13 @@ const AuthPage = () => {
               <TabsTrigger
                 value="signup"
                 className="
-    transition-all
+    bg-purple-500/40 text-purple-900
+    hover:bg-purple-500/60
     data-[state=active]:bg-gradient-to-r
     data-[state=active]:from-purple-600
     data-[state=active]:to-indigo-600
     data-[state=active]:text-white
-    data-[state=active]:shadow-md
+    transition-all
   "
               >
                 Kayıt Ol
