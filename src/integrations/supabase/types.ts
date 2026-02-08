@@ -189,6 +189,30 @@ export type Database = {
           },
         ]
       }
+      forum_messages: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: number
+          message: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: number
+          message: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: number
+          message?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       game_history: {
         Row: {
           id: string
