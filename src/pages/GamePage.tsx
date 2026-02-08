@@ -4441,11 +4441,11 @@ const GamePage = ({
           // Paralel güncelleme
           const [profileResult, weeklyResult, monthlyResult] = await Promise.all([
             // 1. Profiles tablosunu güncelle
-            supabase.rpc("increment_profile_score", { p_user_id: user.id, p_amount: bonusPoints }),
+            (supabase.rpc as any)("increment_profile_score", { p_user_id: user.id, p_amount: bonusPoints }),
             // 2. Weekly stats tablosunu güncelle
-            supabase.rpc("increment_weekly_score", { p_user_id: user.id, p_amount: bonusPoints, p_week_start: weekStartStr }),
+            (supabase.rpc as any)("increment_weekly_score", { p_user_id: user.id, p_amount: bonusPoints, p_week_start: weekStartStr }),
             // 3. Monthly stats tablosunu güncelle
-            supabase.rpc("increment_monthly_score", { p_user_id: user.id, p_amount: bonusPoints, p_month_start: monthStartStr }),
+            (supabase.rpc as any)("increment_monthly_score", { p_user_id: user.id, p_amount: bonusPoints, p_month_start: monthStartStr }),
           ]);
 
           if (profileResult.error || weeklyResult.error || monthlyResult.error) {
