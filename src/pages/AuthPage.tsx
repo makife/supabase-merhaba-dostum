@@ -134,7 +134,19 @@ const AuthPage = () => {
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Giriş Yap</TabsTrigger>
-              <TabsTrigger value="signup">Kayıt Ol</TabsTrigger>
+              <TabsTrigger
+                value="signup"
+                className="
+    transition-all
+    data-[state=active]:bg-gradient-to-r
+    data-[state=active]:from-purple-600
+    data-[state=active]:to-indigo-600
+    data-[state=active]:text-white
+    data-[state=active]:shadow-md
+  "
+              >
+                Kayıt Ol
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
