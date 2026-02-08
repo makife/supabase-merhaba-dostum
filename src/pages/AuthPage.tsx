@@ -196,8 +196,16 @@ const AuthPage = () => {
                       <DialogTrigger asChild>
                         <Button
                           type="button"
-                          variant="link"
-                          className="px-0 text-sm text-muted-foreground hover:text-primary"
+                          variant="ghost"
+                          className="
+    rounded-full
+    bg-red-500
+    text-white
+    px-4 py-1
+    text-xs
+    hover:bg-red-600
+    shadow-sm
+  "
                         >
                           Şifremi unuttum
                         </Button>
