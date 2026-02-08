@@ -147,48 +147,10 @@ const SettingsPage = () => {
     }
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 
-  // Bildirim servisi hazır mı kontrolü
-  const [notificationServiceReady, setNotificationServiceReady] = useState<boolean | null>(null);
-
-  // Servis hazırlığını kontrol et
-  useEffect(() => {
-    const checkServiceReady = async () => {
-      if (!isMobile) {
-        // Web'de Notification API varsa hazır
-        setNotificationServiceReady("Notification" in window);
-        return;
-      }
-      
-      try {
-        // SafePushNotifications.checkPermissions null dönerse servis hazır değil
-        const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
-        const result = await SafePushNotifications.checkPermissions();
-        console.log("📱 Bildirim servisi kontrolü:", result);
-        setNotificationServiceReady(result !== null);
-      } catch (error) {
-        console.error("📱 Bildirim servisi hazır değil:", error);
-        setNotificationServiceReady(false);
-      }
-    };
-    
-    checkServiceReady();
-  }, [isMobile]);
-
   const handleNotificationChange = async (checked: boolean) => {
-    // Servis hazır değilse kullanıcıyı bilgilendir
-    if (notificationServiceReady === false) {
-      toast({
-        title: "Bildirim Servisi Hazır Değil",
-        description: "Push bildirimleri bu cihazda kullanılamıyor. Lütfen uygulamayı yeniden yükleyin.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       console.log("🔔 Bildirim değişikliği:", checked);
       console.log("📱 Platform:", isMobile ? "Mobile" : "Web");
-      console.log("📱 Servis hazır:", notificationServiceReady);
 
       if (checked) {
         // Mobile veya web bildirim izinlerini iste
@@ -488,8 +450,6 @@ const SettingsPage = () => {
                 <Switch 
                   checked={notifications} 
                   onCheckedChange={handleNotificationChange} 
-                  disabled={notificationServiceReady === false}
-                  className={notificationServiceReady === false ? "opacity-50 cursor-not-allowed" : ""}
                 />
               </div>
 
