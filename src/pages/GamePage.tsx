@@ -4425,17 +4425,41 @@ const GamePage = ({
         }
       }
 
-      // Apply end game bonus for player
+      // Apply end game bonus for player - hem profiles hem weekly/monthly stats güncelle
       if (user && bonusPoints > 0) {
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("total_score")
-          .eq("id", user.id)
-          .single();
+        try {
+          // Tüm tabloları aynı anda güncelle: profiles, weekly_stats, monthly_stats
+          const weekStart = new Date();
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Pazartesi
+          if (weekStart > new Date()) weekStart.setDate(weekStart.getDate() - 7);
+          const weekStartStr = weekStart.toISOString().split("T")[0];
 
-        const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
+          const monthStart = new Date();
+          monthStart.setDate(1);
+          const monthStartStr = monthStart.toISOString().split("T")[0];
 
-        await supabase.from("profiles").update({ total_score: newTotalScore }).eq("id", user.id);
+          // Paralel güncelleme
+          const [profileResult, weeklyResult, monthlyResult] = await Promise.all([
+            // 1. Profiles tablosunu güncelle
+            supabase.rpc("increment_profile_score", { p_user_id: user.id, p_amount: bonusPoints }),
+            // 2. Weekly stats tablosunu güncelle
+            supabase.rpc("increment_weekly_score", { p_user_id: user.id, p_amount: bonusPoints, p_week_start: weekStartStr }),
+            // 3. Monthly stats tablosunu güncelle
+            supabase.rpc("increment_monthly_score", { p_user_id: user.id, p_amount: bonusPoints, p_month_start: monthStartStr }),
+          ]);
+
+          if (profileResult.error || weeklyResult.error || monthlyResult.error) {
+            console.error("❌ Bonus puan güncelleme hatası:", {
+              profile: profileResult.error,
+              weekly: weeklyResult.error,
+              monthly: monthlyResult.error,
+            });
+          } else {
+            console.log("✅ Bonus puanlar tüm tablolara eklendi:", bonusPoints);
+          }
+        } catch (error) {
+          console.error("❌ Bonus puan güncelleme hatası:", error);
+        }
 
         setTimeout(() => {
           toast({
