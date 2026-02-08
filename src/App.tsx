@@ -256,7 +256,7 @@ const AppRoutes = () => {
         />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/game/:mode"
           element={
