@@ -222,11 +222,10 @@ const AuthPage = () => {
             </TabsContent>
 
             <TabsContent value="signup">
-              <CardHeader className="bg-purple-500/90 text-white rounded-t-lg">
-                <CardTitle>Kayıt Ol</CardTitle>
-                <CardDescription className="text-purple-100">
-                  Yeni bir hesap oluşturun ve oyuna başlayın
-                </CardDescription>
+              <CardHeader>
+                {" "}
+                <CardTitle>Kayıt Ol</CardTitle>{" "}
+                <CardDescription>Yeni bir hesap oluşturun ve oyuna başlayın</CardDescription>{" "}
               </CardHeader>
               <CardContent>
                 {showEmailConfirmation ? (
