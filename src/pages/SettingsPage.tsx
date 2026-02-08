@@ -693,22 +693,24 @@ const SettingsPage = () => {
                     throw new Error(data.error);
                   }
 
+                  // Modal'ları kapat
+                  setDeleteFinalConfirmOpen(false);
+                  setDeleteConfirmOpen(false);
+
                   // Başarılı mesajı göster
                   toast({
                     title: "Hesap Silindi",
-                    description: "Hesabınız başarıyla silindi. Yönlendiriliyorsunuz...",
+                    description: "Hesabınız başarıyla silindi. Giriş sayfasına yönlendiriliyorsunuz...",
                   });
-
-                  // Kullanıcıyı çıkış yap
-                  await supabase.auth.signOut();
 
                   // Native storage'ı temizle
                   await nativeStorage.clear();
 
-                  // Ana sayfaya yönlendir
-                  setTimeout(() => {
-                    navigate("/auth");
-                  }, 2000);
+                  // Kullanıcıyı çıkış yap
+                  await supabase.auth.signOut();
+
+                  // Giriş sayfasına yönlendir - hemen yönlendir
+                  navigate("/auth", { replace: true });
                 } catch (error) {
                   console.error("Delete error:", error);
                   toast({
