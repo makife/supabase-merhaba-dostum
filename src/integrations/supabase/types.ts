@@ -1688,6 +1688,10 @@ export type Database = {
         Args: { p_badge_id: string; p_badge_name: string; p_user_id: string }
         Returns: undefined
       }
+      award_disconnect_bonus: {
+        Args: { p_bonus_points: number; p_user_id: string }
+        Returns: undefined
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
