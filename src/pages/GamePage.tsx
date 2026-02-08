@@ -6458,6 +6458,7 @@ const GamePage = ({
       }
 
       // Total score güncelleme (vs-computer modunda) - ASYNC, AWAIT'LEME
+      // award_disconnect_bonus RPC ile tüm tablolara atomik güncelleme
       if (user && gameMode === "vs-computer") {
         supabase
           .from("profiles")
@@ -6488,15 +6489,17 @@ const GamePage = ({
             const currentLevel = calculateLevel(currentProfile?.total_score || 0);
             const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
             const bonusPoints = Math.floor(result.points * levelMultiplier);
-            const newTotalScore = (currentProfile?.total_score || 0) + bonusPoints;
 
+            // 🔥 FIX: Direkt profiles güncelleme yerine RPC kullan
+            // Bu tüm tablolara (profiles, weekly_stats, monthly_stats) atomik güncelleme yapar
             supabase
-              .from("profiles")
-              .update({ total_score: newTotalScore })
-              .eq("id", user.id)
-              .then((updateResponse) => {
-                if (updateResponse.error) {
-                  console.error("❌ Total score update error:", updateResponse.error);
+              .rpc("award_disconnect_bonus", {
+                p_user_id: user.id,
+                p_bonus_points: bonusPoints,
+              })
+              .then((rpcResponse) => {
+                if (rpcResponse.error) {
+                  console.error("❌ VS-Bot score RPC error:", rpcResponse.error);
                 }
               });
           });
