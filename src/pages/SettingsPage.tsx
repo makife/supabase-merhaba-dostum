@@ -169,7 +169,7 @@ const SettingsPage = () => {
 
           // Test bildirimi göster
           setTimeout(() => {
-            showLocalNotification("Bildirimler Aktif", "Kelimeci bildirimleriniz aktif edildi!");
+            showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
           }, 1000);
         } else {
           setNotifications(false);
@@ -244,12 +244,12 @@ const SettingsPage = () => {
     const content = `
       <div class="space-y-4">
         <h3 class="font-semibold text-lg">Yardım & Destek</h3>
-        <p>Kelimeci oyunu hakkında sorularınız için aşağıdaki kanalı kullanabilirsiniz:</p>
+        <p>Kelimele oyunu hakkında sorularınız için aşağıdaki kanalı kullanabilirsiniz:</p>
         
         <div class="space-y-3">
           <div class="p-3 bg-muted rounded-lg">
             <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">info@kelimele.com.tr</p>
+            <p class="text-sm text-muted-foreground">info@kelimele.site</p>
             <p class="text-sm">24 saat içinde yanıtlanır</p>
           </div>
           
@@ -295,7 +295,7 @@ const SettingsPage = () => {
           
           <section>
             <h4 class="font-medium">İletişim</h4>
-            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.com.tr</p>
+            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.site</p>
           </section>
         </div>
       </div>
@@ -306,7 +306,7 @@ const SettingsPage = () => {
   const openAbout = () => {
     const content = `
       <div class="space-y-4">
-        <h3 class="font-semibold text-lg">Kelimeci Hakkında</h3>
+        <h3 class="font-semibold text-lg">Kelimele Hakkında</h3>
         
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
@@ -317,7 +317,7 @@ const SettingsPage = () => {
           <section>
             <h4 class="font-medium">Geliştirici</h4>
             <p class="text-sm text-muted-foreground">Kelimele ekibi tarafından geliştirilmiştir.</p>
-            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.com.tr" class="text-primary underline">www.kelimele.com.tr</a></p>
+            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.site/about" class="text-primary underline">www.kelimele.site</a></p>
           </section>
           
           <section>
@@ -361,7 +361,7 @@ const SettingsPage = () => {
               <span class="whitespace-nowrap">E-posta</span>
             </h4>
             <div class="space-y-2">
-              <p class="text-sm font-mono break-all">info@kelimele.com.tr</p>
+              <p class="text-sm font-mono break-all">info@kelimele.site</p>
               <p class="text-xs text-muted-foreground">Genel sorular, destek ve tüm konular</p>
             </div>
           </div>
