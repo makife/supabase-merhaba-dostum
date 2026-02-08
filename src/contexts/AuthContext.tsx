@@ -318,7 +318,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: { 
+        data: { username },
+        emailRedirectTo: "https://kelimele.site/auth/confirm/"
+      },
     });
     
     if (error) {
