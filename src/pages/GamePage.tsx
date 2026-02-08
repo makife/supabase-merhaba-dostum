@@ -286,26 +286,14 @@ const GamePage = ({
         console.error("❌ Turnuva disconnect penalty hatası:", err);
       }
 
-      // Rakibe 200 exp/puan bonus ver
+      // Rakibe 200 exp/puan bonus ver (TÜM TABLOLARA ATOMIK OLARAK)
       if (opponentUserId && !opponentUserId.startsWith("bot_")) {
         try {
-          const { data: opponentProfile } = await supabase
-            .from("profiles")
-            .select("total_score, win_count, tournament_wins")
-            .eq("id", opponentUserId)
-            .single();
-
-          if (opponentProfile) {
-            await supabase
-              .from("profiles")
-              .update({
-                total_score: (opponentProfile.total_score || 0) + 200,
-                win_count: (opponentProfile.win_count || 0) + 1,
-                last_win: new Date().toISOString(),
-              })
-              .eq("id", opponentUserId);
-            console.log("🏆 Turnuva rakibine 200 disconnect bonus verildi:", opponentUserId?.slice(-8));
-          }
+          await supabase.rpc("award_disconnect_bonus", {
+            p_user_id: opponentUserId,
+            p_bonus_points: 200,
+          });
+          console.log("🏆 Turnuva rakibine 200 disconnect bonus verildi (tüm tablolar):", opponentUserId?.slice(-8));
         } catch (err) {
           console.error("❌ Turnuva rakibe bonus verme hatası:", err);
         }
@@ -376,26 +364,14 @@ const GamePage = ({
     // Rakibi kazanan olarak işaretle
     const opponentUserId = room.player1_id === user.id ? room.player2_id : room.player1_id;
 
-    // Rakibe 200 exp/puan bonus ver
+    // Rakibe 200 exp/puan bonus ver (TÜM TABLOLARA ATOMIK OLARAK)
     if (opponentUserId) {
       try {
-        const { data: opponentProfile } = await supabase
-          .from("profiles")
-          .select("total_score, win_count")
-          .eq("id", opponentUserId)
-          .single();
-
-        if (opponentProfile) {
-          await supabase
-            .from("profiles")
-            .update({
-              total_score: (opponentProfile.total_score || 0) + 200,
-              win_count: (opponentProfile.win_count || 0) + 1,
-              last_win: new Date().toISOString(),
-            })
-            .eq("id", opponentUserId);
-          console.log("🏆 Rakibe 200 disconnect bonus verildi:", opponentUserId?.slice(-8));
-        }
+        await supabase.rpc("award_disconnect_bonus", {
+          p_user_id: opponentUserId,
+          p_bonus_points: 200,
+        });
+        console.log("🏆 Rakibe 200 disconnect bonus verildi (tüm tablolar):", opponentUserId?.slice(-8));
       } catch (err) {
         console.error("❌ Rakibe bonus verme hatası:", err);
       }
@@ -4992,34 +4968,18 @@ const GamePage = ({
         }
       }
 
-      // Eğer rakip bot değilse, puan ekle ve bildirim gönder
+      // Eğer rakip bot değilse, puan ekle ve bildirim gönder (TÜM TABLOLARA ATOMIK OLARAK)
       if (opponentId && !opponentId.startsWith("bot_")) {
         opponentId = opponentId.trim();
 
-        // Karşı oyuncunun profile skorunu güncelle
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("total_score")
-          .eq("id", opponentId)
-          .single();
-
-        if (profileError) {
-          console.error("❌ Profile data alınamadı:", profileError);
-        } else if (profile) {
-          console.log("📊 Profile mevcut skor:", profile.total_score);
-
-          const { error: profileUpdateError } = await supabase
-            .from("profiles")
-            .update({
-              total_score: (profile.total_score || 0) + 500,
-            })
-            .eq("id", opponentId);
-
-          if (profileUpdateError) {
-            console.error("❌ Profile skoru güncellenemedi:", profileUpdateError);
-          } else {
-            console.log("✅ Rakibe profiles'da +500 puan eklendi");
-          }
+        try {
+          await supabase.rpc("award_disconnect_bonus", {
+            p_user_id: opponentId,
+            p_bonus_points: 500,
+          });
+          console.log("✅ Rakibe 500 puan eklendi (tüm tablolar):", opponentId.slice(-8));
+        } catch (err) {
+          console.error("❌ Rakibe bonus verme hatası:", err);
         }
 
         // RAKIBE BİLDİRİM GÖNDER
