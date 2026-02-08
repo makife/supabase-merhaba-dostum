@@ -295,7 +295,11 @@ const AuthPage = () => {
                         </Button>
                       </div>
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                      disabled={loading}
+                    >
                       {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
                     </Button>
                   </form>
