@@ -361,7 +361,7 @@ const SettingsPage = () => {
               <span class="whitespace-nowrap">E-posta</span>
             </h4>
             <div class="space-y-2">
-              <p class="text-sm font-mono break-all">info@kelimele.site</p>
+              <p class="text-sm font-mono break-all">info@kelimele.com.tr</p>
               <p class="text-xs text-muted-foreground">Genel sorular, destek ve tüm konular</p>
             </div>
           </div>
@@ -529,7 +529,7 @@ const SettingsPage = () => {
           </Card>
 
           {/* Admin Panel - Only show for admin emails */}
-          {user?.email === "info@erganmuhendislik.com" && (
+          {user?.email === "info@kelimele.site" && (
             <Card className="border-destructive/50 bg-destructive/5">
               <CardHeader>
                 <CardTitle className="flex items-center text-destructive">
