@@ -2082,9 +2082,10 @@ export type Database = {
       update_game_stats:
         | {
             Args: {
-              p_first_word_time?: number
-              p_game_duration?: number
-              p_is_winner?: boolean
+              p_first_word_time: number
+              p_game_duration: number
+              p_game_mode: string
+              p_is_winner: boolean
               p_score: number
               p_user_id: string
               p_words: Json
@@ -2095,7 +2096,6 @@ export type Database = {
             Args: {
               p_first_word_time?: number
               p_game_duration?: number
-              p_game_mode?: string
               p_is_winner?: boolean
               p_score: number
               p_user_id: string
