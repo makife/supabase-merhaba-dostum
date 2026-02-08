@@ -371,11 +371,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🔑 Reset Password
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://kelimeci.com.tr/auth/reset-password",
+      redirectTo: "https://kelimele.site/reset-password",
     });
     
     if (!error) {
-      toast({ title: "Mail Gönderildi" });
+      toast({ title: "Mail Gönderildi", description: "Şifre sıfırlama linki e-postanıza gönderildi." });
+    } else {
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
     }
     
     return { error };
