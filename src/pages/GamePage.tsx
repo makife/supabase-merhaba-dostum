@@ -2682,13 +2682,15 @@ const GamePage = ({
         p_game_duration: gameDuration,
       });
 
-      // TypeScript hatasını önlemek için (any) cast
+      // TypeScript hatasını önlemek için (any) cast - 7 parametreli versiyon
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore,
         p_words: words,
         p_is_winner: isWinner,
         p_game_duration: gameDuration,
+        p_first_word_time: firstWordTime,
+        p_game_mode: gameMode,
       });
 
       console.log("📊 RPC sonucu:", { data, error });
@@ -4356,12 +4358,15 @@ const GamePage = ({
           try {
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
+            // 7 parametreli versiyon - haftalık/aylık liderlik için kritik
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore,
               p_words: playerWordsWithScores,
               p_is_winner: gameResult === "player",
               p_game_duration: gameDuration,
+              p_first_word_time: firstWordTime,
+              p_game_mode: gameMode,
             });
 
             if (error) {
