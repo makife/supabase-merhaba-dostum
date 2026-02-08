@@ -1891,6 +1891,7 @@ const GamePage = ({
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: "tournament",
+          p_bonus_points: userIsWinner ? 50 : 25, // Galibiyet/beraberlik bonusu
         });
 
         if (statsError) {
@@ -2682,7 +2683,6 @@ const GamePage = ({
         p_game_duration: gameDuration,
       });
 
-      // TypeScript hatasını önlemek için (any) cast - 7 parametreli versiyon
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore,
@@ -2691,6 +2691,7 @@ const GamePage = ({
         p_game_duration: gameDuration,
         p_first_word_time: firstWordTime,
         p_game_mode: gameMode,
+        p_bonus_points: isWinner ? 50 : 0, // Galibiyet bonusu varsa ekle
       });
 
       console.log("📊 RPC sonucu:", { data, error });
@@ -2779,14 +2780,16 @@ const GamePage = ({
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
+        const isWinner = finalUserScore > finalOpponentScore;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore,
           p_words: playerWordsWithScores,
-          p_is_winner: finalUserScore > finalOpponentScore,
+          p_is_winner: isWinner,
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
-          p_game_mode: gameMode, // 🎯 Oyun modu eklendi
+          p_game_mode: gameMode,
+          p_bonus_points: isWinner ? 50 : (finalUserScore === finalOpponentScore ? 25 : 0), // Galibiyet/beraberlik bonusu
         });
 
         if (error) {
@@ -4358,7 +4361,7 @@ const GamePage = ({
           try {
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
-            // 7 parametreli versiyon - haftalık/aylık liderlik için kritik
+            // 8 parametreli versiyon - bonus puanlar da dahil edildi (haftalık/aylık liderlik için kritik)
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore,
@@ -4367,6 +4370,7 @@ const GamePage = ({
               p_game_duration: gameDuration,
               p_first_word_time: firstWordTime,
               p_game_mode: gameMode,
+              p_bonus_points: bonusPoints, // YENİ: Bonus puanlar artık RPC içinde işleniyor
             });
 
             if (error) {
@@ -4425,42 +4429,10 @@ const GamePage = ({
         }
       }
 
-      // Apply end game bonus for player - hem profiles hem weekly/monthly stats güncelle
+      // Bonus puanlar artık update_game_stats RPC içinde işleniyor (p_bonus_points parametresi)
+      // Sadece kullanıcıya toast göster
       if (user && bonusPoints > 0) {
-        try {
-          // Tüm tabloları aynı anda güncelle: profiles, weekly_stats, monthly_stats
-          const weekStart = new Date();
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Pazartesi
-          if (weekStart > new Date()) weekStart.setDate(weekStart.getDate() - 7);
-          const weekStartStr = weekStart.toISOString().split("T")[0];
-
-          const monthStart = new Date();
-          monthStart.setDate(1);
-          const monthStartStr = monthStart.toISOString().split("T")[0];
-
-          // Paralel güncelleme
-          const [profileResult, weeklyResult, monthlyResult] = await Promise.all([
-            // 1. Profiles tablosunu güncelle
-            (supabase.rpc as any)("increment_profile_score", { p_user_id: user.id, p_amount: bonusPoints }),
-            // 2. Weekly stats tablosunu güncelle
-            (supabase.rpc as any)("increment_weekly_score", { p_user_id: user.id, p_amount: bonusPoints, p_week_start: weekStartStr }),
-            // 3. Monthly stats tablosunu güncelle
-            (supabase.rpc as any)("increment_monthly_score", { p_user_id: user.id, p_amount: bonusPoints, p_month_start: monthStartStr }),
-          ]);
-
-          if (profileResult.error || weeklyResult.error || monthlyResult.error) {
-            console.error("❌ Bonus puan güncelleme hatası:", {
-              profile: profileResult.error,
-              weekly: weeklyResult.error,
-              monthly: monthlyResult.error,
-            });
-          } else {
-            console.log("✅ Bonus puanlar tüm tablolara eklendi:", bonusPoints);
-          }
-        } catch (error) {
-          console.error("❌ Bonus puan güncelleme hatası:", error);
-        }
-
+        console.log("✅ Bonus puanlar RPC içinde işlendi:", bonusPoints);
         setTimeout(() => {
           toast({
             title: gameResult === "player" ? "Kazanma Bonusu!" : "Beraberlik Bonusu!",
