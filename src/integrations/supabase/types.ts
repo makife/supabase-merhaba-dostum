@@ -1910,12 +1910,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_monthly_score: {
+        Args: { p_amount: number; p_month_start: string; p_user_id: string }
+        Returns: undefined
+      }
+      increment_profile_score: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
       increment_tournament_participants: {
         Args: { tournament_id: string }
         Returns: undefined
       }
       increment_tournament_players: {
         Args: { tournament_id: string }
+        Returns: undefined
+      }
+      increment_weekly_score: {
+        Args: { p_amount: number; p_user_id: string; p_week_start: string }
         Returns: undefined
       }
       leave_tournament_with_transfer: {
