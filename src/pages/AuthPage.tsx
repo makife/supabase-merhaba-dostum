@@ -48,12 +48,12 @@ const AuthPage = () => {
   // İlk yüklemede kayıtlı bilgileri al
   useEffect(() => {
     const loadSavedCredentials = async () => {
-      const { value: savedEmail } = await Preferences.get({ key: 'kelimele-saved-email' });
-      const { value: savedPassword } = await Preferences.get({ key: 'kelimele-saved-password' });
+      const { value: savedEmail } = await Preferences.get({ key: "kelimele-saved-email" });
+      const { value: savedPassword } = await Preferences.get({ key: "kelimele-saved-password" });
       if (savedEmail || savedPassword) {
         setSignInData({
-          email: savedEmail || '',
-          password: savedPassword || '',
+          email: savedEmail || "",
+          password: savedPassword || "",
         });
       }
     };
@@ -69,14 +69,14 @@ const AuthPage = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // 🔧 Giriş bilgilerini Preferences'a kaydet
-    await Preferences.set({ key: 'kelimele-saved-email', value: signInData.email });
-    await Preferences.set({ key: 'kelimele-saved-password', value: signInData.password });
-    
+    await Preferences.set({ key: "kelimele-saved-email", value: signInData.email });
+    await Preferences.set({ key: "kelimele-saved-password", value: signInData.password });
+
     const { error } = await signIn(signInData.email, signInData.password);
     setLoading(false);
-    
+
     // 🔥 Hata yoksa direkt yönlendir (useEffect yedeği)
     if (!error) {
       console.log("[AuthPage] ✅ SignIn successful, navigating to home...");
@@ -89,7 +89,7 @@ const AuthPage = () => {
     setLoading(true);
     const { error } = await signUp(signUpData.email, signUpData.password, signUpData.username);
     setLoading(false);
-    
+
     if (!error) {
       setRegisteredEmail(signUpData.email);
       setShowEmailConfirmation(true);
@@ -222,9 +222,11 @@ const AuthPage = () => {
             </TabsContent>
 
             <TabsContent value="signup">
-              <CardHeader>
+              <CardHeader className="bg-purple-500/90 text-white rounded-t-lg">
                 <CardTitle>Kayıt Ol</CardTitle>
-                <CardDescription>Yeni bir hesap oluşturun ve oyuna başlayın</CardDescription>
+                <CardDescription className="text-purple-100">
+                  Yeni bir hesap oluşturun ve oyuna başlayın
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {showEmailConfirmation ? (
@@ -233,24 +235,18 @@ const AuthPage = () => {
                       <Mail className="w-8 h-8 text-green-500" />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        E-posta Doğrulama Gerekli!
-                      </h3>
+                      <h3 className="text-lg font-semibold text-foreground">E-posta Doğrulama Gerekli!</h3>
                       <p className="text-muted-foreground text-sm">
-                        <span className="font-medium text-primary">{registeredEmail}</span> adresine bir doğrulama linki gönderdik.
+                        <span className="font-medium text-primary">{registeredEmail}</span> adresine bir doğrulama linki
+                        gönderdik.
                       </p>
                       <p className="text-muted-foreground text-sm">
-                        Lütfen e-postanızı kontrol edin ve linke tıklayarak hesabınızı doğrulayın. Ardından giriş yapabilirsiniz.
+                        Lütfen e-postanızı kontrol edin ve linke tıklayarak hesabınızı doğrulayın. Ardından giriş
+                        yapabilirsiniz.
                       </p>
-                      <p className="text-xs text-muted-foreground/70 mt-2">
-                        (Spam/Gereksiz klasörünü de kontrol edin)
-                      </p>
+                      <p className="text-xs text-muted-foreground/70 mt-2">(Spam/Gereksiz klasörünü de kontrol edin)</p>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => setShowEmailConfirmation(false)}
-                    >
+                    <Button variant="outline" className="w-full" onClick={() => setShowEmailConfirmation(false)}>
                       Yeni Kayıt Yap
                     </Button>
                   </div>
