@@ -1,57 +1,87 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+// ResetPasswordPage.tsx
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const ResetPasswordPage = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    document.title = 'Şifre Sıfırlama | Kelimeci';
-  }, []);
+    document.title = "Şifre Sıfırlama | Kelimeci";
+
+    // 🔹 URL'den token al
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("access_token");
+    if (!token) {
+      toast({
+        title: "Hata",
+        description: "Token bulunamadı. Lütfen maildeki linki tekrar kullanın.",
+        variant: "destructive",
+      });
+    }
+    setAccessToken(token);
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!accessToken) return;
+
     if (password.length < 6) {
       toast({
-        title: 'Geçersiz Şifre',
-        description: 'Şifre en az 6 karakter olmalıdır.',
-        variant: 'destructive',
+        title: "Geçersiz Şifre",
+        description: "Şifre en az 6 karakter olmalıdır.",
+        variant: "destructive",
       });
       return;
     }
+
     if (password !== confirmPassword) {
       toast({
-        title: 'Eşleşmeyen Şifreler',
-        description: 'Şifre ve doğrulama şifresi aynı olmalıdır.',
-        variant: 'destructive',
+        title: "Eşleşmeyen Şifreler",
+        description: "Şifre ve doğrulama şifresi aynı olmalıdır.",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+
+    // 🔹 Supabase ile şifre güncelle
+    const { error } = await supabase.auth.updateUser({
+      password,
+      access_token: accessToken,
+    });
+
     setLoading(false);
 
     if (error) {
       toast({
-        title: 'Hata',
-        description: 'Şifre güncellenemedi. Link süresi dolmuş olabilir. Lütfen tekrar deneyin.',
-        variant: 'destructive',
+        title: "Hata",
+        description:
+          "Şifre güncellenemedi. Link süresi dolmuş olabilir. Lütfen tekrar deneyin.",
+        variant: "destructive",
       });
       return;
     }
 
-    toast({ title: 'Başarılı', description: 'Şifreniz güncellendi. Giriş yapabilirsiniz.' });
-    navigate('/auth');
+    toast({
+      title: "Başarılı",
+      description: "Şifreniz güncellendi. Giriş yapabilirsiniz.",
+    });
+
+    navigate("/auth");
   };
 
   return (
@@ -83,7 +113,7 @@ const ResetPasswordPage = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+              {loading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
             </Button>
           </form>
         </CardContent>
