@@ -249,7 +249,7 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <div class="p-3 bg-muted rounded-lg">
             <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">info@kelimele.site</p>
+            <p class="text-sm text-muted-foreground">info@kelimele.com.tr</p>
             <p class="text-sm">24 saat içinde yanıtlanır</p>
           </div>
           
@@ -295,7 +295,7 @@ const SettingsPage = () => {
           
           <section>
             <h4 class="font-medium">İletişim</h4>
-            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.com.tr</p>
+            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.site</p>
           </section>
         </div>
       </div>
