@@ -17,7 +17,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 const AuthPage = () => {
@@ -192,47 +191,14 @@ const AuthPage = () => {
                   </div>
 
                   <div className="text-right">
-                    <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="
-    rounded-full
-    bg-red-500
-    text-white
-    px-4 py-1
-    text-xs
-    hover:bg-red-600
-    shadow-sm
-  "
-                        >
-                          Şifremi unuttum
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Şifre Sıfırlama</DialogTitle>
-                          <DialogDescription>E-posta adresinize şifre sıfırlama linki göndereceğiz.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleResetPassword} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="reset-email">E-posta</Label>
-                            <Input
-                              id="reset-email"
-                              type="email"
-                              placeholder="ornek@email.com"
-                              value={resetEmail}
-                              onChange={(e) => setResetEmail(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <Button type="submit" className="w-full" disabled={resetLoading}>
-                            {resetLoading ? "Gönderiliyor..." : "Şifre Sıfırlama Linki Gönder"}
-                          </Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="rounded-full bg-red-500 text-white px-4 py-1 text-xs hover:bg-red-600 shadow-sm"
+                      onClick={() => setResetDialogOpen(true)}
+                    >
+                      Şifremi unuttum
+                    </Button>
                   </div>
 
                   <Button type="submit" className="w-full" disabled={loading}>
@@ -328,6 +294,32 @@ const AuthPage = () => {
               </CardContent>
             </TabsContent>
           </Tabs>
+
+          {/* Şifre Sıfırlama Dialog - Form dışında */}
+          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Şifre Sıfırlama</DialogTitle>
+                <DialogDescription>E-posta adresinize şifre sıfırlama linki göndereceğiz.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">E-posta</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="ornek@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={resetLoading}>
+                  {resetLoading ? "Gönderiliyor..." : "Şifre Sıfırlama Linki Gönder"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </Card>
       </div>
     </div>
