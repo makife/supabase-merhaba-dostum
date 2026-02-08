@@ -371,7 +371,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🔑 Reset Password
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://kelimele.site/reset-password",
+      redirectTo: "https://kelimele.site/auth/reset-password",
     });
     
     if (!error) {
