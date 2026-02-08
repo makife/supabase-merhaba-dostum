@@ -690,24 +690,18 @@ const SettingsPage = () => {
                     throw new Error(data.error);
                   }
 
-                  // Modal'ları kapat
+                  // 🔥 Modal'ları HEMEN kapat
                   setDeleteFinalConfirmOpen(false);
                   setDeleteConfirmOpen(false);
 
-                  // Başarılı mesajı göster
-                  toast({
-                    title: "Hesap Silindi",
-                    description: "Hesabınız başarıyla silindi. Giriş sayfasına yönlendiriliyorsunuz...",
-                  });
-
-                  // Native storage'ı temizle
+                  // 🔥 Native storage'ı temizle
                   await nativeStorage.clear();
 
-                  // Kullanıcıyı çıkış yap
+                  // 🔥 Kullanıcıyı çıkış yap
                   await supabase.auth.signOut();
 
-                  // Giriş sayfasına yönlendir - hemen yönlendir
-                  navigate("/auth", { replace: true });
+                  // 🔥 HEMEN auth sayfasına yönlendir - window.location ile zorla
+                  window.location.href = "/auth";
                 } catch (error) {
                   console.error("Delete error:", error);
                   toast({
