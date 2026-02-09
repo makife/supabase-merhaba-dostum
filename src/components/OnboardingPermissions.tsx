@@ -5,19 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Camera, Bell, Shield, CheckCircle2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-
-// Dinamik import için helper fonksiyonlar
-const getPushNotifications = async () => {
-  try {
-    const module = await import("@capacitor/push-notifications");
-    return module.PushNotifications;
-  } catch (error) {
-    console.log("PushNotifications plugin yüklenemedi:", error);
-    return null;
-  }
-};
+import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 
 const getCapacitorCamera = async () => {
   try {
@@ -44,7 +32,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
     camera: false,
   });
 
-  const { user } = useAuth();
+  const { requestPermissions: requestNotificationPermissions } = useMobileNotifications();
   const isMobile = Capacitor.getPlatform() !== "web";
 
   const steps = [
@@ -156,74 +144,16 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
     },
   ];
 
-  // Push token'ı veritabanına kaydet
-  const savePushToken = async (userId: string, token: string) => {
-    try {
-      console.log("📱 Push token kaydediliyor:", token.substring(0, 20) + "...");
-      const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
-
-      if (error) {
-        console.error("Push token kaydetme hatası:", error);
-        // LocalStorage'a da kaydet (yedek)
-        localStorage.setItem("push_token_pending", JSON.stringify({ userId, token }));
-      } else {
-        console.log("✅ Push token veritabanına kaydedildi");
-        localStorage.removeItem("push_token_pending");
-      }
-    } catch (error) {
-      console.error("Push token kaydetme hatası:", error);
-    }
-  };
-
-  const requestPermissions = async () => {
+  const requestAllPermissions = async () => {
     const granted = { notifications: false, camera: false };
 
-    // Bildirim izni
-    if (isMobile) {
-      try {
-        const PushNotifications = await getPushNotifications();
-        if (PushNotifications) {
-          console.log("📱 Bildirim izni isteniyor...");
-          const permission = await PushNotifications.requestPermissions();
-          console.log("📱 Bildirim izni sonucu:", permission.receive);
-
-          if (permission.receive === "granted") {
-            // Önce listener'ları kur
-            PushNotifications.addListener("registration", async (token) => {
-              console.log("✅ Push token alındı:", token.value.substring(0, 20) + "...");
-
-              // User varsa hemen kaydet, yoksa localStorage'a koy
-              if (user?.id) {
-                await savePushToken(user.id, token.value);
-              } else {
-                console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
-                localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
-              }
-            });
-
-            PushNotifications.addListener("registrationError", (error: any) => {
-              console.error("❌ Push registration hatası:", error.error);
-            });
-
-            // Sonra register çağır
-            await PushNotifications.register();
-            granted.notifications = true;
-            console.log("✅ Bildirim izni verildi ve register çağrıldı");
-          } else {
-            console.log("❌ Bildirim izni reddedildi");
-          }
-        }
-      } catch (err) {
-        console.error("Bildirim izni hatası:", err);
-      }
-    } else if ("Notification" in window) {
-      try {
-        const permission = await Notification.requestPermission();
-        granted.notifications = permission === "granted";
-        console.log("🌐 Web bildirim izni:", permission);
-      } catch (err) {
-        console.error("Web bildirim izni hatası:", err);
-      }
+    // Bildirim izni - useMobileNotifications hook'unu kullan
+    try {
+      console.log("📱 [Onboarding] Bildirim izni isteniyor (useMobileNotifications)...");
+      granted.notifications = await requestNotificationPermissions();
+      console.log("📱 [Onboarding] Bildirim izni sonucu:", granted.notifications);
+    } catch (err) {
+      console.error("Bildirim izni hatası:", err);
     }
 
     // Kamera izni
@@ -259,9 +189,10 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         // İzin isteme işlemine 5 saniyelik süre tanı.
         // Eğer 5 saniyede cevap gelmezse (pencere açılmazsa veya takılırsa) hata fırlat ve devam et.
 
-        const permissionPromise = requestPermissions(); // Senin yazdığın fonksiyon
+        const permissionPromise = requestAllPermissions();
 
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+        // 15 saniye timeout - native izin dialogları zaman alabilir
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 15000));
 
         // Hangisi önce biterse onu kabul et
         await Promise.race([permissionPromise, timeoutPromise]);
