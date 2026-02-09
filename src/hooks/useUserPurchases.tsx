@@ -227,19 +227,34 @@ export const useUserPurchases = () => {
         // Başarı mesajı silindi - zaten market sayfasında gösteriliyor
 
       } else if (item.type === 'unlimited_time') {
-        // Sınırsız zaman için özel kredi ekle
+        // 🔥 KRİTİK FIX: Sınırsız zaman satın alımında bonus_credits'e ekle
+        // game_credits değil bonus_credits kullanılmalı (game_credits max 5)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('game_credits')
+          .select('game_credits, bonus_credits')
           .eq('id', user.id)
           .single();
 
-        const bonusCredits = item.value === 1 ? 10 : 50; // 1 saat = 10, 24 saat = 50
-        const newCredits = (profile?.game_credits || 0) + bonusCredits;
+        const creditsToAdd = item.value === 1 ? 10 : 50; // 1 saat = 10, 24 saat = 50
+        const currentGameCredits = profile?.game_credits || 0;
+        const currentBonusCredits = profile?.bonus_credits || 0;
+        
+        // game_credits 5'e kadar doldur, kalan bonus'a
+        const spaceInGameCredits = Math.max(0, 5 - currentGameCredits);
+        const addToGame = Math.min(creditsToAdd, spaceInGameCredits);
+        const addToBonus = creditsToAdd - addToGame;
+        
+        const newGameCredits = currentGameCredits + addToGame;
+        const newBonusCredits = currentBonusCredits + addToBonus;
+        
+        console.log(`[Purchase] unlimited_time: Adding ${creditsToAdd} credits. Game: ${currentGameCredits}->${newGameCredits}, Bonus: ${currentBonusCredits}->${newBonusCredits}`);
 
         await supabase
           .from('profiles')
-          .update({ game_credits: newCredits })
+          .update({ 
+            game_credits: newGameCredits,
+            bonus_credits: newBonusCredits
+          })
           .eq('id', user.id);
 
       } else if (item.type === 'premium') {

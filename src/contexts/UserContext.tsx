@@ -656,11 +656,28 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     if (!user || !profile) return;
 
     try {
-      const currentBase = profile.game_credits;
+      // 🔥 KRİTİK FIX: Önce veritabanından güncel değerleri çek!
+      // Bu sayede eski cache değeri üzerine yazmayı önlüyoruz
+      const { data: freshProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, last_credit_refresh")
+        .eq("id", user.id)
+        .single();
+
+      if (fetchError || !freshProfile) {
+        console.error("addBonusCredits: Fresh profile fetch failed:", fetchError);
+        return;
+      }
+
+      const currentBase = freshProfile.game_credits || 0;
+      const currentBonus = freshProfile.bonus_credits || 0;
+      
       const neededForFull = Math.max(0, 5 - currentBase);
       const newBase = Math.min(5, currentBase + bonusCredits);
       const remainingBonus = Math.max(0, bonusCredits - neededForFull);
-      const newTotalBonus = profile.bonus_credits + remainingBonus;
+      const newTotalBonus = currentBonus + remainingBonus;
+
+      console.log(`addBonusCredits: Adding ${bonusCredits} credits. Before: game=${currentBase}, bonus=${currentBonus}. After: game=${newBase}, bonus=${newTotalBonus}`);
 
       const updateData: any = {
         game_credits: newBase,
@@ -679,11 +696,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         ...profile,
         game_credits: newBase,
         bonus_credits: newTotalBonus,
-        last_credit_refresh: newBase >= 5 ? null : profile.last_credit_refresh,
+        last_credit_refresh: newBase >= 5 ? null : freshProfile.last_credit_refresh,
         ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
-      console.log("Bonus credits added:", updatedProfile);
+      console.log("Bonus credits added successfully:", { newBase, newTotalBonus });
     } catch (error) {
       console.error("Error adding bonus credits:", error);
     }
@@ -762,20 +779,39 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return true;
     }
 
-    const totalCredits = getTotalCredits();
-    if (totalCredits <= 0) return false;
-
+    // 🔥 KRİTİK FİX: Önce veritabanından GÜNCEL değerleri çek!
+    // Bu race condition'ı önler - cache'deki eski veri sorunu çözülür
     try {
-      let newGameCredits = profile.game_credits;
-      let newBonusCredits = profile.bonus_credits;
+      const { data: freshProfile, error: fetchError } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, last_credit_refresh")
+        .eq("id", user.id)
+        .single();
 
-      if (profile.bonus_credits > 0) {
-        newBonusCredits = profile.bonus_credits - 1;
-      } else if (profile.game_credits > 0) {
-        newGameCredits = profile.game_credits - 1;
+      if (fetchError || !freshProfile) {
+        console.error("consumeCredit: Fresh profile fetch failed:", fetchError);
+        return false;
       }
 
-      const shouldSetRefreshTime = newGameCredits < 5 && !profile.last_credit_refresh;
+      const freshTotalCredits = (freshProfile.game_credits || 0) + (freshProfile.bonus_credits || 0);
+      if (freshTotalCredits <= 0) {
+        console.log("consumeCredit: No credits available (fresh check)");
+        return false;
+      }
+
+      let newGameCredits = freshProfile.game_credits || 0;
+      let newBonusCredits = freshProfile.bonus_credits || 0;
+
+      // Önce bonus krediden düş, sonra normal krediden
+      if (newBonusCredits > 0) {
+        newBonusCredits = newBonusCredits - 1;
+        console.log(`consumeCredit: Using bonus credit. ${freshProfile.bonus_credits} -> ${newBonusCredits}`);
+      } else if (newGameCredits > 0) {
+        newGameCredits = newGameCredits - 1;
+        console.log(`consumeCredit: Using game credit. ${freshProfile.game_credits} -> ${newGameCredits}`);
+      }
+
+      const shouldSetRefreshTime = newGameCredits < 5 && !freshProfile.last_credit_refresh;
       const updateData: any = {
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits,
@@ -789,14 +825,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       if (error) throw error;
 
+      // State'i de güncelle
       const updatedProfile = {
         ...profile,
         game_credits: newGameCredits,
         bonus_credits: newBonusCredits,
-        last_credit_refresh: shouldSetRefreshTime ? new Date().toISOString() : profile.last_credit_refresh,
+        last_credit_refresh: shouldSetRefreshTime ? new Date().toISOString() : freshProfile.last_credit_refresh,
         ink_count: profile.ink_count ?? 0,
       };
       setProfile(updatedProfile);
+      
+      console.log("consumeCredit: Success - Credits updated:", { newGameCredits, newBonusCredits });
       return true;
     } catch (error) {
       console.error("Error consuming credit:", error);
