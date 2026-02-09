@@ -317,7 +317,7 @@ const SettingsPage = () => {
           <section>
             <h4 class="font-medium">Geliştirici</h4>
             <p class="text-sm text-muted-foreground">Kelimele ekibi tarafından geliştirilmiştir.</p>
-            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.site/about" class="text-primary underline">www.kelimele.site</a></p>
+            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.site/about" class="text-primary underline">www.kelimele.site/about</a></p>
           </section>
           
           <section>
