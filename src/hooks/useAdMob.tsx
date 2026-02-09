@@ -20,6 +20,7 @@ const getAdMobModule = async () => {
 export const useAdMob = () => {
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [isAdReady, setIsAdReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -30,28 +31,36 @@ export const useAdMob = () => {
   console.log("[AdMob] Platform:", platform, "isNative:", isNativePlatform);
 
   // Initialize AdMob
-  const initializeAdMob = useCallback(async () => {
+  const initializeAdMob = useCallback(async (): Promise<boolean> => {
     if (!isNativePlatform) {
       console.log("[AdMob] Skipping init - not native platform");
-      return;
+      return false;
+    }
+
+    if (isInitialized) {
+      console.log("[AdMob] Already initialized");
+      return true;
     }
 
     try {
       const admobModule = await getAdMobModule();
       if (!admobModule) {
         console.error("[AdMob] AdMob module not found");
-        return;
+        return false;
       }
 
       await admobModule.AdMob.initialize({
         testingDevices: [],
         initializeForTesting: false,
       });
+      setIsInitialized(true);
       console.log("[AdMob] ✅ Initialized successfully");
+      return true;
     } catch (error) {
       console.error("[AdMob] ❌ Initialization failed:", error);
+      return false;
     }
-  }, [isNativePlatform]);
+  }, [isNativePlatform, isInitialized]);
 
   // Load rewarded ad
   const loadRewardedAd = useCallback(async (): Promise<boolean> => {
@@ -67,6 +76,21 @@ export const useAdMob = () => {
         description: "Reklamlar sadece mobil uygulamada çalışır",
       });
       return false;
+    }
+
+    // 🔧 KRİTİK: Önce initialize edildiğinden emin ol
+    if (!isInitialized) {
+      console.log("[AdMob] Not initialized yet, initializing first...");
+      const initSuccess = await initializeAdMob();
+      if (!initSuccess) {
+        console.error("[AdMob] Failed to initialize before loading ad");
+        toast({
+          title: "AdMob Hatası",
+          description: "Reklam sistemi başlatılamadı",
+          variant: "destructive",
+        });
+        return false;
+      }
     }
 
     setIsAdLoading(true);
@@ -115,7 +139,7 @@ export const useAdMob = () => {
       setIsAdLoading(false);
       return false;
     }
-  }, [isAdLoading, isNativePlatform, platform, toast]);
+  }, [isAdLoading, isNativePlatform, isInitialized, initializeAdMob, platform, toast]);
 
   // Give reward to user
   const giveReward = useCallback(async () => {
@@ -268,6 +292,7 @@ export const useAdMob = () => {
   return {
     isAdLoading,
     isAdReady,
+    isInitialized,
     initializeAdMob,
     loadRewardedAd,
     showRewardedAd,
