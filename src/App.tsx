@@ -65,6 +65,7 @@ import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";
 import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 import { toast } from "sonner";
+import { useAdMob } from "@/hooks/useAdMob";
 
 const queryClient = new QueryClient();
 
@@ -214,6 +215,18 @@ const AppRoutes = () => {
   useImmersiveBars();
   useSessionRecovery();
   useForceReloadOnResume();
+
+  // 🔥 AdMob'u uygulama başlangıcında initialize et
+  const { initializeAdMob } = useAdMob();
+  
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      console.log("[App] 🎬 Initializing AdMob at app startup...");
+      initializeAdMob().then((success) => {
+        console.log("[App] AdMob init result:", success);
+      });
+    }
+  }, [initializeAdMob]);
 
   // İlk yüklemede audio başlat
   useEffect(() => {
