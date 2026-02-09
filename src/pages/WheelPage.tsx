@@ -271,16 +271,47 @@ const WheelPage = () => {
     if (!user || reward.type === "empty") return;
 
     if (reward.type === "credits") {
-      const currentCredits = profile?.game_credits || 0;
-      await supabase
+      // 🔥 KRİTİK FİX: Önce güncel değeri veritabanından çek!
+      // Bu sayede eski cache değeri üzerine yazmayı önlüyoruz
+      const { data: freshProfile } = await supabase
         .from("profiles")
-        .update({ game_credits: currentCredits + reward.value })
-        .eq("id", user.id);
+        .select("game_credits, bonus_credits")
+        .eq("id", user.id)
+        .single();
+      
+      if (freshProfile) {
+        // Kredi ekleme mantığı: önce game_credits 5'e tamamla, kalan bonus'a
+        const currentGameCredits = freshProfile.game_credits || 0;
+        const currentBonusCredits = freshProfile.bonus_credits || 0;
+        const creditsToAdd = reward.value;
+        
+        // game_credits 5'e kadar doldur
+        const spaceInGameCredits = Math.max(0, 5 - currentGameCredits);
+        const addToGame = Math.min(creditsToAdd, spaceInGameCredits);
+        const addToBonus = creditsToAdd - addToGame;
+        
+        await supabase
+          .from("profiles")
+          .update({ 
+            game_credits: currentGameCredits + addToGame,
+            bonus_credits: currentBonusCredits + addToBonus
+          })
+          .eq("id", user.id);
+        
+        console.log(`[Wheel] Credits added: game +${addToGame}, bonus +${addToBonus}`);
+      }
       refreshProfile();
     } else if (reward.type === "joker" && reward.item) {
       await updateInventory(reward.item, reward.value);
     } else if (reward.type === "ink") {
-      const currentInk = profile?.ink_count || 0;
+      // 🔥 FIX: Güncel ink değerini veritabanından çek
+      const { data: freshProfile } = await supabase
+        .from("profiles")
+        .select("ink_count")
+        .eq("id", user.id)
+        .single();
+      
+      const currentInk = freshProfile?.ink_count || 0;
       await supabase
         .from("profiles")
         .update({ ink_count: currentInk + reward.value })
