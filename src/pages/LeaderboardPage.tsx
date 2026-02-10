@@ -57,6 +57,7 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
 
   // Genel sıralama (tüm zamanlar)
   const fetchAllTimeLeaders = async () => {
@@ -184,8 +185,22 @@ const LeaderboardPage = () => {
   };
 
   // Ana resync fonksiyonu
+  const fetchOnlineUsers = async () => {
+    try {
+      const { data } = await supabase
+        .from("user_presence")
+        .select("user_id")
+        .eq("is_online", true);
+      if (data) {
+        setOnlineUserIds(new Set(data.map((d) => d.user_id)));
+      }
+    } catch (e) {
+      console.error("Error fetching online users:", e);
+    }
+  };
+
   const handleLeaderboardResync = useCallback(async () => {
-    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders(), fetchOnlineUsers()]);
   }, []);
 
   // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
@@ -286,13 +301,18 @@ const LeaderboardPage = () => {
             <CardContent className="p-3">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
-                <Avatar
-                  className="w-10 h-10 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
-                  onClick={() => navigate(`/profile/${leader.user_id}`)}
-                >
-                  <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
-                  <AvatarFallback>{leader.username.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
+                <div className="relative flex-shrink-0">
+                  <Avatar
+                    className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                    onClick={() => navigate(`/profile/${leader.user_id}`)}
+                  >
+                    <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                    <AvatarFallback>{leader.username.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  {onlineUserIds.has(leader.user_id) && (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2 min-w-0 flex-1">
