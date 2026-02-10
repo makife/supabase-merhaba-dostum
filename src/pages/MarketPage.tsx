@@ -277,10 +277,26 @@ const MarketPage = () => {
     setPurchaseLoading(true);
 
     try {
-      // Önce mürekkebi düş
+      // 🔥 FIX: Önce veritabanından güncel değerleri çek (stale state önleme)
+      const { data: freshProfile, error: freshError } = await supabase
+        .from("profiles")
+        .select("ink_count, game_credits, bonus_credits")
+        .eq("id", user.id)
+        .single();
+
+      if (freshError || !freshProfile) throw freshError || new Error("Profil bulunamadı");
+
+      // Mürekkep kontrolü (güncel veriyle)
+      if ((freshProfile.ink_count || 0) < itemToBuy.priceInInk) {
+        toast({ title: "Yetersiz Mürekkep 💧", description: "Yeterli mürekkebiniz yok.", variant: "destructive" });
+        setPurchaseLoading(false);
+        return;
+      }
+
+      // Mürekkebi düş (güncel veriyle)
       const { error: deductError } = await supabase
         .from("profiles")
-        .update({ ink_count: (profile.ink_count || 0) - itemToBuy.priceInInk })
+        .update({ ink_count: (freshProfile.ink_count || 0) - itemToBuy.priceInInk })
         .eq("id", user.id)
         .select()
         .single();
@@ -309,11 +325,23 @@ const MarketPage = () => {
 
         if (invError) throw invError;
       } else if (itemToBuy.type === "heart") {
-        const currentCredits = profile.game_credits || 0;
-        const newCredits = currentCredits + itemToBuy.value;
+        // 🔥 FIX: game_credits max 5, fazlası bonus_credits'e
+        const currentGameCredits = freshProfile.game_credits || 0;
+        const currentBonusCredits = freshProfile.bonus_credits || 0;
+        const creditsToAdd = itemToBuy.value;
 
-        const updateData: any = { game_credits: newCredits };
-        if (newCredits >= 5) {
+        const spaceInGame = Math.max(0, 5 - currentGameCredits);
+        const addToGame = Math.min(creditsToAdd, spaceInGame);
+        const addToBonus = creditsToAdd - addToGame;
+
+        const newGameCredits = currentGameCredits + addToGame;
+        const newBonusCredits = currentBonusCredits + addToBonus;
+
+        const updateData: any = { 
+          game_credits: newGameCredits, 
+          bonus_credits: newBonusCredits 
+        };
+        if (newGameCredits >= 5) {
           updateData.last_credit_refresh = null;
         }
 
