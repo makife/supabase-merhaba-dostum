@@ -6,8 +6,8 @@
 All colors MUST be HSL.
 */
 
-  /* Remove default focus glow/outline from all inputs */
-  input:focus,
+/* Remove default focus glow/outline from all inputs */
+/*input:focus,
   textarea:focus,
   select:focus {
     outline: none !important;
@@ -20,7 +20,7 @@ All colors MUST be HSL.
   select:focus-visible {
     outline: none !important;
     box-shadow: none !important;
-  }
+  }*/
 
 @layer base {
   :root {
@@ -666,10 +666,18 @@ All colors MUST be HSL.
 }
 
 @keyframes rainbow-glow {
-  0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
-  33% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.6); }
-  66% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
-  100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
+  0% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+  }
+  33% {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+  }
+  66% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+  }
 }
 
 /* Çerçeve animasyonları - Yeni eklenen */
@@ -2292,7 +2300,7 @@ body.is-capacitor.hide-bars::before {
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
   border: 1px solid hsl(var(--border) / 0.3);
-  box-shadow: 
+  box-shadow:
     0 8px 32px hsl(var(--primary) / 0.15),
     0 0 0 1px hsl(var(--border) / 0.1) inset,
     0 -2px 6px hsl(var(--background) / 0.5) inset;
@@ -2300,18 +2308,13 @@ body.is-capacitor.hide-bars::before {
 
 /* Animated Gradient Background - STATIC for mobile performance */
 .game-bg-animated {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background)) 0%,
-    hsl(var(--muted)) 50%,
-    hsl(var(--background)) 100%
-  );
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 50%, hsl(var(--background)) 100%);
   /* Animation disabled for mobile performance */
 }
 
 /* Neon Glow Text */
 .game-neon-text {
-  text-shadow: 
+  text-shadow:
     0 0 10px hsl(var(--primary) / 0.8),
     0 0 20px hsl(var(--primary) / 0.6),
     0 0 40px hsl(var(--primary) / 0.4),
@@ -2326,18 +2329,13 @@ body.is-capacitor.hide-bars::before {
 }
 
 .game-btn-premium::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(var(--primary-foreground) / 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, hsl(var(--primary-foreground) / 0.2), transparent);
   transition: left 0.5s ease;
 }
 
@@ -2367,7 +2365,8 @@ body.is-capacitor.hide-bars::before {
 }
 
 @keyframes floatParticle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(100vh) scale(0);
     opacity: 0;
   }
@@ -2393,28 +2392,18 @@ body.is-capacitor.hide-bars::before {
 }
 
 .game-mode-card::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    hsl(0 0% 0% / 0.1) 50%,
-    hsl(0 0% 0% / 0.4) 100%
-  );
+  background: linear-gradient(180deg, transparent 0%, hsl(0 0% 0% / 0.1) 50%, hsl(0 0% 0% / 0.4) 100%);
   z-index: 1;
 }
 
 .game-mode-card::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: -2px;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    hsl(var(--primary-foreground) / 0.1) 50%,
-    transparent 70%
-  );
+  background: linear-gradient(45deg, transparent 30%, hsl(var(--primary-foreground) / 0.1) 50%, transparent 70%);
   z-index: 2;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -2470,15 +2459,11 @@ body.is-capacitor.hide-bars::before {
 }
 
 .game-avatar-ring::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary)),
-    hsl(var(--accent))
-  );
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
   z-index: -1;
   /* Animation disabled for mobile performance */
 }
@@ -2500,15 +2485,20 @@ body.is-capacitor.hide-bars::before {
   backdrop-filter: blur(20px) saturate(1.5);
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
   border-top: 1px solid hsl(var(--border) / 0.3);
-  box-shadow: 
+  box-shadow:
     0 -10px 40px hsl(var(--background) / 0.5),
     0 0 0 1px hsl(var(--border) / 0.1) inset;
 }
 
 /* Quick Pulse Animation for Notifications */
 @keyframes quickPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .game-quick-pulse {
@@ -2517,11 +2507,7 @@ body.is-capacitor.hide-bars::before {
 
 /* Gradient Text - STATIC for mobile performance */
 .game-gradient-text {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary)),
-    hsl(var(--accent))
-  );
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
