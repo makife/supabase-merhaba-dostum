@@ -320,6 +320,47 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
           },
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "message_reactions",
+          },
+          (payload) => {
+            console.log("😀 New reaction received:", payload.new);
+            const newReaction = payload.new as MessageReaction;
+            setMessageReactions((prev) => {
+              const existing = prev[newReaction.message_id] || [];
+              // Duplicate kontrolü
+              if (existing.some((r) => r.id === newReaction.id)) return prev;
+              return {
+                ...prev,
+                [newReaction.message_id]: [...existing, newReaction],
+              };
+            });
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "message_reactions",
+          },
+          (payload) => {
+            console.log("😀 Reaction removed:", payload.old);
+            const oldReaction = payload.old as any;
+            setMessageReactions((prev) => {
+              const messageId = oldReaction.message_id;
+              if (!messageId || !prev[messageId]) return prev;
+              return {
+                ...prev,
+                [messageId]: prev[messageId].filter((r) => r.id !== oldReaction.id),
+              };
+            });
+          },
+        )
         .subscribe((status) => {
           console.log("📡 Global subscription status:", status);
 
