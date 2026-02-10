@@ -1142,7 +1142,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     {/* Sabit emoji seti */}
                     {showEmojiPicker === message.id ? (
                       <div className="flex items-center gap-1 bg-white border border-chat-200 rounded-full px-2 py-0.5 shadow-sm">
-                        {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => (
+                        {["👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
                           <button
                             key={emoji}
                             onClick={() => {
