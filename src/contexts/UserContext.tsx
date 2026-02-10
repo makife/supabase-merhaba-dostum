@@ -672,10 +672,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const currentBase = freshProfile.game_credits || 0;
       const currentBonus = freshProfile.bonus_credits || 0;
       
-      const neededForFull = Math.max(0, 5 - currentBase);
-      const newBase = Math.min(5, currentBase + bonusCredits);
+      // 🔥 FIX: Mevcut game_credits 5'ten büyükse fazlayı da bonus'a taşı
+      const existingOverage = Math.max(0, currentBase - 5);
+      const effectiveBase = Math.min(currentBase, 5);
+      
+      const neededForFull = Math.max(0, 5 - effectiveBase);
+      const newBase = Math.min(5, effectiveBase + bonusCredits);
       const remainingBonus = Math.max(0, bonusCredits - neededForFull);
-      const newTotalBonus = currentBonus + remainingBonus;
+      const newTotalBonus = currentBonus + remainingBonus + existingOverage;
 
       console.log(`addBonusCredits: Adding ${bonusCredits} credits. Before: game=${currentBase}, bonus=${currentBonus}. After: game=${newBase}, bonus=${newTotalBonus}`);
 

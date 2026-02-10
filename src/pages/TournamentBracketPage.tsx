@@ -507,7 +507,15 @@ const TournamentBracketPage = () => {
       if (selected.type === "ink") {
         updateData.ink_count = (profile.ink_count || 0) + selected.value;
       } else if (selected.type === "credits") {
-        updateData.game_credits = (profile.game_credits || 0) + selected.value;
+        // 🔥 FIX: game_credits max 5, fazlası bonus_credits'e
+        const currentGame = profile.game_credits || 0;
+        const currentBonus = profile.bonus_credits || 0;
+        const creditsToAdd = selected.value;
+        const spaceInGame = Math.max(0, 5 - currentGame);
+        const addToGame = Math.min(creditsToAdd, spaceInGame);
+        const addToBonus = creditsToAdd - addToGame;
+        updateData.game_credits = currentGame + addToGame;
+        updateData.bonus_credits = currentBonus + addToBonus;
       } else if (selected.type === "joker" && selected.item) {
         // user_inventory tablosuna upsert yap
         const { data: existingItem } = await supabase
