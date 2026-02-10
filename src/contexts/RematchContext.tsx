@@ -56,6 +56,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingRoomCodeRef = useRef<string | null>(null);
+  const pendingRequestIdRef = useRef<string | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const userId = user?.id;
 
@@ -180,6 +183,92 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     return grid;
   };
+
+  // Polling fallback - Realtime UPDATE kaçırılırsa diye
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    pendingRoomCodeRef.current = null;
+  }, []);
+
+  const startPolling = useCallback(
+    (roomCode: string) => {
+      stopPolling();
+      console.log("🔄 Rematch polling başlatıldı:", roomCode);
+
+      pollingRef.current = setInterval(async () => {
+        if (!userId) return;
+
+        try {
+          const { data: request } = await supabase
+            .from("rematch_requests")
+            .select("id, status, room_code, game_type")
+            .eq("room_code", roomCode)
+            .eq("from_user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!request) return;
+
+          if (request.status === "accepted") {
+            const responseKey = `resp-${request.id}`;
+            if (processedRef.current.has(responseKey)) return;
+            processedRef.current.add(responseKey);
+
+            console.log("✅ [Polling] Rematch kabul edildi:", request.room_code);
+            stopPolling();
+
+            if (waitingTimeoutRef.current) {
+              clearTimeout(waitingTimeoutRef.current);
+              waitingTimeoutRef.current = null;
+            }
+            setIsWaiting(false);
+
+            const { data: room } = await supabase
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", request.room_code)
+              .maybeSingle();
+
+            if (room) {
+              toast({
+                title: "✅ Rematch Kabul Edildi",
+                description: "Oyun başlıyor...",
+                duration: 1000,
+              });
+              navigate(`/private-room/waiting/${request.room_code}`);
+            }
+          } else if (request.status === "rejected") {
+            const responseKey = `resp-${request.id}`;
+            if (processedRef.current.has(responseKey)) return;
+            processedRef.current.add(responseKey);
+
+            console.log("❌ [Polling] Rematch reddedildi");
+            stopPolling();
+
+            if (waitingTimeoutRef.current) {
+              clearTimeout(waitingTimeoutRef.current);
+              waitingTimeoutRef.current = null;
+            }
+            setIsWaiting(false);
+
+            toast({
+              title: "❌ Rematch Reddedildi",
+              description: "Rakip rematch isteğini reddetti.",
+              variant: "destructive",
+              duration: 1000,
+            });
+          }
+        } catch (err) {
+          console.warn("Polling hatası:", err);
+        }
+      }, 2000);
+    },
+    [userId, toast, navigate, stopPolling],
+  );
 
   // Send rematch request
   const sendRematchRequest = useCallback(
@@ -348,7 +437,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Get sender profile for notification
         const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
 
-        // Create notification
+        // Create notification (in-app only, no push for rematch)
         await supabase.rpc("create_notification", {
           p_user_id: opponentId,
           p_type: "rematch",
@@ -356,21 +445,12 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           p_related_id: roomCode,
         });
 
-        // Send push
-        try {
-          await supabase.functions.invoke("send-push-notification", {
-            body: {
-              receiverId: opponentId,
-              title: "🔄 Rematch İsteği",
-              body: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor!`,
-              data: { type: "rematch", roomCode, gameType },
-            },
-          });
-        } catch (e) {
-          console.warn("Push notification gönderilemedi");
-        }
+        // Track pending request for polling fallback
+        pendingRoomCodeRef.current = roomCode;
 
         setIsWaiting(true);
+        startPolling(roomCode);
+
         toast({
           title: "🔄 Tekrar Oyun İsteği Gönderildi",
           description: "Rakibinizin yanıtını bekliyoruz...",
@@ -380,6 +460,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Set timeout
         waitingTimeoutRef.current = setTimeout(() => {
           setIsWaiting(false);
+          stopPolling();
           toast({
             title: "⏰ Süre Doldu",
             description: "Rakibiniz yanıt vermedi.",
@@ -546,11 +627,12 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsWaiting(false);
     setIncomingRequest(null);
     processedRef.current.clear();
+    stopPolling();
     if (waitingTimeoutRef.current) {
       clearTimeout(waitingTimeoutRef.current);
       waitingTimeoutRef.current = null;
     }
-  }, []);
+  }, [stopPolling]);
 
   // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
@@ -670,6 +752,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return () => {
       autoReconnect.unregisterChannel(channelName);
+      stopPolling();
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
       }
