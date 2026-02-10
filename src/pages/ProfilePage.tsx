@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { useJokerInventory } from "@/hooks/useJokerInventory";
+// useJokerInventory kaldırıldı - viewedUserId'ye göre joker çekiliyor
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -40,7 +40,7 @@ const ProfilePage = () => {
   const { profile } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const { jokers } = useJokerInventory();
+  const [jokers, setJokers] = useState({ degistir: 0, fisilida: 0, senYaz: 0 });
   const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
     useAvatarUpload();
   const { id: routeId } = useParams();
@@ -374,6 +374,38 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
+  }, [viewedUserId]);
+
+  // 🔥 Bakılan kullanıcının joker envanterini çek
+  useEffect(() => {
+    const fetchJokers = async () => {
+      if (!viewedUserId) return;
+
+      const { data } = await supabase
+        .from("user_inventory")
+        .select("item_type, quantity")
+        .eq("user_id", viewedUserId)
+        .in("item_type", [
+          "degistir", "joker_degistir",
+          "fisilda", "fisilida", "joker_fisildi", "joker_fisilida",
+          "senYaz", "senyaz", "joker_senyaz",
+        ]);
+
+      const keyMap: Record<string, "degistir" | "fisilida" | "senYaz"> = {
+        degistir: "degistir", joker_degistir: "degistir",
+        fisilda: "fisilida", fisilida: "fisilida", joker_fisildi: "fisilida", joker_fisilida: "fisilida",
+        senYaz: "senYaz", senyaz: "senYaz", joker_senyaz: "senYaz",
+      };
+
+      const result = { degistir: 0, fisilida: 0, senYaz: 0 };
+      data?.forEach((item) => {
+        const mapped = keyMap[item.item_type];
+        if (mapped) result[mapped] += item.quantity;
+      });
+      setJokers(result);
+    };
+
+    fetchJokers();
   }, [viewedUserId]);
 
   // Listen for real-time updates only for own profile
