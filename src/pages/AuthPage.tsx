@@ -131,19 +131,20 @@ const AuthPage = () => {
 
         <Card className="border-0 bg-card/50 backdrop-blur">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Giriş Yap</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/80 rounded-lg">
+              <TabsTrigger
+                value="signin"
+                className="h-full rounded-md text-sm font-semibold transition-all duration-200
+                  data-[state=inactive]:text-muted-foreground data-[state=inactive]:bg-transparent
+                  data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+              >
+                Giriş Yap
+              </TabsTrigger>
               <TabsTrigger
                 value="signup"
-                className="
-    bg-purple-500/40 text-purple-900
-    hover:bg-purple-500/60
-    data-[state=active]:bg-gradient-to-r
-    data-[state=active]:from-purple-600
-    data-[state=active]:to-indigo-600
-    data-[state=active]:text-white
-    transition-all
-  "
+                className="h-full rounded-md text-sm font-semibold transition-all duration-200
+                  data-[state=inactive]:text-muted-foreground data-[state=inactive]:bg-transparent
+                  data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 Kayıt Ol
               </TabsTrigger>
