@@ -356,19 +356,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           p_related_id: roomCode,
         });
 
-        // Send push
-        try {
-          await supabase.functions.invoke("send-push-notification", {
-            body: {
-              receiverId: opponentId,
-              title: "🔄 Rematch İsteği",
-              body: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor!`,
-              data: { type: "rematch", roomCode, gameType },
-            },
-          });
-        } catch (e) {
-          console.warn("Push notification gönderilemedi");
-        }
+        // Push bildirim gönderilMEZ - rematch sadece in-app realtime + polling ile çalışır
+        console.log("ℹ️ Rematch push bildirimi atlandı (tasarım gereği)");
+
 
         setIsWaiting(true);
         toast({
