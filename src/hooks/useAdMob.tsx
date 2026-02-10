@@ -168,6 +168,8 @@ export const useAdMob = () => {
 
       if (error) throw error;
       console.log("[AdMob] ✅ Reward given successfully, new ink:", newInkCount);
+      // 🔧 KRİTİK: Profili hemen yenile - UI anında güncellensin
+      window.dispatchEvent(new CustomEvent('refreshProfile'));
     } catch (error) {
       console.error("[AdMob] ❌ Failed to give reward:", error);
       toast({

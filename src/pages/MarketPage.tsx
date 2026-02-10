@@ -431,8 +431,9 @@ const MarketPage = () => {
           await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, (storedCount + 1).toString());
         }
         
-        // Profili yenile
-        refreshProfile();
+        // Profili yenile - giveReward içindeki refreshProfile event'i zaten tetikleniyor
+        // Ek olarak burada da kısa bir gecikmeyle yeniliyoruz
+        setTimeout(() => refreshProfile(), 500);
         console.log("[Market] ✅ Reklam izlendi, sayaç güncellendi");
       } else {
         toast({
