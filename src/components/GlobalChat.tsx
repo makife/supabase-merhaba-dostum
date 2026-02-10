@@ -1120,26 +1120,58 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 </div>
 
                 {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
-                {!message.id.startsWith("temp-") &&
-                  message.username !== "kelimeciBot" &&
-                  messageReactions[message.id] && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      {Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
+                {!message.id.startsWith("temp-") && message.username !== "kelimeciBot" && (
+                  <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                    {/* Mevcut tepkiler (sayaçlı) */}
+                    {messageReactions[message.id] &&
+                      Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
                         <button
                           key={emoji}
                           onClick={() => toggleReaction(message.id, emoji)}
-                          className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
+                          className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
                             reactions.some((r) => r.user_id === user?.id)
                               ? "bg-chat-100 text-chat-700 border border-chat-300"
-                              : "bg-gray-100 hover:bg-gray-200"
+                              : "bg-gray-100 hover:bg-gray-200 border border-transparent"
                           }`}
                         >
                           <span>{emoji}</span>
-                          <span>{reactions.length}</span>
+                          <span className="font-medium">{reactions.length}</span>
                         </button>
                       ))}
-                    </div>
-                  )}
+
+                    {/* Sabit emoji seti */}
+                    {showEmojiPicker === message.id ? (
+                      <div className="flex items-center gap-1 bg-white border border-chat-200 rounded-full px-2 py-0.5 shadow-sm">
+                        {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              toggleReaction(message.id, emoji);
+                              setShowEmojiPicker(null);
+                            }}
+                            className="text-base hover:scale-125 transition-transform p-0.5"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setShowEmojiPicker(null)}
+                          className="text-gray-400 hover:text-gray-600 ml-0.5 text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowEmojiPicker(message.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded-full hover:bg-gray-100 text-xs"
+                        title="Tepki ekle"
+                      >
+                        😀+
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 
