@@ -33,6 +33,7 @@ import {
   Award,
   Users,
   User,
+  MessageCircle,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -968,6 +969,46 @@ const ProfilePage = () => {
                       </Badge>
                     )}
                   </div>
+                  {!isOwnProfile && user && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const participants = [user.id, viewedUserId!].sort();
+                        const chatId = `chat_${participants.join("_")}`;
+                        // Chat kaydını oluştur (yoksa) ve ChatPage'e yönlendir
+                        const openChat = async () => {
+                          try {
+                            const { data: existingChat, error: chatError } = await supabase
+                              .from("private_chats")
+                              .select("*")
+                              .eq("id", chatId)
+                              .single();
+
+                            if (chatError && chatError.code !== "PGRST116") throw chatError;
+
+                            if (!existingChat) {
+                              await supabase.from("private_chats").insert({
+                                id: chatId,
+                                user1_id: participants[0],
+                                user2_id: participants[1],
+                              });
+                            }
+
+                            navigate(`/chat?openPrivateChat=${viewedUserId}`);
+                          } catch (err) {
+                            console.error("Chat açma hatası:", err);
+                            toast.error("Sohbet açılırken hata oluştu");
+                          }
+                        };
+                        openChat();
+                      }}
+                      className="mt-2 text-xs border-blue-400 text-blue-600 hover:bg-blue-50"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                      Mesaj Yaz
+                    </Button>
+                  )}
                 </div>
               </div>
 
