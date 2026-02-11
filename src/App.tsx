@@ -35,17 +35,19 @@ import ChatPage from "./pages/ChatPage";
 import TournamentPage from "./pages/TournamentPage";
 import TournamentWaitingPage from "./pages/TournamentWaitingPage";
 import TournamentBracketPage from "./pages/TournamentBracketPage";
-import WheelPage from "./pages/WheelPage";
 import PrivateRoomWaitingPage from "./pages/PrivateRoomWaitingPage";
 import { useLocalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
-import MemoryGamePage from "@/pages/MemoryGamePage";
-import PuzzleGamePage from "@/pages/PuzzleGame";
-import GridSimonSaysPage from "@/pages/GridSimonSays";
-import ReactorRunnerPage from "@/pages/DinoRunner";
-import NeonBlitzPage from "@/pages/NeonBlitz";
-import SnakeGamePage from "@/pages/SnakeGame";
-import MorlesGamePage from "@/pages/MorlesGame";
+
+// 🚀 Lazy load mini oyunlar - ana sayfa açılışını hızlandırır
+const WheelPage = React.lazy(() => import("./pages/WheelPage"));
+const MemoryGamePage = React.lazy(() => import("@/pages/MemoryGamePage"));
+const PuzzleGamePage = React.lazy(() => import("@/pages/PuzzleGame"));
+const GridSimonSaysPage = React.lazy(() => import("@/pages/GridSimonSays"));
+const ReactorRunnerPage = React.lazy(() => import("@/pages/DinoRunner"));
+const NeonBlitzPage = React.lazy(() => import("@/pages/NeonBlitz"));
+const SnakeGamePage = React.lazy(() => import("@/pages/SnakeGame"));
+const MorlesGamePage = React.lazy(() => import("@/pages/MorlesGame"));
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { SafeStatusBar, SafeNavigationBar, SafePushNotifications } from "@/utils/safePluginWrapper";
@@ -258,6 +260,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      <React.Suspense fallback={<div className="fixed inset-0 bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" /></div>}>
       <Routes>
         <Route
           path="/"
@@ -464,6 +467,7 @@ const AppRoutes = () => {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </React.Suspense>
       <RoomAutoNavigator />
       <GlobalRematchDialogWrapper />
     </>
