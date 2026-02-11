@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Preferences } from "@capacitor/preferences";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,24 @@ const AuthPage = () => {
     e.preventDefault();
     if (signUpCooldown > 0) return;
     setLoading(true);
+
+    // Önce bu e-posta ile kayıtlı kullanıcı var mı kontrol et
+    const { data: existingUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", signUpData.email)
+      .maybeSingle();
+
+    if (existingUser) {
+      setLoading(false);
+      toast({
+        title: "Bu e-posta zaten kayıtlı",
+        description: "Bu e-posta adresiyle zaten bir hesap mevcut. Lütfen giriş yapın.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await signUp(signUpData.email, signUpData.password, signUpData.username);
     setLoading(false);
 
@@ -115,7 +134,7 @@ const AuthPage = () => {
       setRegisteredEmail(signUpData.email);
       setShowEmailConfirmation(true);
       setSignUpData({ email: "", password: "", username: "" });
-      setSignUpCooldown(60); // Başarılı kayıtta da cooldown koy
+      setSignUpCooldown(60);
     }
   };
 
