@@ -22,6 +22,7 @@ import {
 const AuthPage = () => {
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, user } = useAuth();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -29,6 +30,7 @@ const AuthPage = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [signUpCooldown, setSignUpCooldown] = useState(0);
 
   // 🔧 Email'i Preferences'dan yükle
   const [signInData, setSignInData] = useState({
@@ -83,16 +85,37 @@ const AuthPage = () => {
     }
   };
 
+  // Cooldown timer
+  useEffect(() => {
+    if (signUpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setSignUpCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [signUpCooldown]);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (signUpCooldown > 0) return;
     setLoading(true);
     const { error } = await signUp(signUpData.email, signUpData.password, signUpData.username);
     setLoading(false);
 
-    if (!error) {
+    if (error) {
+      // Rate limit hatası kontrolü
+      if (error.message?.includes("rate") || error.message?.includes("429") || error.status === 429) {
+        toast({
+          title: "Çok Hızlı İstek",
+          description: "Lütfen 60 saniye bekleyip tekrar deneyin.",
+          variant: "destructive",
+        });
+        setSignUpCooldown(60);
+      }
+    } else {
       setRegisteredEmail(signUpData.email);
       setShowEmailConfirmation(true);
       setSignUpData({ email: "", password: "", username: "" });
+      setSignUpCooldown(60); // Başarılı kayıtta da cooldown koy
     }
   };
 
@@ -285,9 +308,9 @@ const AuthPage = () => {
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                      disabled={loading}
+                      disabled={loading || signUpCooldown > 0}
                     >
-                      {loading ? "Kayıt olunuyor..." : "Kayıt Ol"}
+                      {loading ? "Kayıt olunuyor..." : signUpCooldown > 0 ? `Bekleyin (${signUpCooldown}s)` : "Kayıt Ol"}
                     </Button>
                   </form>
                 )}
