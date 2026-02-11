@@ -757,10 +757,11 @@ const HomePage = () => {
               <div
                 key={game.id}
                 onClick={() => {
-                  playSound("buttonClick");
                   navigate(game.route);
+                  playSound("buttonClick");
                 }}
                 className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
+                style={{ touchAction: "manipulation" }}
               >
                 <div
                   className={`w-16 h-16 rounded-2xl bg-white border border-slate-600 flex items-center justify-center text-2xl shadow-sm relative overflow-hidden group-active:scale-95 transition-transform`}
