@@ -76,7 +76,7 @@ const FriendsPage = () => {
         const isOnline =
           presence?.is_online &&
           presence?.last_seen &&
-          now - new Date(presence.last_seen).getTime() < 2 * 60 * 1000;
+          now - new Date(presence.last_seen).getTime() < 5 * 60 * 1000;
 
         return {
           friendship_id: f.id,
