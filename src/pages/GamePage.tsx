@@ -1116,6 +1116,7 @@ const GamePage = ({
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
+  const rematchSendingRef = useRef(false);
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
@@ -1991,6 +1992,7 @@ const GamePage = ({
 
       setRematchRequested(true);
       setWaitingForRematchResponse(true);
+      rematchSendingRef.current = true;
 
       // Yeni hook ile rematch gönder
       const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
@@ -2005,12 +2007,14 @@ const GamePage = ({
       if (!success) {
         setRematchRequested(false);
         setWaitingForRematchResponse(false);
+        rematchSendingRef.current = false;
         disconnectHandledRef.current = false;
       }
     } catch (error) {
       console.error("Rematch request error:", error);
       setRematchRequested(false);
       setWaitingForRematchResponse(false);
+      rematchSendingRef.current = false;
       disconnectHandledRef.current = false;
       toast({
         title: "Hata",
@@ -6212,9 +6216,11 @@ const GamePage = ({
   // 🔄 useRematch hook'undan gelen state'leri senkronize et
   useEffect(() => {
     if (rematchIsWaiting) {
+      // Context isWaiting true oldu, sending tamamlandı
+      rematchSendingRef.current = false;
       setWaitingForRematchResponse(true);
-    } else if (waitingForRematchResponse && !rematchIsWaiting) {
-      // Hook waiting'i kapattı (timeout veya response)
+    } else if (waitingForRematchResponse && !rematchIsWaiting && !rematchSendingRef.current) {
+      // Hook waiting'i kapattı (timeout veya response) VE aktif gönderim yok
       setWaitingForRematchResponse(false);
       setRematchRequested(false);
       disconnectHandledRef.current = false;
