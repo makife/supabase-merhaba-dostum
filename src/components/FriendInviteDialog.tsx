@@ -57,7 +57,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
       const items: Friend[] = (profiles || []).map((p) => {
         const presence = presenceMap.get(p.id);
-        const isOnline = presence?.is_online && presence?.last_seen && now - new Date(presence.last_seen).getTime() < 2 * 60 * 1000;
+        const isOnline = presence?.is_online && presence?.last_seen && now - new Date(presence.last_seen).getTime() < 5 * 60 * 1000;
         return {
           id: p.id,
           username: p.username || "Oyuncu",
