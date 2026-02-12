@@ -18,6 +18,7 @@ import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { BadgesDialog } from "@/components/BadgesDialog";
+import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeClient } from "@supabase/supabase-js";
 import {
@@ -1297,6 +1298,7 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
   const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { sendFriendRequestNotification } = useSmartNotifications();
 
   useEffect(() => {
     const check = async () => {
@@ -1330,13 +1332,21 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
       else toast.error("Davet gönderilemedi");
     } else {
       toast.success("Arkadaşlık daveti gönderildi! 🤝");
-      // Send notification
+      
+      const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+      const senderName = myProfile?.username || "Bir oyuncu";
+      
+      // DB'ye bildirim kaydet (online ise realtime ile toast gösterilecek)
       await supabase.from("notifications").insert({
         user_id: viewedUserId,
         type: "friend_request",
-        message: "Size arkadaşlık daveti gönderdi",
+        message: `${senderName} sana arkadaşlık daveti gönderdi!`,
         related_id: userId,
       });
+      
+      // Offline ise push bildirim gönder (skipIfOnline=true)
+      await sendFriendRequestNotification(viewedUserId!, senderName);
+      
       setFriendshipStatus("pending_sent");
     }
   };

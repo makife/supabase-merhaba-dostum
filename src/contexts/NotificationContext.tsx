@@ -142,6 +142,17 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           toast.success(notification.message, { duration: 5000, icon: "🏆" });
         }
 
+        if (notification.type === "friend_request" && notification.related_id) {
+          toast.info(`🤝 ${notification.message}`, {
+            duration: 8000,
+            action: {
+              label: "Profile Git",
+              onClick: () => navigate(`/profile/${notification.related_id}`),
+            },
+          });
+          return;
+        }
+
         if (notification.type === "room_invite" && notification.related_id) {
           // Hemen okundu olarak işaretle (tekrar gösterilmesin)
           supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
