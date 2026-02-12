@@ -68,13 +68,56 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           });
         }
 
-        // Room invite notification
+        // Room invite notification with accept/reject
         if (notification.type === "room_invite" && notification.related_id) {
-          toast.info(`🎮 ${notification.message}`, {
-            duration: 10000,
+          const toastId = toast.info(`🎮 ${notification.message}`, {
+            duration: 30000,
             action: {
-              label: "Katıl",
-              onClick: () => navigate(`/private-room/waiting/${notification.related_id}`),
+              label: "✅ Katıl",
+              onClick: () => {
+                toast.dismiss(toastId);
+                navigate(`/private-room/waiting/${notification.related_id}`);
+              },
+            },
+            cancel: {
+              label: "❌ Reddet",
+              onClick: async () => {
+                toast.dismiss(toastId);
+                try {
+                  // Extract sender id from notification - we need to find who sent it
+                  const { data: notifData } = await supabase
+                    .from("notifications")
+                    .select("id")
+                    .eq("id", notification.id)
+                    .single();
+
+                  // Find who sent this invite (the user who is NOT the current user)
+                  // We store the sender info by looking at who created the room
+                  const { data: roomData } = await supabase
+                    .from("game_rooms")
+                    .select("host_id")
+                    .eq("room_code", notification.related_id)
+                    .maybeSingle();
+
+                  if (roomData?.host_id && user) {
+                    await supabase.from("room_invite_rejections").insert({
+                      room_code: notification.related_id,
+                      rejected_by: user.id,
+                      rejected_from: roomData.host_id,
+                    });
+                  }
+
+                  // Mark notification as read
+                  await supabase
+                    .from("notifications")
+                    .update({ is_read: true })
+                    .eq("id", notification.id);
+
+                  toast.info("Davet reddedildi", { duration: 2000 });
+                } catch (err) {
+                  console.error("Davet reddetme hatası:", err);
+                }
+              },
             },
           });
           return;

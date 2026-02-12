@@ -1151,6 +1151,30 @@ export type Database = {
           },
         ]
       }
+      room_invite_rejections: {
+        Row: {
+          created_at: string
+          id: string
+          rejected_by: string
+          rejected_from: string
+          room_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rejected_by: string
+          rejected_from: string
+          room_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rejected_by?: string
+          rejected_from?: string
+          room_code?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string
