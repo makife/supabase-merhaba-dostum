@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, Home, Users, CheckCircle2, Loader2 } from "lucide-react";
+import { Copy, Check, Home, Users, CheckCircle2, Loader2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSounds } from "@/hooks/useSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import FriendInviteDialog from "@/components/FriendInviteDialog";
 import { usePageResync } from "@/hooks/useGlobalResync";
 
 interface Participant {
@@ -37,6 +38,7 @@ const PrivateRoomWaitingPage = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [settingReady, setSettingReady] = useState(false);
+  const [friendInviteOpen, setFriendInviteOpen] = useState(false);
 
   // 🔄 Global Resync Hook
   const handleRoomResync = useCallback(async () => {
@@ -338,13 +340,22 @@ const PrivateRoomWaitingPage = () => {
                 </div>
                 <p className="text-xs sm:text-sm text-yellow-200 mt-4">6 haneli kodu arkadaşınla paylaş</p>
                 
-                {/* Paylaş butonu */}
-                <Button
-                  onClick={handleShare}
-                  className="mt-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold px-6"
-                >
-                  📤 Kodu Paylaş
-                </Button>
+                {/* Paylaş butonları */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
+                  <Button
+                    onClick={handleShare}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold px-6"
+                  >
+                    📤 Kodu Paylaş
+                  </Button>
+                  <Button
+                    onClick={() => setFriendInviteOpen(true)}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold px-6"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Arkadaşımla Paylaş
+                  </Button>
+                </div>
               </div>
 
               {/* Oyuncu Durumları */}
@@ -445,6 +456,14 @@ const PrivateRoomWaitingPage = () => {
           </CardContent>
         </Card>
       </div>
+      {roomCode && (
+        <FriendInviteDialog
+          open={friendInviteOpen}
+          onOpenChange={setFriendInviteOpen}
+          roomCode={roomCode}
+          gameType={gameType}
+        />
+      )}
     </div>
   );
 };
