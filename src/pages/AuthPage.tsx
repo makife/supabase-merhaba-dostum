@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -153,41 +154,41 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid touch-none overscroll-none">
       <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
-        <Card className="border-0 bg-card/50 backdrop-blur relative overflow-hidden">
+      <Card className="border-0 bg-gradient-to-br from-primary/10 via-card/80 to-accent/10 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/10">
           <HeaderAnimation />
 
-          <div className="text-center space-y-2 p-6 relative z-10">
+          <div className="text-center space-y-3 p-6 relative z-10">
+            <img
+              src={kelimeleLogo}
+              alt="Kelimele Logo"
+              className="w-20 h-20 mx-auto rounded-2xl shadow-lg shadow-primary/20 ring-2 ring-primary/20"
+            />
             <h1
-              className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent drop-shadow-2xl"
+              className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-400 to-indigo-500 bg-clip-text text-transparent"
               style={{
-                textShadow:
-                  "1px 1px 0px hsl(var(--primary)), 2px 2px 0px rgba(0,0,0,0.3), 0 0 15px hsl(var(--primary) / 0.5)",
-                WebkitTextStroke: "0.5px hsl(var(--border))",
+                textShadow: "0 0 20px hsl(var(--primary) / 0.4)",
               }}
             >
               KELİMELE
             </h1>
-            <p className="text-muted-foreground font-medium">Kelime oyununun en eğlenceli hali</p>
+            <p className="text-muted-foreground/80 font-medium text-sm">Kelime oyununun en eğlenceli hali 🎮</p>
           </div>
         </Card>
 
-        <Card className="border-0 bg-card/50 backdrop-blur">
+        <Card className="border-0 bg-card/60 backdrop-blur-lg shadow-xl shadow-primary/5">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Giriş Yap</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/60 rounded-xl mx-4 mt-4 w-[calc(100%-2rem)]">
+              <TabsTrigger
+                value="signin"
+                className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
+              >
+                🔑 Giriş Yap
+              </TabsTrigger>
               <TabsTrigger
                 value="signup"
-                className="
-    bg-purple-500/40 text-purple-900
-    hover:bg-purple-500/60
-    data-[state=active]:bg-gradient-to-r
-    data-[state=active]:from-purple-600
-    data-[state=active]:to-indigo-600
-    data-[state=active]:text-white
-    transition-all
-  "
+                className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-indigo-600 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
               >
-                Kayıt Ol
+                ✨ Kayıt Ol
               </TabsTrigger>
             </TabsList>
 
