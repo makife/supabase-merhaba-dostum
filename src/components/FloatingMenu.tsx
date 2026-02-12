@@ -1,6 +1,6 @@
 // FloatingMenu.tsx
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSounds } from "@/hooks/useSounds";
@@ -125,6 +125,27 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
+
+  // Pending friend request count (poll every 30s)
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
+
+  const fetchPendingFriends = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { count } = await supabase
+        .from("friendships")
+        .select("id", { count: "exact", head: true })
+        .eq("friend_id", user.id)
+        .eq("status", "pending");
+      setPendingFriendRequests(count || 0);
+    } catch {}
+  }, [user]);
+
+  useEffect(() => {
+    fetchPendingFriends();
+    const interval = setInterval(fetchPendingFriends, 30000);
+    return () => clearInterval(interval);
+  }, [fetchPendingFriends]);
 
   const handleToggle = () => {
     playSound("buttonClick");
@@ -262,14 +283,21 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
               </span>
 
               {/* Butondaki onClick kaldırıldı, renkler group-hover yapıldı */}
-              <Button
-                className={`relative overflow-hidden pointer-events-none bg-gradient-to-r ${item.color} ${item.hoverColor} 
-                           text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
-              >
-                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-                <item.icon className="w-4 h-4 relative z-10" />
-              </Button>
+              <div className="relative">
+                <Button
+                  className={`relative overflow-hidden pointer-events-none bg-gradient-to-r ${item.color} ${item.hoverColor} 
+                             text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
+                             transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
+                >
+                  <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
+                  <item.icon className="w-4 h-4 relative z-10" />
+                </Button>
+                {item.route === "/friends" && pendingFriendRequests > 0 && (
+                  <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border border-white shadow-lg z-50">
+                    {pendingFriendRequests > 9 ? "9+" : pendingFriendRequests}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
