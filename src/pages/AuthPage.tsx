@@ -12,13 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 import { HeaderAnimation } from "@/components/HeaderAnimation";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
@@ -154,7 +148,7 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 game-grid touch-none overscroll-none">
       <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
-      <Card className="border-0 bg-gradient-to-br from-primary/10 via-card/80 to-accent/10 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/10">
+        <Card className="border-0 bg-gradient-to-br from-primary/10 via-card/80 to-accent/10 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/10">
           <HeaderAnimation />
 
           <div className="text-center space-y-3 p-6 relative z-10">
@@ -171,7 +165,7 @@ const AuthPage = () => {
             >
               KELİMELE
             </h1>
-            <p className="text-muted-foreground/80 font-medium text-sm">Kelime oyununun en eğlenceli hali 🎮</p>
+            <p className="text-muted-foreground/80 font-medium text-sm">Kelime oyununun en eğlenceli hali</p>
           </div>
         </Card>
 
@@ -330,7 +324,11 @@ const AuthPage = () => {
                       className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
                       disabled={loading || signUpCooldown > 0}
                     >
-                      {loading ? "Kayıt olunuyor..." : signUpCooldown > 0 ? `Bekleyin (${signUpCooldown}s)` : "Kayıt Ol"}
+                      {loading
+                        ? "Kayıt olunuyor..."
+                        : signUpCooldown > 0
+                          ? `Bekleyin (${signUpCooldown}s)`
+                          : "Kayıt Ol"}
                     </Button>
                   </form>
                 )}
