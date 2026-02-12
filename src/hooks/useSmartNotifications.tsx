@@ -121,6 +121,20 @@ export function useSmartNotifications() {
     [sendPushNotification],
   );
 
+  // Arkadaşlık isteği bildirimi
+  const sendFriendRequestNotification = useCallback(
+    async (receiverId: string, senderUsername: string) => {
+      await sendPushNotification(
+        receiverId,
+        "🤝 Arkadaşlık Daveti",
+        `${senderUsername} sana arkadaşlık daveti gönderdi!`,
+        { type: "friend_request" },
+        true,
+      );
+    },
+    [sendPushNotification],
+  );
+
   return {
     showInAppToast,
     sendPushNotification,
@@ -128,5 +142,6 @@ export function useSmartNotifications() {
     sendMentionNotification,
     sendGameInviteNotification,
     sendTournamentNotification,
+    sendFriendRequestNotification,
   };
 }
