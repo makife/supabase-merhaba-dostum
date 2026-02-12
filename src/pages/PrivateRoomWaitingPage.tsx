@@ -255,43 +255,6 @@ const PrivateRoomWaitingPage = () => {
     }
   };
 
-  const handleShare = async () => {
-    if (!roomCode) return;
-    playSound("buttonClick");
-
-    try {
-      // Capacitor native share kullan - Rollup resolve sorununu önlemek için string concat
-      const capCorePath = "@capacitor" + "/core";
-      const capSharePath = "@capacitor" + "/share";
-      const { Capacitor } = await import(/* @vite-ignore */ capCorePath);
-      if (Capacitor.isNativePlatform()) {
-        const { Share } = await import(/* @vite-ignore */ capSharePath);
-        await Share.share({
-          title: "Özel Oda Daveti",
-          text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
-          dialogTitle: "Oda Kodunu Paylaş",
-        });
-        return;
-      }
-    } catch (err) {
-      // Native share başarısız olursa veya iptal edilirse devam et
-    }
-
-    // Web fallback
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Özel Oda Daveti",
-          text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
-        });
-      } catch (err) {
-        // User cancelled
-      }
-    } else {
-      copyRoomCode();
-    }
-  };
-
   const handleBack = () => {
     playSound("buttonClick");
     navigate("/");
@@ -355,20 +318,14 @@ const PrivateRoomWaitingPage = () => {
                 </div>
                 <p className="text-xs sm:text-sm text-yellow-200 mt-4">6 haneli kodu arkadaşınla paylaş</p>
                 
-                {/* Paylaş butonları */}
-                <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
-                  <Button
-                    onClick={handleShare}
-                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold px-6"
-                  >
-                    📤 Kodu Paylaş
-                  </Button>
+                {/* Arkadaşını Davet Et butonu */}
+                <div className="flex justify-center mt-4">
                   <Button
                     onClick={() => setFriendInviteOpen(true)}
                     className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold px-6"
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Arkadaşımla Paylaş
+                    Arkadaşını Davet Et
                   </Button>
                 </div>
               </div>

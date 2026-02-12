@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface FriendInviteDialogProps {
 
 const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendInviteDialogProps) => {
   const { user } = useAuth();
+  const { sendGameInviteNotification } = useSmartNotifications();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
@@ -122,6 +124,9 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
         related_id: roomCode,
         is_read: false,
       });
+
+      // Push bildirim gönder (offline kullanıcılar için)
+      await sendGameInviteNotification(friend.id, senderName, roomCode);
 
       setInvitedIds((prev) => new Set(prev).add(friend.id));
       toast.success(`${friend.username} adlı arkadaşına davet gönderildi!`);
