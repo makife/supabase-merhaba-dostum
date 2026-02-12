@@ -6,7 +6,47 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { getActivePrivateChats } from "@/utils/notifications";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-// NativeRealtime kaldırıldı - Supabase JS SDK yeterli
+
+// Helper: Davet toast'ı göster
+const showInviteToast = (notification: any, user: any, navigate: any) => {
+  const toastId = toast.info(`🎮 ${notification.message}`, {
+    duration: 30000,
+    action: {
+      label: "✅ Katıl",
+      onClick: async () => {
+        toast.dismiss(toastId);
+        await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+        navigate(`/private-room/waiting/${notification.related_id}`);
+      },
+    },
+    cancel: {
+      label: "❌ Reddet",
+      onClick: async () => {
+        toast.dismiss(toastId);
+        try {
+          const { data: roomData } = await supabase
+            .from("game_rooms")
+            .select("host_id")
+            .eq("room_code", notification.related_id)
+            .maybeSingle();
+
+          if (roomData?.host_id && user) {
+            await supabase.from("room_invite_rejections").insert({
+              room_code: notification.related_id,
+              rejected_by: user.id,
+              rejected_from: roomData.host_id,
+            });
+          }
+
+          await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+          toast.info("Davet reddedildi", { duration: 2000 });
+        } catch (err) {
+          console.error("Davet reddetme hatası:", err);
+        }
+      },
+    },
+  });
+};
 
 interface NotificationContextType {
   unreadCount: number;
@@ -32,14 +72,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const { user } = useAuth();
   const navigate = useNavigate();
   const shownNotifications = useRef<Set<string>>(new Set());
+  const hasLoadedInvites = useRef(false);
 
-  // 🔥 Uygulama açıldığında bekleyen room_invite bildirimlerini göster
+  // 🔥 Uygulama açıldığında bekleyen room_invite bildirimlerini BİR KERE göster
   useEffect(() => {
     if (!user) return;
+    if (hasLoadedInvites.current) return;
 
     const fetchPendingInvites = async () => {
       try {
-        // Son 30 dakika içindeki okunmamış room_invite bildirimlerini çek
+        hasLoadedInvites.current = true;
         const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         const { data: pendingInvites } = await supabase
           .from("notifications")
@@ -53,52 +95,20 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
         if (pendingInvites && pendingInvites.length > 0) {
           console.log("📬 Bekleyen davet bildirimleri bulundu:", pendingInvites.length);
+
+          // Hepsini hemen okundu olarak işaretle (tekrar gösterilmesin)
+          const ids = pendingInvites.map(n => n.id);
+          await supabase
+            .from("notifications")
+            .update({ is_read: true })
+            .in("id", ids);
+
           pendingInvites.forEach((notification) => {
-            // Deduplication
             if (shownNotifications.current.has(notification.id)) return;
             shownNotifications.current.add(notification.id);
 
             if (notification.related_id) {
-              const toastId = toast.info(`🎮 ${notification.message}`, {
-                duration: 30000,
-                action: {
-                  label: "✅ Katıl",
-                  onClick: () => {
-                    toast.dismiss(toastId);
-                    navigate(`/private-room/waiting/${notification.related_id}`);
-                  },
-                },
-                cancel: {
-                  label: "❌ Reddet",
-                  onClick: async () => {
-                    toast.dismiss(toastId);
-                    try {
-                      const { data: roomData } = await supabase
-                        .from("game_rooms")
-                        .select("host_id")
-                        .eq("room_code", notification.related_id)
-                        .maybeSingle();
-
-                      if (roomData?.host_id && user) {
-                        await supabase.from("room_invite_rejections").insert({
-                          room_code: notification.related_id!,
-                          rejected_by: user.id,
-                          rejected_from: roomData.host_id,
-                        });
-                      }
-
-                      await supabase
-                        .from("notifications")
-                        .update({ is_read: true })
-                        .eq("id", notification.id);
-
-                      toast.info("Davet reddedildi", { duration: 2000 });
-                    } catch (err) {
-                      console.error("Davet reddetme hatası:", err);
-                    }
-                  },
-                },
-              });
+              showInviteToast(notification, user, navigate);
             }
           });
         }
@@ -107,119 +117,50 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       }
     };
 
-    // Kısa gecikmeyle çalıştır (UI hazır olsun)
-    const timer = setTimeout(fetchPendingInvites, 2000);
+    const timer = setTimeout(fetchPendingInvites, 3000);
     return () => clearTimeout(timer);
   }, [user, navigate]);
 
+  // Realtime bildirim dinleyici
   useEffect(() => {
     if (!user) return;
 
-    shownNotifications.current.clear();
-
     const channelName = `user-notifications-toast-${user.id}`;
 
-    // 🔥 Bildirim işleyici fonksiyonu
     const handleNotification = (payload: any) => {
       try {
         const notification = payload.new || payload;
-        
-        console.log("🔔 Realtime bildirim alındı:", notification);
 
-        if (!notification || !notification.id) {
-          console.log("🚫 Geçersiz bildirim payload");
-          return;
-        }
+        if (!notification || !notification.id) return;
 
-        const notificationKey = notification.id;
-        if (shownNotifications.current.has(notificationKey)) {
-          console.log("🚫 Bildirim zaten gösterildi:", notificationKey);
-          return;
-        }
+        if (shownNotifications.current.has(notification.id)) return;
+        shownNotifications.current.add(notification.id);
 
-        shownNotifications.current.add(notificationKey);
         console.log("✅ Bildirim işleniyor:", notification.type);
 
         if (notification.type === "badge_earned") {
-          toast.success(notification.message, {
-            duration: 5000,
-            icon: "🏆",
-          });
+          toast.success(notification.message, { duration: 5000, icon: "🏆" });
         }
 
-        // Room invite notification with accept/reject
         if (notification.type === "room_invite" && notification.related_id) {
-          const toastId = toast.info(`🎮 ${notification.message}`, {
-            duration: 30000,
-            action: {
-              label: "✅ Katıl",
-              onClick: () => {
-                toast.dismiss(toastId);
-                navigate(`/private-room/waiting/${notification.related_id}`);
-              },
-            },
-            cancel: {
-              label: "❌ Reddet",
-              onClick: async () => {
-                toast.dismiss(toastId);
-                try {
-                  // Extract sender id from notification - we need to find who sent it
-                  const { data: notifData } = await supabase
-                    .from("notifications")
-                    .select("id")
-                    .eq("id", notification.id)
-                    .single();
-
-                  // Find who sent this invite (the user who is NOT the current user)
-                  // We store the sender info by looking at who created the room
-                  const { data: roomData } = await supabase
-                    .from("game_rooms")
-                    .select("host_id")
-                    .eq("room_code", notification.related_id)
-                    .maybeSingle();
-
-                  if (roomData?.host_id && user) {
-                    await supabase.from("room_invite_rejections").insert({
-                      room_code: notification.related_id,
-                      rejected_by: user.id,
-                      rejected_from: roomData.host_id,
-                    });
-                  }
-
-                  // Mark notification as read
-                  await supabase
-                    .from("notifications")
-                    .update({ is_read: true })
-                    .eq("id", notification.id);
-
-                  toast.info("Davet reddedildi", { duration: 2000 });
-                } catch (err) {
-                  console.error("Davet reddetme hatası:", err);
-                }
-              },
-            },
-          });
+          // Hemen okundu olarak işaretle (tekrar gösterilmesin)
+          supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
+          showInviteToast(notification, user, navigate);
           return;
         }
-        // 🔥 MENTION TOAST KALDIRILDI - useChatNotifications.tsx zaten bunu yapıyor
-        // Duplicate toast'ları önlemek için burada mention işlenmez
+
         if (notification.type === "mention") {
-          console.log("📢 [NotificationContext] Mention alındı - useChatNotifications'a bırakılıyor");
-          return; // Toast gösterme, useChatNotifications hallediyor
+          return; // useChatNotifications hallediyor
         }
 
         if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
           const chatId = notification.related_id;
           const activeChats = getActivePrivateChats();
-          if (activeChats.includes(chatId)) {
-            console.log("🚫 TOAST GÖSTERİLMEDİ - Sohbet açık:", chatId);
-            return;
-          }
+          if (activeChats.includes(chatId)) return;
 
           const userIds = chatId.replace("chat_", "").split("_");
           const otherUserId = userIds.find((id: string) => id !== user?.id);
 
-          console.log("💬 Private message toast gösteriliyor");
           toast.info(`💬 ${notification.message}`, {
             duration: 5000,
             action: {
@@ -234,9 +175,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     };
 
     try {
-      console.log("🔔 NotificationContext: Realtime subscription başlatılıyor, user:", user.id);
-
-      // JS SDK channel - Supabase realtime yeterli
       autoReconnect.registerChannel(channelName, () =>
         supabase
           .channel(channelName)
@@ -250,12 +188,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             },
             handleNotification,
           )
-          .subscribe((status) => {
-            console.log("🔔 Notification channel status:", status);
-            if (status === "SUBSCRIBED") {
-              console.log("✅ Bildirim kanalı başarıyla bağlandı");
-            }
-          })
+          .subscribe()
       );
 
       return () => {
