@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom"; // useParams eklendi
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, Home, Users } from "lucide-react";
+import { Copy, Check, Home, Users, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSounds } from "@/hooks/useSounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 
+interface Participant {
+  id: string;
+  user_id: string | null;
+  is_ready: boolean | null;
+  is_bot: boolean | null;
+}
+
 const PrivateRoomWaitingPage = () => {
-  // 1. useParams ile URL'deki kodu alıyoruz (:roomCode)
   const { roomCode: paramCode } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -19,10 +24,8 @@ const PrivateRoomWaitingPage = () => {
   const { playSound } = useSounds();
   const { user } = useAuth();
 
-  // URL'den gelen kod (App.tsx'deki :roomCode) veya Query param (yedek)
   const roomCode = paramCode || searchParams.get("code");
 
-  // Room verilerini State'te tutuyoruz (URL'de taşıyıp durmamak için)
   const [roomId, setRoomId] = useState<string | null>(searchParams.get("roomId"));
   const [gameType, setGameType] = useState<"timed" | "score" | null>(
     (searchParams.get("gameType") as "timed" | "score") || null,
@@ -30,41 +33,67 @@ const PrivateRoomWaitingPage = () => {
 
   const [copied, setCopied] = useState(false);
   const [navigated, setNavigated] = useState(false);
-  const [loading, setLoading] = useState(true); // Yükleniyor durumu eklendi
+  const [loading, setLoading] = useState(true);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isReady, setIsReady] = useState(false);
+  const [settingReady, setSettingReady] = useState(false);
 
   // 🔄 Global Resync Hook
   const handleRoomResync = useCallback(async () => {
     if (!roomId || navigated) return;
 
-    const { data: parts } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
+    const { data: parts } = await supabase
+      .from("game_participants")
+      .select("id, user_id, is_ready, is_bot")
+      .eq("room_id", roomId);
 
-    if (parts && parts.length >= 2) {
-      const { data: room } = await supabase
-        .from("game_rooms")
-        .select("game_mode, game_type_new")
-        .eq("id", roomId)
-        .single();
-
-      const type = room?.game_type_new || (room?.game_mode?.includes("score") ? "score" : "timed");
-      const basePath = room?.game_mode?.includes("random-match") ? "/game/random-match" : "/game/private-room";
-
-      setNavigated(true);
-      navigate(`${basePath}?room=${roomId}&type=${type}`);
+    if (parts) {
+      setParticipants(parts);
+      // Check if both players are ready
+      const realPlayers = parts.filter(p => !p.is_bot);
+      const allReady = realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
+      
+      if (allReady && !navigated) {
+        await startGameAndNavigate();
+      }
     }
-  }, [roomId, navigated, navigate]);
+  }, [roomId, navigated]);
 
   usePageResync(handleRoomResync, "PrivateRoomWaitingPage", true);
 
-  // 1. Oda Bilgilerini Çekme Effect'i
+  const startGameAndNavigate = useCallback(async () => {
+    if (!roomId || !gameType || navigated) return;
+    setNavigated(true);
+
+    console.log("🎮 İki oyuncu da hazır, countdown başlatılıp GamePage'e yönlendiriliyor...");
+
+    try {
+      const { data: roomCheck } = await supabase
+        .from("game_rooms")
+        .select("countdown_started_at")
+        .eq("id", roomId)
+        .single();
+
+      if (!roomCheck?.countdown_started_at) {
+        console.log("⏱️ Countdown RPC ile başlatılıyor...");
+        await supabase.rpc("start_game_countdown", { p_room_id: roomId });
+      }
+    } catch (err) {
+      console.warn("Countdown başlatma hatası (devam ediliyor):", err);
+    }
+
+    const basePath = "/game/private-room";
+    navigate(`${basePath}?room=${roomId}&type=${gameType}`);
+  }, [roomId, gameType, navigated, navigate]);
+
+  // 1. Oda Bilgilerini Çekme
   useEffect(() => {
     if (!user || !roomCode) {
-      // Sadece user veya roomCode yoksa at, roomId henüz gelmemiş olabilir bekle
       if (!roomCode) navigate("/");
       return;
     }
 
     const fetchRoomDetails = async () => {
-      // Eğer state'te zaten roomId varsa tekrar çekme
       if (roomId && gameType) {
         setLoading(false);
         return;
@@ -74,7 +103,7 @@ const PrivateRoomWaitingPage = () => {
         const { data: roomRow, error } = await supabase
           .from("game_rooms")
           .select("id, game_mode, game_type_new")
-          .eq("room_code", roomCode) // roomCode string olduğu için .toUpperCase() gerekebilir veriye göre
+          .eq("room_code", roomCode)
           .maybeSingle();
 
         if (error || !roomRow) {
@@ -88,7 +117,6 @@ const PrivateRoomWaitingPage = () => {
           return;
         }
 
-        // State güncelle
         setRoomId(roomRow.id);
         const type = roomRow.game_type_new || (roomRow.game_mode?.includes("score") ? "score" : "timed");
         setGameType(type as "timed" | "score");
@@ -102,19 +130,17 @@ const PrivateRoomWaitingPage = () => {
     fetchRoomDetails();
   }, [roomCode, user, roomId, gameType, navigate, toast]);
 
-  // 2. Katılımcı Ekleme ve Dinleme Effect'i
+  // 2. Katılımcı Ekleme ve Dinleme
   useEffect(() => {
-    // roomId veya user yoksa işlem yapma
     if (!roomId || !user || !gameType) return;
 
     let unsubscribed = false;
 
-    // Kendini odaya ekle (Eğer ekli değilse)
     const ensureSelfParticipant = async () => {
       try {
         const { data: existing } = await supabase
           .from("game_participants")
-          .select("id")
+          .select("id, is_ready")
           .eq("room_id", roomId)
           .eq("user_id", user.id)
           .maybeSingle();
@@ -125,12 +151,14 @@ const PrivateRoomWaitingPage = () => {
             user_id: user.id,
             score: 0,
             is_bot: false,
+            is_ready: false,
           });
           console.log("✅ Katılımcı eklendi:", roomId);
+        } else if (existing.is_ready) {
+          setIsReady(true);
         }
       } catch (e: any) {
         if (e?.code !== "23505") {
-          // Unique violation değilse logla
           console.warn("ensureSelfParticipant warning:", e);
         }
       }
@@ -138,58 +166,43 @@ const PrivateRoomWaitingPage = () => {
 
     ensureSelfParticipant();
 
-    // 2. Oyuncu kontrolü VE COUNTDOWN BAŞLATMA
-    const checkAndNavigate = async () => {
-      const { data: parts } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
+    // Fetch current participants
+    const fetchParticipants = async () => {
+      const { data: parts } = await supabase
+        .from("game_participants")
+        .select("id, user_id, is_ready, is_bot")
+        .eq("room_id", roomId);
 
-      if (!unsubscribed && parts && parts.length >= 2 && !navigated) {
-        setNavigated(true);
-
-        console.log("🎮 2. oyuncu katıldı, countdown başlatılıp GamePage'e yönlendiriliyor...");
-
-        // 🎯 COUNTDOWN BAŞLATMA: GamePage'e yönlendirmeden ÖNCE countdown başlat
-        // Bu sayede her iki oyuncu da GamePage'e geldiğinde buffer animasyonları senkronize çalışır
-        try {
-          // Önce mevcut countdown_started_at'ı kontrol et
-          const { data: roomCheck } = await supabase
-            .from("game_rooms")
-            .select("countdown_started_at")
-            .eq("id", roomId)
-            .single();
-
-          // Eğer countdown henüz başlamamışsa RPC ile başlat
-          if (!roomCheck?.countdown_started_at) {
-            console.log("⏱️ Countdown RPC ile başlatılıyor...");
-            await supabase.rpc("start_game_countdown", { p_room_id: roomId });
-          }
-        } catch (err) {
-          console.warn("Countdown başlatma hatası (devam ediliyor):", err);
+      if (!unsubscribed && parts) {
+        setParticipants(parts);
+        
+        // Check if both ready
+        const realPlayers = parts.filter(p => !p.is_bot);
+        const allReady = realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
+        
+        if (allReady && !navigated) {
+          await startGameAndNavigate();
         }
-
-        // Yönlendir - GamePage countdown'ı alacak ve buffer animasyonlarını gösterecek
-        const basePath = "/game/private-room";
-        navigate(`${basePath}?room=${roomId}&type=${gameType}`);
       }
     };
 
-    // İlk kontrol
-    checkAndNavigate();
+    fetchParticipants();
 
-    // Realtime Dinleme
+    // Realtime: listen for INSERT and UPDATE on participants
     const channel = supabase
-      .channel(`room_waiting_${roomId}`)
+      .channel(`room_ready_${roomId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "game_participants",
           filter: `room_id=eq.${roomId}`,
         },
-        async (payload) => {
-          console.log("👥 Yeni katılımcı:", payload);
+        async () => {
+          console.log("👥 Katılımcı değişikliği algılandı");
           if (!navigated) {
-            await checkAndNavigate();
+            await fetchParticipants();
           }
         },
       )
@@ -199,7 +212,29 @@ const PrivateRoomWaitingPage = () => {
       unsubscribed = true;
       supabase.removeChannel(channel);
     };
-  }, [roomId, gameType, user, navigate, navigated]);
+  }, [roomId, gameType, user, navigated, startGameAndNavigate]);
+
+  const handleReady = async () => {
+    if (!roomId || !user || settingReady) return;
+    setSettingReady(true);
+    playSound("buttonClick");
+
+    try {
+      await supabase
+        .from("game_participants")
+        .update({ is_ready: true })
+        .eq("room_id", roomId)
+        .eq("user_id", user.id);
+
+      setIsReady(true);
+      console.log("✅ Hazır durumu güncellendi");
+    } catch (err) {
+      console.error("Hazır durumu güncelleme hatası:", err);
+      toast({ title: "Hata", description: "Hazır durumu güncellenemedi", variant: "destructive" });
+    } finally {
+      setSettingReady(false);
+    }
+  };
 
   const copyRoomCode = async () => {
     if (roomCode) {
@@ -218,10 +253,32 @@ const PrivateRoomWaitingPage = () => {
     }
   };
 
+  const handleShare = async () => {
+    if (!roomCode) return;
+    playSound("buttonClick");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Özel Oda Daveti",
+          text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
+        });
+      } catch (err) {
+        // User cancelled share
+      }
+    } else {
+      copyRoomCode();
+    }
+  };
+
   const handleBack = () => {
     playSound("buttonClick");
     navigate("/");
   };
+
+  const realPlayers = participants.filter(p => !p.is_bot);
+  const opponentJoined = realPlayers.length >= 2;
+  const opponentReady = opponentJoined && realPlayers.filter(p => p.user_id !== user?.id).every(p => p.is_ready);
 
   if (loading) {
     return (
@@ -251,7 +308,13 @@ const PrivateRoomWaitingPage = () => {
             <Users className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Özel Oda</h1>
-          <p className="text-gray-300 text-lg">Arkadaşın bekleniyor...</p>
+          <p className="text-gray-300 text-lg">
+            {!opponentJoined
+              ? "Arkadaşın bekleniyor..."
+              : !isReady || !opponentReady
+                ? "Hazır olun!"
+                : "Oyun başlıyor..."}
+          </p>
         </div>
 
         {/* Oda Kodu Kartı */}
@@ -274,23 +337,98 @@ const PrivateRoomWaitingPage = () => {
                   </Button>
                 </div>
                 <p className="text-xs sm:text-sm text-yellow-200 mt-4">6 haneli kodu arkadaşınla paylaş</p>
+                
+                {/* Paylaş butonu */}
+                <Button
+                  onClick={handleShare}
+                  className="mt-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold px-6"
+                >
+                  📤 Kodu Paylaş
+                </Button>
               </div>
 
-              {/* Bekleme Animasyonu */}
-              <div className="flex items-center justify-center space-x-2 py-4">
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-pink-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></div>
+              {/* Oyuncu Durumları */}
+              <div className="space-y-3">
+                {/* Sen */}
+                <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                  isReady 
+                    ? "bg-green-500/20 border-green-400/40" 
+                    : "bg-white/5 border-white/10"
+                }`}>
+                  <span className="text-white font-medium">👤 Sen</span>
+                  {isReady ? (
+                    <span className="flex items-center gap-1 text-green-400 font-bold text-sm">
+                      <CheckCircle2 className="w-4 h-4" /> HAZIR
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400 text-sm">Bekleniyor</span>
+                  )}
+                </div>
+
+                {/* Rakip */}
+                <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                  opponentReady 
+                    ? "bg-green-500/20 border-green-400/40" 
+                    : opponentJoined 
+                      ? "bg-blue-500/20 border-blue-400/40"
+                      : "bg-white/5 border-white/10"
+                }`}>
+                  <span className="text-white font-medium">👤 Rakip</span>
+                  {opponentReady ? (
+                    <span className="flex items-center gap-1 text-green-400 font-bold text-sm">
+                      <CheckCircle2 className="w-4 h-4" /> HAZIR
+                    </span>
+                  ) : opponentJoined ? (
+                    <span className="text-blue-400 text-sm">Katıldı - Hazır değil</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-zinc-400 text-sm">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Bekleniyor...
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Hazırım Butonu */}
+              {!isReady && (
+                <Button
+                  onClick={handleReady}
+                  disabled={settingReady}
+                  className="w-full py-6 text-lg font-black uppercase tracking-widest bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-2xl shadow-lg shadow-green-900/30"
+                >
+                  {settingReady ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
+                  )}
+                  {settingReady ? "GÜNCELLENİYOR..." : "HAZIRIM!"}
+                </Button>
+              )}
+
+              {isReady && !opponentReady && (
+                <div className="flex items-center justify-center gap-2 py-4 text-green-400">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="font-medium">
+                    {opponentJoined ? "Rakibiniz hazır olana kadar bekleniyor..." : "Rakibiniz katılana ve hazır olana kadar bekleniyor..."}
+                  </span>
+                </div>
+              )}
+
+              {isReady && opponentReady && (
+                <div className="flex items-center justify-center gap-2 py-4 text-yellow-400 animate-pulse">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="font-bold text-lg">Oyun başlıyor!</span>
+                </div>
+              )}
+
+              {/* Bekleme Animasyonu - sadece rakip katılmadıysa */}
+              {!opponentJoined && (
+                <div className="flex items-center justify-center space-x-2 py-4">
+                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              )}
+
               {/* Oyun Türü Bilgisi */}
               <div className="pt-4 border-t border-white/20">
                 <p className="text-sm text-gray-400 mb-2">Oyun Türü</p>
