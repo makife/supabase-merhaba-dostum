@@ -43,9 +43,9 @@ export const HeaderAnimation: React.FC = () => {
     const colorList = colorsByTheme[theme];
     return {
       x: Math.random() * window.innerWidth,
-      y: Math.random() * 120,
-      dx: (Math.random() - 0.5) * 1.2,
-      dy: (Math.random() - 0.5) * 1.2,
+      y: Math.random() * 140,
+      dx: (Math.random() - 0.5) * 0.8,
+      dy: (Math.random() - 0.5) * 0.8,
       char: letters[Math.floor(Math.random() * letters.length)],
       color: colorList[Math.floor(Math.random() * colorList.length)],
       font: fonts[Math.floor(Math.random() * fonts.length)],
@@ -69,7 +69,7 @@ export const HeaderAnimation: React.FC = () => {
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
-    canvas.height = 120;
+    canvas.height = 140;
 
     let frameId: number;
 
@@ -91,7 +91,7 @@ export const HeaderAnimation: React.FC = () => {
         ctx.save();
         ctx.translate(f.x, f.y);
         ctx.rotate((f.rotation * Math.PI) / 180);
-        ctx.font = `bold 24px ${f.font}, sans-serif`;
+        ctx.font = `900 36px ${f.font}, sans-serif`;
         ctx.fillStyle = f.color.replace("0.6", opacity.toString());
         ctx.shadowColor = f.color;
         ctx.shadowBlur = 8;
