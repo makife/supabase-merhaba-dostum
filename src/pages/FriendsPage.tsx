@@ -55,35 +55,30 @@ const FriendsPage = () => {
         .select("id, username, avatar_url")
         .in("id", friendIds);
 
-      // Fetch presence
+      // Fetch presence with server-side filtering
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const { data: presenceData } = await supabase
         .from("user_presence")
         .select("user_id, is_online, last_seen")
-        .in("user_id", friendIds);
+        .in("user_id", friendIds)
+        .eq("is_online", true)
+        .gte("last_seen", oneMinuteAgo);
 
-      const presenceMap = new Map(
-        presenceData?.map((p) => [p.user_id, p]) || []
-      );
+      const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
       const profileMap = new Map(
         profiles?.map((p) => [p.id, p]) || []
       );
 
-      const now = Date.now();
       const items: FriendItem[] = data.map((f) => {
         const friendId = f.user_id === user.id ? f.friend_id : f.user_id;
         const profile = profileMap.get(friendId);
-        const presence = presenceMap.get(friendId);
-        const isOnline =
-          presence?.is_online &&
-          presence?.last_seen &&
-          now - new Date(presence.last_seen).getTime() < 5 * 60 * 1000;
 
         return {
           friendship_id: f.id,
           friend_id: friendId,
           username: profile?.username || "Oyuncu",
           avatar_url: profile?.avatar_url || null,
-          is_online: !!isOnline,
+          is_online: onlineSet.has(friendId),
           status: f.status,
           is_sender: f.user_id === user.id,
         };
