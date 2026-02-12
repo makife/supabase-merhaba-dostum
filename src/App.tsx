@@ -32,6 +32,7 @@ import NakamaGamePage from "@/pages/NakamaGamePage";
 import NotFound from "./pages/NotFound";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ChatPage from "./pages/ChatPage";
+import FriendsPage from "./pages/FriendsPage";
 import TournamentPage from "./pages/TournamentPage";
 import TournamentWaitingPage from "./pages/TournamentWaitingPage";
 import TournamentBracketPage from "./pages/TournamentBracketPage";
@@ -350,6 +351,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ChatPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <FriendsPage />
             </ProtectedRoute>
           }
         />

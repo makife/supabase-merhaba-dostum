@@ -34,6 +34,8 @@ import {
   Users,
   User,
   MessageCircle,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -970,44 +972,7 @@ const ProfilePage = () => {
                     )}
                   </div>
                   {!isOwnProfile && user && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const participants = [user.id, viewedUserId!].sort();
-                        const chatId = `chat_${participants.join("_")}`;
-                        // Chat kaydını oluştur (yoksa) ve ChatPage'e yönlendir
-                        const openChat = async () => {
-                          try {
-                            const { data: existingChat, error: chatError } = await supabase
-                              .from("private_chats")
-                              .select("*")
-                              .eq("id", chatId)
-                              .single();
-
-                            if (chatError && chatError.code !== "PGRST116") throw chatError;
-
-                            if (!existingChat) {
-                              await supabase.from("private_chats").insert({
-                                id: chatId,
-                                user1_id: participants[0],
-                                user2_id: participants[1],
-                              });
-                            }
-
-                            navigate(`/chat?openPrivateChat=${viewedUserId}`);
-                          } catch (err) {
-                            console.error("Chat açma hatası:", err);
-                            toast.error("Sohbet açılırken hata oluştu");
-                          }
-                        };
-                        openChat();
-                      }}
-                      className="mt-2 text-xs border-blue-400 text-blue-600 hover:bg-blue-50"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5 mr-1" />
-                      Mesaj Yaz
-                    </Button>
+                    <FriendRequestSection userId={user.id} viewedUserId={viewedUserId!} navigate={navigate} />
                   )}
                 </div>
               </div>
@@ -1302,6 +1267,116 @@ const ProfilePage = () => {
           userStats={userStats}
         />
       </div>
+    </div>
+  );
+};
+
+// Friend Request + Message Section for other profiles
+const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: string; viewedUserId: string; navigate: any }) => {
+  const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      const { data } = await supabase
+        .from("friendships")
+        .select("id, user_id, friend_id, status")
+        .or(`and(user_id.eq.${userId},friend_id.eq.${viewedUserId}),and(user_id.eq.${viewedUserId},friend_id.eq.${userId})`)
+        .maybeSingle();
+
+      if (data) {
+        setFriendshipId(data.id);
+        if (data.status === "accepted") setFriendshipStatus("accepted");
+        else if (data.status === "pending" && data.user_id === userId) setFriendshipStatus("pending_sent");
+        else if (data.status === "pending") setFriendshipStatus("pending_received");
+      } else {
+        setFriendshipStatus("none");
+      }
+      setLoading(false);
+    };
+    check();
+  }, [userId, viewedUserId]);
+
+  const sendRequest = async () => {
+    const { error } = await supabase.from("friendships").insert({
+      user_id: userId,
+      friend_id: viewedUserId,
+      status: "pending",
+    });
+    if (error) {
+      if (error.code === "23505") toast.error("Zaten bir davet mevcut");
+      else toast.error("Davet gönderilemedi");
+    } else {
+      toast.success("Arkadaşlık daveti gönderildi! 🤝");
+      // Send notification
+      await supabase.from("notifications").insert({
+        user_id: viewedUserId,
+        type: "friend_request",
+        message: "Size arkadaşlık daveti gönderdi",
+        related_id: userId,
+      });
+      setFriendshipStatus("pending_sent");
+    }
+  };
+
+  const acceptRequest = async () => {
+    if (!friendshipId) return;
+    await supabase.from("friendships").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", friendshipId);
+    toast.success("Arkadaşlık kabul edildi! 🎉");
+    setFriendshipStatus("accepted");
+  };
+
+  const openChat = async () => {
+    const participants = [userId, viewedUserId].sort();
+    const chatId = `chat_${participants.join("_")}`;
+    try {
+      const { data: existingChat, error: chatError } = await supabase
+        .from("private_chats").select("id").eq("id", chatId).maybeSingle();
+      if (chatError) throw chatError;
+      if (!existingChat) {
+        await supabase.from("private_chats").insert({
+          id: chatId, user1_id: participants[0], user2_id: participants[1],
+        });
+      }
+      navigate(`/chat?openPrivateChat=${viewedUserId}`);
+    } catch (err) {
+      toast.error("Sohbet açılırken hata oluştu");
+    }
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="flex gap-2 mt-2">
+      <Button variant="outline" size="sm" onClick={openChat} className="text-xs border-blue-400 text-blue-600 hover:bg-blue-50">
+        <MessageCircle className="w-3.5 h-3.5 mr-1" />
+        Mesaj Yaz
+      </Button>
+      {friendshipStatus === "none" && (
+        <Button variant="outline" size="sm" onClick={sendRequest} className="text-xs border-green-400 text-green-600 hover:bg-green-50">
+          <UserPlus className="w-3.5 h-3.5 mr-1" />
+          Arkadaş Ekle
+        </Button>
+      )}
+      {friendshipStatus === "pending_sent" && (
+        <Button variant="outline" size="sm" disabled className="text-xs border-amber-400 text-amber-600 opacity-70">
+          <Clock className="w-3.5 h-3.5 mr-1" />
+          Davet Gönderildi
+        </Button>
+      )}
+      {friendshipStatus === "pending_received" && (
+        <Button variant="outline" size="sm" onClick={acceptRequest} className="text-xs border-green-400 text-green-600 hover:bg-green-50">
+          <UserCheck className="w-3.5 h-3.5 mr-1" />
+          Kabul Et
+        </Button>
+      )}
+      {friendshipStatus === "accepted" && (
+        <Button variant="outline" size="sm" disabled className="text-xs border-cyan-400 text-cyan-600 opacity-70">
+          <UserCheck className="w-3.5 h-3.5 mr-1" />
+          Arkadaş
+        </Button>
+      )}
     </div>
   );
 };
