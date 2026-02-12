@@ -187,12 +187,12 @@ const LeaderboardPage = () => {
   // Ana resync fonksiyonu
   const fetchOnlineUsers = async () => {
     try {
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const { data } = await supabase
         .from("user_presence")
         .select("user_id")
         .eq("is_online", true)
-        .gte("last_seen", twoMinutesAgo);
+        .gte("last_seen", oneMinuteAgo);
       if (data) {
         setOnlineUserIds(new Set(data.map((d) => d.user_id)));
       }

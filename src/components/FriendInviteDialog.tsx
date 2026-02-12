@@ -47,22 +47,20 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const [{ data: profiles }, { data: presenceData }] = await Promise.all([
         supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds),
-        supabase.from("user_presence").select("user_id, is_online, last_seen").in("user_id", friendIds),
+        supabase.from("user_presence").select("user_id").in("user_id", friendIds).eq("is_online", true).gte("last_seen", oneMinuteAgo),
       ]);
 
-      const presenceMap = new Map(presenceData?.map((p) => [p.user_id, p]) || []);
-      const now = Date.now();
+      const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
 
       const items: Friend[] = (profiles || []).map((p) => {
-        const presence = presenceMap.get(p.id);
-        const isOnline = presence?.is_online && presence?.last_seen && now - new Date(presence.last_seen).getTime() < 5 * 60 * 1000;
         return {
           id: p.id,
           username: p.username || "Oyuncu",
           avatar_url: p.avatar_url,
-          is_online: !!isOnline,
+          is_online: onlineSet.has(p.id),
         };
       });
 
