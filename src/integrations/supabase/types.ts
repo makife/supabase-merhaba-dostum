@@ -1821,6 +1821,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_stale_waiting_rooms: { Args: never; Returns: undefined }
       export_user_data: { Args: never; Returns: Json }
       generate_random_grid: { Args: never; Returns: Json }
       get_avatar_url: { Args: { user_id: string }; Returns: string }
