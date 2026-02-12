@@ -33,6 +33,85 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const navigate = useNavigate();
   const shownNotifications = useRef<Set<string>>(new Set());
 
+  // 🔥 Uygulama açıldığında bekleyen room_invite bildirimlerini göster
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchPendingInvites = async () => {
+      try {
+        // Son 30 dakika içindeki okunmamış room_invite bildirimlerini çek
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+        const { data: pendingInvites } = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("type", "room_invite")
+          .eq("is_read", false)
+          .gte("created_at", thirtyMinAgo)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (pendingInvites && pendingInvites.length > 0) {
+          console.log("📬 Bekleyen davet bildirimleri bulundu:", pendingInvites.length);
+          pendingInvites.forEach((notification) => {
+            // Deduplication
+            if (shownNotifications.current.has(notification.id)) return;
+            shownNotifications.current.add(notification.id);
+
+            if (notification.related_id) {
+              const toastId = toast.info(`🎮 ${notification.message}`, {
+                duration: 30000,
+                action: {
+                  label: "✅ Katıl",
+                  onClick: () => {
+                    toast.dismiss(toastId);
+                    navigate(`/private-room/waiting/${notification.related_id}`);
+                  },
+                },
+                cancel: {
+                  label: "❌ Reddet",
+                  onClick: async () => {
+                    toast.dismiss(toastId);
+                    try {
+                      const { data: roomData } = await supabase
+                        .from("game_rooms")
+                        .select("host_id")
+                        .eq("room_code", notification.related_id)
+                        .maybeSingle();
+
+                      if (roomData?.host_id && user) {
+                        await supabase.from("room_invite_rejections").insert({
+                          room_code: notification.related_id!,
+                          rejected_by: user.id,
+                          rejected_from: roomData.host_id,
+                        });
+                      }
+
+                      await supabase
+                        .from("notifications")
+                        .update({ is_read: true })
+                        .eq("id", notification.id);
+
+                      toast.info("Davet reddedildi", { duration: 2000 });
+                    } catch (err) {
+                      console.error("Davet reddetme hatası:", err);
+                    }
+                  },
+                },
+              });
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Bekleyen davet bildirimleri kontrol hatası:", err);
+      }
+    };
+
+    // Kısa gecikmeyle çalıştır (UI hazır olsun)
+    const timer = setTimeout(fetchPendingInvites, 2000);
+    return () => clearTimeout(timer);
+  }, [user, navigate]);
+
   useEffect(() => {
     if (!user) return;
 
