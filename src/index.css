@@ -121,6 +121,20 @@ All colors MUST be HSL.
     --sidebar-ring: 260 84% 57%;
   }
 
+  /* Force purple focus ring on all inputs */
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary)) !important;
+  }
+
+  input:-webkit-autofill:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary)), inset 0 0 0 9999px white !important;
+  }
+
   * {
     @apply border-border;
   }
