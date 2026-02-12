@@ -155,7 +155,7 @@ const AuthPage = () => {
             <img
               src={kelimeleLogo}
               alt="Kelimele Logo"
-              className="w-20 h-20 mx-auto rounded-2xl shadow-lg shadow-primary/20 ring-2 ring-primary/20"
+              className="w-20 h-20 mx-auto rounded-2xl shadow-lg shadow-primary/20 ring-2 ring-primary/20 bg-white p-1"
             />
             <h1
               className="text-3xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-primary via-purple-400 to-indigo-500 bg-clip-text text-transparent"
