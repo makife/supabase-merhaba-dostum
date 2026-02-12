@@ -260,10 +260,12 @@ const PrivateRoomWaitingPage = () => {
     playSound("buttonClick");
 
     try {
-      // Capacitor native share kullan
-      const { Capacitor } = await import("@capacitor/core");
+      // Capacitor native share kullan - Rollup resolve sorununu önlemek için string concat
+      const capCorePath = "@capacitor" + "/core";
+      const capSharePath = "@capacitor" + "/share";
+      const { Capacitor } = await import(/* @vite-ignore */ capCorePath);
       if (Capacitor.isNativePlatform()) {
-        const { Share } = await import("@capacitor/share");
+        const { Share } = await import(/* @vite-ignore */ capSharePath);
         await Share.share({
           title: "Özel Oda Daveti",
           text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
