@@ -259,6 +259,23 @@ const PrivateRoomWaitingPage = () => {
     if (!roomCode) return;
     playSound("buttonClick");
 
+    try {
+      // Capacitor native share kullan
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        const { Share } = await import("@capacitor/share");
+        await Share.share({
+          title: "Özel Oda Daveti",
+          text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
+          dialogTitle: "Oda Kodunu Paylaş",
+        });
+        return;
+      }
+    } catch (err) {
+      // Native share başarısız olursa veya iptal edilirse devam et
+    }
+
+    // Web fallback
     if (navigator.share) {
       try {
         await navigator.share({
@@ -266,7 +283,7 @@ const PrivateRoomWaitingPage = () => {
           text: `Kelimele'de benimle oynamaya gel! Oda kodu: ${roomCode}`,
         });
       } catch (err) {
-        // User cancelled share
+        // User cancelled
       }
     } else {
       copyRoomCode();
