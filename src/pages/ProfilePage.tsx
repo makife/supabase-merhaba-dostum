@@ -54,6 +54,7 @@ const ProfilePage = () => {
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
+  const [isUserOnline, setIsUserOnline] = useState(false);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
@@ -322,10 +323,22 @@ const ProfilePage = () => {
     const fetchProfile = async () => {
       if (!viewedUserId) return;
 
-      const { data } = await supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle();
+      const [{ data }, tournamentStats] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle(),
+        fetchTournamentStats(),
+      ]);
 
-      // Turnuva istatistiklerini al
-      const tournamentStats = await fetchTournamentStats();
+      // Fetch online status
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+      const { data: presenceData } = await supabase
+        .from("user_presence")
+        .select("user_id")
+        .eq("user_id", viewedUserId)
+        .eq("is_online", true)
+        .gte("last_seen", oneMinuteAgo)
+        .maybeSingle();
+
+      setIsUserOnline(!!presenceData);
 
       if (data) {
         const levelData = calculateLevel(data.total_score || 0);
@@ -349,14 +362,12 @@ const ProfilePage = () => {
           nextLevelExp: levelData.nextLevelExp,
           premiumUntil: data.premium_until,
           averageScore: data.average_score || 0,
-          // Turnuva istatistikleri
           tournamentsWon: tournamentStats.won,
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
         }));
 
-        // Badge ilerleme için kullanıcı istatistiklerini güncelle
         setUserStats({
           total_games: data.total_games || 0,
           total_score: data.total_score || 0,
@@ -949,7 +960,17 @@ const ProfilePage = () => {
                       maxLength={15}
                     />
                   ) : (
-                    <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold">{profileData.username}</h2>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        isUserOnline 
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                          : "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isUserOnline ? "bg-green-400" : "bg-zinc-500"}`} />
+                        {isUserOnline ? "Çevrimiçi" : "Çevrimdışı"}
+                      </span>
+                    </div>
                   )}
                   {!isOwnProfile && <p className="text-sm text-muted-foreground">Oyuncu Profili</p>}
                   {isOwnProfile && user?.email && (
