@@ -7,7 +7,7 @@ AI rakibine karşı zihin antrenmanı yapabilirsin.
 Özel oda oluşturarak istediğin kişiyle istediğin kadar oynayabilirsin.
 Rastgele eşleşme modunda herhangi bir rakiple eşleşeceksin.
 Turnuvalarda çeyrek, yarı ve final aşamalarından geçerek turnuva şampiyonu ol.
-Profilin sayfandan istatistik bilgilerine gözat.
+Profilin sayfandan istatistik bilgilerine göz atabilirsin.
 Ayarlar sayfasından oyun hakkında bilgi alabilir ve bazı ayarlara ulaşabilirsin.
 Liderler sayfasından haftalık, aylık ve genel sıralama bilgilerini görebilirsin.
 Market sayfasından reklam izle butonuyla her gün reklam izleyerek 5 mürekkep damlası kazanabilirsin. 
