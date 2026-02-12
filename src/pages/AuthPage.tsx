@@ -176,13 +176,13 @@ const AuthPage = () => {
                 value="signin"
                 className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
               >
-                🔑 Giriş Yap
+                ▶ Giriş Yap
               </TabsTrigger>
               <TabsTrigger
                 value="signup"
                 className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-indigo-600 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
               >
-                ✨ Kayıt Ol
+                ➜] Kayıt Ol
               </TabsTrigger>
             </TabsList>
 
