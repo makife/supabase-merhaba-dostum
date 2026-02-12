@@ -321,15 +321,11 @@ const PrivateRoomWaitingPage = () => {
       </div>
 
       <div className="max-w-2xl mx-auto pt-20">
-        {/* Başlık */}
+        {/* Durum bilgisi */}
         <div className="text-center mb-8">
-          <div className="h-20 w-20 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-            <Users className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Özel Oda</h1>
           <p className="text-gray-300 text-lg">
             {!opponentJoined
-              ? "Arkadaşın bekleniyor..."
+              ? ""
               : !isReady || !opponentReady
                 ? "Hazır olun!"
                 : "Oyun başlıyor..."}
@@ -457,18 +453,6 @@ const PrivateRoomWaitingPage = () => {
                 </div>
               )}
 
-              {/* Oyun Türü Bilgisi */}
-              <div className="pt-4 border-t border-white/20">
-                <p className="text-sm text-gray-400 mb-2">Oyun Türü</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                  <span className="text-white font-semibold">
-                    {gameType === "timed" ? "⏱️ Zamana Karşı" : gameType === "score" ? "🏆 Puanlı" : "Yükleniyor..."}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  {gameType === "timed" ? "2 dakika içinde en yüksek puanı hedefle" : "500 puana ilk ulaşan kazanır"}
-                </p>
-              </div>
             </div>
           </CardContent>
         </Card>
