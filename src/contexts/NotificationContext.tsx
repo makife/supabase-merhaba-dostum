@@ -67,6 +67,18 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             icon: "🏆",
           });
         }
+
+        // Room invite notification
+        if (notification.type === "room_invite" && notification.related_id) {
+          toast.info(`🎮 ${notification.message}`, {
+            duration: 10000,
+            action: {
+              label: "Katıl",
+              onClick: () => navigate(`/private-room/waiting/${notification.related_id}`),
+            },
+          });
+          return;
+        }
         // 🔥 MENTION TOAST KALDIRILDI - useChatNotifications.tsx zaten bunu yapıyor
         // Duplicate toast'ları önlemek için burada mention işlenmez
         if (notification.type === "mention") {
