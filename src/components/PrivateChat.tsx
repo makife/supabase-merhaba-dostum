@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Send, ArrowLeft, Flag } from "lucide-react";
+import { Send, ArrowLeft, Flag, Check, CheckCheck } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
@@ -401,11 +401,18 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                 >
                   <div className="break-words text-sm">{message.message}</div>
                   <div
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-1 flex items-center justify-end gap-1 ${
                       message.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
                     }`}
                   >
-                    {formatTime(message.created_at)}
+                    <span>{formatTime(message.created_at)}</span>
+                    {message.sender_id === user?.id && (
+                      message.is_read ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5" />
+                      )
+                    )}
                   </div>
                 </div>
               </div>
