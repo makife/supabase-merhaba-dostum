@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { FloatingMenu } from "@/components/FloatingMenu";
 import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X } from "lucide-react";
 
 interface FriendItem {
@@ -353,8 +352,6 @@ const FriendsPage = () => {
           )
         )}
       </div>
-
-      <FloatingMenu />
     </div>
   );
 };
