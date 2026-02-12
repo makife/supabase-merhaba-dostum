@@ -142,12 +142,12 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           toast.success(notification.message, { duration: 5000, icon: "🏆" });
         }
 
-        if (notification.type === "friend_request" && notification.related_id) {
+        if (notification.type === "friend_request") {
           toast.info(`🤝 ${notification.message}`, {
             duration: 8000,
             action: {
-              label: "Profile Git",
-              onClick: () => navigate(`/profile/${notification.related_id}`),
+              label: "Git",
+              onClick: () => navigate("/friends"),
             },
           });
           return;
