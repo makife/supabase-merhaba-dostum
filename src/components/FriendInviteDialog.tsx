@@ -88,6 +88,26 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
     setSendingId(friend.id);
 
     try {
+      // Check if this friend has rejected an invite for this room code recently (within 10 minutes)
+      const { data: rejections } = await supabase
+        .from("room_invite_rejections")
+        .select("id, created_at")
+        .eq("room_code", roomCode)
+        .eq("rejected_by", friend.id)
+        .eq("rejected_from", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (rejections && rejections.length > 0) {
+        const rejectedAt = new Date(rejections[0].created_at).getTime();
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        if (rejectedAt > tenMinutesAgo) {
+          toast.error(`${friend.username} bu oda davetini reddetti. 10 dakika bekleyin.`);
+          setSendingId(null);
+          return;
+        }
+      }
+
       // Get current user's username
       const { data: myProfile } = await supabase
         .from("profiles")
