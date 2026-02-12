@@ -120,8 +120,6 @@ const GamePage = ({
     participants: gameParticipants,
     endGame,
     leaveRoom,
-    sendRematchRequest,
-    respondRematchRequest,
     joinRoom,
     createRoom,
     addAIOpponent,
