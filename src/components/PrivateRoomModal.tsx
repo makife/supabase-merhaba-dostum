@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // Import listesine DialogDescription eklendi
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"; 
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,45 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [existingRoom, setExistingRoom] = useState<{ room_code: string; id: string } | null>(null);
+  const [showExistingRoomPrompt, setShowExistingRoomPrompt] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
 
   const { currentRoom, participants, leaveRoom } = useGame();
   const { playSound } = useSounds();
   const { toast } = useToast();
   const { user } = useAuth();
   const { profile, isPremium } = useUser();
+
+  // Check for existing waiting room on mount
+  useEffect(() => {
+    const checkExistingRoom = async () => {
+      if (!user) { setCheckingExisting(false); return; }
+      try {
+        const { data } = await supabase
+          .from("game_rooms")
+          .select("id, room_code")
+          .eq("host_id", user.id)
+          .eq("status", "waiting")
+          .eq("game_mode", "private-room")
+          .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (data?.room_code) {
+          setExistingRoom({ room_code: data.room_code, id: data.id });
+          setShowExistingRoomPrompt(true);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+    checkExistingRoom();
+  }, [user]);
+
 
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -177,6 +210,47 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                Arkadaşlarınla oynamak için oda oluştur veya var olan bir odaya katıl.
             </DialogDescription>
           </div>
+
+          {/* EXISTING ROOM PROMPT */}
+          {showExistingRoomPrompt && existingRoom && (
+            <div className="px-6 pb-4 z-10 animate-in fade-in duration-300">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs font-bold">Bekleyen odanız var!</span>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Yakın zamanda oluşturduğunuz <span className="font-bold text-white">{existingRoom.room_code}</span> kodlu oda hâlâ aktif.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      playSound("buttonClick");
+                      navigate(`/private-room/waiting/${existingRoom.room_code}`);
+                    }}
+                    className="py-2.5 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-500 text-white rounded-xl transition-colors"
+                  >
+                    ODAMA DÖN
+                  </button>
+                  <button
+                    onClick={async () => {
+                      playSound("buttonClick");
+                      // Expire old room
+                      await supabase
+                        .from("game_rooms")
+                        .update({ status: "expired", updated_at: new Date().toISOString() })
+                        .eq("id", existingRoom.id);
+                      setShowExistingRoomPrompt(false);
+                      setExistingRoom(null);
+                    }}
+                    className="py-2.5 text-[10px] font-black uppercase tracking-wider bg-white/5 hover:bg-white/10 text-zinc-400 rounded-xl transition-colors"
+                  >
+                    YENİ ODA
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TABS */}
           <div className="px-8 pb-4 z-10">
