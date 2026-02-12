@@ -2,7 +2,7 @@ Maçtan ayrılana 100 EXP ceza uygulanır.
 Mürekkep doldurmak, oyun hakları ve jokerler satın almak için kırtasiye sayfasından alışveriş yapabilirsin.
 Sohbet sayfasında arkadaşlarınla ve diğer kişilerle sohbet edebilirsin.
 Sohbet esnasında argo ve küfür içerikli konuşmalar sohbet botu tarafından tespit edilmekte ve giriş yasağı uygulanmaktadır.
-Sohbet sayfasında seni rahatsız eden içeği flag butonuna tıklayarak şiayet edebilirsin.
+Sohbet sayfasında seni rahatsız eden içeriği flag butonuna tıklayarak şikayet edebilirsin.
 AI rakibine karşı zihin antrenmanı yapabilirsin.
 Özel oda oluşturarak istediğin kişiyle istediğin kadar oyna.
 Rastgele eşleşme modunda herhangi bir rakiple eşleşeceksin.
