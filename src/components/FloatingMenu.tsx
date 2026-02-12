@@ -24,6 +24,7 @@ import {
   Volume2,
   VolumeX,
   LogOut,
+  Users,
 } from "lucide-react";
 
 // --- Yardımcı Fonksiyonlar ---
@@ -95,6 +96,13 @@ const menuItems = [
     icon: Backpack,
     color: "from-purple-500 to-purple-600",
     hoverColor: "group-hover:from-purple-600 group-hover:to-purple-700",
+  },
+  {
+    title: "Arkadaşlar",
+    route: "/friends",
+    icon: Users,
+    color: "from-cyan-500 to-cyan-600",
+    hoverColor: "group-hover:from-cyan-600 group-hover:to-cyan-700",
   },
   {
     title: "Ayarlar",
