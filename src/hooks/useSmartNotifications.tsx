@@ -43,7 +43,7 @@ export function useSmartNotifications() {
       try {
         const { error } = await supabase.functions.invoke("send-push-notification", {
           body: {
-            receiver_id: receiverId,
+            receiverId: receiverId,
             title,
             body,
             data,
