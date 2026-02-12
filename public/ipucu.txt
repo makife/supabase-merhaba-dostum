@@ -4,9 +4,15 @@ Sohbet sayfasında arkadaşlarınla ve diğer kişilerle sohbet edebilirsin.
 Sohbet esnasında argo ve küfür içerikli konuşmalar sohbet botu tarafından tespit edilmekte ve giriş yasağı uygulanmaktadır.
 Sohbet sayfasında seni rahatsız eden içeriği flag butonuna tıklayarak şikayet edebilirsin.
 AI rakibine karşı zihin antrenmanı yapabilirsin.
-Özel oda oluşturarak istediğin kişiyle istediğin kadar oyna.
+Özel oda oluşturarak istediğin kişiyle istediğin kadar oynayabilirsin.
 Rastgele eşleşme modunda herhangi bir rakiple eşleşeceksin.
 Turnuvalarda çeyrek, yarı ve final aşamalarından geçerek turnuva şampiyonu ol.
 Profilin sayfandan istatistik bilgilerine gözat.
 Ayarlar sayfasından oyun hakkında bilgi alabilir ve bazı ayarlara ulaşabilirsin.
 Liderler sayfasından haftalık, aylık ve genel sıralama bilgilerini görebilirsin.
+Market sayfasından reklam izle butonuyla her gün reklam izleyerek 5 mürekkep damlası kazanabilirsin. 
+Genel sohbet sayfasında rumuzların önüne "@" sembolü ekleyerek ilgili kişilere mention gönderebilirsin.
+Özel sohbet kişilerini sola kaydırarak silebilir ve engelle butonuyla engelleyebilirsin.
+Sohbet sayfasından veya liderlik sayfasından kişilerin avatarlarına tıklayarak profil bilgilerine ulaşabilirsin.
+Sıkılmaman için ana sayfaya mini oyunlar ekledik.
+Genel sohbet sayfasında gönderilen mesajlara emojili tepki ekleyebilirsin.
