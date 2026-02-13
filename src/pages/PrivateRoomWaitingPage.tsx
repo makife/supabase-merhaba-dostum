@@ -70,6 +70,29 @@ const PrivateRoomWaitingPage = () => {
     console.log("🎮 İki oyuncu da hazır, countdown başlatılıp GamePage'e yönlendiriliyor...");
 
     try {
+      // 1. Odayı "active" yap ve player ID'lerini set et
+      const { data: realPlayers } = await supabase
+        .from("game_participants")
+        .select("user_id, joined_at")
+        .eq("room_id", roomId)
+        .eq("is_bot", false)
+        .order("joined_at", { ascending: true } as any);
+
+      const player1Id = realPlayers?.[0]?.user_id || null;
+      const player2Id = realPlayers?.[1]?.user_id || null;
+
+      await supabase
+        .from("game_rooms")
+        .update({
+          status: "active",
+          player1_id: player1Id,
+          player2_id: player2Id,
+        })
+        .eq("id", roomId);
+
+      console.log("✅ Oda active yapıldı, player1:", player1Id?.slice(-8), "player2:", player2Id?.slice(-8));
+
+      // 2. Countdown başlat (henüz başlatılmamışsa)
       const { data: roomCheck } = await supabase
         .from("game_rooms")
         .select("countdown_started_at")
