@@ -334,9 +334,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
               const existing = prev[newReaction.message_id] || [];
               // Duplicate kontrolü
               if (existing.some((r) => r.id === newReaction.id)) return prev;
+              // Optimistic temp tepkiyi kaldır, gerçek veriyle değiştir
+              const withoutTemp = existing.filter(
+                (r) => !(r.id.startsWith("temp-") && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji)
+              );
+              // Tekrar duplicate kontrolü
+              if (withoutTemp.some((r) => r.id === newReaction.id)) return { ...prev, [newReaction.message_id]: withoutTemp };
               return {
                 ...prev,
-                [newReaction.message_id]: [...existing, newReaction],
+                [newReaction.message_id]: [...withoutTemp, newReaction],
               };
             });
           },
