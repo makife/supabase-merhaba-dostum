@@ -56,8 +56,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSentRequestRef = useRef<{ roomCode: string; gameType: string } | null>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const userId = user?.id;
 
@@ -363,7 +361,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
 
         setIsWaiting(true);
-        lastSentRequestRef.current = { roomCode, gameType };
         toast({
           title: "🔄 Tekrar Oyun İsteği Gönderildi",
           description: "Rakibinizin yanıtını bekliyoruz...",
@@ -373,7 +370,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Set timeout
         waitingTimeoutRef.current = setTimeout(() => {
           setIsWaiting(false);
-          lastSentRequestRef.current = null;
           toast({
             title: "⏰ Süre Doldu",
             description: "Rakibiniz yanıt vermedi.",
@@ -546,60 +542,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  // Polling fallback: sender polls for accepted/rejected while waiting
-  useEffect(() => {
-    if (!userId || !isWaiting || !lastSentRequestRef.current) return;
-
-    const roomCode = lastSentRequestRef.current.roomCode;
-    console.log("🔄 Rematch polling başlatılıyor, roomCode:", roomCode);
-
-    pollingRef.current = setInterval(async () => {
-      const { data: req } = await supabase
-        .from("rematch_requests")
-        .select("id, status, room_code, game_type")
-        .eq("from_user_id", userId)
-        .eq("room_code", roomCode)
-        .maybeSingle();
-
-      if (!req) return;
-
-      if (req.status === "accepted") {
-        console.log("✅ [Polling] Rematch kabul edildi:", req.room_code);
-        if (pollingRef.current) clearInterval(pollingRef.current);
-        if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current);
-        setIsWaiting(false);
-        lastSentRequestRef.current = null;
-
-        toast({
-          title: "✅ Rematch Kabul Edildi",
-          description: "Oyun başlıyor...",
-          duration: 1000,
-        });
-
-        navigate(`/private-room/waiting/${req.room_code}`);
-      } else if (req.status === "rejected") {
-        console.log("❌ [Polling] Rematch reddedildi");
-        if (pollingRef.current) clearInterval(pollingRef.current);
-        if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current);
-        setIsWaiting(false);
-        lastSentRequestRef.current = null;
-
-        toast({
-          title: "❌ Rematch Reddedildi",
-          description: "Rakip rematch isteğini reddetti.",
-          variant: "destructive",
-          duration: 1000,
-        });
-      }
-    }, 2000);
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [userId, isWaiting, toast, navigate]);
+  // Realtime listener handles accepted/rejected - no polling needed
 
   // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
