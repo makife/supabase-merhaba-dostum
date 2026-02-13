@@ -3143,8 +3143,33 @@ const GamePage = ({
         return;
       }
 
-      // Countdown, realtime subscription tarafından yakalanacak
-      // (GamePage'deki game-room-countdown subscription'ı)
+      // 🔒 REMATCH FIX: joinRoom sırasında countdown_started_at henüz set edilmemiş olabilir
+      // (RPC henüz tamamlanmamış). Poll ile kontrol et ve currentRoom'u güncelle.
+      if (!countdownInitiatedRef.current) {
+        for (let poll = 0; poll < 15; poll++) {
+          const { data: freshRoom } = await supabase
+            .from("game_rooms")
+            .select("countdown_started_at, status, player1_id, player2_id")
+            .eq("id", roomId)
+            .single();
+
+          if (freshRoom?.countdown_started_at) {
+            console.log("✅ Countdown detected via polling (attempt", poll + 1, "):", freshRoom.countdown_started_at);
+            // GameContext currentRoom'u güncellemek için tekrar fetch et
+            const { data: fullRoom } = await supabase
+              .from("game_rooms")
+              .select("*")
+              .eq("id", roomId)
+              .single();
+            if (fullRoom) {
+              // joinRoom tekrar çağırarak currentRoom'u güncelle
+              await joinRoom(roomId);
+            }
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
     };
     init();
   }, [gameMode, user?.id, joinRoom, navigate, searchParams, toast, setGameGrid]);
@@ -4925,45 +4950,7 @@ const GamePage = ({
           }
         },
       )
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && !countdownInitiatedRef.current && !gameStartedRef.current) {
-          // 🔒 Subscription oluştuktan sonra DB'den güncel countdown_started_at'ı kontrol et
-          // GameContext'te game_rooms realtime subscription olmadığı için
-          // currentRoom.countdown_started_at güncellenmiyor olabilir
-          console.log("🔍 Subscription hazır - DB'den countdown_started_at kontrol ediliyor...");
-          const { data: freshRoom } = await supabase
-            .from("game_rooms")
-            .select("countdown_started_at")
-            .eq("id", currentRoom.id)
-            .single();
-
-          if (freshRoom?.countdown_started_at && !countdownInitiatedRef.current && !gameStartedRef.current) {
-            const countdownStartTime = new Date(freshRoom.countdown_started_at).getTime();
-            const BUFFER_MS = 5000;
-            const COUNTDOWN_MS = 5000;
-            const countdownEndTime = countdownStartTime + BUFFER_MS + COUNTDOWN_MS;
-            const nowWithOffset = Date.now() + serverTimeOffset;
-            const msElapsed = nowWithOffset - countdownStartTime;
-            const msUntilGameStart = countdownEndTime - nowWithOffset;
-
-            console.log("🎯 DB'den countdown bulundu (subscription sonrası):", {
-              countdown_started_at: freshRoom.countdown_started_at,
-              msElapsed,
-              msUntilGameStart,
-            });
-
-            if (msUntilGameStart <= 0) {
-              countdownInitiatedRef.current = true;
-              processedCountdownRef.current = freshRoom.countdown_started_at;
-              setGameStarted(true);
-              gameStartedRef.current = true;
-              gameHasStartedRef.current = true;
-            } else if (processedCountdownRef.current !== freshRoom.countdown_started_at) {
-              initiateCountdown(freshRoom.countdown_started_at, false);
-            }
-          }
-        }
-      });
+      .subscribe();
 
     countdownChannelRef.current = channel;
 
