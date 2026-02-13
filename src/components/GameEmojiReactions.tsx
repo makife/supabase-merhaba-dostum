@@ -56,15 +56,19 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
     const channel = supabase.channel(`emoji-reactions-${roomId}`)
       .on("broadcast", { event: "emoji_reaction" }, (payload) => {
         const { senderId, emojiSrc } = payload.payload;
-        
-        // Show on both cards simultaneously
-        setPlayerEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
-        if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
-        playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+        const overlay = { userId: senderId, emojiSrc, timestamp: Date.now() };
 
-        setOpponentEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
-        if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-        opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+        if (senderId === userId) {
+          // Sender's emoji → show on player's own card
+          setPlayerEmoji(overlay);
+          if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
+          playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+        } else {
+          // Opponent's emoji → show on opponent's card
+          setOpponentEmoji(overlay);
+          if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+          opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+        }
       })
       .subscribe();
 
