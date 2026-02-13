@@ -93,13 +93,12 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
     // Picker button (rendered externally)
     PickerButton: gameStarted && !gameEnded ? (
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 px-2 text-xs gap-1 text-amber-700 hover:bg-amber-100"
+        variant="outline"
+        className="h-12 w-full text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-800 transition-all"
         onClick={() => setShowPicker(!showPicker)}
         disabled={cooldown}
       >
-        <Smile className="w-4 h-4" />
+        <Smile className="w-4 h-4 mr-2" />
         İfadeler
       </Button>
     ) : null,
@@ -143,7 +142,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-lg"
           >
-            <img src={playerEmoji.emojiSrc} alt="emoji" className="w-14 h-14 object-contain" />
+            <img src={playerEmoji.emojiSrc} alt="emoji" className="w-20 h-20 object-contain" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -160,7 +159,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-lg"
           >
-            <img src={opponentEmoji.emojiSrc} alt="emoji" className="w-14 h-14 object-contain" />
+            <img src={opponentEmoji.emojiSrc} alt="emoji" className="w-20 h-20 object-contain" />
           </motion.div>
         )}
       </AnimatePresence>
