@@ -3142,6 +3142,34 @@ const GamePage = ({
         navigate("/");
         return;
       }
+
+      // 🔒 REMATCH FIX: joinRoom sırasında countdown_started_at henüz set edilmemiş olabilir
+      // (RPC henüz tamamlanmamış). Poll ile kontrol et ve currentRoom'u güncelle.
+      if (!countdownInitiatedRef.current) {
+        for (let poll = 0; poll < 15; poll++) {
+          const { data: freshRoom } = await supabase
+            .from("game_rooms")
+            .select("countdown_started_at, status, player1_id, player2_id")
+            .eq("id", roomId)
+            .single();
+
+          if (freshRoom?.countdown_started_at) {
+            console.log("✅ Countdown detected via polling (attempt", poll + 1, "):", freshRoom.countdown_started_at);
+            // GameContext currentRoom'u güncellemek için tekrar fetch et
+            const { data: fullRoom } = await supabase
+              .from("game_rooms")
+              .select("*")
+              .eq("id", roomId)
+              .single();
+            if (fullRoom) {
+              // joinRoom tekrar çağırarak currentRoom'u güncelle
+              await joinRoom(roomId);
+            }
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
     };
     init();
   }, [gameMode, user?.id, joinRoom, navigate, searchParams, toast, setGameGrid]);
