@@ -19,6 +19,14 @@ const EMOJIS = [
   { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
 ];
 
+// Preload all emoji images once at module level
+const preloadedImages: HTMLImageElement[] = [];
+EMOJIS.forEach((emoji) => {
+  const img = new Image();
+  img.src = emoji.src;
+  preloadedImages.push(img);
+});
+
 interface GameEmojiReactionsProps {
   roomId: string;
   userId: string;
@@ -112,7 +120,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-full left-0 mb-2 z-30 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-amber-200 p-2"
+            className="absolute bottom-full left-0 mb-2 z-30 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-amber-200 p-2 will-change-transform"
           >
             <div className="grid grid-cols-6 gap-1.5">
               {EMOJIS.map((emoji) => (
@@ -122,7 +130,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
                   className="w-10 h-10 rounded-lg hover:bg-amber-100 transition-colors flex items-center justify-center active:scale-90"
                   title={emoji.label}
                 >
-                  <img src={emoji.src} alt={emoji.label} className="w-8 h-8 object-contain" />
+                  <img src={emoji.src} alt={emoji.label} className="w-8 h-8 object-contain" loading="eager" decoding="async" />
                 </button>
               ))}
             </div>
