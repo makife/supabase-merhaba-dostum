@@ -57,17 +57,14 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
       .on("broadcast", { event: "emoji_reaction" }, (payload) => {
         const { senderId, emojiSrc } = payload.payload;
         
-        if (senderId === userId) {
-          // Own emoji
-          setPlayerEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
-          if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
-          playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
-        } else {
-          // Opponent emoji
-          setOpponentEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
-          if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-          opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
-        }
+        // Show on both cards simultaneously
+        setPlayerEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
+        if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
+        playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+
+        setOpponentEmoji({ userId: senderId, emojiSrc, timestamp: Date.now() });
+        if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+        opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
       })
       .subscribe();
 
@@ -150,7 +147,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-lg"
           >
-            <img src={playerEmoji.emojiSrc} alt="emoji" className="w-20 h-20 object-contain" />
+            <img src={playerEmoji.emojiSrc} alt="emoji" className="w-40 h-40 object-contain" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -167,7 +164,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 rounded-lg"
           >
-            <img src={opponentEmoji.emojiSrc} alt="emoji" className="w-20 h-20 object-contain" />
+            <img src={opponentEmoji.emojiSrc} alt="emoji" className="w-40 h-40 object-contain" />
           </motion.div>
         )}
       </AnimatePresence>
