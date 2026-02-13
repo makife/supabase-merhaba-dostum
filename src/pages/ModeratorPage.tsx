@@ -7,8 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft, Bell, Send, Loader2 } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 import { usePageResync } from '@/hooks/useGlobalResync';
 import {
   AlertDialog,
@@ -51,12 +55,18 @@ const ModeratorPage = () => {
   const { user } = useAuth();
   const { isSystemConnected } = useUser();
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
   const [reports, setReports] = useState<MessageReport[]>([]);
   const [bans, setBans] = useState<UserBan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<MessageReport | null>(null);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [banDuration, setBanDuration] = useState<string>("48");
+  
+  // Push bildirim state
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [pushSending, setPushSending] = useState(false);
 
   // Ana resync fonksiyonu
   const handleModeratorResync = useCallback(async () => {
@@ -251,6 +261,29 @@ const ModeratorPage = () => {
     }
   };
 
+  // Push bildirim gönderme (sadece admin)
+  const handleBroadcastPush = async () => {
+    if (!pushTitle.trim() || !pushBody.trim()) {
+      toast.error('Başlık ve mesaj alanları boş olamaz');
+      return;
+    }
+    setPushSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-broadcast-notification', {
+        body: { title: pushTitle.trim(), body: pushBody.trim() }
+      });
+      if (error) throw error;
+      toast.success(`Bildirim gönderildi! ✅ (${data?.sent || 0} kişiye ulaştı, ${data?.failed || 0} başarısız)`);
+      setPushTitle('');
+      setPushBody('');
+    } catch (error) {
+      console.error('Broadcast push error:', error);
+      toast.error('Bildirim gönderilirken hata oluştu');
+    } finally {
+      setPushSending(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -304,15 +337,21 @@ const ModeratorPage = () => {
         </div>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className={`grid w-full max-w-md ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="reports" className="gap-2">
               <MessageSquare className="w-4 h-4" />
-              Şikayet Raporları ({reports.filter(r => r.status === 'pending').length})
+              Raporlar ({reports.filter(r => r.status === 'pending').length})
             </TabsTrigger>
             <TabsTrigger value="bans" className="gap-2">
               <Ban className="w-4 h-4" />
-              Aktif Yasaklar ({bans.length})
+              Yasaklar ({bans.length})
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="push" className="gap-2">
+                <Bell className="w-4 h-4" />
+                Push Bildirim
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="reports" className="space-y-4">
@@ -445,6 +484,63 @@ const ModeratorPage = () => {
               ))
             )}
           </TabsContent>
+
+          {/* Push Bildirim Tab - Sadece Admin */}
+          {isAdmin && (
+            <TabsContent value="push" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Toplu Push Bildirim Gönder
+                  </CardTitle>
+                  <CardDescription>
+                    Tüm kullanıcılara aynı anda push bildirim gönderin. Push token'ı olan tüm kullanıcılara ulaşır.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="push-title">Bildirim Başlığı</Label>
+                    <Input
+                      id="push-title"
+                      placeholder="Örn: 🎉 Yeni Güncelleme!"
+                      value={pushTitle}
+                      onChange={(e) => setPushTitle(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="push-body">Bildirim Mesajı</Label>
+                    <Textarea
+                      id="push-body"
+                      placeholder="Örn: Yeni özellikler eklendi, hemen gelin oynayın!"
+                      value={pushBody}
+                      onChange={(e) => setPushBody(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleBroadcastPush}
+                    disabled={pushSending || !pushTitle.trim() || !pushBody.trim()}
+                    className="w-full gap-2"
+                  >
+                    {pushSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Gönderiliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Tüm Kullanıcılara Gönder
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
