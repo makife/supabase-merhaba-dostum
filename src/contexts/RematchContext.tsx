@@ -367,26 +367,15 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           duration: 3000,
         });
 
-        // Gönderen de hemen bekleme sayfasına gitsin
-        navigate(`/private-room/waiting/${roomCode}`);
-
-        // Set timeout - rakip yanıt vermezse
-        waitingTimeoutRef.current = setTimeout(async () => {
+        // Set timeout
+        waitingTimeoutRef.current = setTimeout(() => {
           setIsWaiting(false);
-          // Timeout olursa isteği iptal et
-          await supabase
-            .from("rematch_requests")
-            .update({ status: "rejected", responded_at: new Date().toISOString() })
-            .eq("room_code", roomCode)
-            .eq("from_user_id", userId)
-            .eq("status", "pending");
           toast({
             title: "⏰ Süre Doldu",
             description: "Rakibiniz yanıt vermedi.",
             variant: "destructive",
             duration: 1000,
           });
-          navigate("/");
         }, 30000);
 
         return true;
