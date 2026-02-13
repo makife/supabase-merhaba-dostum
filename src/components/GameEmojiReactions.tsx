@@ -18,7 +18,7 @@ const EMOJIS = [
   { id: "konfeti", src: "/emojiler/konfetiEmoji.png", label: "Konfeti" },
   { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
   { id: "sanirim", src: "/emojiler/sanirimEmoji.png", label: "Sanırım Kazanıyorum" },
-  { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
+  { id: "galiba", src: "/emojiler/galibaEmoji.png", label: "Galiba Kaybettim" },
 ];
 
 // Preload all emoji images once at module level
