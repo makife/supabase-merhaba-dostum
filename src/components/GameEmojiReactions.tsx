@@ -17,6 +17,8 @@ const EMOJIS = [
   { id: "izgara", src: "/emojiler/izgaraEmoji.png", label: "Izgara" },
   { id: "konfeti", src: "/emojiler/konfetiEmoji.png", label: "Konfeti" },
   { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
+  { id: "sanirim", src: "/emojiler/sanirimEmoji.png", label: "Sanırım Kazanıyorum" },
+  { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
 ];
 
 // Preload all emoji images once at module level
@@ -53,7 +55,8 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
   useEffect(() => {
     if (!roomId || !userId) return;
 
-    const channel = supabase.channel(`emoji-reactions-${roomId}`)
+    const channel = supabase
+      .channel(`emoji-reactions-${roomId}`)
       .on("broadcast", { event: "emoji_reaction" }, (payload) => {
         const { senderId, emojiSrc } = payload.payload;
         const overlay = { userId: senderId, emojiSrc, timestamp: Date.now() };
@@ -84,38 +87,42 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
     };
   }, [roomId, userId]);
 
-  const sendEmoji = useCallback((emojiSrc: string) => {
-    if (!channelRef.current || cooldown || gameEnded) return;
+  const sendEmoji = useCallback(
+    (emojiSrc: string) => {
+      if (!channelRef.current || cooldown || gameEnded) return;
 
-    channelRef.current.send({
-      type: "broadcast",
-      event: "emoji_reaction",
-      payload: { senderId: userId, emojiSrc },
-    });
+      channelRef.current.send({
+        type: "broadcast",
+        event: "emoji_reaction",
+        payload: { senderId: userId, emojiSrc },
+      });
 
-    // Broadcast doesn't echo back to sender, so show locally
-    setPlayerEmoji({ userId, emojiSrc, timestamp: Date.now() });
-    if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
-    playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+      // Broadcast doesn't echo back to sender, so show locally
+      setPlayerEmoji({ userId, emojiSrc, timestamp: Date.now() });
+      if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
+      playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
 
-    setShowPicker(false);
-    setCooldown(true);
-    setTimeout(() => setCooldown(false), 4000); // 4s cooldown
-  }, [userId, cooldown, gameEnded]);
+      setShowPicker(false);
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 4000); // 4s cooldown
+    },
+    [userId, cooldown, gameEnded],
+  );
 
   return {
     // Picker button (rendered externally)
-    PickerButton: gameStarted && !gameEnded ? (
-      <Button
-        variant="outline"
-        className="h-12 w-full text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-800 transition-all"
-        onClick={() => setShowPicker(!showPicker)}
-        disabled={cooldown}
-      >
-        <Smile className="w-4 h-4 mr-2" />
-        İfadeler
-      </Button>
-    ) : null,
+    PickerButton:
+      gameStarted && !gameEnded ? (
+        <Button
+          variant="outline"
+          className="h-12 w-full text-amber-700 border-amber-300 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-800 transition-all"
+          onClick={() => setShowPicker(!showPicker)}
+          disabled={cooldown}
+        >
+          <Smile className="w-4 h-4 mr-2" />
+          İfadeler
+        </Button>
+      ) : null,
 
     // Picker panel
     PickerPanel: (
@@ -136,7 +143,13 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
                   className="w-10 h-10 rounded-lg hover:bg-amber-100 transition-colors flex items-center justify-center active:scale-90"
                   title={emoji.label}
                 >
-                  <img src={emoji.src} alt={emoji.label} className="w-8 h-8 object-contain" loading="eager" decoding="async" />
+                  <img
+                    src={emoji.src}
+                    alt={emoji.label}
+                    className="w-8 h-8 object-contain"
+                    loading="eager"
+                    decoding="async"
+                  />
                 </button>
               ))}
             </div>
