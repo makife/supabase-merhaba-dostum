@@ -188,12 +188,22 @@ class SupabaseAutoReconnect {
     }
   }
 
-  // Kanal kaydını sil (sadece Map'ten, removeChannel yapma - başka yerde kullanılabilir)
+  // Kanal kaydını sil ve Supabase'den de kaldır
   unregisterChannel(channelName: string) {
     const interval = this.heartbeatIntervals.get(channelName);
     if (interval) {
       clearInterval(interval);
       this.heartbeatIntervals.delete(channelName);
+    }
+    
+    // Kanalı Supabase'den de kaldır
+    const entry = this.channels.get(channelName);
+    if (entry) {
+      try {
+        supabase.removeChannel(entry.channel);
+      } catch (e) {
+        // Ignore removal errors
+      }
     }
     
     // Map'ten sil ki yeniden register edilebilsin
