@@ -93,6 +93,11 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
       payload: { senderId: userId, emojiSrc },
     });
 
+    // Broadcast doesn't echo back to sender, so show locally
+    setPlayerEmoji({ userId, emojiSrc, timestamp: Date.now() });
+    if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
+    playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+
     setShowPicker(false);
     setCooldown(true);
     setTimeout(() => setCooldown(false), 4000); // 4s cooldown
