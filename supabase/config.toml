@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-premium-daily-reminder]
 verify_jwt = false
+
+[functions.send-broadcast-notification]
+verify_jwt = false
