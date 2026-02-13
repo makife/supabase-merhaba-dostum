@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
+import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
@@ -6803,6 +6804,15 @@ const GamePage = ({
         return { name: "Rakip", icon: User, avatar: null, isPremium: false };
     }
   };
+  // Emoji reactions hook - sadece multiplayer modlarda
+  const isMultiplayerMode = gameMode === "random-match" || gameMode === "private-room";
+  const emojiRoomId = isMultiplayerMode ? (currentRoom?.id || "") : "";
+  const emojiReactions = GameEmojiReactions({
+    roomId: emojiRoomId,
+    userId: user?.id || "",
+    gameStarted,
+    gameEnded,
+  });
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 
@@ -7244,6 +7254,8 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-4 relative">
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
+                      {/* Emoji overlay - oyuncu kartı */}
+                      {isMultiplayerMode && emojiReactions.PlayerEmojiOverlay}
                       <div className="relative inline-block">
                         <Avatar className="w-16 h-16 mx-auto mb-2">
                           <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
@@ -7275,6 +7287,8 @@ const GamePage = ({
 
                   <Card className="silver-gradient border border-gray-300 shadow-lg">
                     <CardContent className="p-4 text-center relative overflow-hidden">
+                      {/* Emoji overlay - rakip kartı */}
+                      {isMultiplayerMode && emojiReactions.OpponentEmojiOverlay}
                       {/* Normal kart içeriği - her zaman göster */}
                       <div className="relative inline-block">
                         <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
@@ -7581,6 +7595,14 @@ const GamePage = ({
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* İfadeler butonu - sadece multiplayer */}
+                {isMultiplayerMode && (
+                  <div className="relative shrink-0">
+                    {emojiReactions.PickerPanel}
+                    {emojiReactions.PickerButton}
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-2 shrink-0">
