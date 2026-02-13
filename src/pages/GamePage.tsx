@@ -7644,7 +7644,7 @@ const GamePage = ({
                 </div>
                 {/* İfadeler butonu - Sil butonunun altında, sadece multiplayer */}
                 {isMultiplayerMode && (
-                  <div className="relative shrink-0">
+                  <div className="relative shrink-0 mt-3">
                     {emojiReactions.PickerPanel}
                     {emojiReactions.PickerButton}
                   </div>
