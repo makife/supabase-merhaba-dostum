@@ -7596,14 +7596,6 @@ const GamePage = ({
                   </CardContent>
                 </Card>
 
-                {/* İfadeler butonu - sadece multiplayer */}
-                {isMultiplayerMode && (
-                  <div className="relative shrink-0">
-                    {emojiReactions.PickerPanel}
-                    {emojiReactions.PickerButton}
-                  </div>
-                )}
-
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-2 shrink-0">
                   <Button
@@ -7650,6 +7642,13 @@ const GamePage = ({
                     {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
                   </Button>
                 </div>
+                {/* İfadeler butonu - Sil butonunun altında, sadece multiplayer */}
+                {isMultiplayerMode && (
+                  <div className="relative shrink-0">
+                    {emojiReactions.PickerPanel}
+                    {emojiReactions.PickerButton}
+                  </div>
+                )}
               </div>
             </div>
 
