@@ -4836,9 +4836,6 @@ const GamePage = ({
     // Countdown zaten gösteriliyorsa yeni subscription açma
     if (showCountdown) return;
 
-    // Zaten subscription varsa tekrar açma
-    if (countdownChannelRef.current) return;
-
     // 🔒 Server time hazır değilse bekle - yanlış hesaplama yapılmasın
     if (!serverTimeReady) {
       console.log("⏳ Server time henüz hazır değil, countdown bekleniyor...");
@@ -4846,6 +4843,8 @@ const GamePage = ({
     }
 
     // 🔒 İLK YÜKLEME: Room'da zaten countdown_started_at varsa HEMEN başlat
+    // ⚡ REMATCH FIX: Bu kontrolü channel varlığından ÖNCE yap
+    // Aksi halde channel zaten varsa bu blok atlanır ve countdown tetiklenmez
     if (currentRoom.countdown_started_at && !countdownInitiatedRef.current) {
       const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
       const BUFFER_MS = 5000;
@@ -4885,6 +4884,9 @@ const GamePage = ({
         return;
       }
     }
+
+    // Zaten subscription varsa tekrar açma
+    if (countdownChannelRef.current) return;
 
     console.log("🔄 Game room countdown subscription başlatılıyor:", shortId(currentRoom?.id));
 
