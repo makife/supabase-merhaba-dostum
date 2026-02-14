@@ -356,38 +356,40 @@ const PrivateRoomWaitingPage = () => {
               {/* Oyuncu Durumları */}
               <div className="space-y-3">
                 {/* Sen */}
-                <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                <div className={`flex items-center justify-between px-5 py-4 rounded-xl border-2 transition-all duration-300 ${
                   isReady 
-                    ? "bg-green-500/20 border-green-400/40" 
-                    : "bg-white/5 border-white/10"
+                    ? "bg-green-500/30 border-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]" 
+                    : "bg-orange-500/20 border-orange-400/60 shadow-[0_0_10px_rgba(249,115,22,0.2)]"
                 }`}>
-                  <span className="text-white font-medium">👤 Sen</span>
+                  <span className="text-white font-bold text-base">👤 Sen</span>
                   {isReady ? (
-                    <span className="flex items-center gap-1 text-green-400 font-bold text-sm">
-                      <CheckCircle2 className="w-4 h-4" /> HAZIR
+                    <span className="flex items-center gap-1.5 text-green-300 font-black text-sm bg-green-500/30 px-3 py-1 rounded-full">
+                      <CheckCircle2 className="w-4 h-4" /> HAZIR ✓
                     </span>
                   ) : (
-                    <span className="text-zinc-400 text-sm">Bekleniyor</span>
+                    <span className="text-orange-300 font-bold text-sm bg-orange-500/30 px-3 py-1 rounded-full animate-pulse">⏳ Hazır değil</span>
                   )}
                 </div>
 
                 {/* Rakip */}
-                <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                <div className={`flex items-center justify-between px-5 py-4 rounded-xl border-2 transition-all duration-300 ${
                   opponentReady 
-                    ? "bg-green-500/20 border-green-400/40" 
+                    ? "bg-green-500/30 border-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]" 
                     : opponentJoined 
-                      ? "bg-blue-500/20 border-blue-400/40"
-                      : "bg-white/5 border-white/10"
+                      ? "bg-amber-500/25 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+                      : "bg-white/5 border-white/20"
                 }`}>
-                  <span className="text-white font-medium">👤 Rakip</span>
+                  <span className="text-white font-bold text-base">👤 Rakip</span>
                   {opponentReady ? (
-                    <span className="flex items-center gap-1 text-green-400 font-bold text-sm">
-                      <CheckCircle2 className="w-4 h-4" /> HAZIR
+                    <span className="flex items-center gap-1.5 text-green-300 font-black text-sm bg-green-500/30 px-3 py-1 rounded-full">
+                      <CheckCircle2 className="w-4 h-4" /> HAZIR ✓
                     </span>
                   ) : opponentJoined ? (
-                    <span className="text-blue-400 text-sm">Katıldı - Hazır değil</span>
+                    <span className="text-amber-200 font-bold text-sm bg-amber-500/30 px-3 py-1 rounded-full animate-pulse">
+                      ⚡ Katıldı — Hazır değil
+                    </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-zinc-400 text-sm">
+                    <span className="flex items-center gap-1.5 text-zinc-300 text-sm bg-white/10 px-3 py-1 rounded-full">
                       <Loader2 className="w-3 h-3 animate-spin" /> Bekleniyor...
                     </span>
                   )}
