@@ -658,6 +658,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const removeReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
+    // Optimistic removal - anında UI'dan kaldır
+    const previousReactions = messageReactions[messageId] || [];
+    setMessageReactions((prev) => ({
+      ...prev,
+      [messageId]: (prev[messageId] || []).filter(
+        (r) => !(r.user_id === user.id && r.emoji === emoji)
+      ),
+    }));
+
     try {
       const { error } = await supabase
         .from("message_reactions")
@@ -670,6 +679,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       playSound("buttonClick");
     } catch (error) {
       console.error("Error removing reaction:", error);
+      // Hata durumunda geri al
+      setMessageReactions((prev) => ({
+        ...prev,
+        [messageId]: previousReactions,
+      }));
       toast.error("Reaksiyon kaldırılırken hata oluştu");
     }
   };
