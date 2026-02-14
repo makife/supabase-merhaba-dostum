@@ -22,27 +22,20 @@ const EMOJIS = [
   { id: "iyiolan", src: "/emojiler/iyiolanEmoji.png", label: "iyi olan kazansın" },
 ];
 
-// Preload all emoji images as blob URLs for instant display
-const blobUrlCache = new Map<string, string>();
+// Görseller public/emojiler/ klasöründe, AAB'ye derleniyor - fetch gereksiz
+// Tarayıcı/WebView cache'i ile doğrudan yüklenir
+const preloadedImages = new Set<string>();
 
-function preloadEmojiAsBlob(emoji: { id: string; src: string }, retries = 3) {
-  fetch(emoji.src)
-    .then((res) => {
-      if (!res.ok) throw new Error("fetch failed");
-      return res.blob();
-    })
-    .then((blob) => {
-      const url = URL.createObjectURL(blob);
-      blobUrlCache.set(emoji.id, url);
-    })
-    .catch(() => {
-      if (retries > 0) {
-        setTimeout(() => preloadEmojiAsBlob(emoji, retries - 1), 1000);
-      }
-    });
+function preloadEmojiImages() {
+  EMOJIS.forEach((emoji) => {
+    if (preloadedImages.has(emoji.id)) return;
+    const img = new Image();
+    img.src = emoji.src;
+    img.onload = () => preloadedImages.add(emoji.id);
+  });
 }
 
-EMOJIS.forEach((emoji) => preloadEmojiAsBlob(emoji));
+preloadEmojiImages();
 
 interface GameEmojiReactionsProps {
   roomId: string;
@@ -159,7 +152,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
                   title={emoji.label}
                 >
                   <img
-                    src={blobUrlCache.get(emoji.id) || emoji.src}
+                    src={emoji.src}
                     alt={emoji.label}
                     className="w-8 h-8 object-contain"
                     loading="eager"
