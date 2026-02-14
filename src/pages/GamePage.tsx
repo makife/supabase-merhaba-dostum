@@ -6326,7 +6326,7 @@ const GamePage = ({
     inputFeedbackTimerRef.current = setTimeout(() => {
       setInputFeedback(null);
       inputFeedbackTimerRef.current = null;
-    }, 1200);
+    }, 700);
   };
 
   // Submit word - Using local wordlist validation
@@ -7486,7 +7486,7 @@ const GamePage = ({
                               initial={{ opacity: 1, x: 0 }}
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -200 }}
-                              transition={{ duration: 0.5, ease: "easeIn" }}
+                              transition={{ duration: 0.3, ease: "easeIn" }}
                               className={`absolute inset-0 flex items-center justify-center z-20 rounded-xl ${
                                 inputFeedback.type === "success"
                                   ? "bg-green-500/90 text-white"
