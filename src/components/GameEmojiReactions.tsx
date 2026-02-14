@@ -145,7 +145,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             onClick={() => setShowPicker(false)}
           >
             <div
-              className="bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.15)] border-t border-amber-200 px-2 py-2"
+              className="bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.15)] border-t border-amber-200 px-1 py-1"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="overflow-x-auto scrollbar-hide">
