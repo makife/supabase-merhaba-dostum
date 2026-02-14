@@ -129,15 +129,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Sunucu zamanını veritabanından al (saat farkı sorununu önlemek için)
+    const { data: serverTimeData } = await supabase.rpc('get_server_time');
+    const serverNow = serverTimeData ? new Date(serverTimeData).getTime() : Date.now();
+    console.log(`🕐 Server time: ${new Date(serverNow).toISOString()}, Edge time: ${new Date().toISOString()}`);
+
     const CREDIT_INTERVAL_MS = 72 * 60 * 1000; // 72 dakika
     const OFFLINE_THRESHOLD_MS = 60 * 1000; // 60 saniye
-    const creditCheckTime = new Date(Date.now() - CREDIT_INTERVAL_MS).toISOString();
-    const onlineThreshold = new Date(Date.now() - OFFLINE_THRESHOLD_MS).toISOString();
+    const creditCheckTime = new Date(serverNow - CREDIT_INTERVAL_MS).toISOString();
+    const onlineThreshold = new Date(serverNow - OFFLINE_THRESHOLD_MS).toISOString();
 
     let sent = 0;
+    let skippedOnline = 0;
     const errors: string[] = [];
 
-    // Kredisi < 5, bonus_credits 0, last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
+    // Kredisi < 5, last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
     const { data: users, error: queryError } = await supabase
       .from('profiles')
       .select('id, username, push_token, game_credits, bonus_credits, last_credit_refresh, last_seen')
@@ -169,8 +175,12 @@ serve(async (req) => {
       console.log(`📱 Found ${eligibleUsers.length} users eligible for +1 credit (filtered from ${users?.length || 0})`);
 
       for (const user of eligibleUsers) {
-        // Kullanıcı online ise bildirim gönderme (last_seen < 60 sn)
-        if (user.last_seen && new Date(user.last_seen).getTime() > new Date(onlineThreshold).getTime()) {
+        // Kullanıcı online kontrolü - sunucu zamanına göre last_seen son 60sn içindeyse online
+        const lastSeenTime = user.last_seen ? new Date(user.last_seen).getTime() : 0;
+        const isOnline = lastSeenTime > (serverNow - OFFLINE_THRESHOLD_MS);
+        
+        console.log(`👤 ${user.username}: last_seen=${user.last_seen}, isOnline=${isOnline}, threshold=${onlineThreshold}`);
+        if (isOnline) {
           // Online kullanıcıya sadece krediyi ekle, push gönderme
           const newCredits = Math.min((user.game_credits || 0) + 1, 5);
           const nextRefreshTime = new Date(new Date(user.last_credit_refresh).getTime() + CREDIT_INTERVAL_MS);
@@ -183,7 +193,8 @@ serve(async (req) => {
             })
             .eq('id', user.id);
 
-          console.log(`⏭️ ${user.username} online, kredi eklendi ama push gönderilmedi`);
+          skippedOnline++;
+          console.log(`⏭️ ${user.username} ONLINE - kredi eklendi (${newCredits}/5) ama push gönderilmedi`);
           continue;
         }
 
@@ -225,10 +236,10 @@ serve(async (req) => {
         const pushSent = await sendFirebaseNotification(message);
         if (pushSent) {
           sent++;
-          console.log(`✅ +1 credit notification sent to ${user.username} (${newCredits}/5)`);
+          console.log(`✅ OFFLINE push sent to ${user.username} (${newCredits}/5)`);
         }
 
-        // Krediyi güncelle - last_credit_refresh'i 72 dk ileri al (toplu değil, tek tek)
+        // Krediyi güncelle
         await supabase
           .from('profiles')
           .update({
@@ -241,7 +252,7 @@ serve(async (req) => {
       console.log('📱 No users eligible for credit notification');
     }
 
-    console.log(`📊 Credit notifications complete: ${sent} sent, ${errors.length} errors`);
+    console.log(`📊 Credit notifications complete: ${sent} push sent, ${skippedOnline} online skipped, ${errors.length} errors`);
 
     return new Response(
       JSON.stringify({ success: true, sent, errors }),
