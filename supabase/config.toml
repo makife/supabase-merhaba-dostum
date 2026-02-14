@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-broadcast-notification]
 verify_jwt = false
+
+[functions.send-credit-notification]
+verify_jwt = false
