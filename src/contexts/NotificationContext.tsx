@@ -113,6 +113,55 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const navigate = useNavigate();
   const shownNotifications = useRef<Set<string>>(new Set());
   const hasLoadedInvites = useRef(false);
+  const lastKnownCredits = useRef<number | null>(null);
+
+  // 🔔 Online iken +1 kredi artışını toast ile göster
+  useEffect(() => {
+    if (!user) return;
+
+    const channelName = `credit-change-${user.id}`;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          const newCredits = payload.new?.game_credits;
+          const oldCredits = lastKnownCredits.current;
+
+          if (oldCredits !== null && newCredits !== null && newCredits > oldCredits && newCredits <= 5) {
+            toast.success(`❤️ +1 Oyun Hakkın Yenilendi! (${newCredits}/5)`, {
+              duration: 3000,
+            });
+          }
+
+          if (newCredits !== null && newCredits !== undefined) {
+            lastKnownCredits.current = newCredits;
+          }
+        }
+      )
+      .subscribe();
+
+    // İlk değeri set et
+    supabase
+      .from("profiles")
+      .select("game_credits")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) lastKnownCredits.current = data.game_credits ?? 0;
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // 🔥 Uygulama açıldığında bekleyen room_invite bildirimlerini BİR KERE göster
   useEffect(() => {
