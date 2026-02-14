@@ -8,6 +8,21 @@ import { getActivePrivateChats } from "@/utils/notifications";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
 // Helper: Davet toast'ı göster
+const sendInviteResponseNotification = async (hostId: string, username: string, accepted: boolean) => {
+  try {
+    await supabase.from("notifications").insert({
+      user_id: hostId,
+      type: "invite_response",
+      message: accepted
+        ? `✅ ${username} davetini kabul etti!`
+        : `❌ ${username} davetini reddetti.`,
+      is_read: false,
+    });
+  } catch (err) {
+    console.error("Davet yanıt bildirimi hatası:", err);
+  }
+};
+
 const showInviteToast = (notification: any, user: any, navigate: any) => {
   const toastId = toast.info(`🎮 ${notification.message}`, {
     duration: 30000,
@@ -16,6 +31,23 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
       onClick: async () => {
         toast.dismiss(toastId);
         await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+
+        // Davet edene kabul bildirimi gönder
+        const { data: roomData } = await supabase
+          .from("game_rooms")
+          .select("host_id")
+          .eq("room_code", notification.related_id)
+          .maybeSingle();
+
+        if (roomData?.host_id && user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", user.id)
+            .maybeSingle();
+          await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", true);
+        }
+
         navigate(`/private-room/waiting/${notification.related_id}`);
       },
     },
@@ -36,6 +68,14 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
               rejected_by: user.id,
               rejected_from: roomData.host_id,
             });
+
+            // Davet edene ret bildirimi gönder
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("id", user.id)
+              .maybeSingle();
+            await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", false);
           }
 
           await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
@@ -154,6 +194,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           // Hemen okundu olarak işaretle (tekrar gösterilmesin)
           supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
           showInviteToast(notification, user, navigate);
+          return;
+        }
+
+        if (notification.type === "invite_response") {
+          supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
+          const isAccepted = notification.message?.includes("kabul");
+          toast(isAccepted ? "✅ Davet Kabul Edildi" : "❌ Davet Reddedildi", {
+            description: notification.message,
+            duration: 5000,
+          });
           return;
         }
 
