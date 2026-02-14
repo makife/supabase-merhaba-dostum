@@ -7478,8 +7478,6 @@ const GamePage = ({
                       {/* Input Konteyneri */}
                       <div
                         className={`flex items-center justify-center h-14 w-full rounded-xl bg-white/80 backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden shadow-inner ${
-                          isJokerActive ? "typing-animation" : ""
-                        } ${
                           inputFlash === "success"
                             ? "border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]"
                             : inputFlash === "error"
