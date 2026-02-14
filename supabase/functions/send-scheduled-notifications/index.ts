@@ -142,101 +142,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const results = {
-      creditNotifications: 0,
       wheelReminders: 0,
       errors: [] as string[],
     };
 
-    // ========== 1. CREDIT REFRESH NOTIFICATIONS ==========
-    // Find users who:
-    // - Have push_token
-    // - game_credits < 5
-    // - last_credit_refresh was more than 72 minutes ago (meaning they got a credit)
-    // - Not premium or unlimited lives
-    console.log('📱 Checking credit refresh notifications...');
-
-    const creditCheckTime = new Date(Date.now() - 72 * 60 * 1000).toISOString(); // 72 minutes ago
-
-    const { data: creditUsers, error: creditError } = await supabase
-      .from('profiles')
-      .select('id, username, push_token, game_credits, last_credit_refresh')
-      .not('push_token', 'is', null)
-      .lt('game_credits', 5)
-      .or('premium_until.is.null,premium_until.lt.now()')
-      .or('unlimited_lives_until.is.null,unlimited_lives_until.lt.now()')
-      .not('last_credit_refresh', 'is', null)
-      .lte('last_credit_refresh', creditCheckTime);
-
-    if (creditError) {
-      console.error('Credit users query error:', creditError);
-      results.errors.push(`Credit query: ${creditError.message}`);
-    }
-
-    if (creditUsers && creditUsers.length > 0) {
-      console.log(`Found ${creditUsers.length} users for credit notification`);
-
-      for (const user of creditUsers) {
-        // Calculate how many credits should have been added
-        const lastRefresh = new Date(user.last_credit_refresh).getTime();
-        const now = Date.now();
-        const creditsPending = Math.floor((now - lastRefresh) / (72 * 60 * 1000));
-        
-        if (creditsPending > 0 && user.push_token) {
-          const newCredits = Math.min(user.game_credits + creditsPending, 5);
-          
-          const message: FCMMessage = {
-            message: {
-              token: user.push_token,
-              notification: {
-                title: '🎮 Hakların Yenilendi!',
-                body: `${newCredits} oyun hakkın hazır! Hadi bir maç yapalım!`,
-              },
-              android: {
-                priority: 'high',
-                notification: {
-                  channel_id: 'kelimeci_notifications',
-                  sound: 'default',
-                  notification_priority: 'PRIORITY_HIGH',
-                  visibility: 'PUBLIC',
-                  default_sound: true,
-                  default_vibrate_timings: true,
-                },
-              },
-              apns: {
-                headers: {
-                  'apns-priority': '10',
-                },
-                payload: {
-                  aps: {
-                    sound: 'default',
-                    badge: 1,
-                  },
-                },
-              },
-              data: {
-                type: 'credit_refresh',
-                credits: String(newCredits),
-              },
-            },
-          };
-
-          const sent = await sendFirebaseNotification(message);
-          if (sent) {
-            results.creditNotifications++;
-            console.log(`✅ Credit notification sent to ${user.username}`);
-            
-            // Update credits and reset timer
-            await supabase
-              .from('profiles')
-              .update({
-                game_credits: newCredits,
-                last_credit_refresh: newCredits >= 5 ? null : new Date().toISOString(),
-              })
-              .eq('id', user.id);
-          }
-        }
-      }
-    }
+    // Kredi bildirimleri artık ayrı fonksiyonda: send-credit-notification
 
     // ========== 2. WHEEL SPIN REMINDERS (Günde 2 kez: 09:00 ve 20:00) ==========
     // Kullanıcı çarkı çevirmediyse GÜNDE 2 KEZ hatırlatma gönder
