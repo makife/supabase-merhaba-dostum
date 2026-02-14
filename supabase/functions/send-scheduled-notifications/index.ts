@@ -350,7 +350,6 @@ serve(async (req) => {
         }
       }
     }
-    }
 
     console.log('📊 Scheduled notifications complete:', results);
 
