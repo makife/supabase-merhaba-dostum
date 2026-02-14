@@ -238,12 +238,12 @@ serve(async (req) => {
       }
     }
 
-    // ========== 2. WHEEL SPIN REMINDERS (Günde 1 kez) ==========
-    // Kullanıcı çarkı çevirmediyse GÜNDE SADECE 1 KEZ hatırlatma gönder
-    console.log('🎡 Checking wheel spin reminders (daily limit: 1)...');
+    // ========== 2. WHEEL SPIN REMINDERS (Günde 2 kez: 09:00 ve 20:00) ==========
+    // Kullanıcı çarkı çevirmediyse GÜNDE 2 KEZ hatırlatma gönder
+    console.log('🎡 Checking wheel spin reminders (daily limit: 2)...');
 
     const today = new Date().toISOString().split('T')[0];
-    const todayStart = new Date(today).toISOString(); // Günün başlangıcı
+    const todayStart = new Date(today).toISOString();
     
     // Get users with push tokens who haven't spun today
     const { data: allUsers, error: usersError } = await supabase
@@ -273,19 +273,25 @@ serve(async (req) => {
 
       console.log(`Found ${usersToRemind.length} users who haven't spun the wheel today`);
 
-      // GÜNDE 1 KEZ - Bugün zaten hatırlatma gönderilmiş mi kontrol et
+      // GÜNDE 2 KEZ - Bugün kaç hatırlatma gönderilmiş kontrol et
       const { data: todayReminders } = await supabase
         .from('notifications')
         .select('user_id')
         .eq('type', 'wheel_reminder')
         .gte('created_at', todayStart);
 
-      const alreadyRemindedTodayUserIds = new Set((todayReminders || []).map(n => n.user_id));
+      // Her kullanıcı için bugün kaç hatırlatma gönderildiğini say
+      const reminderCountMap = new Map<string, number>();
+      (todayReminders || []).forEach(n => {
+        reminderCountMap.set(n.user_id, (reminderCountMap.get(n.user_id) || 0) + 1);
+      });
 
       for (const user of usersToRemind) {
-        // Bugün zaten hatırlatma gönderildiyse atla
-        if (alreadyRemindedTodayUserIds.has(user.id)) {
-          console.log(`⏭️ Skipping ${user.username} - already reminded today`);
+        const sentCount = reminderCountMap.get(user.id) || 0;
+        
+        // Günde maksimum 2 hatırlatma
+        if (sentCount >= 2) {
+          console.log(`⏭️ Skipping ${user.username} - already reminded ${sentCount} times today`);
           continue;
         }
 
@@ -295,7 +301,9 @@ serve(async (req) => {
               token: user.push_token,
               notification: {
                 title: '🎡 Günlük Çarkını Çevirmeyi Unutma!',
-                body: 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!',
+                body: sentCount === 0 
+                  ? 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!' 
+                  : 'Son hatırlatma! Çarkını çevirmeden gün bitmesin! 🎁',
               },
               android: {
                 priority: 'high',
@@ -329,19 +337,19 @@ serve(async (req) => {
           const sent = await sendFirebaseNotification(message);
           if (sent) {
             results.wheelReminders++;
-            console.log(`✅ Wheel reminder sent to ${user.username}`);
+            console.log(`✅ Wheel reminder #${sentCount + 1} sent to ${user.username}`);
 
-            // Log the reminder to prevent spam (5 hour cooldown)
             await supabase
               .from('notifications')
               .insert({
                 user_id: user.id,
                 type: 'wheel_reminder',
-                message: 'Günlük çark hatırlatması gönderildi',
+                message: `Günlük çark hatırlatması #${sentCount + 1} gönderildi`,
               });
           }
         }
       }
+    }
     }
 
     console.log('📊 Scheduled notifications complete:', results);
