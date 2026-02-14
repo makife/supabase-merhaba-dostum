@@ -3336,6 +3336,9 @@ const GamePage = ({
     setHighlightedLetters(positions);
     setGameGrid(newGrid);
 
+    // Input feedback göster
+    showCustomToast("Değiştirme Yapılıyor", "", "green");
+
     // ⚠️ Server'a grid gönderme - sadece lokal değişiklik
     console.log("🎯 Değiştir jokeri - sadece lokal grid değişikliği");
 
@@ -3476,6 +3479,9 @@ const GamePage = ({
     if (validWords.length > 0) {
       // Kelime bulundu
       const selectedWord = validWords[Math.floor(Math.random() * validWords.length)];
+
+      // Input feedback göster
+      showCustomToast("Harfleri Takip Et", "", "green");
 
       // Kelime sırasına göre harfleri bul
       const wordPositions: { row: number; col: number }[] = [];
@@ -3702,6 +3708,9 @@ const GamePage = ({
 
     // Her şey tamam, şimdi kelimeyi yaz (currentWord derived value olduğundan sadece selectedLetters set ediyoruz)
     setSelectedLetters(wordPositions);
+
+    // Input feedback göster - Sen Yaz kelimeyi yeşil olarak göster
+    showCustomToast(normalizedSelectedWord, "", "green");
 
     setTimeout(async () => {
       let jokerSuccess = false;
