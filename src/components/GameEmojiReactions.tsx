@@ -21,13 +21,26 @@ const EMOJIS = [
   { id: "galiba", src: "/emojiler/galibaEmoji.png", label: "Galiba Kaybettim" },
 ];
 
-// Preload all emoji images once at module level
-const preloadedImages: HTMLImageElement[] = [];
-EMOJIS.forEach((emoji) => {
+// Preload all emoji images once at module level with retry
+const preloadedImages = new Map<string, HTMLImageElement>();
+const loadedStatus = new Map<string, boolean>();
+
+function preloadEmoji(emoji: { id: string; src: string }, retries = 3) {
   const img = new Image();
-  img.src = emoji.src;
-  preloadedImages.push(img);
-});
+  img.onload = () => {
+    loadedStatus.set(emoji.id, true);
+    preloadedImages.set(emoji.id, img);
+  };
+  img.onerror = () => {
+    if (retries > 0) {
+      setTimeout(() => preloadEmoji(emoji, retries - 1), 1000);
+    }
+  };
+  img.src = emoji.src + "?v=" + Date.now(); // cache-bust on retry
+  preloadedImages.set(emoji.id, img);
+}
+
+EMOJIS.forEach((emoji) => preloadEmoji(emoji));
 
 interface GameEmojiReactionsProps {
   roomId: string;
@@ -149,6 +162,13 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
                     className="w-8 h-8 object-contain"
                     loading="eager"
                     decoding="async"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      // Retry with cache-bust
+                      setTimeout(() => {
+                        target.src = emoji.src + "?retry=" + Date.now();
+                      }, 500);
+                    }}
                   />
                 </button>
               ))}
