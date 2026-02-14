@@ -401,15 +401,27 @@ const ProfilePage = () => {
         .select("item_type, quantity")
         .eq("user_id", viewedUserId)
         .in("item_type", [
-          "degistir", "joker_degistir",
-          "fisilda", "fisilida", "joker_fisildi", "joker_fisilida",
-          "senYaz", "senyaz", "joker_senyaz",
+          "degistir",
+          "joker_degistir",
+          "fisilda",
+          "fisilida",
+          "joker_fisildi",
+          "joker_fisilida",
+          "senYaz",
+          "senyaz",
+          "joker_senyaz",
         ]);
 
       const keyMap: Record<string, "degistir" | "fisilida" | "senYaz"> = {
-        degistir: "degistir", joker_degistir: "degistir",
-        fisilda: "fisilida", fisilida: "fisilida", joker_fisildi: "fisilida", joker_fisilida: "fisilida",
-        senYaz: "senYaz", senyaz: "senYaz", joker_senyaz: "senYaz",
+        degistir: "degistir",
+        joker_degistir: "degistir",
+        fisilda: "fisilida",
+        fisilida: "fisilida",
+        joker_fisildi: "fisilida",
+        joker_fisilida: "fisilida",
+        senYaz: "senYaz",
+        senyaz: "senYaz",
+        joker_senyaz: "senYaz",
       };
 
       const result = { degistir: 0, fisilida: 0, senYaz: 0 };
@@ -926,7 +938,11 @@ const ProfilePage = () => {
                         alt={profileData.username}
                         key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
                         onLoadingStatusChange={(status) => {
-                          console.log("[ProfilePage] 🖼️ Avatar loading status:", status, effectiveAvatarUrl?.substring(0, 60));
+                          console.log(
+                            "[ProfilePage] 🖼️ Avatar loading status:",
+                            status,
+                            effectiveAvatarUrl?.substring(0, 60),
+                          );
                         }}
                       />
                       <AvatarFallback className="text-2xl">
@@ -963,11 +979,13 @@ const ProfilePage = () => {
                   ) : (
                     <div className="flex items-center gap-2">
                       <h2 className="text-2xl font-bold">{profileData.username}</h2>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        isUserOnline 
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
-                          : "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
-                      }`}>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isUserOnline
+                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                            : "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
+                        }`}
+                      >
                         <span className={`w-1.5 h-1.5 rounded-full ${isUserOnline ? "bg-green-400" : "bg-zinc-500"}`} />
                         {isUserOnline ? "Çevrimiçi" : "Çevrimdışı"}
                       </span>
@@ -1294,8 +1312,18 @@ const ProfilePage = () => {
 };
 
 // Friend Request + Message Section for other profiles
-const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: string; viewedUserId: string; navigate: any }) => {
-  const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">("none");
+const FriendRequestSection = ({
+  userId,
+  viewedUserId,
+  navigate,
+}: {
+  userId: string;
+  viewedUserId: string;
+  navigate: any;
+}) => {
+  const [friendshipStatus, setFriendshipStatus] = useState<"none" | "pending_sent" | "pending_received" | "accepted">(
+    "none",
+  );
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { sendFriendRequestNotification } = useSmartNotifications();
@@ -1305,7 +1333,9 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
       const { data } = await supabase
         .from("friendships")
         .select("id, user_id, friend_id, status")
-        .or(`and(user_id.eq.${userId},friend_id.eq.${viewedUserId}),and(user_id.eq.${viewedUserId},friend_id.eq.${userId})`)
+        .or(
+          `and(user_id.eq.${userId},friend_id.eq.${viewedUserId}),and(user_id.eq.${viewedUserId},friend_id.eq.${userId})`,
+        )
         .maybeSingle();
 
       if (data) {
@@ -1332,10 +1362,10 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
       else toast.error("Davet gönderilemedi");
     } else {
       toast.success("Arkadaşlık daveti gönderildi! 🤝");
-      
+
       const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", userId).single();
       const senderName = myProfile?.username || "Bir oyuncu";
-      
+
       // DB'ye bildirim kaydet (online ise realtime ile toast gösterilecek)
       await supabase.from("notifications").insert({
         user_id: viewedUserId,
@@ -1343,17 +1373,20 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
         message: `${senderName} sana arkadaşlık daveti gönderdi!`,
         related_id: userId,
       });
-      
+
       // Offline ise push bildirim gönder (skipIfOnline=true)
       await sendFriendRequestNotification(viewedUserId!, senderName);
-      
+
       setFriendshipStatus("pending_sent");
     }
   };
 
   const acceptRequest = async () => {
     if (!friendshipId) return;
-    await supabase.from("friendships").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", friendshipId);
+    await supabase
+      .from("friendships")
+      .update({ status: "accepted", updated_at: new Date().toISOString() })
+      .eq("id", friendshipId);
     toast.success("Arkadaşlık kabul edildi! 🎉");
     setFriendshipStatus("accepted");
   };
@@ -1363,11 +1396,16 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
     const chatId = `chat_${participants.join("_")}`;
     try {
       const { data: existingChat, error: chatError } = await supabase
-        .from("private_chats").select("id").eq("id", chatId).maybeSingle();
+        .from("private_chats")
+        .select("id")
+        .eq("id", chatId)
+        .maybeSingle();
       if (chatError) throw chatError;
       if (!existingChat) {
         await supabase.from("private_chats").insert({
-          id: chatId, user1_id: participants[0], user2_id: participants[1],
+          id: chatId,
+          user1_id: participants[0],
+          user2_id: participants[1],
         });
       }
       navigate(`/chat?openPrivateChat=${viewedUserId}`);
@@ -1380,12 +1418,22 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
 
   return (
     <div className="flex gap-2 mt-2">
-      <Button variant="outline" size="sm" onClick={openChat} className="text-xs border-blue-400 text-blue-600 hover:bg-blue-50">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={openChat}
+        className="text-xs border-blue-400 text-blue-600 hover:bg-blue-50"
+      >
         <MessageCircle className="w-3.5 h-3.5 mr-1" />
         Mesaj Yaz
       </Button>
       {friendshipStatus === "none" && (
-        <Button variant="outline" size="sm" onClick={sendRequest} className="text-xs border-green-400 text-green-600 hover:bg-green-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={sendRequest}
+          className="text-xs border-green-400 text-green-600 hover:bg-green-50"
+        >
           <UserPlus className="w-3.5 h-3.5 mr-1" />
           Arkadaş Ekle
         </Button>
@@ -1393,11 +1441,16 @@ const FriendRequestSection = ({ userId, viewedUserId, navigate }: { userId: stri
       {friendshipStatus === "pending_sent" && (
         <Button variant="outline" size="sm" disabled className="text-xs border-amber-400 text-amber-600 opacity-70">
           <Clock className="w-3.5 h-3.5 mr-1" />
-          Davet Gönderildi
+          Davet Edildi
         </Button>
       )}
       {friendshipStatus === "pending_received" && (
-        <Button variant="outline" size="sm" onClick={acceptRequest} className="text-xs border-green-400 text-green-600 hover:bg-green-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={acceptRequest}
+          className="text-xs border-green-400 text-green-600 hover:bg-green-50"
+        >
           <UserCheck className="w-3.5 h-3.5 mr-1" />
           Kabul Et
         </Button>
