@@ -137,12 +137,13 @@ serve(async (req) => {
     let sent = 0;
     const errors: string[] = [];
 
-    // Kredisi < 5, last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
+    // Kredisi < 5, bonus_credits 0, last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
     const { data: users, error: queryError } = await supabase
       .from('profiles')
-      .select('id, username, push_token, game_credits, last_credit_refresh, last_seen')
+      .select('id, username, push_token, game_credits, bonus_credits, last_credit_refresh, last_seen')
       .not('push_token', 'is', null)
       .lt('game_credits', 5)
+      .or('bonus_credits.is.null,bonus_credits.eq.0')
       .or('premium_until.is.null,premium_until.lt.now()')
       .or('unlimited_lives_until.is.null,unlimited_lives_until.lt.now()')
       .not('last_credit_refresh', 'is', null)
