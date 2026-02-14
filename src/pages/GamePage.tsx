@@ -786,6 +786,8 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
   const [opponentWords, setOpponentWords] = useState<string[]>([]);
@@ -6311,34 +6313,20 @@ const GamePage = ({
     // currentWord artık derived value, otomatik temizlenecek
   };
 
-  // Custom toast fonksiyonu
-  const showCustomToast = (title: string, description: string, color: "red" | "green" = "red") => {
-    const toastDiv = document.createElement("div");
-    const bgColor = color === "green" ? "bg-green-500" : "bg-red-500";
-    toastDiv.className = `fixed ${bgColor} text-white p-3 rounded-lg shadow-lg z-50 transition-transform duration-300 left-1/2`;
-    toastDiv.style.bottom = "0px"; // Alttan başla
-    toastDiv.style.transform = "translateX(-50%) translateY(100%)"; // Ortala ve aşağıda gizle
-    toastDiv.innerHTML = '<div class="font-bold">' + title + '</div><div class="text-sm">' + description + "</div>";
-
-    document.body.appendChild(toastDiv);
-
-    // Kartın yüksekliğini al
-    const cardHeight = toastDiv.offsetHeight;
-
-    // Yukarı çık (kart yüksekliği kadar)
-    setTimeout(() => {
-      toastDiv.style.transform = "translateX(-50%) translateY(-" + cardHeight + "px)";
-    }, 50);
-
-    // 2 saniye sonra aşağı in
-    setTimeout(() => {
-      toastDiv.style.transform = "translateX(-50%) translateY(100%)";
-      setTimeout(() => {
-        if (document.body.contains(toastDiv)) {
-          document.body.removeChild(toastDiv);
-        }
-      }, 300);
-    }, 1000);
+  // Input field içinde feedback gösterme fonksiyonu
+  const showCustomToast = (title: string, _description: string, color: "red" | "green" = "red") => {
+    // Önceki timer'ı temizle
+    if (inputFeedbackTimerRef.current) {
+      clearTimeout(inputFeedbackTimerRef.current);
+    }
+    
+    setInputFeedback({ text: title, type: color === "green" ? "success" : "error" });
+    
+    // 1.2 saniye sonra feedback'i kaldır
+    inputFeedbackTimerRef.current = setTimeout(() => {
+      setInputFeedback(null);
+      inputFeedbackTimerRef.current = null;
+    }, 1200);
   };
 
   // Submit word - Using local wordlist validation
@@ -7490,8 +7478,30 @@ const GamePage = ({
                               : "border-2 border-slate-200/50"
                         }`}
                       >
+                        {/* Input Feedback Animasyonu - Kelime sola kayarak kaybolur */}
+                        <AnimatePresence mode="popLayout">
+                          {inputFeedback && (
+                            <motion.div
+                              key={inputFeedback.text + Date.now()}
+                              initial={{ opacity: 1, x: 0 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -200 }}
+                              transition={{ duration: 0.5, ease: "easeIn" }}
+                              className={`absolute inset-0 flex items-center justify-center z-20 rounded-xl ${
+                                inputFeedback.type === "success"
+                                  ? "bg-green-500/90 text-white"
+                                  : "bg-red-500/90 text-white"
+                              }`}
+                            >
+                              <span className="text-xl font-bold font-mono tracking-wider drop-shadow-md">
+                                {inputFeedback.text}
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                         {/* Placeholder */}
-                        {selectedLetters.length === 0 && !isJokerActive && (
+                        {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && (
                           <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
                             K E L İ M E L E
                           </span>
@@ -7503,10 +7513,7 @@ const GamePage = ({
                             <motion.span
                               key={`input-${item.row}-${item.col}`}
                               layoutId={`letter-${item.row}-${item.col}`}
-                              // layout="position" yerine sadece layout kullanmak bazen daha stabildir
                               layout
-                              // initial ve animate proplarını KALDIRIYORUZ veya opacity: 1 yapıyoruz.
-                              // layoutId zaten harfin grid'den input'a uçmasını sağlar.
                               transition={{
                                 type: "spring",
                                 stiffness: 700,
