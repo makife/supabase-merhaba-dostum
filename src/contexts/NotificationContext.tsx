@@ -117,7 +117,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       }
     };
 
-    const timer = setTimeout(fetchPendingInvites, 3000);
+    const timer = setTimeout(fetchPendingInvites, 15000);
     return () => clearTimeout(timer);
   }, [user, navigate]);
 
