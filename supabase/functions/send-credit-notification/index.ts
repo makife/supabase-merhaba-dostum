@@ -143,7 +143,6 @@ serve(async (req) => {
       .select('id, username, push_token, game_credits, bonus_credits, last_credit_refresh, last_seen')
       .not('push_token', 'is', null)
       .lt('game_credits', 5)
-      .or('bonus_credits.is.null,bonus_credits.eq.0')
       .or('premium_until.is.null,premium_until.lt.now()')
       .or('unlimited_lives_until.is.null,unlimited_lives_until.lt.now()')
       .not('last_credit_refresh', 'is', null)
@@ -154,10 +153,22 @@ serve(async (req) => {
       errors.push(queryError.message);
     }
 
-    if (users && users.length > 0) {
-      console.log(`📱 Found ${users.length} users eligible for +1 credit`);
+    // Bonus kredisi olan kullanıcıları filtrele (game_credits + bonus_credits >= 5 ise bildirim gönderme)
+    const eligibleUsers = users
+      ? users.filter(u => {
+          const totalCredits = (u.game_credits || 0) + (u.bonus_credits || 0);
+          if (totalCredits >= 5) {
+            console.log(`⏭️ ${u.username} toplam kredisi ${totalCredits} (game:${u.game_credits}, bonus:${u.bonus_credits}) - atlanıyor`);
+            return false;
+          }
+          return true;
+        })
+      : [];
 
-      for (const user of users) {
+    if (eligibleUsers.length > 0) {
+      console.log(`📱 Found ${eligibleUsers.length} users eligible for +1 credit (filtered from ${users?.length || 0})`);
+
+      for (const user of eligibleUsers) {
         // Kullanıcı online ise bildirim gönderme (last_seen < 60 sn)
         if (user.last_seen && new Date(user.last_seen).getTime() > new Date(onlineThreshold).getTime()) {
           // Online kullanıcıya sadece krediyi ekle, push gönderme
