@@ -3706,8 +3706,7 @@ const GamePage = ({
       return; // Fonksiyondan çık, joker azaltma
     }
 
-    // Her şey tamam, şimdi kelimeyi yaz (currentWord derived value olduğundan sadece selectedLetters set ediyoruz)
-    setSelectedLetters(wordPositions);
+    // Artık selectedLetters set etmiyoruz - sadece input feedback ile kelimeyi gösteriyoruz
 
     // Input feedback göster - Sen Yaz kelimeyi yeşil olarak göster
     showCustomToast(normalizedSelectedWord, "", "green");
