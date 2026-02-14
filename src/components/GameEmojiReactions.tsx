@@ -143,22 +143,30 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             transition={{ duration: 0.2 }}
             className="absolute bottom-full left-0 mb-2 z-30 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-amber-200 p-2 will-change-transform"
           >
-            <div className="grid grid-cols-6 gap-1.5">
-              {EMOJIS.map((emoji) => (
-                <button
+            <div className="grid grid-cols-5 gap-2">
+              {EMOJIS.map((emoji, index) => (
+                <motion.button
                   key={emoji.id}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 15,
+                    delay: index * 0.03,
+                  }}
                   onClick={() => sendEmoji(emoji.src)}
-                  className="w-10 h-10 rounded-lg hover:bg-amber-100 transition-colors flex items-center justify-center active:scale-90"
+                  className="w-12 h-12 rounded-lg hover:bg-amber-100 transition-colors flex items-center justify-center active:scale-90"
                   title={emoji.label}
                 >
                   <img
                     src={emoji.src}
                     alt={emoji.label}
-                    className="w-8 h-8 object-contain"
+                    className="w-10 h-10 object-contain"
                     loading="eager"
                     decoding="async"
                   />
-                </button>
+                </motion.button>
               ))}
             </div>
           </motion.div>
