@@ -97,11 +97,8 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           console.log("📬 Bekleyen davet bildirimleri bulundu:", pendingInvites.length);
 
           // Hepsini hemen okundu olarak işaretle (tekrar gösterilmesin)
-          const ids = pendingInvites.map(n => n.id);
-          await supabase
-            .from("notifications")
-            .update({ is_read: true })
-            .in("id", ids);
+          const ids = pendingInvites.map((n) => n.id);
+          await supabase.from("notifications").update({ is_read: true }).in("id", ids);
 
           pendingInvites.forEach((notification) => {
             if (shownNotifications.current.has(notification.id)) return;
@@ -117,7 +114,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       }
     };
 
-    const timer = setTimeout(fetchPendingInvites, 11000);
+    const timer = setTimeout(fetchPendingInvites, 12000);
     return () => clearTimeout(timer);
   }, [user, navigate]);
 
@@ -199,7 +196,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             },
             handleNotification,
           )
-          .subscribe()
+          .subscribe(),
       );
 
       return () => {
