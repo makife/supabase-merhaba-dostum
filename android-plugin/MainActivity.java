@@ -34,7 +34,7 @@ public class MainActivity extends BridgeActivity {
     private static final String KEY_PAUSE_TIME = "pause_time";
     
     // 🔥 2 DAKİKA = 120.000 ms
-    private static final long FULL_RESTART_THRESHOLD_MS = 120000; // 2 dakika
+    private static final long FULL_RESTART_THRESHOLD_MS = 240000; // 2 dakika
     
     // Minimum arka plan süresi (her dönüşte restart için)
     private static final long MIN_BACKGROUND_TIME_MS = 500; // 0.5 saniye
