@@ -115,9 +115,34 @@ const menuItems = [
 
 interface FloatingMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
+  levelColor?: "blue" | "green" | "yellow" | "pink";
 }
 
-export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
+const levelColorMap = {
+  blue: {
+    closed: "from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700",
+    ping: "from-purple-600 to-blue-600",
+    glow: "from-purple-600/50 to-blue-600/50",
+  },
+  green: {
+    closed: "from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700",
+    ping: "from-emerald-500 to-green-600",
+    glow: "from-emerald-500/50 to-green-600/50",
+  },
+  yellow: {
+    closed: "from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600",
+    ping: "from-yellow-400 to-amber-500",
+    glow: "from-yellow-400/50 to-amber-500/50",
+  },
+  pink: {
+    closed: "from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700",
+    ping: "from-pink-500 to-rose-600",
+    glow: "from-pink-500/50 to-rose-600/50",
+  },
+};
+
+export function FloatingMenu({ onOpenChange, levelColor = "blue" }: FloatingMenuProps) {
+  const colors = levelColorMap[levelColor];
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -432,19 +457,19 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
                       ${
                         isOpen
                           ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rotate-45"
-                          : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                          : `bg-gradient-to-r ${colors.closed}`
                       }`}
         >
           {/* Pulse animation ring */}
           <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 
+            className={`absolute inset-0 rounded-full bg-gradient-to-r ${colors.ping} 
                            animate-ping opacity-20 ${isOpen ? "hidden" : ""}`}
           />
 
           {/* Glow effect */}
           <div
-            className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/50 to-blue-600/50 
-                           blur-lg scale-150 opacity-30"
+            className={`absolute inset-0 rounded-full bg-gradient-to-r ${colors.glow} 
+                           blur-lg scale-150 opacity-30`}
           />
 
           {/* Button content */}
