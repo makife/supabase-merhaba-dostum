@@ -406,38 +406,38 @@ const HomePage = () => {
   const getLevelBackgroundColor = () => {
     const level = levelData.level;
 
-    // Level 70+ (Siyah/Gri Tema)
+    // Level 70+ (Koyu Gümüş/Çelik Tema)
     if (level >= 70) 
       return { 
-        bg: "#E2E8F0", 
-        gradient: "from-slate-300/50" 
+        bg: "#B0BEC5", 
+        gradient: "from-slate-400/60" 
       }; 
 
-    // Level 40+ (Mavi Tema)
+    // Level 40+ (Koyu Mavi Tema)
     if (level >= 40) 
       return { 
-        bg: "#DBEAFE", 
-        gradient: "from-blue-200/50" 
+        bg: "#93C5FD", 
+        gradient: "from-blue-400/60" 
       }; 
 
-    // Level 25+ (Yeşil Tema)
+    // Level 25+ (Koyu Yeşil Tema)
     if (level >= 25) 
       return { 
-        bg: "#DCFCE7", 
-        gradient: "from-emerald-200/50" 
+        bg: "#86EFAC", 
+        gradient: "from-emerald-400/60" 
       }; 
 
-    // Level 10+ (Mor Tema)
+    // Level 10+ (Koyu Mor Tema)
     if (level >= 10) 
       return { 
-        bg: "#F3E8FF", 
-        gradient: "from-purple-200/50" 
+        bg: "#D8B4FE", 
+        gradient: "from-purple-400/60" 
       }; 
 
-    // Varsayılan (Turuncu/Krem Tema)
+    // Varsayılan (Koyu Turuncu/Amber Tema)
     return { 
-      bg: "#FEF3C7", 
-      gradient: "from-orange-200/40" 
+      bg: "#FDE68A", 
+      gradient: "from-orange-300/50" 
     }; 
   };
 
