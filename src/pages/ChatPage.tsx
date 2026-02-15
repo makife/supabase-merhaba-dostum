@@ -238,12 +238,10 @@ export default function ChatPage() {
   }, [searchParams, user?.id]);
 
   const handleBackToMenu = () => {
-    playSound("buttonClick");
     navigate("/");
   };
 
   const handleViewChange = (mode: ViewMode) => {
-    playSound("buttonClick");
     setViewMode(mode);
     if (mode !== "private-chat") {
       setSelectedUser(null);
@@ -346,6 +344,7 @@ export default function ChatPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
+                  playSound("buttonClick");
                   if (viewMode === "private-chat") {
                     handleViewChange("users");
                   } else {
@@ -379,7 +378,7 @@ export default function ChatPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleBackToMenu}
+              onClick={() => { playSound("buttonClick"); handleBackToMenu(); }}
               className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105 sm:px-3"
             >
               <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
