@@ -9,7 +9,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag } from "lucide-react";
+import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PrivateChat } from "@/components/PrivateChat";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
@@ -80,6 +90,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     userId: string;
     username: string;
   } | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
@@ -718,14 +730,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   };
 
   // Delete message
-  const deleteMessage = async (messageId: string) => {
+  const deleteMessage = (messageId: string) => {
     if (!user) return;
+    setDeletingMessageId(messageId);
+    setDeleteConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm("Bu mesajı silmek istediğinizden emin misiniz?");
-    if (!confirmed) return;
+  const confirmDeleteMessage = async () => {
+    if (!user || !deletingMessageId) return;
 
     try {
-      const { error } = await supabase.from("global_chat").delete().eq("id", messageId).eq("user_id", user.id); // Sadece kendi mesajlarını silebilir
+      const { error } = await supabase.from("global_chat").delete().eq("id", deletingMessageId).eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -734,6 +749,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     } catch (error) {
       console.error("Error deleting message:", error);
       toast.error("Mesaj silinirken hata oluştu");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeletingMessageId(null);
     }
   };
 
@@ -1284,6 +1302,37 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     </>
   );
 
+  // Delete Confirm Dialog
+  const deleteDialog = (
+    <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialogContent className="max-w-sm rounded-2xl border-destructive/20 bg-background/95 backdrop-blur-md shadow-2xl">
+        <AlertDialogHeader className="items-center text-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+            <Trash2 className="h-6 w-6 text-destructive" />
+          </div>
+          <AlertDialogTitle className="text-lg font-bold">Mesajı Sil</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground">
+            Bu mesajı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+          <AlertDialogCancel
+            className="flex-1 rounded-xl border-muted-foreground/20"
+            onClick={() => setDeletingMessageId(null)}
+          >
+            Vazgeç
+          </AlertDialogCancel>
+          <AlertDialogAction
+            className="flex-1 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={confirmDeleteMessage}
+          >
+            Evet, Sil
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   // Report Dialog - her zaman render et
   const reportDialog = reportingMessage && (
     <ReportMessageDialog
@@ -1299,7 +1348,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     />
   );
 
-  if (!isOpen) return reportDialog;
+  if (!isOpen) return <>{reportDialog}{deleteDialog}</>;
 
   // If it's full page mode, don't wrap in modal
   if (isFullPage) {
@@ -1307,6 +1356,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       <>
         <div className="h-full w-full flex flex-col">{renderGlobalChat()}</div>
         {reportDialog}
+        {deleteDialog}
       </>
     );
   }
@@ -1319,6 +1369,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         </Card>
       </div>
       {reportDialog}
+      {deleteDialog}
     </>
   );
 }
