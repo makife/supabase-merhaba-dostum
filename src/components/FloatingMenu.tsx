@@ -125,19 +125,19 @@ const levelColorMap = {
     glow: "from-purple-600/50 to-blue-600/50",
   },
   green: {
-    closed: "from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700",
-    ping: "from-emerald-500 to-green-600",
-    glow: "from-emerald-500/50 to-green-600/50",
+    closed: "from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700",
+    ping: "from-emerald-500 to-teal-600",
+    glow: "from-emerald-500/50 to-teal-600/50",
   },
   yellow: {
-    closed: "from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600",
-    ping: "from-yellow-400 to-amber-500",
-    glow: "from-yellow-400/50 to-amber-500/50",
+    closed: "from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600",
+    ping: "from-yellow-400 to-orange-500",
+    glow: "from-yellow-400/50 to-orange-500/50",
   },
   pink: {
-    closed: "from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700",
-    ping: "from-pink-500 to-rose-600",
-    glow: "from-pink-500/50 to-rose-600/50",
+    closed: "from-pink-500 to-fuchsia-600 hover:from-pink-600 hover:to-fuchsia-700",
+    ping: "from-pink-500 to-fuchsia-600",
+    glow: "from-pink-500/50 to-fuchsia-600/50",
   },
 };
 

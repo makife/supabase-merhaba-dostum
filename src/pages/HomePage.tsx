@@ -832,7 +832,7 @@ const HomePage = () => {
       )}
 
       <div className="fixed bottom-0 left-0 right-0 z-50">
-        <FloatingMenu onOpenChange={setIsMenuOpen} levelColor={levelData.level >= 70 ? "pink" : levelData.level >= 40 ? "pink" : levelData.level >= 25 ? "yellow" : levelData.level >= 10 ? "green" : "blue"} />
+        <FloatingMenu onOpenChange={setIsMenuOpen} levelColor={levelData.level >= 70 ? "blue" : levelData.level >= 40 ? "pink" : levelData.level >= 25 ? "yellow" : levelData.level >= 10 ? "green" : "blue"} />
       </div>
 
       <AvatarViewDialog
