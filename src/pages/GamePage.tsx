@@ -2770,7 +2770,7 @@ const GamePage = ({
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: gameMode,
-          p_bonus_points: isWinner ? 50 : (finalUserScore === finalOpponentScore ? 25 : 0), // Galibiyet/beraberlik bonusu
+          p_bonus_points: isWinner ? 50 : finalUserScore === finalOpponentScore ? 25 : 0, // Galibiyet/beraberlik bonusu
         });
 
         if (error) {
@@ -3158,11 +3158,7 @@ const GamePage = ({
           if (freshRoom?.countdown_started_at) {
             console.log("✅ Countdown detected via polling (attempt", poll + 1, "):", freshRoom.countdown_started_at);
             // GameContext currentRoom'u güncellemek için tekrar fetch et
-            const { data: fullRoom } = await supabase
-              .from("game_rooms")
-              .select("*")
-              .eq("id", roomId)
-              .single();
+            const { data: fullRoom } = await supabase.from("game_rooms").select("*").eq("id", roomId).single();
             if (fullRoom) {
               // joinRoom tekrar çağırarak currentRoom'u güncelle
               await joinRoom(roomId);
@@ -6327,9 +6323,9 @@ const GamePage = ({
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
-    
+
     setInputFeedback({ text: title, type: color === "green" ? "success" : "error" });
-    
+
     // 1.2 saniye sonra feedback'i kaldır
     inputFeedbackTimerRef.current = setTimeout(() => {
       setInputFeedback(null);
@@ -6832,7 +6828,7 @@ const GamePage = ({
   };
   // Emoji reactions hook - sadece multiplayer modlarda
   const isMultiplayerMode = gameMode === "random-match" || gameMode === "private-room";
-  const emojiRoomId = isMultiplayerMode ? (currentRoom?.id || "") : "";
+  const emojiRoomId = isMultiplayerMode ? currentRoom?.id || "" : "";
   const emojiReactions = GameEmojiReactions({
     roomId: emojiRoomId,
     userId: user?.id || "",
@@ -6988,7 +6984,7 @@ const GamePage = ({
                       }}
                       className="w-full bg-green-500 hover:bg-green-600"
                     >
-                      🔄 Tekrar Oyna İste
+                      🔄 Tekrar Oyna
                     </Button>
                   )}
 
