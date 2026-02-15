@@ -1317,7 +1317,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
           <AlertDialogCancel
-            className="flex-1 rounded-xl border-muted-foreground/20"
+            className="flex-1 rounded-xl border-muted-foreground/20 mt-0"
             onClick={() => setDeletingMessageId(null)}
           >
             Vazgeç
