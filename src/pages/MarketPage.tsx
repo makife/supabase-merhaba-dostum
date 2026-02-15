@@ -461,9 +461,9 @@ const MarketPage = () => {
         <div className="relative flex items-center justify-between mb-4 h-12">
           {/* SOL BUTON */}
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => navigate("/")}
-            className="text-white hover:bg-white/10 shrink-0 relative z-20"
+            className="border-2 border-white/70 text-white bg-white/10 hover:bg-white/20 shrink-0 relative z-20 -mt-2 font-semibold shadow-md"
           >
             <ArrowLeft className="w-5 h-5 mr-1" /> Geri
           </Button>
