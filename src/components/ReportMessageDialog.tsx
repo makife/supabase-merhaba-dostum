@@ -5,16 +5,13 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { AlertCircle } from 'lucide-react';
+import { Flag, ShieldAlert, MessageSquareWarning, Skull, Flame, Megaphone, HelpCircle, Send, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ReportMessageDialogProps {
   isOpen: boolean;
@@ -27,13 +24,13 @@ interface ReportMessageDialogProps {
 
 type ReportReason = 'spam' | 'harassment' | 'inappropriate_content' | 'hate_speech' | 'violence' | 'other';
 
-const REPORT_REASONS: { value: ReportReason; label: string; description: string }[] = [
-  { value: 'spam', label: 'Spam', description: 'Tekrarlayan veya istenmeyen mesajlar' },
-  { value: 'harassment', label: 'Taciz', description: 'Rahatsız edici veya tehdit içeren içerik' },
-  { value: 'inappropriate_content', label: 'Uygunsuz İçerik', description: 'Argo, küfür veya müstehcen içerik' },
-  { value: 'hate_speech', label: 'Nefret Söylemi', description: 'Ayrımcılık veya nefret içeren ifadeler' },
-  { value: 'violence', label: 'Şiddet', description: 'Şiddet teşvik eden içerik' },
-  { value: 'other', label: 'Diğer', description: 'Yukarıdakilerden farklı bir sebep' },
+const REPORT_REASONS: { value: ReportReason; label: string; icon: React.ReactNode }[] = [
+  { value: 'spam', label: 'Spam', icon: <Megaphone className="w-4 h-4" /> },
+  { value: 'harassment', label: 'Taciz', icon: <ShieldAlert className="w-4 h-4" /> },
+  { value: 'inappropriate_content', label: 'Uygunsuz İçerik', icon: <MessageSquareWarning className="w-4 h-4" /> },
+  { value: 'hate_speech', label: 'Nefret Söylemi', icon: <Flame className="w-4 h-4" /> },
+  { value: 'violence', label: 'Şiddet', icon: <Skull className="w-4 h-4" /> },
+  { value: 'other', label: 'Diğer', icon: <HelpCircle className="w-4 h-4" /> },
 ];
 
 export function ReportMessageDialog({
@@ -55,7 +52,6 @@ export function ReportMessageDialog({
       return;
     }
 
-    // Rate limit kontrolü
     try {
       const { data: canReport } = await supabase
         .rpc('check_report_rate_limit', { p_user_id: user.id });
@@ -109,80 +105,86 @@ export function ReportMessageDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="flex items-center space-x-2 text-base sm:text-lg">
-            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive flex-shrink-0" />
-            <span>Mesajı Bildir</span>
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            <span className="font-semibold">{reportedUsername}</span> kullanıcısının mesajını bildiriyorsunuz
-          </DialogDescription>
+      <DialogContent className="w-[92vw] max-w-[400px] rounded-2xl border-destructive/10 bg-background/95 backdrop-blur-md p-0 gap-0 overflow-hidden shadow-2xl">
+        {/* Header */}
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 flex-shrink-0">
+              <Flag className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-base font-bold">Mesajı Bildir</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                <span className="font-semibold text-foreground">{reportedUsername}</span> adlı kullanıcı
+              </p>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
-          <div className="space-y-2 sm:space-y-3">
-            <Label className="text-sm sm:text-base">Bildirme Nedeni</Label>
-            <RadioGroup value={reason} onValueChange={(value) => setReason(value as ReportReason)}>
+        <div className="px-5 pb-5 space-y-4">
+          {/* Reason chips */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Bildirme Nedeni</p>
+            <div className="grid grid-cols-2 gap-1.5">
               {REPORT_REASONS.map((item) => (
-                <div key={item.value} className="flex items-start space-x-2 sm:space-x-3 space-y-0 py-1">
-                  <RadioGroupItem value={item.value} id={item.value} className="mt-0.5 flex-shrink-0" />
-                  <div className="space-y-0.5 sm:space-y-1 leading-none flex-1 min-w-0">
-                    <Label htmlFor={item.value} className="font-medium cursor-pointer text-sm sm:text-base">
-                      {item.label}
-                    </Label>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </div>
+                <button
+                  key={item.value}
+                  onClick={() => setReason(item.value)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
+                    reason === item.value
+                      ? "bg-destructive/10 border-destructive/30 text-destructive"
+                      : "bg-muted/50 border-transparent text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
               ))}
-            </RadioGroup>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm sm:text-base">Açıklama (Opsiyonel)</Label>
+          {/* Description */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Açıklama (Opsiyonel)</p>
             <Textarea
-              id="description"
-              placeholder="Ek bilgi vermek isterseniz buraya yazabilirsiniz..."
+              placeholder="Ek bilgi ekleyebilirsiniz..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={500}
-              rows={3}
-              className="text-sm sm:text-base resize-none"
+              rows={2}
+              className="text-sm resize-none rounded-xl border-muted-foreground/15 focus-visible:ring-destructive/30"
             />
-            <p className="text-xs text-muted-foreground text-right">{description.length}/500</p>
+            <p className="text-[10px] text-muted-foreground text-right mt-1">{description.length}/500</p>
           </div>
 
-          <div className="bg-muted p-2 sm:p-3 rounded-lg">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              ⚠️ Yanlış veya kötü niyetli raporlar hesabınıza yaptırım uygulanmasına sebep olabilir.
-            </p>
-          </div>
+          {/* Warning */}
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            ⚠️ Yanlış veya kötü niyetli raporlar hesabınıza yaptırım uygulanmasına sebep olabilir.
+          </p>
 
-          <div className="bg-blue-50 dark:bg-blue-950/20 p-2 sm:p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
-              ℹ️ Raporlar veritabanına kaydedilir ve moderatörler tarafından incelenir. Ciddi ihlaller kullanıcı yasaklanmasına yol açabilir.
-            </p>
+          {/* Buttons */}
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 rounded-xl h-10 text-sm"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Vazgeç
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              variant="destructive"
+              className="flex-1 rounded-xl h-10 text-sm"
+            >
+              <Send className="w-4 h-4 mr-1" />
+              {isSubmitting ? 'Gönderiliyor...' : 'Bildir'}
+            </Button>
           </div>
         </div>
-
-        <DialogFooter className="flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={onClose} 
-            disabled={isSubmitting}
-            className="w-full sm:w-auto text-sm sm:text-base"
-          >
-            İptal
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting} 
-            variant="destructive"
-            className="w-full sm:w-auto text-sm sm:text-base"
-          >
-            {isSubmitting ? 'Gönderiliyor...' : 'Rapor Gönder'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
