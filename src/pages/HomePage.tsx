@@ -402,42 +402,47 @@ const HomePage = () => {
 
   const totalCredits = getTotalCredits();
 
-  // Seviyeye göre arka plan rengi
+  // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
     const level = levelData.level;
 
-    // Level 70+ (Koyu Gümüş/Çelik Tema)
+    // Level 70+ (Çelik Gradient)
     if (level >= 70) 
       return { 
-        bg: "#B0BEC5", 
-        gradient: "from-slate-400/60" 
+        bg: "linear-gradient(135deg, #B0BEC5 0%, #78909C 100%)", 
+        gradient: "from-slate-400/60",
+        headerBg: "#9EB3BD"
       }; 
 
-    // Level 40+ (Koyu Mavi Tema)
+    // Level 40+ (Mavi Gradient)
     if (level >= 40) 
       return { 
-        bg: "#93C5FD", 
-        gradient: "from-blue-400/60" 
+        bg: "linear-gradient(135deg, #93C5FD 0%, #60A5FA 100%)", 
+        gradient: "from-blue-400/60",
+        headerBg: "#7AB5FC"
       }; 
 
-    // Level 25+ (Koyu Yeşil Tema)
+    // Level 25+ (Yeşil Gradient)
     if (level >= 25) 
       return { 
-        bg: "#86EFAC", 
-        gradient: "from-emerald-400/60" 
+        bg: "linear-gradient(135deg, #86EFAC 0%, #4ADE80 100%)", 
+        gradient: "from-emerald-400/60",
+        headerBg: "#68E596"
       }; 
 
-    // Level 10+ (Koyu Mor Tema)
+    // Level 10+ (Mor Gradient)
     if (level >= 10) 
       return { 
-        bg: "#D8B4FE", 
-        gradient: "from-purple-400/60" 
+        bg: "linear-gradient(135deg, #D8B4FE 0%, #C084FC 100%)", 
+        gradient: "from-purple-400/60",
+        headerBg: "#CC9CFE"
       }; 
 
-    // Varsayılan (Koyu Turuncu/Amber Tema)
+    // Varsayılan (Amber Gradient)
     return { 
-      bg: "#FDE68A", 
-      gradient: "from-orange-300/50" 
+      bg: "linear-gradient(135deg, #FDE68A 0%, #FBBF24 100%)", 
+      gradient: "from-orange-300/50",
+      headerBg: "#FCD35F"
     }; 
   };
 
@@ -446,7 +451,7 @@ const HomePage = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-800 font-sans selection:bg-amber-200 overflow-hidden transition-colors duration-500"
-      style={{ backgroundColor: levelBgColors.bg }}
+      style={{ background: levelBgColors.bg }}
     >
       {/* Light Effects */}
       <div
@@ -460,7 +465,7 @@ const HomePage = () => {
       */}
       <div
         className="flex-none z-30 pb-2 relative shadow-sm border-b border-slate-200 transition-colors duration-500"
-        style={{ backgroundColor: levelBgColors.bg }}
+        style={{ backgroundColor: levelBgColors.headerBg }}
       >
         {/* HEADER (Profil & Mürekkep) */}
         <div className="px-5 pt-6 pb-2 flex items-center justify-between">
