@@ -148,7 +148,7 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background touch-none overscroll-none">
       <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
-        <Card className="border-0 bg-card/60 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/5">
+        <Card className="border border-slate-600 bg-card/60 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/5 rounded-2xl">
           <HeaderAnimation />
 
           <div className="text-center space-y-3 p-6 relative z-10">
