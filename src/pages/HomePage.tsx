@@ -61,14 +61,15 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 // --- BİLEŞENLER ---
 
-const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => {
-  // Renk eşleştirmeleri için küçük bir obje (Tailwind'in çalışma mantığı için en güvenlisi)
-  const colors: any = {
-    rose: "text-rose-500 bg-rose-500/10",
-    orange: "text-orange-500 bg-orange-500/10",
-    amber: "text-amber-500 bg-amber-500/10",
-    indigo: "text-indigo-500 bg-indigo-500/10",
-  };
+const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
+  <div className="flex-1 bg-white border border-slate-600 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-sm">
+    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-500`} />
+
+    <span className="text-lg font-bold text-slate-800 tracking-tight">{value}</span>
+
+    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide opacity-80">{label}</span>
+  </div>
+);
 
 const GameModeCard = ({ mode, onClick }: any) => (
   <div
@@ -666,33 +667,34 @@ const HomePage = () => {
         </div>
 
         {/* İSTATİSTİKLER */}
-<div className="px-5 mt-4 pb-8">
-  <div className="grid grid-cols-3 gap-3">
-    {/* StatWidget'ların içine prop olarak 'dark' modu desteği ekleyebilir 
-        veya doğrudan bileşen içinde şu sınıfları güncelleyebilirsin: */}
-    <StatWidget 
-      icon={Target} 
-      value={profile?.daily_games || 0} 
-      label="Oyun" 
-      colorClass="rose" 
-      className="bg-[#16213e] border-white/10 shadow-lg" // Eğer dışarıdan class alıyorsa
-    />
-    <StatWidget 
-      icon={Flame} 
-      value={profile?.win_streak || 0} 
-      label="Seri" 
-      colorClass="orange" 
-      className="bg-[#16213e] border-white/10 shadow-lg"
-    />
-    <StatWidget 
-      icon={Trophy} 
-      value={profile?.wins || 0} 
-      label="Zafer" 
-      colorClass="amber" 
-      className="bg-[#16213e] border-white/10 shadow-lg"
-    />
-  </div>
-</div>
+        <div className="px-5 mt-4 pb-12">
+          {" "}
+          {/* Alt boşluğu biraz artırdım, menüye girmesin */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatWidget
+              icon={Target}
+              value={profile?.daily_games || 0}
+              label="Oyun"
+              colorClass="rose"
+              // !bg-[#16213e] kullanarak içindeki beyazı zorla eziyoruz
+              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+            />
+            <StatWidget
+              icon={Flame}
+              value={profile?.win_streak || 0}
+              label="Seri"
+              colorClass="orange"
+              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+            />
+            <StatWidget
+              icon={Trophy}
+              value={profile?.wins || 0}
+              label="Zafer"
+              colorClass="amber"
+              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+            />
+          </div>
+        </div>
       </div>
 
       {/* --- MODALLAR --- */}
@@ -751,4 +753,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
