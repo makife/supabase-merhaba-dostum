@@ -434,7 +434,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <div className="fixed bottom-4 right-4" data-onboarding="floating-menu">
         <Button
           onClick={handleToggle}
-          className={`group relative overflow-hidden w-[84px] h-[84px] rounded-full border-2 border-white shadow-2xl 
+          className={`group relative overflow-hidden w-[84px] h-[84px] rounded-full border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)] 
                       transform transition-all duration-300 hover:scale-110 active:scale-95
                       ${
                         isOpen
