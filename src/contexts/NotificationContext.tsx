@@ -13,9 +13,7 @@ const sendInviteResponseNotification = async (hostId: string, username: string, 
     await supabase.from("notifications").insert({
       user_id: hostId,
       type: "invite_response",
-      message: accepted
-        ? `✅ ${username} davetini kabul etti!`
-        : `❌ ${username} davetini reddetti.`,
+      message: accepted ? `✅ ${username} davetini kabul etti!` : `❌ ${username} davetini reddetti.`,
       is_read: false,
     });
   } catch (err) {
@@ -40,11 +38,7 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
           .maybeSingle();
 
         if (roomData?.host_id && user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", user.id)
-            .maybeSingle();
+          const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
           await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", true);
         }
 
@@ -144,7 +138,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           if (newCredits !== null && newCredits !== undefined) {
             lastKnownCredits.current = newCredits;
           }
-        }
+        },
       )
       .subscribe();
 
@@ -203,7 +197,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       }
     };
 
-    const timer = setTimeout(fetchPendingInvites, 12000);
+    const timer = setTimeout(fetchPendingInvites, 11000);
     return () => clearTimeout(timer);
   }, [user, navigate]);
 
