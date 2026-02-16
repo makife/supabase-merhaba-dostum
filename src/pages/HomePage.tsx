@@ -692,6 +692,7 @@ const HomePage = () => {
     />
   </div>
 </div>
+      </div>
 
       {/* --- MODALLAR --- */}
       {selectedMode && selectedMode === "private-room" ? (
@@ -749,3 +750,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
