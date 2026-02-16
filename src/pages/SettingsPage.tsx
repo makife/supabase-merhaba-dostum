@@ -36,7 +36,7 @@ import {
   Music,
   Volume,
 } from "lucide-react";
-import { triggerGlobalStorageClear } from "@/hooks/useGlobalResync";
+import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear"; // ✅ Doğru import
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 
 const SettingsPage = () => {
