@@ -790,7 +790,7 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(null);
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
@@ -6317,19 +6317,21 @@ const GamePage = ({
   };
 
   // Input field içinde feedback gösterme fonksiyonu
-  const showCustomToast = (title: string, _description: string, color: "red" | "green" = "red") => {
+  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "bonus" = "red") => {
     // Önceki timer'ı temizle
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
 
-    setInputFeedback({ text: title, type: color === "green" ? "success" : "error" });
+    const feedbackType = color === "green" ? "success" : color === "bonus" ? "bonus" : "error";
+    setInputFeedback({ text: title, type: feedbackType });
 
-    // 1.2 saniye sonra feedback'i kaldır
+    // bonus için daha uzun süre göster
+    const duration = color === "bonus" ? 1500 : 700;
     inputFeedbackTimerRef.current = setTimeout(() => {
       setInputFeedback(null);
       inputFeedbackTimerRef.current = null;
-    }, 700);
+    }, duration);
   };
 
   // Submit word - Using local wordlist validation
@@ -6386,10 +6388,80 @@ const GamePage = ({
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
-      // ✅ Flash yeşil ve yeşil toast göster
-      setInputFlash("success");
-      setTimeout(() => setInputFlash(null), 600);
-      showCustomToast(normalizedWord, "", "green");
+      // ✅ KELİMELE özel kontrolü
+      const isKelimeleWord = normalizedWord === "KELİMELE";
+      
+      if (isKelimeleWord) {
+        // 🎯 BONUS: Mor animasyon göster
+        setInputFlash("success");
+        setTimeout(() => setInputFlash(null), 600);
+        showCustomToast("✨ BONUS ✨", "", "bonus");
+        
+        // Joker ödülleri ver (arka planda)
+        if (user) {
+          const jokerTypes = ["degistir", "fisilida", "senyaz"];
+          jokerTypes.forEach(async (jokerType) => {
+            try {
+              const { data: existing } = await supabase
+                .from("user_inventory")
+                .select("id, quantity")
+                .eq("user_id", user.id)
+                .eq("item_type", jokerType)
+                .maybeSingle();
+              
+              if (existing) {
+                await supabase
+                  .from("user_inventory")
+                  .update({ quantity: existing.quantity + 1 })
+                  .eq("id", existing.id);
+              } else {
+                await supabase
+                  .from("user_inventory")
+                  .insert({ user_id: user.id, item_type: jokerType, quantity: 1 });
+              }
+            } catch (err) {
+              console.error(`❌ Kelimele bonus joker (${jokerType}) hatası:`, err);
+            }
+          });
+          
+          // Rozet ver
+          (async () => {
+            try {
+              const { data: badge } = await supabase
+                .from("badges")
+                .select("id")
+                .eq("condition_type", "kelimele_word")
+                .maybeSingle();
+              
+              if (badge) {
+                const { data: existing } = await supabase
+                  .from("user_badges")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .eq("badge_id", badge.id)
+                  .maybeSingle();
+                
+                if (!existing) {
+                  await supabase
+                    .from("user_badges")
+                    .insert({ user_id: user.id, badge_id: badge.id });
+                  console.log("🏅 Kelimele rozeti kazanıldı!");
+                }
+              }
+            } catch (err) {
+              console.error("❌ Kelimele rozet hatası:", err);
+            }
+            
+            // Jokerleri yeniden yükle
+            loadJokers();
+          })();
+        }
+      } else {
+        // Normal kelime: yeşil feedback
+        setInputFlash("success");
+        setTimeout(() => setInputFlash(null), 600);
+        showCustomToast(normalizedWord, "", "green");
+      }
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
       clearWord();
@@ -7489,12 +7561,16 @@ const GamePage = ({
                               exit={{ opacity: 0, x: -200 }}
                               transition={{ duration: 0.3, ease: "easeIn" }}
                               className={`absolute inset-0 flex items-center justify-center z-20 rounded-xl ${
-                                inputFeedback.type === "success"
+                                inputFeedback.type === "bonus"
+                                  ? "bg-purple-600/95 text-white shadow-[0_0_20px_rgba(147,51,234,0.6)]"
+                                  : inputFeedback.type === "success"
                                   ? "bg-green-500/90 text-white"
                                   : "bg-red-500/90 text-white"
                               }`}
                             >
-                              <span className="text-xl font-bold font-mono tracking-wider drop-shadow-md">
+                              <span className={`font-bold font-mono tracking-wider drop-shadow-md ${
+                                inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"
+                              }`}>
                                 {inputFeedback.text}
                               </span>
                             </motion.div>
