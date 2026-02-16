@@ -557,55 +557,143 @@ const HomePage = () => {
           </div>
         </div>
 
+
         {/* INFO PANELS (SÜRE & HAK) */}
-        <div className="px-5 mt-3 space-y-2">
+        <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
             <div
-              className={`flex items-center justify-between rounded-2xl p-3 px-4 shadow-xl border ${
+              className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
                 vipType === "yearly"
-                  ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50"
-                  : "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/50"
+                  ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
+                  : vipType === "monthly"
+                    ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                    : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-white/10 backdrop-blur-md">
-                  <Crown className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center gap-2">
+                <div
+                  className={`p-1.5 rounded-full ${
+                    vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                  }`}
+                >
+                  <Crown
+                    className={`w-5 h-5 ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
+                    }`}
+                  />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-white">VIP Yazar Aktif</span>
-                  <span className="text-[9px] text-slate-300 uppercase">Sınırsız • 2x XP</span>
+                  <span
+                    className={`text-sm font-bold ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                    }`}
+                  >
+                    {vipType === "yearly"
+                      ? "⭐ VIP Yazar (Yıllık)"
+                      : vipType === "monthly"
+                        ? "💎 VIP Yazar (Aylık)"
+                        : "VIP Yazar"}
+                  </span>
+                  <span
+                    className={`text-[10px] ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
+                    }`}
+                  >
+                    Sınırsız hak • Günlük joker • 2x XP
+                  </span>
                 </div>
               </div>
-              <div className="px-2 py-1 rounded-lg bg-black/20 border border-white/10">
-                <span className="text-[10px] font-mono font-bold text-amber-400">{premiumTimeLeft}</span>
+              <div
+                className={`px-2 py-1 rounded-lg ${
+                  vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
+                }`}
+              >
+                <span
+                  className={`text-xs font-mono font-bold ${
+                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
+                  }`}
+                >
+                  {premiumTimeLeft}
+                </span>
               </div>
             </div>
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-[#16213e] border border-white/5 rounded-xl py-2 px-4 shadow-sm">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalar"}
+            <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
+              <span className="text-xs text-slate-500 font-medium">
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
               </span>
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <div
-                      key={i}
-                      className={`w-5 h-1.5 rounded-full skew-x-[-15deg] transition-all ${i < totalCredits ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-700"}`}
-                    />
-                  ))}
+
+              {isUnlimitedLivesActive(profile) ? (
+                <div className="flex items-center gap-2">
+                  {unlimitedTimeLeft ? (
+                    <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                      <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
+                      <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
+                        {unlimitedTimeLeft}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
+                  )}
+                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
+                    Sınırsız
+                  </Badge>
                 </div>
-                {timeUntilNextCredit && totalCredits < 5 && (
-                  <span className="text-[9px] font-mono text-slate-500 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
-                    {timeUntilNextCredit}
-                  </span>
-                )}
-              </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {totalCredits > 5 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 opacity-50">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                        ))}
+                      </div>
+                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
+                        + {totalCredits - 5} Sayfa
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {timeUntilNextCredit && totalCredits < 5 && (
+                    <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                      {timeUntilNextCredit}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+
+        {/* HEDİYE BANNER */}
+        {isPremium && isGiftPremium(profile) && (
+          <div className="px-5 mt-4">
+            <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
+                <Gift className="w-5 h-5 text-white animate-bounce" />
+              </div>
+              <div className="flex-1 z-10">
+                <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
+                <p className="text-[10px] text-white/90">
+                  Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div
 
       {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
