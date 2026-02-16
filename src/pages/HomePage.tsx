@@ -557,7 +557,6 @@ const HomePage = () => {
           </div>
         </div>
 
-
         {/* INFO PANELS (SÜRE & HAK) */}
         <div className="px-5 mt-2 space-y-2">
           {isPremium && premiumTimeLeft && (
@@ -693,7 +692,7 @@ const HomePage = () => {
             </div>
           </div>
         )}
-      </div
+      </div>
 
       {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
