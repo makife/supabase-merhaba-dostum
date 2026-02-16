@@ -18,20 +18,7 @@ import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 
-import {
-  Bot,
-  Users,
-  Trophy,
-  Clock,
-  Target,
-  Crown,
-  Zap,
-  Gift,
-  Star,
-  Flame,
-  Gamepad2,
-  Sparkles,
-} from "lucide-react";
+import { Bot, Users, Trophy, Clock, Target, Crown, Zap, Gift, Star, Flame, Gamepad2, Sparkles } from "lucide-react";
 
 // --- YARDIMCI SABİTLER ---
 
@@ -209,7 +196,7 @@ const HomePage = () => {
     // 🔧 FIX: Tutarlı hesaplama - kalan tam günleri göster
     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
     const remainingHours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     // Eğer 1+ gün kaldıysa, gün ve saat olarak göster
     if (days > 0) {
       if (remainingHours > 0) {
@@ -404,12 +391,13 @@ const HomePage = () => {
 
   // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
-    // Şimdilik tüm leveller için siyah-çelik gradyan
-    // Eski level bazlı renkler aşağıda yorum olarak saklanıyor
-    return { 
-      bg: "linear-gradient(135deg, #2D3436 0%, #636E72 100%)", 
-      gradient: "from-gray-800/60",
-      headerBg: "#484F53"
+    return {
+      // index.html'deki ana arka plan rengi (#1a1a2e)
+      bg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+      // index.html'deki accent (pembe/turuncu) rengin hafif parlaması
+      gradient: "from-[#ff6b6b]/20",
+      // Header için biraz daha açık bir ton
+      headerBg: "#16213e",
     };
 
     /*
@@ -498,7 +486,7 @@ const HomePage = () => {
         <div className="px-5 mt-2">
           {(() => {
             const level = levelData.level;
-            let starGradient = "from-amber-400 to-orange-500"; 
+            let starGradient = "from-amber-400 to-orange-500";
             let shadowColor = "shadow-orange-200";
 
             if (level >= 70) {
