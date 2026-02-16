@@ -33,8 +33,10 @@ import {
   Trash2,
   Download,
   AlertTriangle,
+  Music,
+  Volume,
 } from "lucide-react";
-import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
+import { triggerGlobalStorageClear } from "@/hooks/useGlobalResync";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 
 const SettingsPage = () => {
@@ -75,7 +77,6 @@ const SettingsPage = () => {
         setNotifications(settings.notifications ?? false);
         setLanguage(settings.language ?? "tr");
 
-        // Store initial settings for comparison
         initialSettingsRef.current = {
           notifications: settings.notifications ?? false,
           sounds: soundsEnabled,
@@ -84,7 +85,6 @@ const SettingsPage = () => {
           language: settings.language ?? "tr",
         };
       } else if (permissionsCompleted && isPermissionGranted) {
-        // Eğer izin onboarding'i tamamlanmışsa ve izin verildiyse, notifications'ı true yap
         setNotifications(true);
         initialSettingsRef.current = {
           notifications: true,
@@ -94,7 +94,6 @@ const SettingsPage = () => {
           language: "tr",
         };
       } else {
-        // Store initial settings even if no saved settings exist
         initialSettingsRef.current = {
           notifications: false,
           sounds: soundsEnabled,
@@ -112,7 +111,6 @@ const SettingsPage = () => {
   useEffect(() => {
     if (!initialSettingsRef.current) return;
 
-    // İlk mount'ta toast gösterme
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -126,23 +124,20 @@ const SettingsPage = () => {
       language,
     };
 
-    // Check if any setting has actually changed
     const hasRealChange = JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
 
     if (hasRealChange) {
       hasChangedRef.current = true;
       nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(currentSettings));
 
-      // Dispatch custom event to notify other components
       window.dispatchEvent(new Event("settingsChanged"));
 
-      // Update initial settings ref for next comparison
       initialSettingsRef.current = currentSettings;
 
       playSound("buttonClick");
       toast({
-        title: "Ayarlar Kaydedildi",
-        description: "Değişiklikleriniz kaydedildi.",
+        title: "✅ Ayarlar Kaydedildi",
+        description: "Değişiklikleriniz başarıyla kaydedildi.",
       });
     }
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
@@ -150,41 +145,33 @@ const SettingsPage = () => {
   const handleNotificationChange = async (checked: boolean) => {
     try {
       console.log("🔔 Bildirim değişikliği:", checked);
-      console.log("📱 Platform:", isMobile ? "Mobile" : "Web");
 
       if (checked) {
-        // Mobile veya web bildirim izinlerini iste
-        console.log("📱 İzin isteniyor...");
-
-        // requestPermissions artık boolean döndürüyor
         const permissionGranted = await requestPermissions();
-        console.log("📱 İzin sonucu:", permissionGranted);
 
         if (permissionGranted) {
           setNotifications(true);
           toast({
-            title: "Bildirimler Aktif",
+            title: "✅ Bildirimler Aktif",
             description: "Oyun bildirimleri başarıyla aktif edildi",
           });
 
-          // Test bildirimi göster
           setTimeout(() => {
             showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
           }, 1000);
         } else {
           setNotifications(false);
           toast({
-            title: "İzin Gerekli",
+            title: "⚠️ İzin Gerekli",
             description: "Bildirim izni verilemedi. Lütfen uygulama ayarlarından izin verin.",
             variant: "destructive",
           });
         }
       } else {
         setNotifications(false);
-        // Bildirimleri kapat - push token'ı veritabanından sil
         await disableNotifications();
         toast({
-          title: "Bildirimler Kapatıldı",
+          title: "🔕 Bildirimler Kapatıldı",
           description: "Artık oyun bildirimi almayacaksınız",
         });
       }
@@ -287,16 +274,6 @@ const SettingsPage = () => {
             <h4 class="font-medium">Veri Güvenliği</h4>
             <p class="text-sm text-muted-foreground">Tüm veriler şifrelenerek güvenli sunucularda saklanır. Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz.</p>
           </section>
-          
-          <section>
-            <h4 class="font-medium">Çerezler</h4>
-            <p class="text-sm text-muted-foreground">Oyun ayarlarınızı hatırlamak için yerel depolama kullanılır.</p>
-          </section>
-          
-          <section>
-            <h4 class="font-medium">İletişim</h4>
-            <p class="text-sm text-muted-foreground">Gizlilik konularında: info@kelimele.site</p>
-          </section>
         </div>
       </div>
     `;
@@ -306,8 +283,6 @@ const SettingsPage = () => {
   const openAbout = () => {
     const content = `
       <div class="space-y-4">
-        <h3 class="font-semibold text-lg">Kelimele Hakkında</h3>
-        
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
           <p class="text-lg font-medium">Versiyon 1.0.0</p>
@@ -317,32 +292,11 @@ const SettingsPage = () => {
           <section>
             <h4 class="font-medium">Geliştirici</h4>
             <p class="text-sm text-muted-foreground">Kelimele ekibi tarafından geliştirilmiştir.</p>
-            <p class="text-sm text-muted-foreground">Web: <a href="https://kelimele.site/about" class="text-primary underline">www.kelimele.site/about</a></p>
-          </section>
-          
-          <section>
-            <h4 class="font-medium">Misyonumuz</h4>
-            <p class="text-sm text-muted-foreground">Türkçe kelime dağarcığını geliştirmeyi amaçlayan, eğlenceli ve rekabetçi bir oyun deneyimi sunmak.</p>
-          </section>
-          
-          <section>
-            <h4 class="font-medium">Özellikler</h4>
-            <p class="text-sm text-muted-foreground">• Çoklu oyun modları</p>
-            <p class="text-sm text-muted-foreground">• Gerçek zamanlı çok oyunculu</p>
-            <p class="text-sm text-muted-foreground">• Kapsamlı Türkçe kelime sözlüğü</p>
-            <p class="text-sm text-muted-foreground">• Liderlik tabloları</p>
-            <p class="text-sm text-muted-foreground">• Sosyal özellikler</p>
-          </section>
-          
-          <section>
-            <h4 class="font-medium">Teşekkürler</h4>
-            <p class="text-sm text-muted-foreground">Kelimele'yi tercih ettiğiniz için teşekkür ederiz!</p>
           </section>
         </div>
         
         <div class="text-center text-xs text-muted-foreground border-t pt-3">
           <p>© 2025 Ergan Yazılım</p>
-          <p>Tüm hakları saklıdır</p>
         </div>
       </div>
     `;
@@ -362,19 +316,7 @@ const SettingsPage = () => {
             </h4>
             <div class="space-y-2">
               <p class="text-sm font-mono break-all">info@kelimele.site</p>
-              <p class="text-xs text-muted-foreground">Genel sorular, destek ve tüm konular</p>
             </div>
-          </div>
-          
-          <div class="space-y-2 pt-3 border-t">
-            <h4 class="font-medium">Yanıt Süreleri</h4>
-            <p class="text-sm text-muted-foreground">• Genel sorular: 24 saat</p>
-            <p class="text-sm text-muted-foreground">• Teknik sorunlar: 48 saat</p>
-            <p class="text-sm text-muted-foreground">• Acil durumlar: 6 saat</p>
-          </div>
-          
-          <div class="text-center pt-3 border-t">
-            <p class="text-sm text-muted-foreground">Size en iyi hizmeti verebilmek için buradayız!</p>
           </div>
         </div>
       </div>
@@ -383,268 +325,271 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-background to-muted overflow-x-hidden">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-purple-50/95 backdrop-blur-sm border-b border-purple-200 p-3 pt-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="space-y-4">
-            {" "}
-            {/* space-y-4'ü buraya ekledim */}
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="text-purple-600 border-purple-500/30 hover:bg-purple-500/20 bg-purple-500/10"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Geri
-              </Button>
+    <div
+      className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+    >
+      {/* Light Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
-              <div className="relative inline-block">
-                {/* Stroke Background */}
-                <img
-                  src="/stroke.png"
-                  alt="Stroke Background"
-                  className="absolute inset-0 w-full h-full object-contain opacity-50"
-                />
-                {/* Ayarlar Title */}
-                <h1 className="text-3xl font-bold flex items-center text-purple-600 relative z-10 px-6 py-3">
-                  <Settings className="w-6 h-6 mr-3 text-purple-500" />
-                  Ayarlar
-                </h1>
+      {/* Header */}
+      <div className="flex-none z-30 bg-[#1a1a2e] border-b border-white/5 shadow-2xl">
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={() => navigate("/")}
+              className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Settings className="w-6 h-6 text-white" />
               </div>
-
-              <div className="w-16" />
+              <h1 className="text-2xl font-bold text-white">Ayarlar</h1>
             </div>
-            {/* Game Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Smartphone className="w-5 h-5 mr-2" />
-                  Oyun Ayarları
-                </CardTitle>
-                <CardDescription>Oyun deneyiminizi kişiselleştirin</CardDescription>
-              </CardHeader>
-            </Card>
+
+            <div className="w-20" />
           </div>
         </div>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto p-4 space-y-6 pb-8">
-          {/* Game Settings Content */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              {/* Notifications */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Bell className="w-5 h-5" />
-                  <div>
-                    <p className="font-medium">Bildirimler</p>
-                    <p className="text-sm text-muted-foreground">Oyun bildirimlerini alın</p>
-                  </div>
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 relative z-10">
+        {/* Game Settings */}
+        <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+              <Smartphone className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Oyun Ayarları</h2>
+          </div>
+
+          <div className="space-y-4">
+            {/* Notifications */}
+            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-amber-400" />
                 </div>
-                <Switch checked={notifications} onCheckedChange={handleNotificationChange} />
-              </div>
-
-              <Separator />
-
-              {/* Sounds */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Volume2 className="w-5 h-5" />
-                  <div>
-                    <p className="font-medium">Ses Efektleri</p>
-                    <p className="text-sm text-muted-foreground">Oyun seslerini açın/kapatın</p>
-                  </div>
+                <div>
+                  <p className="font-medium text-white">Bildirimler</p>
+                  <p className="text-xs text-slate-400">Oyun bildirimlerini alın</p>
                 </div>
-                <Switch
-                  checked={soundsEnabled}
-                  onCheckedChange={(checked) => {
-                    setSoundsEnabled(checked);
-                    if (checked) playSound("buttonClick");
-                  }}
-                />
               </div>
+              <Switch
+                checked={notifications}
+                onCheckedChange={handleNotificationChange}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
 
-              <Separator />
-
-              {/* Music */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Volume2 className="w-5 h-5" />
-                  <div>
-                    <p className="font-medium">Arka Plan Müziği</p>
-                    <p className="text-sm text-muted-foreground">Oyun müziğini açın/kapatın</p>
-                  </div>
+            {/* Sounds */}
+            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <Volume className="w-5 h-5 text-blue-400" />
                 </div>
-                <Switch
-                  checked={musicEnabled}
-                  onCheckedChange={(checked) => {
-                    setMusicEnabled(checked);
-                    if (checked) playSound("buttonClick");
-                  }}
-                />
+                <div>
+                  <p className="font-medium text-white">Ses Efektleri</p>
+                  <p className="text-xs text-slate-400">Oyun seslerini aç/kapat</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <Switch
+                checked={soundsEnabled}
+                onCheckedChange={(checked) => {
+                  setSoundsEnabled(checked);
+                  if (checked) playSound("buttonClick");
+                }}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
 
-          {/* Support & Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Info className="w-5 h-5 mr-2" />
-                Destek & Bilgi
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="ghost" className="w-full justify-start" onClick={openHowToPlay}>
-                <PlayCircle className="w-4 h-4 mr-2" />
-                Nasıl Oynanır
-              </Button>
-
-              <Button variant="ghost" className="w-full justify-start" onClick={openSupport}>
-                <HelpCircle className="w-4 h-4 mr-2" />
-                Yardım & Destek
-              </Button>
-
-              <Button variant="ghost" className="w-full justify-start" onClick={openPrivacyPolicy}>
-                <Shield className="w-4 h-4 mr-2" />
-                Gizlilik Politikası
-              </Button>
-
-              <Button variant="ghost" className="w-full justify-start" onClick={openAbout}>
-                <Info className="w-4 h-4 mr-2" />
-                Hakkımızda
-              </Button>
-
-              <Button variant="ghost" className="w-full justify-start" onClick={openContact}>
-                <Mail className="w-4 h-4 mr-2" />
-                İletişim
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Admin Panel - Only show for admin emails */}
-          {user?.email === "info@kelimele.site" && (
-            <Card className="border-destructive/50 bg-destructive/5">
-              <CardHeader>
-                <CardTitle className="flex items-center text-destructive">
-                  <ShieldCheck className="w-5 h-5 mr-2" />
-                  Admin Panel
-                </CardTitle>
-                <CardDescription>Sistem yönetimi araçları</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={async () => {
-                    const result = await triggerGlobalStorageClear();
-                    if (result.success) {
-                      toast({
-                        title: "Başarılı",
-                        description: "Tüm kullanıcıların localStorage'ı temizlenecek.",
-                        variant: "default",
-                      });
-                    } else {
-                      toast({
-                        title: "Hata",
-                        description: "İşlem başarısız oldu.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Tüm Kullanıcı Ayarlarını Sıfırla
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Account Management - KVKK Compliance */}
-          <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle className="flex items-center text-destructive">
-                <AlertTriangle className="w-5 h-5 mr-2" />
-                Hesap Silme
-              </CardTitle>
-              <CardDescription>Buradan hesabınızı kalıcı olarak silebilirsiniz</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="destructive" className="w-full justify-start" onClick={() => setDeleteConfirmOpen(true)}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Hesabımı Sil
-              </Button>
-
-              <p className="text-xs text-muted-foreground">
-                ⚠️ Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* App Version */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center text-sm text-muted-foreground">
-                <p>Kelimele v1.0.0</p>
-                <p>© 2025 Ergan Yazılım</p>
+            {/* Music */}
+            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Music className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white">Arka Plan Müziği</p>
+                  <p className="text-xs text-slate-400">Oyun müziğini aç/kapat</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <Switch
+                checked={musicEnabled}
+                onCheckedChange={(checked) => {
+                  setMusicEnabled(checked);
+                  if (checked) playSound("buttonClick");
+                }}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Support & Info */}
+        <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+              <Info className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Destek & Bilgi</h2>
+          </div>
+
+          <div className="space-y-2">
+            <button
+              onClick={openHowToPlay}
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <PlayCircle className="w-5 h-5 text-indigo-400" />
+              <span className="text-white font-medium">Nasıl Oynanır</span>
+            </button>
+
+            <button
+              onClick={openSupport}
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <HelpCircle className="w-5 h-5 text-blue-400" />
+              <span className="text-white font-medium">Yardım & Destek</span>
+            </button>
+
+            <button
+              onClick={openPrivacyPolicy}
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <Shield className="w-5 h-5 text-green-400" />
+              <span className="text-white font-medium">Gizlilik Politikası</span>
+            </button>
+
+            <button
+              onClick={openAbout}
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <Info className="w-5 h-5 text-purple-400" />
+              <span className="text-white font-medium">Hakkımızda</span>
+            </button>
+
+            <button
+              onClick={openContact}
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <Mail className="w-5 h-5 text-cyan-400" />
+              <span className="text-white font-medium">İletişim</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Admin Panel */}
+        {user?.email === "info@kelimele.site" && (
+          <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-md border border-red-400/30 rounded-2xl p-4 shadow-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-lg font-bold text-red-400">Admin Panel</h2>
+            </div>
+
+            <Button
+              onClick={async () => {
+                const result = await triggerGlobalStorageClear();
+                if (result.success) {
+                  toast({
+                    title: "Başarılı",
+                    description: "Tüm kullanıcıların localStorage'ı temizlenecek.",
+                  });
+                }
+              }}
+              className="w-full bg-red-500 hover:bg-red-600 text-white"
+            >
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              Tüm Kullanıcı Ayarlarını Sıfırla
+            </Button>
+          </div>
+        )}
+
+        {/* Delete Account */}
+        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 backdrop-blur-md border border-red-400/20 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-red-500/30 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+            </div>
+            <h2 className="text-lg font-bold text-red-400">Hesap Silme</h2>
+          </div>
+
+          <p className="text-xs text-slate-400 mb-3">
+            Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinecektir.
+          </p>
+
+          <Button
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-400/30"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hesabımı Sil
+          </Button>
+        </div>
+
+        {/* Version */}
+        <div className="bg-[#16213e]/40 backdrop-blur-md border border-white/5 rounded-2xl p-4 text-center">
+          <p className="text-sm text-slate-400">Kelimele v1.0.0</p>
+          <p className="text-xs text-slate-500 mt-1">© 2025 Ergan Yazılım</p>
+        </div>
+
+        {/* Bottom Spacer */}
+        <div className="h-20" />
       </div>
 
       {/* Modal Dialog */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-[#16213e] border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">{modalContent.title}</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-white">{modalContent.title}</DialogTitle>
           </DialogHeader>
-          <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: modalContent.content }} />
+          <div
+            className="prose prose-sm prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: modalContent.content }}
+          />
         </DialogContent>
       </Dialog>
 
-      {/* Delete Account Confirmation Dialog */}
+      {/* Delete Confirmation Dialogs */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
           <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center">
+            <DialogTitle className="text-red-400 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
               Hesabı Silmeyi Onaylayın
             </DialogTitle>
-            <DialogDescription>Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir:</DialogDescription>
+            <DialogDescription className="text-slate-400">
+              Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+            <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
               <li>Profil bilgileriniz</li>
               <li>Oyun geçmişiniz ve istatistikleriniz</li>
               <li>Rozetleriniz ve başarılarınız</li>
               <li>Satın alımlarınız ve envanter</li>
-              <li>Tüm oyun kayıtlarınız</li>
             </ul>
 
             <div className="flex gap-2">
               <Button
-                variant="outline"
-                className="flex-1"
                 onClick={() => setDeleteConfirmOpen(false)}
+                className="flex-1 bg-slate-700 hover:bg-slate-600"
                 disabled={isDeleting}
               >
                 İptal
               </Button>
               <Button
-                variant="destructive"
-                className="flex-1"
-                disabled={isDeleting}
                 onClick={() => {
                   setDeleteConfirmOpen(false);
                   setDeleteFinalConfirmOpen(true);
                 }}
+                className="flex-1 bg-red-500 hover:bg-red-600"
+                disabled={isDeleting}
               >
                 Evet, Hesabımı Sil
               </Button>
@@ -653,54 +598,40 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Final Delete Account Confirmation Dialog */}
       <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
           <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center">
+            <DialogTitle className="text-red-400 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
               Son Onay
             </DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              Emin olmak için üzülerek tekrar sormak istiyoruz. Bu son onay aşamasıdır ve geri alınması imkansızdır.
+            <DialogDescription className="text-slate-400 text-base pt-2">
+              Bu son onay aşamasıdır ve geri alınması imkansızdır.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 pt-4">
             <Button
-              variant="outline"
-              className="flex-1"
               onClick={() => setDeleteFinalConfirmOpen(false)}
+              className="flex-1 bg-slate-700 hover:bg-slate-600"
               disabled={isDeleting}
             >
               Kalıyorum
             </Button>
             <Button
-              variant="destructive"
-              className="flex-1"
-              disabled={isDeleting}
               onClick={async () => {
                 setIsDeleting(true);
                 try {
-                  // Edge Function ile hesap silme
                   const { data, error } = await supabase.functions.invoke("delete-user-account");
 
                   if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
 
-                  if (data?.error) {
-                    throw new Error(data.error);
-                  }
-
-                  // 🔥 Modal'ları HEMEN kapat
                   setDeleteFinalConfirmOpen(false);
                   setDeleteConfirmOpen(false);
 
-                  // 🔥 Native storage'ı temizle
                   await nativeStorage.clear();
-
-                  // 🔥 Kullanıcıyı çıkış yap
                   await supabase.auth.signOut();
 
-                  // 🔥 HEMEN auth sayfasına yönlendir - window.location ile zorla
                   window.location.href = "/auth";
                 } catch (error) {
                   console.error("Delete error:", error);
@@ -713,6 +644,8 @@ const SettingsPage = () => {
                   setDeleteFinalConfirmOpen(false);
                 }
               }}
+              className="flex-1 bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
               {isDeleting ? "Siliniyor..." : "Hesabımı Sil"}
             </Button>
