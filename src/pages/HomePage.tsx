@@ -526,7 +526,7 @@ const HomePage = () => {
     {(profile?.total_score || 0).toLocaleString()}
   </span>
 </div>
-              </div>
+
             );
           })()}
         </div>
