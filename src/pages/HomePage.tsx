@@ -61,13 +61,14 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 // --- BİLEŞENLER ---
 
-const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="flex-1 bg-white border border-slate-600 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-sm">
-    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-500`} />
-    <span className="text-lg font-bold text-slate-800 tracking-tight">{value}</span>
-    <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide opacity-80">{label}</span>
-  </div>
-);
+const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => {
+  // Renk eşleştirmeleri için küçük bir obje (Tailwind'in çalışma mantığı için en güvenlisi)
+  const colors: any = {
+    rose: "text-rose-500 bg-rose-500/10",
+    orange: "text-orange-500 bg-orange-500/10",
+    amber: "text-amber-500 bg-amber-500/10",
+    indigo: "text-indigo-500 bg-indigo-500/10",
+  };
 
 const GameModeCard = ({ mode, onClick }: any) => (
   <div
