@@ -416,48 +416,45 @@ const HomePage = () => {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col text-slate-800 font-sans selection:bg-amber-200 overflow-hidden transition-colors duration-500"
-      style={{ background: levelBgColors.bg }}
+      className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
+      style={{ background: levelBgColors.bg || "#1a1a2e" }}
     >
       {/* Light Effects */}
       <div
-        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500`}
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500 opacity-30`}
       />
 
       {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
-        flex-none ve z-30 kullanarak bu alanı yukarı sabitledik.
-        --------------------------------------------------------
-      */}
+      -------------------------------------------------------- */}
       <div
-        className="flex-none z-30 pb-2 relative shadow-none border-b-0 transition-colors duration-500"
-        style={{ backgroundColor: levelBgColors.headerBg }}
+        className="flex-none z-30 pb-4 relative shadow-2xl transition-colors duration-500 border-b border-white/5"
+        style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
       >
         {/* HEADER (Profil & Mürekkep) */}
         <div className="px-5 pt-6 pb-2 flex items-center justify-between">
           {/* Profil */}
-          <div className="flex items-center gap-3" onClick={() => setShowAvatarView(true)}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
             <div className="relative">
               <div
-                className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                className={`w-12 h-12 rounded-full p-[2px] shadow-lg ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
               >
-                {/* PROFIL FOTOSU: Border füme (slate-600) */}
-                <Avatar className="w-full h-full border-2 border-slate-600">
+                <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-slate-200 text-slate-600 text-xs">U</AvatarFallback>
+                  <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
                 </Avatar>
               </div>
               {isPremium && (
-                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#FFFDF5]">
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
                   <Crown className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold leading-tight drop-shadow-sm text-white">
+              <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
                 {profile?.username || "Misafir"}
               </h2>
-              <p className="text-[10px] text-slate-500 font-medium">{greeting}</p>
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
             </div>
           </div>
 
@@ -467,13 +464,13 @@ const HomePage = () => {
               playSound("buttonClick");
               navigate("/market");
             }}
-            className="flex items-center gap-2 bg-white border border-slate-600 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-transform shadow-md cursor-pointer"
+            className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all shadow-xl cursor-pointer"
           >
-            <div className="w-10 h-10 bg-indigo-50/50 rounded-full flex items-center justify-center">
-              <img src="/murekkepikon.png" alt="ink" className="w-8 h-8 object-contain drop-shadow-sm" />
+            <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+              <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
             </div>
-            <span className="text-base font-bold text-slate-800">{profile?.ink_count || 0}</span>
-            <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
+            <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
+            <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
               <span className="text-xs leading-none text-white font-bold">+</span>
             </div>
           </div>
@@ -484,51 +481,48 @@ const HomePage = () => {
           {(() => {
             const level = levelData.level;
             let starGradient = "from-amber-400 to-orange-500";
-            let shadowColor = "shadow-orange-200";
+            let shadowColor = "shadow-orange-500/20";
 
             if (level >= 70) {
-              starGradient = "from-slate-700 to-black";
-              shadowColor = "shadow-slate-300";
+              starGradient = "from-slate-400 to-slate-600";
+              shadowColor = "shadow-slate-500/20";
             } else if (level >= 40) {
               starGradient = "from-blue-400 to-blue-600";
-              shadowColor = "shadow-blue-200";
+              shadowColor = "shadow-blue-500/20";
             } else if (level >= 25) {
               starGradient = "from-emerald-400 to-green-600";
-              shadowColor = "shadow-green-200";
+              shadowColor = "shadow-green-500/20";
             } else if (level >= 10) {
               starGradient = "from-purple-500 to-indigo-600";
-              shadowColor = "shadow-purple-200";
+              shadowColor = "shadow-purple-500/20";
             }
 
             return (
-              <div className="bg-white border border-slate-600 rounded-xl p-3 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
+              <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+                <div className="flex items-center gap-4">
                   <div
-                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-md ${shadowColor}`}
+                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-lg ${shadowColor}`}
                   >
-                    <Star className="w-5 h-5 text-white fill-white" />
+                    <Star className="w-6 h-6 text-white fill-white" />
                   </div>
-
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-800">Seviye {level}</span>
-                      <span className="text-[10px] text-slate-400">
-                        ({levelData.experience} / {levelData.nextLevelExp} XP)
+                      <span className="text-sm font-bold text-white">Seviye {level}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {levelData.experience}/{levelData.nextLevelExp} XP
                       </span>
                     </div>
-
-                    <div className="h-2.5 w-32 bg-slate-100 rounded-full mt-1 overflow-hidden border border-black">
+                    <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
                       <div
-                        className={`h-full bg-gradient-to-r ${starGradient}`}
+                        className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
                   </div>
                 </div>
-
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider">Toplam Puan</span>
-                  <span className="text-sm font-mono font-bold text-amber-600">
+                  <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                  <span className="text-sm font-mono font-bold text-amber-500">
                     {(profile?.total_score || 0).toLocaleString()}
                   </span>
                 </div>
@@ -539,7 +533,7 @@ const HomePage = () => {
 
         {/* --- JOKERLER --- */}
         <div className="px-5 mt-3">
-          <div className="bg-white rounded-xl p-3 border border-slate-600 flex justify-around shadow-sm">
+          <div className="bg-[#16213e]/60 backdrop-blur-sm rounded-2xl p-3 border border-white/5 flex justify-around shadow-inner">
             {[
               { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
               { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
@@ -547,170 +541,83 @@ const HomePage = () => {
             ].map((j, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center gap-1 flex-1 active:scale-95 transition-transform cursor-pointer"
+                className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
                 onClick={() => navigate("/market")}
               >
-                <img src={j.img} className="w-10 h-10 object-contain drop-shadow-sm" alt={j.name} />
-                <span className="text-xs font-bold text-slate-500">x{j.count}</span>
+                <img
+                  src={j.img}
+                  className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                  alt={j.name}
+                />
+                <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* INFO PANELS (SÜRE & HAK) */}
-        <div className="px-5 mt-2 space-y-2">
+        <div className="px-5 mt-3 space-y-2">
           {isPremium && premiumTimeLeft && (
             <div
-              className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+              className={`flex items-center justify-between rounded-2xl p-3 px-4 shadow-xl border ${
                 vipType === "yearly"
-                  ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
-                  : vipType === "monthly"
-                    ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
-                    : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
+                  ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50"
+                  : "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/50"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div
-                  className={`p-1.5 rounded-full ${
-                    vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
-                  }`}
-                >
-                  <Crown
-                    className={`w-5 h-5 ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
-                    }`}
-                  />
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-white/10 backdrop-blur-md">
+                  <Crown className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="flex flex-col">
-                  <span
-                    className={`text-sm font-bold ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
-                    }`}
-                  >
-                    {vipType === "yearly"
-                      ? "⭐ VIP Yazar (Yıllık)"
-                      : vipType === "monthly"
-                        ? "💎 VIP Yazar (Aylık)"
-                        : "VIP Yazar"}
-                  </span>
-                  <span
-                    className={`text-[10px] ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
-                    }`}
-                  >
-                    Sınırsız hak • Günlük joker • 2x XP
-                  </span>
+                  <span className="text-xs font-bold text-white">VIP Yazar Aktif</span>
+                  <span className="text-[9px] text-slate-300 uppercase">Sınırsız • 2x XP</span>
                 </div>
               </div>
-              <div
-                className={`px-2 py-1 rounded-lg ${
-                  vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
-                }`}
-              >
-                <span
-                  className={`text-xs font-mono font-bold ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
-                  }`}
-                >
-                  {premiumTimeLeft}
-                </span>
+              <div className="px-2 py-1 rounded-lg bg-black/20 border border-white/10">
+                <span className="text-[10px] font-mono font-bold text-amber-400">{premiumTimeLeft}</span>
               </div>
             </div>
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
-              <span className="text-xs text-slate-500 font-medium">
-                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
+            <div className="flex items-center justify-between bg-[#16213e] border border-white/5 rounded-xl py-2 px-4 shadow-sm">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalar"}
               </span>
-
-              {isUnlimitedLivesActive(profile) ? (
-                <div className="flex items-center gap-2">
-                  {unlimitedTimeLeft ? (
-                    <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                      <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
-                      <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
-                        {unlimitedTimeLeft}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
-                  )}
-                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
-                    Sınırsız
-                  </Badge>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`w-5 h-1.5 rounded-full skew-x-[-15deg] transition-all ${i < totalCredits ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-700"}`}
+                    />
+                  ))}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {totalCredits > 5 ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1 opacity-50">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
-                        ))}
-                      </div>
-                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                        + {totalCredits - 5} Sayfa
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <div
-                          key={i}
-                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {timeUntilNextCredit && totalCredits < 5 && (
-                    <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
-                      {timeUntilNextCredit}
-                    </span>
-                  )}
-                </div>
-              )}
+                {timeUntilNextCredit && totalCredits < 5 && (
+                  <span className="text-[9px] font-mono text-slate-500 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
+                    {timeUntilNextCredit}
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
-
-        {/* HEDİYE BANNER */}
-        {isPremium && isGiftPremium(profile) && (
-          <div className="px-5 mt-4">
-            <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
-                <Gift className="w-5 h-5 text-white animate-bounce" />
-              </div>
-              <div className="flex-1 z-10">
-                <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
-                <p className="text-[10px] text-white/90">
-                  Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
-        --------------------------------------------------------
-      */}
+      -------------------------------------------------------- */}
       <div
-        className={`flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative z-10 pb-24 transition-all duration-300 ${isMenuOpen ? "blur-sm scale-[0.98]" : ""}`}
+        className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 transition-all duration-300 ${isMenuOpen ? "blur-md scale-95 opacity-50" : ""}`}
       >
         {/* OYUN MODLARI */}
         <div className="px-5 mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4 text-indigo-500" />
-              Oyun Modları
-            </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {gameModesConfig.map((mode) => (
               <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
             ))}
@@ -718,12 +625,12 @@ const HomePage = () => {
         </div>
 
         {/* MINI OYUNLAR */}
-        <div className="mt-6 pl-5">
-          <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#ff6b6b]" />
-            Mini Oyunlar
-          </h3>
-          <div className="flex gap-3 overflow-x-auto pb-4 pr-5 scrollbar-hide">
+        <div className="mt-8 pl-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-rose-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Mini Eğlence</h3>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-6 pr-5 scrollbar-hide">
             {miniGamesConfig.map((game) => {
               const isWheel = game.id === "wheel";
               return (
@@ -733,31 +640,23 @@ const HomePage = () => {
                     navigate(game.route);
                     playSound("buttonClick");
                   }}
-                  className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 cursor-pointer group ${game.disabled ? "opacity-50 grayscale" : ""}`}
-                  style={{ touchAction: "manipulation" }}
+                  className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 group ${game.disabled ? "opacity-30 grayscale" : ""}`}
                 >
                   <div
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-lg relative overflow-hidden transition-all duration-200 group-active:scale-90 
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-2xl relative overflow-hidden transition-all duration-300 group-active:scale-90 border
                       ${
                         isWheel
-                          ? "bg-gradient-to-br from-[#ff6b6b] to-rose-700 border-2 border-white/30" // Çark için özel vurgu
-                          : "bg-[#16213e] border border-slate-700 hover:border-[#ff6b6b]/50"
+                          ? "bg-gradient-to-br from-rose-500 to-rose-700 border-rose-400/50 shadow-rose-500/20"
+                          : "bg-[#16213e] border-white/5 hover:border-white/20"
                       }`}
                   >
-                    {/* Hover Işığı (Statik) */}
-                    <div
-                      className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity
-                        ${isWheel ? "bg-white/10" : "bg-[#ff6b6b]/5"}`}
-                    />
+                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     {game.icon}
                   </div>
                   <span
-                    className={`text-[10px] font-bold text-center leading-tight ${isWheel ? "text-[#ff6b6b]" : "text-slate-400"}`}
+                    className={`text-[10px] font-bold text-center leading-tight ${isWheel ? "text-rose-400" : "text-slate-500"}`}
                   >
                     {game.title}
-                    {game.disabled && game.cooldown && (
-                      <span className="block text-[9px] text-rose-500 mt-0.5">{game.cooldown}</span>
-                    )}
                   </span>
                 </div>
               );
@@ -766,9 +665,8 @@ const HomePage = () => {
         </div>
 
         {/* İSTATİSTİKLER */}
-        <div className="px-5 mt-2 pb-6">
-          <div className="flex gap-3">
-            {/* StatWidget'ların içindeki bg-white'ı bg-[#16213e] ve text-slate'leri text-white yapmayı unutmayın */}
+        <div className="px-5 mt-2">
+          <div className="grid grid-cols-3 gap-3">
             <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="rose" />
             <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
             <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
