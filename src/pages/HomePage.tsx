@@ -426,7 +426,6 @@ const HomePage = () => {
     return { bg: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", gradient: "from-orange-200/50", headerBg: "#FEEDA6" };
     */
   };
-  };
 
   const levelBgColors = getLevelBackgroundColor();
 
