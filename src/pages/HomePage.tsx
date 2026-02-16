@@ -445,7 +445,7 @@ const HomePage = () => {
         --------------------------------------------------------
       */}
       <div
-        className="flex-none z-30 pb-2 relative shadow-sm border-b border-slate-200 transition-colors duration-500"
+        className="flex-none z-30 pb-2 relative shadow-none border-b-0 transition-colors duration-500"
         style={{ backgroundColor: levelBgColors.headerBg }}
       >
         {/* HEADER (Profil & Mürekkep) */}
