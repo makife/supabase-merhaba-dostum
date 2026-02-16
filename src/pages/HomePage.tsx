@@ -617,7 +617,7 @@ const HomePage = () => {
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-white border border-slate-600 rounded-xl p-2 px-3 shadow-sm">
+            <div className="flex items-center justify-between bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-xl p-2 px-3 shadow-xl">
               <span className="text-xs text-slate-500 font-medium">
                 {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
               </span>
