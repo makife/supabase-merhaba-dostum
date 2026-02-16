@@ -2,17 +2,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-// useJokerInventory kaldırıldı - viewedUserId'ye göre joker çekiliyor
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -37,6 +34,10 @@ import {
   MessageCircle,
   UserPlus,
   UserCheck,
+  Flame,
+  Star,
+  Sparkles,
+  Gift,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -71,7 +72,6 @@ const ProfilePage = () => {
     nextLevelExp: 1000,
     averageScore: 0,
     premiumUntil: null as string | null,
-    // Yeni turnuva istatistikleri
     tournamentsWon: 0,
     tournamentsLost: 0,
     tournamentsPlayed: 0,
@@ -91,7 +91,6 @@ const ProfilePage = () => {
     }>
   >([]);
 
-  // Badge ilerleme için kullanıcı istatistikleri
   const [userStats, setUserStats] = useState<{
     total_games?: number;
     total_score?: number;
@@ -109,7 +108,6 @@ const ProfilePage = () => {
     fastest_word_time?: number;
   }>({});
 
-  // Calculate level from total score (same as LevelProgress component)
   const calculateLevel = (totalScore: number) => {
     const baseExp = 1000;
     const expIncreasePerLevel = 100;
@@ -134,7 +132,6 @@ const ProfilePage = () => {
     if (!viewedUserId) return;
 
     try {
-      // Get all badges with user's earned status
       const { data: allBadges, error: badgesError } = await supabase.from("badges").select("*").order("name");
 
       if (badgesError) {
@@ -142,7 +139,6 @@ const ProfilePage = () => {
         return;
       }
 
-      // Get viewed user's earned badges
       const { data: userBadges, error: userBadgesError } = await supabase
         .from("user_badges")
         .select("badge_id, earned_at")
@@ -153,7 +149,6 @@ const ProfilePage = () => {
         return;
       }
 
-      // Combine badges with earned status
       const earnedBadgeIds = new Set(userBadges?.map((ub) => ub.badge_id) || []);
       const badgesWithStatus =
         allBadges?.map((badge) => ({
@@ -177,7 +172,6 @@ const ProfilePage = () => {
     if (!viewedUserId) return { won: 0, lost: 0, played: 0, winRate: 0 };
 
     try {
-      // Sadece final maçlarını getir (şampiyonluk)
       const { data: finalMatches, error } = await supabase
         .from("tournament_matches")
         .select("winner_id, player1_id, player2_id, status, tournament_id, round")
@@ -193,7 +187,6 @@ const ProfilePage = () => {
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
-      // Her turnuvanın max round'unu bul
       const tournamentMaxRounds: Record<string, number> = {};
       finalMatches.forEach((match) => {
         if (match.tournament_id) {
@@ -204,12 +197,10 @@ const ProfilePage = () => {
         }
       });
 
-      // Sadece final maçlarını say (şampiyonluklar)
       let won = 0;
       let lost = 0;
 
       finalMatches.forEach((match) => {
-        // Sadece final round'larını say
         if (match.tournament_id && match.round === tournamentMaxRounds[match.tournament_id]) {
           if (match.winner_id === viewedUserId) {
             won++;
@@ -229,29 +220,21 @@ const ProfilePage = () => {
     }
   };
 
-  // 🔥 Avatar Key - image reload zorlamak için
   const [avatarKey, setAvatarKey] = useState(0);
 
-  // 🔥 KRİTİK FIX: State olarak tutulacak - ref yerine state kullan!
-  // Ref kullandığımızda useMemo değişikliği algılamıyordu ve eski değer kalıyordu
   const [localAvatarOverride, setLocalAvatarOverride] = useState<{ url: string; timestamp: number } | null>(null);
 
-  // 🔥 PENDING AVATAR RECOVERY HOOK - Native platformda kamera/galeri recovery için
   const handleAvatarUploaded = useCallback((url: string) => {
     console.log("[ProfilePage] ✅ Avatar yüklendi, UI güncelleniyor:", url);
 
-    // 🔥 KRİTİK: URL'e timestamp ekle (cache busting)
     const cacheBustedUrl = url.includes("?") ? `${url.split("?")[0]}?t=${Date.now()}` : `${url}?t=${Date.now()}`;
 
     console.log("[ProfilePage] 🔗 Cache-busted URL:", cacheBustedUrl);
 
-    // 🔥 KRİTİK FIX: State ile override set et - artık useMemo değişikliği algılayacak!
     setLocalAvatarOverride({ url: cacheBustedUrl, timestamp: Date.now() });
 
-    // Force image reload
     setAvatarKey((prev) => prev + 1);
 
-    // 🔥 KRİTİK: viewedProfile'ı güncelle (Context DEĞİL!)
     setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
     setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
 
@@ -261,30 +244,24 @@ const ProfilePage = () => {
   const { captureFromCameraWithRecovery, captureFromGalleryWithRecovery } =
     usePendingAvatarRecovery(handleAvatarUploaded);
 
-  // 🔥 Effective Avatar URL - hesaplanmış değer
   const effectiveAvatarUrl = useMemo(() => {
-    // Local override varsa ve 10 saniyeden yeniyse onu kullan
     if (localAvatarOverride) {
       const { url, timestamp } = localAvatarOverride;
       if (Date.now() - timestamp < 10000) {
         console.log("[ProfilePage] 🎯 Local override kullanılıyor:", url.substring(0, 60));
         return url;
       }
-      // Expire olmuş - state güncellemesi bir sonraki render'da yapılacak
     }
 
-    // Profile'dan URL al
     const profileUrl = isOwnProfile ? profile?.avatar_url : viewedProfile?.avatar_url;
     console.log("[ProfilePage] 📸 Profile URL kullanılıyor:", profileUrl?.substring(0, 60) || "(boş)");
     return profileUrl || "";
   }, [avatarKey, localAvatarOverride, profile?.avatar_url, viewedProfile?.avatar_url, isOwnProfile]);
 
-  // 🔥 BACKUP: Custom event listener - callback çalışmazsa bu devreye girer
   useEffect(() => {
     const handleAvatarUploadedEvent = (event: CustomEvent<{ url: string }>) => {
       console.log("[ProfilePage] 📡 avatar-uploaded event alındı:", event.detail.url);
 
-      // 🔥 URL'e timestamp ekle (cache busting)
       const originalUrl = event.detail.url;
       const cacheBustedUrl = originalUrl.includes("?")
         ? `${originalUrl.split("?")[0]}?t=${Date.now()}`
@@ -292,13 +269,10 @@ const ProfilePage = () => {
 
       console.log("[ProfilePage] 📡 Cache-busted URL (event):", cacheBustedUrl);
 
-      // 🔥 KRİTİK FIX: State ile override set et
       setLocalAvatarOverride({ url: cacheBustedUrl, timestamp: Date.now() });
 
-      // Force re-render
       setAvatarKey((prev) => prev + 1);
 
-      // 🔥 viewedProfile'ı güncelle (Context DEĞİL!)
       setViewedProfile((prev) => ({ ...prev, avatar_url: cacheBustedUrl }));
       setProfileData((prev: any) => ({ ...prev, avatar_url: cacheBustedUrl }));
     };
@@ -310,12 +284,10 @@ const ProfilePage = () => {
     };
   }, []);
 
-  // 🔥 KRİTİK: UserContext profile değiştiğinde viewedProfile'ı senkronize et (kendi profil için)
   useEffect(() => {
     if (isOwnProfile && profile?.avatar_url) {
       console.log("[ProfilePage] 🔄 UserContext profile değişti, viewedProfile güncelleniyor:", profile.avatar_url);
       setViewedProfile((prev) => ({ ...prev, avatar_url: profile.avatar_url }));
-      // avatarKey'i artırarak image'ı force refresh et
       setAvatarKey((prev) => prev + 1);
     }
   }, [isOwnProfile, profile?.avatar_url]);
@@ -329,7 +301,6 @@ const ProfilePage = () => {
         fetchTournamentStats(),
       ]);
 
-      // Fetch online status
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const { data: presenceData } = await supabase
         .from("user_presence")
@@ -391,7 +362,6 @@ const ProfilePage = () => {
     fetchProfile();
   }, [viewedUserId]);
 
-  // 🔥 Bakılan kullanıcının joker envanterini çek
   useEffect(() => {
     const fetchJokers = async () => {
       if (!viewedUserId) return;
@@ -435,7 +405,6 @@ const ProfilePage = () => {
     fetchJokers();
   }, [viewedUserId]);
 
-  // Listen for real-time updates only for own profile
   useEffect(() => {
     if (!user || !isOwnProfile) return;
 
@@ -481,7 +450,6 @@ const ProfilePage = () => {
             };
           });
 
-          // Badge ilerleme için userStats'ı da güncelle
           setUserStats((prev) => ({
             ...prev,
             total_games: newData.total_games ?? prev.total_games,
@@ -500,10 +468,8 @@ const ProfilePage = () => {
             fastest_word_time: newData.fastest_word_time ?? prev.fastest_word_time,
           }));
 
-          // Profilde bir güncelleme olduğunda rozetleri de tazele ve kontrol et
           fetchBadges();
 
-          // Rozet kontrolü yap
           if (user) {
             checkBadges(user.id);
           }
@@ -535,7 +501,6 @@ const ProfilePage = () => {
           fetchBadges();
         },
       )
-      // Turnuva maçları değişikliklerini dinle
       .on(
         "postgres_changes",
         {
@@ -556,7 +521,6 @@ const ProfilePage = () => {
               tournamentWinRate: tournamentStats.winRate,
             }));
 
-            // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
@@ -583,7 +547,6 @@ const ProfilePage = () => {
               tournamentWinRate: tournamentStats.winRate,
             }));
 
-            // Rozet kontrolü yap
             if (user) {
               checkBadges(user.id);
             }
@@ -592,9 +555,7 @@ const ProfilePage = () => {
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
       console.log("⚠️ [ProfilePage] Cleanup ATLANYOR (bağlantı koruması)");
     };
   }, [user, isOwnProfile]);
@@ -603,7 +564,6 @@ const ProfilePage = () => {
     fetchBadges();
   }, [viewedUserId]);
 
-  // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil verilerini otomatik tazele
   const refreshProfileData = useCallback(async () => {
     if (!viewedUserId) return;
 
@@ -645,7 +605,6 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
         }));
 
-        // Badge ilerleme için userStats'ı da güncelle
         setUserStats({
           total_games: data.total_games || 0,
           total_score: data.total_score || 0,
@@ -664,7 +623,6 @@ const ProfilePage = () => {
         });
       }
 
-      // Rozetleri de yeniden yükle
       await fetchBadges();
       console.log("✅ [ProfilePage] Resync tamamlandı - rozetler dahil");
     } catch (error) {
@@ -684,7 +642,6 @@ const ProfilePage = () => {
   const handleSaveProfile = async () => {
     if (!user || !isOwnProfile) return;
 
-    // Rumuz uzunluk kontrolü
     if (editedUsername.length > 15) {
       toast.error("Rumuz en fazla 15 karakter olabilir");
       return;
@@ -709,7 +666,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Helper function to get subscription info
   const getSubscriptionInfo = () => {
     if (!profileData.premiumUntil) return null;
 
@@ -719,8 +675,6 @@ const ProfilePage = () => {
     if (premiumDate <= now) return null;
 
     const diffTime = premiumDate.getTime() - now.getTime();
-    // 🔧 FIX: Math.floor kullanarak HomePage ile tutarlı hesaplama
-    // Kalan tam günleri göster (1.5 gün = 1 gün kaldı)
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     const isYearly = diffDays > 40;
@@ -744,7 +698,6 @@ const ProfilePage = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
 
-  // checkBadges fonksiyonunu ekle
   const checkBadges = async (userId: string) => {
     try {
       console.log("Rozet kontrolu yapiliyor:", userId);
@@ -772,14 +725,12 @@ const ProfilePage = () => {
   const handleCameraSelect = async () => {
     setShowAvatarOptions(false);
 
-    // 🔥 Native platformda yeni recovery sistemini kullan
     if (Capacitor.isNativePlatform()) {
       console.log("[ProfilePage] 📷 Native kamera recovery modu aktif");
       await captureFromCameraWithRecovery();
       return;
     }
 
-    // Web platformu için eski mantık
     const result = await captureFromCamera();
     if (result) {
       const publicUrl = await uploadAvatar(result.file);
@@ -793,14 +744,12 @@ const ProfilePage = () => {
   const handleGallerySelect = async () => {
     setShowAvatarOptions(false);
 
-    // 🔥 Native platformda yeni recovery sistemini kullan
     if (Capacitor.isNativePlatform()) {
       console.log("[ProfilePage] 🖼️ Native galeri recovery modu aktif");
       await captureFromGalleryWithRecovery();
       return;
     }
 
-    // Web platformu için eski mantık
     const result = await captureFromGallery();
     if (result) {
       const publicUrl = await uploadAvatar(result.file);
@@ -864,7 +813,6 @@ const ProfilePage = () => {
 
       await fetchBadges();
 
-      // Rozet kontrolü yap (sadece kendi profilinde)
       if (isOwnProfile && user) {
         await checkBadges(user.id);
       }
@@ -875,443 +823,422 @@ const ProfilePage = () => {
     }
   };
 
+  const progressPercent = (profileData.experience / profileData.nextLevelExp) * 100;
+  const earnedBadges = badges.filter((b) => b.earned);
+  const isPremium = profileData.premiumUntil && new Date(profileData.premiumUntil) > new Date();
+
   return (
-    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col">
-      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
-        {/* Fixed Header */}
-        <div className="p-3 pt-6 bg-blue-50/95 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-10">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const fromPage = location.state?.from;
-                if (fromPage === "/chat") {
-                  navigate("/chat");
-                } else {
-                  navigate("/");
-                }
-              }}
-              className="text-blue-600 border-blue-500/30 hover:bg-blue-500/20 bg-blue-500/10"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Geri
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
+      {/* HEADER */}
+      <div className="sticky top-0 z-50 bg-[#16213e]/80 backdrop-blur-md border-b border-white/10">
+        <div className="px-5 py-4 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const fromPage = location.state?.from;
+              if (fromPage === "/chat") {
+                navigate("/chat");
+              } else {
+                navigate("/");
+              }
+            }}
+            className="text-white hover:bg-white/10 rounded-full"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-white">{isOwnProfile ? "Profil" : `${profileData.username}`}</h1>
+            {isUserOnline && !isOwnProfile && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-            <div className="relative inline-block">
-              {/* Stroke Background */}
-              <img
-                src="/stroke.png"
-                alt="Stroke Background"
-                className="absolute inset-0 w-full h-full object-contain opacity-50"
-              />
-              {/* Profile Title */}
-              <h1 className="text-3xl font-bold flex items-center text-blue-600 relative z-10 px-6 py-3">
-                <User className="w-6 h-6 mr-3 text-blue-500" />
-                {isOwnProfile ? "Profil" : `${profileData.username} Profili`}
-              </h1>
-            </div>
+      {/* SCROLL AREA */}
+      <div className="overflow-y-auto pb-20" style={{ height: "calc(100vh - 73px)" }}>
+        {/* PROFILE HEADER CARD */}
+        <div className="px-5 pt-6 pb-4">
+          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl" />
+            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
 
-            <div className="w-16 flex justify-end">
-              {isOwnProfile &&
-                (isEditing ? (
-                  <Button variant="outline" size="sm" onClick={handleSaveProfile}>
+            {/* Avatar Section */}
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse" />
+                <Avatar
+                  key={avatarKey}
+                  className="w-28 h-28 border-4 border-white/20 shadow-2xl relative z-10"
+                  onClick={isOwnProfile ? () => setShowAvatarOptions(true) : undefined}
+                >
+                  <AvatarImage
+                    src={effectiveAvatarUrl}
+                    alt={profileData.username}
+                    key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
+                    onLoadingStatusChange={(status) => {
+                      console.log(
+                        "[ProfilePage] 🖼️ Avatar loading status:",
+                        status,
+                        effectiveAvatarUrl?.substring(0, 60),
+                      );
+                    }}
+                  />
+                  <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-3xl font-bold">
+                    {profileData.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                {isOwnProfile && (
+                  <Button
+                    size="icon"
+                    onClick={() => setShowAvatarOptions(true)}
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-2 border-white/20 shadow-lg"
+                    disabled={uploading}
+                  >
+                    <Edit className="w-4 h-4 text-white" />
+                  </Button>
+                )}
+                {isPremium && (
+                  <div className="absolute -top-2 -right-2">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg animate-pulse">
+                      <Crown className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Username */}
+              {isEditing ? (
+                <div className="flex gap-2 items-center mb-2">
+                  <Input
+                    value={editedUsername}
+                    onChange={(e) => setEditedUsername(e.target.value)}
+                    className="h-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
+                    placeholder="Kullanıcı adı"
+                    maxLength={15}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSaveProfile}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                  >
                     Kaydet
                   </Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={handleEditToggle} className="p-2">
-                    <Edit className="w-5 h-5 text-red-500" />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedUsername(profileData.username);
+                    }}
+                    className="text-white/70 hover:text-white hover:bg-white/10"
+                  >
+                    İptal
                   </Button>
-                ))}
-            </div>
-          </div>
-
-          {/* Profile Header in Fixed Area */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="flex flex-col items-center">
-                  <div className={`relative ${isOwnProfile ? "cursor-pointer" : ""}`} onClick={handleAvatarClick}>
-                    <Avatar className="w-20 h-20 ring-2 ring-primary/20">
-                      <AvatarImage
-                        src={effectiveAvatarUrl}
-                        alt={profileData.username}
-                        key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
-                        onLoadingStatusChange={(status) => {
-                          console.log(
-                            "[ProfilePage] 🖼️ Avatar loading status:",
-                            status,
-                            effectiveAvatarUrl?.substring(0, 60),
-                          );
-                        }}
-                      />
-                      <AvatarFallback className="text-2xl">
-                        {profileData.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    {uploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-2xl font-bold text-white">{profileData.username}</h2>
                   {isOwnProfile && (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAvatarClick}
-                      className="mt-2 text-xs px-3 py-1 h-7 border-blue-300 hover:bg-blue-50"
-                      disabled={uploading}
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsEditing(true)}
+                      className="w-7 h-7 text-white/70 hover:text-white hover:bg-white/10 rounded-full"
                     >
-                      {uploading ? "Yükleniyor..." : "Yükle/Değiştir"}
+                      <Edit className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
-                <div className="flex-1">
-                  {isEditing && isOwnProfile ? (
-                    <Input
-                      value={editedUsername}
-                      onChange={(e) => setEditedUsername(e.target.value)}
-                      className="text-2xl font-bold mb-2"
-                      placeholder="Kullanıcı adınız"
-                      maxLength={15}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-bold">{profileData.username}</h2>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isUserOnline
-                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                            : "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isUserOnline ? "bg-green-400" : "bg-zinc-500"}`} />
-                        {isUserOnline ? "Çevrimiçi" : "Çevrimdışı"}
-                      </span>
-                    </div>
-                  )}
-                  {!isOwnProfile && <p className="text-sm text-muted-foreground">Oyuncu Profili</p>}
-                  {isOwnProfile && user?.email && (
-                    <p className="text-xs text-muted-foreground truncate max-w-xs">{user.email}</p>
-                  )}
-                  <div className="flex items-center space-x-2 mt-2 flex-wrap gap-1">
-                    <Badge variant="secondary">Seviye {profileData.level}</Badge>
-                    <Badge variant="outline">{profileData.winRate}% Kazanma</Badge>
-                    {profileData.tournamentWinRate > 0 && (
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                        <Trophy className="w-3 h-3 mr-1" />
-                        {profileData.tournamentWinRate}% Turnuva
-                      </Badge>
-                    )}
-                    {subscriptionInfo && (
-                      <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                        <Crown className="w-3 h-3 mr-1" />
-                        Premium
-                      </Badge>
-                    )}
-                  </div>
-                  {!isOwnProfile && user && (
-                    <FriendRequestSection userId={user.id} viewedUserId={viewedUserId!} navigate={navigate} />
-                  )}
-                </div>
+              )}
+
+              {/* Level Badge */}
+              <div className="flex items-center gap-2 mb-4">
+                <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 px-3 py-1 text-sm font-bold shadow-lg">
+                  <Zap className="w-4 h-4 mr-1" />
+                  Seviye {profileData.level}
+                </Badge>
+                {isPremium && (
+                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 px-3 py-1 text-sm font-bold shadow-lg">
+                    <Crown className="w-4 h-4 mr-1" />
+                    Premium
+                  </Badge>
+                )}
               </div>
 
               {/* Level Progress */}
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Seviye İlerlemesi</span>
+              <div className="w-full space-y-2">
+                <div className="flex justify-between text-xs text-white/70">
                   <span>
-                    {profileData.experience}/{profileData.nextLevelExp} EXP
+                    XP: {profileData.experience.toLocaleString()} / {profileData.nextLevelExp.toLocaleString()}
                   </span>
+                  <span>{Math.round(progressPercent)}%</span>
                 </div>
-                <Progress value={(profileData.experience / profileData.nextLevelExp) * 100} />
+                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500 shadow-lg"
+                    style={{ width: `${progressPercent}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-pulse" />
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Friend Request Section for other profiles */}
+              {!isOwnProfile && user?.id && viewedUserId && (
+                <FriendRequestSection userId={user.id} viewedUserId={viewedUserId} navigate={navigate} />
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Scrollable Content */}
-        <ScrollArea className="flex-1 px-4">
-          <div className="space-y-6 pb-6">
-            {/* Premium Subscription Info */}
-            {subscriptionInfo && (
-              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-700">
-                    <Crown className="w-5 h-5 mr-2" />
-                    Premium Abonelik
-                  </CardTitle>
-                  <CardDescription>Aktif premium üyeliğinizin detayları</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-yellow-100 p-2 rounded-lg">
-                        <Calendar className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-yellow-800">Abonelik Türü</p>
-                        <p className="text-sm text-yellow-600">{subscriptionInfo.subscriptionType} Premium</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-orange-100 p-2 rounded-lg">
-                        <Clock className="w-5 h-5 text-orange-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-orange-800">Kalan Süre</p>
-                        <p className="text-sm text-orange-600">{subscriptionInfo.timeLeft}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-yellow-700">Yenilenme süresine kalan gün</span>
-                      <span className="font-medium text-yellow-800">{subscriptionInfo.diffDays} gün</span>
-                    </div>
-                    <Progress
-                      value={Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}
-                      className="bg-yellow-100"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Statistics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Target className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-2xl font-bold">{profileData.totalGames}</p>
-                  <p className="text-sm text-muted-foreground">Toplam Oyun</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Trophy className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-2xl font-bold">{profileData.wins}</p>
-                  <p className="text-sm text-muted-foreground">Kazanma</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <Zap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-                  <p className="text-2xl font-bold">{profileData.currentStreak}</p>
-                  <p className="text-sm text-muted-foreground">Seri</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-cyan-500" />
-                  <p className="text-2xl font-bold">{Math.round(profileData.averageScore)}</p>
-                  <p className="text-sm text-muted-foreground">Ort. Puan</p>
-                </CardContent>
-              </Card>
+        {/* PREMIUM INFO */}
+        {subscriptionInfo && (
+          <div className="px-5 mb-6">
+            <div className="bg-gradient-to-br from-amber-500/20 to-orange-600/20 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Crown className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Premium Abonelik</h3>
+                  <p className="text-xs text-white/70">{subscriptionInfo.subscriptionType}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-white/80">
+                  <span>Kalan Süre</span>
+                  <span className="font-bold text-white">{subscriptionInfo.timeLeft}</span>
+                </div>
+                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+                    style={{ width: `${Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}%` }}
+                  />
+                </div>
+              </div>
             </div>
-
-            {/* Tournament Statistics */}
-            {profileData.tournamentsPlayed > 0 && (
-              <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-yellow-700">
-                    <Trophy className="w-5 h-5 mr-2" />
-                    Turnuva İstatistikleri
-                  </CardTitle>
-                  <CardDescription>Turnuva performansınız</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Users className="w-6 h-6 text-amber-600" />
-                      </div>
-                      <p className="text-xl font-bold text-amber-800">{profileData.tournamentsPlayed}</p>
-                      <p className="text-sm text-amber-600">Katılım</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Award className="w-6 h-6 text-green-600" />
-                      </div>
-                      <p className="text-xl font-bold text-green-800">{profileData.tournamentsWon}</p>
-                      <p className="text-sm text-green-600">Kazanma</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <Target className="w-6 h-6 text-red-500" />
-                      </div>
-                      <p className="text-xl font-bold text-red-700">{profileData.tournamentsLost}</p>
-                      <p className="text-sm text-red-500">Kaybetme</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <TrendingUp className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <p className="text-xl font-bold text-purple-800">{profileData.tournamentWinRate}%</p>
-                      <p className="text-sm text-purple-600">Başarı</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Achievements / Badges */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center">
-                      <Crown className="w-5 h-5 mr-2" />
-                      Rozetler
-                    </CardTitle>
-                    <CardDescription>Oyun içi başarılarınız ve rozetleriniz</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowBadgesDialog(true)}>
-                    Tümünü Gör
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {badges
-                    .filter((b) => b.earned)
-                    .slice(0, 4)
-                    .map((badge) => (
-                      <div
-                        key={badge.id}
-                        className="flex items-center space-x-3 p-3 rounded-lg border bg-accent/50 border-accent"
-                      >
-                        <div className="text-2xl">{badge.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{badge.name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{badge.description}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-xs">
-                          Kazanıldı
-                        </Badge>
-                      </div>
-                    ))}
-                  {badges.filter((b) => b.earned).length === 0 && (
-                    <div className="col-span-2 text-center py-8 text-muted-foreground">Henüz kazanılmış rozet yok</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Joker Envanteri */}
-            {(jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>🃏 Joker Envanteri</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                      {/* Değiştir İkonu */}
-                      <img src="/degistirIkon.png" alt="Değiştir" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Değiştir</div>
-                      <div className="text-lg font-bold">{jokers.degistir}</div>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                      {/* Fısılda İkonu */}
-                      <img src="/fisildaIkon.png" alt="Fısılda" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Fısılda</div>
-                      <div className="text-lg font-bold">{jokers.fisilida}</div>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                      {/* Sen Yaz İkonu */}
-                      <img src="/senyazIkon.png" alt="Sen Yaz" className="w-10 h-10 mx-auto mb-2 object-contain" />
-                      <div className="text-sm text-muted-foreground">Sen Yaz</div>
-                      <div className="text-lg font-bold">{jokers.senYaz}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Detailed Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Detaylı İstatistikler</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Toplam Puan:</span>
-                  <span className="font-bold">{profileData.totalScore.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>En Uzun Kelime:</span>
-                  <span className="font-bold">
-                    {profileData.longestWord
-                      ? `${profileData.longestWord} (${profileData.longestWordLength} harf)`
-                      : profileData.longestWordLength > 0
-                        ? `${profileData.longestWordLength} harfli kelime`
-                        : "Henüz yok"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Kaybetme:</span>
-                  <span className="font-bold">{profileData.losses}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Kazanma Oranı:</span>
-                  <span className="font-bold">{profileData.winRate}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Ortalama Puan:</span>
-                  <span className="font-bold">{Math.round(profileData.averageScore)}</span>
-                </div>
-                {profileData.tournamentsPlayed > 0 && (
-                  <>
-                    <hr className="my-4" />
-                    <div className="text-sm font-semibold text-muted-foreground mb-2">Turnuva Performansı</div>
-                    <div className="flex justify-between">
-                      <span>Kazanılan Turnuva:</span>
-                      <span className="font-bold text-green-600">{profileData.tournamentsWon}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Kaybedilen Turnuva:</span>
-                      <span className="font-bold text-red-600">{profileData.tournamentsLost}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Toplam Turnuva:</span>
-                      <span className="font-bold">{profileData.tournamentsPlayed}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Turnuva Başarı Oranı:</span>
-                      <span className="font-bold text-yellow-600">{profileData.tournamentWinRate}%</span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
           </div>
-        </ScrollArea>
+        )}
 
-        {/* Avatar Options Dialog */}
-        <AvatarOptionsDialog
-          open={showAvatarOptions}
-          onOpenChange={setShowAvatarOptions}
-          onCameraSelect={handleCameraSelect}
-          onGallerySelect={handleGallerySelect}
-          onGameAvatarsSelect={handleGameAvatarsSelect}
-          onDelete={handleDeleteAvatar}
-        />
+        {/* STATS GRID */}
+        <div className="px-5 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">İstatistikler</h3>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <StatCard
+              icon={Target}
+              value={profileData.totalGames}
+              label="Oyun"
+              colorClass="from-rose-500 to-pink-600"
+            />
+            <StatCard icon={Trophy} value={profileData.wins} label="Galibiyet" colorClass="from-amber-500 to-orange-600" />
+            <StatCard
+              icon={Flame}
+              value={profileData.currentStreak}
+              label="Seri"
+              colorClass="from-orange-500 to-red-600"
+            />
+            <StatCard
+              icon={TrendingUp}
+              value={Math.round(profileData.averageScore)}
+              label="Ort. Puan"
+              colorClass="from-cyan-500 to-blue-600"
+            />
+          </div>
+        </div>
 
-        {/* Badges Dialog */}
-        <BadgesDialog
-          open={showBadgesDialog}
-          onOpenChange={setShowBadgesDialog}
-          badges={badges}
-          userStats={userStats}
-        />
+        {/* TOURNAMENT STATS */}
+        {profileData.tournamentsPlayed > 0 && (
+          <div className="px-5 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-amber-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Turnuva</h3>
+            </div>
+            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5">
+              <div className="grid grid-cols-4 gap-4 text-center">
+                <div>
+                  <Users className="w-5 h-5 mx-auto mb-1 text-amber-400" />
+                  <p className="text-lg font-bold text-white">{profileData.tournamentsPlayed}</p>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide">Katılım</p>
+                </div>
+                <div>
+                  <Award className="w-5 h-5 mx-auto mb-1 text-green-400" />
+                  <p className="text-lg font-bold text-white">{profileData.tournamentsWon}</p>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide">Kazanma</p>
+                </div>
+                <div>
+                  <Target className="w-5 h-5 mx-auto mb-1 text-red-400" />
+                  <p className="text-lg font-bold text-white">{profileData.tournamentsLost}</p>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide">Kaybetme</p>
+                </div>
+                <div>
+                  <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-400" />
+                  <p className="text-lg font-bold text-white">{profileData.tournamentWinRate}%</p>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wide">Başarı</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* JOKERS (Only for own profile) */}
+        {isOwnProfile && (jokers.degistir > 0 || jokers.fisilida > 0 || jokers.senYaz > 0) && (
+          <div className="px-5 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-purple-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Jokerler</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <JokerCard icon="degistirIkon.png" value={jokers.degistir} label="Değiştir" />
+              <JokerCard icon="fisildaIkon.png" value={jokers.fisilida} label="Fısılda" />
+              <JokerCard icon="senyazIkon.png" value={jokers.senYaz} label="Sen Yaz" />
+            </div>
+          </div>
+        )}
+
+        {/* BADGES */}
+        <div className="px-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-emerald-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Rozetler</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowBadgesDialog(true)}
+              className="text-xs text-white/70 hover:text-white hover:bg-white/10"
+            >
+              Tümünü Gör
+            </Button>
+          </div>
+          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4">
+            {earnedBadges.length > 0 ? (
+              <div className="flex flex-wrap gap-3">
+                {earnedBadges.slice(0, 6).map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2"
+                  >
+                    <span className="text-2xl">{badge.icon}</span>
+                    <div>
+                      <p className="text-xs font-bold text-white">{badge.name}</p>
+                      <p className="text-[10px] text-white/60">{badge.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Award className="w-12 h-12 mx-auto mb-2 text-white/30" />
+                <p className="text-sm text-white/50">Henüz rozet kazanılmadı</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* DETAILED STATS */}
+        <div className="px-5 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-cyan-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Detaylı İstatistikler</h3>
+          </div>
+          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 space-y-4">
+            <DetailRow label="Toplam Puan" value={profileData.totalScore.toLocaleString()} />
+            <DetailRow
+              label="En Uzun Kelime"
+              value={
+                profileData.longestWord
+                  ? `${profileData.longestWord} (${profileData.longestWordLength} harf)`
+                  : profileData.longestWordLength > 0
+                    ? `${profileData.longestWordLength} harfli kelime`
+                    : "Henüz yok"
+              }
+            />
+            <DetailRow label="Kaybetme" value={profileData.losses.toString()} />
+            <DetailRow label="Kazanma Oranı" value={`${profileData.winRate}%`} />
+            <DetailRow label="Ortalama Puan" value={Math.round(profileData.averageScore).toString()} />
+
+            {profileData.tournamentsPlayed > 0 && (
+              <>
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <p className="text-sm font-bold text-white/70 mb-3">Turnuva Performansı</p>
+                </div>
+                <DetailRow label="Kazanılan Turnuva" value={profileData.tournamentsWon.toString()} highlight="green" />
+                <DetailRow label="Kaybedilen Turnuva" value={profileData.tournamentsLost.toString()} highlight="red" />
+                <DetailRow label="Toplam Turnuva" value={profileData.tournamentsPlayed.toString()} />
+                <DetailRow label="Turnuva Başarı Oranı" value={`${profileData.tournamentWinRate}%`} highlight="yellow" />
+              </>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* DIALOGS */}
+      <AvatarOptionsDialog
+        open={showAvatarOptions}
+        onOpenChange={setShowAvatarOptions}
+        onCameraSelect={handleCameraSelect}
+        onGallerySelect={handleGallerySelect}
+        onGameAvatarsSelect={handleGameAvatarsSelect}
+        onDelete={handleDeleteAvatar}
+      />
+
+      <BadgesDialog open={showBadgesDialog} onOpenChange={setShowBadgesDialog} badges={badges} userStats={userStats} />
     </div>
   );
 };
 
-// Friend Request + Message Section for other profiles
+// HELPER COMPONENTS
+
+const StatCard = ({ icon: Icon, value, label, colorClass }: any) => (
+  <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden shadow-xl">
+    <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-10`} />
+    <Icon className="w-5 h-5 mb-1 text-white relative z-10" />
+    <span className="text-base font-bold text-white tracking-tight relative z-10">{value}</span>
+    <span className="text-[9px] text-white/60 font-medium uppercase tracking-wide relative z-10">{label}</span>
+  </div>
+);
+
+const JokerCard = ({ icon, value, label }: any) => (
+  <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
+    <img src={`/${icon}`} alt={label} className="w-8 h-8 mb-1 object-contain" />
+    <span className="text-lg font-bold text-white">{value}</span>
+    <span className="text-[10px] text-white/60 font-medium uppercase tracking-wide">{label}</span>
+  </div>
+);
+
+const DetailRow = ({ label, value, highlight }: { label: string; value: string; highlight?: "green" | "red" | "yellow" }) => {
+  const colorClass = highlight === "green" 
+    ? "text-green-400" 
+    : highlight === "red" 
+      ? "text-red-400" 
+      : highlight === "yellow" 
+        ? "text-yellow-400" 
+        : "text-white";
+
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-white/70">{label}:</span>
+      <span className={`text-sm font-bold ${colorClass}`}>{value}</span>
+    </div>
+  );
+};
+
+// Friend Request + Message Section
 const FriendRequestSection = ({
   userId,
   viewedUserId,
@@ -1366,7 +1293,6 @@ const FriendRequestSection = ({
       const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", userId).single();
       const senderName = myProfile?.username || "Bir oyuncu";
 
-      // DB'ye bildirim kaydet (online ise realtime ile toast gösterilecek)
       await supabase.from("notifications").insert({
         user_id: viewedUserId,
         type: "friend_request",
@@ -1374,7 +1300,6 @@ const FriendRequestSection = ({
         related_id: userId,
       });
 
-      // Offline ise push bildirim gönder (skipIfOnline=true)
       await sendFriendRequestNotification(viewedUserId!, senderName);
 
       setFriendshipStatus("pending_sent");
@@ -1417,14 +1342,14 @@ const FriendRequestSection = ({
   if (loading) return null;
 
   return (
-    <div className="flex gap-2 mt-2">
+    <div className="flex gap-2 mt-4">
       <Button
         variant="outline"
         size="sm"
         onClick={openChat}
-        className="text-xs border-blue-400 text-blue-600 hover:bg-blue-50"
+        className="flex-1 bg-white/10 hover:bg-white/20 border-white/20 text-white"
       >
-        <MessageCircle className="w-3.5 h-3.5 mr-1" />
+        <MessageCircle className="w-4 h-4 mr-1" />
         Mesaj Yaz
       </Button>
       {friendshipStatus === "none" && (
@@ -1432,15 +1357,20 @@ const FriendRequestSection = ({
           variant="outline"
           size="sm"
           onClick={sendRequest}
-          className="text-xs border-green-400 text-green-600 hover:bg-green-50"
+          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 text-white"
         >
-          <UserPlus className="w-3.5 h-3.5 mr-1" />
+          <UserPlus className="w-4 h-4 mr-1" />
           Arkadaş Ekle
         </Button>
       )}
       {friendshipStatus === "pending_sent" && (
-        <Button variant="outline" size="sm" disabled className="text-xs border-amber-400 text-amber-600 opacity-70">
-          <Clock className="w-3.5 h-3.5 mr-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled
+          className="flex-1 bg-white/10 border-white/20 text-white/50 opacity-70"
+        >
+          <Clock className="w-4 h-4 mr-1" />
           Davet Edildi
         </Button>
       )}
@@ -1449,15 +1379,20 @@ const FriendRequestSection = ({
           variant="outline"
           size="sm"
           onClick={acceptRequest}
-          className="text-xs border-green-400 text-green-600 hover:bg-green-50"
+          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 text-white"
         >
-          <UserCheck className="w-3.5 h-3.5 mr-1" />
+          <UserCheck className="w-4 h-4 mr-1" />
           Kabul Et
         </Button>
       )}
       {friendshipStatus === "accepted" && (
-        <Button variant="outline" size="sm" disabled className="text-xs border-cyan-400 text-cyan-600 opacity-70">
-          <UserCheck className="w-3.5 h-3.5 mr-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled
+          className="flex-1 bg-white/10 border-white/20 text-white/50 opacity-70"
+        >
+          <UserCheck className="w-4 h-4 mr-1" />
           Arkadaş
         </Button>
       )}
