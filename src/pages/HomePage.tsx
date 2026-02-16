@@ -409,41 +409,41 @@ const HomePage = () => {
     // Level 70+ (Çelik Gradient)
     if (level >= 70) 
       return { 
-        bg: "linear-gradient(135deg, #B0BEC5 0%, #78909C 100%)", 
-        gradient: "from-slate-400/60",
-        headerBg: "#9EB3BD"
+        bg: "linear-gradient(135deg, #CFD8DC 0%, #B0BEC5 100%)", 
+        gradient: "from-slate-300/60",
+        headerBg: "#C0CCD3"
       }; 
 
     // Level 40+ (Mavi Gradient)
     if (level >= 40) 
       return { 
-        bg: "linear-gradient(135deg, #93C5FD 0%, #60A5FA 100%)", 
-        gradient: "from-blue-400/60",
-        headerBg: "#7AB5FC"
+        bg: "linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)", 
+        gradient: "from-blue-300/60",
+        headerBg: "#A9D0FE"
       }; 
 
     // Level 25+ (Yeşil Gradient)
     if (level >= 25) 
       return { 
-        bg: "linear-gradient(135deg, #86EFAC 0%, #4ADE80 100%)", 
-        gradient: "from-emerald-400/60",
-        headerBg: "#68E596"
+        bg: "linear-gradient(135deg, #BBF7D0 0%, #86EFAC 100%)", 
+        gradient: "from-emerald-300/60",
+        headerBg: "#A0F3BE"
       }; 
 
     // Level 10+ (Mor Gradient)
     if (level >= 10) 
       return { 
-        bg: "linear-gradient(135deg, #D8B4FE 0%, #C084FC 100%)", 
-        gradient: "from-purple-400/60",
-        headerBg: "#CC9CFE"
+        bg: "linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%)", 
+        gradient: "from-purple-300/60",
+        headerBg: "#E0C5FE"
       }; 
 
     // Varsayılan (Amber Gradient)
     return { 
-      bg: "linear-gradient(135deg, #FDE68A 0%, #FBBF24 100%)", 
-      gradient: "from-orange-300/50",
-      headerBg: "#FCD35F"
-    }; 
+      bg: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", 
+      gradient: "from-orange-200/50",
+      headerBg: "#FEEDA6"
+    };
   };
 
   const levelBgColors = getLevelBackgroundColor();
