@@ -115,34 +115,16 @@ const menuItems = [
 
 interface FloatingMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
-  levelColor?: "blue" | "green" | "yellow" | "pink";
 }
 
-const levelColorMap = {
-  blue: {
-    closed: "from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700",
-    ping: "from-purple-600 to-blue-600",
-    glow: "from-purple-600/50 to-blue-600/50",
-  },
-  green: {
-    closed: "from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700",
-    ping: "from-emerald-500 to-teal-600",
-    glow: "from-emerald-500/50 to-teal-600/50",
-  },
-  yellow: {
-    closed: "from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600",
-    ping: "from-yellow-400 to-orange-500",
-    glow: "from-yellow-400/50 to-orange-500/50",
-  },
-  pink: {
-    closed: "from-pink-500 to-fuchsia-600 hover:from-pink-600 hover:to-fuchsia-700",
-    ping: "from-pink-500 to-fuchsia-600",
-    glow: "from-pink-500/50 to-fuchsia-600/50",
-  },
+const menuColors = {
+  closed: "from-gray-800 to-slate-500 hover:from-gray-900 hover:to-slate-600",
+  ping: "from-gray-800 to-slate-500",
+  glow: "from-gray-800/50 to-slate-500/50",
 };
 
-export function FloatingMenu({ onOpenChange, levelColor = "blue" }: FloatingMenuProps) {
-  const colors = levelColorMap[levelColor];
+export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
+  const colors = menuColors;
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
