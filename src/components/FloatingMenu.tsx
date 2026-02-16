@@ -118,9 +118,9 @@ interface FloatingMenuProps {
 }
 
 const menuColors = {
-  closed: "from-gray-800 to-slate-500 hover:from-gray-900 hover:to-slate-600",
-  ping: "from-gray-800 to-slate-500",
-  glow: "from-gray-800/50 to-slate-500/50",
+  closed: "from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
+  ping: "from-red-500 to-red-600",
+  glow: "from-red-500/50 to-red-600/50",
 };
 
 export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
