@@ -185,6 +185,10 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
+  const globalUsedWordsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    globalUsedWordsRef.current = globalUsedWords;
+  }, [globalUsedWords]);
 
   // 🔄 Server Time Context - Tüm uygulama genelinde senkronize offset
   const { offset: contextOffset, serverNow, isReady: contextServerTimeReady, triggerResync } = useServerTimeContext();
@@ -5788,14 +5792,16 @@ const GamePage = ({
       return;
     }
 
-    console.log("🤖 Starting AI play interval for game mode:", gameMode);
+    console.log("🤖 Starting AI play with setTimeout for game mode:", gameMode);
+    let cancelled = false;
 
-    const aiPlayInterval = setInterval(
-      () => {
-        // AI kelime seçimi
-        const selectAIWord = async () => {
-          try {
-            const potentialWords = [
+    const scheduleNextAIWord = () => {
+      if (cancelled) return;
+      const delay = 2500 + Math.random() * 15000; // 2.5-17.5 sn arası rastgele
+      setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          const potentialWords = [
               "KEDİ",
               "MASA",
               "ARABA",
@@ -5875,29 +5881,26 @@ const GamePage = ({
 
             const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
             let wordUsed = false;
+            const currentGlobalUsed = globalUsedWordsRef.current;
 
             for (const word of shuffledWords) {
               const normalizedWord = word.toLocaleUpperCase("tr-TR");
 
-              // Global kullanılmış kelimeler kontrolü - tüm oyuncuların kelimelerini kontrol et
-              if (!globalUsedWords.has(normalizedWord)) {
-                // Rastgele puan (daha dengeli)
+              if (!currentGlobalUsed.has(normalizedWord)) {
                 const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
 
+                const currentOpponentScore = opponentScoreRef.current;
                 console.log(
-                  `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${opponentScore + points})`,
+                  `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${currentOpponentScore + points})`,
                 );
 
-                // Score güncelleme
-                const newOpponentScore = opponentScore + points;
+                const newOpponentScore = currentOpponentScore + points;
                 setOpponentScore(newOpponentScore);
                 setOpponentWords((prev) => [...prev, word]);
                 setOpponentWordsWithScores((prev) => [...prev, { word, score: points }]);
 
-                // Ses efekti
                 playSound("correctWord");
 
-                // Global kullanılmış kelimeler listesine ekle
                 setGlobalUsedWords((prev) => new Set([...prev, normalizedWord]));
 
                 // Turnuva modunda Supabase'i de güncelle
@@ -5925,16 +5928,15 @@ const GamePage = ({
               }
             }
 
-            // Kelime bulunamazsa küçük puan ver
             if (!wordUsed) {
-              const fallbackPoints = Math.floor(Math.random() * 6) + 3; // 3-8 puan
-              const newScore = opponentScore + fallbackPoints;
+              const fallbackPoints = Math.floor(Math.random() * 6) + 3;
+              const currentOpponentScore = opponentScoreRef.current;
+              const newScore = currentOpponentScore + fallbackPoints;
               setOpponentScore(newScore);
               console.log(
                 `🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`,
               );
 
-              // Turnuva modunda fallback için de DB güncelle
               if (gameMode === "tournament" && tournamentMatch && user) {
                 const isPlayer1 = tournamentMatch.player1_id === user.id;
                 const updateField = isPlayer1 ? "player2_score" : "player1_score";
@@ -5952,23 +5954,22 @@ const GamePage = ({
                 }
               }
             }
-          } catch (error) {
-            console.error("🤖 AI word selection error:", error);
-            // Hata durumunda da küçük puan ver
-            const errorPoints = Math.floor(Math.random() * 5) + 2;
-            setOpponentScore((prev) => prev + errorPoints);
-            console.log(`🤖 AI error, got ${errorPoints} points`);
-          }
-        };
+        } catch (error) {
+          console.error("🤖 AI word selection error:", error);
+          const errorPoints = Math.floor(Math.random() * 5) + 2;
+          setOpponentScore((prev) => prev + errorPoints);
+          console.log(`🤖 AI error, got ${errorPoints} points`);
+        }
+        // Sonraki kelimeyi planla
+        scheduleNextAIWord();
+      }, delay);
+    };
 
-        selectAIWord();
-      },
-      2500 + Math.random() * 15000,
-    );
+    scheduleNextAIWord();
 
     return () => {
-      console.log("🤖 Stopping AI play interval for game mode:", gameMode);
-      clearInterval(aiPlayInterval);
+      console.log("🤖 Stopping AI play for game mode:", gameMode);
+      cancelled = true;
     };
   }, [
     gameStarted,
@@ -5976,9 +5977,7 @@ const GamePage = ({
     gameMode,
     user?.id,
     isPlayingWithAI,
-    globalUsedWords,
     tournamentMatch?.id,
-    opponentScore,
     playSound,
   ]);
 
