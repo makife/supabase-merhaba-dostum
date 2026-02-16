@@ -520,13 +520,13 @@ const HomePage = () => {
                     </div>
                   </div>
                 </div>
-                <<div className="text-right">
-  <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-  <span className="text-sm font-mono font-bold text-red-500">
-    {(profile?.total_score || 0).toLocaleString()}
-  </span>
-</div>
-
+                <div className="text-right">
+                  <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                  <span className="text-sm font-mono font-bold text-amber-500">
+                    {(profile?.total_score || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
             );
           })()}
         </div>
