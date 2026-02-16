@@ -162,7 +162,7 @@ const AuthPage = () => {
           </div>
         </Card>
 
-        <Card className="border-0 bg-card/60 backdrop-blur-lg shadow-xl shadow-primary/5">
+        <Card className="border border-slate-600 bg-card/60 backdrop-blur-lg shadow-xl shadow-primary/5 rounded-2xl">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/60 rounded-xl mx-4 mt-4 w-[calc(100%-2rem)]">
               <TabsTrigger
