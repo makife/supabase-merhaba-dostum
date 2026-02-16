@@ -665,14 +665,33 @@ const HomePage = () => {
         </div>
 
         {/* İSTATİSTİKLER */}
-        <div className="px-5 mt-2">
-          <div className="grid grid-cols-3 gap-3">
-            <StatWidget icon={Target} value={profile?.daily_games || 0} label="Oyun" colorClass="rose" />
-            <StatWidget icon={Flame} value={profile?.win_streak || 0} label="Seri" colorClass="orange" />
-            <StatWidget icon={Trophy} value={profile?.wins || 0} label="Zafer" colorClass="amber" />
-          </div>
-        </div>
-      </div>
+<div className="px-5 mt-4 pb-8">
+  <div className="grid grid-cols-3 gap-3">
+    {/* StatWidget'ların içine prop olarak 'dark' modu desteği ekleyebilir 
+        veya doğrudan bileşen içinde şu sınıfları güncelleyebilirsin: */}
+    <StatWidget 
+      icon={Target} 
+      value={profile?.daily_games || 0} 
+      label="Oyun" 
+      colorClass="rose" 
+      className="bg-[#16213e] border-white/10 shadow-lg" // Eğer dışarıdan class alıyorsa
+    />
+    <StatWidget 
+      icon={Flame} 
+      value={profile?.win_streak || 0} 
+      label="Seri" 
+      colorClass="orange" 
+      className="bg-[#16213e] border-white/10 shadow-lg"
+    />
+    <StatWidget 
+      icon={Trophy} 
+      value={profile?.wins || 0} 
+      label="Zafer" 
+      colorClass="amber" 
+      className="bg-[#16213e] border-white/10 shadow-lg"
+    />
+  </div>
+</div>
 
       {/* --- MODALLAR --- */}
       {selectedMode && selectedMode === "private-room" ? (
