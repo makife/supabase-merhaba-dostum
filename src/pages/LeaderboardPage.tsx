@@ -22,6 +22,7 @@ import {
   TrendingUp,
   CalendarRange,
   TrendingDown,
+  Flame,
 } from "lucide-react";
 
 interface LeaderboardEntry {
@@ -81,7 +82,7 @@ const LeaderboardPage = () => {
           best_word: null,
           best_word_score: 0,
           rank: index + 1,
-          change: 0, // Genel sıralamada değişim göstermiyoruz ama veri tutarlılığı için
+          change: 0,
         })) || [];
 
       setAllTimeLeaders(allTimeData);
@@ -103,17 +104,12 @@ const LeaderboardPage = () => {
   // Haftalık sıralama
   const fetchWeeklyLeaders = async () => {
     try {
-      // Tarih argümanı göndermeden (sunucu tarafı geçerli haftayı kullanır)
-      console.log("Haftalık sorgu tarihi: (server default)");
-
       const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
       if (error) {
         console.error("Weekly leaderboard RPC error:", error);
         setWeeklyLeaders([]);
         return;
       }
-
-      console.log("Haftalık veri geldi:", data);
 
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -145,17 +141,12 @@ const LeaderboardPage = () => {
   // Aylık sıralama
   const fetchMonthlyLeaders = async () => {
     try {
-      // Tarih argümanı göndermeden (sunucu tarafı geçerli ayı kullanır)
-      console.log("Aylık sorgu tarihi: (server default)");
-
       const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
       if (error) {
         console.error("Monthly leaderboard RPC error:", error);
         setMonthlyLeaders([]);
         return;
       }
-
-      console.log("Aylık veri geldi:", data);
 
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -184,7 +175,6 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Ana resync fonksiyonu
   const fetchOnlineUsers = async () => {
     try {
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -205,7 +195,6 @@ const LeaderboardPage = () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders(), fetchOnlineUsers()]);
   }, []);
 
-  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
 
   useEffect(() => {
@@ -214,11 +203,9 @@ const LeaderboardPage = () => {
       await handleLeaderboardResync();
       setLoading(false);
     };
-
     loadData();
   }, [user]);
 
-  // Aktif sekme değiştiğinde ilgili listeyi tazele
   useEffect(() => {
     const refetchActive = async () => {
       if (activeTab === "all-time") await fetchAllTimeLeaders();
@@ -228,7 +215,6 @@ const LeaderboardPage = () => {
     refetchActive();
   }, [activeTab]);
 
-  // Sayfa tekrar görünür olduğunda tüm verileri tazele (oyun sonrası geri dönünce güncellensin)
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
@@ -242,30 +228,15 @@ const LeaderboardPage = () => {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="w-6 h-6 text-yellow-500" />;
+        return <Crown className="w-6 h-6 text-amber-400 fill-amber-400 drop-shadow-lg" />;
       case 2:
-        return <Medal className="w-6 h-6 text-gray-400" />;
+        return <Medal className="w-6 h-6 text-slate-300 fill-slate-300 drop-shadow-lg" />;
       case 3:
-        return <Medal className="w-6 h-6 text-amber-700" />;
+        return <Medal className="w-6 h-6 text-orange-600 fill-orange-600 drop-shadow-lg" />;
       default:
         return (
-          <span className="w-6 h-6 flex items-center justify-center text-sm font-bold text-muted-foreground">
-            #{rank}
-          </span>
+          <span className="w-6 h-6 flex items-center justify-center text-xs font-bold text-slate-400">#{rank}</span>
         );
-    }
-  };
-
-  const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
-      case 2:
-        return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
-      case 3:
-        return "bg-gradient-to-r from-amber-700 to-amber-900 text-white";
-      default:
-        return "bg-muted";
     }
   };
 
@@ -273,15 +244,15 @@ const LeaderboardPage = () => {
     if (!change || change === 0) return null;
     if (change > 0) {
       return (
-        <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-          <TrendingUp className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs font-bold border border-green-500/30">
+          <TrendingUp className="w-3 h-3" />
           <span>+{change}</span>
         </div>
       );
     } else if (change < 0) {
       return (
-        <div className="flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-          <TrendingDown className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1 bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs font-bold border border-red-500/30">
+          <TrendingDown className="w-3 h-3" />
           <span>{change}</span>
         </div>
       );
@@ -290,79 +261,106 @@ const LeaderboardPage = () => {
   };
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {leaders.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>Henüz oyun oynayan yok</p>
-          <p className="text-sm">İlk sen ol!</p>
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-[#16213e]/50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-10 h-10 text-slate-500" />
+          </div>
+          <p className="text-slate-400 font-medium">Henüz oyun oynayan yok</p>
+          <p className="text-sm text-slate-500 mt-1">İlk sen ol!</p>
         </div>
       ) : (
-        leaders.map((leader) => (
-          <Card key={leader.user_id} className={`transition-all hover:shadow-md ${getRankColor(leader.rank)}`}>
-            <CardContent className="p-3">
-              <div className="flex items-center space-x-3">
+        leaders.map((leader, index) => {
+          const isTopThree = leader.rank <= 3;
+          const isCurrentUser = leader.user_id === user?.id;
+
+          return (
+            <div
+              key={leader.user_id}
+              className={`relative group rounded-2xl p-4 transition-all duration-300 border backdrop-blur-md ${
+                isTopThree
+                  ? leader.rank === 1
+                    ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border-amber-400/30 shadow-lg shadow-amber-500/10"
+                    : leader.rank === 2
+                      ? "bg-gradient-to-r from-slate-400/20 via-slate-300/20 to-slate-400/20 border-slate-300/30 shadow-lg shadow-slate-400/10"
+                      : "bg-gradient-to-r from-orange-600/20 via-orange-500/20 to-orange-600/20 border-orange-500/30 shadow-lg shadow-orange-600/10"
+                  : isCurrentUser
+                    ? "bg-[#16213e]/80 border-indigo-400/30 shadow-lg shadow-indigo-500/10"
+                    : "bg-[#16213e]/60 border-white/10 hover:border-white/20 hover:bg-[#16213e]/80"
+              }`}
+            >
+              {/* Hover Effect */}
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+              <div className="flex items-center gap-4 relative z-10">
+                {/* Rank Icon */}
                 <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
+
+                {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <Avatar
-                    className="w-10 h-10 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
-                    onClick={() => navigate(`/profile/${leader.user_id}`)}
+                  <div
+                    className={`w-12 h-12 rounded-full p-[2px] ${
+                      isTopThree
+                        ? "bg-gradient-to-tr from-amber-300 to-orange-500"
+                        : "bg-gradient-to-tr from-indigo-400 to-purple-500"
+                    }`}
                   >
-                    <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
-                    <AvatarFallback>{leader.username.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                    <Avatar
+                      className="w-full h-full cursor-pointer border-2 border-[#1a1a2e] hover:scale-110 transition-transform"
+                      onClick={() => navigate(`/profile/${leader.user_id}`)}
+                    >
+                      <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                      <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
+                        {leader.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   {onlineUserIds.has(leader.user_id) && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1a1a2e] rounded-full animate-pulse" />
                   )}
                 </div>
+
+                {/* User Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-2 min-w-0 flex-1">
-                      <h3
-                        className={`font-semibold truncate text-sm cursor-pointer transition-colors ${
-                          leader.rank <= 3 ? "text-white hover:text-blue-200" : "text-foreground hover:text-blue-600"
-                        }`}
-                        onClick={() => navigate(`/profile/${leader.user_id}`)}
-                      >
-                        {leader.username}
-                      </h3>
-                      {leader.user_id === user?.id && (
-                        <Badge className="text-xs px-1.5 py-0 h-4 bg-white/20 text-white border-white/50 flex-shrink-0">
-                          Sen
-                        </Badge>
-                      )}
-                    </div>
-                    {showChange && <div className="flex-shrink-0 ml-2">{getRankChangeIcon(leader.change)}</div>}
-                  </div>
-                  <div className="flex items-center space-x-3 text-xs">
-                    <span
-                      className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3
+                      className="font-bold text-white truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
+                      onClick={() => navigate(`/profile/${leader.user_id}`)}
                     >
-                      <Target className="w-3 h-3 mr-1" />
-                      {leader.score}
+                      {leader.username}
+                    </h3>
+                    {isCurrentUser && (
+                      <Badge className="text-xs px-2 py-0 h-5 bg-indigo-500 text-white border-0">Sen</Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      {leader.score.toLocaleString()}
                     </span>
                     {leader.games_played > 0 && (
-                      <span
-                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
-                      >
-                        <Users className="w-3 h-3 mr-1" />
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
                         {leader.games_played}
                       </span>
                     )}
                     {leader.wins > 0 && (
-                      <span
-                        className={`flex items-center ${leader.rank <= 3 ? "text-white/80" : "text-muted-foreground"}`}
-                      >
-                        <Star className="w-3 h-3 mr-1" />
+                      <span className="flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
                         {leader.wins}
                       </span>
                     )}
                   </div>
                 </div>
+
+                {/* Rank Change */}
+                {showChange && <div className="flex-shrink-0">{getRankChangeIcon(leader.change)}</div>}
               </div>
-            </CardContent>
-          </Card>
-        ))
+            </div>
+          );
+        })
       )}
     </div>
   );
@@ -378,24 +376,15 @@ const LeaderboardPage = () => {
     }
   };
 
-  const getTabDescription = (tab: string) => {
-    switch (tab) {
-      case "weekly":
-        return "Son 7 günün en iyileri";
-      case "monthly":
-        return "Bu ayın en iyileri";
-      default:
-        return "Tüm zamanların en iyileri";
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-slate-400 font-medium">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -404,117 +393,108 @@ const LeaderboardPage = () => {
   const currentStats = getCurrentUserStats();
 
   return (
-    <div className="h-screen bg-gradient-to-br from-background to-muted flex flex-col overflow-hidden">
-      <div className="max-w-2xl mx-auto w-full flex flex-col h-full">
-        {/* Sabit Header */}
-        <div className="flex-shrink-0 bg-yellow-50/95 backdrop-blur-sm border-b border-yellow-200 p-3 pt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/")}
-                className="text-yellow-600 border-yellow-500/30 hover:bg-yellow-500/20 bg-yellow-500/10"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Geri
-              </Button>
+    <div
+      className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+    >
+      {/* Light Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
-              <div className="relative inline-block">
-                {/* Stroke Background */}
-                <img
-                  src="/stroke.png"
-                  alt="Stroke Background"
-                  className="absolute inset-0 w-full h-full object-contain opacity-50"
-                />
-                {/* Liderlik Title */}
-                <h1 className="text-3xl font-bold flex items-center text-yellow-600 relative z-10 px-6 py-3">
-                  <Trophy className="w-6 h-6 mr-3 text-yellow-500" />
-                  Liderlik
-                </h1>
+      {/* Header */}
+      <div className="flex-none z-30 bg-[#1a1a2e] border-b border-white/5 shadow-2xl">
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              onClick={() => navigate("/")}
+              className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Geri
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white">Liderlik Tablosu</h1>
+            </div>
+
+            <div className="w-20" />
+          </div>
+
+          {/* User Stats Card */}
+          {currentStats && (
+            <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-bold text-white">Senin Performansın</span>
+                </div>
+                <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 text-xs">
+                  {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Genel"}
+                </Badge>
               </div>
 
-              <div className="w-16" />
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-amber-500">#{currentStats.rank || "—"}</div>
+                  <div className="text-[10px] text-slate-400">Sıra</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-indigo-400">{currentStats.score}</div>
+                  <div className="text-[10px] text-slate-400">Puan</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-blue-400">{currentStats.games_played}</div>
+                  <div className="text-[10px] text-slate-400">Oyun</div>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-green-400">{currentStats.wins}</div>
+                  <div className="text-[10px] text-slate-400">Zafer</div>
+                </div>
+              </div>
             </div>
-            {currentStats && (
-              <Card className="border-primary">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <div className="flex items-center">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Senin Performansın
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Genel"}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.rank || "—"}</div>
-                      <div className="text-xs text-muted-foreground">Sıralama</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.score}</div>
-                      <div className="text-xs text-muted-foreground">Puan</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.games_played}</div>
-                      <div className="text-xs text-muted-foreground">Oyun</div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <div className="text-xl font-bold text-primary">{currentStats.wins}</div>
-                      <div className="text-xs text-muted-foreground">Galibiyet</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          )}
 
-            {/* Liderlik Sıralaması Başlık ve Tablar - Sabit */}
-            <div className="pt-2">
-              <h2 className="text-lg font-semibold mb-3">Liderlik Sıralaması</h2>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-9 bg-gray-100">
-                  <TabsTrigger
-                    value="all-time"
-                    className="text-xs px-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white hover:bg-blue-100"
-                  >
-                    <Trophy className="w-3 h-3 mr-1" />
-                    <span className="hidden xs:inline">Genel</span>
-                    <span className="xs:hidden">Tümü</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="weekly"
-                    className="text-xs px-2 data-[state=active]:bg-green-500 data-[state=active]:text-white hover:bg-green-100"
-                  >
-                    <Calendar className="w-3 h-3 mr-1" />
-                    <span className="hidden xs:inline">Haftalık</span>
-                    <span className="xs:hidden">Hafta</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="monthly"
-                    className="text-xs px-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white hover:bg-purple-100"
-                  >
-                    <CalendarRange className="w-3 h-3 mr-1" />
-                    <span className="hidden xs:inline">Aylık</span>
-                    <span className="xs:hidden">Ay</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+          {/* Tabs */}
+          <div className="mt-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 bg-[#16213e]/60 border border-white/10 rounded-xl p-1 h-auto">
+                <TabsTrigger
+                  value="all-time"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white text-slate-400 transition-all"
+                >
+                  <Trophy className="w-3 h-3 mr-1.5" />
+                  Genel
+                </TabsTrigger>
+                <TabsTrigger
+                  value="weekly"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
+                >
+                  <Calendar className="w-3 h-3 mr-1.5" />
+                  Haftalık
+                </TabsTrigger>
+                <TabsTrigger
+                  value="monthly"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white text-slate-400 transition-all"
+                >
+                  <CalendarRange className="w-3 h-3 mr-1.5" />
+                  Aylık
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
+      </div>
 
-        {/* Scroll edilebilir Liste İçeriği */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          <CardDescription className="text-center">{getTabDescription(activeTab)}</CardDescription>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 relative z-10">
+        {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
+        {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
+        {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
 
-          {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
-          {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
-          {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
-        </div>
+        {/* Bottom Spacer */}
+        <div className="h-20" />
       </div>
     </div>
   );
