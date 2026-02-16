@@ -404,46 +404,28 @@ const HomePage = () => {
 
   // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
+    // Şimdilik tüm leveller için siyah-çelik gradyan
+    // Eski level bazlı renkler aşağıda yorum olarak saklanıyor
+    return { 
+      bg: "linear-gradient(135deg, #2D3436 0%, #636E72 100%)", 
+      gradient: "from-gray-800/60",
+      headerBg: "#484F53"
+    };
+
+    /*
     const level = levelData.level;
 
-    // Level 70+ (Çelik Gradient)
     if (level >= 70) 
-      return { 
-        bg: "linear-gradient(135deg, #CFD8DC 0%, #B0BEC5 100%)", 
-        gradient: "from-slate-300/60",
-        headerBg: "#C0CCD3"
-      }; 
-
-    // Level 40+ (Mavi Gradient)
+      return { bg: "linear-gradient(135deg, #CFD8DC 0%, #B0BEC5 100%)", gradient: "from-slate-300/60", headerBg: "#C0CCD3" }; 
     if (level >= 40) 
-      return { 
-        bg: "linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)", 
-        gradient: "from-blue-300/60",
-        headerBg: "#A9D0FE"
-      }; 
-
-    // Level 25+ (Yeşil Gradient)
+      return { bg: "linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%)", gradient: "from-blue-300/60", headerBg: "#A9D0FE" }; 
     if (level >= 25) 
-      return { 
-        bg: "linear-gradient(135deg, #BBF7D0 0%, #86EFAC 100%)", 
-        gradient: "from-emerald-300/60",
-        headerBg: "#A0F3BE"
-      }; 
-
-    // Level 10+ (Mor Gradient)
+      return { bg: "linear-gradient(135deg, #BBF7D0 0%, #86EFAC 100%)", gradient: "from-emerald-300/60", headerBg: "#A0F3BE" }; 
     if (level >= 10) 
-      return { 
-        bg: "linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%)", 
-        gradient: "from-purple-300/60",
-        headerBg: "#E0C5FE"
-      }; 
-
-    // Varsayılan (Amber Gradient)
-    return { 
-      bg: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", 
-      gradient: "from-orange-200/50",
-      headerBg: "#FEEDA6"
-    };
+      return { bg: "linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%)", gradient: "from-purple-300/60", headerBg: "#E0C5FE" }; 
+    return { bg: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)", gradient: "from-orange-200/50", headerBg: "#FEEDA6" };
+    */
+  };
   };
 
   const levelBgColors = getLevelBackgroundColor();
