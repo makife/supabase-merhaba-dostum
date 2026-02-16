@@ -469,7 +469,7 @@ const HomePage = () => {
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold leading-tight drop-shadow-sm text-slate-900">
+              <h2 className="text-base font-bold leading-tight drop-shadow-sm text-white">
                 {profile?.username || "Misafir"}
               </h2>
               <p className="text-[10px] text-slate-500 font-medium">{greeting}</p>
@@ -719,7 +719,7 @@ const HomePage = () => {
         {/* OYUN MODLARI */}
         <div className="px-5 mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Gamepad2 className="w-4 h-4 text-indigo-500" />
               Oyun Modları
             </h3>
@@ -734,7 +734,7 @@ const HomePage = () => {
 
         {/* MINI OYUNLAR */}
         <div className="mt-6 pl-5">
-          <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500" />
             Mini Oyunlar
           </h3>
