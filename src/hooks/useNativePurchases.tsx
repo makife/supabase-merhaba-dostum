@@ -62,8 +62,14 @@ export const useNativePurchases = () => {
         console.log("Satın alma başarılı:", customerInfo);
         return true;
       } catch (error: any) {
-        if (error.userCancelled) {
-          console.log("Kullanıcı iptal etti");
+        if (
+          error.userCancelled === true ||
+          error.code === "PURCHASE_CANCELLED_ERROR" ||
+          error.code === 1 ||
+          error.message?.toLowerCase().includes("cancel") ||
+          error.message?.toLowerCase().includes("dismiss")
+        ) {
+          // Sessizce geç
         } else {
           console.error("Satın alma hatası:", error);
           toast({ title: "Hata", description: error.message || "Satın alma başarısız", variant: "destructive" });
