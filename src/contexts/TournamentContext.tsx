@@ -12,7 +12,7 @@ interface TournamentContextType {
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
   loading: boolean;
-  leftTournaments: string[]; // Ayrılan turnuva ID'leri
+  leftTournaments: string[];
 
   createTournament: () => Promise<string | null>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
@@ -47,7 +47,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const fetchingRef = useRef(false);
 
-  // Ayrılan turnuva kontrolü
   const hasLeftTournament = (tournamentId: string): boolean => {
     return leftTournaments.includes(tournamentId);
   };
@@ -69,10 +68,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       fetchingRef.current = true;
       setLoading(true);
 
-      // Cleanup expired tournaments first
       await supabase.rpc("cleanup_expired_tournaments");
 
-      // Sadece beklemedeki turnuvaları getir (in_progress olan turnuvalar bracket'ta gösterilmeli)
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
       const { data, error } = await supabase
@@ -92,14 +89,18 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Create tournament - kredi düşümü YOK, sadece maç başladığında düşülür
+  // Create tournament
   const createTournament = async (): Promise<string | null> => {
     if (!user) return null;
 
     try {
       setLoading(true);
 
-      // Kredi kontrolü - minimum 3 kredi gerekli ama düşüm yapılmıyor
+      // ✅ Önceki turnuva verisini temizle — cancelled dialog tetiklenmesin
+      setCurrentTournament(null);
+      setParticipants([]);
+      setMatches([]);
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
@@ -147,7 +148,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (error) throw error;
 
-      // Add creator as participant
       const { error: participantError } = await supabase.from("tournament_participants").insert({
         tournament_id: tournament.id,
         user_id: user.id,
@@ -168,14 +168,18 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Join tournament - kredi düşümü YOK, sadece maç başladığında düşülür
+  // Join tournament
   const joinTournament = async (tournamentId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
       setLoading(true);
 
-      // Önce zaten katılmış mı kontrol et
+      // ✅ Önceki turnuva verisini temizle — cancelled dialog tetiklenmesin
+      setCurrentTournament(null);
+      setParticipants([]);
+      setMatches([]);
+
       const { data: existing } = await supabase
         .from("tournament_participants")
         .select("id")
@@ -188,7 +192,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         return true;
       }
 
-      // Kredi kontrolü - minimum 3 kredi gerekli ama düşüm yapılmıyor
       const { data: profile } = await supabase
         .from("profiles")
         .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
@@ -245,7 +248,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       setLoading(true);
       console.log("🚪 Turnuvadan ayrılıyor:", { tournamentId, userId: user.id });
 
-      // 1. Önce turnuva bilgisini al
       const { data: tournament } = await supabase
         .from("tournaments")
         .select("creator_id, status")
@@ -260,13 +262,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       const isCreator = tournament.creator_id === user.id;
 
-      // 2. Katılımcıları al
       const { data: allParticipants } = await supabase
         .from("tournament_participants")
         .select("id, user_id, is_bot")
         .eq("tournament_id", tournamentId);
 
-      // 3. Doğrudan tablo silme (RPC geçici olarak çalışmıyor)
       const { error: deleteError } = await supabase
         .from("tournament_participants")
         .delete()
@@ -280,7 +280,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
       console.log("✅ Katılımcı kaydı silindi");
 
-      // 3. Eğer kurucu ayrılıyorsa, başka bir oyuncuya kuruculuk devret
       if (isCreator && tournament.status === "waiting") {
         const otherPlayers = allParticipants?.filter((p) => p.user_id !== user.id && !p.is_bot);
 
@@ -296,10 +295,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
 
-      // Ayrılan turnuvayı kaydet (tekrar katılmasın)
       setLeftTournaments((prev) => [...prev, tournamentId]);
 
-      // Context'i temizle
       setCurrentTournament(null);
       setParticipants([]);
       setMatches([]);
@@ -314,13 +311,12 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Start tournament - called when countdown ends, deduct credits here
+  // Start tournament
   const startTournament = async (tournamentId: string): Promise<boolean> => {
     try {
       setLoading(true);
       console.log("🏆 Turnuva başlatılıyor:", tournamentId);
 
-      // 1. Önce maçları ve botları oluşturan RPC
       const { data, error } = await supabase.rpc("start_tournament_with_bots_v2", {
         p_tournament_id: tournamentId,
       });
@@ -333,15 +329,12 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         return false;
       }
 
-      // 2. ŞİMDİ KREDİLERİ DÜŞ (Yeni Yazdığımız RPC)
-      // Bu işlem sunucuda yapılacak, kimin başlattığı önemli değil.
       const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits" as any, {
         p_tournament_id: tournamentId,
       });
 
       if (creditError) {
         console.error("❌ Kredi düşme hatası:", creditError);
-        // Kritik bir hata değil, turnuva başlasın ama logla.
       } else {
         console.log("💰 Krediler düşüldü:", creditResult);
       }
@@ -371,7 +364,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       const currentRound = tournament.current_round || 1;
       const nextRound = currentRound + 1;
 
-      // Get completed matches from current round
       const { data: completedMatches } = await supabase
         .from("tournament_matches")
         .select("*")
@@ -382,7 +374,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (!completedMatches) return false;
 
-      // Check if all matches in current round are completed
       const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
       if (completedMatches.length < expectedMatches) {
         console.log(`⏳ Tur ${currentRound} henüz tamamlanmadı`);
@@ -390,7 +381,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
 
       if (currentRound >= 3) {
-        // Tournament finished
         await supabase
           .from("tournaments")
           .update({ status: "completed", finished_at: new Date().toISOString() })
@@ -400,7 +390,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         return true;
       }
 
-      // Create next round matches from winners
       const winners = completedMatches.map((m) => m.winner_id);
 
       const nextRoundMatches = [];
@@ -418,10 +407,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
 
       const { error: insertError } = await supabase.from("tournament_matches").insert(nextRoundMatches);
-
       if (insertError) throw insertError;
 
-      // Update tournament round
       const nextRoundStartsAt = new Date();
       nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
 
@@ -449,7 +436,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       setLoading(true);
 
-      // Get tournament
       const { data: tournament, error: tournamentError } = await supabase
         .from("tournaments")
         .select("*")
@@ -458,7 +444,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (tournamentError) throw tournamentError;
 
-      // Get participants with profiles
       const { data: rawParticipants } = await supabase
         .from("tournament_participants")
         .select("*")
@@ -486,7 +471,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         }),
       );
 
-      // Get matches with player info
       const { data: rawMatches } = await supabase
         .from("tournament_matches")
         .select("*")
@@ -527,7 +511,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Realtime subscriptions with auto-reconnect
+  // Realtime subscriptions
   useEffect(() => {
     if (!user) return;
 
@@ -543,7 +527,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .subscribe(),
     );
 
-    // 🔥 BASİT YAKLAŞIM: app-resumed eventi dinle (GLOBAL LISTENER)
     const handleAppResumed = () => {
       console.log("🔄 [Tournament] 🎯 App resumed eventi alındı!");
       fetchTournaments().catch((e) => {
@@ -560,15 +543,12 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     };
   }, [user]);
 
-  // Realtime: Sadece kritik değişikliklerde bracket'i yenile
-  // Skor güncellemeleri (oyun içi kelime girişleri) bracket'i yeniden yüklememeli
   useEffect(() => {
     if (!currentTournament?.id) return;
 
     const tournamentId = currentTournament.id;
     const channelName = `tournament-details-${tournamentId}`;
 
-    // Son bilinen maç durumlarını cache'le
     const matchStatusCache = new Map<string, string>();
     matches.forEach((m) => matchStatusCache.set(m.id, m.status));
 
@@ -599,8 +579,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             const newMatch = payload.new as any;
             const oldMatch = payload.old as any;
 
-            // Sadece durum veya kazanan değiştiyse bracket'i yenile
-            // Skor güncellemeleri (kelime girişleri) bracket'i yeniden yüklememeli
             const statusChanged = oldMatch?.status !== newMatch?.status;
             const winnerChanged = oldMatch?.winner_id !== newMatch?.winner_id;
             const countdownChanged = !oldMatch?.countdown_started_at && newMatch?.countdown_started_at;
@@ -611,7 +589,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
               );
               fetchTournamentDetails(tournamentId);
             } else {
-              // Sadece lokal state'i güncelle (skor için)
               setMatches((prev) =>
                 prev.map((m) =>
                   m.id === newMatch.id
@@ -631,7 +608,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             filter: `tournament_id=eq.${tournamentId}`,
           },
           () => {
-            // Yeni maç oluşturuldu (yeni round) - bracket'i yenile
             fetchTournamentDetails(tournamentId);
           },
         )
