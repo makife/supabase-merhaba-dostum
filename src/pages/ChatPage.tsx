@@ -47,7 +47,7 @@ export default function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline, isSystemConnected } = useUser();
-  const [isMiniMenuOpen, setIsMiniMenuOpen] = useState(false);
+
   const { playSound } = useSounds();
   const [viewMode, setViewMode] = useState<ViewMode>("global");
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
@@ -56,6 +56,7 @@ export default function ChatPage() {
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
   const [banInfo, setBanInfo] = useState<BanInfo | null>(null);
   const [showBanDialog, setShowBanDialog] = useState(false);
+  const [isMiniMenuOpen, setIsMiniMenuOpen] = useState(false);
   const { unreadCount, markAllAsRead, markPrivateMessagesAsRead, markGlobalMessagesAsRead, refreshUnreadCounts } =
     useChatNotifications();
   const { blockedUsers, blockUser, unblockUser, isUserBlocked } = useUserBlocking();
@@ -116,7 +117,6 @@ export default function ChatPage() {
     }
   };
 
-  // Tüm fonksiyonlar aynı kalacak (kısaltıyorum)
   const fetchAllUsers = async () => {
     try {
       console.log("🔍 DEBUG: fetchAllUsers başladı, user.id:", user?.id);
@@ -215,7 +215,6 @@ export default function ChatPage() {
   useEffect(() => {
     const openPrivateChatUserId = searchParams.get("openPrivateChat");
     if (openPrivateChatUserId && user?.id) {
-      // Kullanıcı bilgisini al ve özel mesajı aç
       const openChatFromNotification = async () => {
         try {
           const { data: targetUserData, error } = await supabase
@@ -556,13 +555,16 @@ export default function ChatPage() {
     </ScrollArea>
   );
 
+  // ── RENDER CONTENT
+  // Header blur almaz (ChatMiniMenu orada), sadece altındaki içerik blur alır
   const renderContent = () => {
     if (viewMode === "private-chat" && selectedUser && activeChatId) {
       return (
         <div className="h-full flex flex-col">
+          {/* Header — blur almaz */}
           {renderHeader(`KELİMELE - ${selectedUser.username}`, "Özel Sohbet", true)}
-
-          <div className="flex-1 min-h-0">
+          {/* Sadece içerik blur alır */}
+          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
             <PrivateChat chatId={activeChatId} otherUser={selectedUser} onBack={() => handleViewChange("users")} />
           </div>
         </div>
@@ -572,9 +574,12 @@ export default function ChatPage() {
     if (viewMode === "users") {
       return (
         <div className="h-full flex flex-col">
+          {/* Header — blur almaz */}
           {renderHeader("Özel Mesajlar", `${onlineUsers.length} kişi çevrimiçi`, true)}
-
-          {renderUsersList()}
+          {/* Sadece içerik blur alır */}
+          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+            {renderUsersList()}
+          </div>
         </div>
       );
     }
@@ -582,9 +587,12 @@ export default function ChatPage() {
     if (viewMode === "blocked-users") {
       return (
         <div className="h-full flex flex-col">
+          {/* Header — blur almaz */}
           {renderHeader("Engellediklerim", `${blockedUsers.length} kişi engellendi`, true)}
-
-          {renderBlockedUsersList()}
+          {/* Sadece içerik blur alır */}
+          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+            {renderBlockedUsersList()}
+          </div>
         </div>
       );
     }
@@ -592,9 +600,10 @@ export default function ChatPage() {
     // Global chat (default)
     return (
       <div className="h-full flex flex-col">
+        {/* Header — ChatMiniMenu burada, blur almaz */}
         {renderHeader("KELİMELE SOHBET", `${onlineUsers.length} kişi çevrimiçi`)}
-
-        <div className="flex-1 min-h-0">
+        {/* Sadece sohbet alanı blur alır */}
+        <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
           <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} onStartPrivateChat={startPrivateChat} />
         </div>
       </div>
@@ -640,9 +649,8 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-[#2D3436] via-[#434d50] to-[#636E72]">
-      <div
-        className={`flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden transition-all duration-300 ${isMiniMenuOpen ? "blur-md scale-[0.98] opacity-50" : ""}`}
-      >
+      {/* Ana wrapper — blur YOK burada, blur renderContent içinde içerik div'ine veriliyor */}
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
