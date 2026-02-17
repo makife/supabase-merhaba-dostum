@@ -15,6 +15,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { useMusic } from "@/contexts/MusicContext";
 import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
+import { ContactDialog } from "@/components/ContactDialog";
 import {
   ArrowLeft,
   Bell,
@@ -65,6 +66,7 @@ const SettingsPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteFinalConfirmOpen, setDeleteFinalConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   // Load settings from native storage and set initial values
   useEffect(() => {
@@ -303,26 +305,6 @@ const SettingsPage = () => {
     openModal("Hakkımızda", content);
   };
 
-  const openContact = () => {
-    const content = `
-      <div class="space-y-4">
-        <h3 class="font-semibold text-lg">İletişim</h3>
-        
-        <div class="space-y-4">
-          <div class="p-4 bg-slate-800/60 rounded-lg border border-white/10">
-            <h4 class="font-medium text-white flex items-center mb-3">
-              📧
-              <span class="whitespace-nowrap ml-2">E-posta</span>
-            </h4>
-            <div class="space-y-2">
-              <p class="text-sm font-mono break-all text-slate-300">team@kelimele.site</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    openModal("İletişim", content);
-  };
 
   return (
     <div
@@ -473,12 +455,12 @@ const SettingsPage = () => {
             </button>
 
             <button
-              onClick={openContact}
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
-            >
-              <Mail className="w-5 h-5 text-cyan-400" />
-              <span className="text-white font-medium">İletişim</span>
-            </button>
+  onClick={() => setContactOpen(true)}          // <-- değişti
+  className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+>
+  <Mail className="w-5 h-5 text-cyan-400" />
+  <span className="text-white font-medium">İletişim</span>
+</button>
           </div>
         </div>
 
@@ -597,6 +579,11 @@ const SettingsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ContactDialog
+  open={contactOpen}
+  onOpenChange={setContactOpen}
+/>
 
       <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
         <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
