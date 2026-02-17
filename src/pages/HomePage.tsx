@@ -428,7 +428,7 @@ const HomePage = () => {
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
       <div
-        className="flex-none z-30 pb-4 relative shadow-2xl transition-colors duration-500 border-b border-white/5"
+        className={`flex-none z-30 pb-4 relative shadow-2xl transition-all duration-300 border-b border-white/5 ${isMenuOpen ? "blur-md scale-95 opacity-50" : ""}`}
         style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
       >
         {/* HEADER (Profil & Mürekkep) */}
