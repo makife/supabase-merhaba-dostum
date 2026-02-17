@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, LogOut, Clock, Crown } from "lucide-react";
+import { Trophy, LogOut, Clock, Crown, ArrowLeft, Swords, Flame, Shield } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,12 +27,128 @@ import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
+// ── Tur bilgileri ─────────────────────────────────────────────────────────────
+const ROUND_INFO = {
+  1: {
+    name: "Çeyrek Final",
+    short: "ÇF",
+    dot: "bg-indigo-400",
+    ring: "ring-indigo-400/30",
+    bg: "bg-indigo-500/10",
+    icon: Swords,
+  },
+  2: {
+    name: "Yarı Final",
+    short: "YF",
+    dot: "bg-amber-400",
+    ring: "ring-amber-400/30",
+    bg: "bg-amber-500/10",
+    icon: Flame,
+  },
+  3: { name: "Final", short: "F", dot: "bg-rose-400", ring: "ring-rose-400/30", bg: "bg-rose-500/10", icon: Crown },
+} as const;
+
+// ── Bileşen: Oyuncu satırı ────────────────────────────────────────────────────
+const PlayerRow = ({
+  player,
+  score,
+  isWinner,
+  isCompleted,
+  isInProgress,
+}: {
+  player: any;
+  score: number;
+  isWinner: boolean;
+  isCompleted: boolean;
+  isInProgress: boolean;
+}) => (
+  <div
+    className={`rounded-xl px-3 py-2 flex items-center justify-between transition-all
+    ${isWinner ? "bg-emerald-500/15 ring-1 ring-emerald-400/30" : "bg-white/5 ring-1 ring-white/8"}`}
+  >
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <Avatar className="w-7 h-7 flex-shrink-0">
+        <AvatarImage src={player.avatar_url || undefined} />
+        <AvatarFallback className="bg-indigo-500/30 text-white text-xs font-bold">
+          {player.name.charAt(0).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-white/90 text-xs font-medium truncate">{player.name}</span>
+    </div>
+    {(isCompleted || isInProgress) && (
+      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+        {isWinner && <Trophy className="w-3.5 h-3.5 text-amber-400" />}
+        <span
+          className={`text-sm font-black ${isWinner ? "text-emerald-300" : isInProgress ? "text-amber-300" : "text-white/60"}`}
+        >
+          {score}
+        </span>
+      </div>
+    )}
+  </div>
+);
+
+// ── Bileşen: Maç kartı ────────────────────────────────────────────────────────
+const MatchCard = ({ match, round }: { match: any; round: 1 | 2 | 3 }) => {
+  const info = ROUND_INFO[round];
+
+  const getPlayerInfo = (playerId: string | null, playerData: any) => {
+    if (!playerId) return { name: "TBD", isBot: false, avatar_url: null };
+    const isBot = playerData?.is_bot || playerId.startsWith("bot_");
+    if (isBot) {
+      const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const botName = playerData?.username || generateBotName(seed);
+      return { name: botName, isBot: true, avatar_url: generateBotAvatar(seed, botName) };
+    }
+    return { name: playerData?.username || "Oyuncu", isBot: false, avatar_url: playerData?.avatar_url };
+  };
+
+  const player1 = getPlayerInfo(match.player1_id, match.player1);
+  const player2 = getPlayerInfo(match.player2_id, match.player2);
+  const isCompleted = match.status === "completed";
+  const isInProgress = match.status === "in_progress";
+  const winner = match.winner_id;
+
+  const statusDot = isCompleted ? "bg-emerald-400" : isInProgress ? "bg-amber-400" : "bg-slate-500";
+  const statusText = isCompleted ? "Bitti" : isInProgress ? "Oynanıyor" : "Bekliyor";
+
+  return (
+    <div className={`rounded-2xl p-3 ring-1 ${info.ring} ${info.bg} space-y-1.5`}>
+      {/* Maç başlığı */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Maç {match.match_number}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+          <span className="text-[10px] text-white/50">{statusText}</span>
+        </div>
+      </div>
+
+      <PlayerRow
+        player={player1}
+        score={match.player1_score || 0}
+        isWinner={isCompleted && winner === match.player1_id}
+        isCompleted={isCompleted}
+        isInProgress={isInProgress}
+      />
+      <div className="text-center text-white/20 text-[10px] font-black tracking-widest">VS</div>
+      <PlayerRow
+        player={player2}
+        score={match.player2_score || 0}
+        isWinner={isCompleted && winner === match.player2_id}
+        isCompleted={isCompleted}
+        isInProgress={isInProgress}
+      />
+    </div>
+  );
+};
+
+// ── Ana sayfa ─────────────────────────────────────────────────────────────────
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { profile, refreshProfile, isSystemConnected } = useUser();
+  const { profile, refreshProfile } = useUser();
   const { playSpecialSound } = useSounds();
   const { serverNow, offset } = useServerTimeContext();
 
@@ -47,6 +163,12 @@ const TournamentBracketPage = () => {
   } = useTournament(tournamentId);
 
   const [isLeaving, setIsLeaving] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+  const [showChampion, setShowChampion] = useState(false);
+  const [showEliminated, setShowEliminated] = useState(false);
+  const [navigatedToGame, setNavigatedToGame] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [wonReward, setWonReward] = useState<any>(null);
 
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
@@ -57,110 +179,54 @@ const TournamentBracketPage = () => {
     extra_spin: "/carkOdul.png",
   };
 
-  const [wonReward, setWonReward] = useState<any>(null);
-
-  // Bracket'ten ayrılma fonksiyonu
-  const handleLeaveBracket = async () => {
-    if (!user || !tournamentId) return;
-
-    setIsLeaving(true);
-    try {
-      const currentRound = currentTournament?.current_round || 1;
-
-      const myActiveMatch = matches.find(
-        (m) =>
-          m.round === currentRound &&
-          (m.player1_id === user.id || m.player2_id === user.id) &&
-          (m.status === "pending" || m.status === "in_progress"),
-      );
-
-      if (myActiveMatch) {
-        const winnerId = myActiveMatch.player1_id === user.id ? myActiveMatch.player2_id : myActiveMatch.player1_id;
-
-        console.log(`🚪 Bracket'ten ayrılıyor, maç ${myActiveMatch.id} - Kazanan: ${winnerId}`);
-
-        await supabase
-          .from("tournament_matches")
-          .update({
-            status: "completed",
-            winner_id: winnerId,
-          })
-          .eq("id", myActiveMatch.id);
-
-        toast.info("Maçı bıraktınız, rakibiniz kazandı");
-      }
-
-      await leaveTournament();
-      navigate("/tournament");
-    } catch (error) {
-      console.error("❌ Bracket ayrılma hatası:", error);
-      toast.error("Ayrılırken bir hata oluştu");
-    } finally {
-      setIsLeaving(false);
-    }
-  };
-
-  const [countdown, setCountdown] = useState(10);
-  const [showChampion, setShowChampion] = useState(false);
-  const [showEliminated, setShowEliminated] = useState(false);
-  const [navigatedToGame, setNavigatedToGame] = useState(false);
   const navigatedMatchIdRef = useRef<string | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
-
   const fromCompletedMatchRef = useRef<string | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const matchesStartedRef = useRef<string | null>(null);
+  const advancingRef = useRef(false);
+  const completedMatchIdsRef = useRef<Set<string>>(new Set());
+  const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
+
+  // fromCompletedMatch state
   useEffect(() => {
     const state = location.state as { fromCompletedMatch?: string } | null;
     if (state?.fromCompletedMatch) {
-      console.log(`🔒 Came from completed match: ${state.fromCompletedMatch}, blocking re-navigation`);
       fromCompletedMatchRef.current = state.fromCompletedMatch;
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const matchesStartedRef = useRef<string | null>(null);
-  const advancingRef = useRef(false);
-
-  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  // Resync
   const handleBracketResync = useCallback(async () => {
-    if (tournamentId) {
-      await fetchTournamentDetails(tournamentId);
-    }
+    if (tournamentId) await fetchTournamentDetails(tournamentId);
   }, [tournamentId, fetchTournamentDetails]);
-
   usePageResync(handleBracketResync, "TournamentBracketPage", true);
 
   useEffect(() => {
     if (tournamentId) {
       setInitialLoading(true);
-      fetchTournamentDetails(tournamentId).finally(() => {
-        setTimeout(() => setInitialLoading(false), 300);
-      });
+      fetchTournamentDetails(tournamentId).finally(() => setTimeout(() => setInitialLoading(false), 300));
       setNavigatedToGame(false);
     }
   }, [tournamentId]);
 
   useEffect(() => {
     if (currentTournament?.current_round) {
-      console.log(`🔄 Round changed to ${currentTournament.current_round}, resetting navigation flags`);
       setNavigatedToGame(false);
       matchesStartedRef.current = null;
       navigatedMatchIdRef.current = null;
     }
   }, [currentTournament?.current_round]);
 
-  // Start matches logic
+  // Start all matches
   const startAllMatches = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.creator_id !== user.id) return;
 
     const currentRound = currentTournament.current_round || 1;
     const roundKey = `${tournamentId}-${currentRound}`;
-
     if (matchesStartedRef.current === roundKey) return;
     matchesStartedRef.current = roundKey;
-
-    console.log(`🎮 Round ${currentRound} maçları başlatılıyor...`);
 
     try {
       const { data: pendingMatches } = await supabase
@@ -178,45 +244,34 @@ const TournamentBracketPage = () => {
       });
 
       for (const match of pendingMatches) {
-        const player1IsBot = botIds.has(match.player1_id || "") || match.player1_id?.startsWith("bot_");
-        const player2IsBot = botIds.has(match.player2_id || "") || match.player2_id?.startsWith("bot_");
+        const p1Bot = botIds.has(match.player1_id || "") || match.player1_id?.startsWith("bot_");
+        const p2Bot = botIds.has(match.player2_id || "") || match.player2_id?.startsWith("bot_");
 
-        if (player1IsBot && player2IsBot) {
-          const p1Score = Math.floor(Math.random() * 50) + 20;
-          const p2Score = Math.floor(Math.random() * 50) + 20;
-          const winnerId = p1Score >= p2Score ? match.player1_id : match.player2_id;
-
+        if (p1Bot && p2Bot) {
+          const p1s = Math.floor(Math.random() * 50) + 20;
+          const p2s = Math.floor(Math.random() * 50) + 20;
           await supabase
             .from("tournament_matches")
             .update({
               status: "completed",
-              player1_score: p1Score,
-              player2_score: p2Score,
-              winner_id: winnerId,
+              player1_score: p1s,
+              player2_score: p2s,
+              winner_id: p1s >= p2s ? match.player1_id : match.player2_id,
             })
             .eq("id", match.id);
-
-          console.log(`🤖 Bot maçı tamamlandı: ${match.id}`);
         } else {
           const now = new Date();
-          const countdownStartedAt = now.toISOString();
-          // 5s countdown + 5s animasyon + 120s oyun = 132s
-          // GamePage TOURNAMENT_START_OFFSET_MS (12000ms) ile tutarlı olmalı
           const endsAt = new Date(now.getTime() + 132 * 1000).toISOString();
-
           await supabase
             .from("tournament_matches")
             .update({
               status: "in_progress",
-              countdown_started_at: countdownStartedAt,
+              countdown_started_at: now.toISOString(),
               ends_at: endsAt,
             })
             .eq("id", match.id);
-
-          console.log(`⚔️ Maç başladı: ${match.id}`);
         }
       }
-
       setTimeout(() => checkAndAdvance(), 2000);
     } catch (error) {
       console.error("❌ Maç başlatma hatası:", error);
@@ -230,8 +285,6 @@ const TournamentBracketPage = () => {
     if (currentTournament.creator_id !== user.id) return;
 
     const currentRound = currentTournament.current_round || 1;
-
-    // TÜM alanları çekiyoruz (*) ki winner_id'ye erişelim
     const { data: roundMatches } = await supabase
       .from("tournament_matches")
       .select("*")
@@ -239,107 +292,74 @@ const TournamentBracketPage = () => {
       .eq("round", currentRound);
 
     if (!roundMatches) return;
-
     const allCompleted = roundMatches.every((m) => m.status === "completed");
 
     if (allCompleted && currentRound < 3) {
       advancingRef.current = true;
-      console.log(`📈 Round ${currentRound} tamamlandı, ilerleniyor...`);
       await advanceToNextRound(tournamentId);
       advancingRef.current = false;
     } else if (allCompleted && currentRound === 3) {
-      // FİNAL BİTTİ - KAZANANI BUL VE BİLDİRİM GÖNDER
-
       await supabase
         .from("tournaments")
         .update({ status: "completed", finished_at: new Date().toISOString() })
         .eq("id", tournamentId);
 
       const finalMatch = roundMatches[0];
-      if (finalMatch && finalMatch.winner_id) {
+      if (finalMatch?.winner_id) {
         const winnerProfile = participants.find((p) => p.user_id === finalMatch.winner_id);
-        const winnerName = winnerProfile?.profiles?.username || "Bir Oyuncu";
-
-        // Bildirim RPC çağrısı - HATA DÜZELTİLDİ: (supabase.rpc as any)
         await (supabase.rpc as any)("notify_tournament_end", {
           p_tournament_id: tournamentId,
           p_winner_id: finalMatch.winner_id,
-          p_winner_name: winnerName,
+          p_winner_name: winnerProfile?.profiles?.username || "Bir Oyuncu",
         });
-
-        console.log("📢 Turnuva sonuç bildirimi gönderildi");
       }
     }
   }, [tournamentId, user, currentTournament, advanceToNextRound, participants]);
 
-  // Süresi dolan maç kontrolü
-  const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
-
+  // Expired match check
   useEffect(() => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.status !== "in_progress") return;
     if (currentTournament.creator_id !== user.id) return;
 
-    const checkExpiredMatches = async () => {
-      try {
-        const { data: expiredMatches } = await supabase
+    const checkExpired = async () => {
+      const { data: expired } = await supabase
+        .from("tournament_matches")
+        .select("*")
+        .eq("tournament_id", tournamentId)
+        .eq("status", "in_progress")
+        .lt("ends_at", new Date().toISOString());
+
+      if (!expired?.length) return;
+
+      for (const match of expired) {
+        const w = (match.player1_score || 0) >= (match.player2_score || 0) ? match.player1_id : match.player2_id;
+        await supabase
           .from("tournament_matches")
-          .select("*")
-          .eq("tournament_id", tournamentId)
-          .eq("status", "in_progress")
-          .lt("ends_at", new Date().toISOString());
-
-        if (!expiredMatches || expiredMatches.length === 0) return;
-
-        for (const match of expiredMatches) {
-          const p1Score = match.player1_score || 0;
-          const p2Score = match.player2_score || 0;
-          let winnerId: string;
-          if (p1Score >= p2Score) winnerId = match.player1_id;
-          else winnerId = match.player2_id;
-
-          await supabase
-            .from("tournament_matches")
-            .update({
-              status: "completed",
-              winner_id: winnerId,
-            })
-            .eq("id", match.id)
-            .eq("status", "in_progress");
-        }
-
-        if (expiredMatches.length > 0) {
-          fetchTournamentDetails(tournamentId);
-          setTimeout(() => checkAndAdvance(), 1000);
-        }
-      } catch (err) {
-        console.error("⏰ Süresi dolan maç kontrolü hatası:", err);
+          .update({ status: "completed", winner_id: w })
+          .eq("id", match.id)
+          .eq("status", "in_progress");
       }
+      fetchTournamentDetails(tournamentId);
+      setTimeout(() => checkAndAdvance(), 1000);
     };
 
-    checkExpiredMatches();
-    expiredMatchCheckRef.current = setInterval(checkExpiredMatches, 5000);
-
+    checkExpired();
+    expiredMatchCheckRef.current = setInterval(checkExpired, 5000);
     return () => {
-      if (expiredMatchCheckRef.current) {
-        clearInterval(expiredMatchCheckRef.current);
-        expiredMatchCheckRef.current = null;
-      }
+      if (expiredMatchCheckRef.current) clearInterval(expiredMatchCheckRef.current);
     };
   }, [tournamentId, user?.id, currentTournament?.status, currentTournament?.creator_id, checkAndAdvance]);
 
+  // Countdown
   useEffect(() => {
     if (!currentTournament || currentTournament.status !== "in_progress") return;
     if (!currentTournament.next_round_starts_at) return;
 
-    const targetTime = new Date(currentTournament.next_round_starts_at).getTime();
-
+    const target = new Date(currentTournament.next_round_starts_at).getTime();
     const tick = () => {
-      // Server time kullanarak doğru kalan süreyi hesapla
-      const now = serverNow();
-      const remaining = Math.max(0, Math.ceil((targetTime - now) / 1000));
+      const remaining = Math.max(0, Math.ceil((target - serverNow()) / 1000));
       setCountdown(remaining);
-
       if (remaining === 0) {
         if (countdownRef.current) {
           clearInterval(countdownRef.current);
@@ -348,65 +368,38 @@ const TournamentBracketPage = () => {
         startAllMatches();
       }
     };
-
     tick();
     countdownRef.current = setInterval(tick, 1000);
-
     return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-        countdownRef.current = null;
-      }
+      if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches, serverNow, offset]);
 
-  // 🔒 Tamamlanmış maçları takip et - tekrar navigation'ı önle
-  const completedMatchIdsRef = useRef<Set<string>>(new Set());
-
+  // Navigate to match
   useEffect(() => {
     if (!user || !tournamentId) return;
     if (!currentTournament || currentTournament.status !== "in_progress") return;
 
     const navigateToMatch = async (match: any, source: string) => {
-      // 🔒 GUARD 1: fromCompletedMatch kontrolü - ayrıldığımız maça geri dönmeyi önle
-      if (fromCompletedMatchRef.current === match.id) {
-        console.log(`🚫 [${source}] Blocking navigation - came from this completed match:`, match.id);
-        return false;
-      }
-
-      // 🔒 GUARD 2: Daha önce tamamlandığını bildiğimiz maçları atla
-      if (completedMatchIdsRef.current.has(match.id)) {
-        console.log(`🚫 [${source}] Blocking navigation - match already completed in this session:`, match.id);
-        return false;
-      }
+      if (fromCompletedMatchRef.current === match.id) return false;
+      if (completedMatchIdsRef.current.has(match.id)) return false;
 
       const completedKey = `${STORAGE_KEYS.TOURNAMENT_MATCH_COMPLETED_PREFIX}${match.id}`;
-      const isLocallyCompleted = await nativeStorage.getItem(completedKey);
-
-      if (isLocallyCompleted) {
+      const isLocallyDone = await nativeStorage.getItem(completedKey);
+      if (isLocallyDone) {
         completedMatchIdsRef.current.add(match.id);
-        console.log(`🚫 [${source}] Blocking navigation - locally marked as completed:`, match.id);
         return false;
       }
-
       if (match.status === "completed") {
         completedMatchIdsRef.current.add(match.id);
-        console.log(`🚫 [${source}] Blocking navigation - status is completed:`, match.id);
         return false;
       }
-
-      if (navigatedMatchIdRef.current === match.id) {
-        console.log(`🚫 [${source}] Blocking navigation - already navigating to this match:`, match.id);
-        return false;
-      }
-
+      if (navigatedMatchIdRef.current === match.id) return false;
       if (match.winner_id) {
         completedMatchIdsRef.current.add(match.id);
-        console.log(`🚫 [${source}] Blocking navigation - winner already set:`, match.id);
         return false;
       }
 
-      console.log(`🎮 [${source}] My match started, navigating:`, match.id);
       navigatedMatchIdRef.current = match.id;
       setNavigatedToGame(true);
       navigate(`/tournament/game/${match.id}`);
@@ -420,16 +413,11 @@ const TournamentBracketPage = () => {
           (m as any).countdown_started_at &&
           (m.player1_id === user.id || m.player2_id === user.id),
       );
-
-      if (myMatch && navigatedMatchIdRef.current !== myMatch.id) {
-        return navigateToMatch(myMatch, "Initial");
-      }
+      if (myMatch && navigatedMatchIdRef.current !== myMatch.id) return navigateToMatch(myMatch, "Initial");
       return false;
     };
 
-    if (!navigatedToGame) {
-      if (checkMyMatch()) return;
-    }
+    if (!navigatedToGame) checkMyMatch();
 
     const channel = supabase
       .channel(`my-match-updates-${user.id}-${currentTournament.current_round}`)
@@ -442,41 +430,32 @@ const TournamentBracketPage = () => {
           filter: `tournament_id=eq.${tournamentId}`,
         },
         (payload) => {
-          const newMatch = payload.new as any;
-
-          // 🔒 Tamamlanan maçları takip listesine ekle
-          if (newMatch.status === "completed" || newMatch.winner_id) {
-            completedMatchIdsRef.current.add(newMatch.id);
-            console.log(`📝 Match marked as completed:`, newMatch.id);
+          const m = payload.new as any;
+          if (m.status === "completed" || m.winner_id) {
+            completedMatchIdsRef.current.add(m.id);
             return;
           }
-
           if (
-            newMatch.status === "in_progress" &&
-            newMatch.countdown_started_at &&
-            (newMatch.player1_id === user.id || newMatch.player2_id === user.id)
-          ) {
-            navigateToMatch(newMatch, "Realtime");
-          }
+            m.status === "in_progress" &&
+            m.countdown_started_at &&
+            (m.player1_id === user.id || m.player2_id === user.id)
+          )
+            navigateToMatch(m, "Realtime");
         },
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [TournamentBracketPage] Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("⚠️ [TournamentBracketPage] Cleanup ATLANYOR");
     };
   }, [matches, user, navigatedToGame, tournamentId, navigate, currentTournament]);
 
+  // Champion / eliminated
   useEffect(() => {
     if (!user || !matches.length) return;
-
     const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
     if (!finalMatch?.winner_id) return;
-
     const isInFinal = finalMatch.player1_id === user.id || finalMatch.player2_id === user.id;
-
     if (finalMatch.winner_id === user.id && !showChampion) {
       setShowChampion(true);
       playSpecialSound("/sampiyon.mp3", 0.8);
@@ -484,99 +463,78 @@ const TournamentBracketPage = () => {
     } else if (isInFinal && finalMatch.winner_id !== user.id && !showEliminated) {
       setShowEliminated(true);
     }
-  }, [matches, user, showChampion, showEliminated, playSpecialSound]);
+  }, [matches, user, showChampion, showEliminated]);
 
   const giveChampionReward = async () => {
     if (!user || !profile) return;
-
-    const rewardPool = [
+    const pool = [
       { type: "ink", value: 5, key: "ink", label: "+5 Mürekkep" },
-      { type: "joker", item: "degistir", value: 2, key: "degistir", label: "+2 Değiştir Jokeri" },
-      { type: "joker", item: "senyaz", value: 2, key: "senyaz", label: "+2 Sen Yaz Jokeri" },
-      { type: "joker", item: "fisilda", value: 2, key: "fisilda", label: "+2 Fısılda Jokeri" },
+      { type: "joker", value: 2, key: "degistir", label: "+2 Değiştir Jokeri", item: "degistir" },
+      { type: "joker", value: 2, key: "senyaz", label: "+2 Sen Yaz Jokeri", item: "senyaz" },
+      { type: "joker", value: 2, key: "fisilda", label: "+2 Fısılda Jokeri", item: "fisilda" },
       { type: "credits", value: 3, key: "credits", label: "+3 Oyun Hakkı" },
       { type: "extra_spin", value: 1, key: "extra_spin", label: "+1 Çark Hakkı" },
     ];
-
-    const selected = rewardPool[Math.floor(Math.random() * rewardPool.length)];
-    setWonReward(selected); // State'e kaydet ki ekranda resmi çıksın
-
+    const selected = pool[Math.floor(Math.random() * pool.length)];
+    setWonReward(selected);
     try {
-      let updateData: any = {};
-
       if (selected.type === "ink") {
-        updateData.ink_count = (profile.ink_count || 0) + selected.value;
+        await supabase
+          .from("profiles")
+          .update({ ink_count: (profile.ink_count || 0) + selected.value })
+          .eq("id", user.id);
       } else if (selected.type === "credits") {
-        // 🔥 FIX: game_credits max 5, fazlası bonus_credits'e
-        const currentGame = profile.game_credits || 0;
-        const currentBonus = profile.bonus_credits || 0;
-        const creditsToAdd = selected.value;
-        const spaceInGame = Math.max(0, 5 - currentGame);
-        const addToGame = Math.min(creditsToAdd, spaceInGame);
-        const addToBonus = creditsToAdd - addToGame;
-        updateData.game_credits = currentGame + addToGame;
-        updateData.bonus_credits = currentBonus + addToBonus;
-      } else if (selected.type === "joker" && selected.item) {
-        // user_inventory tablosuna upsert yap
-        const { data: existingItem } = await supabase
+        const g = profile.game_credits || 0,
+          b = profile.bonus_credits || 0;
+        const space = Math.max(0, 5 - g);
+        const toG = Math.min(selected.value, space);
+        await supabase
+          .from("profiles")
+          .update({ game_credits: g + toG, bonus_credits: b + (selected.value - toG) })
+          .eq("id", user.id);
+      } else if (selected.type === "joker" && (selected as any).item) {
+        const { data: ex } = await supabase
           .from("user_inventory")
           .select("quantity")
           .eq("user_id", user.id)
-          .eq("item_type", selected.item)
+          .eq("item_type", (selected as any).item)
           .single();
-
-        if (existingItem) {
+        if (ex)
           await supabase
             .from("user_inventory")
-            .update({ quantity: existingItem.quantity + selected.value })
+            .update({ quantity: ex.quantity + selected.value })
             .eq("user_id", user.id)
-            .eq("item_type", selected.item);
-        } else {
-          await supabase.from("user_inventory").insert({
-            user_id: user.id,
-            item_type: selected.item,
-            quantity: selected.value,
-          });
-        }
+            .eq("item_type", (selected as any).item);
+        else
+          await supabase
+            .from("user_inventory")
+            .insert({ user_id: user.id, item_type: (selected as any).item, quantity: selected.value });
       } else if (selected.type === "extra_spin") {
-        // Bonus çark hakkını profiles tablosuna ekle
-        const currentBonusSpins = profile?.bonus_spins || 0;
         await supabase
           .from("profiles")
-          .update({ bonus_spins: currentBonusSpins + selected.value })
+          .update({ bonus_spins: (profile?.bonus_spins || 0) + selected.value })
           .eq("id", user.id);
-
-        console.log(`Bonus çark hakkı verildi. Yeni toplam: ${currentBonusSpins + selected.value}`);
       }
-
-      // Sadece profil verisi değiştiyse (mürekkep/kredi) profili güncelle
-      // Jokerler ve Çark için burası çalışmaz (onlar kendi tablolarına gitti)
-      if (selected.type === "ink" || selected.type === "credits") {
-        await supabase.from("profiles").update(updateData).eq("id", user.id);
-      }
-
       refreshProfile?.();
-    } catch (error) {
-      console.error("Ödül hatası:", error);
+    } catch (e) {
+      console.error("Ödül hatası:", e);
     }
   };
 
   useEffect(() => {
     if (!showChampion && !showEliminated) return;
-    const timer = setTimeout(() => navigate("/tournament"), 10000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => navigate("/tournament"), 10000);
+    return () => clearTimeout(t);
   }, [showChampion, showEliminated, navigate]);
 
   useEffect(() => {
     if (!tournamentId || !currentTournament || currentTournament.status !== "in_progress") return;
-    const interval = setInterval(() => {
-      checkAndAdvance();
-    }, 5000);
+    const interval = setInterval(() => checkAndAdvance(), 5000);
     return () => clearInterval(interval);
   }, [tournamentId, currentTournament, checkAndAdvance]);
 
   const matchesByRound = useMemo(() => {
-    const rounds: { [key: number]: typeof matches } = {};
+    const rounds: { [k: number]: typeof matches } = {};
     matches.forEach((m) => {
       if (!rounds[m.round]) rounds[m.round] = [];
       rounds[m.round].push(m);
@@ -585,16 +543,37 @@ const TournamentBracketPage = () => {
     return rounds;
   }, [matches]);
 
+  // ── Türetilmiş state ─────────────────────────────────────────────────────
+  const currentRound = currentTournament?.current_round || 1;
+  const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
+  const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+  const hasActiveCountdown = hasPendingMatches && countdown > 0;
+
+  // "Birazdan maç başlayacak" — tur oluşturuldu ama henüz geri sayım yok
+  const isWaitingForCountdown =
+    currentTournament?.status === "in_progress" &&
+    currentRoundMatches.length > 0 &&
+    hasPendingMatches &&
+    !hasActiveCountdown &&
+    !loading;
+
+  // Tur henüz oluşturulmamış (round geçişi bekleniyor)
+  const isWaitingForRoundCreation =
+    currentTournament?.status === "in_progress" &&
+    !hasActiveCountdown &&
+    !isWaitingForCountdown &&
+    (initialLoading || loading || currentRoundMatches.length === 0);
+
+  // ── Özel ekranlar ────────────────────────────────────────────────────────
+
   if (!currentTournament || initialLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-4 flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md bg-indigo-800 border-indigo-600">
-          <CardContent className="p-8 text-center">
-            <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
-            <h2 className="text-xl font-bold text-white mb-2">Turnuva Durumu Güncelleniyor</h2>
-            <p className="text-yellow-200 animate-pulse">Sonuçlar işleniyor ve sonraki eşleşmeler hazırlanıyor...</p>
-          </CardContent>
-        </Card>
+      <div
+        className="fixed inset-0 flex flex-col items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin mb-4" />
+        <p className="text-white/60 text-sm font-medium uppercase tracking-widest">Turnuva yükleniyor</p>
       </div>
     );
   }
@@ -602,17 +581,11 @@ const TournamentBracketPage = () => {
   if (showChampion) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
-        {/* Arka Plan Görseli (Sabit) */}
-        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon Arka Plan" />
-
-        {/* İçerik Katmanı */}
+        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon" />
         <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-8">
           {wonReward && (
             <div className="text-center">
-              {/* Ödülünüz Başlığı - 4 satır aşağı */}
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
-
-              {/* Ödül Kartı Görseli - 2 satır aşağı */}
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
                 className="w-48 h-auto mx-auto drop-shadow-2xl mt-8"
@@ -627,223 +600,219 @@ const TournamentBracketPage = () => {
 
   if (showEliminated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-700 to-purple-800 p-4 flex items-center justify-center">
+      <div
+        className="fixed inset-0 flex flex-col items-center justify-center gap-6"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <div className="text-6xl">😢</div>
         <div className="text-center">
-          <div className="text-6xl mb-4">😢</div>
-          <h1 className="text-4xl font-bold text-white mb-2">Elendiniz!</h1>
-          <Button onClick={() => navigate("/tournament")} className="bg-blue-600 hover:bg-blue-700">
-            <Trophy className="w-4 h-4 mr-2" />
-            Turnuva Listesi
-          </Button>
+          <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
+          <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
+        </div>
+        <div
+          onClick={() => navigate("/tournament")}
+          className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+          <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
+            <Trophy className="w-4 h-4" />
+          </div>
         </div>
       </div>
     );
   }
 
-  const currentRound = currentTournament.current_round || 1;
-  const hasPendingMatches = matches.some((m) => m.round === currentRound && m.status === "pending");
-  const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-  const hasActiveCountdown = hasPendingMatches && countdown > 0;
-  const isWaitingForRoundCreation =
-    currentTournament.status === "in_progress" &&
-    !hasActiveCountdown &&
-    (initialLoading || loading || currentRoundMatches.length === 0);
-
+  // ── Ana bracket ekranı ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-900 p-3 sm:p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
+    <div
+      className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+    >
+      {/* Arka plan ışık efekti */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
+
+      {/* ── HEADER ── */}
+      <div
+        className="flex-none z-10 px-5 pt-6 pb-4 border-b border-white/5 shadow-xl"
+        style={{ backgroundColor: "#1a1a2e" }}
+      >
+        <div className="flex items-center justify-between">
+          {/* Ayrıl butonu */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button size="sm" className="bg-red-600 hover:bg-red-700" disabled={isLeaving}>
-                <LogOut className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">{isLeaving ? "Ayrılıyor..." : "Ayrıl"}</span>
-              </Button>
+              <button
+                disabled={isLeaving}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-300 bg-red-500/10 ring-1 ring-red-500/20 active:scale-90 transition-transform hover:bg-red-500/15 disabled:opacity-40"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                {isLeaving ? "Çıkıyor..." : "Ayrıl"}
+              </button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-gray-900 border-gray-700">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">Turnuvadan Ayrıl</AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-300">
-                  Turnuvadan ayrılırsanız aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz bir sonraki tura geçer. Bu
-                  işlem geri alınamaz.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600">
+            <AlertDialogContent
+              className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
+              style={{ left: "50%", transform: "translateX(-50%)" }}
+            >
+              <div className="px-5 pt-6 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1 h-5 bg-red-400 rounded-full" />
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Turnuvadan Ayrıl</h2>
+                </div>
+                <p className="text-[11px] text-slate-400 ml-3">
+                  Aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz tur atlar. Bu işlem geri alınamaz.
+                </p>
+              </div>
+              <div className="px-4 py-4 flex flex-col gap-2">
+                <AlertDialogCancel className="rounded-2xl bg-white/8 ring-1 ring-white/10 text-white/80 border-0 hover:bg-white/12 text-sm font-semibold h-11">
                   Vazgeç
                 </AlertDialogCancel>
-                <AlertDialogAction onClick={handleLeaveBracket} className="bg-red-600 hover:bg-red-700">
+                <AlertDialogAction
+                  onClick={async () => {
+                    setIsLeaving(true);
+                    try {
+                      if (!user || !tournamentId) return;
+                      const myMatch = matches.find(
+                        (m) =>
+                          m.round === currentRound &&
+                          (m.player1_id === user.id || m.player2_id === user.id) &&
+                          (m.status === "pending" || m.status === "in_progress"),
+                      );
+                      if (myMatch) {
+                        const winnerId = myMatch.player1_id === user.id ? myMatch.player2_id : myMatch.player1_id;
+                        await supabase
+                          .from("tournament_matches")
+                          .update({ status: "completed", winner_id: winnerId })
+                          .eq("id", myMatch.id);
+                        toast.info("Maçı bıraktınız, rakibiniz kazandı");
+                      }
+                      await leaveTournament();
+                      navigate("/tournament");
+                    } catch (e) {
+                      console.error("❌ Bracket ayrılma hatası:", e);
+                      toast.error("Ayrılırken bir hata oluştu");
+                    } finally {
+                      setIsLeaving(false);
+                    }
+                  }}
+                  className="rounded-2xl bg-red-500/15 ring-1 ring-red-500/30 text-red-300 border-0 hover:bg-red-500/20 text-sm font-semibold h-11"
+                >
                   Ayrıl
                 </AlertDialogAction>
-              </AlertDialogFooter>
+              </div>
+              <div className="h-2" />
             </AlertDialogContent>
           </AlertDialog>
-          <div className="text-center flex-1 mx-2">
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">{currentTournament.name}</h1>
-            <p className="text-gray-300 text-xs sm:text-sm">Turnuva Ağacı</p>
+
+          {/* Başlık */}
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-5 bg-amber-400 rounded-full" />
+            <h1 className="text-sm font-black text-white uppercase tracking-widest truncate max-w-[160px]">
+              {currentTournament.name}
+            </h1>
           </div>
-          <div className="w-16 sm:w-24" />
+
+          <div className="w-16" />
         </div>
+      </div>
 
-        {(isWaitingForRoundCreation || hasActiveCountdown) && (
-          <div className="sticky top-0 z-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-gradient-to-b from-purple-900 via-purple-900/95 to-transparent">
-            {isWaitingForRoundCreation && (
-              <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
-                <CardContent className="p-4 text-center">
-                  <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full mx-auto mb-2 animate-spin" />
-                  <p className="text-yellow-200 text-sm font-medium">
-                    🔄 {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Round"} oluşturuluyor,
-                    lütfen bekleyin...
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {hasActiveCountdown && (
-              <Card className="bg-indigo-800 border-indigo-600 shadow-lg">
-                <CardContent className="p-3 text-center">
-                  <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
-                  <p className="text-white font-medium text-sm">
-                    {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} başlıyor...
-                  </p>
-                  <p className="text-yellow-300 text-xl font-bold">{countdown} saniye</p>
-                </CardContent>
-              </Card>
-            )}
+      {/* ── SCROLLABLE İÇERİK ── */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-8 relative z-10">
+        {/* ── "Birazdan maç başlayacak" banner'ı ── */}
+        {isWaitingForCountdown && (
+          <div className="bg-[#16213e]/90 ring-1 ring-amber-400/20 rounded-3xl px-5 py-5 flex flex-col items-center gap-3 shadow-xl">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 ring-1 ring-amber-400/30 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-black text-white uppercase tracking-widest mb-1">Birazdan Maç Başlayacak</p>
+              <p className="text-xs text-slate-400">
+                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} hazırlanıyor, lütfen
+                bekleyin…
+              </p>
+            </div>
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms` }}
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-4">
-          {[1, 2, 3].map((round) => {
-            const roundInfo = {
-              1: { name: "Çeyrek Final", icon: "⚔️", color: "bg-purple-700", border: "border-purple-500" },
-              2: { name: "Yarı Final", icon: "🔥", color: "bg-orange-700", border: "border-orange-500" },
-              3: { name: "Final", icon: "👑", color: "bg-yellow-600", border: "border-yellow-400" },
-            }[round]!;
+        {/* ── Tur geçiş loading ── */}
+        {isWaitingForRoundCreation && (
+          <div className="bg-[#16213e]/90 ring-1 ring-indigo-400/20 rounded-3xl px-5 py-5 flex flex-col items-center gap-3 shadow-xl">
+            <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-indigo-400 animate-spin" />
+            <div className="text-center">
+              <p className="text-sm font-black text-white uppercase tracking-widest mb-1">
+                {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Tur"} Oluşturuluyor
+              </p>
+              <p className="text-xs text-slate-400">Eşleşmeler hazırlanıyor…</p>
+            </div>
+          </div>
+        )}
 
-            return (
-              <div key={round}>
-                <div className="text-center mb-2">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${roundInfo.color}`}>
-                    <span className="text-base">{roundInfo.icon}</span>
-                    <span className="text-white font-semibold text-sm">{roundInfo.name}</span>
-                  </div>
+        {/* ── Aktif geri sayım ── */}
+        {hasActiveCountdown && (
+          <div className="bg-[#16213e]/90 ring-1 ring-rose-400/20 rounded-3xl px-5 py-5 flex items-center gap-4 shadow-xl">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 ring-1 ring-rose-400/30 flex flex-col items-center justify-center flex-shrink-0">
+              <span className="text-xl font-black text-rose-300 leading-none">{countdown}</span>
+              <span className="text-[9px] text-rose-400/70 uppercase tracking-wider">sn</span>
+            </div>
+            <div>
+              <p className="text-sm font-black text-white uppercase tracking-widest">
+                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} Başlıyor
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">Hazır ol!</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Bracket ── */}
+        {[1, 2, 3].map((round) => {
+          const info = ROUND_INFO[round as 1 | 2 | 3];
+          const Icon = info.icon;
+          const isCurrentRound = round === currentRound;
+
+          return (
+            <div
+              key={round}
+              className={`bg-[#16213e]/80 ring-1 rounded-3xl overflow-hidden shadow-xl transition-all
+                ${isCurrentRound ? "ring-white/15" : "ring-white/5 opacity-70"}`}
+            >
+              {/* Tur başlığı */}
+              <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1 h-5 ${info.dot} rounded-full`} />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{info.name}</h3>
                 </div>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${info.bg} ring-1 ${info.ring}`}>
+                  <Icon className="w-4 h-4 text-white/70" />
+                </div>
+              </div>
 
+              {/* Maçlar */}
+              <div className="px-4 py-4 space-y-3">
                 {matchesByRound[round]?.length ? (
-                  matchesByRound[round].map((match) => <MatchCard key={match.id} match={match} roundInfo={roundInfo} />)
+                  matchesByRound[round].map((match) => (
+                    <MatchCard key={match.id} match={match} round={round as 1 | 2 | 3} />
+                  ))
                 ) : (
-                  <Card className="bg-white/5 border-white/10 mb-3">
-                    <CardContent className="p-3 text-center text-gray-400 text-sm">
-                      Maçlar henüz oluşturulmadı
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center gap-2 py-3 opacity-40">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />
+                    <p className="text-xs text-slate-400">Maçlar henüz oluşturulmadı</p>
+                  </div>
                 )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
-
-const MatchCard = ({ match, roundInfo }: { match: any; roundInfo: { color: string; border: string } }) => {
-  const getPlayerInfo = (playerId: string | null, playerData: any) => {
-    if (!playerId) return { name: "TBD", isBot: false, avatar_url: null };
-
-    const isBot = playerData?.is_bot || playerId.startsWith("bot_");
-    if (isBot) {
-      const seed = [...playerId].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      const botName = playerData?.username || generateBotName(seed);
-      return {
-        name: botName,
-        isBot: true,
-        avatar_url: generateBotAvatar(seed, botName),
-      };
-    }
-
-    return { name: playerData?.username || "Oyuncu", isBot: false, avatar_url: playerData?.avatar_url };
-  };
-
-  const player1 = getPlayerInfo(match.player1_id, match.player1);
-  const player2 = getPlayerInfo(match.player2_id, match.player2);
-  const isCompleted = match.status === "completed";
-  const winner = match.winner_id;
-
-  const statusText =
-    match.status === "completed" ? "Tamamlandı" : match.status === "in_progress" ? "Oynanıyor" : "Bekliyor";
-  const statusColor =
-    match.status === "completed" ? "bg-green-600" : match.status === "in_progress" ? "bg-yellow-600" : "bg-blue-600";
-
-  return (
-    <Card className={`${roundInfo.color} border ${roundInfo.border} mb-3`}>
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-white text-sm font-medium">Maç {match.match_number}</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${statusColor} text-white`}>{statusText}</span>
-        </div>
-
-        <PlayerRow
-          player={player1}
-          score={match.player1_score || 0}
-          isWinner={isCompleted && winner === match.player1_id}
-          isCompleted={isCompleted}
-          isInProgress={match.status === "in_progress"}
-        />
-
-        <div className="text-center text-white/60 text-xs my-1">VS</div>
-
-        <PlayerRow
-          player={player2}
-          score={match.player2_score || 0}
-          isWinner={isCompleted && winner === match.player2_id}
-          isCompleted={isCompleted}
-          isInProgress={match.status === "in_progress"}
-        />
-
-        {match.status === "in_progress" && (
-          <div className="mt-2 text-center">
-            <span className="text-yellow-300 text-xs">⚡ Maç devam ediyor</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-const PlayerRow = ({
-  player,
-  score,
-  isWinner,
-  isCompleted,
-  isInProgress,
-}: {
-  player: any;
-  score: number;
-  isWinner: boolean;
-  isCompleted: boolean;
-  isInProgress: boolean;
-}) => (
-  <div className={`rounded p-2 ${isWinner ? "bg-green-700 border border-green-400" : "bg-white/10"}`}>
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <Avatar className="w-7 h-7 flex-shrink-0">
-          <AvatarImage src={player.avatar_url || undefined} />
-          <AvatarFallback className="bg-blue-600 text-white text-xs">
-            {player.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-white text-sm truncate">{player.name}</span>
-      </div>
-      {(isCompleted || isInProgress) && (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {isWinner && <Trophy className="w-4 h-4 text-yellow-400" />}
-          <span className={`font-bold ${isInProgress ? "text-yellow-300" : "text-white"}`}>{score}</span>
-        </div>
-      )}
-    </div>
-  </div>
-);
 
 export default TournamentBracketPage;
