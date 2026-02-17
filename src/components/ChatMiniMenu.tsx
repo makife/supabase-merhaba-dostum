@@ -8,21 +8,25 @@ interface ChatMiniMenuProps {
   onViewChange: (mode: ViewMode) => void;
   onGoHome: () => void;
   currentView: ViewMode;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function ChatMiniMenu({ onViewChange, onGoHome, currentView }: ChatMiniMenuProps) {
+export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange }: ChatMiniMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { playSound } = useSounds();
 
   const handleToggle = () => {
     playSound("buttonClick");
-    setIsOpen(!isOpen);
+    const next = !isOpen;
+    setIsOpen(next);
+    onOpenChange?.(next);
   };
 
   const handleMenuClick = (action: () => void) => {
     playSound("buttonClick");
     action();
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const menuItems = [
@@ -76,7 +80,15 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView }: ChatMiniMe
   return (
     <div className="relative">
       {/* Overlay */}
-      {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setIsOpen(false);
+            onOpenChange?.(false);
+          }}
+        />
+      )}
 
       {/* Menu items — toggle butonunun altına açılıyor */}
       <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50">
