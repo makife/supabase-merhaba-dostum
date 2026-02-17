@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Users, UserX, Home, Menu, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 
@@ -31,99 +30,108 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView }: ChatMiniMe
       title: "Özel Sohbetlerim",
       icon: Users,
       action: () => onViewChange("users"),
-      color: "from-green-500 to-green-600",
-      hoverColor: "group-hover:from-green-600 group-hover:to-green-700",
+      iconColor: "text-emerald-300",
+      dotColor: "bg-emerald-400",
+      iconBg: "bg-emerald-500/20",
       isActive: currentView === "users",
     },
     {
       title: "Engellediklerim",
       icon: UserX,
       action: () => onViewChange("blocked-users"),
-      color: "from-red-500 to-red-600",
-      hoverColor: "group-hover:from-red-600 group-hover:to-red-700",
+      iconColor: "text-red-300",
+      dotColor: "bg-red-400",
+      iconBg: "bg-red-500/20",
       isActive: currentView === "blocked-users",
     },
     {
       title: "Ana Sayfa",
       icon: Home,
       action: onGoHome,
-      color: "from-purple-500 to-purple-600",
-      hoverColor: "group-hover:from-purple-600 group-hover:to-purple-700",
+      iconColor: "text-purple-300",
+      dotColor: "bg-purple-400",
+      iconBg: "bg-purple-500/20",
       isActive: false,
     },
   ];
 
+  // FloatingMenu ile aynı row stili
+  const rowBase =
+    "flex items-center gap-3 cursor-pointer select-none " +
+    "rounded-2xl px-3 py-2.5 " +
+    "ring-1 ring-white/20 " +
+    "active:scale-95 transition-all duration-150 ease-out " +
+    "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
+
+  const staggerStyle = (i: number): React.CSSProperties => ({
+    transitionDelay: isOpen ? `${i * 45}ms` : "0ms",
+    willChange: isOpen ? "transform, opacity" : "auto",
+  });
+
+  const itemAnim = () =>
+    `transform transition-all duration-200 ease-out ${
+      isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95 pointer-events-none"
+    }`;
+
   return (
     <div className="relative">
       {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
 
-      {/* Menu Toggle Button */}
-      <Button
-        onClick={handleToggle}
-        className={`relative overflow-hidden w-10 h-10 rounded-full border-2 border-white shadow-lg 
-                    transform transition-all duration-300 hover:scale-105 active:scale-95
-                    ${
-                      isOpen
-                        ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
-                        : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
-                    }`}
-      >
-        {isOpen ? (
-          <X className="w-5 h-5 text-white" />
-        ) : (
-          <Menu className="w-5 h-5 text-white" />
-        )}
-      </Button>
-
-      {/* Dropdown Menu - Top to Bottom */}
-      <div
-        className={`absolute top-14 right-0 flex flex-col items-end space-y-2 transition-all duration-300 z-50 ${
-          isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
+      {/* Menu items — toggle butonunun altına açılıyor */}
+      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50">
         {menuItems.map((item, index) => (
-          <div
-            key={item.title}
-            className={`transform transition-all duration-300 ${
-              isOpen ? "translate-y-0 scale-100" : "-translate-y-4 scale-75"
-            }`}
-            style={{
-              transitionDelay: isOpen ? `${index * 50}ms` : `${(menuItems.length - index) * 30}ms`,
-            }}
-          >
+          <div key={item.title} className={itemAnim()} style={staggerStyle(index)}>
             <div
               onClick={() => handleMenuClick(item.action)}
-              className={`flex items-center space-x-2 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/30 shadow-xl cursor-pointer group active:scale-95 transition-all duration-200
-                ${item.isActive ? "bg-white/30" : "bg-black/70"}`}
+              className={`${rowBase} ${
+                item.isActive
+                  ? "bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.22)]"
+                  : "bg-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.16)]"
+              }`}
             >
+              {/* Sol renkli dot — aktifse dolu, değilse soluk */}
               <span
-                className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-                style={{
-                  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                  textShadow: "0 1px 3px rgba(0,0,0,0.8)",
-                }}
-              >
-                {item.title}
-              </span>
+                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor} ${
+                  item.isActive ? "opacity-100" : "opacity-60"
+                }`}
+              />
 
-              <Button
-                className={`relative overflow-hidden pointer-events-none bg-gradient-to-r ${item.color} ${item.hoverColor} 
-                           text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                           transition-all duration-200 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0`}
+              <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
+
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 brightness-125
+                  ${item.iconBg} ${item.iconColor}
+                  ${item.isActive ? "ring-1 ring-white/30" : ""}`}
               >
-                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-                <item.icon className="w-4 h-4 relative z-10" />
-              </Button>
+                <item.icon className="w-4 h-4" />
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Toggle butonu — FloatingMenu ana butonu ile aynı stil */}
+      <button
+        onClick={handleToggle}
+        className={`
+          relative w-12 h-12 rounded-full
+          flex items-center justify-center
+          transition-all duration-200 ease-out
+          active:scale-90 hover:scale-105
+          ${
+            isOpen
+              ? "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
+              : "bg-gradient-to-br from-white to-gray-200 shadow-[0_4px_20px_rgba(255,255,255,0.15)] ring-2 ring-white/30 hover:shadow-[0_6px_28px_rgba(255,255,255,0.25)]"
+          }
+        `}
+      >
+        {isOpen ? (
+          <X className="w-5 h-5 text-gray-900 transition-transform duration-200" />
+        ) : (
+          <Menu className="w-5 h-5 text-gray-900 transition-transform duration-200" />
+        )}
+      </button>
     </div>
   );
 }
