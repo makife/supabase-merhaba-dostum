@@ -236,7 +236,7 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <div class="p-3 bg-muted rounded-lg">
             <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">info@kelimele.site</p>
+            <p class="text-sm text-muted-foreground">team@kelimele.site</p>
             <p class="text-sm">24 saat içinde yanıtlanır</p>
           </div>
           
@@ -291,7 +291,7 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <section>
             <h4 class="font-medium">Geliştirici</h4>
-            <p class="text-sm text-muted-foreground">Kelimele ekibi tarafından geliştirilmiştir.</p>
+            <p class="text-sm text-muted-foreground">Ergan yazılım ekibi tarafından geliştirilmiştir.</p>
           </section>
         </div>
         
@@ -315,7 +315,7 @@ const SettingsPage = () => {
               <span class="whitespace-nowrap">E-posta</span>
             </h4>
             <div class="space-y-2">
-              <p class="text-sm font-mono break-all">info@kelimele.site</p>
+              <p class="text-sm font-mono break-all">team@kelimele.site</p>
             </div>
           </div>
         </div>
