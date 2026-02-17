@@ -346,9 +346,9 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-background">
+    <div className="w-full h-full flex flex-col bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
       {/* Header - Back button ve kullanıcı bilgisi */}
-      <div className="flex items-center space-x-3 p-4 border-b bg-card">
+      <div className="flex items-center space-x-3 p-4 border-b border-white/10 bg-[#2D3436]">
         <Button
           variant="ghost"
           size="sm"
@@ -357,7 +357,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             removeActivePrivateChat(chatId); // Manuel olarak da kaldır
             onBack();
           }}
-          className="flex-shrink-0"
+          className="flex-shrink-0 text-white hover:bg-white/10"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -365,14 +365,14 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         {/* Avatar - UserAvatar yerine direkt Avatar kullanıyoruz */}
         <Avatar className="w-8 h-8">
           <AvatarImage src={otherUser.avatar_url} alt={otherUser.username} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+          <AvatarFallback className="bg-green-500/20 text-green-400 text-xs">
             {otherUser.username?.charAt(0)?.toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{otherUser.username}</h3>
-          <p className="text-xs text-muted-foreground">Özel sohbet</p>
+          <h3 className="font-semibold text-sm truncate text-white">{otherUser.username}</h3>
+          <p className="text-xs text-gray-400">Özel sohbet</p>
         </div>
       </div>
 
@@ -396,13 +396,15 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
                 <div
                   className={`p-3 rounded-lg ${
-                    message.sender_id === user?.id ? "bg-primary text-primary-foreground" : "bg-muted"
+                    message.sender_id === user?.id 
+                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white" 
+                      : "bg-white/10 text-gray-200"
                   }`}
                 >
                   <div className="break-words text-sm">{message.message}</div>
                   <div
                     className={`text-xs mt-1 flex items-center justify-end gap-1 ${
-                      message.sender_id === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"
+                      message.sender_id === user?.id ? "text-white/70" : "text-gray-400"
                     }`}
                   >
                     <span>{formatTime(message.created_at)}</span>
@@ -422,9 +424,9 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         </div>
       </ScrollArea>
 
-      <Separator />
+      <Separator className="bg-white/10" />
 
-      <div className="p-4 bg-background">
+      <div className="p-4 bg-[#2D3436] border-t border-white/10">
         <div className="flex space-x-2">
           <Input
             value={newMessage}
@@ -433,18 +435,18 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             placeholder="Mesajınızı yazın..."
             maxLength={500}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-green-400/50 focus:ring-green-400/30"
           />
           <Button
             onClick={sendMessage}
             disabled={!newMessage.trim() || isLoading}
             size="sm"
-            className="px-3 flex-shrink-0"
+            className="px-3 flex-shrink-0 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground mt-1 text-right">{newMessage.length}/500</div>
+        <div className="text-xs text-gray-400 mt-1 text-right">{newMessage.length}/500</div>
       </div>
 
       {/* Report Dialog */}
