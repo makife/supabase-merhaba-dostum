@@ -72,44 +72,44 @@ const menuItems = [
     title: "Ana Sayfa",
     route: "/",
     icon: Home,
-    color: "from-blue-500 to-blue-600",
-    // group-hover kullanarak tüm satıra gelindiğinde rengin değişmesini sağlıyoruz
-    hoverColor: "group-hover:from-blue-600 group-hover:to-blue-700",
+    // Glassmorphism için ikon rengi (bg değil, sadece icon tint)
+    iconColor: "text-blue-300",
+    dotColor: "bg-blue-400",
   },
   {
     title: "Liderlik",
     route: "/leaderboard",
     icon: Trophy,
-    color: "from-yellow-500 to-amber-600",
-    hoverColor: "group-hover:from-yellow-600 group-hover:to-amber-700",
+    iconColor: "text-amber-300",
+    dotColor: "bg-amber-400",
   },
   {
     title: "Profil",
     route: "/profile",
     icon: User,
-    color: "from-green-500 to-green-600",
-    hoverColor: "group-hover:from-green-600 group-hover:to-green-700",
+    iconColor: "text-emerald-300",
+    dotColor: "bg-emerald-400",
   },
   {
     title: "Kırtasiye",
     route: "/market",
     icon: Backpack,
-    color: "from-purple-500 to-purple-600",
-    hoverColor: "group-hover:from-purple-600 group-hover:to-purple-700",
+    iconColor: "text-purple-300",
+    dotColor: "bg-purple-400",
   },
   {
     title: "Arkadaşlar",
     route: "/friends",
     icon: Users,
-    color: "from-cyan-500 to-cyan-600",
-    hoverColor: "group-hover:from-cyan-600 group-hover:to-cyan-700",
+    iconColor: "text-cyan-300",
+    dotColor: "bg-cyan-400",
   },
   {
     title: "Ayarlar",
     route: "/settings",
     icon: Settings,
-    color: "from-orange-500 to-orange-600",
-    hoverColor: "group-hover:from-orange-600 group-hover:to-orange-700",
+    iconColor: "text-orange-300",
+    dotColor: "bg-orange-400",
   },
 ];
 
@@ -117,14 +117,7 @@ interface FloatingMenuProps {
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-const menuColors = {
-  closed: "from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
-  ping: "from-red-500 to-red-600",
-  glow: "from-red-500/50 to-red-600/50",
-};
-
 export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
-  const colors = menuColors;
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -133,7 +126,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
 
-  // Pending friend request count (poll every 30s)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   const fetchPendingFriends = useCallback(async () => {
@@ -202,11 +194,40 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     setIsOpen(false);
   };
 
+  // ─── Ortak item satır stili ───────────────────────────────────────────────
+  // backdrop-blur YOK — yerine yarı-saydam lacivert solid bg
+  // border yerine çok ince ring + sol tarafta renkli dot aksanı
+  const rowBase =
+    "flex items-center gap-3 cursor-pointer select-none " +
+    "rounded-2xl px-3 py-2.5 " +
+    // Glassmorphism efekti: blur kullanmadan transparan lacivert katman
+    "bg-[rgba(15,23,60,0.82)] " +
+    // İnce, soluk beyaz ring — neon border yerine
+    "ring-1 ring-white/10 " +
+    // Hover: biraz daha aydınlık + ring belirginleşir, sadece opacity değişimi (GPU dostu)
+    "hover:bg-[rgba(25,35,80,0.92)] hover:ring-white/20 " +
+    "active:scale-95 transition-all duration-150 ease-out " +
+    // Gölge: box-shadow yerine çok daha hafif drop-shadow filter
+    "shadow-[0_2px_12px_rgba(0,0,0,0.4)]";
+
+  // ─── Stagger helper ──────────────────────────────────────────────────────
+  const staggerStyle = (i: number): React.CSSProperties => ({
+    transitionDelay: isOpen ? `${i * 45}ms` : "0ms",
+    // will-change: sadece açık konumda aktif, kapanınca temizle
+    willChange: isOpen ? "transform, opacity" : "auto",
+  });
+
+  const itemAnim = (i: number) =>
+    `transform transition-all duration-200 ease-out ${
+      isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95 pointer-events-none"
+    }`;
+
   return (
     <div className="fixed bottom-4 right-4 z-50">
+      {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/40 -z-10"
+          className="fixed inset-0 bg-black/30 -z-10"
           onClick={() => {
             setIsOpen(false);
             onOpenChange?.(false);
@@ -214,93 +235,53 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         />
       )}
 
-      <div
-        className={`absolute bottom-24 right-0 flex flex-col items-end space-y-3 transition-all duration-300 ${
-          isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-        }`}
-      >
-        {/* 1. MUSIC TOGGLE - Tüm satır tıklanabilir */}
-        <div
-          className={`flex items-center space-x-3 transform transition-all duration-300 ${
-            isOpen ? "translate-x-0 scale-100" : "translate-x-8 scale-75"
-          }`}
-          style={{ transitionDelay: isOpen ? "0ms" : `${(menuItems.length + 3) * 40}ms` }}
-        >
-          {/* TIKLAMA OLAYI BURAYA TAŞINDI */}
+      {/* Menu items listesi */}
+      <div className="absolute bottom-24 right-0 flex flex-col items-end gap-2">
+        {/* ── 1. MÜZİK ── */}
+        <div className={itemAnim(0)} style={staggerStyle(0)}>
           <div
             onClick={() => {
               setMusicEnabled(!musicEnabled);
               playSound("buttonClick");
             }}
-            className="flex items-center space-x-2 bg-red-600/80 backdrop-blur-md rounded-full px-3 py-1.5 border-2 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] cursor-pointer group active:scale-95 transition-transform"
+            className={rowBase}
           >
+            {/* Sol renkli dot aksanı */}
             <span
-              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-              style={{
-                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                textShadow: "0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)",
-              }}
-            >
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`}
+            />
+
+            <span className="text-xs font-medium text-white/80 whitespace-nowrap">
               {musicEnabled ? "Ses Açık" : "Ses Kapalı"}
             </span>
 
-            {/* Butondaki onClick kaldırıldı ve pointer-events-none eklendi */}
-            <Button
-              className={`relative overflow-hidden pointer-events-none ${
-                musicEnabled
-                  ? "bg-gradient-to-r from-green-500 to-green-600 group-hover:from-green-600 group-hover:to-green-700"
-                  : "bg-gradient-to-r from-gray-500 to-gray-600 group-hover:from-gray-600 group-hover:to-gray-700"
-              } text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-              transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
+            {/* İkon — gradient button yok, sade renkli ikon */}
+            <div
+              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                musicEnabled ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-500/20 text-gray-400"
+              }`}
             >
-              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-              {musicEnabled ? (
-                <Volume2 className="w-5 h-5 relative z-10" />
-              ) : (
-                <VolumeX className="w-5 h-5 relative z-10 opacity-70" />
-              )}
-            </Button>
+              {musicEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </div>
           </div>
         </div>
 
-        {/* 2. MENU ITEMS - Tüm satır tıklanabilir */}
+        {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item, index) => (
-          <div
-            key={item.route}
-            className={`flex items-center space-x-3 transform transition-all duration-300 ${
-              isOpen ? "translate-x-0 scale-100" : "translate-x-8 scale-75"
-            }`}
-            style={{
-              transitionDelay: isOpen ? `${(index + 1) * 60}ms` : `${(menuItems.length + 2 - index) * 40}ms`,
-            }}
-          >
-            {/* TIKLAMA OLAYI BURAYA TAŞINDI */}
-            <div
-              onClick={() => handleMenuClick(item.route)}
-              className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border-2 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] cursor-pointer group active:scale-95 transition-transform"
-            >
-              <span
-                className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-                style={{
-                  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                  textShadow: "0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)",
-                }}
-              >
-                {item.title}
-              </span>
+          <div key={item.route} className={itemAnim(index + 1)} style={staggerStyle(index + 1)}>
+            <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
 
-              {/* Butondaki onClick kaldırıldı, renkler group-hover yapıldı */}
-              <div className="relative">
-                <Button
-                  className={`relative overflow-hidden pointer-events-none bg-gradient-to-r ${item.color} ${item.hoverColor} 
-                             text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                             transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
-                >
-                  <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-                  <item.icon className="w-4 h-4 relative z-10" />
-                </Button>
+              <span className="text-xs font-medium text-white/80 whitespace-nowrap">{item.title}</span>
+
+              <div className="relative flex-shrink-0">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/5 ${item.iconColor}`}>
+                  <item.icon className="w-4 h-4" />
+                </div>
+
+                {/* Arkadaşlar badge */}
                 {item.route === "/friends" && pendingFriendRequests > 0 && (
-                  <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border border-white shadow-lg z-50">
+                  <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
                     {pendingFriendRequests > 9 ? "9+" : pendingFriendRequests}
                   </div>
                 )}
@@ -309,166 +290,73 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           </div>
         ))}
 
-        {/* 3. MODERATOR BUTTON - Tüm satır tıklanabilir */}
+        {/* ── 3. MODERATÖR ── */}
         {!roleLoading && isModerator && (
-          <div
-            className={`flex items-center space-x-3 transform transition-all duration-300 ${
-              isOpen ? "translate-x-0 scale-100" : "translate-x-8 scale-75"
-            }`}
-            style={{
-              transitionDelay: isOpen ? `${(menuItems.length + 1) * 60}ms` : `${(3 - menuItems.length) * 40}ms`,
-            }}
-          >
-            {/* TIKLAMA OLAYI BURAYA TAŞINDI */}
-            <div
-              onClick={() => handleMenuClick("/moderator")}
-              className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border-2 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] cursor-pointer group active:scale-95 transition-transform"
-            >
-              <span
-                className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-                style={{
-                  fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                  textShadow: "0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)",
-                }}
-              >
-                Moderatör
-              </span>
-
-              <Button
-                className="relative overflow-hidden pointer-events-none bg-gradient-to-r from-indigo-500 to-indigo-600 group-hover:from-indigo-600 group-hover:to-indigo-700
-                           text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              >
-                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-                <Shield className="w-4 h-4 relative z-10" />
-              </Button>
+          <div className={itemAnim(menuItems.length + 1)} style={staggerStyle(menuItems.length + 1)}>
+            <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
+              <span className="text-xs font-medium text-white/80 whitespace-nowrap">Moderatör</span>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-300 flex-shrink-0">
+                <Shield className="w-4 h-4" />
+              </div>
             </div>
           </div>
         )}
 
-        {/* 4. CHAT BUTTON - Tüm satır tıklanabilir */}
-        <div
-          className={`flex items-center space-x-3 transform transition-all duration-300 ${
-            isOpen ? "translate-x-0 scale-100" : "translate-x-8 scale-75"
-          }`}
-          style={{
-            transitionDelay: isOpen
-              ? `${(menuItems.length + 1 + (isModerator ? 1 : 0)) * 60}ms`
-              : `${(2 - menuItems.length) * 40}ms`,
-          }}
-        >
-          {/* TIKLAMA OLAYI BURAYA TAŞINDI */}
-          <div
-            onClick={handleChatOpen}
-            className="flex items-center space-x-2 bg-orange-500/80 backdrop-blur-md rounded-full px-3 py-1.5 border-2 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] cursor-pointer group active:scale-95 transition-transform"
-          >
-            <span
-              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-              style={{
-                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                textShadow: "0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)",
-              }}
-            >
-              Sohbet
-            </span>
-            <div className="relative">
-              <Button
-                className="relative overflow-hidden pointer-events-none bg-gradient-to-r from-teal-500 to-teal-600 group-hover:from-teal-600 group-hover:to-teal-700
-                           text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                           transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              >
-                <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-                <MessageCircle className="w-4 h-4 relative z-10" />
-              </Button>
-
-              {/* Notification Badge */}
+        {/* ── 4. SOHBET ── */}
+        <div className={itemAnim(menuItems.length + 2)} style={staggerStyle(menuItems.length + 2)}>
+          <div onClick={handleChatOpen} className={rowBase}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
+            <span className="text-xs font-medium text-white/80 whitespace-nowrap">Sohbet</span>
+            <div className="relative flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20 text-teal-300">
+                <MessageCircle className="w-4 h-4" />
+              </div>
               {totalNotifications > 0 && (
-                <div className="absolute -top-3 -right-3 w-7 h-7 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-xl animate-bounce z-50">
+                <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
                   {totalNotifications > 9 ? "9+" : totalNotifications}
-                  <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* 5. LOGOUT BUTTON - Tüm satır tıklanabilir */}
-        <div
-          className={`flex items-center space-x-3 transform transition-all duration-300 ${
-            isOpen ? "translate-x-0 scale-100" : "translate-x-8 scale-75"
-          }`}
-          style={{
-            transitionDelay: isOpen
-              ? `${(menuItems.length + 2 + (isModerator ? 1 : 0)) * 60}ms`
-              : `${(1 - menuItems.length) * 40}ms`,
-          }}
-        >
-          {/* TIKLAMA OLAYI BURAYA TAŞINDI */}
-          <div
-            onClick={handleLogout}
-            className="flex items-center space-x-2 bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border-2 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] cursor-pointer group active:scale-95 transition-transform"
-          >
-            <span
-              className="text-sm font-semibold text-white whitespace-nowrap pointer-events-none select-none tracking-wide"
-              style={{
-                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                textShadow: "0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.1)",
-              }}
-            >
-              Çıkış
-            </span>
-
-            <Button
-              className="relative overflow-hidden pointer-events-none bg-gradient-to-r from-red-500 to-red-600 group-hover:from-red-600 group-hover:to-red-700
-                         text-white border-2 border-white shadow-lg group-hover:shadow-xl transform group-hover:scale-105 
-                         transition-all duration-200 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-            >
-              <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full" />
-              <LogOut className="w-4 h-4 relative z-10" />
-            </Button>
+        {/* ── 5. ÇIKIŞ ── */}
+        <div className={itemAnim(menuItems.length + 3)} style={staggerStyle(menuItems.length + 3)}>
+          <div onClick={handleLogout} className={rowBase}>
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
+            <span className="text-xs font-medium text-white/80 whitespace-nowrap">Çıkış</span>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 text-red-300 flex-shrink-0">
+              <LogOut className="w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main toggle button - Fixed position */}
+      {/* ── Ana toggle butonu ── */}
       <div className="fixed bottom-4 right-4" data-onboarding="floating-menu">
-        <Button
+        <button
           onClick={handleToggle}
-          className={`group relative overflow-hidden w-[84px] h-[84px] rounded-full border-2 border-green-400 shadow-[0_0_12px_rgba(74,222,128,0.6)] 
-                      transform transition-all duration-300 hover:scale-110 active:scale-95
-                      ${
-                        isOpen
-                          ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 rotate-45"
-                          : `bg-gradient-to-r ${colors.closed}`
-                      }`}
+          className={`
+            relative w-14 h-14 rounded-2xl
+            flex items-center justify-center
+            transition-all duration-200 ease-out
+            active:scale-90
+            shadow-[0_4px_20px_rgba(0,0,0,0.5)]
+            ${
+              isOpen
+                ? "bg-[rgba(30,15,40,0.95)] ring-1 ring-white/15 rotate-45"
+                : "bg-[rgba(15,23,60,0.95)] ring-1 ring-white/10 hover:ring-white/20 hover:bg-[rgba(25,35,80,0.98)]"
+            }
+          `}
         >
-          {/* Pulse animation ring */}
-          <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-r ${colors.ping} 
-                           animate-ping opacity-20 ${isOpen ? "hidden" : ""}`}
-          />
+          {isOpen ? <X className="w-6 h-6 text-white/90" /> : <MenuIcon className="w-6 h-6 text-white/90" />}
 
-          {/* Glow effect */}
-          <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-r ${colors.glow} 
-                           blur-lg scale-150 opacity-30`}
-          />
-
-          {/* Button content */}
-          <div className="relative z-10 flex items-center justify-center">
-            {isOpen ? (
-              <X className="w-9 h-9 text-white transition-transform duration-300" />
-            ) : (
-              <MenuIcon className="w-9 h-9 text-white transition-transform duration-300" />
-            )}
-          </div>
-
-          {/* Ripple effect on click */}
-          <div
-            className="absolute inset-0 bg-white/30 scale-0 group-active:scale-100 
-                           transition-transform duration-150 rounded-full"
-          />
-        </Button>
+          {/* Bildirim varsa ana butonda küçük nokta */}
+          {!isOpen && totalNotifications > 0 && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-400 shadow-sm" />
+          )}
+        </button>
       </div>
     </div>
   );
