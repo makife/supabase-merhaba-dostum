@@ -233,7 +233,7 @@ const SettingsPage = () => {
     const content = `
       <div class="space-y-4">
         <h3 class="font-semibold text-lg">Yardım & Destek</h3>
-        <p>Kelimele oyunu hakkında sorularınız için aşağıdaki kanalı kullanabilirsiniz:</p>
+        <p>Kelimele oyunu hakkında soru, görüş ve önerilerinizi iletişim butonuna tıklayarak açılan formu doldurup iletebilirsiniz:</p>
         
         <div class="space-y-3">
           <div class="p-3 bg-slate-800/60 rounded-lg border border-white/10">
@@ -304,7 +304,6 @@ const SettingsPage = () => {
     `;
     openModal("Hakkımızda", content);
   };
-
 
   return (
     <div
@@ -455,12 +454,12 @@ const SettingsPage = () => {
             </button>
 
             <button
-  onClick={() => setContactOpen(true)}          // <-- değişti
-  className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
->
-  <Mail className="w-5 h-5 text-cyan-400" />
-  <span className="text-white font-medium">İletişim</span>
-</button>
+              onClick={() => setContactOpen(true)} // <-- değişti
+              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+            >
+              <Mail className="w-5 h-5 text-cyan-400" />
+              <span className="text-white font-medium">İletişim</span>
+            </button>
           </div>
         </div>
 
@@ -580,10 +579,7 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
-      <ContactDialog
-  open={contactOpen}
-  onOpenChange={setContactOpen}
-/>
+      <ContactDialog open={contactOpen} onOpenChange={setContactOpen} />
 
       <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
         <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
