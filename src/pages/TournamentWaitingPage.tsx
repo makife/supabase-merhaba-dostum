@@ -149,16 +149,13 @@ const TournamentWaitingPage = () => {
                 key={participant.id}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-emerald-500/8 ring-1 ring-emerald-500/15"
               >
-                {/* Sol dot */}
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-
                 <Avatar className="w-9 h-9 flex-shrink-0" showFrame={true}>
                   <AvatarImage src={participant.profiles?.avatar_url || undefined} />
                   <AvatarFallback className="bg-emerald-500/20 text-emerald-300 text-xs font-bold">
                     {participant.profiles?.username?.charAt(0)?.toUpperCase() || "?"}
                   </AvatarFallback>
                 </Avatar>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-white/95 truncate">
@@ -172,7 +169,6 @@ const TournamentWaitingPage = () => {
                     )}
                   </div>
                 </div>
-
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide flex-shrink-0">
                   Oyuncu
                 </span>
@@ -186,17 +182,14 @@ const TournamentWaitingPage = () => {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white/4 ring-1 ring-white/8"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />
-
                 <div className="w-9 h-9 rounded-full bg-slate-500/20 ring-1 ring-white/10 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-slate-400" />
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-slate-400 truncate">
                     {participant.profiles?.username || "Bot"}
                   </span>
                 </div>
-
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex-shrink-0">Bot</span>
               </div>
             ))}
@@ -214,15 +207,20 @@ const TournamentWaitingPage = () => {
             ))}
           </div>
 
-          {/* Alt boşluk */}
           <div className="h-3" />
         </div>
       </div>
 
-      {/* ── İPTAL DİALOG ── */}
-      <Dialog open={currentTournament?.status === "cancelled"} onOpenChange={() => navigate("/tournament")}>
+      {/* ── İPTAL DİALOG ──
+          Sadece bu sayfanın turnuvası iptal olursa açılsın (currentTournament.id === tournamentId)
+          Önceki cancelled turnuva cache'de kalsa bile tetiklenmez
+      */}
+      <Dialog
+        open={currentTournament?.status === "cancelled" && currentTournament?.id === tournamentId}
+        onOpenChange={() => navigate("/tournament")}
+      >
         <DialogContent
-          className="mx-4 w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
+          className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
           style={{ left: "50%", transform: "translateX(-50%)" }}
         >
           <div className="px-5 pt-6 pb-4 border-b border-white/5">
