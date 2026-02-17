@@ -75,8 +75,7 @@ export const ContactDialog = ({ open, onOpenChange }: ContactDialogProps) => {
             İletişim
           </DialogTitle>
           <DialogDescription className="text-slate-400 text-sm">
-            Mesajınız doğrudan{" "}
-            <span className="text-cyan-400 font-mono text-xs">team@kelimele.site</span> adresine
+            Mesajınız doğrudan <span className="text-cyan-400 font-mono text-xs">team@kelimele.site</span> adresine
             iletilecektir.
           </DialogDescription>
         </DialogHeader>
@@ -88,9 +87,7 @@ export const ContactDialog = ({ open, onOpenChange }: ContactDialogProps) => {
               <CheckCircle className="w-9 h-9 text-green-400" />
             </div>
             <h3 className="text-lg font-semibold text-white">Mesajınız İletildi!</h3>
-            <p className="text-sm text-slate-400">
-              En kısa sürede size geri dönüş yapacağız. Teşekkürler 🙏
-            </p>
+            <p className="text-sm text-slate-400">En kısa sürede size geri dönüş yapacağız. Teşekkürler 🙏</p>
             <Button
               onClick={handleClose}
               className="mt-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-400/30"
@@ -138,14 +135,6 @@ export const ContactDialog = ({ open, onOpenChange }: ContactDialogProps) => {
                 <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-red-300">{errorMsg}</p>
               </div>
-            )}
-
-            {/* Sender info */}
-            {user?.email && (
-              <p className="text-xs text-slate-500">
-                Yanıt şu adrese gönderilecek:{" "}
-                <span className="text-slate-400 font-mono">{user.email}</span>
-              </p>
             )}
 
             {/* Buttons */}
