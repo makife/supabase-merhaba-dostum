@@ -6,7 +6,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const TO_EMAIL = "team@kelimele.site";
-const FROM_EMAIL = "noreply@kelimele.site"; // Resend'de domaininizi doğrulamanız gerekir
+const FROM_EMAIL = "Kelimele <team@kelimele.site>";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,24 +24,24 @@ serve(async (req) => {
 
     // Basit validasyon
     if (!subject?.trim() || !message?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Konu ve mesaj alanları zorunludur." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Konu ve mesaj alanları zorunludur." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (subject.length > 100 || message.length > 1000) {
-      return new Response(
-        JSON.stringify({ error: "Konu veya mesaj çok uzun." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Konu veya mesaj çok uzun." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Resend API ile mail gönder
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -94,16 +94,15 @@ serve(async (req) => {
       throw new Error(resendData.message ?? "Mail gönderilemedi");
     }
 
-    return new Response(
-      JSON.stringify({ success: true, id: resendData.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return new Response(JSON.stringify({ success: true, id: resendData.id }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err: any) {
     console.error("Edge function error:", err);
-    return new Response(
-      JSON.stringify({ error: err.message ?? "Sunucu hatası" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: err.message ?? "Sunucu hatası" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
