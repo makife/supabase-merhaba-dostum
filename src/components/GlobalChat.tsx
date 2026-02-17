@@ -851,22 +851,18 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const renderUsersList = () => (
     <>
       {/* Header */}
-      <div className="bg-chat-500 text-white p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Users className="w-6 h-6" />
           <div>
             <h3 className="font-semibold text-lg">Kullanıcılar</h3>
-            {/* Çevrimiçi kişi sayısı gösterimi kapatıldı */}
-            {/* <p className="text-chat-100 text-sm">
-            {onlineUsers.length} kişi çevrimiçi
-          </p> */}
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setViewMode("global")}
-          className="text-white hover:bg-chat-600 p-2 rounded-full"
+          className="text-white hover:bg-white/10 p-2 rounded-full"
         >
           <X className="w-5 h-5" />
         </Button>
@@ -874,16 +870,16 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
       {/* Online Users */}
       {onlineUsers.length > 0 && (
-        <div className="p-4 bg-chat-50 border-b border-chat-200">
+        <div className="p-4 bg-white/5 border-b border-white/10">
           <div className="flex items-center space-x-2 mb-3">
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-green-700">Çevrimiçi</span>
+            <span className="text-sm font-medium text-green-400">Çevrimiçi</span>
           </div>
           <div className="space-y-2">
             {onlineUsers.map((targetUser) => (
               <Card
                 key={targetUser.id}
-                className="p-3 hover:shadow-md transition-all cursor-pointer border-chat-200"
+                className="p-3 hover:shadow-md transition-all cursor-pointer border-white/10 bg-white/5 hover:bg-white/10"
                 onClick={() => startPrivateChat(targetUser)}
               >
                 <div className="flex items-center space-x-3">
@@ -907,11 +903,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     }}
                   >
                     <div
-                      className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-600 line-through" : "text-gray-800"} hover:text-blue-600 transition-colors`}
+                      className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-400 line-through" : "text-white"} hover:text-blue-400 transition-colors`}
                     >
                       {targetUser.username}
                     </div>
-                    <div className={`text-xs ${isUserBlocked(targetUser.id) ? "text-red-600" : "text-green-600"}`}>
+                    <div className={`text-xs ${isUserBlocked(targetUser.id) ? "text-red-400" : "text-green-400"}`}>
                       {isUserBlocked(targetUser.id) ? "Engellendi" : "Çevrimiçi"}
                     </div>
                   </div>
@@ -937,17 +933,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       )}
 
       {/* All Users */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="p-4 space-y-3">
           <div className="flex items-center space-x-2 mb-3">
-            <Users className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Tüm Kullanıcılar</span>
+            <Users className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-300">Tüm Kullanıcılar</span>
           </div>
 
           {allUsers.map((targetUser) => (
             <Card
               key={targetUser.id}
-              className="p-4 hover:shadow-md transition-all cursor-pointer border-chat-100"
+              className="p-4 hover:shadow-md transition-all cursor-pointer border-white/10 bg-white/5 hover:bg-white/10"
               onClick={() => startPrivateChat(targetUser)}
             >
               <div className="flex items-center space-x-3">
@@ -965,10 +961,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     navigate(`/profile/${targetUser.id}`);
                   }}
                 >
-                  <p className="font-medium text-gray-800 truncate hover:text-blue-600 transition-colors">
+                  <p className="font-medium text-white truncate hover:text-blue-400 transition-colors">
                     {targetUser.username}
                   </p>
-                  <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+                  <p className="text-sm text-gray-400">Özel mesaj gönder</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {isUserOnline(targetUser.id) && (
@@ -1006,8 +1002,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           ))}
 
           {allUsers.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-50 text-chat-300" />
+            <div className="text-center py-8 text-gray-400">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-50 text-gray-500" />
               <p>Henüz kullanıcı bulunamadı</p>
             </div>
           )}
@@ -1019,38 +1015,38 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const renderBlockedUsersList = () => (
     <>
       {/* Header */}
-      <div className="bg-red-500 text-white p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <UserX className="w-6 h-6" />
           <div>
             <h3 className="font-semibold text-lg">Engellediklerim</h3>
-            <p className="text-red-100 text-sm">{blockedUsers.length} kişi engellendi</p>
+            <p className="text-gray-300 text-sm">{blockedUsers.length} kişi engellendi</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setViewMode("global")}
-          className="text-white hover:bg-red-600 p-2 rounded-full"
+          className="text-white hover:bg-white/10 p-2 rounded-full"
         >
           <X className="w-5 h-5" />
         </Button>
       </div>
 
       {/* Blocked Users List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="p-4 space-y-3">
           {blockedUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <UserX className="w-12 h-12 mx-auto mb-3 opacity-50 text-red-300" />
-              <p>Engellenen kullanıcı yok</p>
-              <p className="text-sm">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
+            <div className="text-center py-8 text-gray-400">
+              <UserX className="w-12 h-12 mx-auto mb-3 opacity-50 text-gray-500" />
+              <p className="text-white/80">Engellenen kullanıcı yok</p>
+              <p className="text-sm text-gray-400">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
             </div>
           ) : (
             allUsers
               .filter((user) => blockedUsers.includes(user.id))
               .map((blockedUser) => (
-                <Card key={blockedUser.id} className="p-4 border-red-200 bg-red-50">
+                <Card key={blockedUser.id} className="p-4 border-red-500/30 bg-red-500/10">
                   <div className="flex items-center space-x-3">
                     <div
                       className="cursor-pointer"
@@ -1068,16 +1064,16 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       className="flex-1 min-w-0 cursor-pointer"
                       onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: "/chat" } })}
                     >
-                      <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
+                      <p className="font-medium text-red-300 truncate hover:text-red-200 transition-colors">
                         {blockedUser.username}
                       </p>
-                      <p className="text-sm text-red-600">Engellendi</p>
+                      <p className="text-sm text-red-400">Engellendi</p>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => unblockUser(blockedUser.id)}
-                      className="text-xs px-3 py-1 h-7 text-green-600 border-green-600 hover:bg-green-50"
+                      className="text-xs px-3 py-1 h-7 text-green-400 border-green-400/50 hover:bg-green-500/20"
                     >
                       Engeli Kaldır
                     </Button>
@@ -1093,14 +1089,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const renderGlobalChat = () => (
     <>
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4 bg-chat-50">
+      <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="space-y-3">
           {messages
             .filter((message) => !message.user_id || !isUserBlocked(message.user_id))
             .map((message) => (
               <div
                 key={message.id}
-                className="group flex flex-col space-y-1 p-3 rounded-lg bg-white shadow-sm border border-chat-100 hover:border-chat-300 transition-all"
+                className="group flex flex-col space-y-1 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1119,12 +1115,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       />
                     </div>
                     <span
-                      className={`text-sm font-medium cursor-pointer hover:text-blue-600 transition-colors ${
+                      className={`text-sm font-medium cursor-pointer hover:text-blue-400 transition-colors ${
                         message.username === "kelimeciBot"
-                          ? "text-blue-600 font-bold" // Bot için özel stil
+                          ? "text-blue-400 font-bold"
                           : message.user_id === user?.id
-                            ? "text-chat-600"
-                            : "text-gray-700"
+                            ? "text-green-400"
+                            : "text-gray-200"
                       }`}
                       onClick={() =>
                         message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
@@ -1139,7 +1135,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                     )}
 
-                    <span className="text-xs text-gray-500">{formatTime(message.created_at)}</span>
+                    <span className="text-xs text-gray-400">{formatTime(message.created_at)}</span>
 
                     {/* Private message button - sadece gerçek kullanıcılar için */}
                     {message.user_id &&
@@ -1191,8 +1187,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 </div>
 
                 <div
-                  className={`text-gray-800 break-words ${
-                    message.username === "kelimeciBot" ? "font-medium text-blue-800" : ""
+                  className={`text-gray-200 break-words ${
+                    message.username === "kelimeciBot" ? "font-medium text-blue-300" : ""
                   }`}
                 >
                   {message.message}
@@ -1209,8 +1205,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                           onClick={() => toggleReaction(message.id, emoji)}
                           className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
                             reactions.some((r) => r.user_id === user?.id)
-                              ? "bg-chat-100 text-chat-700 border border-chat-300"
-                              : "bg-gray-100 hover:bg-gray-200 border border-transparent"
+                              ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                              : "bg-white/10 hover:bg-white/20 border border-transparent text-gray-300"
                           }`}
                         >
                           <span>{emoji}</span>
@@ -1220,7 +1216,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                     {/* Sabit emoji seti */}
                     {showEmojiPicker === message.id ? (
-                      <div className="flex items-center gap-1 bg-white border border-chat-200 rounded-full px-2 py-0.5 shadow-sm">
+                      <div className="flex items-center gap-1 bg-[#2D3436] border border-white/20 rounded-full px-2 py-0.5 shadow-sm">
                         {["👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
                           <button
                             key={emoji}
@@ -1256,7 +1252,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
           {/* Typing indicator */}
           {typingUsers.size > 0 && (
-            <div className="flex items-center space-x-2 text-chat-600 text-sm italic p-2 bg-chat-100 rounded-lg">
+            <div className="flex items-center space-x-2 text-green-400 text-sm italic p-2 bg-white/5 rounded-lg">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
                 <div
@@ -1277,7 +1273,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </ScrollArea>
 
       {/* Message Input */}
-      <div className="p-4 bg-white border-t border-chat-200">
+      <div className="p-4 bg-[#2D3436] border-t border-white/10">
         <div className="flex space-x-2">
           <Input
             value={newMessage}
@@ -1286,18 +1282,18 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             placeholder="Mesajınızı yazın..."
             maxLength={200}
             disabled={isLoading}
-            className="flex-1 border-chat-300 focus:border-chat-500 focus:ring-chat-500"
+            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-green-400/50 focus:ring-green-400/30"
           />
           <Button
             onClick={sendMessage}
             disabled={!newMessage.trim() || isLoading}
             size="sm"
-            className="px-4 bg-chat-500 hover:bg-chat-600 text-white"
+            className="px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-xs text-gray-500 mt-1 text-right">{newMessage.length}/200</div>
+        <div className="text-xs text-gray-400 mt-1 text-right">{newMessage.length}/200</div>
       </div>
     </>
   );

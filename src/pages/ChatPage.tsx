@@ -334,7 +334,7 @@ export default function ChatPage() {
 
   // Ortak header bileşeni - Mini floating menü ile güncellenmiş versiyon
   const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
-    <div className="bg-gradient-to-r from-chat-500 via-chat-600 to-chat-500 text-white p-6 border-b-2 border-chat-300 shadow-lg h-[120px]">
+    <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-6 border-b border-white/10 shadow-lg h-[120px]">
       <div className="flex flex-col h-full justify-end">
         {/* Alt kısım - Başlık ve Butonlar aynı hizada */}
         <div className="flex items-center justify-between">
@@ -392,15 +392,15 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <ScrollArea className="flex-1 bg-gradient-to-b from-gray-50 to-white">
+      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <div className="bg-gradient-to-br from-chat-100 to-chat-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-10 h-10 text-chat-500" />
+            <div className="text-center py-12 text-gray-400">
+              <div className="bg-white/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-lg font-medium">Henüz özel mesajınız yok</p>
-              <p className="text-sm">Global sohbetten birine özel mesaj gönderin</p>
+              <p className="text-lg font-medium text-white/80">Henüz özel mesajınız yok</p>
+              <p className="text-sm text-gray-400">Global sohbetten birine özel mesaj gönderin</p>
             </div>
           ) : (
             allUsers
@@ -410,16 +410,16 @@ export default function ChatPage() {
                 const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
 
                 return (
-                  <SwipeToDeleteCard
+                    <SwipeToDeleteCard
                     key={targetUser.id}
                     onDelete={() => deletePrivateChat(targetUser.id)}
-                    className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border-2 rounded-xl ${
+                    className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-xl ${
                       unreadCount > 0
-                        ? "border-chat-500 bg-gradient-to-r from-chat-50 to-chat-100 shadow-md"
+                        ? "border-green-400/50 bg-white/15 shadow-md shadow-green-500/10"
                         : hasHistory
-                          ? "border-chat-300 bg-gradient-to-r from-gray-50 to-white hover:from-chat-50 hover:to-chat-100"
-                          : "border-chat-200 bg-white hover:bg-gradient-to-r hover:from-chat-50 hover:to-white"
-                    } hover:border-chat-400 hover:scale-[1.02]`}
+                          ? "border-white/20 bg-white/10 hover:bg-white/15"
+                          : "border-white/10 bg-white/5 hover:bg-white/10"
+                    } hover:border-white/30 hover:scale-[1.02]`}
                     onClick={() => startPrivateChat(targetUser)}
                   >
                     <div className="flex items-center space-x-3">
@@ -435,13 +435,13 @@ export default function ChatPage() {
                         }`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate text-lg">{targetUser.username}</p>
+                        <p className="font-semibold text-white truncate text-lg">{targetUser.username}</p>
                         {unreadCount > 0 ? (
-                          <p className="text-sm text-chat-600 font-bold">{unreadCount} okunmamış mesaj</p>
+                          <p className="text-sm text-green-400 font-bold">{unreadCount} okunmamış mesaj</p>
                         ) : hasHistory ? (
-                          <p className="text-sm text-gray-600 font-medium">Mesaj geçmişi var</p>
+                          <p className="text-sm text-gray-300 font-medium">Mesaj geçmişi var</p>
                         ) : (
-                          <p className="text-sm text-gray-500">Özel mesaj gönder</p>
+                          <p className="text-sm text-gray-400">Özel mesaj gönder</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
@@ -491,19 +491,19 @@ export default function ChatPage() {
   };
 
   const renderBlockedUsersList = () => (
-    <ScrollArea className="flex-1 p-4">
+    <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <UserX className="w-16 h-16 mx-auto mb-4 opacity-30" />
-            <h3 className="text-lg font-medium mb-2">Engellenen kullanıcı yok</h3>
-            <p className="text-sm">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
+          <div className="text-center py-12 text-gray-400">
+            <UserX className="w-16 h-16 mx-auto mb-4 opacity-30 text-gray-500" />
+            <h3 className="text-lg font-medium mb-2 text-white/80">Engellenen kullanıcı yok</h3>
+            <p className="text-sm text-gray-400">Kullanıcıları engellemek için kullanıcılar listesini kullanın</p>
           </div>
         ) : (
           allUsers
             .filter((user) => blockedUsers.includes(user.id))
             .map((blockedUser) => (
-              <Card key={blockedUser.id} className="p-4 border-red-200 bg-red-50/50 hover:bg-red-50 transition-colors">
+              <Card key={blockedUser.id} className="p-4 border-red-500/30 bg-red-500/10 hover:bg-red-500/15 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div
                     className="cursor-pointer"
@@ -521,10 +521,10 @@ export default function ChatPage() {
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: "/chat" } })}
                   >
-                    <p className="font-medium text-red-800 truncate hover:text-red-600 transition-colors">
+                    <p className="font-medium text-red-300 truncate hover:text-red-200 transition-colors">
                       {blockedUser.username}
                     </p>
-                    <p className="text-sm text-red-600 flex items-center">
+                    <p className="text-sm text-red-400 flex items-center">
                       <UserX className="w-3 h-3 mr-1" />
                       Engellendi
                     </p>
@@ -536,7 +536,7 @@ export default function ChatPage() {
                       unblockUser(blockedUser.id);
                       toast.success(`${blockedUser.username} engellemeden kaldırıldı`);
                     }}
-                    className="text-xs px-3 py-1 h-8 text-green-600 border-green-600 hover:bg-green-50"
+                    className="text-xs px-3 py-1 h-8 text-green-400 border-green-400/50 hover:bg-green-500/20"
                   >
                     <UserCheck className="w-3 h-3 mr-1" />
                     Engeli Kaldır
@@ -632,8 +632,8 @@ export default function ChatPage() {
   }, [user?.id]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-chat-50 via-gray-50 to-chat-100">
-      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-white shadow-2xl border-x-2 border-chat-200 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-[#2D3436] via-[#434d50] to-[#636E72]">
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
