@@ -79,11 +79,11 @@ export const AvatarOptionsDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           className="
-            mx-4 w-[calc(100%-2rem)] max-w-sm
-            rounded-3xl border-0 p-0 shadow-2xl
-            bg-[#16213e]
-            ring-1 ring-white/10
-          "
+  left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm
+  rounded-3xl border-0 p-0 shadow-2xl
+  bg-[#16213e]
+  ring-1 ring-white/10
+"
         >
           {/* Başlık */}
           <div className="px-5 pt-6 pb-4 border-b border-white/5">
