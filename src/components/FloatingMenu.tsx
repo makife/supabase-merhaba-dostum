@@ -195,20 +195,18 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   };
 
   // ─── Ortak item satır stili ───────────────────────────────────────────────
-  // backdrop-blur YOK — yerine yarı-saydam lacivert solid bg
-  // border yerine çok ince ring + sol tarafta renkli dot aksanı
+  // Koyu temada belirgin olması için: daha opak beyazımsı bg + üst kenardan ince parlak ring
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    // Glassmorphism efekti: blur kullanmadan transparan lacivert katman
-    "bg-[rgba(15,23,60,0.82)] " +
-    // İnce, soluk beyaz ring — neon border yerine
-    "ring-1 ring-white/10 " +
-    // Hover: biraz daha aydınlık + ring belirginleşir, sadece opacity değişimi (GPU dostu)
-    "hover:bg-[rgba(25,35,80,0.92)] hover:ring-white/20 " +
+    // Açık gri-beyaz ton — koyu lacivert bg üzerinde net seçiliyor, blur yok
+    "bg-[rgba(255,255,255,0.10)] " +
+    // Üst + sol kenardan hafif parlayan ince çizgi (cam kenarı etkisi)
+    "ring-1 ring-white/20 " +
+    // Hover: biraz daha aydınlık
+    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/30 " +
     "active:scale-95 transition-all duration-150 ease-out " +
-    // Gölge: box-shadow yerine çok daha hafif drop-shadow filter
-    "shadow-[0_2px_12px_rgba(0,0,0,0.4)]";
+    "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
 
   // ─── Stagger helper ──────────────────────────────────────────────────────
   const staggerStyle = (i: number): React.CSSProperties => ({
@@ -251,7 +249,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`}
             />
 
-            <span className="text-xs font-medium text-white/80 whitespace-nowrap">
+            <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">
               {musicEnabled ? "Ses Açık" : "Ses Kapalı"}
             </span>
 
@@ -272,10 +270,12 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
             <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
 
-              <span className="text-xs font-medium text-white/80 whitespace-nowrap">{item.title}</span>
+              <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
 
               <div className="relative flex-shrink-0">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/5 ${item.iconColor}`}>
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/10 ${item.iconColor} brightness-125`}
+                >
                   <item.icon className="w-4 h-4" />
                 </div>
 
@@ -295,7 +295,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           <div className={itemAnim(menuItems.length + 1)} style={staggerStyle(menuItems.length + 1)}>
             <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
-              <span className="text-xs font-medium text-white/80 whitespace-nowrap">Moderatör</span>
+              <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Moderatör</span>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-300 flex-shrink-0">
                 <Shield className="w-4 h-4" />
               </div>
@@ -307,7 +307,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim(menuItems.length + 2)} style={staggerStyle(menuItems.length + 2)}>
           <div onClick={handleChatOpen} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
-            <span className="text-xs font-medium text-white/80 whitespace-nowrap">Sohbet</span>
+            <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Sohbet</span>
             <div className="relative flex-shrink-0">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20 text-teal-300">
                 <MessageCircle className="w-4 h-4" />
@@ -325,7 +325,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim(menuItems.length + 3)} style={staggerStyle(menuItems.length + 3)}>
           <div onClick={handleLogout} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
-            <span className="text-xs font-medium text-white/80 whitespace-nowrap">Çıkış</span>
+            <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Çıkış</span>
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 text-red-300 flex-shrink-0">
               <LogOut className="w-4 h-4" />
             </div>
@@ -338,23 +338,28 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <button
           onClick={handleToggle}
           className={`
-            relative w-14 h-14 rounded-2xl
+            relative w-[72px] h-[72px] rounded-full
             flex items-center justify-center
             transition-all duration-200 ease-out
-            active:scale-90
-            shadow-[0_4px_20px_rgba(0,0,0,0.5)]
+            active:scale-90 hover:scale-105
             ${
               isOpen
-                ? "bg-[rgba(30,15,40,0.95)] ring-1 ring-white/15 rotate-45"
-                : "bg-[rgba(15,23,60,0.95)] ring-1 ring-white/10 hover:ring-white/20 hover:bg-[rgba(25,35,80,0.98)]"
+                ? // Açıkken: beyaz/açık — kapat ikonuyla kontrast
+                  "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
+                : // Kapalıyken: siyah-beyaz çarpıcı gradient
+                  "bg-gradient-to-br from-white to-gray-200 shadow-[0_6px_28px_rgba(255,255,255,0.15)] ring-2 ring-white/30 hover:shadow-[0_8px_32px_rgba(255,255,255,0.25)]"
             }
           `}
         >
-          {isOpen ? <X className="w-6 h-6 text-white/90" /> : <MenuIcon className="w-6 h-6 text-white/90" />}
+          {isOpen ? (
+            <X className="w-8 h-8 text-gray-900 transition-transform duration-200" />
+          ) : (
+            <MenuIcon className="w-8 h-8 text-gray-900 transition-transform duration-200" />
+          )}
 
-          {/* Bildirim varsa ana butonda küçük nokta */}
+          {/* Bildirim varsa ana butonda kırmızı nokta */}
           {!isOpen && totalNotifications > 0 && (
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-400 shadow-sm" />
+            <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white shadow-md" />
           )}
         </button>
       </div>
