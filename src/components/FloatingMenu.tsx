@@ -234,7 +234,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       )}
 
       {/* Menu items listesi */}
-      <div className="absolute bottom-24 right-0 flex flex-col items-end gap-2">
+      <div
+        className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
+      >
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim(0)} style={staggerStyle(0)}>
           <div
