@@ -68,49 +68,12 @@ const getBanTimeLeft = async (userId: string): Promise<string> => {
 };
 
 const menuItems = [
-  {
-    title: "Ana Sayfa",
-    route: "/",
-    icon: Home,
-    // Glassmorphism için ikon rengi (bg değil, sadece icon tint)
-    iconColor: "text-blue-300",
-    dotColor: "bg-blue-400",
-  },
-  {
-    title: "Liderlik",
-    route: "/leaderboard",
-    icon: Trophy,
-    iconColor: "text-amber-300",
-    dotColor: "bg-amber-400",
-  },
-  {
-    title: "Profil",
-    route: "/profile",
-    icon: User,
-    iconColor: "text-emerald-300",
-    dotColor: "bg-emerald-400",
-  },
-  {
-    title: "Kırtasiye",
-    route: "/market",
-    icon: Backpack,
-    iconColor: "text-purple-300",
-    dotColor: "bg-purple-400",
-  },
-  {
-    title: "Arkadaşlar",
-    route: "/friends",
-    icon: Users,
-    iconColor: "text-cyan-300",
-    dotColor: "bg-cyan-400",
-  },
-  {
-    title: "Ayarlar",
-    route: "/settings",
-    icon: Settings,
-    iconColor: "text-orange-300",
-    dotColor: "bg-orange-400",
-  },
+  { title: "Ana Sayfa", route: "/", icon: Home, iconColor: "text-blue-300", dotColor: "bg-blue-400" },
+  { title: "Liderlik", route: "/leaderboard", icon: Trophy, iconColor: "text-amber-300", dotColor: "bg-amber-400" },
+  { title: "Profil", route: "/profile", icon: User, iconColor: "text-emerald-300", dotColor: "bg-emerald-400" },
+  { title: "Kırtasiye", route: "/market", icon: Backpack, iconColor: "text-purple-300", dotColor: "bg-purple-400" },
+  { title: "Arkadaşlar", route: "/friends", icon: Users, iconColor: "text-cyan-300", dotColor: "bg-cyan-400" },
+  { title: "Ayarlar", route: "/settings", icon: Settings, iconColor: "text-orange-300", dotColor: "bg-orange-400" },
 ];
 
 interface FloatingMenuProps {
@@ -125,7 +88,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
-
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   const fetchPendingFriends = useCallback(async () => {
@@ -163,7 +125,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const handleChatOpen = async () => {
     playSound("buttonClick");
     const isBanned = await isUserBanned(user.id);
-
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
       toast.error(`Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`, {
@@ -172,7 +133,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       });
       return;
     }
-
     try {
       await supabase
         .from("notifications")
@@ -183,7 +143,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     } catch (error) {
       console.error("Error marking notifications as read:", error);
     }
-
     navigate("/chat");
     setIsOpen(false);
   };
@@ -195,37 +154,40 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   };
 
   // ─── Ortak item satır stili ───────────────────────────────────────────────
-  // Koyu temada belirgin olması için: daha opak beyazımsı bg + üst kenardan ince parlak ring
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    // Açık gri-beyaz ton — koyu lacivert bg üzerinde net seçiliyor, blur yok
     "bg-[rgba(255,255,255,0.10)] " +
-    // Üst + sol kenardan hafif parlayan ince çizgi (cam kenarı etkisi)
     "ring-1 ring-white/20 " +
-    // Hover: biraz daha aydınlık
     "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/30 " +
-    "active:scale-95 transition-all duration-150 ease-out " +
+    // transition-all → transition-colors: sadece renk geçişi izleniyor
+    // layout / transform hesabı yok = kasma azalır
+    "active:scale-95 transition-colors duration-150 " +
     "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
 
-  // ─── Stagger helper ──────────────────────────────────────────────────────
+  // ─── Stagger animasyonu ───────────────────────────────────────────────────
+  // DEĞİŞTİRİLENLER:
+  // 1. scale kaldırıldı → boyut hesabı yok = titreme yok
+  // 2. will-change artık dinamik değil, sabit string = layout thrashing yok
+  // 3. translate-y-2 (küçük kayma), eskiden translate-y-3 idi
   const staggerStyle = (i: number): React.CSSProperties => ({
-    transitionDelay: isOpen ? `${i * 45}ms` : "0ms",
-    // will-change: sadece açık konumda aktif, kapanınca temizle
-    willChange: isOpen ? "transform, opacity" : "auto",
+    transitionDelay: isOpen ? `${i * 40}ms` : "0ms",
+    willChange: "transform, opacity", // sabit — state'e göre değişmiyor
   });
 
-  const itemAnim = (i: number) =>
-    `transform transition-all duration-200 ease-out ${
-      isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95 pointer-events-none"
-    }`;
+  const itemAnim = () =>
+    "transition-[transform,opacity] duration-200 ease-out " +
+    (isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none");
+  // scale-95 → kaldırıldı (titreme sebebiydi)
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      {/* Overlay */}
+      {/* Overlay — blur YOK, sadece koyu opacity
+          blur-md büyük ekran alanında GPU'yu çok zorlar (Snapdragon 680)
+          bg-black/50 aynı "odak" hissini verir, sıfır GPU ek yükü */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/30 -z-10"
+          className="fixed inset-0 bg-black/50 -z-10 transition-opacity duration-200"
           onClick={() => {
             setIsOpen(false);
             onOpenChange?.(false);
@@ -238,7 +200,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
       >
         {/* ── 1. MÜZİK ── */}
-        <div className={itemAnim(0)} style={staggerStyle(0)}>
+        <div className={itemAnim()} style={staggerStyle(0)}>
           <div
             onClick={() => {
               setMusicEnabled(!musicEnabled);
@@ -246,16 +208,12 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
             }}
             className={rowBase}
           >
-            {/* Sol renkli dot aksanı */}
             <span
               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`}
             />
-
             <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">
               {musicEnabled ? "Ses Açık" : "Ses Kapalı"}
             </span>
-
-            {/* İkon — gradient button yok, sade renkli ikon */}
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 musicEnabled ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-500/20 text-gray-400"
@@ -268,20 +226,16 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item, index) => (
-          <div key={item.route} className={itemAnim(index + 1)} style={staggerStyle(index + 1)}>
+          <div key={item.route} className={itemAnim()} style={staggerStyle(index + 1)}>
             <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
-
               <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
-
               <div className="relative flex-shrink-0">
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/10 ${item.iconColor} brightness-125`}
                 >
                   <item.icon className="w-4 h-4" />
                 </div>
-
-                {/* Arkadaşlar badge */}
                 {item.route === "/friends" && pendingFriendRequests > 0 && (
                   <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
                     {pendingFriendRequests > 9 ? "9+" : pendingFriendRequests}
@@ -294,7 +248,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
         {/* ── 3. MODERATÖR ── */}
         {!roleLoading && isModerator && (
-          <div className={itemAnim(menuItems.length + 1)} style={staggerStyle(menuItems.length + 1)}>
+          <div className={itemAnim()} style={staggerStyle(menuItems.length + 1)}>
             <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
               <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Moderatör</span>
@@ -306,7 +260,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         )}
 
         {/* ── 4. SOHBET ── */}
-        <div className={itemAnim(menuItems.length + 2)} style={staggerStyle(menuItems.length + 2)}>
+        <div className={itemAnim()} style={staggerStyle(menuItems.length + 2)}>
           <div onClick={handleChatOpen} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
             <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Sohbet</span>
@@ -324,7 +278,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         </div>
 
         {/* ── 5. ÇIKIŞ ── */}
-        <div className={itemAnim(menuItems.length + 3)} style={staggerStyle(menuItems.length + 3)}>
+        <div className={itemAnim()} style={staggerStyle(menuItems.length + 3)}>
           <div onClick={handleLogout} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
             <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Çıkış</span>
@@ -339,27 +293,21 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <div className="fixed bottom-4 right-4" data-onboarding="floating-menu">
         <button
           onClick={handleToggle}
+          // willChange sabit inline style — toggle sırasında layout thrashing önler
+          style={{ willChange: "transform" }}
           className={`
             relative w-[72px] h-[72px] rounded-full
             flex items-center justify-center
-            transition-all duration-200 ease-out
+            transition-transform duration-200 ease-out
             active:scale-90 hover:scale-105
             ${
               isOpen
-                ? // Açıkken: beyaz/açık — kapat ikonuyla kontrast
-                  "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
-                : // Kapalıyken: siyah-beyaz çarpıcı gradient
-                  "bg-gradient-to-br from-white to-gray-200 shadow-[0_6px_28px_rgba(255,255,255,0.15)] ring-2 ring-white/30 hover:shadow-[0_8px_32px_rgba(255,255,255,0.25)]"
+                ? "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
+                : "bg-gradient-to-br from-white to-gray-200 shadow-[0_6px_28px_rgba(255,255,255,0.15)] ring-2 ring-white/30"
             }
           `}
         >
-          {isOpen ? (
-            <X className="w-8 h-8 text-gray-900 transition-transform duration-200" />
-          ) : (
-            <MenuIcon className="w-8 h-8 text-gray-900 transition-transform duration-200" />
-          )}
-
-          {/* Bildirim varsa ana butonda kırmızı nokta */}
+          {isOpen ? <X className="w-8 h-8 text-gray-900" /> : <MenuIcon className="w-8 h-8 text-gray-900" />}
           {!isOpen && totalNotifications > 0 && (
             <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white shadow-md" />
           )}
