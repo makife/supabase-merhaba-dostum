@@ -47,7 +47,7 @@ export default function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline, isSystemConnected } = useUser();
-
+  const [isMiniMenuOpen, setIsMiniMenuOpen] = useState(false);
   const { playSound } = useSounds();
   const [viewMode, setViewMode] = useState<ViewMode>("global");
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
@@ -63,7 +63,7 @@ export default function ChatPage() {
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde otomatik veri tazeleme
   const handleChatResync = useCallback(() => {
     if (user?.id) {
-      console.log('🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...');
+      console.log("🔄 [ChatPage] Resync triggered - veriler yeniden yükleniyor...");
       fetchAllUsers();
       fetchUnreadCounts();
       refreshUnreadCounts();
@@ -71,32 +71,32 @@ export default function ChatPage() {
   }, [user?.id]);
 
   // PrivateChat kritik sayfa - öncelikli resync
-  usePageResync(handleChatResync, 'ChatPage', true);
+  usePageResync(handleChatResync, "ChatPage", true);
 
   // Yasak kontrolü
   useEffect(() => {
     const checkBanStatus = async () => {
       if (!user?.id) return;
-      
+
       try {
-        const { data, error } = await supabase.rpc('check_user_ban_status', {
-          p_user_id: user.id
+        const { data, error } = await supabase.rpc("check_user_ban_status", {
+          p_user_id: user.id,
         });
-        
+
         if (error) {
-          console.error('Ban check error:', error);
+          console.error("Ban check error:", error);
           return;
         }
-        
+
         if (data && data.length > 0 && data[0].is_banned) {
           setBanInfo(data[0]);
           setShowBanDialog(true);
         }
       } catch (err) {
-        console.error('Ban status check failed:', err);
+        console.error("Ban status check failed:", err);
       }
     };
-    
+
     checkBanStatus();
   }, [user?.id]);
 
@@ -370,6 +370,7 @@ export default function ChatPage() {
               onViewChange={handleViewChange}
               onGoHome={handleBackToMenu}
               currentView={viewMode}
+              onOpenChange={setIsMiniMenuOpen}
             />
           )}
 
@@ -378,7 +379,10 @@ export default function ChatPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { playSound("buttonClick"); handleBackToMenu(); }}
+              onClick={() => {
+                playSound("buttonClick");
+                handleBackToMenu();
+              }}
               className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105 sm:px-3"
             >
               <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
@@ -410,7 +414,7 @@ export default function ChatPage() {
                 const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
 
                 return (
-                    <SwipeToDeleteCard
+                  <SwipeToDeleteCard
                     key={targetUser.id}
                     onDelete={() => deletePrivateChat(targetUser.id)}
                     className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-xl ${
@@ -503,7 +507,10 @@ export default function ChatPage() {
           allUsers
             .filter((user) => blockedUsers.includes(user.id))
             .map((blockedUser) => (
-              <Card key={blockedUser.id} className="p-4 border-red-500/30 bg-red-500/10 hover:bg-red-500/15 transition-colors">
+              <Card
+                key={blockedUser.id}
+                className="p-4 border-red-500/30 bg-red-500/10 hover:bg-red-500/15 transition-colors"
+              >
                 <div className="flex items-center space-x-3">
                   <div
                     className="cursor-pointer"
@@ -633,7 +640,9 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-[#2D3436] via-[#434d50] to-[#636E72]">
-      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden">
+      <div
+        className={`flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden transition-all duration-300 ${isMiniMenuOpen ? "blur-md scale-[0.98] opacity-50" : ""}`}
+      >
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
@@ -649,12 +658,12 @@ export default function ChatPage() {
             <AlertDialogDescription className="space-y-3">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-2">
                 <p className="font-semibold text-red-800 mb-2">Yasak Sebebi:</p>
-                <p className="text-red-700">{banInfo?.ban_reason || 'Uygunsuz davranış'}</p>
+                <p className="text-red-700">{banInfo?.ban_reason || "Uygunsuz davranış"}</p>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <p className="font-semibold text-orange-800 mb-2">Kalan Süre:</p>
                 <p className="text-orange-700 text-lg font-bold">
-                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ''}
+                  {banInfo ? formatBanDuration(banInfo.remaining_hours) : ""}
                 </p>
               </div>
               <p className="text-sm text-gray-600 mt-4">
@@ -663,10 +672,10 @@ export default function ChatPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => {
                 setShowBanDialog(false);
-                navigate('/');
+                navigate("/");
               }}
               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
             >
