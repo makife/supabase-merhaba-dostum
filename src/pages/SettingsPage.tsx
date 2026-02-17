@@ -234,15 +234,15 @@ const SettingsPage = () => {
         <p>Kelimele oyunu hakkında sorularınız için aşağıdaki kanalı kullanabilirsiniz:</p>
         
         <div class="space-y-3">
-          <div class="p-3 bg-muted rounded-lg">
-            <h4 class="font-medium">E-posta Desteği</h4>
-            <p class="text-sm text-muted-foreground">team@kelimele.site</p>
-            <p class="text-sm">24 saat içinde yanıtlanır</p>
+          <div class="p-3 bg-slate-800/60 rounded-lg border border-white/10">
+            <h4 class="font-medium text-white">E-posta Desteği</h4>
+            <p class="text-sm text-slate-400">team@kelimele.site</p>
+            <p class="text-sm text-slate-300">24 saat içinde yanıtlanır</p>
           </div>
           
-          <div class="p-3 bg-muted rounded-lg">
-            <h4 class="font-medium">Teknik Sorunlar</h4>
-            <p class="text-sm">Uygulama ile ilgili teknik sorunları bildirin. Cihaz modelinizi ve hatanın ne zaman oluştuğunu belirtmeyi unutmayın.</p>
+          <div class="p-3 bg-slate-800/60 rounded-lg border border-white/10">
+            <h4 class="font-medium text-white">Teknik Sorunlar</h4>
+            <p class="text-sm text-slate-300">Uygulama ile ilgili teknik sorunları bildirin. Cihaz modelinizi ve hatanın ne zaman oluştuğunu belirtmeyi unutmayın.</p>
           </div>
         </div>
       </div>
@@ -258,21 +258,21 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <section>
             <h4 class="font-medium">Toplanan Bilgiler</h4>
-            <p class="text-sm text-muted-foreground">• E-posta adresi (hesap oluşturma için)</p>
-            <p class="text-sm text-muted-foreground">• Oyun istatistikleri</p>
-            <p class="text-sm text-muted-foreground">• Uygulama kullanım verileri</p>
+            <p class="text-sm text-slate-400">• E-posta adresi (hesap oluşturma için)</p>
+            <p class="text-sm text-slate-400">• Oyun istatistikleri</p>
+            <p class="text-sm text-slate-400">• Uygulama kullanım verileri</p>
           </section>
           
           <section>
-            <h4 class="font-medium">Verilerin Kullanımı</h4>
-            <p class="text-sm text-muted-foreground">• Oyun deneyimini geliştirmek</p>
-            <p class="text-sm text-muted-foreground">• Hesap güvenliğini sağlamak</p>
-            <p class="text-sm text-muted-foreground">• İstatistik ve liderlik tabloları</p>
+            <h4 class="font-medium text-white">Verilerin Kullanımı</h4>
+            <p class="text-sm text-slate-400">• Oyun deneyimini geliştirmek</p>
+            <p class="text-sm text-slate-400">• Hesap güvenliğini sağlamak</p>
+            <p class="text-sm text-slate-400">• İstatistik ve liderlik tabloları</p>
           </section>
           
           <section>
-            <h4 class="font-medium">Veri Güvenliği</h4>
-            <p class="text-sm text-muted-foreground">Tüm veriler şifrelenerek güvenli sunucularda saklanır. Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz.</p>
+            <h4 class="font-medium text-white">Veri Güvenliği</h4>
+            <p class="text-sm text-slate-400">Tüm veriler şifrelenerek güvenli sunucularda saklanır. Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz.</p>
           </section>
         </div>
       </div>
@@ -291,11 +291,11 @@ const SettingsPage = () => {
         <div class="space-y-3">
           <section>
             <h4 class="font-medium">Geliştirici</h4>
-            <p class="text-sm text-muted-foreground">Ergan yazılım ekibi tarafından geliştirilmiştir.</p>
+            <p class="text-sm text-slate-400">Ergan yazılım ekibi tarafından geliştirilmiştir.</p>
           </section>
         </div>
         
-        <div class="text-center text-xs text-muted-foreground border-t pt-3">
+        <div class="text-center text-xs text-slate-500 border-t border-white/10 pt-3">
           <p>© 2025 Ergan Yazılım</p>
         </div>
       </div>
@@ -309,13 +309,13 @@ const SettingsPage = () => {
         <h3 class="font-semibold text-lg">İletişim</h3>
         
         <div class="space-y-4">
-          <div class="p-4 bg-muted rounded-lg">
-            <h4 class="font-medium flex items-center mb-3">
-              <Mail class="w-4 h-4 mr-2 flex-shrink-0" />
-              <span class="whitespace-nowrap">E-posta</span>
+          <div class="p-4 bg-slate-800/60 rounded-lg border border-white/10">
+            <h4 class="font-medium text-white flex items-center mb-3">
+              📧
+              <span class="whitespace-nowrap ml-2">E-posta</span>
             </h4>
             <div class="space-y-2">
-              <p class="text-sm font-mono break-all">team@kelimele.site</p>
+              <p class="text-sm font-mono break-all text-slate-300">team@kelimele.site</p>
             </div>
           </div>
         </div>
