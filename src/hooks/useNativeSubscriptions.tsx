@@ -317,11 +317,14 @@ export const useNativeSubscriptions = () => {
         console.error("Subscription purchase failed:", error);
 
         // Kullanıcı iptal ettiyse
-        if (error.code === "PURCHASE_CANCELLED_ERROR" || error.userCancelled) {
-          toast({
-            title: "İptal Edildi",
-            description: "Abonelik işlemi iptal edildi",
-          });
+        if (
+          error.code === "PURCHASE_CANCELLED_ERROR" ||
+          error.userCancelled === true ||
+          error.code === 1 || // Google Play iptal kodu
+          error.message?.toLowerCase().includes("cancel") ||
+          error.message?.toLowerCase().includes("dismiss")
+        ) {
+          // Sessizce geç — kullanıcı zaten biliyor, toast gösterme
         } else {
           toast({
             title: "Abonelik Hatası",
@@ -329,6 +332,7 @@ export const useNativeSubscriptions = () => {
             variant: "destructive",
           });
         }
+
         return false;
       } finally {
         setIsLoading(false);
