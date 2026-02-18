@@ -143,7 +143,8 @@ serve(async (req) => {
     let skippedOnline = 0;
     const errors: string[] = [];
 
-    // Kredisi < 5, last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
+    // Kredisi < 5 (game+bonus toplam), last_credit_refresh 72+ dk önce, push_token var, premium/unlimited değil
+    // NOT: game_credits < 5 filtresi ile DB'den alıyoruz, sonra JS'de toplam kredi kontrolü yapıyoruz
     const { data: users, error: queryError } = await supabase
       .from('profiles')
       .select('id, username, push_token, game_credits, bonus_credits, last_credit_refresh, last_seen')
@@ -159,12 +160,13 @@ serve(async (req) => {
       errors.push(queryError.message);
     }
 
-    // Bonus kredisi olan kullanıcıları filtrele (game_credits + bonus_credits >= 5 ise bildirim gönderme)
+    // KRITIK: Toplam kredi (game_credits + bonus_credits) >= 5 ise HIÇBIR işlem yapma
+    // Hem kredi artırma hem de push gönderme atlanmalı
     const eligibleUsers = users
       ? users.filter(u => {
           const totalCredits = (u.game_credits || 0) + (u.bonus_credits || 0);
           if (totalCredits >= 5) {
-            console.log(`⏭️ ${u.username} toplam kredisi ${totalCredits} (game:${u.game_credits}, bonus:${u.bonus_credits}) - atlanıyor`);
+            console.log(`⏭️ ${u.username} toplam kredisi zaten ${totalCredits} (game:${u.game_credits}, bonus:${u.bonus_credits}) - kredi ekleme ve push ATLANDI`);
             return false;
           }
           return true;
@@ -182,24 +184,41 @@ serve(async (req) => {
         console.log(`👤 ${user.username}: last_seen=${user.last_seen}, isOnline=${isOnline}, threshold=${onlineThreshold}`);
         if (isOnline) {
           // Online kullanıcıya sadece krediyi ekle, push gönderme
-          const newCredits = Math.min((user.game_credits || 0) + 1, 5);
+          // Sadece game_credits'e ekle (bonus_credits'e değil), toplam 5 sınırını aşma
+          const currentGameCredits = user.game_credits || 0;
+          const currentBonusCredits = user.bonus_credits || 0;
+          const currentTotal = currentGameCredits + currentBonusCredits;
+          
+          // Zaten toplam 5 ise (bu noktaya gelmiş olmamalı ama güvenlik için)
+          if (currentTotal >= 5) {
+            console.log(`⏭️ ${user.username} ONLINE ama toplam zaten ${currentTotal} - atlanıyor`);
+            skippedOnline++;
+            continue;
+          }
+
+          const newGameCredits = Math.min(currentGameCredits + 1, 5 - currentBonusCredits);
+          const newTotal = newGameCredits + currentBonusCredits;
           const nextRefreshTime = new Date(new Date(user.last_credit_refresh).getTime() + CREDIT_INTERVAL_MS);
 
           await supabase
             .from('profiles')
             .update({
-              game_credits: newCredits,
-              last_credit_refresh: newCredits >= 5 ? null : nextRefreshTime.toISOString(),
+              game_credits: newGameCredits,
+              last_credit_refresh: newTotal >= 5 ? null : nextRefreshTime.toISOString(),
             })
             .eq('id', user.id);
 
           skippedOnline++;
-          console.log(`⏭️ ${user.username} ONLINE - kredi eklendi (${newCredits}/5) ama push gönderilmedi`);
+          console.log(`⏭️ ${user.username} ONLINE - kredi eklendi (game:${newGameCredits}, bonus:${currentBonusCredits}, toplam:${newTotal}) ama push gönderilmedi`);
           continue;
         }
 
         // Offline kullanıcıya +1 kredi + push bildirim
-        const newCredits = Math.min((user.game_credits || 0) + 1, 5);
+        // Toplam 5 sınırını aşmadan sadece game_credits'e ekle
+        const currentGameCredits = user.game_credits || 0;
+        const currentBonusCredits = user.bonus_credits || 0;
+        const newGameCredits = Math.min(currentGameCredits + 1, 5 - currentBonusCredits);
+        const newTotal = newGameCredits + currentBonusCredits;
         const nextRefreshTime = new Date(new Date(user.last_credit_refresh).getTime() + CREDIT_INTERVAL_MS);
 
         const message: FCMMessage = {
@@ -207,9 +226,9 @@ serve(async (req) => {
             token: user.push_token,
             notification: {
               title: '🎮 +1 Oyun Hakkın Geldi!',
-              body: newCredits >= 5
+              body: newTotal >= 5
                 ? 'Tüm hakların doldu! Hadi bir maç yapalım! 🎉'
-                : `Şu an ${newCredits}/5 hakkın var. Oynamaya hazır mısın?`,
+                : `Şu an ${newTotal}/5 hakkın var. Oynamaya hazır mısın?`,
             },
             android: {
               priority: 'high',
@@ -228,7 +247,7 @@ serve(async (req) => {
             },
             data: {
               type: 'credit_refresh',
-              credits: String(newCredits),
+              credits: String(newTotal),
             },
           },
         };
@@ -236,15 +255,15 @@ serve(async (req) => {
         const pushSent = await sendFirebaseNotification(message);
         if (pushSent) {
           sent++;
-          console.log(`✅ OFFLINE push sent to ${user.username} (${newCredits}/5)`);
+          console.log(`✅ OFFLINE push sent to ${user.username} (game:${newGameCredits}, bonus:${currentBonusCredits}, toplam:${newTotal})`);
         }
 
         // Krediyi güncelle
         await supabase
           .from('profiles')
           .update({
-            game_credits: newCredits,
-            last_credit_refresh: newCredits >= 5 ? null : nextRefreshTime.toISOString(),
+            game_credits: newGameCredits,
+            last_credit_refresh: newTotal >= 5 ? null : nextRefreshTime.toISOString(),
           })
           .eq('id', user.id);
       }
