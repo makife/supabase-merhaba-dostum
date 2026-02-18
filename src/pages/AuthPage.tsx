@@ -1,4 +1,3 @@
-// AuthPage.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,17 +7,16 @@ import { Preferences } from "@capacitor/preferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
-import { HeaderAnimation } from "@/components/HeaderAnimation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, user } = useAuth();
   const { toast } = useToast();
+
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -28,13 +26,18 @@ const AuthPage = () => {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [signUpCooldown, setSignUpCooldown] = useState(0);
 
-  // 🔧 Email'i Preferences'dan yükle
   const [signInData, setSignInData] = useState({
     email: "",
     password: "",
   });
 
-  // 🔥 User değişince ana sayfaya yönlendir (giriş başarılı)
+  const [signUpData, setSignUpData] = useState({
+    email: "",
+    password: "",
+    username: "",
+  });
+
+  // User varsa ana sayfaya yönlendir
   useEffect(() => {
     if (user) {
       console.log("[AuthPage] ✅ User detected, navigating to home...");
@@ -42,7 +45,7 @@ const AuthPage = () => {
     }
   }, [user, navigate]);
 
-  // İlk yüklemede kayıtlı bilgileri al
+  // Kayıtlı bilgileri yükle
   useEffect(() => {
     const loadSavedCredentials = async () => {
       const { value: savedEmail } = await Preferences.get({ key: "kelimele-saved-email" });
@@ -57,30 +60,6 @@ const AuthPage = () => {
     loadSavedCredentials();
   }, []);
 
-  const [signUpData, setSignUpData] = useState({
-    email: "",
-    password: "",
-    username: "",
-  });
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // 🔧 Giriş bilgilerini Preferences'a kaydet
-    await Preferences.set({ key: "kelimele-saved-email", value: signInData.email });
-    await Preferences.set({ key: "kelimele-saved-password", value: signInData.password });
-
-    const { error } = await signIn(signInData.email, signInData.password);
-    setLoading(false);
-
-    // 🔥 Hata yoksa direkt yönlendir (useEffect yedeği)
-    if (!error) {
-      console.log("[AuthPage] ✅ SignIn successful, navigating to home...");
-      navigate("/", { replace: true });
-    }
-  };
-
   // Cooldown timer
   useEffect(() => {
     if (signUpCooldown <= 0) return;
@@ -90,12 +69,27 @@ const AuthPage = () => {
     return () => clearInterval(timer);
   }, [signUpCooldown]);
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    await Preferences.set({ key: "kelimele-saved-email", value: signInData.email });
+    await Preferences.set({ key: "kelimele-saved-password", value: signInData.password });
+
+    const { error } = await signIn(signInData.email, signInData.password);
+    setLoading(false);
+
+    if (!error) {
+      console.log("[AuthPage] ✅ SignIn successful, navigating to home...");
+      navigate("/", { replace: true });
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (signUpCooldown > 0) return;
     setLoading(true);
 
-    // Önce bu e-posta ile kayıtlı kullanıcı var mı kontrol et
     const { data: existingUser } = await supabase
       .from("profiles")
       .select("id")
@@ -116,7 +110,6 @@ const AuthPage = () => {
     setLoading(false);
 
     if (error) {
-      // Rate limit hatası kontrolü
       if (error.message?.includes("rate") || error.message?.includes("429") || error.status === 429) {
         toast({
           title: "Çok Hızlı İstek",
@@ -146,48 +139,70 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background touch-none overscroll-none">
-      <div className="w-full max-w-md space-y-6 bounce-in touch-auto overscroll-auto">
-        <Card className="border border-slate-600 bg-card/60 backdrop-blur-lg relative overflow-hidden shadow-xl shadow-primary/5 rounded-2xl">
-          <HeaderAnimation />
+    <div
+      className="fixed inset-0 flex items-center justify-center overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+    >
+      {/* Arka plan ışık efekti */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
 
-          <div className="text-center space-y-3 p-6 relative z-10">
-            <img
-              src={kelimeleLogo}
-              alt="Kelimele Logo"
-              className="w-20 h-20 mx-auto rounded-2xl shadow-lg shadow-primary/20 ring-2 ring-primary/20 bg-white p-1"
-            />
-
-            <p className="text-muted-foreground/80 font-medium text-sm">Kelime oyununun en eğlenceli hali</p>
+      {/* Ana kart */}
+      <div className="relative z-10 w-full max-w-md mx-4 space-y-6">
+        {/* Logo ve başlık */}
+        <div className="text-center space-y-4">
+          <div className="inline-block">
+            <img src={kelimeleLogo} alt="Kelimele" className="w-24 h-24 rounded-3xl shadow-2xl ring-4 ring-white/10" />
           </div>
-        </Card>
+          <div>
+            <h1 className="text-2xl font-black text-white uppercase tracking-widest">Kelimele</h1>
+            <p className="text-xs text-slate-400 mt-1">Kelime oyununun en eğlenceli hali</p>
+          </div>
+        </div>
 
-        <Card className="border border-slate-600 bg-card/60 backdrop-blur-lg shadow-xl shadow-primary/5 rounded-2xl">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/60 rounded-xl mx-4 mt-4 w-[calc(100%-2rem)]">
-              <TabsTrigger
-                value="signin"
-                className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
-              >
-                ▶ Giriş Yap
-              </TabsTrigger>
-              <TabsTrigger
-                value="signup"
-                className="rounded-lg text-sm font-semibold transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-indigo-600 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=inactive]:text-muted-foreground/70 data-[state=inactive]:hover:text-foreground/80"
-              >
-                ➜] Kayıt Ol
-              </TabsTrigger>
-            </TabsList>
+        {/* Form kartı */}
+        <div className="bg-[#16213e]/90 ring-1 ring-white/10 rounded-3xl overflow-hidden shadow-2xl">
+          {/* Tab başlıkları */}
+          <div className="px-4 pt-5 pb-3 border-b border-white/5 flex gap-2">
+            <button
+              onClick={() => setActiveTab("signin")}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all
+                ${
+                  activeTab === "signin"
+                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    : "bg-transparent text-white/40 hover:text-white/60"
+                }`}
+            >
+              Giriş Yap
+            </button>
+            <button
+              onClick={() => setActiveTab("signup")}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all
+                ${
+                  activeTab === "signup"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20"
+                    : "bg-transparent text-white/40 hover:text-white/60"
+                }`}
+            >
+              Kayıt Ol
+            </button>
+          </div>
 
-            <TabsContent value="signin">
-              <CardHeader>
-                <CardTitle>Giriş Yap</CardTitle>
-                <CardDescription>E-posta adresiniz ve şifrenizle giriş yapın</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">E-posta</Label>
+          {/* ── GİRİŞ YAP ── */}
+          {activeTab === "signin" && (
+            <div className="px-5 py-5 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1 h-5 bg-indigo-400 rounded-full" />
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Hoş Geldin</h2>
+              </div>
+
+              <form onSubmit={handleSignIn} className="space-y-3">
+                {/* Email */}
+                <div>
+                  <Label htmlFor="signin-email" className="text-xs text-slate-400 mb-1.5 block">
+                    E-posta
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <Input
                       id="signin-email"
                       type="email"
@@ -195,104 +210,140 @@ const AuthPage = () => {
                       value={signInData.email}
                       onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
                       required
+                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Şifre</Label>
-                    <div className="relative">
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={signInData.password}
-                        onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
+                </div>
 
-                  <div className="text-right">
-                    <Button
+                {/* Şifre */}
+                <div>
+                  <Label htmlFor="signin-password" className="text-xs text-slate-400 mb-1.5 block">
+                    Şifre
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input
+                      id="signin-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={signInData.password}
+                      onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                      required
+                      className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
+                    />
+                    <button
                       type="button"
-                      variant="ghost"
-                      className="rounded-full bg-red-500 text-white px-4 py-1 text-xs hover:bg-red-600 shadow-sm"
-                      onClick={() => setResetDialogOpen(true)}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                     >
-                      Şifremi unuttum
-                    </Button>
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Şifremi unuttum */}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setResetDialogOpen(true)}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Şifremi unuttum
+                  </button>
+                </div>
+
+                {/* Giriş butonu */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
+                >
+                  {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ── KAYIT OL ── */}
+          {activeTab === "signup" && (
+            <div className="px-5 py-5 space-y-4">
+              {showEmailConfirmation ? (
+                // Email doğrulama ekranı
+                <div className="text-center space-y-4 py-6">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-400/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white uppercase tracking-widest mb-2">
+                      E-posta Doğrulama
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      <span className="text-amber-400 font-semibold">{registeredEmail}</span> adresine doğrulama linki
+                      gönderdik.
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">Lütfen e-postanızı kontrol edin ve linke tıklayın.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">(Spam klasörünü de kontrol edin)</p>
+                  </div>
+                  <button
+                    onClick={() => setShowEmailConfirmation(false)}
+                    className="w-full py-3 rounded-xl bg-white/8 ring-1 ring-white/10 text-white font-semibold text-sm hover:bg-white/12 transition-all active:scale-95"
+                  >
+                    Yeni Kayıt Yap
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-5 bg-amber-400 rounded-full" />
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest">Hesap Oluştur</h2>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
-                  </Button>
-                </form>
-              </CardContent>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <CardHeader>
-                {" "}
-                <CardTitle>Kayıt Ol</CardTitle>{" "}
-                <CardDescription>Yeni bir hesap oluşturun ve oyuna başlayın</CardDescription>{" "}
-              </CardHeader>
-              <CardContent>
-                {showEmailConfirmation ? (
-                  <div className="text-center space-y-4 py-4">
-                    <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center">
-                      <Mail className="w-8 h-8 text-green-500" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-foreground">E-posta Doğrulama Gerekli!</h3>
-                      <p className="text-muted-foreground text-sm">
-                        <span className="font-medium text-primary">{registeredEmail}</span> adresine bir doğrulama linki
-                        gönderdik.
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        Lütfen e-postanızı kontrol edin ve linke tıklayarak hesabınızı doğrulayın. Ardından giriş
-                        yapabilirsiniz.
-                      </p>
-                      <p className="text-xs text-muted-foreground/70 mt-2">(Spam/Gereksiz klasörünü de kontrol edin)</p>
-                    </div>
-                    <Button variant="outline" className="w-full" onClick={() => setShowEmailConfirmation(false)}>
-                      Yeni Kayıt Yap
-                    </Button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-username">Kullanıcı Adı</Label>
-                      <Input
-                        id="signup-username"
-                        type="text"
-                        placeholder="kullaniciadi"
-                        value={signUpData.username}
-                        onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">E-posta</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="ornek@email.com"
-                        value={signUpData.email}
-                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Şifre</Label>
+                  <form onSubmit={handleSignUp} className="space-y-3">
+                    {/* Kullanıcı adı */}
+                    <div>
+                      <Label htmlFor="signup-username" className="text-xs text-slate-400 mb-1.5 block">
+                        Kullanıcı Adı
+                      </Label>
                       <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <Input
+                          id="signup-username"
+                          type="text"
+                          placeholder="kullaniciadi"
+                          value={signUpData.username}
+                          onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                          required
+                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <Label htmlFor="signup-email" className="text-xs text-slate-400 mb-1.5 block">
+                        E-posta
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="ornek@email.com"
+                          value={signUpData.email}
+                          onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                          required
+                          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Şifre */}
+                    <div>
+                      <Label htmlFor="signup-password" className="text-xs text-slate-400 mb-1.5 block">
+                        Şifre
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <Input
                           id="signup-password"
                           type={showPassword ? "text" : "password"}
@@ -300,62 +351,80 @@ const AuthPage = () => {
                           value={signUpData.password}
                           onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                           required
+                          className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
                         />
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
-                    <Button
+
+                    {/* Kayıt butonu */}
+                    <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
                       disabled={loading || signUpCooldown > 0}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20"
                     >
                       {loading
                         ? "Kayıt olunuyor..."
                         : signUpCooldown > 0
                           ? `Bekleyin (${signUpCooldown}s)`
                           : "Kayıt Ol"}
-                    </Button>
+                    </button>
                   </form>
-                )}
-              </CardContent>
-            </TabsContent>
-          </Tabs>
-
-          {/* Şifre Sıfırlama Dialog - Form dışında */}
-          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Şifre Sıfırlama</DialogTitle>
-                <DialogDescription>E-posta adresinize şifre sıfırlama linki göndereceğiz.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">E-posta</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="ornek@email.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={resetLoading}>
-                  {resetLoading ? "Gönderiliyor..." : "Şifre Sıfırlama Linki Gönder"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </Card>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ── ŞİFRE SIFIRLAMA DİALOG ── */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent
+          className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
+          style={{ left: "50%", transform: "translateX(-50%)" }}
+        >
+          <div className="px-5 pt-6 pb-4 border-b border-white/5">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-1 h-5 bg-red-400 rounded-full" />
+              <h2 className="text-sm font-black text-white uppercase tracking-widest">Şifre Sıfırlama</h2>
+            </div>
+            <p className="text-[11px] text-slate-400 ml-3">E-posta adresinize şifre sıfırlama linki göndereceğiz.</p>
+          </div>
+          <form onSubmit={handleResetPassword} className="px-5 py-4 space-y-3">
+            <div>
+              <Label htmlFor="reset-email" className="text-xs text-slate-400 mb-1.5 block">
+                E-posta
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={resetLoading}
+              className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-red-600/20"
+            >
+              {resetLoading ? "Gönderiliyor..." : "Sıfırlama Linki Gönder"}
+            </button>
+          </form>
+          <div className="h-2" />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
