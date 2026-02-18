@@ -715,61 +715,67 @@ const TournamentBracketPage = () => {
         </div>
       </div>
 
+      {/* ── Sticky geri sayım ve banner'lar ── */}
+      {(isWaitingForCountdown || isWaitingForRoundCreation || hasActiveCountdown) && (
+        <div className="flex-none z-20 px-5 pt-3 pb-0">
+          {/* ── "Birazdan maç başlayacak" banner'ı ── */}
+          {isWaitingForCountdown && (
+            <div className="bg-[#16213e]/95 ring-1 ring-amber-400/20 rounded-3xl px-5 py-4 flex flex-col items-center gap-3 shadow-xl backdrop-blur-sm">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/15 ring-1 ring-amber-400/30 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-black text-white uppercase tracking-widest mb-1">Birazdan Maç Başlayacak</p>
+                <p className="text-xs text-slate-400">
+                  {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} hazırlanıyor, lütfen
+                  bekleyin…
+                </p>
+              </div>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Tur geçiş loading ── */}
+          {isWaitingForRoundCreation && (
+            <div className="bg-[#16213e]/95 ring-1 ring-indigo-400/20 rounded-3xl px-5 py-4 flex flex-col items-center gap-3 shadow-xl backdrop-blur-sm">
+              <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-indigo-400 animate-spin" />
+              <div className="text-center">
+                <p className="text-sm font-black text-white uppercase tracking-widest mb-1">
+                  {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Tur"} Oluşturuluyor
+                </p>
+                <p className="text-xs text-slate-400">Eşleşmeler hazırlanıyor…</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Aktif geri sayım ── */}
+          {hasActiveCountdown && (
+            <div className="bg-[#16213e]/95 ring-1 ring-rose-400/30 rounded-3xl px-5 py-4 flex items-center gap-4 shadow-xl backdrop-blur-sm">
+              <div className="w-14 h-14 rounded-2xl bg-red-500/20 ring-2 ring-red-500/40 flex flex-col items-center justify-center flex-shrink-0">
+                <span className="text-2xl font-black text-red-400 leading-none">{countdown}</span>
+                <span className="text-[9px] text-red-400/70 uppercase tracking-wider">sn</span>
+              </div>
+              <div>
+                <p className="text-sm font-black text-white uppercase tracking-widest">
+                  {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} Başlıyor
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Hazır ol!</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── SCROLLABLE İÇERİK ── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-8 relative z-10">
-        {/* ── "Birazdan maç başlayacak" banner'ı ── */}
-        {isWaitingForCountdown && (
-          <div className="bg-[#16213e]/90 ring-1 ring-amber-400/20 rounded-3xl px-5 py-5 flex flex-col items-center gap-3 shadow-xl">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 ring-1 ring-amber-400/30 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-amber-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-black text-white uppercase tracking-widest mb-1">Birazdan Maç Başlayacak</p>
-              <p className="text-xs text-slate-400">
-                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} hazırlanıyor, lütfen
-                bekleyin…
-              </p>
-            </div>
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Tur geçiş loading ── */}
-        {isWaitingForRoundCreation && (
-          <div className="bg-[#16213e]/90 ring-1 ring-indigo-400/20 rounded-3xl px-5 py-5 flex flex-col items-center gap-3 shadow-xl">
-            <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-indigo-400 animate-spin" />
-            <div className="text-center">
-              <p className="text-sm font-black text-white uppercase tracking-widest mb-1">
-                {currentRound === 2 ? "Yarı Final" : currentRound === 3 ? "Final" : "Tur"} Oluşturuluyor
-              </p>
-              <p className="text-xs text-slate-400">Eşleşmeler hazırlanıyor…</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Aktif geri sayım ── */}
-        {hasActiveCountdown && (
-          <div className="bg-[#16213e]/90 ring-1 ring-rose-400/20 rounded-3xl px-5 py-5 flex items-center gap-4 shadow-xl">
-            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 ring-1 ring-rose-400/30 flex flex-col items-center justify-center flex-shrink-0">
-              <span className="text-xl font-black text-rose-300 leading-none">{countdown}</span>
-              <span className="text-[9px] text-rose-400/70 uppercase tracking-wider">sn</span>
-            </div>
-            <div>
-              <p className="text-sm font-black text-white uppercase tracking-widest">
-                {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} Başlıyor
-              </p>
-              <p className="text-xs text-slate-400 mt-0.5">Hazır ol!</p>
-            </div>
-          </div>
-        )}
 
         {/* ── Bracket ── */}
         {[1, 2, 3].map((round) => {
