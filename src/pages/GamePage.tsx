@@ -7214,8 +7214,9 @@ const GamePage = ({
 
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
-              className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+              className="min-h-screen relative overflow-hidden letters-background"
               style={{
+                background: "#1a1a2e",
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
                 paddingLeft: "env(safe-area-inset-left, 4px)",
