@@ -186,6 +186,7 @@ const TournamentBracketPage = () => {
   const advancingRef = useRef(false);
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const tournamentEndToastShownRef = useRef(false);
 
   // fromCompletedMatch state
   useEffect(() => {
@@ -450,20 +451,53 @@ const TournamentBracketPage = () => {
     };
   }, [matches, user, navigatedToGame, tournamentId, navigate, currentTournament]);
 
-  // Champion / eliminated
+  // Champion / eliminated + tournament end toast for all participants
   useEffect(() => {
     if (!user || !matches.length) return;
     const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
     if (!finalMatch?.winner_id) return;
+
     const isInFinal = finalMatch.player1_id === user.id || finalMatch.player2_id === user.id;
-    if (finalMatch.winner_id === user.id && !showChampion) {
-      setShowChampion(true);
-      playSpecialSound("/sampiyon.mp3", 0.8);
-      giveChampionReward();
-    } else if (isInFinal && finalMatch.winner_id !== user.id && !showEliminated) {
-      setShowEliminated(true);
+
+    // Kazanan adını bul
+    const winnerParticipant = participants.find((p) => p.user_id === finalMatch.winner_id);
+    const winnerName = winnerParticipant?.profiles?.username || "Bir Oyuncu";
+
+    // Tüm katılımcılara (finalist olmayanlar dahil) turnuva bitiş toastı göster
+    if (!tournamentEndToastShownRef.current) {
+      tournamentEndToastShownRef.current = true;
+
+      if (finalMatch.winner_id === user.id) {
+        // Şampiyon
+        setShowChampion(true);
+        playSpecialSound("/sampiyon.mp3", 0.8);
+        giveChampionReward();
+        toast.success("🏆 Tebrikler! Turnuvayı kazandınız!", {
+          description: "Siz turnuvanın şampiyonusunuz!",
+          duration: 8000,
+        });
+      } else if (isInFinal) {
+        // Finalde ama kaybetti
+        setShowEliminated(true);
+        toast.error(`🏆 Turnuva Sona Erdi`, {
+          description: `Şampiyon: ${winnerName} — İyi oyun!`,
+          duration: 8000,
+        });
+      } else {
+        // Finalistte olmayan katılımcı
+        toast(`🏆 Turnuva Sona Erdi`, {
+          description: `Şampiyon: ${winnerName}`,
+          duration: 8000,
+          style: {
+            background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+            border: "1px solid rgba(251,191,36,0.3)",
+            color: "#fff",
+          },
+          icon: "🥇",
+        });
+      }
     }
-  }, [matches, user, showChampion, showEliminated]);
+  }, [matches, user, participants, showChampion, showEliminated]);
 
   const giveChampionReward = async () => {
     if (!user || !profile) return;
