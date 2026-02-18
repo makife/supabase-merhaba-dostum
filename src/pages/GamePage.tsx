@@ -790,7 +790,9 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(null);
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(
+    null,
+  );
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
@@ -5802,141 +5804,108 @@ const GamePage = ({
         if (cancelled) return;
         try {
           const potentialWords = [
-              "KEDİ",
-              "MASA",
-              "ARABA",
-              "OKUL",
-              "KİTAP",
-              "DENİZ",
-              "AĞAÇ",
-              "ÇİÇEK",
-              "DOSTLUK",
-              "GÜNEŞ",
-              "YILDIZ",
-              "BULUT",
-              "RÜZGAR",
-              "ATEŞ",
-              "TOPRAK",
-              "SEVGİ",
-              "MUTLULUK",
-              "UMUT",
-              "HAYAL",
-              "RENKLER",
-              "MÜZİK",
-              "DANS",
-              "ŞARKI",
-              "OYUN",
-              "SPOR",
-              "FUTBOL",
-              "BASKETBOL",
-              "TENİS",
-              "YÜZME",
-              "KOŞU",
-              "BİSİKLET",
-              "YEMEK",
-              "EKMEK",
-              "PEYNİR",
-              "DOMATES",
-              "SALATA",
-              "ÇORBA",
-              "MEYVE",
-              "ELMA",
-              "ARMUT",
-              "ÇİLEK",
-              "KIRAZ",
-              "ÜZÜM",
-              "PORTAKAL",
-              "MANGO",
-              "SEBZE",
-              "HAVUÇ",
-              "PATLICAN",
-              "BİBER",
-              "SOĞAN",
-              "SARIMSAK",
-              "PATATES",
-              "KALE",
-              "KÖPEK",
-              "KUŞU",
-              "BALINA",
-              "ASLAN",
-              "KAPLAN",
-              "FİL",
-              "SÜT",
-              "KOLA",
-              "ÇAY",
-              "KAHVE",
-              "ŞEKER",
-              "TUZ",
-              "YAĞLI",
-              "EKŞİ",
-              "EV",
-              "KAPI",
-              "PENCERE",
-              "ODA",
-              "SALON",
-              "MUTFAK",
-              "BANYO",
-              "YATAK",
-            ];
+            "KEDİ",
+            "MASA",
+            "ARABA",
+            "OKUL",
+            "KİTAP",
+            "DENİZ",
+            "AĞAÇ",
+            "ÇİÇEK",
+            "DOSTLUK",
+            "GÜNEŞ",
+            "YILDIZ",
+            "BULUT",
+            "RÜZGAR",
+            "ATEŞ",
+            "TOPRAK",
+            "SEVGİ",
+            "MUTLULUK",
+            "UMUT",
+            "HAYAL",
+            "RENKLER",
+            "MÜZİK",
+            "DANS",
+            "ŞARKI",
+            "OYUN",
+            "SPOR",
+            "FUTBOL",
+            "BASKETBOL",
+            "TENİS",
+            "YÜZME",
+            "KOŞU",
+            "BİSİKLET",
+            "YEMEK",
+            "EKMEK",
+            "PEYNİR",
+            "DOMATES",
+            "SALATA",
+            "ÇORBA",
+            "MEYVE",
+            "ELMA",
+            "ARMUT",
+            "ÇİLEK",
+            "KIRAZ",
+            "ÜZÜM",
+            "PORTAKAL",
+            "MANGO",
+            "SEBZE",
+            "HAVUÇ",
+            "PATLICAN",
+            "BİBER",
+            "SOĞAN",
+            "SARIMSAK",
+            "PATATES",
+            "KALE",
+            "KÖPEK",
+            "KUŞU",
+            "BALINA",
+            "ASLAN",
+            "KAPLAN",
+            "FİL",
+            "SÜT",
+            "KOLA",
+            "ÇAY",
+            "KAHVE",
+            "ŞEKER",
+            "TUZ",
+            "YAĞLI",
+            "EKŞİ",
+            "EV",
+            "KAPI",
+            "PENCERE",
+            "ODA",
+            "SALON",
+            "MUTFAK",
+            "BANYO",
+            "YATAK",
+          ];
 
-            const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
-            let wordUsed = false;
-            const currentGlobalUsed = globalUsedWordsRef.current;
+          const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+          let wordUsed = false;
+          const currentGlobalUsed = globalUsedWordsRef.current;
 
-            for (const word of shuffledWords) {
-              const normalizedWord = word.toLocaleUpperCase("tr-TR");
+          for (const word of shuffledWords) {
+            const normalizedWord = word.toLocaleUpperCase("tr-TR");
 
-              if (!currentGlobalUsed.has(normalizedWord)) {
-                const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
+            if (!currentGlobalUsed.has(normalizedWord)) {
+              const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
 
-                const currentOpponentScore = opponentScoreRef.current;
-                console.log(
-                  `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${currentOpponentScore + points})`,
-                );
-
-                const newOpponentScore = currentOpponentScore + points;
-                setOpponentScore(newOpponentScore);
-                setOpponentWords((prev) => [...prev, word]);
-                setOpponentWordsWithScores((prev) => [...prev, { word, score: points }]);
-
-                playSound("correctWord");
-
-                setGlobalUsedWords((prev) => new Set([...prev, normalizedWord]));
-
-                // Turnuva modunda Supabase'i de güncelle
-                if (gameMode === "tournament" && tournamentMatch && user) {
-                  const isPlayer1 = tournamentMatch.player1_id === user.id;
-                  const updateField = isPlayer1 ? "player2_score" : "player1_score";
-
-                  try {
-                    await supabase
-                      .from("tournament_matches")
-                      .update({
-                        [updateField]: newOpponentScore,
-                        updated_at: new Date().toISOString(),
-                      })
-                      .eq("id", tournamentMatch.id);
-
-                    console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
-                  } catch (error) {
-                    console.error("❌ Bot tournament score update error:", error);
-                  }
-                }
-
-                wordUsed = true;
-                break;
-              }
-            }
-
-            if (!wordUsed) {
-              const fallbackPoints = Math.floor(Math.random() * 6) + 3;
               const currentOpponentScore = opponentScoreRef.current;
-              const newScore = currentOpponentScore + fallbackPoints;
-              setOpponentScore(newScore);
               console.log(
-                `🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`,
+                `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${currentOpponentScore + points})`,
               );
 
+              const newOpponentScore = currentOpponentScore + points;
+              setOpponentScore(newOpponentScore);
+              setOpponentWords((prev) => [...prev, word]);
+              setOpponentWordsWithScores((prev) => [...prev, { word, score: points }]);
+
+              playSound("correctWord");
+
+              setGlobalUsedWords((prev) => new Set([...prev, normalizedWord]));
+
+              // Turnuva modunda Supabase'i de güncelle
               if (gameMode === "tournament" && tournamentMatch && user) {
                 const isPlayer1 = tournamentMatch.player1_id === user.id;
                 const updateField = isPlayer1 ? "player2_score" : "player1_score";
@@ -5945,15 +5914,46 @@ const GamePage = ({
                   await supabase
                     .from("tournament_matches")
                     .update({
-                      [updateField]: newScore,
+                      [updateField]: newOpponentScore,
                       updated_at: new Date().toISOString(),
                     })
                     .eq("id", tournamentMatch.id);
+
+                  console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
                 } catch (error) {
-                  console.error("❌ Bot fallback score update error:", error);
+                  console.error("❌ Bot tournament score update error:", error);
                 }
               }
+
+              wordUsed = true;
+              break;
             }
+          }
+
+          if (!wordUsed) {
+            const fallbackPoints = Math.floor(Math.random() * 6) + 3;
+            const currentOpponentScore = opponentScoreRef.current;
+            const newScore = currentOpponentScore + fallbackPoints;
+            setOpponentScore(newScore);
+            console.log(`🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`);
+
+            if (gameMode === "tournament" && tournamentMatch && user) {
+              const isPlayer1 = tournamentMatch.player1_id === user.id;
+              const updateField = isPlayer1 ? "player2_score" : "player1_score";
+
+              try {
+                await supabase
+                  .from("tournament_matches")
+                  .update({
+                    [updateField]: newScore,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", tournamentMatch.id);
+              } catch (error) {
+                console.error("❌ Bot fallback score update error:", error);
+              }
+            }
+          }
         } catch (error) {
           console.error("🤖 AI word selection error:", error);
           const errorPoints = Math.floor(Math.random() * 5) + 2;
@@ -5971,15 +5971,7 @@ const GamePage = ({
       console.log("🤖 Stopping AI play for game mode:", gameMode);
       cancelled = true;
     };
-  }, [
-    gameStarted,
-    gameEnded,
-    gameMode,
-    user?.id,
-    isPlayingWithAI,
-    tournamentMatch?.id,
-    playSound,
-  ]);
+  }, [gameStarted, gameEnded, gameMode, user?.id, isPlayingWithAI, tournamentMatch?.id, playSound]);
 
   // lastPlayerAction'ı başlat
   useEffect(() => {
@@ -6390,13 +6382,13 @@ const GamePage = ({
 
       // ✅ KELİMELE özel kontrolü
       const isKelimeleWord = normalizedWord === "KELİMELE";
-      
+
       if (isKelimeleWord) {
         // 🎯 BONUS: Mor animasyon göster
         setInputFlash("success");
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast("✨ BONUS ✨", "", "bonus");
-        
+
         // Joker ödülleri ver (arka planda)
         if (user) {
           const jokerTypes = ["degistir", "fisilida", "senyaz"];
@@ -6408,22 +6400,20 @@ const GamePage = ({
                 .eq("user_id", user.id)
                 .eq("item_type", jokerType)
                 .maybeSingle();
-              
+
               if (existing) {
                 await supabase
                   .from("user_inventory")
                   .update({ quantity: existing.quantity + 1 })
                   .eq("id", existing.id);
               } else {
-                await supabase
-                  .from("user_inventory")
-                  .insert({ user_id: user.id, item_type: jokerType, quantity: 1 });
+                await supabase.from("user_inventory").insert({ user_id: user.id, item_type: jokerType, quantity: 1 });
               }
             } catch (err) {
               console.error(`❌ Kelimele bonus joker (${jokerType}) hatası:`, err);
             }
           });
-          
+
           // Rozet ver
           (async () => {
             try {
@@ -6432,7 +6422,7 @@ const GamePage = ({
                 .select("id")
                 .eq("condition_type", "kelimele_word")
                 .maybeSingle();
-              
+
               if (badge) {
                 const { data: existing } = await supabase
                   .from("user_badges")
@@ -6440,18 +6430,16 @@ const GamePage = ({
                   .eq("user_id", user.id)
                   .eq("badge_id", badge.id)
                   .maybeSingle();
-                
+
                 if (!existing) {
-                  await supabase
-                    .from("user_badges")
-                    .insert({ user_id: user.id, badge_id: badge.id });
+                  await supabase.from("user_badges").insert({ user_id: user.id, badge_id: badge.id });
                   console.log("🏅 Kelimele rozeti kazanıldı!");
                 }
               }
             } catch (err) {
               console.error("❌ Kelimele rozet hatası:", err);
             }
-            
+
             // Jokerleri yeniden yükle
             loadJokers();
           })();
@@ -7226,7 +7214,7 @@ const GamePage = ({
 
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
-              className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
+              className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden letters-background"
               style={{
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
@@ -7564,13 +7552,15 @@ const GamePage = ({
                                 inputFeedback.type === "bonus"
                                   ? "bg-purple-600/95 text-white shadow-[0_0_20px_rgba(147,51,234,0.6)]"
                                   : inputFeedback.type === "success"
-                                  ? "bg-green-500/90 text-white"
-                                  : "bg-red-500/90 text-white"
+                                    ? "bg-green-500/90 text-white"
+                                    : "bg-red-500/90 text-white"
                               }`}
                             >
-                              <span className={`font-bold font-mono tracking-wider drop-shadow-md ${
-                                inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"
-                              }`}>
+                              <span
+                                className={`font-bold font-mono tracking-wider drop-shadow-md ${
+                                  inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"
+                                }`}
+                              >
                                 {inputFeedback.text}
                               </span>
                             </motion.div>
