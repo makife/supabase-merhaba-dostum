@@ -6899,10 +6899,7 @@ const GamePage = ({
 
   if (gameEnded) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
-      >
+      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
         {/* Victory animations */}
         {winner === "player" && (
           <div className="absolute inset-0 pointer-events-none">
@@ -7189,10 +7186,7 @@ const GamePage = ({
       <>
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
-          <div
-            className="min-h-screen flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
-          >
+          <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
             <Card className="max-w-sm mx-auto">
               <CardContent className="p-6 text-center">
                 <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
@@ -7220,8 +7214,7 @@ const GamePage = ({
 
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
-              className="min-h-screen relative overflow-hidden letters-background"
-              style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+              className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden letters-background"
               style={{
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
