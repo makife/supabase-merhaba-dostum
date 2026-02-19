@@ -7730,7 +7730,9 @@ const GamePage = ({
                             }}
                           >
                             <span
-                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isSelected ? "opacity-20 text-white/30" : "opacity-0"}`}
+                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                                isSelected ? "opacity-100 text-white font-black" : "opacity-0"
+                              }`}
                             >
                               {letter}
                             </span>
