@@ -6,13 +6,12 @@ import { useSounds } from "@/hooks/useSounds";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck, Ban } from "lucide-react";
+import { ArrowLeft, Users, MessageCircle, Hash, Home, Dot, Mail, UserX, UserCheck, Ban, Trash2 } from "lucide-react";
 import { ChatMiniMenu } from "@/components/ChatMiniMenu";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GlobalChat } from "@/components/GlobalChat";
 import { PrivateChat } from "@/components/PrivateChat";
 import { UserAvatar } from "@/components/UserAvatar";
-import { SwipeToDeleteCard } from "@/components/SwipeToDeleteCard";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -395,7 +394,7 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -413,9 +412,8 @@ export default function ChatPage() {
                 const hasHistory = Object.keys(unreadCounts).includes(targetUser.id) || unreadCount > 0;
 
                 return (
-                  <SwipeToDeleteCard
+                  <Card
                     key={targetUser.id}
-                    onDelete={() => deletePrivateChat(targetUser.id)}
                     className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-xl ${
                       unreadCount > 0
                         ? "border-green-400/50 bg-white/15 shadow-md shadow-green-500/10"
@@ -481,20 +479,32 @@ export default function ChatPage() {
                             <UserX className="w-4 h-4" />
                           )}
                         </Button>
-                        <Mail className="w-5 h-5 text-chat-500" />
+                        {/* 🗑️ SİL BUTONU - Sağ üstte */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deletePrivateChat(targetUser.id);
+                          }}
+                          className="p-1 h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          title="Sohbeti Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                  </SwipeToDeleteCard>
+                  </Card>
                 );
               })
           )}
         </div>
-      </ScrollArea>
+      </div>
     );
   };
 
   const renderBlockedUsersList = () => (
-    <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+    <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -552,7 +562,7 @@ export default function ChatPage() {
             ))
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 
   // ── RENDER CONTENT
