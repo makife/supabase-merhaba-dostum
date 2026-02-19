@@ -309,7 +309,7 @@ const AuthPage = () => {
                         <Input
                           id="signup-username"
                           type="text"
-                          placeholder="kullaniciadi"
+                          placeholder="Kullanıcı Adı"
                           value={signUpData.username}
                           onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
                           required
