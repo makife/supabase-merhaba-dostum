@@ -5786,11 +5786,21 @@ const GamePage = ({
   // Tournament activity tracking (removed - not needed for core functionality)
 
   // AI continuous play effect - unified for all modes when playing with AI
+  // isPlayingWithAI bir ref üzerinden tutulur - dependency array sorunundan kaçınmak için
+  const aiPlayingRef = useRef(false);
   useEffect(() => {
-    const aiPlaying = isPlayingWithAI();
+    aiPlayingRef.current = isPlayingWithAI();
+  }, [isPlayingWithAI]);
 
-    if (!aiPlaying || !gameStarted || gameEnded || !user) {
-      console.log("🤖 AI not playing:", { aiPlaying, gameStarted, gameEnded, gameMode });
+  useEffect(() => {
+    if (!gameStarted || gameEnded || !user) {
+      return;
+    }
+
+    // gameStarted olduğunda AI durumunu bir kez al - stale closure önlemek için
+    const aiPlaying = aiPlayingRef.current;
+    if (!aiPlaying) {
+      console.log("🤖 AI not playing:", { gameStarted, gameEnded, gameMode });
       return;
     }
 
@@ -5799,89 +5809,39 @@ const GamePage = ({
 
     const scheduleNextAIWord = () => {
       if (cancelled) return;
-      const delay = 2500 + Math.random() * 15000; // 2.5-17.5 sn arası rastgele
+      // Turnuva modunda daha agresif: 1.5-10 saniye, diğer modlarda 2.5-17.5
+      const minDelay = gameMode === "tournament" ? 1500 : 2500;
+      const maxDelay = gameMode === "tournament" ? 10000 : 15000;
+      const delay = minDelay + Math.random() * (maxDelay - minDelay);
       setTimeout(async () => {
         if (cancelled) return;
         try {
           const potentialWords = [
-            "KEDİ",
-            "MASA",
-            "ARABA",
-            "OKUL",
-            "KİTAP",
-            "DENİZ",
-            "AĞAÇ",
-            "ÇİÇEK",
-            "DOSTLUK",
-            "GÜNEŞ",
-            "YILDIZ",
-            "BULUT",
-            "RÜZGAR",
-            "ATEŞ",
-            "TOPRAK",
-            "SEVGİ",
-            "MUTLULUK",
-            "UMUT",
-            "HAYAL",
-            "RENKLER",
-            "MÜZİK",
-            "DANS",
-            "ŞARKI",
-            "OYUN",
-            "SPOR",
-            "FUTBOL",
-            "BASKETBOL",
-            "TENİS",
-            "YÜZME",
-            "KOŞU",
-            "BİSİKLET",
-            "YEMEK",
-            "EKMEK",
-            "PEYNİR",
-            "DOMATES",
-            "SALATA",
-            "ÇORBA",
-            "MEYVE",
-            "ELMA",
-            "ARMUT",
-            "ÇİLEK",
-            "KIRAZ",
-            "ÜZÜM",
-            "PORTAKAL",
-            "MANGO",
-            "SEBZE",
-            "HAVUÇ",
-            "PATLICAN",
-            "BİBER",
-            "SOĞAN",
-            "SARIMSAK",
-            "PATATES",
-            "KALE",
-            "KÖPEK",
-            "KUŞU",
-            "BALINA",
-            "ASLAN",
-            "KAPLAN",
-            "FİL",
-            "SÜT",
-            "KOLA",
-            "ÇAY",
-            "KAHVE",
-            "ŞEKER",
-            "TUZ",
-            "YAĞLI",
-            "EKŞİ",
-            "EV",
-            "KAPI",
-            "PENCERE",
-            "ODA",
-            "SALON",
-            "MUTFAK",
-            "BANYO",
-            "YATAK",
+            // Kısa kelimeler (3-4 harf) - kolay, sık
+            "KEDİ", "MASA", "ARABA", "OKUL", "KİTAP", "EV", "GÖZ", "EL", "YOL", "SU",
+            "DİŞ", "BAŞ", "KOL", "AY", "GÜN", "YIL", "AKİL", "İPEK", "GÜL", "TAŞ",
+            "ODA", "KAPI", "YATAK", "KOLA", "ÇAY", "SÜT", "TUZ", "EKŞİ", "EV",
+            // Orta kelimeler (5-7 harf) - puan için güzel
+            "DENİZ", "AĞAÇ", "ÇİÇEK", "GÜNEŞ", "YILDIZ", "BULUT", "RÜZGAR", "ATEŞ",
+            "TOPRAK", "SEVGİ", "MUTLU", "UMUT", "HAYAL", "MÜZİK", "DANS", "ŞARKI",
+            "OYUN", "SPOR", "FUTBOL", "TENİS", "YÜZME", "KOŞU", "YEMEK", "EKMEK",
+            "PEYNİR", "DOMATES", "SALATA", "ÇORBA", "MEYVE", "ELMA", "ARMUT", "ÇİLEK",
+            "KIRAZ", "ÜZÜM", "MANGO", "HAVUÇ", "BİBER", "SOĞAN", "PATATES",
+            "KÖPEK", "BALINA", "ASLAN", "KAPLAN", "ZÜRAFA", "PENGUEN", "LEYLEK",
+            "PENCERE", "SALON", "MUTFAK", "BANYO", "KAHVE", "ŞEKER",
+            "OKUYUCU", "YAZICI", "ÇALIŞMA", "TOPLAMA", "ÇARPMA", "BÖLME",
+            "YARIŞMA", "TURNUVA", "KAZANAN", "BAŞARI", "GURUR", "CESUR",
+            "DENEYİM", "BİLGİSAYAR", "TELEFON", "TABLET", "UÇAK", "GEMİ",
+            "KÖPRÜ", "TÜNEL", "YÜKSEK", "DERİN", "GENIŞ", "UZUN",
+            // Uzun kelimeler (8+ harf) - yüksek puan
+            "DOSTLUK", "RENKLER", "MUTLULUK", "BİSİKLET", "BASKETBOL", "PATLICAN",
+            "SARIMSAK", "PORTAKAL", "MÜHENDIS", "ÖĞRETMEN", "DOKTORLUK",
+            "KARDEŞLIK", "ARKADAŞLIK", "BERBERLIK", "GELENEKSEL",
+            "KÜTÜPHANE", "HASTAHANE", "ÜNIVERSITE", "MİMARLIK",
           ];
 
-          const shuffledWords = potentialWords.sort(() => Math.random() - 0.5);
+          // Kelime listesini karıştır, daha büyük havuzdan seç
+          const shuffledWords = [...potentialWords].sort(() => Math.random() - 0.5);
           let wordUsed = false;
           const currentGlobalUsed = globalUsedWordsRef.current;
 
@@ -5889,7 +5849,15 @@ const GamePage = ({
             const normalizedWord = word.toLocaleUpperCase("tr-TR");
 
             if (!currentGlobalUsed.has(normalizedWord)) {
-              const points = Math.floor(Math.random() * 15) + 8; // 8-22 puan
+              // Turnuva modunda daha yüksek puan aralığı (12-35), diğerlerinde 8-22
+              const basePoints = gameMode === "tournament"
+                ? Math.floor(Math.random() * 24) + 12  // 12-35 puan
+                : Math.floor(Math.random() * 15) + 8;  // 8-22 puan
+              // Uzun kelimelere bonus
+              const lengthBonus = word.length >= 8 ? Math.floor(Math.random() * 15) + 10
+                : word.length >= 6 ? Math.floor(Math.random() * 8) + 5
+                : 0;
+              const points = basePoints + lengthBonus;
 
               const currentOpponentScore = opponentScoreRef.current;
               console.log(
@@ -5903,7 +5871,9 @@ const GamePage = ({
 
               playSound("correctWord");
 
-              setGlobalUsedWords((prev) => new Set([...prev, normalizedWord]));
+              // globalUsedWordsRef'i güncelle - set state async olduğundan ref üzerinden de ekle
+              globalUsedWordsRef.current = new Set([...currentGlobalUsed, normalizedWord]);
+              setGlobalUsedWords(new Set([...currentGlobalUsed, normalizedWord]));
 
               // Turnuva modunda Supabase'i de güncelle
               if (gameMode === "tournament" && tournamentMatch && user) {
@@ -5931,7 +5901,10 @@ const GamePage = ({
           }
 
           if (!wordUsed) {
-            const fallbackPoints = Math.floor(Math.random() * 6) + 3;
+            // Fallback: kelime listesi tükendi, puan ver
+            const fallbackPoints = gameMode === "tournament"
+              ? Math.floor(Math.random() * 20) + 10  // 10-29
+              : Math.floor(Math.random() * 6) + 3;    // 3-8
             const currentOpponentScore = opponentScoreRef.current;
             const newScore = currentOpponentScore + fallbackPoints;
             setOpponentScore(newScore);
@@ -5956,8 +5929,11 @@ const GamePage = ({
           }
         } catch (error) {
           console.error("🤖 AI word selection error:", error);
-          const errorPoints = Math.floor(Math.random() * 5) + 2;
-          setOpponentScore((prev) => prev + errorPoints);
+          const errorPoints = gameMode === "tournament"
+            ? Math.floor(Math.random() * 15) + 8
+            : Math.floor(Math.random() * 5) + 2;
+          const currentOpponentScore = opponentScoreRef.current;
+          setOpponentScore(currentOpponentScore + errorPoints);
           console.log(`🤖 AI error, got ${errorPoints} points`);
         }
         // Sonraki kelimeyi planla
@@ -5971,7 +5947,7 @@ const GamePage = ({
       console.log("🤖 Stopping AI play for game mode:", gameMode);
       cancelled = true;
     };
-  }, [gameStarted, gameEnded, gameMode, user?.id, isPlayingWithAI, tournamentMatch?.id, playSound]);
+  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, playSound]);
 
   // lastPlayerAction'ı başlat
   useEffect(() => {
