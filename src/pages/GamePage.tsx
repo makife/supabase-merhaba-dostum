@@ -6985,7 +6985,10 @@ const GamePage = ({
 
   if (gameEnded) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 game-grid relative overflow-hidden">
+      <div
+        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
         {/* Victory animations */}
         {winner === "player" && (
           <div className="absolute inset-0 pointer-events-none">
@@ -7016,7 +7019,7 @@ const GamePage = ({
           </div>
         )}
 
-        <Card className="w-full max-w-md text-center relative z-10">
+        <Card className="w-full max-w-md text-center relative z-10 bg-[#16213e]/80 backdrop-blur-md border border-white/10 shadow-2xl">
           <CardContent className="p-6">
             <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
@@ -7031,9 +7034,7 @@ const GamePage = ({
 
             {/* Başlık */}
             <h2
-              className={`text-2xl font-bold mb-2 ${
-                winner === "player" ? "text-yellow-600 animate-pulse" : "text-gray-600"
-              }`}
+              className={`text-2xl font-bold mb-2 ${winner === "player" ? "text-amber-400 animate-pulse" : "text-slate-400"}`}
             >
               {gameMode === "tournament"
                 ? winner === "player"
@@ -7050,13 +7051,13 @@ const GamePage = ({
 
             {/* Skorlar */}
             <div className="space-y-2 mb-6">
-              <div className="flex justify-between">
-                <span>Sizin Puanınız:</span>
-                <span className="font-bold">{finalPlayerScore || playerScore}</span>
+              <div className="flex justify-between bg-white/5 rounded-xl px-4 py-2 border border-white/10">
+                <span className="text-slate-400 text-sm">Sizin Puanınız</span>
+                <span className="font-bold text-white">{finalPlayerScore || playerScore}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Rakip:</span>
-                <span className="font-bold">{finalOpponentScore || opponentScore}</span>
+              <div className="flex justify-between bg-white/5 rounded-xl px-4 py-2 border border-white/10">
+                <span className="text-slate-400 text-sm">Rakip</span>
+                <span className="font-bold text-white">{finalOpponentScore || opponentScore}</span>
               </div>
             </div>
 
