@@ -7546,9 +7546,12 @@ const GamePage = ({
                     >
                       <Shuffle className="w-4 h-4 text-emerald-400 mb-0.5" />
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
-                      <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
                         {jokers.degistir}
-                      </span>
+                      </Badge>
                     </button>
                     {/* Fısılda */}
                     <button
@@ -7572,9 +7575,12 @@ const GamePage = ({
                     >
                       <Lightbulb className="w-4 h-4 text-cyan-400 mb-0.5" />
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
-                      <span className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
                         {jokers.fisilida}
-                      </span>
+                      </Badge>
                     </button>
                     {/* Sen Yaz */}
                     <button
@@ -7598,9 +7604,12 @@ const GamePage = ({
                     >
                       <PenTool className="w-4 h-4 text-violet-400 mb-0.5" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
-                      <span className="absolute -top-1.5 -right-1.5 bg-violet-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                      <Badge
+                        variant="secondary"
+                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
+                      >
                         {jokers.senYaz}
-                      </span>
+                      </Badge>
                     </button>
                   </div>
                 </div>
