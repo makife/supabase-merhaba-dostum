@@ -1,4 +1,4 @@
-// PrivateChat.tsx - Real-time düzeltmeleri (autoReconnect ile)
+// PrivateChat.tsx - Real-time düzeltmeleri (autoReconnect ile) + Linkify
 import { setActivePrivateChat, removeActivePrivateChat } from "@/utils/notifications";
 import { useUser } from "@/contexts/UserContext";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -41,6 +41,32 @@ interface PrivateChatProps {
   onBack: () => void;
 }
 
+// 🔗 URL REGEX - Link algılama
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+// 🔗 Linkify fonksiyonu - Mesajdaki linkleri <a> tag'ine çevir
+const linkifyText = (text: string) => {
+  const parts = text.split(URL_REGEX);
+
+  return parts.map((part, index) => {
+    if (part.match(URL_REGEX)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-blue-300 transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
   const { user } = useAuth();
   const { profile, isSystemConnected, loading: userLoading } = useUser(); // Hepsini tek seferde alıyoruz
@@ -71,7 +97,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
     console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
     setActivePrivateChat(chatId);
-    
+
     // 🆕 Native Storage'a kaydet
     setLastChatId(chatId);
 
@@ -235,7 +261,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
           if (status === "SUBSCRIBED") {
             console.log("✅ Private chat subscription active");
           }
-        })
+        }),
     );
 
     // Cleanup - autoReconnect'ten kayıt sil
@@ -396,25 +422,24 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
                 <div
                   className={`p-3 rounded-lg ${
-                    message.sender_id === user?.id 
-                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white" 
+                    message.sender_id === user?.id
+                      ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
                       : "bg-white/10 text-gray-200"
                   }`}
                 >
-                  <div className="break-words text-sm">{message.message}</div>
+                  <div className="break-words text-sm whitespace-pre-wrap">{linkifyText(message.message)}</div>
                   <div
                     className={`text-xs mt-1 flex items-center justify-end gap-1 ${
                       message.sender_id === user?.id ? "text-white/70" : "text-gray-400"
                     }`}
                   >
                     <span>{formatTime(message.created_at)}</span>
-                    {message.sender_id === user?.id && (
-                      message.is_read ? (
+                    {message.sender_id === user?.id &&
+                      (message.is_read ? (
                         <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
                       ) : (
                         <Check className="w-3.5 h-3.5" />
-                      )
-                    )}
+                      ))}
                   </div>
                 </div>
               </div>
