@@ -394,7 +394,7 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -504,7 +504,7 @@ export default function ChatPage() {
   };
 
   const renderBlockedUsersList = () => (
-    <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+    <div className="h-full overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
