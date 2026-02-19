@@ -416,7 +416,7 @@ const LeaderboardPage = () => {
               <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-white">Liderlik Tablosu</h1>
+              <h1 className="text-2xl font-bold text-white">Liderlik</h1>
             </div>
 
             <div className="w-20" />
