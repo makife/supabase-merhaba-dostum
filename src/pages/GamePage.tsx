@@ -5818,26 +5818,132 @@ const GamePage = ({
         try {
           const potentialWords = [
             // Kısa kelimeler (3-4 harf) - kolay, sık
-            "KEDİ", "MASA", "ARABA", "OKUL", "KİTAP", "EV", "GÖZ", "EL", "YOL", "SU",
-            "DİŞ", "BAŞ", "KOL", "AY", "GÜN", "YIL", "AKİL", "İPEK", "GÜL", "TAŞ",
-            "ODA", "KAPI", "YATAK", "KOLA", "ÇAY", "SÜT", "TUZ", "EKŞİ", "EV",
+            "KEDİ",
+            "MASA",
+            "ARABA",
+            "OKUL",
+            "KİTAP",
+            "EV",
+            "GÖZ",
+            "EL",
+            "YOL",
+            "SU",
+            "DİŞ",
+            "BAŞ",
+            "KOL",
+            "AY",
+            "GÜN",
+            "YIL",
+            "AKİL",
+            "İPEK",
+            "GÜL",
+            "TAŞ",
+            "ODA",
+            "KAPI",
+            "YATAK",
+            "KOLA",
+            "ÇAY",
+            "SÜT",
+            "TUZ",
+            "EKŞİ",
+            "EV",
             // Orta kelimeler (5-7 harf) - puan için güzel
-            "DENİZ", "AĞAÇ", "ÇİÇEK", "GÜNEŞ", "YILDIZ", "BULUT", "RÜZGAR", "ATEŞ",
-            "TOPRAK", "SEVGİ", "MUTLU", "UMUT", "HAYAL", "MÜZİK", "DANS", "ŞARKI",
-            "OYUN", "SPOR", "FUTBOL", "TENİS", "YÜZME", "KOŞU", "YEMEK", "EKMEK",
-            "PEYNİR", "DOMATES", "SALATA", "ÇORBA", "MEYVE", "ELMA", "ARMUT", "ÇİLEK",
-            "KIRAZ", "ÜZÜM", "MANGO", "HAVUÇ", "BİBER", "SOĞAN", "PATATES",
-            "KÖPEK", "BALINA", "ASLAN", "KAPLAN", "ZÜRAFA", "PENGUEN", "LEYLEK",
-            "PENCERE", "SALON", "MUTFAK", "BANYO", "KAHVE", "ŞEKER",
-            "OKUYUCU", "YAZICI", "ÇALIŞMA", "TOPLAMA", "ÇARPMA", "BÖLME",
-            "YARIŞMA", "TURNUVA", "KAZANAN", "BAŞARI", "GURUR", "CESUR",
-            "DENEYİM", "BİLGİSAYAR", "TELEFON", "TABLET", "UÇAK", "GEMİ",
-            "KÖPRÜ", "TÜNEL", "YÜKSEK", "DERİN", "GENIŞ", "UZUN",
+            "DENİZ",
+            "AĞAÇ",
+            "ÇİÇEK",
+            "GÜNEŞ",
+            "YILDIZ",
+            "BULUT",
+            "RÜZGAR",
+            "ATEŞ",
+            "TOPRAK",
+            "SEVGİ",
+            "MUTLU",
+            "UMUT",
+            "HAYAL",
+            "MÜZİK",
+            "DANS",
+            "ŞARKI",
+            "OYUN",
+            "SPOR",
+            "FUTBOL",
+            "TENİS",
+            "YÜZME",
+            "KOŞU",
+            "YEMEK",
+            "EKMEK",
+            "PEYNİR",
+            "DOMATES",
+            "SALATA",
+            "ÇORBA",
+            "MEYVE",
+            "ELMA",
+            "ARMUT",
+            "ÇİLEK",
+            "KIRAZ",
+            "ÜZÜM",
+            "MANGO",
+            "HAVUÇ",
+            "BİBER",
+            "SOĞAN",
+            "PATATES",
+            "KÖPEK",
+            "BALINA",
+            "ASLAN",
+            "KAPLAN",
+            "ZÜRAFA",
+            "PENGUEN",
+            "LEYLEK",
+            "PENCERE",
+            "SALON",
+            "MUTFAK",
+            "BANYO",
+            "KAHVE",
+            "ŞEKER",
+            "OKUYUCU",
+            "YAZICI",
+            "ÇALIŞMA",
+            "TOPLAMA",
+            "ÇARPMA",
+            "BÖLME",
+            "YARIŞMA",
+            "TURNUVA",
+            "KAZANAN",
+            "BAŞARI",
+            "GURUR",
+            "CESUR",
+            "DENEYİM",
+            "BİLGİSAYAR",
+            "TELEFON",
+            "TABLET",
+            "UÇAK",
+            "GEMİ",
+            "KÖPRÜ",
+            "TÜNEL",
+            "YÜKSEK",
+            "DERİN",
+            "GENIŞ",
+            "UZUN",
             // Uzun kelimeler (8+ harf) - yüksek puan
-            "DOSTLUK", "RENKLER", "MUTLULUK", "BİSİKLET", "BASKETBOL", "PATLICAN",
-            "SARIMSAK", "PORTAKAL", "MÜHENDIS", "ÖĞRETMEN", "DOKTORLUK",
-            "KARDEŞLIK", "ARKADAŞLIK", "BERBERLIK", "GELENEKSEL",
-            "KÜTÜPHANE", "HASTAHANE", "ÜNIVERSITE", "MİMARLIK",
+            "DOSTLUK",
+            "RENKLER",
+            "MUTLULUK",
+            "BİSİKLET",
+            "BASKETBOL",
+            "PATLICAN",
+            "SARIMSAK",
+            "PORTAKAL",
+            "MÜHENDIS",
+            "ÖĞRETMEN",
+            "DOKTORLUK",
+            "KARDEŞLIK",
+            "ARKADAŞLIK",
+            "BERBERLIK",
+            "GELENEKSEL",
+            "KÜTÜPHANE",
+            "HASTAHANE",
+            "ÜNIVERSITE",
+            "MİMARLIK",
           ];
 
           // Kelime listesini karıştır, daha büyük havuzdan seç
@@ -5850,13 +5956,17 @@ const GamePage = ({
 
             if (!currentGlobalUsed.has(normalizedWord)) {
               // Turnuva modunda daha yüksek puan aralığı (12-35), diğerlerinde 8-22
-              const basePoints = gameMode === "tournament"
-                ? Math.floor(Math.random() * 24) + 12  // 12-35 puan
-                : Math.floor(Math.random() * 15) + 8;  // 8-22 puan
+              const basePoints =
+                gameMode === "tournament"
+                  ? Math.floor(Math.random() * 24) + 12 // 12-35 puan
+                  : Math.floor(Math.random() * 15) + 8; // 8-22 puan
               // Uzun kelimelere bonus
-              const lengthBonus = word.length >= 8 ? Math.floor(Math.random() * 15) + 10
-                : word.length >= 6 ? Math.floor(Math.random() * 8) + 5
-                : 0;
+              const lengthBonus =
+                word.length >= 8
+                  ? Math.floor(Math.random() * 15) + 10
+                  : word.length >= 6
+                    ? Math.floor(Math.random() * 8) + 5
+                    : 0;
               const points = basePoints + lengthBonus;
 
               const currentOpponentScore = opponentScoreRef.current;
@@ -5902,9 +6012,10 @@ const GamePage = ({
 
           if (!wordUsed) {
             // Fallback: kelime listesi tükendi, puan ver
-            const fallbackPoints = gameMode === "tournament"
-              ? Math.floor(Math.random() * 20) + 10  // 10-29
-              : Math.floor(Math.random() * 6) + 3;    // 3-8
+            const fallbackPoints =
+              gameMode === "tournament"
+                ? Math.floor(Math.random() * 20) + 10 // 10-29
+                : Math.floor(Math.random() * 6) + 3; // 3-8
             const currentOpponentScore = opponentScoreRef.current;
             const newScore = currentOpponentScore + fallbackPoints;
             setOpponentScore(newScore);
@@ -5929,9 +6040,8 @@ const GamePage = ({
           }
         } catch (error) {
           console.error("🤖 AI word selection error:", error);
-          const errorPoints = gameMode === "tournament"
-            ? Math.floor(Math.random() * 15) + 8
-            : Math.floor(Math.random() * 5) + 2;
+          const errorPoints =
+            gameMode === "tournament" ? Math.floor(Math.random() * 15) + 8 : Math.floor(Math.random() * 5) + 2;
           const currentOpponentScore = opponentScoreRef.current;
           setOpponentScore(currentOpponentScore + errorPoints);
           console.log(`🤖 AI error, got ${errorPoints} points`);
@@ -7166,9 +7276,7 @@ const GamePage = ({
             <div className="max-w-sm mx-auto text-center p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
               <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-cyan-400" />
               <p className="text-lg font-semibold text-white mb-2">Maç Tamamlanıyor...</p>
-              <p className="text-sm text-slate-400">
-                Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
-              </p>
+              <p className="text-sm text-slate-400">Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.</p>
             </div>
           </div>
         )}
@@ -7220,14 +7328,17 @@ const GamePage = ({
                     <div className="flex flex-col items-center space-y-1">
                       {gameMode === "tournament" && tournamentMatch && (
                         <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
-                          {tournamentMatch.round === 1 ? "⚔️ Çeyrek Final" : tournamentMatch.round === 2 ? "🥊 Yarı Final" : "🏆 Final"}{" "}· Maç {tournamentMatch.match_number}
+                          {tournamentMatch.round === 1
+                            ? "⚔️ Çeyrek Final"
+                            : tournamentMatch.round === 2
+                              ? "🥊 Yarı Final"
+                              : "🏆 Final"}{" "}
+                          · Maç {tournamentMatch.match_number}
                         </div>
                       )}
                       <div
                         className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
-                          displayTime <= 9
-                            ? "invisible opacity-0"
-                            : "visible opacity-100"
+                          displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
                         } ${
                           displayTime <= 30
                             ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
@@ -7241,7 +7352,8 @@ const GamePage = ({
                           }`}
                           style={{
                             fontFamily: "'Orbitron', 'Courier New', monospace",
-                            textShadow: displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
+                            textShadow:
+                              displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
                             fontVariantNumeric: "tabular-nums",
                             letterSpacing: "0.1em",
                           }}
@@ -7254,7 +7366,12 @@ const GamePage = ({
                     <div className="flex flex-col items-center space-y-1">
                       {gameMode === "tournament" && tournamentMatch && (
                         <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
-                          {tournamentMatch.round === 1 ? "⚔️ Çeyrek Final" : tournamentMatch.round === 2 ? "🥊 Yarı Final" : "🏆 Final"}{" "}· Maç {tournamentMatch.match_number}
+                          {tournamentMatch.round === 1
+                            ? "⚔️ Çeyrek Final"
+                            : tournamentMatch.round === 2
+                              ? "🥊 Yarı Final"
+                              : "🏆 Final"}{" "}
+                          · Maç {tournamentMatch.match_number}
                         </div>
                       )}
                       <div className="flex items-center space-x-2 bg-white/5 border border-white/15 rounded-xl px-3 py-1.5">
@@ -7285,8 +7402,10 @@ const GamePage = ({
                 {/* Scores - Oyuncu kartları */}
                 <div className="grid grid-cols-2 gap-3 relative mb-2">
                   {/* Oyuncu kartı */}
-                  <div className="relative rounded-2xl border border-white/10 overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}>
+                  <div
+                    className="relative rounded-2xl border border-white/10 overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}
+                  >
                     {/* Üst glow çizgisi */}
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
                     <div className="p-3 text-center relative overflow-hidden">
@@ -7305,10 +7424,18 @@ const GamePage = ({
                         )}
                       </div>
                       <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
-                      <p className="text-2xl font-black text-white" style={{ textShadow: "0 0 20px rgba(103,232,249,0.4)" }}>{playerScore}</p>
+                      <p
+                        className="text-2xl font-black text-white"
+                        style={{ textShadow: "0 0 20px rgba(103,232,249,0.4)" }}
+                      >
+                        {playerScore}
+                      </p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500" style={{ width: `${Math.min((playerScore / 500) * 100, 100)}%` }} />
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
+                            style={{ width: `${Math.min((playerScore / 500) * 100, 100)}%` }}
+                          />
                         </div>
                       )}
                     </div>
@@ -7322,8 +7449,10 @@ const GamePage = ({
                   )}
 
                   {/* Rakip kartı */}
-                  <div className="relative rounded-2xl border border-white/10 overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}>
+                  <div
+                    className="relative rounded-2xl border border-white/10 overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}
+                  >
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
                     <div className="p-3 text-center relative overflow-hidden">
                       {isMultiplayerMode && emojiReactions.OpponentEmojiOverlay}
@@ -7340,11 +7469,21 @@ const GamePage = ({
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1 truncate max-w-[90px] mx-auto">{opponent.name}</p>
-                      <p className="text-2xl font-black text-white" style={{ textShadow: "0 0 20px rgba(167,139,250,0.4)" }}>{opponentScore}</p>
+                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1 truncate max-w-[90px] mx-auto">
+                        {opponent.name}
+                      </p>
+                      <p
+                        className="text-2xl font-black text-white"
+                        style={{ textShadow: "0 0 20px rgba(167,139,250,0.4)" }}
+                      >
+                        {opponentScore}
+                      </p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500" style={{ width: `${Math.min((opponentScore / 500) * 100, 100)}%` }} />
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500"
+                            style={{ width: `${Math.min((opponentScore / 500) * 100, 100)}%` }}
+                          />
                         </div>
                       )}
 
@@ -7357,12 +7496,18 @@ const GamePage = ({
                               </p>
                               <div className="flex gap-1 justify-center mt-2">
                                 {[0, 150, 300].map((delay) => (
-                                  <div key={delay} className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                                  <div
+                                    key={delay}
+                                    className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
+                                    style={{ animationDelay: `${delay}ms` }}
+                                  />
                                 ))}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs font-bold text-green-400 animate-pulse">✓ {gameMode === "vs-computer" ? "AI Hazır!" : "Oyuncu Hazır!"}</span>
+                            <span className="text-xs font-bold text-green-400 animate-pulse">
+                              ✓ {gameMode === "vs-computer" ? "AI Hazır!" : "Oyuncu Hazır!"}
+                            </span>
                           )}
                         </div>
                       )}
@@ -7371,20 +7516,31 @@ const GamePage = ({
                 </div>
 
                 {/* Joker Panel */}
-                <div className="rounded-2xl border border-white/10 p-2 mb-1" style={{ background: "rgba(30,30,50,0.7)" }}>
+                <div
+                  className="rounded-2xl border border-white/10 p-2 mb-1"
+                  style={{ background: "rgba(30,30,50,0.7)" }}
+                >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">🎭 Jokerler</span>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {/* Değiştir */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
                         jokers.degistir <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
                           : "border-emerald-500/30 bg-gradient-to-b from-emerald-900/50 to-emerald-800/30 hover:from-emerald-800/60 active:scale-95 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
                       }`}
-                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useDegisTirJoker(); }}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useDegisTirJoker(); }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useDegisTirJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useDegisTirJoker();
+                      }}
                       disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
@@ -7396,13 +7552,21 @@ const GamePage = ({
                     </button>
                     {/* Fısılda */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
                         jokers.fisilida <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
                           : "border-cyan-500/30 bg-gradient-to-b from-cyan-900/50 to-cyan-800/30 hover:from-cyan-800/60 active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
                       }`}
-                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useFisildaJoker(); }}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useFisildaJoker(); }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useFisildaJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useFisildaJoker();
+                      }}
                       disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
@@ -7414,13 +7578,21 @@ const GamePage = ({
                     </button>
                     {/* Sen Yaz */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
                         jokers.senYaz <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
                           : "border-violet-500/30 bg-gradient-to-b from-violet-900/50 to-violet-800/30 hover:from-violet-800/60 active:scale-95 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
                       }`}
-                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useSenYazJoker(); }}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useSenYazJoker(); }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useSenYazJoker();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        useSenYazJoker();
+                      }}
                       disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
@@ -7461,7 +7633,9 @@ const GamePage = ({
                                   : "bg-red-500/90"
                             }`}
                           >
-                            <span className={`font-black font-mono tracking-wider text-white drop-shadow-md ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}>
+                            <span
+                              className={`font-black font-mono tracking-wider text-white drop-shadow-md ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
+                            >
                               {inputFeedback.text}
                             </span>
                           </motion.div>
@@ -7502,14 +7676,18 @@ const GamePage = ({
                 </div>
 
                 {/* Game Grid */}
-                <div className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
-                  style={{ background: "rgba(20,20,40,0.6)" }}>
+                <div
+                  className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
+                  style={{ background: "rgba(20,20,40,0.6)" }}
+                >
                   <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
                     {gameGrid.map((row, rowIndex) =>
                       row.map((letter, colIndex) => {
                         const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
                         const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
-                        const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
+                        const selectionOrder = selectedLetters.findIndex(
+                          (s) => s.row === rowIndex && s.col === colIndex,
+                        );
                         return (
                           <Button
                             key={`${rowIndex}-${colIndex}`}
@@ -7519,8 +7697,19 @@ const GamePage = ({
                                 : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white"
                             } ${isHighlighted ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
-                            onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); e.stopPropagation(); handleLetterClick(letter, rowIndex, colIndex); }}
-                            onClick={(e) => { if (!gameStarted) return; if (e.nativeEvent && "touches" in e.nativeEvent) return; e.preventDefault(); e.stopPropagation(); handleLetterClick(letter, rowIndex, colIndex); }}
+                            onTouchStart={(e) => {
+                              if (!gameStarted) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLetterClick(letter, rowIndex, colIndex);
+                            }}
+                            onClick={(e) => {
+                              if (!gameStarted) return;
+                              if (e.nativeEvent && "touches" in e.nativeEvent) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleLetterClick(letter, rowIndex, colIndex);
+                            }}
                             style={{
                               touchAction: "manipulation",
                               WebkitTapHighlightColor: "transparent",
@@ -7530,7 +7719,9 @@ const GamePage = ({
                               pointerEvents: !gameStarted ? "none" : "auto",
                             }}
                           >
-                            <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isSelected ? "opacity-20 text-white/30" : "opacity-0"}`}>
+                            <span
+                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isSelected ? "opacity-20 text-white/30" : "opacity-0"}`}
+                            >
                               {letter}
                             </span>
                             {!isSelected && (
@@ -7553,7 +7744,7 @@ const GamePage = ({
                             )}
                           </Button>
                         );
-                      })
+                      }),
                     )}
                   </div>
                 </div>
@@ -7562,8 +7753,16 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-2 shrink-0">
                   <Button
                     variant="ghost"
-                    onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); clearWord(); }}
-                    onClick={(e) => { if (!gameStarted) return; e.preventDefault(); clearWord(); }}
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      clearWord();
+                    }}
+                    onClick={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      clearWord();
+                    }}
                     className="h-12 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 rounded-xl font-bold"
                     disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
                     style={{ touchAction: "manipulation" }}
@@ -7573,8 +7772,20 @@ const GamePage = ({
                   </Button>
 
                   <Button
-                    onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); submitTouchTsRef.current = Date.now(); playSound("buttonClick"); submitWord(); }}
-                    onClick={(e) => { if (!gameStarted) return; e.preventDefault(); if (Date.now() - submitTouchTsRef.current < 500) return; playSound("buttonClick"); submitWord(); }}
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      submitTouchTsRef.current = Date.now();
+                      playSound("buttonClick");
+                      submitWord();
+                    }}
+                    onClick={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      if (Date.now() - submitTouchTsRef.current < 500) return;
+                      playSound("buttonClick");
+                      submitWord();
+                    }}
                     className="h-12 rounded-xl font-black text-base bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-0 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
                     disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
                     style={{ touchAction: "manipulation" }}
