@@ -7162,16 +7162,14 @@ const GamePage = ({
       <>
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
-          <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-            <Card className="max-w-sm mx-auto">
-              <CardContent className="p-6 text-center">
-                <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-primary" />
-                <p className="text-lg font-semibold mb-2">Maç Tamamlanıyor...</p>
-                <p className="text-sm text-muted-foreground">
-                  Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="min-h-screen flex items-center justify-center" style={{ background: "#1a1a2e" }}>
+            <div className="max-w-sm mx-auto text-center p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+              <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-cyan-400" />
+              <p className="text-lg font-semibold text-white mb-2">Maç Tamamlanıyor...</p>
+              <p className="text-sm text-slate-400">
+                Sonuçlar hesaplanıyor ve turnuva bracket'i güncelleniyor.
+              </p>
+            </div>
           </div>
         )}
 
@@ -7200,60 +7198,50 @@ const GamePage = ({
               }}
             >
               <div className="h-full flex flex-col px-2 relative z-15">
-                {/* Header - GÜNCELLENMIŞ */}
+                {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="text-xs px-2 py-1 h-8"
+                    className="text-xs px-2 py-1 h-8 text-slate-300 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/10"
                     onClick={(e) => {
-                      console.log("🚪 Çıkış butonuna tıklandı - gameMode:", gameMode);
                       e.preventDefault();
                       e.stopPropagation();
                       handleBackToMenu();
                     }}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    <ArrowLeft className="w-4 h-4 mr-1" />
                     Çıkış
                   </Button>
 
                   {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
                   {gameType === "timed" ? (
-                    <div className="flex flex-col items-center space-y-2">
-                      {/* ... Turnuva bilgisi (Çeyrek Final vs) ... */}
+                    <div className="flex flex-col items-center space-y-1">
                       {gameMode === "tournament" && tournamentMatch && (
-                        <div className="text-xs text-yellow-600 font-medium mb-1">
-                          {tournamentMatch.round === 1
-                            ? "Çeyrek Final"
-                            : tournamentMatch.round === 2
-                              ? "Yarı Final"
-                              : "Final"}{" "}
-                          - Maç {tournamentMatch.match_number}
+                        <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
+                          {tournamentMatch.round === 1 ? "⚔️ Çeyrek Final" : tournamentMatch.round === 2 ? "🥊 Yarı Final" : "🏆 Final"}{" "}· Maç {tournamentMatch.match_number}
                         </div>
                       )}
-
-                      {/* DÜZELTME BURADA: Koşullu render yerine opacity/visibility kullanıyoruz */}
                       <div
-                        className={`flex items-center justify-center h-8 px-3 rounded-lg transition-opacity duration-300 ${
+                        className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
                           displayTime <= 9
-                            ? "invisible opacity-0" // Görünmez ama yer kaplar
-                            : "visible opacity-100" // Görünür
+                            ? "invisible opacity-0"
+                            : "visible opacity-100"
                         } ${
                           displayTime <= 30
-                            ? "bg-red-500/10 border border-red-500/30"
-                            : "bg-primary/5 border border-primary/20"
+                            ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                            : "bg-white/5 border border-white/15"
                         }`}
-                        style={{ minWidth: "100px" }}
+                        style={{ minWidth: "110px" }}
                       >
                         <span
                           className={`font-mono text-lg font-black tracking-wider ${
-                            displayTime <= 30 ? "text-red-500" : "text-primary"
+                            displayTime <= 30 ? "text-red-400" : "text-cyan-300"
                           }`}
                           style={{
                             fontFamily: "'Orbitron', 'Courier New', monospace",
-                            textShadow:
-                              displayTime <= 30 ? "0 0 10px rgba(239,68,68,0.5)" : "0 0 10px rgba(var(--primary),0.3)",
+                            textShadow: displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
                             fontVariantNumeric: "tabular-nums",
                             letterSpacing: "0.1em",
                           }}
@@ -7264,77 +7252,67 @@ const GamePage = ({
                     </div>
                   ) : (
                     <div className="flex flex-col items-center space-y-1">
-                      {/* 🏆 TURNUVA BİLGİSİ EKLENDİ */}
                       {gameMode === "tournament" && tournamentMatch && (
-                        <div className="text-xs text-yellow-600 font-medium">
-                          {tournamentMatch.round === 1
-                            ? "Çeyrek Final"
-                            : tournamentMatch.round === 2
-                              ? "Yarı Final"
-                              : "Final"}{" "}
-                          - Maç {tournamentMatch.match_number}
+                        <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
+                          {tournamentMatch.round === 1 ? "⚔️ Çeyrek Final" : tournamentMatch.round === 2 ? "🥊 Yarı Final" : "🏆 Final"}{" "}· Maç {tournamentMatch.match_number}
                         </div>
                       )}
-
-                      <div className="flex items-center space-x-2">
-                        <Target className="w-4 h-4" />
-                        <span className="text-sm font-medium">500 Puana Kadar</span>
+                      <div className="flex items-center space-x-2 bg-white/5 border border-white/15 rounded-xl px-3 py-1.5">
+                        <Target className="w-4 h-4 text-cyan-400" />
+                        <span className="text-sm font-bold text-white">500 Puan</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Sağ taraf - Rakip bilgisi */}
+                  {/* Sağ taraf */}
                   <div className="w-16 text-right">
                     {gameMode === "tournament" && (
-                      <div className="text-xs text-muted-foreground">vs {getOpponentDisplayName()}</div>
+                      <div className="text-[10px] text-slate-400">vs {getOpponentDisplayName()}</div>
                     )}
                   </div>
                 </div>
-                {/* Header bitiş */}
 
-                {/* 🏆 TURNUVA UYARI KARTI EKLENDİ */}
+                {/* 🏆 Turnuva bilgi bandı */}
                 {gameMode === "tournament" && (
-                  <div className="mb-4">
-                    <Card className="border-yellow-200 bg-yellow-50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center space-x-2">
-                          <Trophy className="w-4 h-4 text-yellow-600" />
-                          <span className="text-xs font-medium text-yellow-800">
-                            Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 flex items-center space-x-2">
+                    <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-xs font-medium text-amber-200">
+                      Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                    </span>
                   </div>
                 )}
 
-                {/* Scores - Son 9 saniye geri sayımı ortada */}
-                <div className="grid grid-cols-2 gap-4 relative">
-                  <Card className="silver-gradient border border-gray-300 shadow-lg">
-                    <CardContent className="p-4 text-center relative overflow-hidden">
-                      {/* Emoji overlay - oyuncu kartı */}
+                {/* Scores - Oyuncu kartları */}
+                <div className="grid grid-cols-2 gap-3 relative mb-2">
+                  {/* Oyuncu kartı */}
+                  <div className="relative rounded-2xl border border-white/10 overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}>
+                    {/* Üst glow çizgisi */}
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+                    <div className="p-3 text-center relative overflow-hidden">
                       {isMultiplayerMode && emojiReactions.PlayerEmojiOverlay}
                       <div className="relative inline-block">
-                        <Avatar className="w-16 h-16 mx-auto mb-2">
+                        <Avatar className="w-14 h-14 mx-auto mb-1.5 ring-2 ring-white/10">
                           <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                          <AvatarFallback>
-                            <User className="w-8 h-8 text-gray-600" />
+                          <AvatarFallback className="bg-slate-700">
+                            <User className="w-7 h-7 text-slate-300" />
                           </AvatarFallback>
                         </Avatar>
-                        {/* VIP rozet - kendi kartımız */}
                         {isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-slate-800 shadow-md">
                             <Crown className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700 font-bold font-bungee">Siz</p>
-                      <p className="text-2xl font-bold text-gray-700">{playerScore}</p>
+                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
+                      <p className="text-2xl font-black text-white" style={{ textShadow: "0 0 20px rgba(103,232,249,0.4)" }}>{playerScore}</p>
                       {gameType === "score" && (
-                        <Progress value={(playerScore / 500) * 100} className="mt-2 bg-white/60" />
+                        <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500" style={{ width: `${Math.min((playerScore / 500) * 100, 100)}%` }} />
+                        </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
 
                   {/* Son 9 saniye geri sayım - kartların ortasında */}
                   {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 9 && (
@@ -7343,355 +7321,250 @@ const GamePage = ({
                     </div>
                   )}
 
-                  <Card className="silver-gradient border border-gray-300 shadow-lg">
-                    <CardContent className="p-4 text-center relative overflow-hidden">
-                      {/* Emoji overlay - rakip kartı */}
+                  {/* Rakip kartı */}
+                  <div className="relative rounded-2xl border border-white/10 overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}>
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
+                    <div className="p-3 text-center relative overflow-hidden">
                       {isMultiplayerMode && emojiReactions.OpponentEmojiOverlay}
-                      {/* Normal kart içeriği - her zaman göster */}
                       <div className="relative inline-block">
-                        <Avatar className="w-16 h-16 mx-auto mb-2 bg-transparent">
+                        <Avatar className="w-14 h-14 mx-auto mb-1.5 ring-2 ring-white/10 bg-transparent">
                           <AvatarImage src={opponent.avatar} alt="Opponent" />
-                          <AvatarFallback>
-                            <opponent.icon className="w-8 h-8 text-gray-600" />
+                          <AvatarFallback className="bg-slate-700">
+                            <opponent.icon className="w-7 h-7 text-slate-300" />
                           </AvatarFallback>
                         </Avatar>
-                        {/* VIP rozet - rakip kartı */}
                         {opponent.isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-white shadow-md">
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-slate-800 shadow-md">
                             <Crown className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700 font-bold font-bungee">{opponent.name}</p>
-                      <p className="text-2xl font-bold text-gray-700">{opponentScore}</p>
+                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1 truncate max-w-[90px] mx-auto">{opponent.name}</p>
+                      <p className="text-2xl font-black text-white" style={{ textShadow: "0 0 20px rgba(167,139,250,0.4)" }}>{opponentScore}</p>
                       {gameType === "score" && (
-                        <Progress value={(opponentScore / 500) * 100} className="mt-2 bg-white/60" />
+                        <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500" style={{ width: `${Math.min((opponentScore / 500) * 100, 100)}%` }} />
+                        </div>
                       )}
 
-                      {/* Hazırlık overlay - absolute positioned */}
                       {preparingOpponent && (
-                        <div className="absolute inset-0 bg-silver-gradient/95 backdrop-blur-sm flex items-center justify-center">
+                        <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center rounded-2xl">
                           {preparingOpponent === "preparing" ? (
                             <div className="text-center animate-pulse">
-                              <p className="text-sm font-bold text-gray-700">
+                              <p className="text-xs font-bold text-slate-300">
                                 {gameMode === "vs-computer" ? "AI Hazırlanıyor..." : "Oyuncu Hazırlanıyor..."}
                               </p>
                               <div className="flex gap-1 justify-center mt-2">
-                                <div
-                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: "0ms" }}
-                                ></div>
-                                <div
-                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: "150ms" }}
-                                ></div>
-                                <div
-                                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: "300ms" }}
-                                ></div>
+                                {[0, 150, 300].map((delay) => (
+                                  <div key={delay} className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                                ))}
                               </div>
                             </div>
                           ) : (
-                            <Badge variant="default" className="text-sm font-semibold animate-pulse bg-green-500">
-                              {gameMode === "vs-computer" ? "✓ AI Hazır!" : "✓ Oyuncu Hazır!"}
-                            </Badge>
+                            <span className="text-xs font-bold text-green-400 animate-pulse">✓ {gameMode === "vs-computer" ? "AI Hazır!" : "Oyuncu Hazır!"}</span>
                           )}
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Joker Panel - EN ÖNEMLİ KISIM! */}
-                <Card className="bg-gradient-to-r from-amber-50 to-orange-100 border-amber-200 shadow-md">
-                  <CardContent className="p-2">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-purple-800 mb-2">🎭 Jokerler</h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <Button
-                        variant={selectedJoker === "degistir" ? "default" : "outline"}
-                        size="sm"
-                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-green-100 to-emerald-200 hover:from-green-200 hover:to-emerald-300 border-green-300"
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useDegisTirJoker();
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useDegisTirJoker();
-                        }}
-                        disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
-                        style={{
-                          touchAction: "manipulation",
-                          WebkitTapHighlightColor: "transparent",
-                        }}
-                      >
-                        <Shuffle className="w-3 h-3 mb-0.5" />
-                        <span className="text-xs">Değiştir</span>
-                        <Badge
-                          variant="secondary"
-                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                        >
-                          {jokers.degistir}
-                        </Badge>
-                      </Button>
+                {/* Joker Panel */}
+                <div className="rounded-2xl border border-white/10 p-2 mb-1" style={{ background: "rgba(30,30,50,0.7)" }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">🎭 Jokerler</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {/* Değiştir */}
+                    <button
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                        jokers.degistir <= 0 || isJokerActive || !gameStarted
+                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
+                          : "border-emerald-500/30 bg-gradient-to-b from-emerald-900/50 to-emerald-800/30 hover:from-emerald-800/60 active:scale-95 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                      }`}
+                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useDegisTirJoker(); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useDegisTirJoker(); }}
+                      disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
+                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      <Shuffle className="w-4 h-4 text-emerald-400 mb-0.5" />
+                      <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
+                      <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                        {jokers.degistir}
+                      </span>
+                    </button>
+                    {/* Fısılda */}
+                    <button
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                        jokers.fisilida <= 0 || isJokerActive || !gameStarted
+                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
+                          : "border-cyan-500/30 bg-gradient-to-b from-cyan-900/50 to-cyan-800/30 hover:from-cyan-800/60 active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                      }`}
+                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useFisildaJoker(); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useFisildaJoker(); }}
+                      disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
+                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      <Lightbulb className="w-4 h-4 text-cyan-400 mb-0.5" />
+                      <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
+                      <span className="absolute -top-1.5 -right-1.5 bg-cyan-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                        {jokers.fisilida}
+                      </span>
+                    </button>
+                    {/* Sen Yaz */}
+                    <button
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 ${
+                        jokers.senYaz <= 0 || isJokerActive || !gameStarted
+                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
+                          : "border-violet-500/30 bg-gradient-to-b from-violet-900/50 to-violet-800/30 hover:from-violet-800/60 active:scale-95 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
+                      }`}
+                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); useSenYazJoker(); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); useSenYazJoker(); }}
+                      disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
+                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                    >
+                      <PenTool className="w-4 h-4 text-violet-400 mb-0.5" />
+                      <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
+                      <span className="absolute -top-1.5 -right-1.5 bg-violet-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-black border border-slate-900">
+                        {jokers.senYaz}
+                      </span>
+                    </button>
+                  </div>
+                </div>
 
-                      <Button
-                        variant={selectedJoker === "fisilida" ? "default" : "outline"}
-                        size="sm"
-                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-blue-100 to-cyan-200 hover:from-blue-200 hover:to-cyan-300 border-blue-300"
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useFisildaJoker();
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useFisildaJoker();
-                        }}
-                        disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
-                        style={{
-                          touchAction: "manipulation",
-                          WebkitTapHighlightColor: "transparent",
-                        }}
-                      >
-                        <Lightbulb className="w-4 h-4 mb-1" />
-                        <span className="text-xs">Fısılda</span>
-                        <Badge
-                          variant="secondary"
-                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                        >
-                          {jokers.fisilida}
-                        </Badge>
-                      </Button>
+                {/* Current Word Input */}
+                <div className="mb-1">
+                  <div className="flex items-center space-x-2 w-full">
+                    <div
+                      className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
+                        inputFlash === "success"
+                          ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
+                          : inputFlash === "error"
+                            ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
+                            : "border border-white/15 bg-white/5"
+                      }`}
+                    >
+                      <AnimatePresence mode="popLayout">
+                        {inputFeedback && (
+                          <motion.div
+                            key={inputFeedback.text + Date.now()}
+                            initial={{ opacity: 1, x: 0 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -200 }}
+                            transition={{ duration: 0.3, ease: "easeIn" }}
+                            className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
+                              inputFeedback.type === "bonus"
+                                ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
+                                : inputFeedback.type === "success"
+                                  ? "bg-emerald-500/90"
+                                  : "bg-red-500/90"
+                            }`}
+                          >
+                            <span className={`font-black font-mono tracking-wider text-white drop-shadow-md ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}>
+                              {inputFeedback.text}
+                            </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
-                      <Button
-                        variant={selectedJoker === "senYaz" ? "default" : "outline"}
-                        size="sm"
-                        className="joker-button flex flex-col items-center p-1 h-auto relative text-xs bg-gradient-to-br from-purple-100 to-violet-200 hover:from-purple-200 hover:to-violet-300 border-purple-300"
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useSenYazJoker();
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          useSenYazJoker();
-                        }}
-                        disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
-                        style={{
-                          touchAction: "manipulation",
-                          WebkitTapHighlightColor: "transparent",
-                        }}
-                      >
-                        <PenTool className="w-4 h-4 mb-1" />
-                        <span className="text-xs">Sen Yaz</span>
-                        <Badge
-                          variant="secondary"
-                          className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                        >
-                          {jokers.senYaz}
-                        </Badge>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                      {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && (
+                        <span className="text-white/20 font-bold font-mono text-lg select-none tracking-widest uppercase">
+                          K E L İ M E L E
+                        </span>
+                      )}
 
-                {/* Current Word Input - GÜNCELLENMİŞ VERSİYON */}
-                <Card className="game-grid border-0">
-                  <CardContent className="p-2">
-                    <div className="flex items-center justify-center space-x-2 w-full">
-                      {/* Input Konteyneri */}
-                      <div
-                        className={`flex items-center justify-center h-14 w-full rounded-xl bg-white/80 backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden shadow-inner ${
-                          inputFlash === "success"
-                            ? "border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.6)]"
-                            : inputFlash === "error"
-                              ? "border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]"
-                              : "border-2 border-slate-200/50"
-                        }`}
-                      >
-                        {/* Input Feedback Animasyonu - Kelime sola kayarak kaybolur */}
-                        <AnimatePresence mode="popLayout">
-                          {inputFeedback && (
-                            <motion.div
-                              key={inputFeedback.text + Date.now()}
-                              initial={{ opacity: 1, x: 0 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: -200 }}
-                              transition={{ duration: 0.3, ease: "easeIn" }}
-                              className={`absolute inset-0 flex items-center justify-center z-20 rounded-xl ${
-                                inputFeedback.type === "bonus"
-                                  ? "bg-purple-600/95 text-white shadow-[0_0_20px_rgba(147,51,234,0.6)]"
-                                  : inputFeedback.type === "success"
-                                    ? "bg-green-500/90 text-white"
-                                    : "bg-red-500/90 text-white"
-                              }`}
-                            >
-                              <span
-                                className={`font-bold font-mono tracking-wider drop-shadow-md ${
-                                  inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"
-                                }`}
-                              >
-                                {inputFeedback.text}
-                              </span>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* Placeholder */}
-                        {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && (
-                          <span className="text-slate-400 font-bold font-mono text-lg animate-pulse select-none tracking-widest uppercase opacity-70">
-                            K E L İ M E L E
+                      <div className="flex gap-1 items-center justify-center z-10">
+                        {selectedLetters.map((item) => (
+                          <motion.span
+                            key={`input-${item.row}-${item.col}`}
+                            layoutId={`letter-${item.row}-${item.col}`}
+                            layout
+                            transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
+                            style={{ willChange: "transform" }}
+                            className="text-3xl font-mono font-extrabold text-white drop-shadow-sm select-none"
+                          >
+                            {item.letter}
+                          </motion.span>
+                        ))}
+                        {currentWord.length > selectedLetters.length && (
+                          <span className="text-3xl font-mono font-extrabold text-white drop-shadow-sm">
+                            {currentWord.slice(selectedLetters.length)}
                           </span>
                         )}
-
-                        {/* Seçilen Harfler - OPTİMİZE EDİLDİ */}
-                        <div className="flex gap-1 items-center justify-center z-10">
-                          {selectedLetters.map((item) => (
-                            <motion.span
-                              key={`input-${item.row}-${item.col}`}
-                              layoutId={`letter-${item.row}-${item.col}`}
-                              layout
-                              transition={{
-                                type: "spring",
-                                stiffness: 700,
-                                damping: 35,
-                                mass: 0.5,
-                              }}
-                              style={{ willChange: "transform" }}
-                              className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm select-none"
-                            >
-                              {item.letter}
-                            </motion.span>
-                          ))}
-
-                          {/* Joker veya manuel yazım */}
-                          {currentWord.length > selectedLetters.length && (
-                            <span className="text-3xl font-mono font-extrabold text-slate-900 drop-shadow-sm">
-                              {currentWord.slice(selectedLetters.length)}
-                            </span>
-                          )}
-                        </div>
                       </div>
-
-                      <Badge
-                        variant="secondary"
-                        className="bg-slate-800 text-white text-base font-bold px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-lg shadow-md border border-slate-600"
-                      >
-                        {currentWord.length}
-                      </Badge>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="bg-white/10 border border-white/15 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
+                      {currentWord.length}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Game Grid */}
-                <Card className="game-grid border-0 mb-2 flex-1">
-                  <CardContent className="p-3 h-full flex items-center justify-center">
-                    <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
-                      {gameGrid.map((row, rowIndex) =>
-                        row.map((letter, colIndex) => {
-                          const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
-                          const isHighlighted = highlightedLetters.some(
-                            (h) => h.row === rowIndex && h.col === colIndex,
-                          );
-                          const selectionOrder = selectedLetters.findIndex(
-                            (s) => s.row === rowIndex && s.col === colIndex,
-                          );
-                          return (
-                            <Button
-                              key={`${rowIndex}-${colIndex}`}
-                              className={`letter-button h-12 text-lg font-bold relative transition-all duration-300 overflow-visible ${
-                                isSelected ? "selected border-green-400 bg-green-900/40" : ""
-                              } ${isHighlighted ? "letter-glow-highlight" : ""} ${
-                                !gameStarted ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              disabled={!gameStarted}
-                              onTouchStart={(e) => {
-                                if (!gameStarted) return;
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleLetterClick(letter, rowIndex, colIndex);
-                              }}
-                              onClick={(e) => {
-                                if (!gameStarted) return;
-                                if (e.nativeEvent && "touches" in e.nativeEvent) return;
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleLetterClick(letter, rowIndex, colIndex);
-                              }}
-                              style={{
-                                touchAction: "manipulation",
-                                WebkitTapHighlightColor: "transparent",
-                                WebkitTouchCallout: "none",
-                                WebkitUserSelect: "none",
-                                userSelect: "none",
-                                pointerEvents: !gameStarted ? "none" : "auto",
-                              }}
-                            >
-                              {/* 1. KATMAN: HAYALET HARF */}
-                              <span
-                                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                                  isSelected ? "opacity-30 text-white/50" : "opacity-0"
-                                }`}
+                <div className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
+                  style={{ background: "rgba(20,20,40,0.6)" }}>
+                  <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                    {gameGrid.map((row, rowIndex) =>
+                      row.map((letter, colIndex) => {
+                        const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
+                        const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
+                        const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
+                        return (
+                          <Button
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`letter-button h-14 text-xl font-black relative transition-all duration-200 overflow-visible rounded-xl border ${
+                              isSelected
+                                ? "selected border-emerald-400/70 bg-emerald-900/50 shadow-[0_0_12px_rgba(52,211,153,0.3)] text-emerald-100"
+                                : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white"
+                            } ${isHighlighted ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            disabled={!gameStarted}
+                            onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); e.stopPropagation(); handleLetterClick(letter, rowIndex, colIndex); }}
+                            onClick={(e) => { if (!gameStarted) return; if (e.nativeEvent && "touches" in e.nativeEvent) return; e.preventDefault(); e.stopPropagation(); handleLetterClick(letter, rowIndex, colIndex); }}
+                            style={{
+                              touchAction: "manipulation",
+                              WebkitTapHighlightColor: "transparent",
+                              WebkitTouchCallout: "none",
+                              WebkitUserSelect: "none",
+                              userSelect: "none",
+                              pointerEvents: !gameStarted ? "none" : "auto",
+                            }}
+                          >
+                            <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${isSelected ? "opacity-20 text-white/30" : "opacity-0"}`}>
+                              {letter}
+                            </span>
+                            {!isSelected && (
+                              <motion.span
+                                layoutId={`letter-${rowIndex}-${colIndex}`}
+                                className="relative z-10"
+                                transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
                               >
                                 {letter}
-                              </span>
-
-                              {/* 2. KATMAN: UÇAN HARF */}
-                              {!isSelected && (
-                                <motion.span
-                                  layoutId={`letter-${rowIndex}-${colIndex}`}
-                                  className="relative z-10"
-                                  transition={{
-                                    type: "spring",
-                                    stiffness: 700,
-                                    damping: 35,
-                                    mass: 0.5,
-                                  }}
-                                >
-                                  {letter}
-                                </motion.span>
-                              )}
-
-                              {/* Sıra Numarası */}
-                              {isSelected && selectionOrder >= 0 && (
-                                <motion.span
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold border-2 border-white z-20 shadow-sm"
-                                >
-                                  {selectionOrder + 1}
-                                </motion.span>
-                              )}
-                            </Button>
-                          );
-                        }),
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                              </motion.span>
+                            )}
+                            {isSelected && selectionOrder >= 0 && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black border-2 border-slate-900 z-20 shadow-sm"
+                              >
+                                {selectionOrder + 1}
+                              </motion.span>
+                            )}
+                          </Button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-2 shrink-0">
                   <Button
-                    variant="outline"
-                    onTouchStart={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      clearWord();
-                    }}
-                    onClick={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      clearWord();
-                    }}
-                    className="h-12"
+                    variant="ghost"
+                    onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); clearWord(); }}
+                    onClick={(e) => { if (!gameStarted) return; e.preventDefault(); clearWord(); }}
+                    className="h-12 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 rounded-xl font-bold"
                     disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
                     style={{ touchAction: "manipulation" }}
                   >
@@ -7700,32 +7573,20 @@ const GamePage = ({
                   </Button>
 
                   <Button
-                    onTouchStart={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      submitTouchTsRef.current = Date.now();
-                      playSound("buttonClick");
-                      submitWord();
-                    }}
-                    onClick={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      // Dokunmatik cihazlarda çift tetiklemeyi önle
-                      if (Date.now() - submitTouchTsRef.current < 500) return;
-                      playSound("buttonClick");
-                      submitWord();
-                    }}
-                    className="h-12"
+                    onTouchStart={(e) => { if (!gameStarted) return; e.preventDefault(); submitTouchTsRef.current = Date.now(); playSound("buttonClick"); submitWord(); }}
+                    onClick={(e) => { if (!gameStarted) return; e.preventDefault(); if (Date.now() - submitTouchTsRef.current < 500) return; playSound("buttonClick"); submitWord(); }}
+                    className="h-12 rounded-xl font-black text-base bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-0 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
                     disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
                     style={{ touchAction: "manipulation" }}
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    {isValidating ? "Kontrol Ediliyor..." : "Gönder"}
+                    {isValidating ? "Kontrol..." : "Gönder"}
                   </Button>
                 </div>
-                {/* İfadeler butonu - Sil butonunun altında, sadece multiplayer */}
+
+                {/* İfadeler butonu - sadece multiplayer */}
                 {isMultiplayerMode && (
-                  <div className="relative shrink-0 mt-3">
+                  <div className="relative shrink-0 mt-2">
                     {emojiReactions.PickerPanel}
                     {emojiReactions.PickerButton}
                   </div>
