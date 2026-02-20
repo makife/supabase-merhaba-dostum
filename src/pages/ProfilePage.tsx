@@ -747,7 +747,7 @@ const ProfilePage = () => {
     if (Capacitor.isNativePlatform()) {
       console.log("[ProfilePage] 🖼️ Native galeri recovery modu aktif");
       await captureFromGalleryWithRecovery();
-      return;
+      return; // ← Bu return zaten var ama recovery hook içinde çift çağrı olabilir
     }
 
     const result = await captureFromGallery();
@@ -1044,7 +1044,12 @@ const ProfilePage = () => {
               label="Oyun"
               colorClass="from-rose-500 to-pink-600"
             />
-            <StatCard icon={Trophy} value={profileData.wins} label="Galibiyet" colorClass="from-amber-500 to-orange-600" />
+            <StatCard
+              icon={Trophy}
+              value={profileData.wins}
+              label="Galibiyet"
+              colorClass="from-amber-500 to-orange-600"
+            />
             <StatCard
               icon={Flame}
               value={profileData.currentStreak}
@@ -1180,7 +1185,11 @@ const ProfilePage = () => {
                 <DetailRow label="Kazanılan Turnuva" value={profileData.tournamentsWon.toString()} highlight="green" />
                 <DetailRow label="Kaybedilen Turnuva" value={profileData.tournamentsLost.toString()} highlight="red" />
                 <DetailRow label="Toplam Turnuva" value={profileData.tournamentsPlayed.toString()} />
-                <DetailRow label="Turnuva Başarı Oranı" value={`${profileData.tournamentWinRate}%`} highlight="yellow" />
+                <DetailRow
+                  label="Turnuva Başarı Oranı"
+                  value={`${profileData.tournamentWinRate}%`}
+                  highlight="yellow"
+                />
               </>
             )}
           </div>
@@ -1221,14 +1230,23 @@ const JokerCard = ({ icon, value, label }: any) => (
   </div>
 );
 
-const DetailRow = ({ label, value, highlight }: { label: string; value: string; highlight?: "green" | "red" | "yellow" }) => {
-  const colorClass = highlight === "green" 
-    ? "text-green-400" 
-    : highlight === "red" 
-      ? "text-red-400" 
-      : highlight === "yellow" 
-        ? "text-yellow-400" 
-        : "text-white";
+const DetailRow = ({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: "green" | "red" | "yellow";
+}) => {
+  const colorClass =
+    highlight === "green"
+      ? "text-green-400"
+      : highlight === "red"
+        ? "text-red-400"
+        : highlight === "yellow"
+          ? "text-yellow-400"
+          : "text-white";
 
   return (
     <div className="flex justify-between items-center">
