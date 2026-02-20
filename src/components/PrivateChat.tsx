@@ -430,7 +430,9 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                       : "bg-white/10 text-gray-200"
                   }`}
                 >
-                  <div className="break-words text-sm whitespace-pre-wrap">{linkifyText(message.message)}</div>
+                  <div className="break-all overflow-hidden text-sm whitespace-pre-wrap">
+                    {linkifyText(message.message)}
+                  </div>
                   <div
                     className={`text-xs mt-1 flex items-center justify-end gap-1 ${
                       message.sender_id === user?.id ? "text-white/70" : "text-gray-400"
