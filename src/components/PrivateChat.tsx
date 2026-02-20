@@ -424,7 +424,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
                 )}
 
                 <div
-                  className={`p-3 rounded-lg ${
+                  className={`p-3 rounded-lg min-w-0 overflow-hidden ${
                     message.sender_id === user?.id
                       ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
                       : "bg-white/10 text-gray-200"
