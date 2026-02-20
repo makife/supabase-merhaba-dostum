@@ -5075,10 +5075,10 @@ const GamePage = ({
       }
 
       toast({
-        title: "🏆 Turnuva Cezası",
-        description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
+        title: "⚖️ Turnuva Cezası",
+        description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız. Rakibiniz hükmen galip ilan edildi.",
         variant: "destructive",
-        duration: 4000,
+        duration: 6000,
       });
 
       setShowTournamentExitDialog(false);
@@ -7819,21 +7819,27 @@ const GamePage = ({
 
             {/* Exit Confirmation Dialog */}
             <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-              <AlertDialogContent className="max-w-sm mx-auto">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-center">⚠️ Aktif Oyun Uyarısı</AlertDialogTitle>
-                  <AlertDialogDescription className="text-center">
-                    Şu an aktif bir oyun oynuyorsun!
-                    <br />
-                    <br />
-                    Oyundan çıkarsan <span className="font-bold text-destructive">ceza alacaksın</span> ve rakibin
-                    kazanacak.
-                    <br />
-                    <br />
-                    <span className="text-muted-foreground text-sm">Emin misin?</span>
+              <AlertDialogContent className="max-w-sm mx-auto rounded-2xl border border-amber-500/20 shadow-[0_0_40px_rgba(245,158,11,0.15)]" style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}>
+                <AlertDialogHeader className="items-center text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                  <AlertDialogTitle className="text-lg font-bold text-white">Aktif Oyun Uyarısı</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
+                      <p className="text-gray-300">Şu an aktif bir oyun oynuyorsun!</p>
+                      <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
+                        <p>⚖️ <span className="font-semibold text-red-400">Ceza alacaksın</span></p>
+                        <p>🏆 <span className="font-semibold text-amber-400">Rakibin kazanacak</span></p>
+                      </div>
+                      <p className="text-gray-500 text-xs">Emin misin?</p>
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0 mt-2">
+                  <AlertDialogCancel className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white border-0 font-semibold">
+                    🎮 Hayır, Oyuna Devam Et
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
                       setShowExitDialog(false);
@@ -7842,42 +7848,48 @@ const GamePage = ({
                       }
                       navigate("/");
                     }}
-                    className="w-full bg-destructive hover:bg-destructive/90"
+                    className="w-full bg-white/5 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 font-medium"
                   >
                     🚪 Evet, Çıkış Yap
                   </AlertDialogAction>
-                  <AlertDialogCancel className="w-full">🎮 Hayır, Oyuna Devam Et</AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
 
             {/* Tournament Exit Dialog */}
             <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-              <AlertDialogContent className="max-w-sm mx-auto">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-center">⚠️ Turnuva Maçı Uyarısı</AlertDialogTitle>
-                  <AlertDialogDescription className="text-center">
-                    Turnuva maçından ayrılırsan:
-                    <br />
-                    <br />• <span className="font-bold text-destructive">Maçı kaybedersin</span>
-                    <br />• <span className="font-bold text-yellow-600">Rakip kazanır</span>
-                    <br />• <span className="font-bold text-blue-600">Turnuvadan elenirsin</span>
-                    <br />
-                    <br />
-                    <span className="text-muted-foreground text-sm">Emin misin?</span>
+              <AlertDialogContent className="max-w-sm mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]" style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}>
+                <AlertDialogHeader className="items-center text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                  <AlertDialogTitle className="text-lg font-bold text-white">Turnuva Maçı Uyarısı</AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
+                      <p className="text-gray-300">Turnuva maçından ayrılırsan:</p>
+                      <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
+                        <p>❌ <span className="font-semibold text-red-400">Maçı kaybedersin</span></p>
+                        <p>🏆 <span className="font-semibold text-amber-400">Rakip kazanır</span></p>
+                        <p>🚫 <span className="font-semibold text-sky-400">Turnuvadan elenirsin</span></p>
+                        <p>⚖️ <span className="font-semibold text-orange-400">-500 puan cezası alırsın</span></p>
+                      </div>
+                      <p className="text-gray-500 text-xs">Bu işlem geri alınamaz!</p>
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0">
+                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0 mt-2">
+                  <AlertDialogCancel className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white border-0 font-semibold">
+                    🏆 Hayır, Maça Devam Et
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
                       setShowTournamentExitDialog(false);
                       await handleTournamentExit();
                     }}
-                    className="w-full bg-destructive hover:bg-destructive/90"
+                    className="w-full bg-white/5 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 font-medium"
                   >
                     Evet, Ayrıl
                   </AlertDialogAction>
-                  <AlertDialogCancel className="w-full">🏆 Hayır, Maça Devam Et</AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
