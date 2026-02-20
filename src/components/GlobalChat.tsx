@@ -30,6 +30,7 @@ import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { useNavigate } from "react-router-dom";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useMessageCooldown } from "@/hooks/useMessageCooldown";
 
 interface ChatMessage {
   id: string;
@@ -73,6 +74,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { cooldownRemaining, isCoolingDown, startCooldown } = useMessageCooldown();
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [currentChannel, setCurrentChannel] = useState<any>(null);
@@ -552,6 +554,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       }
 
       playSound("buttonClick");
+      startCooldown();
     } catch (error) {
       console.error("❌ Error sending global message:", error);
 
@@ -1279,18 +1282,22 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             value={newMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Mesajınızı yazın..."
+            placeholder={isCoolingDown ? `${cooldownRemaining}s bekleyin...` : "Mesajınızı yazın..."}
             maxLength={200}
-            disabled={isLoading}
+            disabled={isLoading || isCoolingDown}
             className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-green-400/50 focus:ring-green-400/30"
           />
           <Button
             onClick={sendMessage}
-            disabled={!newMessage.trim() || isLoading}
+            disabled={!newMessage.trim() || isLoading || isCoolingDown}
             size="sm"
-            className="px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+            className="px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white relative overflow-hidden"
           >
-            <Send className="w-4 h-4" />
+            {isCoolingDown ? (
+              <span className="text-xs font-mono">{cooldownRemaining}</span>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <div className="text-xs text-gray-400 mt-1 text-right">{newMessage.length}/200</div>
