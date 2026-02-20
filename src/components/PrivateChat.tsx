@@ -463,7 +463,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             placeholder={isCoolingDown ? `${cooldownRemaining}s bekleyin...` : "Mesajınızı yazın..."}
             maxLength={500}
             disabled={isLoading || isCoolingDown}
-            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-green-400/50 focus:ring-green-400/30"
+            className={`flex-1 bg-white/10 border-white/20 text-white focus:border-green-400/50 focus:ring-green-400/30 ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
           />
           <Button
             onClick={sendMessage}
@@ -471,11 +471,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             size="sm"
             className="px-3 flex-shrink-0 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
           >
-            {isCoolingDown ? (
-              <span className="text-xs font-mono">{cooldownRemaining}</span>
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            <Send className="w-4 h-4" />
           </Button>
         </div>
         <div className="text-xs text-gray-400 mt-1 text-right">{newMessage.length}/500</div>
