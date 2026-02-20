@@ -412,7 +412,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
               key={message.id}
               className={`group flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}
             >
-              <div className="flex items-end space-x-2 max-w-[70%]">
+              <div className="flex items-end space-x-2 max-w-[85%] min-w-0">
                 {message.sender_id !== user?.id && (
                   <button
                     onClick={() => handleReportMessage(message.id, message.sender_id)}
