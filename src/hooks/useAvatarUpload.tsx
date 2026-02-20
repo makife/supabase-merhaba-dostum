@@ -4,11 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import imageCompression from "browser-image-compression";
-import { 
-  captureFromNativeCamera, 
-  pickFromNativeGallery, 
-  isNativePlatform 
-} from "@/services/nativeCameraService";
+import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -160,7 +156,7 @@ export const useAvatarUpload = () => {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      const blob = new Blob([byteArray], { type: "image/jpeg" });
       const file = new File([blob], "camera-photo.jpg", { type: "image/jpeg" });
       const webPath = `data:image/jpeg;base64,${photo.base64String}`;
 
@@ -168,10 +164,11 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
-      const isCancelled = error.message?.includes("cancelled") || 
-                          error.message?.includes("User cancelled") ||
-                          error.message?.includes("iptal");
-      
+      const isCancelled =
+        error.message?.includes("cancelled") ||
+        error.message?.includes("User cancelled") ||
+        error.message?.includes("iptal");
+
       if (!isCancelled) {
         console.error("[Avatar] Camera error:", error);
         toast.error("Fotoğraf çekilirken hata oluştu");
@@ -203,6 +200,8 @@ export const useAvatarUpload = () => {
         quality: 80,
         width: 800,
         height: 800,
+        promptLabelHeader: "Fotoğraf Seç",
+        correctOrientation: true,
       });
 
       if (!photo.base64String) {
@@ -217,7 +216,7 @@ export const useAvatarUpload = () => {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      const blob = new Blob([byteArray], { type: "image/jpeg" });
       const file = new File([blob], "gallery-photo.jpg", { type: "image/jpeg" });
       const webPath = `data:image/jpeg;base64,${photo.base64String}`;
 
@@ -225,9 +224,10 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
-      const isCancelled = error.message?.includes("cancelled") || 
-                          error.message?.includes("User cancelled") ||
-                          error.message?.includes("iptal");
+      const isCancelled =
+        error.message?.includes("cancelled") ||
+        error.message?.includes("User cancelled") ||
+        error.message?.includes("iptal");
 
       if (!isCancelled) {
         console.error("[Avatar] Gallery error:", error);
