@@ -684,8 +684,8 @@ const TournamentBracketPage = () => {
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent
-              className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
-              style={{ left: "50%", transform: "translateX(-50%)" }}
+              className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10 
+             fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
               <div className="px-5 pt-6 pb-4 border-b border-white/5">
                 <div className="flex items-center gap-2 mb-1">
@@ -761,8 +761,8 @@ const TournamentBracketPage = () => {
               <div className="text-center">
                 <p className="text-sm font-black text-white uppercase tracking-widest mb-1">Birazdan Maç Başlayacak</p>
                 <p className="text-xs text-slate-400">
-                  {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} hazırlanıyor, lütfen
-                  bekleyin…
+                  {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} hazırlanıyor,
+                  lütfen bekleyin…
                 </p>
               </div>
               <div className="flex gap-1">
@@ -810,7 +810,6 @@ const TournamentBracketPage = () => {
 
       {/* ── SCROLLABLE İÇERİK ── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 pb-8 relative z-10">
-
         {/* ── Bracket ── */}
         {[1, 2, 3].map((round) => {
           const info = ROUND_INFO[round as 1 | 2 | 3];
