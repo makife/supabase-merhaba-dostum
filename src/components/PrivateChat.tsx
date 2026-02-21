@@ -150,12 +150,14 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
         .from("private_messages")
         .select("*")
         .eq("chat_id", chatId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (error) throw error;
 
-      setMessages(data || []);
-      console.log(`✅ Loaded ${data?.length || 0} private messages`);
+      const reversedData = data ? [...data].reverse() : [];
+      setMessages(reversedData || []);
+      console.log(`✅ Loaded ${reversedData.length} private messages`);
 
       // Mesajları okundu olarak işaretle
       await markMessagesAsRead();

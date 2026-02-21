@@ -1808,6 +1808,7 @@ export type Database = {
       cleanup_expired_rematch_requests: { Args: never; Returns: undefined }
       cleanup_expired_rooms: { Args: never; Returns: undefined }
       cleanup_expired_tournaments: { Args: never; Returns: undefined }
+      cleanup_old_messages: { Args: never; Returns: undefined }
       complete_tournament_match: {
         Args: {
           p_match_id: string
