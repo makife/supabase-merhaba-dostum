@@ -8,118 +8,98 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
+// Koyu tema loading spinner - tüm durumlar için ortak
+const DarkLoadingScreen = () => (
+  <div
+    className="fixed inset-0 flex flex-col items-center justify-center gap-4"
+    style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+  >
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
+    <div className="relative z-10 flex flex-col items-center gap-4">
+      <img src="/kelimeleLogo.png" alt="Kelimele" className="w-16 h-16 rounded-2xl shadow-2xl ring-2 ring-white/10" />
+      <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
+      <p className="text-white/50 text-xs font-bold uppercase tracking-widest">Yükleniyor</p>
+    </div>
+  </div>
+);
+
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
-  
+
   const isNative = Capacitor.isNativePlatform();
 
-  // State
   const [showLoading, setShowLoading] = useState(true);
   const [hasStoredSession, setHasStoredSession] = useState<boolean | null>(null);
   const [giveUp, setGiveUp] = useState(false);
-  
+
   const checkedStorageRef = useRef(false);
 
-  // 🔧 User geldiğinde tüm loading'leri kapat
   useEffect(() => {
     if (user) {
-      console.log("✅ [ProtectedRoute] User geldi");
       setShowLoading(false);
       setGiveUp(false);
     }
   }, [user]);
 
-  // 🔧 Session recovered eventi dinle
   useEffect(() => {
     const handleSessionRecovered = () => {
       console.log("[ProtectedRoute] 🔐 Session recovered eventi alındı!");
     };
-
     window.addEventListener("session-recovered", handleSessionRecovered);
     return () => window.removeEventListener("session-recovered", handleSessionRecovered);
   }, []);
 
-  // 🔧 Storage'da session var mı kontrol et (sadece native)
   useEffect(() => {
     if (!isNative || checkedStorageRef.current) return;
-    
     checkedStorageRef.current = true;
-    
+
     const checkStorage = async () => {
       try {
         const stored = await loadSessionFromStorage();
-        const hasSession = !!(stored?.refresh_token && stored?.user);
-        console.log("[ProtectedRoute] 📦 Storage session:", hasSession);
-        setHasStoredSession(hasSession);
+        setHasStoredSession(!!(stored?.refresh_token && stored?.user));
       } catch {
         setHasStoredSession(false);
       }
     };
-    
+
     checkStorage();
   }, [isNative]);
 
-  // 🔧 Loading timeout'ları - BASİT
   useEffect(() => {
-    // Auth yüklemesi bittiyse kısa süre sonra loading kapat
     let loadingTimeout: NodeJS.Timeout;
-    
+
     if (!authLoading) {
       loadingTimeout = setTimeout(() => setShowLoading(false), 500);
     }
-    
-    // Maksimum bekleme süresi
+
     const maxWait = isNative && hasStoredSession ? 15000 : 5000;
-    
+
     const giveUpTimeout = setTimeout(() => {
       if (!user) {
         console.log(`⏰ [ProtectedRoute] ${maxWait}ms timeout, redirect to auth`);
         setGiveUp(true);
       }
     }, maxWait);
-    
+
     return () => {
       clearTimeout(loadingTimeout);
       clearTimeout(giveUpTimeout);
     };
   }, [authLoading, user, isNative, hasStoredSession]);
 
-  // 1. USER VARSA - hemen göster
-  if (user) {
-    return <>{children}</>;
-  }
+  if (user) return <>{children}</>;
 
-  // 2. İlk yükleme - SADECE spinner, mesaj yok
-  if (authLoading || showLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
-      </div>
-    );
-  }
+  if (authLoading || showLoading) return <DarkLoadingScreen />;
 
-  // 3. Native'de storage'da session varsa - bekle, SADECE spinner
-  if (isNative && hasStoredSession && !giveUp) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (isNative && hasStoredSession && !giveUp) return <DarkLoadingScreen />;
 
-  // 4. Timeout - redirect
   if (giveUp) {
     console.log("🚪 [ProtectedRoute] Redirect to /auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // 5. Fallback - SADECE spinner
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
-    </div>
-  );
+  return <DarkLoadingScreen />;
 };
 
 export default ProtectedRoute;
