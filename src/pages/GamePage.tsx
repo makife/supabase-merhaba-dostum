@@ -3940,8 +3940,8 @@ const GamePage = ({
         console.log("Credit consumed result:", creditConsumed);
         if (!creditConsumed) {
           toast({
-            title: "Yetersiz Hak",
-            description: "Oyun oynamak için yeterli hakkınız yok. Market'ten hak satın alabilirsiniz.",
+            title: "Sayfaların tükendi",
+            description: "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
             variant: "destructive",
           });
           navigate("/market");
@@ -7819,7 +7819,10 @@ const GamePage = ({
 
             {/* Exit Confirmation Dialog */}
             <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-              <AlertDialogContent className="max-w-sm mx-auto rounded-2xl border border-amber-500/20 shadow-[0_0_40px_rgba(245,158,11,0.15)]" style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}>
+              <AlertDialogContent
+                className="max-w-sm mx-auto rounded-2xl border border-amber-500/20 shadow-[0_0_40px_rgba(245,158,11,0.15)]"
+                style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
+              >
                 <AlertDialogHeader className="items-center text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
                     <span className="text-2xl">⚠️</span>
@@ -7829,8 +7832,12 @@ const GamePage = ({
                     <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
                       <p className="text-gray-300">Şu an aktif bir oyun oynuyorsun!</p>
                       <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
-                        <p>⚖️ <span className="font-semibold text-red-400">Ceza alacaksın</span></p>
-                        <p>🏆 <span className="font-semibold text-amber-400">Rakibin kazanacak</span></p>
+                        <p>
+                          ⚖️ <span className="font-semibold text-red-400">Ceza alacaksın</span>
+                        </p>
+                        <p>
+                          🏆 <span className="font-semibold text-amber-400">Rakibin kazanacak</span>
+                        </p>
                       </div>
                       <p className="text-gray-500 text-xs">Emin misin?</p>
                     </div>
@@ -7858,7 +7865,10 @@ const GamePage = ({
 
             {/* Tournament Exit Dialog */}
             <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-              <AlertDialogContent className="max-w-sm mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]" style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}>
+              <AlertDialogContent
+                className="max-w-sm mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]"
+                style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
+              >
                 <AlertDialogHeader className="items-center text-center">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
                     <span className="text-2xl">⚠️</span>
@@ -7868,10 +7878,18 @@ const GamePage = ({
                     <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
                       <p className="text-gray-300">Turnuva maçından ayrılırsan:</p>
                       <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
-                        <p>❌ <span className="font-semibold text-red-400">Maçı kaybedersin</span></p>
-                        <p>🏆 <span className="font-semibold text-amber-400">Rakip kazanır</span></p>
-                        <p>🚫 <span className="font-semibold text-sky-400">Turnuvadan elenirsin</span></p>
-                        <p>⚖️ <span className="font-semibold text-orange-400">-500 puan cezası alırsın</span></p>
+                        <p>
+                          ❌ <span className="font-semibold text-red-400">Maçı kaybedersin</span>
+                        </p>
+                        <p>
+                          🏆 <span className="font-semibold text-amber-400">Rakip kazanır</span>
+                        </p>
+                        <p>
+                          🚫 <span className="font-semibold text-sky-400">Turnuvadan elenirsin</span>
+                        </p>
+                        <p>
+                          ⚖️ <span className="font-semibold text-orange-400">-500 puan cezası alırsın</span>
+                        </p>
                       </div>
                       <p className="text-gray-500 text-xs">Bu işlem geri alınamaz!</p>
                     </div>
