@@ -95,31 +95,23 @@ public class NativeCameraPlugin extends Plugin {
     public void pickFromGallery(PluginCall call) {
         Log.d(TAG, "🖼️ pickFromGallery çağrıldı");
         
-        // Android 13+ için READ_MEDIA_IMAGES gerekli, önceki sürümler için READ_EXTERNAL_STORAGE
+        // Android 13+ (API 33+): ACTION_PICK_IMAGES kullanıyoruz, izin GEREKMİYOR!
+        // İzin istemek sistem picker'ını açar → sonra bizim picker da açılır = ÇİFT SEÇİM
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ - READ_MEDIA_IMAGES
-            if (ContextCompat.checkSelfPermission(getContext(), "android.permission.READ_MEDIA_IMAGES") 
-                != PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "🖼️ READ_MEDIA_IMAGES izni isteniyor...");
-                requestPermissionForAlias("photos", call, "galleryPermissionCallback");
-                return;
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Android 6-12 - READ_EXTERNAL_STORAGE
+            Log.d(TAG, "🖼️ Android 13+ - Photo Picker kullanılıyor (izin gerekmez)");
+            launchGallery(call);
+            return;
+        }
+        
+        // Android 6-12 - READ_EXTERNAL_STORAGE gerekli
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
                 != PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "🖼️ READ_EXTERNAL_STORAGE izni isteniyor...");
-                ActivityCompat.requestPermissions(
-                    getActivity(),
-                    new String[] { Manifest.permission.READ_EXTERNAL_STORAGE },
-                    REQUEST_GALLERY
-                );
-                // Basitleştirilmiş: izin istendikten sonra galeriyi aç
-                launchGallery(call);
+                requestPermissionForAlias("photos", call, "galleryPermissionCallback");
                 return;
             }
         }
-        // Android 5 ve altı - izin gerekmez
         
         launchGallery(call);
     }
