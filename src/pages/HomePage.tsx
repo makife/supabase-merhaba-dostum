@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+yorsunimport { useState, useEffect } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -28,6 +28,7 @@ const greetingMessages = [
   "Enerjin harika! ⚡",
   "Rekor kırmaya hazır mısın? 🚀",
   "Şampiyon geldi! 👑",
+  "Mükemmel gözüküyorsun 🧿",
 ];
 
 const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
