@@ -69,6 +69,7 @@ import { initEventHub } from "@/utils/foregroundEventHub";
 import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 import { toast } from "sonner";
 import { useAdMob } from "@/hooks/useAdMob";
+import { useFriendOnlineToast } from "@/hooks/useFriendOnlineToast";
 
 const queryClient = new QueryClient();
 
@@ -218,6 +219,7 @@ const AppRoutes = () => {
   useImmersiveBars();
   useSessionRecovery();
   useForceReloadOnResume();
+  useFriendOnlineToast();
 
   // 🔥 AdMob'u uygulama başlangıcında initialize et
   const { initializeAdMob } = useAdMob();
