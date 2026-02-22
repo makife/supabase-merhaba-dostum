@@ -687,52 +687,78 @@ const TournamentBracketPage = () => {
               className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10 
              fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-              <div className="px-5 pt-6 pb-4 border-b border-white/5">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-1 h-5 bg-red-400 rounded-full" />
-                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Turnuvadan Ayrıl</h2>
-                </div>
-                <p className="text-[11px] text-slate-400 ml-3">
-                  Aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz tur atlar. Bu işlem geri alınamaz.
-                </p>
-              </div>
-              <div className="px-4 py-4 flex flex-col gap-2">
-                <AlertDialogCancel className="rounded-2xl bg-white/8 ring-1 ring-white/10 text-white/80 border-0 hover:bg-white/12 text-sm font-semibold h-11">
-                  Vazgeç
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={async () => {
-                    setIsLeaving(true);
-                    try {
-                      if (!user || !tournamentId) return;
-                      const myMatch = matches.find(
-                        (m) =>
-                          m.round === currentRound &&
-                          (m.player1_id === user.id || m.player2_id === user.id) &&
-                          (m.status === "pending" || m.status === "in_progress"),
-                      );
-                      if (myMatch) {
-                        const winnerId = myMatch.player1_id === user.id ? myMatch.player2_id : myMatch.player1_id;
-                        await supabase
-                          .from("tournament_matches")
-                          .update({ status: "completed", winner_id: winnerId })
-                          .eq("id", myMatch.id);
-                        toast.info("Maçı bıraktınız, rakibiniz kazandı");
-                      }
-                      await leaveTournament();
-                      navigate("/tournament");
-                    } catch (e) {
-                      console.error("❌ Bracket ayrılma hatası:", e);
-                      toast.error("Ayrılırken bir hata oluştu");
-                    } finally {
-                      setIsLeaving(false);
-                    }
-                  }}
-                  className="rounded-2xl bg-red-500/15 ring-1 ring-red-500/30 text-red-300 border-0 hover:bg-red-500/20 text-sm font-semibold h-11"
-                >
-                  Ayrıl
-                </AlertDialogAction>
-              </div>
+              {(() => {
+                const isTournamentOver = currentTournament.status === "completed" || currentTournament.status === "cancelled";
+                const hasActiveMatch = !isTournamentOver && matches.some(
+                  (m) =>
+                    m.round === currentRound &&
+                    (m.player1_id === user?.id || m.player2_id === user?.id) &&
+                    (m.status === "pending" || m.status === "in_progress"),
+                );
+                return (
+                  <>
+                    <div className="px-5 pt-6 pb-4 border-b border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-1 h-5 rounded-full ${isTournamentOver ? "bg-amber-400" : "bg-red-400"}`} />
+                        <h2 className="text-sm font-black text-white uppercase tracking-widest">
+                          {isTournamentOver ? "Turnuvadan Çık" : "Turnuvadan Ayrıl"}
+                        </h2>
+                      </div>
+                      <p className="text-[11px] text-slate-400 ml-3">
+                        {isTournamentOver
+                          ? "Turnuva sona erdi. Turnuva listesine dönmek istiyor musunuz?"
+                          : hasActiveMatch
+                            ? "Aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz tur atlar. Bu işlem geri alınamaz."
+                            : "Turnuvadan ayrılmak istediğinize emin misiniz?"}
+                      </p>
+                    </div>
+                    <div className="px-4 py-4 flex flex-col gap-2">
+                      <AlertDialogCancel className="rounded-2xl bg-white/8 ring-1 ring-white/10 text-white/80 border-0 hover:bg-white/12 text-sm font-semibold h-11">
+                        Vazgeç
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          setIsLeaving(true);
+                          try {
+                            if (!user || !tournamentId) return;
+
+                            // Turnuva bittiyse sadece çık
+                            if (isTournamentOver) {
+                              navigate("/tournament");
+                              return;
+                            }
+
+                            const myMatch = matches.find(
+                              (m) =>
+                                m.round === currentRound &&
+                                (m.player1_id === user.id || m.player2_id === user.id) &&
+                                (m.status === "pending" || m.status === "in_progress"),
+                            );
+                            if (myMatch) {
+                              const winnerId = myMatch.player1_id === user.id ? myMatch.player2_id : myMatch.player1_id;
+                              await supabase
+                                .from("tournament_matches")
+                                .update({ status: "completed", winner_id: winnerId })
+                                .eq("id", myMatch.id);
+                              toast.info("Maçı bıraktınız, rakibiniz kazandı");
+                            }
+                            await leaveTournament();
+                            navigate("/tournament");
+                          } catch (e) {
+                            console.error("❌ Bracket ayrılma hatası:", e);
+                            toast.error("Ayrılırken bir hata oluştu");
+                          } finally {
+                            setIsLeaving(false);
+                          }
+                        }}
+                        className={`rounded-2xl border-0 text-sm font-semibold h-11 ${isTournamentOver ? "bg-amber-500/15 ring-1 ring-amber-500/30 text-amber-300 hover:bg-amber-500/20" : "bg-red-500/15 ring-1 ring-red-500/30 text-red-300 hover:bg-red-500/20"}`}
+                      >
+                        {isTournamentOver ? "Turnuvalara Dön" : "Ayrıl"}
+                      </AlertDialogAction>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="h-2" />
             </AlertDialogContent>
           </AlertDialog>
