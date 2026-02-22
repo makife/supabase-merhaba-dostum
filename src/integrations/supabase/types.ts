@@ -1572,6 +1572,7 @@ export type Database = {
           created_at: string
           effects_enabled: boolean | null
           fireworks_effect_enabled: boolean | null
+          friend_online_notify: boolean
           id: string
           updated_at: string
           user_id: string
@@ -1585,6 +1586,7 @@ export type Database = {
           created_at?: string
           effects_enabled?: boolean | null
           fireworks_effect_enabled?: boolean | null
+          friend_online_notify?: boolean
           id?: string
           updated_at?: string
           user_id: string
@@ -1598,6 +1600,7 @@ export type Database = {
           created_at?: string
           effects_enabled?: boolean | null
           fireworks_effect_enabled?: boolean | null
+          friend_online_notify?: boolean
           id?: string
           updated_at?: string
           user_id?: string

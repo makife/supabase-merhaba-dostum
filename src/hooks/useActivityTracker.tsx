@@ -40,12 +40,23 @@ export function useActivityTracker() {
     if (!user) return;
     
     try {
+      const now = new Date().toISOString();
+      
+      // Update profiles.last_seen
       await supabase
         .from('profiles')
-        .update({ last_seen: new Date().toISOString() })
+        .update({ last_seen: now })
         .eq('id', user.id);
+
+      // Upsert user_presence (triggers friend online notifications)
+      await supabase
+        .from('user_presence')
+        .upsert(
+          { user_id: user.id, is_online: true, last_seen: now },
+          { onConflict: 'user_id' }
+        );
         
-      console.log('💓 Heartbeat sent (last_seen updated)');
+      console.log('💓 Heartbeat sent (last_seen + presence updated)');
     } catch (error) {
       console.error('Error updating last_seen:', error);
     }
