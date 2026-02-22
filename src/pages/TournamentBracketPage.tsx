@@ -475,6 +475,12 @@ const TournamentBracketPage = () => {
         toast.success("🏆 Tebrikler! Turnuvayı kazandınız!", {
           description: "Siz turnuvanın şampiyonusunuz!",
           duration: 8000,
+          style: {
+            background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+            border: "1px solid rgba(16,185,129,0.4)",
+            color: "#f0fdf4",
+          },
+          descriptionClassName: "!text-green-200",
         });
       } else if (isInFinal) {
         // Finalde ama kaybetti
@@ -482,6 +488,12 @@ const TournamentBracketPage = () => {
         toast.error(`🏆 Turnuva Sona Erdi`, {
           description: `Şampiyon: ${winnerName} — İyi oyun!`,
           duration: 8000,
+          style: {
+            background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+            border: "1px solid rgba(239,68,68,0.3)",
+            color: "#fef2f2",
+          },
+          descriptionClassName: "!text-red-200",
         });
       } else {
         // Finalistte olmayan katılımcı
@@ -491,8 +503,9 @@ const TournamentBracketPage = () => {
           style: {
             background: "linear-gradient(135deg, #1a1a2e, #16213e)",
             border: "1px solid rgba(251,191,36,0.3)",
-            color: "#fff",
+            color: "#fefce8",
           },
+          descriptionClassName: "!text-amber-200",
           icon: "🥇",
         });
       }
