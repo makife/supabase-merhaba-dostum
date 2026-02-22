@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
 
 interface FriendItem {
   friendship_id: string;
@@ -24,6 +25,40 @@ const FriendsPage = () => {
   const [pendingRequests, setPendingRequests] = useState<FriendItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"friends" | "pending">("friends");
+  const [friendOnlineNotify, setFriendOnlineNotify] = useState(false);
+  const [notifyLoading, setNotifyLoading] = useState(false);
+
+  // Fetch friend online notify preference
+  useEffect(() => {
+    if (!user) return;
+    const fetchNotifPref = async () => {
+      const { data } = await supabase
+        .from("user_settings")
+        .select("friend_online_notify")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) setFriendOnlineNotify(data.friend_online_notify ?? false);
+    };
+    fetchNotifPref();
+  }, [user]);
+
+  const toggleFriendOnlineNotify = async (checked: boolean) => {
+    if (!user) return;
+    setNotifyLoading(true);
+    try {
+      const { error } = await supabase
+        .from("user_settings")
+        .update({ friend_online_notify: checked })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setFriendOnlineNotify(checked);
+      toast(checked ? "Arkadaş online bildirimleri açıldı 🔔" : "Arkadaş online bildirimleri kapatıldı");
+    } catch {
+      toast.error("Ayar güncellenemedi");
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
 
   const fetchFriends = useCallback(async () => {
     if (!user) return;
@@ -204,6 +239,19 @@ const FriendsPage = () => {
               {pendingRequests.length}
             </div>
           )}
+        </div>
+
+        {/* Friend Online Notify Toggle */}
+        <div className="flex items-center justify-between mt-3 px-1 py-2 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-amber-400" />
+            <span className="text-xs text-zinc-300">Arkadaş online bildirimi</span>
+          </div>
+          <Switch
+            checked={friendOnlineNotify}
+            onCheckedChange={toggleFriendOnlineNotify}
+            disabled={notifyLoading}
+          />
         </div>
 
         {/* Tabs */}
