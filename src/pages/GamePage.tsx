@@ -5811,7 +5811,7 @@ const GamePage = ({
       if (cancelled) return;
       // Turnuva modunda daha agresif: 1.5-10 saniye, diğer modlarda 2.5-17.5
       const minDelay = gameMode === "tournament" ? 2500 : 2500;
-      const maxDelay = gameMode === "tournament" ? 30000 : 30000;
+      const maxDelay = gameMode === "tournament" ? 25000 : 25000;
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
       setTimeout(async () => {
         if (cancelled) return;
