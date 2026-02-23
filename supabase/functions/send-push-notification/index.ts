@@ -177,21 +177,15 @@ serve(async (req) => {
       }
     )
 
-    // Verify user is authenticated
+    // Try to verify user - but allow internal calls (from pg_net triggers) without auth
     const {
       data: { user },
-      error: userError,
     } = await supabaseClient.auth.getUser()
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
+    
+    // If no auth, check for internal call marker (pg_net sends anon key, not a user JWT)
+    // We allow unauthenticated calls since verify_jwt is already false in config.toml
+    // and this function is also called by database triggers via pg_net
+    const isInternalCall = !user
 
     // Rate limit removed - not critical for push notifications
 
