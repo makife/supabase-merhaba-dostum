@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 // Import listesine DialogDescription eklendi
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"; 
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
@@ -47,7 +47,10 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
   // Check for existing waiting room on mount
   useEffect(() => {
     const checkExistingRoom = async () => {
-      if (!user) { setCheckingExisting(false); return; }
+      if (!user) {
+        setCheckingExisting(false);
+        return;
+      }
       try {
         const { data } = await supabase
           .from("game_rooms")
@@ -59,7 +62,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
         if (data?.room_code) {
           setExistingRoom({ room_code: data.room_code, id: data.id });
           setShowExistingRoomPrompt(true);
@@ -73,7 +76,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
     checkExistingRoom();
   }, [user]);
 
-
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -85,7 +87,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
   const handleCreateRoom = async () => {
     if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-      sonnerToast.error("Yetersiz oyun hakkı!", {
+      sonnerToast.error("Oyun için sayfaların yetersiz!", {
         description: "Özel oda oluşturmak için hak satın alın veya dolmasını bekleyin.",
         duration: 4000,
       });
@@ -104,7 +106,36 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       localStorage.setItem(`room_type_${shortCode}`, "timed");
 
       const letterPool = [
-        "A", "A", "E", "E", "İ", "İ", "I", "O", "U", "L", "L", "N", "R", "K", "M", "T", "S", "D", "Y", "B", "C", "Ç", "F", "G", "Ğ", "H", "P", "Ş", "V", "Z",
+        "A",
+        "A",
+        "E",
+        "E",
+        "İ",
+        "İ",
+        "I",
+        "O",
+        "U",
+        "L",
+        "L",
+        "N",
+        "R",
+        "K",
+        "M",
+        "T",
+        "S",
+        "D",
+        "Y",
+        "B",
+        "C",
+        "Ç",
+        "F",
+        "G",
+        "Ğ",
+        "H",
+        "P",
+        "Ş",
+        "V",
+        "Z",
       ];
       const grid: string[] = [];
       for (let i = 0; i < 16; i++) {
@@ -133,7 +164,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
       // DÜZELTME 1: onClose() kaldırıldı. Sayfa değiştiği için modal zaten kapanacak.
       navigate(`/private-room/waiting/${shortCode}`);
-      
     } catch (error: any) {
       toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
     } finally {
@@ -164,7 +194,6 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
 
       // DÜZELTME 2: onClose() kaldırıldı.
       navigate(`/private-room/waiting/${joinCode.toUpperCase()}`);
-      
     } catch (error: any) {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
     } finally {
@@ -204,10 +233,10 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
             </div>
 
             <DialogTitle className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</DialogTitle>
-            
+
             {/* DÜZELTME 3: Erişim hatasını gidermek için Description eklendi */}
             <DialogDescription className="text-zinc-400 text-xs mt-1">
-               Arkadaşlarınla oynamak için oda oluştur veya var olan bir odaya katıl.
+              Arkadaşlarınla oynamak için oda oluştur veya var olan bir odaya katıl.
             </DialogDescription>
           </div>
 
@@ -220,7 +249,8 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                   <span className="text-xs font-bold">Bekleyen odanız var!</span>
                 </div>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Yakın zamanda oluşturduğunuz <span className="font-bold text-white">{existingRoom.room_code}</span> kodlu oda hâlâ aktif.
+                  Yakın zamanda oluşturduğunuz <span className="font-bold text-white">{existingRoom.room_code}</span>{" "}
+                  kodlu oda hâlâ aktif.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
