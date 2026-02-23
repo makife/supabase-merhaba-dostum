@@ -108,6 +108,19 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const shownNotifications = useRef<Set<string>>(new Set());
   const hasLoadedInvites = useRef(false);
   const lastKnownCredits = useRef<number | null>(null);
+  const purchaseSuppressRef = useRef(false);
+
+  // Satın alma sırasında toast'u bastırmak için global event dinle
+  useEffect(() => {
+    const suppressOn = () => { purchaseSuppressRef.current = true; };
+    const suppressOff = () => { setTimeout(() => { purchaseSuppressRef.current = false; }, 3000); };
+    window.addEventListener('purchaseStarted', suppressOn);
+    window.addEventListener('refreshProfile', suppressOff);
+    return () => {
+      window.removeEventListener('purchaseStarted', suppressOn);
+      window.removeEventListener('refreshProfile', suppressOff);
+    };
+  }, []);
 
   // 🔔 Online iken +1 kredi artışını toast ile göster
   useEffect(() => {
@@ -128,6 +141,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         (payload: any) => {
           const newCredits = payload.new?.game_credits;
           const oldCredits = lastKnownCredits.current;
+
+          // Satın alma sırasında bu toast'u gösterme
+          if (purchaseSuppressRef.current) {
+            if (newCredits !== null && newCredits !== undefined) {
+              lastKnownCredits.current = newCredits;
+            }
+            return;
+          }
 
           if (oldCredits !== null && newCredits !== null && newCredits > oldCredits && newCredits <= 5) {
             toast.success(`❤️ +1 Oyun Hakkın Yenilendi! (${newCredits}/5)`, {
