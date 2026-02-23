@@ -275,7 +275,7 @@ const MarketPage = () => {
 
     setShowConfirmation(false);
     setPurchaseLoading(true);
-
+    window.dispatchEvent(new CustomEvent('purchaseStarted'));
     try {
       // 🔥 FIX: Önce veritabanından güncel değerleri çek (stale state önleme)
       const { data: freshProfile, error: freshError } = await supabase
