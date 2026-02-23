@@ -113,7 +113,7 @@ export const useFriendOnlineToast = () => {
           // Sadece offline → online geçişi
           if (newRecord.is_online === true && oldRecord.is_online !== true) {
             const friendName = friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
-            toast(`👋 ${friendName} şu an çevrimiçi! Sen neredesin 👀`, {
+            toast(`👋 ${friendName} şu an çevrimiçi!`, {
               duration: 4000,
             });
           }
