@@ -112,13 +112,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   // Satın alma sırasında toast'u bastırmak için global event dinle
   useEffect(() => {
-    const suppressOn = () => { purchaseSuppressRef.current = true; };
-    const suppressOff = () => { setTimeout(() => { purchaseSuppressRef.current = false; }, 3000); };
+    const suppressOn = () => { 
+      purchaseSuppressRef.current = true;
+      // 5 saniye sonra otomatik kapat (güvenlik)
+      setTimeout(() => { purchaseSuppressRef.current = false; }, 5000);
+    };
     window.addEventListener('purchaseStarted', suppressOn);
-    window.addEventListener('refreshProfile', suppressOff);
     return () => {
       window.removeEventListener('purchaseStarted', suppressOn);
-      window.removeEventListener('refreshProfile', suppressOff);
     };
   }, []);
 
