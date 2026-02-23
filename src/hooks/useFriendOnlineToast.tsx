@@ -12,6 +12,7 @@ export const useFriendOnlineToast = () => {
   const friendIdsRef = useRef<Set<string>>(new Set());
   const notifyEnabledRef = useRef(false);
   const friendNamesRef = useRef<Map<string, string>>(new Map());
+  const onlineStateRef = useRef<Map<string, boolean>>(new Map());
 
   // Arkadaş listesini ve ayarı yükle
   useEffect(() => {
@@ -40,6 +41,14 @@ export const useFriendOnlineToast = () => {
         const nameMap = new Map<string, string>();
         profiles?.forEach((p) => nameMap.set(p.id, p.username || "Oyuncu"));
         friendNamesRef.current = nameMap;
+
+        // Mevcut online durumlarını yükle (ilk açılışta yanlış toast atmasın)
+        const { data: presences } = await supabase
+          .from("user_presence")
+          .select("user_id, is_online")
+          .in("user_id", ids);
+
+        presences?.forEach((p) => onlineStateRef.current.set(p.user_id, p.is_online ?? false));
       }
     };
 
@@ -99,7 +108,6 @@ export const useFriendOnlineToast = () => {
         },
         (payload) => {
           const newRecord = payload.new as any;
-          const oldRecord = payload.old as any;
 
           // Bildirim kapalıysa atla
           if (!notifyEnabledRef.current) return;
@@ -110,13 +118,20 @@ export const useFriendOnlineToast = () => {
           // Arkadaş değilse atla
           if (!friendIdsRef.current.has(newRecord.user_id)) return;
 
-          // Sadece offline → online geçişi
-          if (newRecord.is_online === true && oldRecord.is_online !== true) {
+          const prevOnline = onlineStateRef.current.get(newRecord.user_id);
+          const isNowOnline = newRecord.is_online === true;
+
+          // Sadece kesin false → true geçişinde toast göster
+          // (oldRecord.is_online Supabase'de bazen boş geldiği için kendi state'imizi kullanıyoruz)
+          if (isNowOnline && prevOnline === false) {
             const friendName = friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
             toast(`👋 ${friendName} şu an çevrimiçi!`, {
               duration: 4000,
             });
           }
+
+          // Her durumda son state'i güncelle
+          onlineStateRef.current.set(newRecord.user_id, isNowOnline);
         },
       )
       .subscribe();
