@@ -188,6 +188,7 @@ export const useUserPurchases = () => {
     if (!user?.id) return false;
 
     setLoading(true);
+    window.dispatchEvent(new CustomEvent('purchaseStarted'));
     try {
       // Öğe tipine göre işlem yap
       if (item.type === 'credits') {
