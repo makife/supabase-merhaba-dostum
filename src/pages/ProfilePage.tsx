@@ -839,6 +839,8 @@ const ProfilePage = () => {
               const fromPage = location.state?.from;
               if (fromPage === "/chat") {
                 navigate("/chat");
+              } else if (fromPage === "/friends") {
+                navigate("/friends");
               } else {
                 navigate("/");
               }

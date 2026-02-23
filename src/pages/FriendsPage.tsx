@@ -309,7 +309,7 @@ const FriendsPage = () => {
                       friend={friend}
                       onMessage={() => handleMessage(friend.friend_id)}
                       onRemove={() => handleRemoveFriend(friend.friendship_id, friend.username)}
-                      onProfile={() => navigate(`/profile/${friend.friend_id}`)}
+                      onProfile={() => navigate(`/profile/${friend.friend_id}`, { state: { from: "/friends" } })}
                     />
                   ))}
                 </div>
@@ -326,7 +326,7 @@ const FriendsPage = () => {
                       friend={friend}
                       onMessage={() => handleMessage(friend.friend_id)}
                       onRemove={() => handleRemoveFriend(friend.friendship_id, friend.username)}
-                      onProfile={() => navigate(`/profile/${friend.friend_id}`)}
+                      onProfile={() => navigate(`/profile/${friend.friend_id}`, { state: { from: "/friends" } })}
                     />
                   ))}
                 </div>
@@ -348,7 +348,7 @@ const FriendsPage = () => {
                   <p className="text-xs font-bold text-amber-400 uppercase tracking-wider px-1">Gelen Davetler</p>
                   {pendingRequests.filter(p => !p.is_sender).map((req) => (
                     <div key={req.friendship_id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
-                      <button onClick={() => navigate(`/profile/${req.friend_id}`)}>
+                      <button onClick={() => navigate(`/profile/${req.friend_id}`, { state: { from: "/friends" } })}>
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={req.avatar_url || ""} />
                           <AvatarFallback className="bg-amber-600 text-white text-xs">{req.username[0]?.toUpperCase()}</AvatarFallback>
