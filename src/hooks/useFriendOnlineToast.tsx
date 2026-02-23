@@ -26,17 +26,26 @@ export const useFriendOnlineToast = () => {
           .select("user_id, friend_id")
           .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
           .eq("status", "accepted"),
-        supabase.from("user_settings").select("friend_online_notify").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("user_settings")
+          .select("friend_online_notify")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
       notifyEnabledRef.current = settingsRes.data?.friend_online_notify ?? false;
 
       if (friendsRes.data && friendsRes.data.length > 0) {
-        const ids = friendsRes.data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
+        const ids = friendsRes.data.map((f) =>
+          f.user_id === user.id ? f.friend_id : f.user_id
+        );
         friendIdsRef.current = new Set(ids);
 
         // İsimleri çek
-        const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", ids);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", ids);
 
         const nameMap = new Map<string, string>();
         profiles?.forEach((p) => nameMap.set(p.id, p.username || "Oyuncu"));
@@ -48,7 +57,9 @@ export const useFriendOnlineToast = () => {
           .select("user_id, is_online")
           .in("user_id", ids);
 
-        presences?.forEach((p) => onlineStateRef.current.set(p.user_id, p.is_online ?? false));
+        presences?.forEach((p) =>
+          onlineStateRef.current.set(p.user_id, p.is_online ?? false)
+        );
       }
     };
 
@@ -66,7 +77,7 @@ export const useFriendOnlineToast = () => {
         },
         () => {
           loadFriendsAndSetting();
-        },
+        }
       )
       .subscribe();
 
@@ -82,8 +93,9 @@ export const useFriendOnlineToast = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          notifyEnabledRef.current = (payload.new as any).friend_online_notify ?? false;
-        },
+          notifyEnabledRef.current =
+            (payload.new as any).friend_online_notify ?? false;
+        }
       )
       .subscribe();
 
@@ -124,7 +136,8 @@ export const useFriendOnlineToast = () => {
           // Sadece kesin false → true geçişinde toast göster
           // (oldRecord.is_online Supabase'de bazen boş geldiği için kendi state'imizi kullanıyoruz)
           if (isNowOnline && prevOnline === false) {
-            const friendName = friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
+            const friendName =
+              friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
             toast(`👋 ${friendName} şu an çevrimiçi!`, {
               duration: 4000,
             });
@@ -132,7 +145,7 @@ export const useFriendOnlineToast = () => {
 
           // Her durumda son state'i güncelle
           onlineStateRef.current.set(newRecord.user_id, isNowOnline);
-        },
+        }
       )
       .subscribe();
 
