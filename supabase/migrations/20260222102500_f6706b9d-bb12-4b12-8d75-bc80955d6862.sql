@@ -38,7 +38,7 @@ BEGIN
         body := jsonb_build_object(
           'receiverId', friend_record.f_user_id,
           'title', '👋 Arkadaşın Çevrimiçi!',
-          'body', COALESCE(🟢 online_username, 'Bir arkadaşın') || ' şu an çevrimiçi!',
+          'body', COALESCE(online_username, 'Bir arkadaşın') || '🟢  şu an çevrimiçi!',
           'data', jsonb_build_object('type', 'friend_online'),
           'skipIfOnline', true
         ),
