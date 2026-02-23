@@ -62,7 +62,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   const handleStart = () => {
     playSound("buttonClick");
     if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-      toast.error("Yetersiz oyun hakkı!", {
+      toast.error("Oyun için yeterli sayfan yok!", {
         description: "Oyun oynamak için sayfa satın alın veya dolmasını bekleyin.",
         duration: 4000,
       });
