@@ -57,7 +57,6 @@ const greetingMessages = [
   "Zirve modu aktif! 🚨",
   "Hadi tarih yazalım! 📖",
 ];
-];
 
 const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
 
