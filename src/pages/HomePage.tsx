@@ -58,7 +58,8 @@ const greetingMessages = [
   "Hadi tarih yazalım! 📖",
 ];
 
-const getRandomGreeting = () => greetingMessages[Math.floor(Math.random() * greetingMessages.length)];
+const getRandomGreeting = () =>
+  greetingMessages[Math.floor(Math.random() * greetingMessages.length)].toLocaleUpperCase("tr-TR");
 
 const isGiftPremium = (profile: any) => {
   if (!profile?.premium_until) return false;
