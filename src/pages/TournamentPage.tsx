@@ -26,8 +26,8 @@ const TournamentPage = () => {
   const handleCreateTournament = async () => {
     const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
     if (!isPremium && totalCredits < 3) {
-      toast.error("Yetersiz oyun hakkı!", {
-        description: `Turnuva için en az 3 hak gerekli. Mevcut: ${totalCredits}`,
+      toast.error("Yetersiz oyun sayfası!", {
+        description: `Turnuva için en az 3 sayfa gerekli. Mevcut: ${totalCredits}`,
         duration: 4000,
       });
       return;
