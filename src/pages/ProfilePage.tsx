@@ -902,7 +902,19 @@ const ProfilePage = () => {
                   <Button
                     size="icon"
                     onClick={() => setShowAvatarOptions(true)}
-                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 border-2 border-white/20 shadow-lg"
+                    className="
+      absolute bottom-0 right-0
+      translate-x-1/3 translate-y-1/3
+      w-8 h-8
+      rounded-full
+      bg-gradient-to-r from-indigo-500 to-purple-600
+      hover:from-indigo-600 hover:to-purple-700
+      border-2 border-white
+      shadow-xl
+      z-30
+      transition-transform
+      hover:scale-110
+    "
                     disabled={uploading}
                   >
                     <Edit className="w-4 h-4 text-white" />
