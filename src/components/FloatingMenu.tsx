@@ -68,12 +68,54 @@ const getBanTimeLeft = async (userId: string): Promise<string> => {
 };
 
 const menuItems = [
-  { title: "Ana Sayfa", route: "/", icon: Home, iconColor: "text-blue-300", dotColor: "bg-blue-400" },
-  { title: "Liderlik", route: "/leaderboard", icon: Trophy, iconColor: "text-amber-300", dotColor: "bg-amber-400" },
-  { title: "Profil", route: "/profile", icon: User, iconColor: "text-emerald-300", dotColor: "bg-emerald-400" },
-  { title: "Kırtasiye", route: "/market", icon: Backpack, iconColor: "text-purple-300", dotColor: "bg-purple-400" },
-  { title: "Arkadaşlar", route: "/friends", icon: Users, iconColor: "text-cyan-300", dotColor: "bg-cyan-400" },
-  { title: "Ayarlar", route: "/settings", icon: Settings, iconColor: "text-orange-300", dotColor: "bg-orange-400" },
+  {
+    title: "Ana Sayfa",
+    route: "/",
+    icon: Home,
+    iconColor: "text-blue-300",
+    dotColor: "bg-blue-400",
+    bgColor: "bg-blue-500/15 hover:bg-blue-500/25 ring-blue-400/40 hover:ring-blue-400/70",
+  },
+  {
+    title: "Liderlik",
+    route: "/leaderboard",
+    icon: Trophy,
+    iconColor: "text-amber-300",
+    dotColor: "bg-amber-400",
+    bgColor: "bg-amber-500/15 hover:bg-amber-500/25 ring-amber-400/40 hover:ring-amber-400/70",
+  },
+  {
+    title: "Profil",
+    route: "/profile",
+    icon: User,
+    iconColor: "text-emerald-300",
+    dotColor: "bg-emerald-400",
+    bgColor: "bg-emerald-500/15 hover:bg-emerald-500/25 ring-emerald-400/40 hover:ring-emerald-400/70",
+  },
+  {
+    title: "Kırtasiye",
+    route: "/market",
+    icon: Backpack,
+    iconColor: "text-purple-300",
+    dotColor: "bg-purple-400",
+    bgColor: "bg-purple-500/15 hover:bg-purple-500/25 ring-purple-400/40 hover:ring-purple-400/70",
+  },
+  {
+    title: "Arkadaşlar",
+    route: "/friends",
+    icon: Users,
+    iconColor: "text-cyan-300",
+    dotColor: "bg-cyan-400",
+    bgColor: "bg-cyan-500/15 hover:bg-cyan-500/25 ring-cyan-400/40 hover:ring-cyan-400/70",
+  },
+  {
+    title: "Ayarlar",
+    route: "/settings",
+    icon: Settings,
+    iconColor: "text-orange-300",
+    dotColor: "bg-orange-400",
+    bgColor: "bg-orange-500/15 hover:bg-orange-500/25 ring-orange-400/40 hover:ring-orange-400/70",
+  },
 ];
 
 interface FloatingMenuProps {
@@ -157,9 +199,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "bg-[rgba(255,255,255,0.10)] " +
-    "ring-2 ring-white/40 " + // 👈 2px ve daha belirgin
-    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/60 " +
+    "ring-2 " +
     "active:scale-95 transition-colors duration-150 " +
     "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
 
