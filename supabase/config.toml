@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-credit-notification]
 verify_jwt = false
+
+[functions.award-leaderboard-prizes]
+verify_jwt = false
