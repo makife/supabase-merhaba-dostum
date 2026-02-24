@@ -24,6 +24,7 @@ import {
   TrendingDown,
   Flame,
 } from "lucide-react";
+import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -60,30 +61,81 @@ const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState("all-time");
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
 
-  // Genel sıralama (tüm zamanlar)
+  // 4-aylık sezon başlangıç tarihi hesapla (Ocak-Nisan, Mayıs-Ağustos, Eylül-Aralık)
+  const getSeasonStart = (): string => {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const seasonStartMonth = month < 4 ? 0 : month < 8 ? 4 : 8;
+    return new Date(year, seasonStartMonth, 1).toISOString();
+  };
+
+  // Genel sıralama (4 aylık sezon)
   const fetchAllTimeLeaders = async () => {
     try {
+      const seasonStart = getSeasonStart();
+
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, total_score, total_games, wins")
+        .select("id, username, avatar_url, total_score, total_games, wins, created_at")
         .order("total_score", { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
-      const allTimeData =
-        data?.map((entry, index) => ({
-          user_id: entry.id,
-          username: entry.username || "Anonim",
-          avatar_url: entry.avatar_url,
-          score: entry.total_score || 0,
-          games_played: entry.total_games || 0,
-          wins: entry.wins || 0,
-          best_word: null,
-          best_word_score: 0,
-          rank: index + 1,
-          change: 0,
-        })) || [];
+      // Filter to only include scores from the current season
+      // Since profiles has cumulative scores, we use game_sessions for season data
+      const { data: sessionData, error: sessionError } = await supabase
+        .from("game_sessions")
+        .select("user_id, score, is_winner")
+        .gte("created_at", seasonStart);
+
+      if (sessionError) throw sessionError;
+
+      // Aggregate session data per user
+      const seasonScores = new Map<string, { score: number; games: number; wins: number }>();
+      (sessionData || []).forEach((s) => {
+        const existing = seasonScores.get(s.user_id) || { score: 0, games: 0, wins: 0 };
+        existing.score += s.score || 0;
+        existing.games += 1;
+        if (s.is_winner) existing.wins += 1;
+        seasonScores.set(s.user_id, existing);
+      });
+
+      // Get profile info for users with season scores
+      const userIds = Array.from(seasonScores.keys());
+      if (userIds.length === 0) {
+        setAllTimeLeaders([]);
+        if (user) setUserStats((prev) => ({ ...prev, allTime: null }));
+        return;
+      }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map((profileData || []).map((p) => [p.id, p]));
+
+      const allTimeData = Array.from(seasonScores.entries())
+        .map(([userId, stats]) => {
+          const profile = profileMap.get(userId);
+          return {
+            user_id: userId,
+            username: profile?.username || "Anonim",
+            avatar_url: profile?.avatar_url || null,
+            score: stats.score,
+            games_played: stats.games,
+            wins: stats.wins,
+            best_word: null,
+            best_word_score: 0,
+            rank: 0,
+            change: 0,
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+        .slice(0, 50);
 
       setAllTimeLeaders(allTimeData);
 
@@ -92,10 +144,10 @@ const LeaderboardPage = () => {
         setUserStats((prev) => ({ ...prev, allTime: userEntry || null }));
       }
     } catch (error) {
-      console.error("Error fetching all-time leaders:", error);
+      console.error("Error fetching season leaders:", error);
       toast({
         title: "Hata",
-        description: "Genel sıralama yüklenirken hata oluştu",
+        description: "Sezon sıralaması yüklenirken hata oluştu",
         variant: "destructive",
       });
     }
@@ -431,7 +483,7 @@ const LeaderboardPage = () => {
                   <span className="text-sm font-bold text-white">Senin Performansın</span>
                 </div>
                 <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-400/30 text-xs">
-                  {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Genel"}
+                  {activeTab === "weekly" ? "Bu Hafta" : activeTab === "monthly" ? "Bu Ay" : "Sezon"}
                 </Badge>
               </div>
 
@@ -489,6 +541,7 @@ const LeaderboardPage = () => {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 relative z-10">
+        <LeaderboardPrizeBanner tab={activeTab as "all-time" | "weekly" | "monthly"} />
         {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
         {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
         {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
