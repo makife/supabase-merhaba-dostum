@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useAppState } from "@/hooks/useAppState";
 import { Button } from "@/components/ui/button";
+import { useAdMob } from "@/hooks/useAdMob";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -163,6 +164,9 @@ const GamePage = ({
     return type || "timed";
   });
 
+  const { loadRewardedAd, showRewardedAd, isAdLoading, initializeAdMob } = useAdMob();
+  const [adWatched, setAdWatched] = useState(false);
+  const [userInkCount, setUserInkCount] = useState<number | null>(null);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
