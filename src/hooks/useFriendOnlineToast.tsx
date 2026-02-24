@@ -125,11 +125,23 @@ export const useFriendOnlineToast = () => {
           // (oldRecord.is_online Supabase'de bazen boş geldiği için kendi state'imizi kullanıyoruz)
           if (isNowOnline && prevOnline === false) {
             const friendName = friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
+
+            // In-app toast (uygulama açıksa)
             toast(`🟢 ${friendName} şu an çevrimiçi! 👋`, {
               duration: 4000,
             });
-          }
 
+            // Push bildirimi (uygulama kapalıysa gider, skipIfOnline=true ile çift bildirim olmaz)
+            supabase.functions.invoke("send-push-notification", {
+              body: {
+                receiverId: user.id, // bildirimi ALAN: sen
+                title: "🟢 Arkadaşın Online",
+                body: `${friendName} çevrimiçi oldu`,
+                data: { type: "friend_online", userId: newRecord.user_id },
+                skipIfOnline: true, // sen açıksan push gitmesin (toast yeterli)
+              },
+            });
+          }
           // Her durumda son state'i güncelle
           onlineStateRef.current.set(newRecord.user_id, isNowOnline);
         },
