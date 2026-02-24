@@ -514,20 +514,27 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
       );
 
-      // Mention kontrolü - case-insensitive
-      const mentionRegex = /@(\w+)/g;
+      // Mention kontrolü - Unicode + noktalama destekli (@çağrı, @cagri_1, @cagri.)
+      const mentionRegex = /@([\p{L}\p{N}_.-]+)/gu;
       let match;
       const processedUsers = new Set<string>(); // Aynı kullanıcıya birden fazla bildirim göndermeyi önle
 
       while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
-        const mentionedUsername = match[1];
+        const rawMention = match[1] ?? "";
+        const mentionedUsername = rawMention.replace(/[.,!?;:]+$/g, "").trim();
+        if (!mentionedUsername) continue;
 
-        // Case-insensitive arama için ilike kullan
-        const { data: mentionedUser } = await supabase
+        // Case-insensitive arama
+        const { data: mentionedUser, error: mentionedUserError } = await supabase
           .from("profiles")
           .select("id, username")
           .ilike("username", mentionedUsername)
-          .single();
+          .maybeSingle();
+
+        if (mentionedUserError) {
+          console.warn("Mention user lookup error:", mentionedUserError);
+          continue;
+        }
 
         if (mentionedUser && mentionedUser.id !== user.id && !processedUsers.has(mentionedUser.id)) {
           processedUsers.add(mentionedUser.id);
