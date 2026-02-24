@@ -19,7 +19,7 @@ const PRIZE_CONFIG: Record<string, { image: string; prizes: PrizeInfo }> = {
   },
   weekly: {
     image: "/maviHediye.png",
-    prizes: { degistir: 3, fisilida: 3, senyaz: 3 },
+    prizes: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3 },
   },
   monthly: {
     image: "/yesilHediye.png",
@@ -150,7 +150,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
             {prizes.oyunHakki && (
               <span className="flex items-center gap-1">
                 <Gift className="w-3.5 h-3.5 text-amber-400" />
-                {prizes.oyunHakki} Oyun Hakkı
+                +{prizes.oyunHakki} Oyun Sayfası
               </span>
             )}
           </div>

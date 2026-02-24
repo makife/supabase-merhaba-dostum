@@ -16,7 +16,7 @@ interface PrizeConfig {
 }
 
 const PRIZES: Record<string, PrizeConfig> = {
-  weekly: { degistir: 3, fisilida: 3, senyaz: 3, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
+  weekly: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
   monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, label: "Aylık", badgeId: "b1000001-0000-0000-0000-000000000003", countColumn: "monthly_first_count" },
   season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, label: "Sezon", badgeId: "b1000001-0000-0000-0000-000000000001", countColumn: "season_first_count" },
 };
@@ -106,29 +106,9 @@ async function findMonthlyWinner(supabase: any, monthStart: string, monthEnd: st
 }
 
 async function findSeasonWinner(supabase: any, seasonStart: string, seasonEnd: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("game_sessions")
-    .select("user_id, score")
-    .gte("created_at", seasonStart)
-    .lt("created_at", seasonEnd);
-
+  const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 1, season_start_date: seasonStart });
   if (error || !data || data.length === 0) return null;
-
-  const scores = new Map<string, number>();
-  data.forEach((s: any) => {
-    scores.set(s.user_id, (scores.get(s.user_id) || 0) + (s.score || 0));
-  });
-
-  let topUser: string | null = null;
-  let topScore = 0;
-  scores.forEach((score, userId) => {
-    if (score > topScore) {
-      topScore = score;
-      topUser = userId;
-    }
-  });
-
-  return topUser;
+  return data[0].user_id;
 }
 
 async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
@@ -216,7 +196,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
   await supabase.from("notifications").insert({
     user_id: userId,
     type: "leaderboard_prize",
-    message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, ${prize.oyunHakki} Oyun Hakkı` : ""} hesabına eklendi!`,
+    message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`,
   });
 
   console.log(`Prize awarded to ${userId}: ${JSON.stringify(prize)}`);
