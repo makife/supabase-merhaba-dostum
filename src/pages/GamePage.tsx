@@ -166,7 +166,7 @@ const GamePage = ({
 
   const { loadRewardedAd, showRewardedAd, isAdLoading, initializeAdMob } = useAdMob();
   const [adWatched, setAdWatched] = useState(false);
-  const [userInkCount, setUserInkCount] = useState<number | null>(null);
+  const [userInkCount, setUserInkCount] = useState<number>(0);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
@@ -855,17 +855,18 @@ const GamePage = ({
   const attemptedAutoCompleteRef = useRef(false);
 
   useEffect(() => {
-    if (gameEnded && user?.id) {
+    if ((gameEnded || showResults) && user?.id) {
       supabase
         .from("profiles")
         .select("ink_count")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
+          console.log("💰 ink_count çekildi:", data?.ink_count);
           setUserInkCount(data?.ink_count ?? 0);
         });
     }
-  }, [gameEnded, user?.id]);
+  }, [gameEnded, showResults, user?.id]);
 
   const handleWatchAd = async () => {
     if (!user?.id) return;
