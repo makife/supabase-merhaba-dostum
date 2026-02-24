@@ -1767,10 +1767,19 @@ export type Database = {
         Returns: undefined
       }
       check_and_award_badges: { Args: { p_user_id: string }; Returns: Json[] }
-      check_and_award_badges_simple: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
+      check_and_award_badges_simple:
+        | {
+            Args: { p_user_id: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.check_and_award_badges_simple(p_user_id => text), public.check_and_award_badges_simple(p_user_id => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { p_user_id: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.check_and_award_badges_simple(p_user_id => text), public.check_and_award_badges_simple(p_user_id => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
       check_and_finish_expired_games: { Args: never; Returns: undefined }
       check_and_refresh_credits:
         | { Args: never; Returns: undefined }

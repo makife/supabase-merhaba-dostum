@@ -166,7 +166,7 @@ const GamePage = ({
 
   const { loadRewardedAd, showRewardedAd, isAdLoading, initializeAdMob } = useAdMob();
   const [adWatched, setAdWatched] = useState(false);
-  const [userInkCount, setUserInkCount] = useState<number>(0);
+  const [userCredits, setUserCredits] = useState<number>(0);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const cleanupRef = useRef<(() => void)[]>([]);
@@ -858,12 +858,13 @@ const GamePage = ({
     if (gameEnded && user?.id) {
       supabase
         .from("profiles")
-        .select("ink_count")
+        .select("game_credits, bonus_credits")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
-          console.log("💰 ink_count çekildi:", data?.ink_count);
-          setUserInkCount(data?.ink_count ?? 0);
+          const total = (data?.game_credits ?? 0) + (data?.bonus_credits ?? 0);
+          console.log("💰 Toplam kredi:", total, "game:", data?.game_credits, "bonus:", data?.bonus_credits);
+          setUserCredits(total);
         });
     }
   }, [gameEnded, user?.id]);
@@ -871,13 +872,13 @@ const GamePage = ({
   const handleWatchAd = async () => {
     if (!user?.id) return;
 
-    // Güncel hak sayısını kontrol et
-    const { data: profileData } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
+    // Güncel kredi sayısını kontrol et
+    const { data: profileData } = await supabase.from("profiles").select("game_credits, bonus_credits").eq("id", user.id).single();
 
-    const currentInk = profileData?.ink_count ?? 0;
-    setUserInkCount(currentInk);
+    const currentCredits = (profileData?.game_credits ?? 0) + (profileData?.bonus_credits ?? 0);
+    setUserCredits(currentCredits);
 
-    if (currentInk >= 5) {
+    if (currentCredits >= 5) {
       toast({
         title: "Yeterli Hakkın Var",
         description: "Zaten 5 veya daha fazla oyun hakkın var.",
@@ -897,11 +898,30 @@ const GamePage = ({
       return;
     }
 
-    const success = await showRewardedAd();
+    // Custom reward: +1 game_credits
+    const customReward = async () => {
+      const { data: freshProfile } = await supabase.from("profiles").select("game_credits").eq("id", user.id).single();
+      const currentGameCredits = freshProfile?.game_credits ?? 0;
+      const newGameCredits = Math.min(currentGameCredits + 1, 5);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ game_credits: newGameCredits, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("[Ad Reward] Kredi verme hatası:", error);
+      } else {
+        console.log("[Ad Reward] ✅ +1 kredi verildi, yeni:", newGameCredits);
+        toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı kazandınız!" });
+        window.dispatchEvent(new CustomEvent('refreshProfile'));
+      }
+    };
+
+    const success = await showRewardedAd(customReward);
     if (success) {
       setAdWatched(true);
-      // Hak sayısını güncelle
-      setUserInkCount((prev) => (prev ?? 0) + 1);
+      setUserCredits((prev) => prev + 1);
     }
   };
 
@@ -7186,7 +7206,7 @@ const GamePage = ({
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
                   {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
-                  {!adWatched && user && userInkCount < 5 && (
+                  {!adWatched && user && userCredits < 5 && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
@@ -7202,7 +7222,7 @@ const GamePage = ({
                         <>
                           <span className="text-lg">🎬</span>
                           <span>Reklam İzle → +1 Hak Kazan</span>
-                          <span className="text-xs opacity-70 ml-1">({userInkCount}/5)</span>
+                          <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
                         </>
                       )}
                     </button>
@@ -7259,8 +7279,30 @@ const GamePage = ({
                   </Button>
                 </div>
               ) : (
-                // Normal mod butonları
+                // Normal mod butonları (vs-computer)
                 <>
+                  {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
+                  {!adWatched && user && userCredits < 5 && (
+                    <button
+                      onClick={handleWatchAd}
+                      disabled={isAdLoading}
+                      className="w-full flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm transition-all border border-amber-500/40 bg-gradient-to-r from-amber-900/50 to-yellow-900/50 hover:from-amber-800/60 hover:to-yellow-800/60 text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(245,158,11,0.2)]"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      {isAdLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-amber-300/30 border-t-amber-300 rounded-full animate-spin" />
+                          <span>Reklam Yükleniyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">🎬</span>
+                          <span>Reklam İzle → +1 Hak Kazan</span>
+                          <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                   <Button
                     disabled={!buttonsEnabled}
                     onClick={async () => {

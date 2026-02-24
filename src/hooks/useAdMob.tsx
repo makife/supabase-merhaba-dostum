@@ -180,8 +180,8 @@ export const useAdMob = () => {
     }
   }, [user, toast]);
 
-  // Show rewarded ad
-  const showRewardedAd = useCallback(async (): Promise<boolean> => {
+  // Show rewarded ad - optional custom reward callback
+  const showRewardedAd = useCallback(async (customReward?: () => Promise<void>): Promise<boolean> => {
     if (!isNativePlatform) {
       toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
       return false;
@@ -249,11 +249,15 @@ export const useAdMob = () => {
             RewardAdPluginEvents.Rewarded,
             async (reward: any) => {
               console.log("[AdMob] 🎉 User earned reward:", reward);
-              await giveReward();
-              toast({ 
-                title: "Tebrikler! 🎉", 
-                description: "+1 Mürekkep kazandınız!" 
-              });
+              if (customReward) {
+                await customReward();
+              } else {
+                await giveReward();
+                toast({ 
+                  title: "Tebrikler! 🎉", 
+                  description: "+1 Mürekkep kazandınız!" 
+                });
+              }
             }
           );
           listeners.push(rewardedListener);
