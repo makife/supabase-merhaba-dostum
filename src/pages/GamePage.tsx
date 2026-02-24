@@ -855,7 +855,7 @@ const GamePage = ({
   const attemptedAutoCompleteRef = useRef(false);
 
   useEffect(() => {
-    if ((gameEnded || showResults) && user?.id) {
+    if (gameEnded && user?.id) {
       supabase
         .from("profiles")
         .select("ink_count")
@@ -866,7 +866,7 @@ const GamePage = ({
           setUserInkCount(data?.ink_count ?? 0);
         });
     }
-  }, [gameEnded, showResults, user?.id]);
+  }, [gameEnded, user?.id]);
 
   const handleWatchAd = async () => {
     if (!user?.id) return;
@@ -7186,7 +7186,7 @@ const GamePage = ({
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
                   {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
-                  {!adWatched && user && userInkCount !== null && userInkCount < 5 && (
+                  {!adWatched && user && userInkCount < 5 && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
