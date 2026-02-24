@@ -350,10 +350,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
               if (existing.some((r) => r.id === newReaction.id)) return prev;
               // Optimistic temp tepkiyi kaldır, gerçek veriyle değiştir
               const withoutTemp = existing.filter(
-                (r) => !(r.id.startsWith("temp-") && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji)
+                (r) =>
+                  !(r.id.startsWith("temp-") && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji),
               );
               // Tekrar duplicate kontrolü
-              if (withoutTemp.some((r) => r.id === newReaction.id)) return { ...prev, [newReaction.message_id]: withoutTemp };
+              if (withoutTemp.some((r) => r.id === newReaction.id))
+                return { ...prev, [newReaction.message_id]: withoutTemp };
               return {
                 ...prev,
                 [newReaction.message_id]: [...withoutTemp, newReaction],
@@ -684,9 +686,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     const previousReactions = messageReactions[messageId] || [];
     setMessageReactions((prev) => ({
       ...prev,
-      [messageId]: (prev[messageId] || []).filter(
-        (r) => !(r.user_id === user.id && r.emoji === emoji)
-      ),
+      [messageId]: (prev[messageId] || []).filter((r) => !(r.user_id === user.id && r.emoji === emoji)),
     }));
 
     try {
@@ -1311,25 +1311,38 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   // Delete Confirm Dialog
   const deleteDialog = (
     <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-      <AlertDialogContent className="max-w-sm rounded-2xl border-destructive/20 bg-background/95 backdrop-blur-md shadow-2xl">
+      <AlertDialogContent
+        className="max-w-sm rounded-2xl 
+      bg-[#0f172a] border-[#1e293b] 
+      shadow-2xl backdrop-blur-md"
+      >
         <AlertDialogHeader className="items-center text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-            <Trash2 className="h-6 w-6 text-destructive" />
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
+            <Trash2 className="h-6 w-6 text-red-400" />
           </div>
-          <AlertDialogTitle className="text-lg font-bold">Mesajı Sil</AlertDialogTitle>
-          <AlertDialogDescription className="text-sm text-muted-foreground">
-            Bu mesajı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+
+          <AlertDialogTitle className="text-lg font-bold text-white">Mesajı Sil</AlertDialogTitle>
+
+          <AlertDialogDescription className="text-sm text-slate-300">
+            Bu mesajı silmek istediğinize emin misiniz?
           </AlertDialogDescription>
         </AlertDialogHeader>
+
         <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
           <AlertDialogCancel
-            className="flex-1 rounded-xl border-muted-foreground/20 mt-0"
+            className="flex-1 rounded-xl 
+            bg-slate-800 text-slate-200 
+            border border-slate-700 
+            hover:bg-slate-700 mt-0"
             onClick={() => setDeletingMessageId(null)}
           >
             Vazgeç
           </AlertDialogCancel>
+
           <AlertDialogAction
-            className="flex-1 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="flex-1 rounded-xl 
+            bg-red-600 text-white 
+            hover:bg-red-500"
             onClick={confirmDeleteMessage}
           >
             Evet, Sil
@@ -1354,7 +1367,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     />
   );
 
-  if (!isOpen) return <>{reportDialog}{deleteDialog}</>;
+  if (!isOpen)
+    return (
+      <>
+        {reportDialog}
+        {deleteDialog}
+      </>
+    );
 
   // If it's full page mode, don't wrap in modal
   if (isFullPage) {
