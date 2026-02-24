@@ -87,14 +87,14 @@ export const useFriendOnlineToast = () => {
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "user_settings",
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           notifyEnabledRef.current =
-            (payload.new as any).friend_online_notify ?? false;
+            (payload.new as any)?.friend_online_notify ?? false;
         }
       )
       .subscribe();

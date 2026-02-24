@@ -48,8 +48,15 @@ const FriendsPage = () => {
     try {
       const { error } = await supabase
         .from("user_settings")
-        .update({ friend_online_notify: checked })
-        .eq("user_id", user.id);
+        .upsert(
+          {
+            user_id: user.id,
+            friend_online_notify: checked,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" },
+        );
+
       if (error) throw error;
       setFriendOnlineNotify(checked);
       toast(checked ? "Arkadaş online bildirimleri açıldı 🔔" : "Arkadaş online bildirimleri kapatıldı");
