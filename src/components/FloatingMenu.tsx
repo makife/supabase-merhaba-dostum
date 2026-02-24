@@ -265,7 +265,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item, index) => (
           <div key={item.route} className={itemAnim()} style={staggerStyle(index + 1)}>
-            <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
+            <div onClick={() => handleMenuClick(item.route)} className={`${rowBase} ${item.bgColor}`}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
               <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
               <div className="relative flex-shrink-0">
