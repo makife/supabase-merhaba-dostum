@@ -519,21 +519,21 @@ const LeaderboardPage = () => {
               <TabsList className="grid w-full grid-cols-3 bg-[#16213e]/60 border border-white/10 rounded-xl p-1 h-auto">
                 <TabsTrigger
                   value="all-time"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-slate-400 transition-all"
                 >
                   <Trophy className="w-3 h-3 mr-1.5" />
                   Genel
                 </TabsTrigger>
                 <TabsTrigger
                   value="weekly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-slate-400 transition-all"
                 >
                   <Calendar className="w-3 h-3 mr-1.5" />
                   Haftalık
                 </TabsTrigger>
                 <TabsTrigger
                   value="monthly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-rose-500 data-[state=active]:to-pink-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
                 >
                   <CalendarRange className="w-3 h-3 mr-1.5" />
                   Aylık
