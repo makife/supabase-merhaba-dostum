@@ -283,7 +283,6 @@ const TournamentBracketPage = () => {
   // Check and advance round
   const checkAndAdvance = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament || advancingRef.current) return;
-    if (currentTournament.creator_id !== user.id) return;
 
     const currentRound = currentTournament.current_round || 1;
     const { data: roundMatches } = await supabase
@@ -701,13 +700,16 @@ const TournamentBracketPage = () => {
              fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
               {(() => {
-                const isTournamentOver = currentTournament.status === "completed" || currentTournament.status === "cancelled";
-                const hasActiveMatch = !isTournamentOver && matches.some(
-                  (m) =>
-                    m.round === currentRound &&
-                    (m.player1_id === user?.id || m.player2_id === user?.id) &&
-                    (m.status === "pending" || m.status === "in_progress"),
-                );
+                const isTournamentOver =
+                  currentTournament.status === "completed" || currentTournament.status === "cancelled";
+                const hasActiveMatch =
+                  !isTournamentOver &&
+                  matches.some(
+                    (m) =>
+                      m.round === currentRound &&
+                      (m.player1_id === user?.id || m.player2_id === user?.id) &&
+                      (m.status === "pending" || m.status === "in_progress"),
+                  );
                 return (
                   <>
                     <div className="px-5 pt-6 pb-4 border-b border-white/5">
