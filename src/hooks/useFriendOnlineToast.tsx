@@ -130,17 +130,6 @@ export const useFriendOnlineToast = () => {
             toast(`🟢 ${friendName} şu an çevrimiçi! 👋`, {
               duration: 4000,
             });
-
-            // Push bildirimi (uygulama kapalıysa gider, skipIfOnline=true ile çift bildirim olmaz)
-            supabase.functions.invoke("send-push-notification", {
-              body: {
-                receiverId: user.id, // bildirimi ALAN: sen
-                title: "🟢 Arkadaşın Online",
-                body: `${friendName} çevrimiçi oldu`,
-                data: { type: "friend_online", userId: newRecord.user_id },
-                skipIfOnline: true, // sen açıksan push gitmesin (toast yeterli)
-              },
-            });
           }
           // Her durumda son state'i güncelle
           onlineStateRef.current.set(newRecord.user_id, isNowOnline);
