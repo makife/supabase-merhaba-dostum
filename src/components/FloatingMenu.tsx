@@ -157,11 +157,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "bg-[rgba(255,255,255,0.10)] " +
-    "ring-1 ring-white/20 " +
-    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/30 " +
-    // transition-all → transition-colors: sadece renk geçişi izleniyor
-    // layout / transform hesabı yok = kasma azalır
+    "bg-slate-900/70 " +
+    "ring-1 ring-white/10 " +
+    "hover:bg-slate-800/80 hover:ring-white/20 " +
     "active:scale-95 transition-colors duration-150 " +
     "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
 
