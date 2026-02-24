@@ -878,13 +878,7 @@ const GamePage = ({
     const currentCredits = (profileData?.game_credits ?? 0) + (profileData?.bonus_credits ?? 0);
     setUserCredits(currentCredits);
 
-    if (currentCredits >= 5) {
-      toast({
-        title: "Yeterli Hakkın Var",
-        description: "Zaten 5 veya daha fazla oyun hakkın var.",
-      });
-      return;
-    }
+    // Kredi kısıtlaması yok - her zaman reklam izlenebilir
 
     await initializeAdMob();
 
@@ -902,7 +896,7 @@ const GamePage = ({
     const customReward = async () => {
       const { data: freshProfile } = await supabase.from("profiles").select("game_credits").eq("id", user.id).single();
       const currentGameCredits = freshProfile?.game_credits ?? 0;
-      const newGameCredits = Math.min(currentGameCredits + 1, 5);
+      const newGameCredits = currentGameCredits + 1;
 
       const { error } = await supabase
         .from("profiles")
@@ -7205,8 +7199,8 @@ const GamePage = ({
               ) : gameMode === "private-room" || gameMode === "random-match" ? (
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
-                  {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
-                  {!adWatched && user && userCredits < 5 && (
+                  {/* Ödüllü Reklam Butonu - her zaman göster */}
+                  {!adWatched && user && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
@@ -7281,8 +7275,8 @@ const GamePage = ({
               ) : (
                 // Normal mod butonları (vs-computer)
                 <>
-                  {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
-                  {!adWatched && user && userCredits < 5 && (
+                  {/* Ödüllü Reklam Butonu - her zaman göster */}
+                  {!adWatched && user && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
