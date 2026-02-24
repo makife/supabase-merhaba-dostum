@@ -17,6 +17,7 @@ import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
+import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 
 import { Bot, Users, Trophy, Clock, Target, Crown, Zap, Gift, Star, Flame, Gamepad2, Sparkles } from "lucide-react";
 
@@ -444,6 +445,8 @@ const HomePage = () => {
   const levelBgColors = getLevelBackgroundColor();
 
   return (
+    <>
+    <LeaderboardPrizeDialog />
     <div
       className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
       style={{ background: levelBgColors.bg || "#1a1a2e" }}
@@ -863,6 +866,7 @@ const HomePage = () => {
         username={profile?.username || "Oyuncu"}
       />
     </div>
+    </>
   );
 };
 
