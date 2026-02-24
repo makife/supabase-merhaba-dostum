@@ -247,6 +247,10 @@ const GamePage = ({
   // Ref'leri güncel tut
   useEffect(() => {
     currentRoomRef.current = currentRoom;
+    // 🆕 Room ID'yi de kalıcı ref'e kaydet (disconnect handler için)
+    if (currentRoom?.id) {
+      savedRoomIdRef.current = currentRoom.id;
+    }
   }, [currentRoom]);
 
   // 💓 HEARTBEAT (NABIZ) KONTROLÜ
@@ -1127,7 +1131,7 @@ const GamePage = ({
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
-
+  const savedRoomIdRef = useRef<string | null>(null);
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
     // Önce participants'tan bul
