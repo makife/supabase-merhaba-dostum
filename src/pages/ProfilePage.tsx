@@ -1200,7 +1200,7 @@ const ProfilePage = () => {
             {profileData.tournamentsPlayed > 0 && (
               <>
                 <div className="border-t border-white/10 pt-4 mt-4">
-                  <p className="text-sm font-bold text-white/70 mb-3">Turnuva Performansı</p>
+                  <p className="text-sm font-bold text-white/70 mb-3 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-amber-400" /> Turnuva Performansı</p>
                 </div>
                 <DetailRow label="Kazanılan Turnuva" value={profileData.tournamentsWon.toString()} highlight="green" />
                 <DetailRow label="Kaybedilen Turnuva" value={profileData.tournamentsLost.toString()} highlight="red" />
