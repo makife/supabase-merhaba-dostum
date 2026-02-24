@@ -364,6 +364,19 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       const currentRound = tournament.current_round || 1;
       const nextRound = currentRound + 1;
 
+      // ✅ Idempotent guard — duplicate maç oluşmasın
+      const { data: existingNextRound } = await supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("tournament_id", tournamentId)
+        .eq("round", nextRound)
+        .limit(1);
+
+      if (existingNextRound && existingNextRound.length > 0) {
+        console.log(`⚠️ Tur ${nextRound} zaten mevcut, atlanıyor`);
+        return false;
+      }
+
       const { data: completedMatches } = await supabase
         .from("tournament_matches")
         .select("*")
@@ -385,13 +398,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           .from("tournaments")
           .update({ status: "completed", finished_at: new Date().toISOString() })
           .eq("id", tournamentId);
-
         console.log("🏆 Turnuva tamamlandı!");
         return true;
       }
 
       const winners = completedMatches.map((m) => m.winner_id);
-
       const nextRoundMatches = [];
       for (let i = 0; i < winners.length; i += 2) {
         nextRoundMatches.push({
