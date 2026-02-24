@@ -854,6 +854,56 @@ const GamePage = ({
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
 
+  useEffect(() => {
+    if (gameEnded && user?.id) {
+      supabase
+        .from("profiles")
+        .select("ink_count")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          setUserInkCount(data?.ink_count ?? 0);
+        });
+    }
+  }, [gameEnded, user?.id]);
+
+  const handleWatchAd = async () => {
+    if (!user?.id) return;
+
+    // Güncel hak sayısını kontrol et
+    const { data: profileData } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
+
+    const currentInk = profileData?.ink_count ?? 0;
+    setUserInkCount(currentInk);
+
+    if (currentInk >= 5) {
+      toast({
+        title: "Yeterli Hakkın Var",
+        description: "Zaten 5 veya daha fazla oyun hakkın var.",
+      });
+      return;
+    }
+
+    await initializeAdMob();
+
+    const loaded = await loadRewardedAd();
+    if (!loaded) {
+      toast({
+        title: "Reklam Yüklenemedi",
+        description: "Lütfen biraz bekleyip tekrar deneyin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const success = await showRewardedAd();
+    if (success) {
+      setAdWatched(true);
+      // Hak sayısını güncelle
+      setUserInkCount((prev) => (prev ?? 0) + 1);
+    }
+  };
+
   // 🎵 Oyun bitince müziği geri başlat
   useEffect(() => {
     if (gameEnded) {
