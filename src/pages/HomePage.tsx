@@ -77,6 +77,16 @@ const isUnlimitedLivesActive = (profile: any) => {
   return expiry > new Date();
 };
 
+// 2 saatten fazla kaldıysa "maraton" (24h), değilse "kısa" (1h)
+const getUnlimitedType = (profile: any): "maraton" | "short" | null => {
+  if (!profile?.unlimited_lives_until) return null;
+  const expiry = new Date(profile.unlimited_lives_until);
+  const now = new Date();
+  if (expiry <= now) return null;
+  const hoursLeft = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60);
+  return hoursLeft > 2 ? "maraton" : "short";
+};
+
 const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   if (!profile?.premium_until) return null;
   const now = new Date();
@@ -649,24 +659,52 @@ const HomePage = () => {
           )}
 
           {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className="flex items-center justify-between bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-xl p-2 px-3 shadow-xl">
-              <span className="text-xs text-slate-500 font-medium">
-                {isUnlimitedLivesActive(profile) ? "Sınırsız Akış" : "Kalan Sayfalarım"}
+            <div className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 shadow-xl ${
+              isUnlimitedLivesActive(profile)
+                ? getUnlimitedType(profile) === "maraton"
+                  ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
+                  : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
+                : "bg-[#16213e]/80 border-white/10"
+            }`}>
+              <span className={`text-xs font-medium ${
+                isUnlimitedLivesActive(profile)
+                  ? getUnlimitedType(profile) === "maraton"
+                    ? "text-amber-400"
+                    : "text-blue-400"
+                  : "text-slate-500"
+              }`}>
+                {isUnlimitedLivesActive(profile)
+                  ? getUnlimitedType(profile) === "maraton"
+                    ? "🔥 Maraton Modu"
+                    : "⚡ Sınırsız Akış"
+                  : "Kalan Sayfalarım"}
               </span>
 
               {isUnlimitedLivesActive(profile) ? (
                 <div className="flex items-center gap-2">
                   {unlimitedTimeLeft ? (
-                    <div className="flex items-center gap-1.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                      <Clock className="w-3 h-3 text-indigo-500 animate-pulse" />
-                      <span className="text-xs font-mono font-bold text-indigo-600 tabular-nums">
+                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
+                      getUnlimitedType(profile) === "maraton"
+                        ? "bg-amber-500/20 border-amber-500/30"
+                        : "bg-blue-500/20 border-blue-500/30"
+                    }`}>
+                      <Clock className={`w-3 h-3 animate-pulse ${
+                        getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
+                      }`} />
+                      <span className={`text-xs font-mono font-bold tabular-nums ${
+                        getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
+                      }`}>
                         {unlimitedTimeLeft}
                       </span>
                     </div>
                   ) : (
-                    <div className="w-16 h-5 bg-slate-100 rounded animate-pulse" />
+                    <div className="w-16 h-5 bg-slate-700 rounded animate-pulse" />
                   )}
-                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-2 py-0.5">
+                  <Badge className={`text-[10px] px-2 py-0.5 border ${
+                    getUnlimitedType(profile) === "maraton"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                  }`}>
                     Sınırsız
                   </Badge>
                 </div>
