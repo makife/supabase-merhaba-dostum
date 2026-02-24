@@ -7184,6 +7184,29 @@ const GamePage = ({
               ) : gameMode === "private-room" || gameMode === "random-match" ? (
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
+                  {/* Ödüllü Reklam Butonu - hak 5'ten azsa göster */}
+                  {!adWatched && user && userInkCount !== null && userInkCount < 5 && (
+                    <button
+                      onClick={handleWatchAd}
+                      disabled={isAdLoading}
+                      className="w-full flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm transition-all border border-amber-500/40 bg-gradient-to-r from-amber-900/50 to-yellow-900/50 hover:from-amber-800/60 hover:to-yellow-800/60 text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(245,158,11,0.2)]"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      {isAdLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-amber-300/30 border-t-amber-300 rounded-full animate-spin" />
+                          <span>Reklam Yükleniyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">🎬</span>
+                          <span>Reklam İzle → +1 Hak Kazan</span>
+                          <span className="text-xs opacity-70 ml-1">({userInkCount}/5)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {/* Disconnect durumunda (rakip ayrıldı VEYA biz arka plandan disconnect olduk) rematch butonu gösterme */}
                   {!disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && (
                     <Button
@@ -7214,21 +7237,17 @@ const GamePage = ({
                     disabled={!buttonsEnabled}
                     onClick={async () => {
                       playSound("buttonClick");
-                      // Oyun bitiminde matchmaking state'ini temizle ve odayı banla
                       if (currentRoom?.id) {
                         matchBanlist.add(currentRoom.id);
                         console.log("🚫 Oda banlist'e eklendi:", shortId(currentRoom?.id));
                       }
-
-                      // Kullanıcının rematch opt-out kaydını oluştur/güncelle (5 dakika geçerli)
                       if (user?.id) {
                         await supabase.from("rematch_opt_outs").upsert({
                           user_id: user.id,
-                          opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 dakika sonrası
+                          opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
                           updated_at: new Date().toISOString(),
                         });
                       }
-
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                       navigate("/");
                     }}
