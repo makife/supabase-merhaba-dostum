@@ -1394,12 +1394,18 @@ const GamePage = ({
 
       // 🎯 REMATCH FIX: Rakibe disconnect cezası uygula
       const disconnectedOpponentId = savedOpponentIdRef.current;
-      if (disconnectedOpponentId && currentRoom?.id) {
-        console.log("⚖️ Disconnect penalty uygulanıyor (GamePage handler):", disconnectedOpponentId.slice(-8));
+      const roomIdForPenalty = currentRoom?.id || savedRoomIdRef.current; // ← FIX
+      if (disconnectedOpponentId && roomIdForPenalty) {
+        console.log(
+          "⚖️ Disconnect penalty uygulanıyor (GamePage handler):",
+          disconnectedOpponentId.slice(-8),
+          "room:",
+          roomIdForPenalty.slice(-8),
+        );
         try {
           const { data: penaltyResult, error: penaltyError } = await supabase.rpc("apply_disconnect_penalty", {
             p_offender_id: disconnectedOpponentId,
-            p_room_id: currentRoom.id,
+            p_room_id: roomIdForPenalty, // ← FIX
           });
 
           if (penaltyError) {
