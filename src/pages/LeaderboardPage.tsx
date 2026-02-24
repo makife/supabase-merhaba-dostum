@@ -508,8 +508,13 @@ const LeaderboardPage = () => {
             </div>
           )}
 
+          {/* Prize Banner */}
+          <div className="mt-3">
+            <LeaderboardPrizeBanner tab={activeTab as "all-time" | "weekly" | "monthly"} />
+          </div>
+
           {/* Tabs */}
-          <div className="mt-4">
+          <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-[#16213e]/60 border border-white/10 rounded-xl p-1 h-auto">
                 <TabsTrigger
@@ -541,7 +546,6 @@ const LeaderboardPage = () => {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 relative z-10">
-        <LeaderboardPrizeBanner tab={activeTab as "all-time" | "weekly" | "monthly"} />
         {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
         {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
         {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
