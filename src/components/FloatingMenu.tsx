@@ -157,9 +157,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "bg-[rgba(255,255,255,0.10)] " + // 👈 ANA SAYDAMLIK BURADA
-    "ring-1 ring-white/20 " +
-    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/30 " +
+    "bg-[rgba(255,255,255,0.10)] " +
+    "ring-2 ring-white/40 " + // 👈 2px ve daha belirgin
+    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/60 " +
     "active:scale-95 transition-colors duration-150 " +
     "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
 
