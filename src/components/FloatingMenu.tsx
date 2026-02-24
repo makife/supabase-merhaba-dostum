@@ -161,7 +161,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "border-2 border-white/40 " + // 👈 2px ve daha belirgin
     "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/60 " +
     "active:scale-95 transition-colors duration-150 " +
-    "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
+    "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
   // DEĞİŞTİRİLENLER:
