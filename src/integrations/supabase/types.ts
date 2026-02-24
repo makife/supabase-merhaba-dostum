@@ -953,10 +953,12 @@ export type Database = {
           longest_word: string | null
           longest_word_length: number | null
           losses: number | null
+          monthly_first_count: number
           premium_until: string | null
           private_room_games: number | null
           push_token: string | null
           random_match_games: number | null
+          season_first_count: number
           senyaz_joker_used: number | null
           total_games: number | null
           total_play_time: number | null
@@ -968,6 +970,7 @@ export type Database = {
           updated_at: string | null
           username: string | null
           vs_bot_games: number | null
+          weekly_first_count: number
           win_count: number | null
           win_streak: number | null
           wins: number | null
@@ -1003,10 +1006,12 @@ export type Database = {
           longest_word?: string | null
           longest_word_length?: number | null
           losses?: number | null
+          monthly_first_count?: number
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null
           random_match_games?: number | null
+          season_first_count?: number
           senyaz_joker_used?: number | null
           total_games?: number | null
           total_play_time?: number | null
@@ -1018,6 +1023,7 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           vs_bot_games?: number | null
+          weekly_first_count?: number
           win_count?: number | null
           win_streak?: number | null
           wins?: number | null
@@ -1053,10 +1059,12 @@ export type Database = {
           longest_word?: string | null
           longest_word_length?: number | null
           losses?: number | null
+          monthly_first_count?: number
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null
           random_match_games?: number | null
+          season_first_count?: number
           senyaz_joker_used?: number | null
           total_games?: number | null
           total_play_time?: number | null
@@ -1068,6 +1076,7 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           vs_bot_games?: number | null
+          weekly_first_count?: number
           win_count?: number | null
           win_streak?: number | null
           wins?: number | null

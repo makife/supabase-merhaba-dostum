@@ -76,6 +76,9 @@ const ProfilePage = () => {
     tournamentsLost: 0,
     tournamentsPlayed: 0,
     tournamentWinRate: 0,
+    weeklyFirstCount: 0,
+    monthlyFirstCount: 0,
+    seasonFirstCount: 0,
   });
 
   const [badges, setBadges] = useState<
@@ -338,6 +341,9 @@ const ProfilePage = () => {
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
+          weeklyFirstCount: data.weekly_first_count || 0,
+          monthlyFirstCount: data.monthly_first_count || 0,
+          seasonFirstCount: data.season_first_count || 0,
         }));
 
         setUserStats({
@@ -1204,6 +1210,23 @@ const ProfilePage = () => {
                   value={`${profileData.tournamentWinRate}%`}
                   highlight="yellow"
                 />
+              </>
+            )}
+
+            {(profileData.weeklyFirstCount > 0 || profileData.monthlyFirstCount > 0 || profileData.seasonFirstCount > 0) && (
+              <>
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <p className="text-sm font-bold text-white/70 mb-3">🏆 Liderlik Şampiyonlukları</p>
+                </div>
+                {profileData.seasonFirstCount > 0 && (
+                  <DetailRow label="Sezon Şampiyonluğu" value={profileData.seasonFirstCount.toString()} highlight="yellow" />
+                )}
+                {profileData.weeklyFirstCount > 0 && (
+                  <DetailRow label="Haftalık 1.'lik" value={profileData.weeklyFirstCount.toString()} highlight="green" />
+                )}
+                {profileData.monthlyFirstCount > 0 && (
+                  <DetailRow label="Aylık 1.'lik" value={profileData.monthlyFirstCount.toString()} highlight="green" />
+                )}
               </>
             )}
           </div>

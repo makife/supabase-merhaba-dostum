@@ -11,12 +11,14 @@ interface PrizeConfig {
   senyaz: number;
   oyunHakki?: number;
   label: string;
+  badgeId: string;
+  countColumn: string;
 }
 
 const PRIZES: Record<string, PrizeConfig> = {
-  weekly: { degistir: 3, fisilida: 3, senyaz: 3, label: "Haftalık" },
-  monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, label: "Aylık" },
-  season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, label: "Sezon" },
+  weekly: { degistir: 3, fisilida: 3, senyaz: 3, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
+  monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, label: "Aylık", badgeId: "b1000001-0000-0000-0000-000000000003", countColumn: "monthly_first_count" },
+  season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, label: "Sezon", badgeId: "b1000001-0000-0000-0000-000000000001", countColumn: "season_first_count" },
 };
 
 Deno.serve(async (req) => {
@@ -34,15 +36,13 @@ Deno.serve(async (req) => {
     const results: string[] = [];
 
     // --- Check Weekly (runs every Monday at 00:00) ---
-    const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon
+    const dayOfWeek = now.getUTCDay();
     const hour = now.getUTCHours();
     
     if (dayOfWeek === 1 && hour < 1) {
-      // Last week's start: previous Monday
       const lastWeekStart = new Date(now);
       lastWeekStart.setUTCDate(now.getUTCDate() - 7);
       lastWeekStart.setUTCHours(0, 0, 0, 0);
-      // Find day to Monday
       const daysSinceMonday = (lastWeekStart.getUTCDay() + 6) % 7;
       lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - daysSinceMonday);
 
@@ -66,9 +66,8 @@ Deno.serve(async (req) => {
     }
 
     // --- Check Season (runs on May 1, Sep 1, Jan 1) ---
-    const seasonResetMonths = [0, 4, 8]; // Jan, May, Sep
+    const seasonResetMonths = [0, 4, 8];
     if (seasonResetMonths.includes(now.getUTCMonth()) && now.getUTCDate() === 1 && hour < 1) {
-      // Previous season: 4 months back
       const prevSeasonStart = new Date(now);
       prevSeasonStart.setUTCMonth(now.getUTCMonth() - 4);
       prevSeasonStart.setUTCDate(1);
@@ -107,7 +106,6 @@ async function findMonthlyWinner(supabase: any, monthStart: string, monthEnd: st
 }
 
 async function findSeasonWinner(supabase: any, seasonStart: string, seasonEnd: string): Promise<string | null> {
-  // Aggregate game_sessions for the season period
   const { data, error } = await supabase
     .from("game_sessions")
     .select("user_id, score")
@@ -142,7 +140,6 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
   ];
 
   for (const joker of jokerTypes) {
-    // Get current quantity
     const { data: existing } = await supabase
       .from("user_inventory")
       .select("id, quantity")
@@ -179,6 +176,40 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
         })
         .eq("id", userId);
     }
+  }
+
+  // Increment championship count
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select(prize.countColumn)
+    .eq("id", userId)
+    .single();
+
+  if (currentProfile) {
+    const currentCount = currentProfile[prize.countColumn] || 0;
+    await supabase
+      .from("profiles")
+      .update({
+        [prize.countColumn]: currentCount + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+  }
+
+  // Award badge (only first time - check if already has it)
+  const { data: existingBadge } = await supabase
+    .from("user_badges")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("badge_id", prize.badgeId)
+    .maybeSingle();
+
+  if (!existingBadge) {
+    await supabase.from("user_badges").insert({
+      user_id: userId,
+      badge_id: prize.badgeId,
+    });
+    console.log(`Badge ${prize.badgeId} awarded to ${userId}`);
   }
 
   // Send notification
