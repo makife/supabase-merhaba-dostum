@@ -5,7 +5,7 @@ import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-rea
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
 
 const GRID_SIZE = 9;
-const INITIAL_TIME = 2500;
+const INITIAL_TIME = 2500; // ms
 const POINTS_PER_LETTER = 5;
 const WORD_BONUS = 20;
 
@@ -27,13 +27,14 @@ const NeonBlitz: React.FC = () => {
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [activeTile, setActiveTile] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState(100);
+  const [timeLeft, setTimeLeft] = useState(100); // 0-100 yüzde
   const [themeColor, setThemeColor] = useState("hsl(180, 100%, 60%)");
   const [currentWord, setCurrentWord] = useState("");
   const [letterIndex, setLetterIndex] = useState(0);
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   const [bonusVisible, setBonusVisible] = useState(false);
 
+  // Oyun state'i ref'lerde — stale closure'dan kaçınmak için
   const wordListRef = useRef<string[]>(SAFE_FALLBACK);
   const usedWordsRef = useRef<Set<string>>(new Set());
   const scoreRef = useRef(0);
@@ -43,9 +44,11 @@ const NeonBlitz: React.FC = () => {
   const activeTileRef = useRef<number | null>(null);
   const completedWordsRef = useRef<string[]>([]);
   const maxTimeRef = useRef(INITIAL_TIME);
-  const startTimeRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
+
+  // Timer için ayrı ref'ler
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const turnStartRef = useRef<number>(0);
 
   useEffect(() => {
     fetch("/wordlist.txt")
@@ -57,8 +60,11 @@ const NeonBlitz: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const stopRAF = () => {
-    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+  const clearTimer = () => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   };
 
   const pickWord = () => {
@@ -75,30 +81,36 @@ const NeonBlitz: React.FC = () => {
     return t;
   };
 
-  const startTick = useCallback((fromTile: number | null) => {
-    stopRAF();
-    const tile = pickTile(fromTile);
+  // Yeni tur başlat: yeni karo seç + timer'ı sıfırla
+  const beginTurn = useCallback(() => {
+    clearTimer();
+
+    const tile = pickTile(activeTileRef.current);
     activeTileRef.current = tile;
     setActiveTile(tile);
-    startTimeRef.current = Date.now();
 
-    const tick = () => {
-      if (!isPlayingRef.current) return;
-      const elapsed = Date.now() - startTimeRef.current;
-      const remaining = Math.max(0, maxTimeRef.current - elapsed);
-      setTimeLeft((remaining / maxTimeRef.current) * 100);
-      if (remaining > 0) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
+    // Bar'ı %100'den başlat
+    setTimeLeft(100);
+    turnStartRef.current = Date.now();
+
+    // Her 30ms'de bir bar'ı güncelle
+    intervalRef.current = setInterval(() => {
+      if (!isPlayingRef.current) { clearTimer(); return; }
+      const elapsed = Date.now() - turnStartRef.current;
+      const remaining = maxTimeRef.current - elapsed;
+      if (remaining <= 0) {
+        clearTimer();
+        setTimeLeft(0);
         isPlayingRef.current = false;
         setGameState("GAMEOVER");
+      } else {
+        setTimeLeft((remaining / maxTimeRef.current) * 100);
       }
-    };
-    rafRef.current = requestAnimationFrame(tick);
+    }, 30);
   }, []);
 
   const startGame = useCallback(() => {
-    stopRAF();
+    clearTimer();
     isPlayingRef.current = false;
 
     usedWordsRef.current.clear();
@@ -125,20 +137,26 @@ const NeonBlitz: React.FC = () => {
     setThemeColor(color);
     setGameState("PLAYING");
 
-    isPlayingRef.current = true;
-
-    setTimeout(() => startTick(null), 80);
-  }, [startTick]);
+    // gameState "PLAYING" olduktan sonra turn'ü başlat
+    setTimeout(() => {
+      isPlayingRef.current = true;
+      beginTurn();
+    }, 50);
+  }, [beginTurn]);
 
   const handleTileClick = useCallback((id: number) => {
     if (!isPlayingRef.current) return;
 
     if (id !== activeTileRef.current) {
+      // Yanlış karo
       isPlayingRef.current = false;
-      stopRAF();
+      clearTimer();
       setGameState("GAMEOVER");
       return;
     }
+
+    // Doğru karo
+    clearTimer(); // Önce mevcut timer'ı durdur
 
     const newScore = scoreRef.current + POINTS_PER_LETTER;
     scoreRef.current = newScore;
@@ -164,33 +182,33 @@ const NeonBlitz: React.FC = () => {
       setBonusVisible(true);
       setTimeout(() => setBonusVisible(false), 900);
 
+      // Yeni kelime
       const newWord = pickWord();
       usedWordsRef.current.add(newWord);
       currentWordRef.current = newWord;
       letterIndexRef.current = 0;
       setCurrentWord(newWord);
       setLetterIndex(0);
-
-      const color = generateColor();
-      setThemeColor(color);
-
-      startTick(activeTileRef.current);
+      setThemeColor(generateColor());
     } else {
+      // Sonraki harf
       letterIndexRef.current = nextIdx;
       setLetterIndex(nextIdx);
-      startTick(activeTileRef.current);
     }
-  }, [startTick]);
+
+    // Her durumda yeni tur başlat
+    beginTurn();
+  }, [beginTurn]);
 
   const returnToMenu = () => {
-    stopRAF();
+    clearTimer();
     isPlayingRef.current = false;
     setGameState("MENU");
   };
 
-  useEffect(() => () => { stopRAF(); isPlayingRef.current = false; }, []);
+  useEffect(() => () => { clearTimer(); isPlayingRef.current = false; }, []);
 
-  // ─── RENDER ─────────────────────────────────────────────
+  // ─── RENDER ─────────────────────────────────────────────────────
 
   const renderMenu = () => (
     <div style={s.center}>
@@ -209,6 +227,7 @@ const NeonBlitz: React.FC = () => {
     const activeLetter = currentWord[letterIndex] ?? "";
     return (
       <div style={s.gameWrap}>
+        {/* Header */}
         <div style={s.header}>
           <button onClick={returnToMenu} style={s.iconBtn}><ArrowLeft size={22} color="#fff" /></button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: "bold" }}>
@@ -217,10 +236,18 @@ const NeonBlitz: React.FC = () => {
           </div>
         </div>
 
+        {/* Progress bar — transition YOK, anlık güncelleniyor */}
         <div style={s.progWrap}>
-          <div style={{ ...s.progBar, width: `${timeLeft}%`, background: themeColor, boxShadow: `0 0 8px ${themeColor}` }} />
+          <div style={{
+            ...s.progBar,
+            width: `${timeLeft}%`,
+            background: themeColor,
+            boxShadow: `0 0 8px ${themeColor}`,
+            // Transition kasıtlı olarak yok — interval zaten çok sık güncelliyor
+          }} />
         </div>
 
+        {/* Kelime harfleri */}
         <div style={s.wordRow}>
           {currentWord.split("").map((ch, i) => (
             <div key={i} style={{
@@ -241,6 +268,7 @@ const NeonBlitz: React.FC = () => {
           Hedef: <span style={{ color: themeColor, fontWeight: "bold", fontSize: "1rem" }}>{activeLetter}</span>
         </div>
 
+        {/* Grid */}
         <div style={s.grid}>
           {Array.from({ length: GRID_SIZE }).map((_, i) => {
             const isActive = i === activeTile;
@@ -262,6 +290,7 @@ const NeonBlitz: React.FC = () => {
           })}
         </div>
 
+        {/* Bonus animasyonu */}
         {bonusVisible && (
           <div style={{
             position: "absolute", top: "38%", left: "50%", transform: "translateX(-50%)",
@@ -273,6 +302,7 @@ const NeonBlitz: React.FC = () => {
           </div>
         )}
 
+        {/* Tamamlanan kelimeler */}
         {completedWords.length > 0 && (
           <div style={s.wordListBox}>
             <div style={s.wordListTitle}><BookOpen size={12} style={{ marginRight: 5 }} />Tamamlananlar</div>
@@ -347,7 +377,7 @@ const s: { [k: string]: React.CSSProperties } = {
   outlineBtn: { padding: "11px 24px", fontSize: "0.9rem", fontWeight: "bold", backgroundColor: "transparent", border: "2px solid", borderRadius: 50, cursor: "pointer", display: "flex", alignItems: "center" },
   iconBtn: { background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.08)" },
   progWrap: { width: "100%", height: 10, backgroundColor: "#1e1e2e", border: "1px solid #2a2a3a", borderRadius: 10, marginBottom: 18, overflow: "hidden" },
-  progBar: { height: "100%", borderRadius: 10, transition: "width 0.08s linear" },
+  progBar: { height: "100%", borderRadius: 10 },
   wordRow: { display: "flex", gap: 7, marginBottom: 10 },
   letterBox: { width: 42, height: 46, borderRadius: 9, border: "2px solid", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", transition: "all 0.15s", fontFamily: "Georgia, serif" },
   grid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 11, width: "100%", maxWidth: 330, aspectRatio: "1/1", marginBottom: 14 },
