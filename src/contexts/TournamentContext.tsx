@@ -267,6 +267,27 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .select("id, user_id, is_bot")
         .eq("tournament_id", tournamentId);
 
+      // 🎮 Turnuva in_progress ise, ayrılan oyuncunun aktif maçını rakip lehine sonuçlandır
+      if (tournament.status === "in_progress") {
+        const { data: activeMatches } = await supabase
+          .from("tournament_matches")
+          .select("id, player1_id, player2_id, status")
+          .eq("tournament_id", tournamentId)
+          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+          .in("status", ["pending", "in_progress"]);
+
+        if (activeMatches && activeMatches.length > 0) {
+          for (const match of activeMatches) {
+            const winnerId = match.player1_id === user.id ? match.player2_id : match.player1_id;
+            await supabase
+              .from("tournament_matches")
+              .update({ status: "completed", winner_id: winnerId })
+              .eq("id", match.id);
+            console.log("✅ Maç otomatik sonuçlandırıldı, kazanan:", winnerId);
+          }
+        }
+      }
+
       const { error: deleteError } = await supabase
         .from("tournament_participants")
         .delete()
