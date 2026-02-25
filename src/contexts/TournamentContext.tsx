@@ -280,14 +280,14 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       }
       console.log("✅ Katılımcı kaydı silindi");
 
-      if (isCreator && tournament.status === "waiting") {
+      if (isCreator && (tournament.status === "waiting" || tournament.status === "in_progress")) {
         const otherPlayers = allParticipants?.filter((p) => p.user_id !== user.id && !p.is_bot);
 
         if (otherPlayers && otherPlayers.length > 0) {
           const newCreatorId = otherPlayers[0].user_id;
           await supabase.from("tournaments").update({ creator_id: newCreatorId }).eq("id", tournamentId);
           console.log("✅ Kuruculuk devredildi:", newCreatorId);
-        } else {
+        } else if (tournament.status === "waiting") {
           await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
           console.log("🚫 Turnuva iptal edildi");
         }
