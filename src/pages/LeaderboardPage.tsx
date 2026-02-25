@@ -479,18 +479,18 @@ const LeaderboardPage = () => {
                   Genel
                 </TabsTrigger>
                 <TabsTrigger
-                  value="weekly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-slate-400 transition-all"
-                >
-                  <Calendar className="w-3 h-3 mr-1.5" />
-                  Haftalık
-                </TabsTrigger>
-                <TabsTrigger
                   value="monthly"
                   className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
                 >
                   <CalendarRange className="w-3 h-3 mr-1.5" />
                   Aylık
+                </TabsTrigger>
+                <TabsTrigger
+                  value="weekly"
+                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-slate-400 transition-all"
+                >
+                  <Calendar className="w-3 h-3 mr-1.5" />
+                  Haftalık
                 </TabsTrigger>
               </TabsList>
             </Tabs>
