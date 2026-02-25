@@ -116,7 +116,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                       <div className="flex items-start gap-3">
                         <div className="text-4xl">{badge.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-foreground mb-1">{badge.name}</h4>
+                          <h4 className="font-bold text-white mb-1">{badge.name}</h4>
                           <p className="text-sm text-muted-foreground">{badge.description}</p>
                           {badge.earned_at && (
                             <Badge variant="secondary" className="mt-2 text-xs">
