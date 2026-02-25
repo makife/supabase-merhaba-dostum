@@ -743,20 +743,7 @@ const TournamentBracketPage = () => {
                               return;
                             }
 
-                            const myMatch = matches.find(
-                              (m) =>
-                                m.round === currentRound &&
-                                (m.player1_id === user.id || m.player2_id === user.id) &&
-                                (m.status === "pending" || m.status === "in_progress"),
-                            );
-                            if (myMatch) {
-                              const winnerId = myMatch.player1_id === user.id ? myMatch.player2_id : myMatch.player1_id;
-                              await supabase
-                                .from("tournament_matches")
-                                .update({ status: "completed", winner_id: winnerId })
-                                .eq("id", myMatch.id);
-                              toast.info("Maçı bıraktınız, rakibiniz kazandı");
-                            }
+                            // Maç sonuçlandırma artık leaveTournament içinde otomatik yapılıyor
                             await leaveTournament();
                             navigate("/tournament");
                           } catch (e) {
