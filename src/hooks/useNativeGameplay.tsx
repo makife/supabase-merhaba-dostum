@@ -25,31 +25,35 @@ export const useNativeGameplay = () => {
     }
   }, []);
 
-  // Prevent context menu and text selection globally
+  // Prevent context menu and text selection globally (but allow on inputs)
   useEffect(() => {
+    const isInputElement = (target: EventTarget | null): boolean => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || target.isContentEditable;
+    };
+
     const preventContextMenu = (e: Event) => {
+      if (isInputElement(e.target)) return; // Allow on inputs
       e.preventDefault();
       return false;
     };
 
     const preventTextSelection = (e: Event) => {
+      if (isInputElement(e.target)) return; // Allow on inputs
       e.preventDefault();
       return false;
     };
 
     const preventCopyPaste = (e: Event) => {
+      if (isInputElement(e.target)) return; // Allow on inputs
       e.preventDefault();
       return false;
     };
 
-    // Disable context menu on all platforms
     document.addEventListener('contextmenu', preventContextMenu);
-    
-    // Disable text selection on long press
     document.addEventListener('selectstart', preventTextSelection);
     document.addEventListener('dragstart', preventTextSelection);
-    
-    // Disable copy/paste menu
     document.addEventListener('copy', preventCopyPaste);
     document.addEventListener('cut', preventCopyPaste);
 

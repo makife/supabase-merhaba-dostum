@@ -467,6 +467,11 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             placeholder={isCoolingDown ? `${cooldownRemaining}s bekleyin...` : "Mesajınızı yazın..."}
             maxLength={500}
             disabled={isLoading || isCoolingDown}
+            autoComplete="on"
+            autoCorrect="on"
+            spellCheck={true}
+            inputMode="text"
+            enterKeyHint="send"
             className={`flex-1 bg-white/10 border-white/20 text-white focus:border-green-400/50 focus:ring-green-400/30 ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
           />
           <Button

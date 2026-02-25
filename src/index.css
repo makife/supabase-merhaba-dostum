@@ -175,7 +175,7 @@ All colors MUST be HSL.
     user-select: none;
   }
 
-  /* Allow text selection and emoji keyboard for input fields */
+  /* Allow text selection, emoji keyboard, autocorrect for input fields */
   input,
   textarea,
   [contenteditable="true"] {
@@ -183,7 +183,6 @@ All colors MUST be HSL.
     -moz-user-select: text !important;
     -ms-user-select: text !important;
     user-select: text !important;
-    -webkit-touch-callout: default !important;
     -webkit-touch-callout: text !important;
     touch-action: auto !important;
   }
@@ -197,9 +196,7 @@ All colors MUST be HSL.
   input[type="tel"],
   input:not([type]),
   textarea {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+    /* Do NOT use appearance:none - it kills native keyboard features (emoji, autocorrect) on Android WebView */
   }
 
   /* Safe area utilities for mobile */
