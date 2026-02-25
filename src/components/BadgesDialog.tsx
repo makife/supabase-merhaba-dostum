@@ -88,7 +88,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] bg-gradient-to-b from-[#2D3436] to-[#636E72] border-white/10 text-white">
+      <DialogContent className="max-w-2xl max-h-[80vh] bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] border-white/10 text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Award className="w-6 h-6 text-primary" />
