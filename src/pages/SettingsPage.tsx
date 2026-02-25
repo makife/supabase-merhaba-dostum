@@ -147,12 +147,16 @@ const SettingsPage = () => {
   const handleNotificationChange = async (checked: boolean) => {
     try {
       console.log("🔔 Bildirim değişikliği:", checked);
+      console.log("🔔 isMobile:", isMobile);
 
       if (checked) {
+        // Önce switch'i aç (optimistic update)
+        setNotifications(true);
+        
         const permissionGranted = await requestPermissions();
+        console.log("🔔 İzin sonucu:", permissionGranted);
 
         if (permissionGranted) {
-          setNotifications(true);
           toast({
             title: "✅ Bildirimler Aktif",
             description: "Oyun bildirimleri başarıyla aktif edildi",
@@ -162,6 +166,7 @@ const SettingsPage = () => {
             showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
           }, 1000);
         } else {
+          // İzin reddedildiyse geri al
           setNotifications(false);
           toast({
             title: "⚠️ İzin Gerekli",
