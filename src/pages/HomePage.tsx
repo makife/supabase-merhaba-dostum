@@ -412,7 +412,7 @@ const HomePage = () => {
     { id: "wheel", title: "Çark", icon: "🎡", color: "amber", route: "/wheel" },
     { id: "snake", title: "Yılan", icon: "🐍", color: "green", route: "/snake-game" },
     { id: "reactor", title: "Reaktör", icon: "☢️", color: "red", route: "/reactor-runner" },
-    { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" },
+    // { id: "simon", title: "Takip", icon: "🎯", color: "indigo", route: "/grid-simon-says" },
     {
       id: "memory",
       title: "Hafıza",
@@ -423,7 +423,7 @@ const HomePage = () => {
       cooldown: timeUntilNextPlay,
     },
     { id: "neon", title: "Refleks", icon: "⚡", color: "cyan", route: "/neon-blitz" },
-    { id: "morles", title: "Kule", icon: "🏗️", color: "teal", route: "/morles-game" },
+    // { id: "morles", title: "Kule", icon: "🏗️", color: "teal", route: "/morles-game" },
     { id: "puzzle", title: "Puzzle", icon: "🧩", color: "blue", route: "/puzzle-game" },
   ];
 
