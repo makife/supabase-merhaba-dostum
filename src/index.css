@@ -175,7 +175,7 @@ All colors MUST be HSL.
     user-select: none;
   }
 
-  /* Allow text selection only for input fields */
+  /* Allow text selection and emoji keyboard for input fields */
   input,
   textarea,
   [contenteditable="true"] {
@@ -184,6 +184,22 @@ All colors MUST be HSL.
     -ms-user-select: text !important;
     user-select: text !important;
     -webkit-touch-callout: default !important;
+    -webkit-touch-callout: text !important;
+    touch-action: auto !important;
+  }
+
+  /* Ensure input fields are not affected by global pointer/touch restrictions */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="tel"],
+  input:not([type]),
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
 
   /* Safe area utilities for mobile */
