@@ -47,8 +47,9 @@ const NeonBlitz: React.FC = () => {
   const isPlayingRef = useRef(false);
 
   // Timer için ayrı ref'ler
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
   const turnStartRef = useRef<number>(0);
+  const timeLeftRef = useRef(100);
 
   useEffect(() => {
     fetch("/wordlist.txt")
@@ -61,9 +62,9 @@ const NeonBlitz: React.FC = () => {
   }, []);
 
   const clearTimer = () => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   };
 
@@ -90,23 +91,29 @@ const NeonBlitz: React.FC = () => {
     setActiveTile(tile);
 
     // Bar'ı %100'den başlat
+    timeLeftRef.current = 100;
     setTimeLeft(100);
     turnStartRef.current = Date.now();
 
-    // Her 30ms'de bir bar'ı güncelle
-    intervalRef.current = setInterval(() => {
+    // requestAnimationFrame loop
+    const tick = () => {
       if (!isPlayingRef.current) { clearTimer(); return; }
       const elapsed = Date.now() - turnStartRef.current;
       const remaining = maxTimeRef.current - elapsed;
       if (remaining <= 0) {
         clearTimer();
+        timeLeftRef.current = 0;
         setTimeLeft(0);
         isPlayingRef.current = false;
         setGameState("GAMEOVER");
       } else {
-        setTimeLeft((remaining / maxTimeRef.current) * 100);
+        const pct = (remaining / maxTimeRef.current) * 100;
+        timeLeftRef.current = pct;
+        setTimeLeft(pct);
+        rafRef.current = requestAnimationFrame(tick);
       }
-    }, 30);
+    };
+    rafRef.current = requestAnimationFrame(tick);
   }, []);
 
   const startGame = useCallback(() => {
