@@ -7199,8 +7199,8 @@ const GamePage = ({
               ) : gameMode === "private-room" || gameMode === "random-match" ? (
                 // ✅ ÖZEL ODA VE RASTGELE EŞLEŞME BUTONLARI - YENİ
                 <div className="space-y-2">
-                  {/* Ödüllü Reklam Butonu - her zaman göster */}
-                  {!adWatched && user && (
+                  {/* Ödüllü Reklam Butonu - Premium kullanıcılara gösterme */}
+                  {!adWatched && user && !isPremium && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
@@ -7275,8 +7275,8 @@ const GamePage = ({
               ) : (
                 // Normal mod butonları (vs-computer)
                 <>
-                  {/* Ödüllü Reklam Butonu - her zaman göster */}
-                  {!adWatched && user && (
+                  {/* Ödüllü Reklam Butonu - Premium kullanıcılara gösterme */}
+                  {!adWatched && user && !isPremium && (
                     <button
                       onClick={handleWatchAd}
                       disabled={isAdLoading}
