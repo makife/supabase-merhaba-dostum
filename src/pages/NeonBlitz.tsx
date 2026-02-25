@@ -1,339 +1,260 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
 
-// --- TİP TANIMLAMALARI ---
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
 
-// --- SABİTLER ---
 const GRID_SIZE = 9;
 const INITIAL_TIME = 2500;
 const POINTS_PER_LETTER = 5;
 const WORD_BONUS = 20;
 
+const SAFE_FALLBACK = [
+  "ELMAS", "KALEM", "SABAH", "DENIZ", "BAHAR",
+  "ORMAN", "FENER", "ARABA", "EVLER", "KAPAK",
+  "TARAF", "KITAP", "YAŞAM", "SEZON", "ÇIZGI",
+];
+
+const generateColor = () => {
+  const hues = [180, 270, 330, 60, 120, 200, 30, 0];
+  return `hsl(${hues[Math.floor(Math.random() * hues.length)]}, 100%, 60%)`;
+};
+
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
 
-  // --- STATE YÖNETİMİ ---
   const [gameState, setGameState] = useState<GameState>("MENU");
-  const [score, setScore] = useState<number>(0);
-  const [level, setLevel] = useState<number>(1);
+  const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(1);
   const [activeTile, setActiveTile] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(100);
-  const [themeColor, setThemeColor] = useState<string>("hsl(180, 100%, 60%)");
-
-  // Kelime sistemi
-  const [wordList, setWordList] = useState<string[]>([]);
-  const [currentWord, setCurrentWord] = useState<string>("");
-  const [currentLetterIndex, setCurrentLetterIndex] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState(100);
+  const [themeColor, setThemeColor] = useState("hsl(180, 100%, 60%)");
+  const [currentWord, setCurrentWord] = useState("");
+  const [letterIndex, setLetterIndex] = useState(0);
   const [completedWords, setCompletedWords] = useState<string[]>([]);
-  const [showBonus, setShowBonus] = useState<boolean>(false);
+  const [bonusVisible, setBonusVisible] = useState(false);
 
-  const timerRef = useRef<number | null>(null);
-  const progressRef = useRef<number | null>(null);
-  const maxTimeRef = useRef<number>(INITIAL_TIME);
-  const startTimeRef = useRef<number>(0);
+  const wordListRef = useRef<string[]>(SAFE_FALLBACK);
   const usedWordsRef = useRef<Set<string>>(new Set());
-  const scoreRef = useRef<number>(0);
-  const levelRef = useRef<number>(1);
-  const currentWordRef = useRef<string>("");
-  const currentLetterIndexRef = useRef<number>(0);
+  const scoreRef = useRef(0);
+  const levelRef = useRef(1);
+  const currentWordRef = useRef("");
+  const letterIndexRef = useRef(0);
   const activeTileRef = useRef<number | null>(null);
   const completedWordsRef = useRef<string[]>([]);
-  const themeColorRef = useRef<string>("hsl(180, 100%, 60%)");
+  const maxTimeRef = useRef(INITIAL_TIME);
+  const startTimeRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const isPlayingRef = useRef(false);
 
-  // --- WORDLIST YÜKLEME ---
   useEffect(() => {
     fetch("/wordlist.txt")
-      .then((res) => res.text())
-      .then((text) => {
-        const words = text
-          .split("\n")
-          .map((w) => w.trim().toUpperCase())
-          .filter((w) => w.length === 5 && /^[A-ZÇĞİÖŞÜ]+$/.test(w));
-        setWordList(words);
+      .then(r => r.text())
+      .then(text => {
+        const words = text.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+        if (words.length > 0) wordListRef.current = words;
       })
-      .catch(() => {
-        // Fallback kelimeler
-        const fallback = [
-          "ELMAS", "KALEM", "SABAH", "DENIZ", "GÜNEŞ",
-          "YILDIZ", "BULUT", "NEHIR", "ORMAN", "ÇIÇEK",
-          "TAŞIM", "RÜZGAR", "BAHAR", "KUŞAK", "FENER",
-        ].filter(w => w.length === 5);
-        setWordList(fallback);
-      });
+      .catch(() => {});
   }, []);
 
-  // --- YARDIMCI FONKSİYONLAR ---
-  const generateRandomColor = () => {
-    const hues = [180, 270, 330, 60, 120, 200, 30];
-    const hue = hues[Math.floor(Math.random() * hues.length)];
-    return `hsl(${hue}, 100%, 60%)`;
+  const stopRAF = () => {
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
   };
 
-  const pickRandomWord = useCallback((words: string[]) => {
-    const available = words.filter(w => !usedWordsRef.current.has(w));
-    if (available.length === 0) {
-      usedWordsRef.current.clear();
-      return words[Math.floor(Math.random() * words.length)];
-    }
-    return available[Math.floor(Math.random() * available.length)];
-  }, []);
-
-  const pickNewTile = useCallback((current: number | null) => {
-    let newTile;
-    do {
-      newTile = Math.floor(Math.random() * GRID_SIZE);
-    } while (newTile === current);
-    return newTile;
-  }, []);
-
-  // --- OYUN MANTIĞI ---
-  const clearTimers = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (progressRef.current) cancelAnimationFrame(progressRef.current);
+  const pickWord = () => {
+    const list = wordListRef.current;
+    const available = list.filter(w => !usedWordsRef.current.has(w));
+    const pool = available.length > 0 ? available : list;
+    if (available.length === 0) usedWordsRef.current.clear();
+    return pool[Math.floor(Math.random() * pool.length)];
   };
 
-  const stopGame = useCallback(() => {
-    clearTimers();
-    setGameState("GAMEOVER");
-  }, []);
+  const pickTile = (exclude: number | null): number => {
+    let t: number;
+    do { t = Math.floor(Math.random() * GRID_SIZE); } while (t === exclude);
+    return t;
+  };
 
-  const startTurn = useCallback((currentTile: number | null) => {
-    clearTimers();
-    const newTile = pickNewTile(currentTile);
-    setActiveTile(newTile);
-    activeTileRef.current = newTile;
-
+  const startTick = useCallback((fromTile: number | null) => {
+    stopRAF();
+    const tile = pickTile(fromTile);
+    activeTileRef.current = tile;
+    setActiveTile(tile);
     startTimeRef.current = Date.now();
 
-    const updateProgress = () => {
+    const tick = () => {
+      if (!isPlayingRef.current) return;
       const elapsed = Date.now() - startTimeRef.current;
       const remaining = Math.max(0, maxTimeRef.current - elapsed);
-      const percentage = (remaining / maxTimeRef.current) * 100;
-      setTimeLeft(percentage);
-
+      setTimeLeft((remaining / maxTimeRef.current) * 100);
       if (remaining > 0) {
-        progressRef.current = requestAnimationFrame(updateProgress);
+        rafRef.current = requestAnimationFrame(tick);
       } else {
-        stopGame();
+        isPlayingRef.current = false;
+        setGameState("GAMEOVER");
       }
     };
-
-    progressRef.current = requestAnimationFrame(updateProgress);
-  }, [pickNewTile, stopGame]);
-
-  const startNewWord = useCallback((words: string[], currentTile: number | null) => {
-    const word = pickRandomWord(words);
-    usedWordsRef.current.add(word);
-    currentWordRef.current = word;
-    currentLetterIndexRef.current = 0;
-    setCurrentWord(word);
-    setCurrentLetterIndex(0);
-
-    const newColor = generateRandomColor();
-    themeColorRef.current = newColor;
-    setThemeColor(newColor);
-
-    startTurn(currentTile);
-  }, [pickRandomWord, startTurn]);
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
 
   const startGame = useCallback(() => {
-    if (wordList.length === 0) return;
-    clearTimers();
+    stopRAF();
+    isPlayingRef.current = false;
+
     usedWordsRef.current.clear();
     scoreRef.current = 0;
     levelRef.current = 1;
     completedWordsRef.current = [];
     maxTimeRef.current = INITIAL_TIME;
+    activeTileRef.current = null;
+
+    const word = pickWord();
+    usedWordsRef.current.add(word);
+    currentWordRef.current = word;
+    letterIndexRef.current = 0;
+
+    const color = generateColor();
 
     setScore(0);
     setLevel(1);
     setCompletedWords([]);
     setActiveTile(null);
-    activeTileRef.current = null;
+    setTimeLeft(100);
+    setCurrentWord(word);
+    setLetterIndex(0);
+    setThemeColor(color);
     setGameState("PLAYING");
 
-    startNewWord(wordList, null);
-  }, [wordList, startNewWord]);
+    isPlayingRef.current = true;
 
-  const returnToGameMenu = () => {
-    clearTimers();
-    setGameState("MENU");
-  };
-
-  const exitToAppHome = () => {
-    clearTimers();
-    navigate("/");
-  };
+    setTimeout(() => startTick(null), 80);
+  }, [startTick]);
 
   const handleTileClick = useCallback((id: number) => {
-    if (activeTileRef.current === null) return;
+    if (!isPlayingRef.current) return;
+
     if (id !== activeTileRef.current) {
-      stopGame();
+      isPlayingRef.current = false;
+      stopRAF();
+      setGameState("GAMEOVER");
       return;
     }
 
-    // Doğru karo tıklandı
     const newScore = scoreRef.current + POINTS_PER_LETTER;
     scoreRef.current = newScore;
     setScore(newScore);
 
     const word = currentWordRef.current;
-    const nextIndex = currentLetterIndexRef.current + 1;
+    const nextIdx = letterIndexRef.current + 1;
 
-    if (nextIndex >= word.length) {
-      // Kelime tamamlandı!
+    if (nextIdx >= word.length) {
+      // Kelime tamamlandı
       const bonusScore = newScore + WORD_BONUS;
       scoreRef.current = bonusScore;
       setScore(bonusScore);
 
       const newCompleted = [...completedWordsRef.current, word];
       completedWordsRef.current = newCompleted;
-      setCompletedWords(newCompleted);
+      setCompletedWords([...newCompleted]);
 
-      // Level up
-      const newLevel = levelRef.current + 1;
-      levelRef.current = newLevel;
-      setLevel(newLevel);
+      levelRef.current += 1;
+      setLevel(levelRef.current);
       maxTimeRef.current = Math.max(500, maxTimeRef.current * 0.9);
 
-      // Bonus animasyonu
-      setShowBonus(true);
-      setTimeout(() => setShowBonus(false), 1000);
+      setBonusVisible(true);
+      setTimeout(() => setBonusVisible(false), 900);
 
-      // Yeni kelimeye geç
-      startNewWord(wordList, activeTileRef.current);
+      const newWord = pickWord();
+      usedWordsRef.current.add(newWord);
+      currentWordRef.current = newWord;
+      letterIndexRef.current = 0;
+      setCurrentWord(newWord);
+      setLetterIndex(0);
+
+      const color = generateColor();
+      setThemeColor(color);
+
+      startTick(activeTileRef.current);
     } else {
-      // Sonraki harfe geç
-      currentLetterIndexRef.current = nextIndex;
-      setCurrentLetterIndex(nextIndex);
-      startTurn(activeTileRef.current);
+      letterIndexRef.current = nextIdx;
+      setLetterIndex(nextIdx);
+      startTick(activeTileRef.current);
     }
-  }, [stopGame, startNewWord, startTurn, wordList]);
+  }, [startTick]);
 
-  // --- EKRAN BİLEŞENLERİ ---
+  const returnToMenu = () => {
+    stopRAF();
+    isPlayingRef.current = false;
+    setGameState("MENU");
+  };
+
+  useEffect(() => () => { stopRAF(); isPlayingRef.current = false; }, []);
+
+  // ─── RENDER ─────────────────────────────────────────────
 
   const renderMenu = () => (
-    <div style={styles.centerContainer}>
-      <div style={{ ...styles.glowRing, borderColor: themeColor, boxShadow: `0 0 40px ${themeColor}33` }} />
-      <h1 style={{ ...styles.title, textShadow: `0 0 30px ${themeColor}, 0 0 60px ${themeColor}55` }}>
-        DOKUNSANA
-      </h1>
-      <p style={styles.subtitle}>Kelimeyi Harf Harf Tamamla</p>
-
-      {wordList.length === 0 && (
-        <p style={{ color: "#f88", fontSize: "0.85rem", marginBottom: 16 }}>
-          Kelime listesi yükleniyor...
-        </p>
-      )}
-
-      <button
-        onClick={startGame}
-        disabled={wordList.length === 0}
-        style={{
-          ...styles.button,
-          backgroundColor: themeColor,
-          boxShadow: `0 0 20px ${themeColor}88`,
-          marginBottom: 16,
-          opacity: wordList.length === 0 ? 0.5 : 1,
-        }}
-      >
-        <Play size={22} style={{ marginRight: 8 }} /> OYNA
+    <div style={s.center}>
+      <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>DOKUNSANA</h1>
+      <p style={s.subtitle}>Kelimeyi Harf Harf Tamamla</p>
+      <button onClick={startGame} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 20px ${themeColor}88`, marginBottom: 14 }}>
+        <Play size={20} style={{ marginRight: 8 }} /> OYNA
       </button>
-
-      <button onClick={exitToAppHome} style={{ ...styles.outlineButton, borderColor: "rgba(255,255,255,0.3)", color: "#ccc" }}>
-        <LogOut size={18} style={{ marginRight: 8 }} /> Oyundan Çık
+      <button onClick={() => navigate("/")} style={{ ...s.outlineBtn, borderColor: "rgba(255,255,255,0.25)", color: "#aaa" }}>
+        <LogOut size={17} style={{ marginRight: 8 }} /> Çıkış
       </button>
     </div>
   );
 
-  const renderGame = () => {
-    const currentLetter = currentWord[currentLetterIndex] || "";
-
+  const renderPlaying = () => {
+    const activeLetter = currentWord[letterIndex] ?? "";
     return (
-      <div style={styles.gameContainer}>
-        {/* Header */}
-        <div style={styles.header}>
-          <button onClick={returnToGameMenu} style={styles.iconButton}>
-            <ArrowLeft size={24} color="#fff" />
-          </button>
-          <div style={styles.scoreBoard}>
-            <span style={{ color: themeColor, marginRight: 16, fontSize: "0.95rem" }}>LVL {level}</span>
-            <span style={{ fontWeight: "bold" }}>{score} <span style={{ color: "#888", fontSize: "0.8rem" }}>puan</span></span>
+      <div style={s.gameWrap}>
+        <div style={s.header}>
+          <button onClick={returnToMenu} style={s.iconBtn}><ArrowLeft size={22} color="#fff" /></button>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: "bold" }}>
+            <span style={{ color: themeColor }}>LVL {level}</span>
+            <span>{score} puan</span>
           </div>
         </div>
 
-        {/* Süre Çubuğu */}
-        <div style={styles.progressContainer}>
-          <div
-            style={{
-              ...styles.progressBar,
-              width: `${timeLeft}%`,
-              backgroundColor: themeColor,
-              boxShadow: `0 0 10px ${themeColor}`,
-            }}
-          />
+        <div style={s.progWrap}>
+          <div style={{ ...s.progBar, width: `${timeLeft}%`, background: themeColor, boxShadow: `0 0 8px ${themeColor}` }} />
         </div>
 
-        {/* Kelime Göstergesi */}
-        <div style={styles.wordDisplay}>
-          {currentWord.split("").map((letter, i) => (
-            <div
-              key={i}
-              style={{
-                ...styles.letterBox,
-                backgroundColor: i < currentLetterIndex
-                  ? `${themeColor}33`
-                  : i === currentLetterIndex
-                  ? themeColor
-                  : "rgba(255,255,255,0.05)",
-                color: i === currentLetterIndex ? "#000" : i < currentLetterIndex ? themeColor : "#555",
-                borderColor: i === currentLetterIndex ? themeColor : i < currentLetterIndex ? `${themeColor}66` : "rgba(255,255,255,0.1)",
-                boxShadow: i === currentLetterIndex ? `0 0 15px ${themeColor}` : "none",
-                transform: i === currentLetterIndex ? "scale(1.15)" : "scale(1)",
-                fontWeight: i === currentLetterIndex ? "900" : "bold",
-              }}
-            >
-              {letter}
+        <div style={s.wordRow}>
+          {currentWord.split("").map((ch, i) => (
+            <div key={i} style={{
+              ...s.letterBox,
+              background: i < letterIndex ? `${themeColor}25` : i === letterIndex ? themeColor : "rgba(255,255,255,0.04)",
+              color: i === letterIndex ? "#000" : i < letterIndex ? themeColor : "#444",
+              borderColor: i === letterIndex ? themeColor : i < letterIndex ? `${themeColor}55` : "rgba(255,255,255,0.1)",
+              boxShadow: i === letterIndex ? `0 0 12px ${themeColor}` : "none",
+              transform: i === letterIndex ? "scale(1.18)" : "scale(1)",
+              fontWeight: i <= letterIndex ? 900 : 600,
+            }}>
+              {ch}
             </div>
           ))}
         </div>
 
-        {/* Aktif harf ipucu */}
-        <div style={{ color: "#888", fontSize: "0.85rem", marginBottom: 16, letterSpacing: 1 }}>
-          Hedef harf: <span style={{ color: themeColor, fontWeight: "bold", fontSize: "1rem" }}>{currentLetter}</span>
+        <div style={{ color: "#666", fontSize: "0.8rem", marginBottom: 14 }}>
+          Hedef: <span style={{ color: themeColor, fontWeight: "bold", fontSize: "1rem" }}>{activeLetter}</span>
         </div>
 
-        {/* Grid */}
-        <div style={styles.grid}>
-          {Array.from({ length: GRID_SIZE }).map((_, index) => {
-            const isActive = index === activeTile;
+        <div style={s.grid}>
+          {Array.from({ length: GRID_SIZE }).map((_, i) => {
+            const isActive = i === activeTile;
             return (
-              <button
-                key={index}
-                onClick={() => handleTileClick(index)}
-                style={{
-                  ...styles.tile,
-                  backgroundColor: isActive ? themeColor : "rgba(255,255,255,0.04)",
-                  boxShadow: isActive ? `0 0 25px ${themeColor}, 0 0 50px ${themeColor}44` : "none",
-                  transform: isActive ? "scale(1.06)" : "scale(1)",
-                  borderColor: isActive ? "#fff" : "rgba(255,255,255,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <button key={i} onClick={() => handleTileClick(i)} style={{
+                ...s.tile,
+                background: isActive ? themeColor : "rgba(255,255,255,0.04)",
+                borderColor: isActive ? "#fff" : "rgba(255,255,255,0.08)",
+                boxShadow: isActive ? `0 0 22px ${themeColor}, 0 0 44px ${themeColor}44` : "none",
+                transform: isActive ? "scale(1.06)" : "scale(1)",
+              }}>
                 {isActive && (
-                  <span style={{
-                    fontSize: "1.8rem",
-                    fontWeight: "900",
-                    color: "#000",
-                    textShadow: "none",
-                    fontFamily: "'Georgia', serif",
-                    letterSpacing: "-1px",
-                  }}>
-                    {currentLetter}
+                  <span style={{ fontSize: "1.9rem", fontWeight: 900, color: "#000", fontFamily: "Georgia, serif" }}>
+                    {activeLetter}
                   </span>
                 )}
               </button>
@@ -341,36 +262,23 @@ const NeonBlitz: React.FC = () => {
           })}
         </div>
 
-        {/* Bonus animasyonu */}
-        {showBonus && (
+        {bonusVisible && (
           <div style={{
-            position: "absolute",
-            top: "40%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: themeColor,
-            fontSize: "1.8rem",
-            fontWeight: "900",
-            textShadow: `0 0 20px ${themeColor}`,
-            animation: "floatUp 1s ease forwards",
-            pointerEvents: "none",
-            zIndex: 100,
+            position: "absolute", top: "38%", left: "50%", transform: "translateX(-50%)",
+            color: themeColor, fontSize: "1.7rem", fontWeight: 900,
+            textShadow: `0 0 20px ${themeColor}`, animation: "floatUp 0.9s ease forwards",
+            pointerEvents: "none", zIndex: 100,
           }}>
             +{WORD_BONUS} BONUS!
           </div>
         )}
 
-        {/* Tamamlanan kelimeler listesi */}
         {completedWords.length > 0 && (
-          <div style={styles.completedWordsContainer}>
-            <div style={styles.completedWordsTitle}>
-              <BookOpen size={14} style={{ marginRight: 6 }} /> Tamamlanan Kelimeler
-            </div>
-            <div style={styles.completedWordsList}>
-              {completedWords.map((word, i) => (
-                <span key={i} style={{ ...styles.completedWordTag, borderColor: `${themeColor}55`, color: themeColor }}>
-                  {word}
-                </span>
+          <div style={s.wordListBox}>
+            <div style={s.wordListTitle}><BookOpen size={12} style={{ marginRight: 5 }} />Tamamlananlar</div>
+            <div style={s.wordTags}>
+              {completedWords.map((w, i) => (
+                <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>{w}</span>
               ))}
             </div>
           </div>
@@ -380,39 +288,33 @@ const NeonBlitz: React.FC = () => {
   };
 
   const renderGameOver = () => (
-    <div style={styles.centerContainer}>
-      <Trophy size={56} color={themeColor} style={{ marginBottom: 16, filter: `drop-shadow(0 0 15px ${themeColor})` }} />
-      <h2 style={{ ...styles.gameOverTitle, textShadow: `0 0 20px ${themeColor}55` }}>OYUN BİTTİ</h2>
-      <div style={styles.finalScore}>{score} <span style={{ fontSize: "1rem", color: "#888" }}>puan</span></div>
-      <div style={styles.finalLevel}>Ulaşılan Level: <span style={{ color: themeColor }}>{level}</span></div>
-      <div style={styles.finalLevel}>Tamamlanan Kelime: <span style={{ color: themeColor }}>{completedWords.length}</span></div>
+    <div style={s.center}>
+      <Trophy size={52} color={themeColor} style={{ marginBottom: 14, filter: `drop-shadow(0 0 12px ${themeColor})` }} />
+      <h2 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: 8 }}>OYUN BİTTİ</h2>
+      <div style={{ fontSize: "2.4rem", fontWeight: 900, marginBottom: 4 }}>
+        {score} <span style={{ fontSize: "1rem", color: "#888" }}>puan</span>
+      </div>
+      <div style={{ color: "#888", marginBottom: 4 }}>Level: <span style={{ color: themeColor }}>{level}</span></div>
+      <div style={{ color: "#888", marginBottom: 20 }}>
+        Tamamlanan: <span style={{ color: themeColor }}>{completedWords.length} kelime</span>
+      </div>
 
       {completedWords.length > 0 && (
-        <div style={{ ...styles.completedWordsContainer, marginBottom: 24, maxWidth: 300 }}>
-          <div style={styles.completedWordsTitle}>
-            <BookOpen size={13} style={{ marginRight: 5 }} /> Kelime Listesi
-          </div>
-          <div style={styles.completedWordsList}>
-            {completedWords.map((word, i) => (
-              <span key={i} style={{ ...styles.completedWordTag, borderColor: `${themeColor}55`, color: themeColor }}>
-                {word}
-              </span>
+        <div style={{ ...s.wordListBox, marginBottom: 24, maxWidth: 300 }}>
+          <div style={s.wordListTitle}><BookOpen size={12} style={{ marginRight: 5 }} />Kelimeler</div>
+          <div style={s.wordTags}>
+            {completedWords.map((w, i) => (
+              <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>{w}</span>
             ))}
           </div>
         </div>
       )}
 
-      <div style={styles.buttonGroup}>
-        <button
-          onClick={startGame}
-          style={{ ...styles.button, backgroundColor: themeColor, boxShadow: `0 0 15px ${themeColor}66`, marginRight: 10 }}
-        >
-          <RefreshCw size={18} style={{ marginRight: 8 }} /> Tekrar Dene
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+        <button onClick={startGame} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}>
+          <RefreshCw size={17} style={{ marginRight: 8 }} /> Tekrar Dene
         </button>
-        <button
-          onClick={returnToGameMenu}
-          style={{ ...styles.outlineButton, borderColor: themeColor, color: themeColor }}
-        >
+        <button onClick={returnToMenu} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
           Menüye Dön
         </button>
       </div>
@@ -420,227 +322,40 @@ const NeonBlitz: React.FC = () => {
   );
 
   return (
-    <div style={styles.appContainer}>
-      <style>{`
-        @keyframes floatUp {
-          0% { opacity: 1; transform: translateX(-50%) translateY(0); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-60px); }
-        }
-      `}</style>
+    <div style={s.app}>
+      <style>{`@keyframes floatUp{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-55px)}}`}</style>
       {gameState === "MENU" && renderMenu()}
-      {gameState === "PLAYING" && renderGame()}
+      {gameState === "PLAYING" && renderPlaying()}
       {gameState === "GAMEOVER" && renderGameOver()}
     </div>
   );
 };
 
-const styles: { [key: string]: React.CSSProperties } = {
-  appContainer: {
-    width: "100%",
-    height: "100vh",
-    backgroundColor: "#0a0a0f",
-    color: "#fff",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    overflow: "hidden",
-    userSelect: "none",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    zIndex: 50,
+const s: { [k: string]: React.CSSProperties } = {
+  app: {
+    width: "100%", height: "100vh", backgroundColor: "#0a0a0f", color: "#fff",
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    fontFamily: "'Segoe UI', sans-serif", overflow: "hidden", userSelect: "none",
+    position: "absolute", top: 0, left: 0, zIndex: 50,
   },
-  glowRing: {
-    position: "absolute",
-    width: 300,
-    height: 300,
-    borderRadius: "50%",
-    border: "1px solid",
-    opacity: 0.15,
-    pointerEvents: "none",
-  },
-  centerContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    textAlign: "center",
-    padding: 20,
-    position: "relative",
-  },
-  gameContainer: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "16px 20px",
-    maxWidth: "480px",
-    position: "relative",
-    overflowY: "auto",
-  },
-  header: {
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "14px",
-    paddingTop: "10px",
-  },
-  scoreBoard: {
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    display: "flex",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: "2.8rem",
-    fontWeight: "900",
-    marginBottom: "8px",
-    letterSpacing: "3px",
-    color: "#fff",
-  },
-  subtitle: {
-    fontSize: "1rem",
-    color: "#777",
-    marginBottom: "36px",
-    letterSpacing: 1,
-  },
-  gameOverTitle: {
-    fontSize: "2.2rem",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-  finalScore: {
-    fontSize: "2.5rem",
-    fontWeight: "900",
-    marginBottom: "6px",
-  },
-  finalLevel: {
-    fontSize: "0.95rem",
-    color: "#888",
-    marginBottom: "6px",
-  },
-  button: {
-    padding: "14px 36px",
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    color: "#000",
-    border: "none",
-    borderRadius: "50px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    transition: "transform 0.1s",
-  },
-  outlineButton: {
-    padding: "12px 26px",
-    fontSize: "0.95rem",
-    fontWeight: "bold",
-    backgroundColor: "transparent",
-    border: "2px solid",
-    borderRadius: "50px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-  },
-  iconButton: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "8px",
-    borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-  buttonGroup: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  progressContainer: {
-    width: "100%",
-    height: "10px",
-    backgroundColor: "#1e1e2e",
-    border: "1px solid #333",
-    borderRadius: "10px",
-    marginBottom: "20px",
-    overflow: "hidden",
-  },
-  progressBar: {
-    height: "100%",
-    borderRadius: "10px",
-    transition: "width 0.08s linear",
-  },
-  // Kelime göstergesi
-  wordDisplay: {
-    display: "flex",
-    gap: "8px",
-    marginBottom: "10px",
-  },
-  letterBox: {
-    width: 44,
-    height: 48,
-    borderRadius: 10,
-    border: "2px solid",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "1.3rem",
-    transition: "all 0.15s ease",
-    fontFamily: "'Georgia', serif",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "12px",
-    width: "100%",
-    maxWidth: 340,
-    aspectRatio: "1/1",
-    marginBottom: "16px",
-  },
-  tile: {
-    borderRadius: "14px",
-    border: "2px solid",
-    cursor: "pointer",
-    transition: "background-color 0.1s, transform 0.12s, box-shadow 0.15s",
-    outline: "none",
-    WebkitTapHighlightColor: "transparent",
-  },
-  // Tamamlanan kelimeler
-  completedWordsContainer: {
-    width: "100%",
-    maxWidth: 340,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 12,
-    padding: "10px 14px",
-  },
-  completedWordsTitle: {
-    fontSize: "0.75rem",
-    color: "#666",
-    display: "flex",
-    alignItems: "center",
-    marginBottom: 8,
-    letterSpacing: 1,
-    textTransform: "uppercase" as const,
-  },
-  completedWordsList: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: 6,
-  },
-  completedWordTag: {
-    fontSize: "0.8rem",
-    fontWeight: "bold",
-    padding: "3px 10px",
-    borderRadius: 20,
-    border: "1px solid",
-    letterSpacing: 1,
-  },
+  center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, position: "relative" },
+  gameWrap: { width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 18px", maxWidth: 460, position: "relative", overflowY: "auto" },
+  header: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingTop: 8 },
+  title: { fontSize: "2.7rem", fontWeight: 900, marginBottom: 8, letterSpacing: 3, color: "#fff" },
+  subtitle: { fontSize: "0.95rem", color: "#666", marginBottom: 34, letterSpacing: 1 },
+  btn: { padding: "13px 32px", fontSize: "1.05rem", fontWeight: "bold", color: "#000", border: "none", borderRadius: 50, cursor: "pointer", display: "flex", alignItems: "center" },
+  outlineBtn: { padding: "11px 24px", fontSize: "0.9rem", fontWeight: "bold", backgroundColor: "transparent", border: "2px solid", borderRadius: 50, cursor: "pointer", display: "flex", alignItems: "center" },
+  iconBtn: { background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.08)" },
+  progWrap: { width: "100%", height: 10, backgroundColor: "#1e1e2e", border: "1px solid #2a2a3a", borderRadius: 10, marginBottom: 18, overflow: "hidden" },
+  progBar: { height: "100%", borderRadius: 10, transition: "width 0.08s linear" },
+  wordRow: { display: "flex", gap: 7, marginBottom: 10 },
+  letterBox: { width: 42, height: 46, borderRadius: 9, border: "2px solid", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", transition: "all 0.15s", fontFamily: "Georgia, serif" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 11, width: "100%", maxWidth: 330, aspectRatio: "1/1", marginBottom: 14 },
+  tile: { borderRadius: 13, border: "2px solid", cursor: "pointer", transition: "all 0.1s", outline: "none", WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center" },
+  wordListBox: { width: "100%", maxWidth: 330, backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "9px 12px" },
+  wordListTitle: { fontSize: "0.7rem", color: "#555", display: "flex", alignItems: "center", marginBottom: 7, letterSpacing: 1, textTransform: "uppercase" as const },
+  wordTags: { display: "flex", flexWrap: "wrap" as const, gap: 5 },
+  tag: { fontSize: "0.75rem", fontWeight: "bold", padding: "2px 9px", borderRadius: 20, border: "1px solid", letterSpacing: 1 },
 };
 
 export default NeonBlitz;
