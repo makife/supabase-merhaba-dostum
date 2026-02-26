@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, Bot, Users, Zap, Trophy, X, Play } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useUser } from "@/contexts/UserContext";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 interface GameModeSelectorProps {
   mode: string;
@@ -15,6 +15,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   const [selectedType, setSelectedType] = useState<"timed" | "score">("timed");
   const { playSound } = useSounds();
   const { profile, isPremium } = useUser();
+  const { toast } = useToast();
 
   const getTheme = () => {
     switch (mode) {
@@ -62,15 +63,10 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   const handleStart = () => {
     playSound("buttonClick");
     if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
-      toast("Oyun için yeterli sayfan yok!", {
+      toast({
+        title: "Oyun için yeterli sayfan yok!",
         description: "Oyun oynamak için sayfa satın al veya dolmasını bekle.",
-        duration: 4000,
-        style: {
-          background: "#0f172a",
-          border: "1px solid rgba(239,68,68,0.3)",
-          color: "#fef2f2",
-        },
-        icon: "❌",
+        className: "!bg-[#0f172a] !border-red-500/30 !text-red-300",
       });
       return;
     }
