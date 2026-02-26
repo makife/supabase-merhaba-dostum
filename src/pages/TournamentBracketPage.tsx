@@ -320,7 +320,9 @@ const TournamentBracketPage = () => {
   useEffect(() => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.status !== "in_progress") return;
-    if (currentTournament.creator_id !== user.id) return;
+
+    // Artık sadece kurucu değil, herkes expired maç kontrolü yapabilir
+    const isCreatorOrOnly = currentTournament.creator_id === user.id;
 
     const checkExpired = async () => {
       const { data: expired } = await supabase
@@ -330,18 +332,27 @@ const TournamentBracketPage = () => {
         .eq("status", "in_progress")
         .lt("ends_at", new Date().toISOString());
 
-      if (!expired?.length) return;
-
-      for (const match of expired) {
-        const w = (match.player1_score || 0) >= (match.player2_score || 0) ? match.player1_id : match.player2_id;
-        await supabase
-          .from("tournament_matches")
-          .update({ status: "completed", winner_id: w })
-          .eq("id", match.id)
-          .eq("status", "in_progress");
+      if (!expired?.length) {
+        // Expired maç yoksa bile, tüm maçlar tamamlanmışsa advance dene
+        if (isCreatorOrOnly) {
+          checkAndAdvance();
+        }
+        return;
       }
-      fetchTournamentDetails(tournamentId);
-      setTimeout(() => checkAndAdvance(), 1000);
+
+      // Sadece kurucu expired maçları sonuçlandırsın (çift yazma önleme)
+      if (isCreatorOrOnly) {
+        for (const match of expired) {
+          const w = (match.player1_score || 0) >= (match.player2_score || 0) ? match.player1_id : match.player2_id;
+          await supabase
+            .from("tournament_matches")
+            .update({ status: "completed", winner_id: w })
+            .eq("id", match.id)
+            .eq("status", "in_progress");
+        }
+        fetchTournamentDetails(tournamentId);
+        setTimeout(() => checkAndAdvance(), 1000);
+      }
     };
 
     checkExpired();

@@ -268,6 +268,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         .eq("tournament_id", tournamentId);
 
       // 🎮 Turnuva in_progress ise, ayrılan oyuncunun aktif maçını rakip lehine sonuçlandır
+      let matchesAutoCompleted = false;
       if (tournament.status === "in_progress") {
         const { data: activeMatches } = await supabase
           .from("tournament_matches")
@@ -285,6 +286,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
               .eq("id", match.id);
             console.log("✅ Maç otomatik sonuçlandırıldı, kazanan:", winnerId);
           }
+          matchesAutoCompleted = true;
         }
       }
 
@@ -312,6 +314,19 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
           console.log("🚫 Turnuva iptal edildi");
         }
+      }
+
+      // 🔄 Maçlar otomatik sonuçlandırıldıysa, tur ilerlemesini kontrol et
+      if (matchesAutoCompleted && tournament.status === "in_progress") {
+        console.log("🔄 Maç sonuçlandırıldı, tur ilerlemesi kontrol ediliyor...");
+        // Kısa gecikme ile advance et - DB'nin güncellenmesi için
+        setTimeout(async () => {
+          try {
+            await advanceToNextRound(tournamentId);
+          } catch (e) {
+            console.error("❌ Otomatik tur ilerleme hatası:", e);
+          }
+        }, 1500);
       }
 
       toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
