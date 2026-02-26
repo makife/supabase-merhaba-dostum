@@ -66,7 +66,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
       toast({
         title: "Oyun için yeterli sayfan yok!",
         description: "Oyun oynamak için sayfa satın al veya dolmasını bekle.",
-        className: "!bg-[#0f172a] !border-red-500/30 !text-red-300",
+        variant: "navy" as any,
       });
       return;
     }
