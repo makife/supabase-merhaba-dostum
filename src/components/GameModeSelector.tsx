@@ -65,6 +65,11 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
       toast.error("Oyun için yeterli sayfan yok!", {
         description: "Oyun oynamak için sayfa satın al veya dolmasını bekle.",
         duration: 4000,
+        style: {
+          background: "#0f172a",
+          border: "1px solid rgba(239,68,68,0.3)",
+          color: "#fef2f2",
+        },
       });
       return;
     }
