@@ -1509,6 +1509,15 @@ const GamePage = ({
           const noPlay = playerWordsWithScores.length === 0 && opponentWordsWithScores.length === 0;
           if (earlyDc || noPlay) {
             await addBonusCredits(1);
+            // Refund sonrası güncel krediyi DB'den çek ve state'e yaz
+            const { data: freshCredits } = await supabase
+              .from("profiles")
+              .select("game_credits, bonus_credits")
+              .eq("id", user?.id)
+              .single();
+            if (freshCredits) {
+              setUserCredits((freshCredits.game_credits ?? 0) + (freshCredits.bonus_credits ?? 0));
+            }
             toast({
               title: "🎟 Hak iade edildi",
               description: "Rakip erken ayrıldığı için oyun hakkınız iade edildi.",
