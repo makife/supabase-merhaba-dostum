@@ -482,15 +482,22 @@ const TournamentBracketPage = () => {
         setShowChampion(true);
         playSpecialSound("/sampiyon.mp3", 0.8);
         giveChampionReward();
-        toast.success("🏆 Tebrikler! Turnuvayı kazandınız!", {
-          description: "Siz turnuvanın şampiyonusunuz!",
+        toast.success("🏆 T E B R İ K L E R!", {
+          description: (
+            <span>
+              <span style={{ color: "#f0fdf4" }}>Turnuva Şampiyonu oldunuz! </span>
+              <span style={{ color: "#10b981" }}>İşte Ödülünüz</span>
+            </span>
+          ),
           duration: 8000,
           style: {
             background: "linear-gradient(135deg, #1a1a2e, #16213e)",
             border: "1px solid rgba(16,185,129,0.4)",
             color: "#f0fdf4",
           },
-          descriptionClassName: "!text-green-200",
+          classNames: {
+            title: "!text-amber-400",
+          },
         });
       } else if (isInFinal) {
         // Finalde ama kaybetti
