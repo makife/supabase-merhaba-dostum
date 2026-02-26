@@ -856,16 +856,20 @@ const GamePage = ({
 
   useEffect(() => {
     if (gameEnded && user?.id) {
-      supabase
-        .from("profiles")
-        .select("game_credits, bonus_credits")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
-          const total = (data?.game_credits ?? 0) + (data?.bonus_credits ?? 0);
-          console.log("💰 Toplam kredi:", total, "game:", data?.game_credits, "bonus:", data?.bonus_credits);
-          setUserCredits(total);
-        });
+      // Kredi iadesinin DB'ye yazılması için kısa gecikme (disconnect refund race condition fix)
+      const timer = setTimeout(() => {
+        supabase
+          .from("profiles")
+          .select("game_credits, bonus_credits")
+          .eq("id", user.id)
+          .single()
+          .then(({ data }) => {
+            const total = (data?.game_credits ?? 0) + (data?.bonus_credits ?? 0);
+            console.log("💰 Toplam kredi:", total, "game:", data?.game_credits, "bonus:", data?.bonus_credits);
+            setUserCredits(total);
+          });
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [gameEnded, user?.id]);
 
