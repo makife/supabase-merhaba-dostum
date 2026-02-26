@@ -3358,7 +3358,7 @@ const GamePage = ({
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = async () => {
-    if (jokers.degistir <= 0 || isJokerActive) return;
+    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     playSpecialSound("/degistir.mp3");
 
@@ -3445,7 +3445,7 @@ const GamePage = ({
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
   const useFisildaJoker = async () => {
-    if (jokers.fisilida <= 0 || isJokerActive) return;
+    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     // ✅ HEMEN FEEDBACK VER
     playSpecialSound("/fisilda.mp3");
@@ -3629,7 +3629,7 @@ const GamePage = ({
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   const useSenYazJoker = async () => {
-    if (jokers.senYaz <= 0 || isJokerActive) return;
+    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     playSpecialSound("/senyaz.mp3");
 
@@ -7655,11 +7655,13 @@ const GamePage = ({
                       onTouchStart={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useDegisTirJoker();
                       }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useDegisTirJoker();
                       }}
                       disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
@@ -7684,11 +7686,13 @@ const GamePage = ({
                       onTouchStart={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useFisildaJoker();
                       }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useFisildaJoker();
                       }}
                       disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
@@ -7713,11 +7717,13 @@ const GamePage = ({
                       onTouchStart={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useSenYazJoker();
                       }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded) return;
                         useSenYazJoker();
                       }}
                       disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
