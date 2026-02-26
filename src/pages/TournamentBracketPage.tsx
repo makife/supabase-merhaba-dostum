@@ -222,7 +222,7 @@ const TournamentBracketPage = () => {
   // Start all matches
   const startAllMatches = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament) return;
-    if (currentTournament.creator_id !== user.id) return;
+    // Herhangi bir oyuncu maçları başlatabilir (idempotent) — kurucu transferinde gecikme sorununu önler
 
     const currentRound = currentTournament.current_round || 1;
     const roundKey = `${tournamentId}-${currentRound}`;
@@ -321,9 +321,7 @@ const TournamentBracketPage = () => {
     if (!tournamentId || !user || !currentTournament) return;
     if (currentTournament.status !== "in_progress") return;
 
-    // Artık sadece kurucu değil, herkes expired maç kontrolü yapabilir
-    const isCreatorOrOnly = currentTournament.creator_id === user.id;
-
+    // Herhangi bir oyuncu expired maç kontrolü ve ilerleme yapabilir (idempotent)
     const checkExpired = async () => {
       const { data: expired } = await supabase
         .from("tournament_matches")
@@ -334,25 +332,20 @@ const TournamentBracketPage = () => {
 
       if (!expired?.length) {
         // Expired maç yoksa bile, tüm maçlar tamamlanmışsa advance dene
-        if (isCreatorOrOnly) {
-          checkAndAdvance();
-        }
+        checkAndAdvance();
         return;
       }
 
-      // Sadece kurucu expired maçları sonuçlandırsın (çift yazma önleme)
-      if (isCreatorOrOnly) {
-        for (const match of expired) {
-          const w = (match.player1_score || 0) >= (match.player2_score || 0) ? match.player1_id : match.player2_id;
-          await supabase
-            .from("tournament_matches")
-            .update({ status: "completed", winner_id: w })
-            .eq("id", match.id)
-            .eq("status", "in_progress");
-        }
-        fetchTournamentDetails(tournamentId);
-        setTimeout(() => checkAndAdvance(), 1000);
+      for (const match of expired) {
+        const w = (match.player1_score || 0) >= (match.player2_score || 0) ? match.player1_id : match.player2_id;
+        await supabase
+          .from("tournament_matches")
+          .update({ status: "completed", winner_id: w })
+          .eq("id", match.id)
+          .eq("status", "in_progress");
       }
+      fetchTournamentDetails(tournamentId);
+      setTimeout(() => checkAndAdvance(), 1000);
     };
 
     checkExpired();
@@ -360,7 +353,7 @@ const TournamentBracketPage = () => {
     return () => {
       if (expiredMatchCheckRef.current) clearInterval(expiredMatchCheckRef.current);
     };
-  }, [tournamentId, user?.id, currentTournament?.status, currentTournament?.creator_id, checkAndAdvance]);
+  }, [tournamentId, user?.id, currentTournament?.status, checkAndAdvance]);
 
   // Countdown
   useEffect(() => {
