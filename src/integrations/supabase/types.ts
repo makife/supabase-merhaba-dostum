@@ -1497,16 +1497,19 @@ export type Database = {
       user_presence: {
         Row: {
           is_online: boolean | null
+          last_online_notified_at: string | null
           last_seen: string | null
           user_id: string
         }
         Insert: {
           is_online?: boolean | null
+          last_online_notified_at?: string | null
           last_seen?: string | null
           user_id: string
         }
         Update: {
           is_online?: boolean | null
+          last_online_notified_at?: string | null
           last_seen?: string | null
           user_id?: string
         }

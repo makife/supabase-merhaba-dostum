@@ -13,6 +13,7 @@ export const useFriendOnlineToast = () => {
   const notifyEnabledRef = useRef(false);
   const friendNamesRef = useRef<Map<string, string>>(new Map());
   const onlineStateRef = useRef<Map<string, boolean>>(new Map());
+  const lastToastTimeRef = useRef<Map<string, number>>(new Map());
 
   // Arkadaş listesini ve ayarı yükle
   useEffect(() => {
@@ -124,9 +125,17 @@ export const useFriendOnlineToast = () => {
           // Sadece kesin false → true geçişinde toast göster
           // (oldRecord.is_online Supabase'de bazen boş geldiği için kendi state'imizi kullanıyoruz)
           if (isNowOnline && prevOnline === false) {
+            // Cooldown: aynı arkadaş için 5 dakika içinde tekrar toast gösterme
+            const lastToast = lastToastTimeRef.current.get(newRecord.user_id) || 0;
+            const now = Date.now();
+            if (now - lastToast < 5 * 60 * 1000) {
+              onlineStateRef.current.set(newRecord.user_id, isNowOnline);
+              return;
+            }
+            lastToastTimeRef.current.set(newRecord.user_id, now);
+
             const friendName = friendNamesRef.current.get(newRecord.user_id) || "Bir arkadaşın";
 
-            // In-app toast (uygulama açıksa)
             toast(`🟢 ${friendName} şu an çevrimiçi! 👋`, {
               duration: 4000,
             });
