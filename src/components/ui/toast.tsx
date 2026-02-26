@@ -32,6 +32,7 @@ const toastVariants = cva(
           "destructive group border-red-500/30 !bg-[#0f172a] text-white shadow-[0_0_24px_rgba(239,68,68,0.25)]",
         success:
           "border-green-500/30 bg-card/98 backdrop-blur-xl shadow-[0_0_24px_rgba(34,197,94,0.15)] text-card-foreground dark:text-white",
+        navy: "group border-red-500/30 bg-[#0f172a] text-white backdrop-blur-xl",
       },
     },
     defaultVariants: {
