@@ -386,88 +386,25 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Advance to next round
+  // Advance to next round — uses SECURITY DEFINER RPC to bypass RLS
   const advanceToNextRound = async (tournamentId: string): Promise<boolean> => {
     try {
-      const { data: tournament } = await supabase
-        .from("tournaments")
-        .select("current_round")
-        .eq("id", tournamentId)
-        .single();
+      const { data, error } = await supabase.rpc("advance_tournament_round" as any, {
+        p_tournament_id: tournamentId,
+      });
 
-      if (!tournament) return false;
-
-      const currentRound = tournament.current_round || 1;
-      const nextRound = currentRound + 1;
-
-      // ✅ Idempotent guard — duplicate maç oluşmasın
-      const { data: existingNextRound } = await supabase
-        .from("tournament_matches")
-        .select("id")
-        .eq("tournament_id", tournamentId)
-        .eq("round", nextRound)
-        .limit(1);
-
-      if (existingNextRound && existingNextRound.length > 0) {
-        console.log(`⚠️ Tur ${nextRound} zaten mevcut, atlanıyor`);
+      if (error) {
+        console.error("❌ Tur ilerleme RPC hatası:", error);
         return false;
       }
 
-      const { data: completedMatches } = await supabase
-        .from("tournament_matches")
-        .select("*")
-        .eq("tournament_id", tournamentId)
-        .eq("round", currentRound)
-        .eq("status", "completed")
-        .order("match_number", { ascending: true });
-
-      if (!completedMatches) return false;
-
-      const expectedMatches = currentRound === 1 ? 4 : currentRound === 2 ? 2 : 1;
-      if (completedMatches.length < expectedMatches) {
-        console.log(`⏳ Tur ${currentRound} henüz tamamlanmadı`);
+      const result = data as { success: boolean; error?: string; action?: string; new_round?: number };
+      if (!result.success) {
+        console.log(`⏳ Tur ilerleme: ${result.error}`);
         return false;
       }
 
-      if (currentRound >= 3) {
-        await supabase
-          .from("tournaments")
-          .update({ status: "completed", finished_at: new Date().toISOString() })
-          .eq("id", tournamentId);
-        console.log("🏆 Turnuva tamamlandı!");
-        return true;
-      }
-
-      const winners = completedMatches.map((m) => m.winner_id);
-      const nextRoundMatches = [];
-      for (let i = 0; i < winners.length; i += 2) {
-        nextRoundMatches.push({
-          tournament_id: tournamentId,
-          round: nextRound,
-          match_number: Math.floor(i / 2) + 1,
-          player1_id: winners[i],
-          player2_id: winners[i + 1],
-          status: "pending",
-          player1_score: 0,
-          player2_score: 0,
-        });
-      }
-
-      const { error: insertError } = await supabase.from("tournament_matches").insert(nextRoundMatches);
-      if (insertError) throw insertError;
-
-      const nextRoundStartsAt = new Date();
-      nextRoundStartsAt.setSeconds(nextRoundStartsAt.getSeconds() + 10);
-
-      await supabase
-        .from("tournaments")
-        .update({
-          current_round: nextRound,
-          next_round_starts_at: nextRoundStartsAt.toISOString(),
-        })
-        .eq("id", tournamentId);
-
-      console.log(`✅ Tur ${nextRound} oluşturuldu`);
+      console.log(`✅ Tur ilerleme: ${result.action}`, result.new_round ? `→ Tur ${result.new_round}` : "");
       await fetchTournamentDetails(tournamentId);
       return true;
     } catch (error) {

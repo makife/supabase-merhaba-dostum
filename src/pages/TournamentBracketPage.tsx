@@ -158,7 +158,6 @@ const TournamentBracketPage = () => {
     participants,
     loading,
     fetchTournamentDetails,
-    advanceToNextRound,
     leaveTournament,
   } = useTournament(tournamentId);
 
@@ -280,7 +279,7 @@ const TournamentBracketPage = () => {
     }
   }, [tournamentId, user, currentTournament, participants]);
 
-  // Check and advance round
+  // Check and advance round — uses SECURITY DEFINER RPC
   const checkAndAdvance = useCallback(async () => {
     if (!tournamentId || !user || !currentTournament || advancingRef.current) return;
 
@@ -294,27 +293,38 @@ const TournamentBracketPage = () => {
     if (!roundMatches) return;
     const allCompleted = roundMatches.every((m) => m.status === "completed");
 
-    if (allCompleted && currentRound < 3) {
+    if (allCompleted) {
       advancingRef.current = true;
-      await advanceToNextRound(tournamentId);
-      advancingRef.current = false;
-    } else if (allCompleted && currentRound === 3) {
-      await supabase
-        .from("tournaments")
-        .update({ status: "completed", finished_at: new Date().toISOString() })
-        .eq("id", tournamentId);
-
-      const finalMatch = roundMatches[0];
-      if (finalMatch?.winner_id) {
-        const winnerProfile = participants.find((p) => p.user_id === finalMatch.winner_id);
-        await (supabase.rpc as any)("notify_tournament_end", {
+      try {
+        const { data, error } = await supabase.rpc("advance_tournament_round" as any, {
           p_tournament_id: tournamentId,
-          p_winner_id: finalMatch.winner_id,
-          p_winner_name: winnerProfile?.profiles?.username || "Bir Oyuncu",
         });
+        
+        if (error) {
+          console.error("❌ checkAndAdvance RPC hatası:", error);
+        } else {
+          const result = data as any;
+          console.log("✅ checkAndAdvance RPC:", result);
+          
+          if (result?.action === "tournament_completed") {
+            const finalMatch = roundMatches.find((m) => m.round === 3);
+            if (finalMatch?.winner_id) {
+              const winnerProfile = participants.find((p) => p.user_id === finalMatch.winner_id);
+              await (supabase.rpc as any)("notify_tournament_end", {
+                p_tournament_id: tournamentId,
+                p_winner_id: finalMatch.winner_id,
+                p_winner_name: winnerProfile?.profiles?.username || "Bir Oyuncu",
+              });
+            }
+          }
+          
+          await fetchTournamentDetails(tournamentId);
+        }
+      } finally {
+        advancingRef.current = false;
       }
     }
-  }, [tournamentId, user, currentTournament, advanceToNextRound, participants]);
+  }, [tournamentId, user, currentTournament, participants, fetchTournamentDetails]);
 
   // Expired match check
   useEffect(() => {
