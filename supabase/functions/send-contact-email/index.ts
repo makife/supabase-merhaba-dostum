@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-const TO_EMAIL = "team@kelimele.site";
+const TO_EMAIL = "makifergan@gmail.com";
 const FROM_EMAIL = "Kelimele <team@kelimele.site>";
 
 const corsHeaders = {
