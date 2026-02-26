@@ -15,6 +15,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   const [selectedType, setSelectedType] = useState<"timed" | "score">("timed");
   const { playSound } = useSounds();
   const { profile, isPremium } = useUser();
+  const { toast } = useToast();
 
   const getTheme = () => {
     switch (mode) {
