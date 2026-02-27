@@ -369,11 +369,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       //   p_tournament_id: tournamentId,
       // });
 
-      if (creditError) {
-        console.error("❌ Kredi düşme hatası:", creditError);
-      } else {
-        console.log("💰 Krediler düşüldü:", creditResult);
-      }
+      //if (creditError) {
+      //   console.error("❌ Kredi düşme hatası:", creditError);
+      //  } else {
+      //   console.log("💰 Krediler düşüldü:", creditResult);
+      //  }
 
       await fetchTournamentDetails(tournamentId);
       return true;
