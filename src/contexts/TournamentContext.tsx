@@ -365,9 +365,9 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         return false;
       }
 
-      const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits" as any, {
-        p_tournament_id: tournamentId,
-      });
+      // const { data: creditResult, error: creditError } = await supabase.rpc("deduct_tournament_credits" as any, {
+      //   p_tournament_id: tournamentId,
+      // });
 
       if (creditError) {
         console.error("❌ Kredi düşme hatası:", creditError);
