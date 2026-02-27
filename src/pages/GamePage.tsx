@@ -5755,35 +5755,10 @@ const GamePage = ({
           filter: `id=eq.${tournamentMatch.id}`,
         },
         (payload) => {
-          console.log("🔄 Tournament match güncellendi:", payload.new);
-
-          // Rakip skorunu real-time güncelle
-          const newMatch = payload.new as any;
-          const currentUserId = user?.id;
-
-          if (currentUserId) {
-            const isPlayer1 = String(newMatch.player1_id) === String(currentUserId);
-            const newOpponentScore = isPlayer1 ? (newMatch.player2_score ?? 0) : (newMatch.player1_score ?? 0);
-            const newPlayerScore = isPlayer1 ? (newMatch.player1_score ?? 0) : (newMatch.player2_score ?? 0);
-
-            console.log("🔄 Real-time tournament sync:", {
-              isPlayer1,
-              newPlayerScore,
-              newOpponentScore,
-            });
-
-            // 🔥 Functional update kullan - closure sorunu yok!
-            setOpponentScore((prev) => {
-              if (newOpponentScore !== prev) {
-                console.log("🔄 Rakip skoru güncellendi:", prev, "->", newOpponentScore);
-                return newOpponentScore;
-              }
-              return prev;
-            });
-
-            // Kendi skorumuzu güncelleme - kendi skorumuz zaten local'de güncel
-            // Sadece rakipten gelen skor güncellemesini al
-          }
+          console.log("🔄 Tournament match güncellendi (secondary):", payload.new);
+          // ✅ Bu subscription sadece maç durumunu izler (completed vs in_progress)
+          // Skor sync'i primary subscription (tournament-match-xxx) üzerinden yapılıyor
+          // Duplicate skor güncellemelerini önlemek için burada skor sync YAPILMAZ
         },
       )
       .subscribe((status) => {
@@ -5793,10 +5768,7 @@ const GamePage = ({
     tournamentChannelRef.current = tournamentChannel;
 
     return () => {
-      // Cleanup sadece component unmount olduğunda
       console.log("⚠️ [GamePage] Turnuva real-time useEffect cleanup");
-      // NOT: Channel'ı burada temizlemiyoruz çünkü bağlantı koruması aktif
-      // Sadece tournamentMatch değiştiğinde veya gameMode değiştiğinde temizle
     };
   }, [gameMode, tournamentMatch?.id, user?.id]);
 
@@ -5900,13 +5872,13 @@ const GamePage = ({
     let cancelled = false;
 
     const scheduleNextAIWord = () => {
-      if (cancelled) return;
+      if (cancelled || gameEndedRef.current) return;
       // Turnuva modunda daha agresif: 1.5-10 saniye, diğer modlarda 2.5-17.5
       const minDelay = gameMode === "tournament" ? 2500 : 2500;
       const maxDelay = gameMode === "tournament" ? 25000 : 25000;
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
       setTimeout(async () => {
-        if (cancelled) return;
+        if (cancelled || gameEndedRef.current) return;
         try {
           const potentialWords = [
             // Kısa kelimeler (3-4 harf) - kolay, sık
@@ -6061,6 +6033,12 @@ const GamePage = ({
                     : 0;
               const points = basePoints + lengthBonus;
 
+              // ✅ Oyun bittiyse skor güncellemesi yapma
+              if (gameEndedRef.current) {
+                console.log("⚠️ Oyun bitti, bot skor güncellemesi atlanıyor");
+                break;
+              }
+
               const currentOpponentScore = opponentScoreRef.current;
               console.log(
                 `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${currentOpponentScore + points})`,
@@ -6103,6 +6081,10 @@ const GamePage = ({
           }
 
           if (!wordUsed) {
+            // ✅ Oyun bittiyse fallback skor da verme
+            if (gameEndedRef.current) {
+              console.log("⚠️ Oyun bitti, bot fallback skor atlanıyor");
+            } else {
             // Fallback: kelime listesi tükendi, puan ver
             const fallbackPoints =
               gameMode === "tournament"
@@ -6129,6 +6111,7 @@ const GamePage = ({
                 console.error("❌ Bot fallback score update error:", error);
               }
             }
+            } // close else (gameEndedRef check)
           }
         } catch (error) {
           console.error("🤖 AI word selection error:", error);
