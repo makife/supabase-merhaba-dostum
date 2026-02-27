@@ -4018,11 +4018,13 @@ const GamePage = ({
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
 
-      console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode);
+      console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode, "urlMatchId:", urlMatchId);
 
       // Turnuva modunda kredi düşürme - katılırken zaten 3 hak düşürüldü
-      if (gameMode === "tournament") {
-        console.log("Tournament mode - credits already deducted on join, skipping");
+      // URL'de matchId varsa veya tournament parametresi varsa da turnuva modu sayılır
+      const isTournamentGame = gameMode === "tournament" || !!urlMatchId || !!searchParams.get("tournament");
+      if (isTournamentGame) {
+        console.log("Tournament mode - credits already deducted on join, skipping credit consumption");
         return;
       }
 
