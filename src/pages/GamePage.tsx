@@ -877,7 +877,11 @@ const GamePage = ({
     if (!user?.id) return;
 
     // Güncel kredi sayısını kontrol et
-    const { data: profileData } = await supabase.from("profiles").select("game_credits, bonus_credits").eq("id", user.id).single();
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("game_credits, bonus_credits")
+      .eq("id", user.id)
+      .single();
 
     const currentCredits = (profileData?.game_credits ?? 0) + (profileData?.bonus_credits ?? 0);
     setUserCredits(currentCredits);
@@ -911,8 +915,8 @@ const GamePage = ({
         console.error("[Ad Reward] Kredi verme hatası:", error);
       } else {
         console.log("[Ad Reward] ✅ +1 kredi verildi, yeni:", newGameCredits);
-        toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı kazandınız!" });
-        window.dispatchEvent(new CustomEvent('refreshProfile'));
+        toast({ title: "Tebrikler! 🎉", description: "+1 Sayfa Eklendi!" });
+        window.dispatchEvent(new CustomEvent("refreshProfile"));
       }
     };
 
@@ -3371,7 +3375,8 @@ const GamePage = ({
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = async () => {
-    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     playSpecialSound("/degistir.mp3");
 
@@ -3458,7 +3463,8 @@ const GamePage = ({
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
   const useFisildaJoker = async () => {
-    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     // ✅ HEMEN FEEDBACK VER
     playSpecialSound("/fisilda.mp3");
@@ -3642,7 +3648,8 @@ const GamePage = ({
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   const useSenYazJoker = async () => {
-    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     playSpecialSound("/senyaz.mp3");
 
@@ -6087,32 +6094,34 @@ const GamePage = ({
             if (gameEndedRef.current) {
               console.log("⚠️ Oyun bitti, bot fallback skor atlanıyor");
             } else {
-            // Fallback: kelime listesi tükendi, puan ver
-            const fallbackPoints =
-              gameMode === "tournament"
-                ? Math.floor(Math.random() * 20) + 10 // 10-29
-                : Math.floor(Math.random() * 6) + 3; // 3-8
-            const currentOpponentScore = opponentScoreRef.current;
-            const newScore = currentOpponentScore + fallbackPoints;
-            setOpponentScore(newScore);
-            console.log(`🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`);
+              // Fallback: kelime listesi tükendi, puan ver
+              const fallbackPoints =
+                gameMode === "tournament"
+                  ? Math.floor(Math.random() * 20) + 10 // 10-29
+                  : Math.floor(Math.random() * 6) + 3; // 3-8
+              const currentOpponentScore = opponentScoreRef.current;
+              const newScore = currentOpponentScore + fallbackPoints;
+              setOpponentScore(newScore);
+              console.log(
+                `🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`,
+              );
 
-            if (gameMode === "tournament" && tournamentMatch && user) {
-              const isPlayer1 = tournamentMatch.player1_id === user.id;
-              const updateField = isPlayer1 ? "player2_score" : "player1_score";
+              if (gameMode === "tournament" && tournamentMatch && user) {
+                const isPlayer1 = tournamentMatch.player1_id === user.id;
+                const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
-              try {
-                await supabase
-                  .from("tournament_matches")
-                  .update({
-                    [updateField]: newScore,
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq("id", tournamentMatch.id);
-              } catch (error) {
-                console.error("❌ Bot fallback score update error:", error);
+                try {
+                  await supabase
+                    .from("tournament_matches")
+                    .update({
+                      [updateField]: newScore,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("id", tournamentMatch.id);
+                } catch (error) {
+                  console.error("❌ Bot fallback score update error:", error);
+                }
               }
-            }
             } // close else (gameEndedRef check)
           }
         } catch (error) {
