@@ -877,7 +877,11 @@ const GamePage = ({
     if (!user?.id) return;
 
     // Güncel kredi sayısını kontrol et
-    const { data: profileData } = await supabase.from("profiles").select("game_credits, bonus_credits").eq("id", user.id).single();
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("game_credits, bonus_credits")
+      .eq("id", user.id)
+      .single();
 
     const currentCredits = (profileData?.game_credits ?? 0) + (profileData?.bonus_credits ?? 0);
     setUserCredits(currentCredits);
@@ -912,7 +916,7 @@ const GamePage = ({
       } else {
         console.log("[Ad Reward] ✅ +1 kredi verildi, yeni:", newGameCredits);
         toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı kazandınız!" });
-        window.dispatchEvent(new CustomEvent('refreshProfile'));
+        window.dispatchEvent(new CustomEvent("refreshProfile"));
       }
     };
 
@@ -3371,7 +3375,8 @@ const GamePage = ({
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = async () => {
-    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     playSpecialSound("/degistir.mp3");
 
@@ -3458,7 +3463,8 @@ const GamePage = ({
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
   const useFisildaJoker = async () => {
-    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     // ✅ HEMEN FEEDBACK VER
     playSpecialSound("/fisilda.mp3");
@@ -3642,7 +3648,8 @@ const GamePage = ({
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   const useSenYazJoker = async () => {
-    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
+    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
+      return;
 
     playSpecialSound("/senyaz.mp3");
 
@@ -7524,13 +7531,15 @@ const GamePage = ({
                 </div>
 
                 {/* 🏆 Turnuva bilgi bandı */}
-                {gameMode === "tournament" && (
+                {gameMode === "tournament" && tournamentMatch?.round && tournamentMatch.round <= 3 && (
                   <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 flex items-center space-x-2">
                     <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
                     <span className="text-xs font-medium text-amber-200">
-                      {tournamentMatch?.round === 3
-                        ? "Final maçı! Kazanırsan sürpriz ödülün sahibi olacaksın."
-                        : "Turnuva maçı! Kazanırsan sonraki tura geçeceksin."}
+                      {tournamentMatch.round === 1
+                        ? "Çeyrek final maçı! Kazanırsan sonraki tura geçeceksin."
+                        : tournamentMatch.round === 2
+                          ? "Yarı final maçı! Kazanırsan sonraki tura geçeceksin."
+                          : "Final maçı! Kazanırsan sürpriz ödülün sahibi olacaksın."}
                     </span>
                   </div>
                 )}
