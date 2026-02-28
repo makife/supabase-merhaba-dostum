@@ -196,7 +196,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
   await supabase.from("notifications").insert({
     user_id: userId,
     type: "system",
-    message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Hakkı` : ""} hesabına eklendi!`,
+    message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`,
   });
 
   console.log(`Prize awarded to ${userId}: ${JSON.stringify(prize)}`);
