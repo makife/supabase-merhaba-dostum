@@ -180,10 +180,29 @@ const TournamentBracketPage = () => {
   const completedMatchIdsRef = useRef<Set<string>>(new Set());
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
   const tournamentEndToastShownRef = useRef(false);
+  const roundWinSoundPlayedRef = useRef<Set<number>>(new Set());
 
   // Component içine ekle (useRef'ler yanına)
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
   const confettiAnimRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!user || !matches.length) return;
+
+    const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
+    if (finalMatch?.winner_id) return; // Final sesine karışma
+
+    [1, 2].forEach((round) => {
+      if (roundWinSoundPlayedRef.current.has(round)) return;
+
+      const match = matches.find((m) => m.round === round && m.status === "completed" && m.winner_id === user.id);
+
+      if (match) {
+        roundWinSoundPlayedRef.current.add(round);
+        playSpecialSound("/turKazanma.mp3", 0.8);
+      }
+    });
+  }, [matches, user]);
 
   // useEffect ekle (diğer useEffect'lerin yanına)
   useEffect(() => {
