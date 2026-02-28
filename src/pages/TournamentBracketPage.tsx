@@ -152,14 +152,8 @@ const TournamentBracketPage = () => {
   const { playSpecialSound } = useSounds();
   const { serverNow, offset } = useServerTimeContext();
 
-  const {
-    currentTournament,
-    matches,
-    participants,
-    loading,
-    fetchTournamentDetails,
-    leaveTournament,
-  } = useTournament(tournamentId);
+  const { currentTournament, matches, participants, loading, fetchTournamentDetails, leaveTournament } =
+    useTournament(tournamentId);
 
   const [isLeaving, setIsLeaving] = useState(false);
   const [countdown, setCountdown] = useState(10);
@@ -299,13 +293,13 @@ const TournamentBracketPage = () => {
         const { data, error } = await supabase.rpc("advance_tournament_round" as any, {
           p_tournament_id: tournamentId,
         });
-        
+
         if (error) {
           console.error("❌ checkAndAdvance RPC hatası:", error);
         } else {
           const result = data as any;
           console.log("✅ checkAndAdvance RPC:", result);
-          
+
           if (result?.action === "tournament_completed") {
             const finalMatch = roundMatches.find((m) => m.round === 3);
             if (finalMatch?.winner_id) {
@@ -317,7 +311,7 @@ const TournamentBracketPage = () => {
               });
             }
           }
-          
+
           await fetchTournamentDetails(tournamentId);
         }
       } finally {
@@ -655,7 +649,7 @@ const TournamentBracketPage = () => {
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                className="w-42 h-auto mx-auto drop-shadow-2xl mt-4"
+                className="w-32 h-auto mx-auto drop-shadow-2xl mt-4"
                 alt="Kazanılan Ödül"
               />
             </div>
