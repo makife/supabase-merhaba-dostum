@@ -368,7 +368,7 @@ const MarketPage = () => {
 
       toast({
         title: "Satın Alma Başarılı! 🖋️",
-        description: `${itemToBuy.name} başarıyla alındı.`,
+        description: <span className="text-white">{itemToBuy.name} başarıyla alındı.</span>,
         className: "bg-green-600 text-white border-green-500",
       });
     } catch (error) {
