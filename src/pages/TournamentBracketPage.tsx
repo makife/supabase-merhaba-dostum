@@ -732,37 +732,16 @@ const TournamentBracketPage = () => {
   if (showChampion) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
-        {/* Arka plan görseli */}
         <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon" />
-
         {/* Konfeti canvas */}
         <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
-
-        {/* İçerik - alt yarı */}
-        <div className="relative z-20 flex flex-col items-center justify-start w-full h-full pt-[55%]">
+        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-8">
           {wonReward && (
             <div className="text-center">
-              {/* Konturlu "Ödülünüz" yazısı */}
-              <h2
-                className="text-white text-3xl font-black mb-4 tracking-widest uppercase"
-                style={{
-                  textShadow: `
-                  0 0 20px rgba(255, 215, 0, 0.9),
-                  0 0 40px rgba(255, 215, 0, 0.6),
-                  0 0 60px rgba(255, 215, 0, 0.3),
-                  2px 2px 0px #000,
-                  -2px -2px 0px #000,
-                  2px -2px 0px #000,
-                  -2px 2px 0px #000,
-                  0 0 80px rgba(255, 165, 0, 0.4)
-                `,
-                }}
-              >
-                🏆 Ödülünüz
-              </h2>
+              <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                className="w-32 h-auto mx-auto drop-shadow-2xl"
+                className="w-34 h-auto mx-auto drop-shadow-2xl mt-4"
                 alt="Kazanılan Ödül"
               />
             </div>
@@ -770,7 +749,6 @@ const TournamentBracketPage = () => {
         </div>
       </div>
     );
-  }
 
   if (showEliminated) {
     return (
