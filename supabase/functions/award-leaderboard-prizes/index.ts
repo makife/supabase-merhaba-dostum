@@ -32,7 +32,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Türkiye saati = UTC+3
+    // TEST MODU: { "test": true, "userId": "...", "prizeType": "monthly" }
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    if (body.test === true && body.userId) {
+      const prizeType = body.prizeType || "monthly";
+      const prize = PRIZES[prizeType];
+      if (!prize) {
+        return new Response(
+          JSON.stringify({ error: "Gecersiz prizeType. weekly / monthly / season olmali." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      await awardPrize(supabase, body.userId, prize);
+      return new Response(
+        JSON.stringify({ success: true, message: `Test: ${prizeType} odulu verildi`, userId: body.userId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Turkiye saati = UTC+3
     const now = new Date();
     const turkeyOffset = 3 * 60 * 60 * 1000;
     const turkeyNow = new Date(now.getTime() + turkeyOffset);
@@ -44,7 +62,7 @@ Deno.serve(async (req) => {
 
     const results: string[] = [];
 
-    // --- Check Weekly (Her Pazartesi 00:00 Türkiye saati) ---
+    // Weekly (Her Pazartesi 00:00 Turkiye saati)
     if (dayOfWeek === 1 && hour < 1) {
       const winner = await findWeeklyWinner(supabase);
       if (winner) {
@@ -53,7 +71,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Check Monthly (Her ayın 1'i 00:00 Türkiye saati) ---
+    // Monthly (Her ayin 1'i 00:00 Turkiye saati)
     if (dateOfMonth === 1 && hour < 1) {
       const winner = await findMonthlyWinner(supabase);
       if (winner) {
@@ -62,7 +80,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Check Season (Mayıs 1, Eylül 1, Ocak 1 Türkiye saati) ---
+    // Season (Mayis 1, Eylul 1, Ocak 1 Turkiye saati)
     const seasonResetMonths = [0, 4, 8];
     if (seasonResetMonths.includes(month) && dateOfMonth === 1 && hour < 1) {
       const prevSeasonStart = new Date(turkeyNow);
@@ -112,7 +130,6 @@ async function findSeasonWinner(supabase: any, seasonStart: string, seasonEnd: s
 }
 
 async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
-  // ✅ Düzeltildi: item type isimleri doğru (joker_degistir, joker_fisilida, joker_senyaz)
   const jokerTypes = [
     { type: "joker_degistir", amount: prize.degistir },
     { type: "joker_fisilida", amount: prize.fisilida },
@@ -139,7 +156,6 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     }
   }
 
-  // Game credits
   if (prize.oyunHakki) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -158,7 +174,6 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     }
   }
 
-  // Şampiyonluk sayacı
   const { data: currentProfile } = await supabase
     .from("profiles")
     .select(prize.countColumn)
@@ -176,7 +191,6 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
       .eq("id", userId);
   }
 
-  // Badge (sadece ilk kez)
   const { data: existingBadge } = await supabase
     .from("user_badges")
     .select("id")
@@ -192,7 +206,6 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     console.log(`Badge ${prize.badgeId} awarded to ${userId}`);
   }
 
-  // ✅ Düzeltildi: type "system" olarak değiştirildi (notifications_type_check constraint)
   await supabase.from("notifications").insert({
     user_id: userId,
     type: "system",
