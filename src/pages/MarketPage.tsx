@@ -147,7 +147,7 @@ const MarketPage = () => {
       id: "h_full",
       type: "heart",
       name: "Müsvedde",
-      description: "5 sayfa verir",
+      description: "Stoğunuza 5 sayfa ekler",
       priceInInk: 25,
       value: 5,
       image: "/bescanPaketi.png",
