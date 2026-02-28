@@ -261,4 +261,3 @@ const LeaderboardPrizeDialog = () => {
 };
 
 export default LeaderboardPrizeDialog;
-            
