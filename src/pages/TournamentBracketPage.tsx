@@ -499,16 +499,25 @@ const TournamentBracketPage = () => {
       } else if (isInFinal) {
         // Finalde ama kaybetti
         setShowEliminated(true);
-        toast.error(`🏆 Turnuva Sona Erdi`, {
-          description: `Şampiyon: ${winnerName} — İyi oyun!`,
-          duration: 8000,
-          style: {
-            background: "linear-gradient(135deg, #1a1a2e, #16213e)",
-            border: "1px solid rgba(239,68,68,0.3)",
-            color: "#fef2f2",
+        toast.custom(
+          () => (
+            <div
+              className="backdrop-blur-md rounded-xl p-4 shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                color: "#fef2f2",
+              }}
+            >
+              <p className="text-base font-medium">🏆 Turnuva Sona Erdi</p>
+
+              <p className="mt-1 text-sm text-red-200 font-normal">Şampiyon: {winnerName} — İyi oyun!</p>
+            </div>
+          ),
+          {
+            duration: 8000,
           },
-          descriptionClassName: "!text-red-200",
-        });
+        );
       } else {
         // Finalistte olmayan katılımcı
         toast(`🏆 Turnuva Sona Erdi`, {
