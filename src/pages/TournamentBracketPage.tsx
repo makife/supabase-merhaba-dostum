@@ -181,6 +181,87 @@ const TournamentBracketPage = () => {
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
   const tournamentEndToastShownRef = useRef(false);
 
+  // Component içine ekle (useRef'ler yanına)
+  const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
+  const confettiAnimRef = useRef<number | null>(null);
+
+  // useEffect ekle (diğer useEffect'lerin yanına)
+  useEffect(() => {
+    if (!showChampion) return;
+
+    const canvas = confettiCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const pieces: {
+      x: number;
+      y: number;
+      r: number;
+      color: string;
+      speed: number;
+      angle: number;
+      spin: number;
+      opacity: number;
+    }[] = [];
+
+    const colors = [
+      "#FFD700",
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98FB98",
+      "#F0E68C",
+      "#FF69B4",
+    ];
+
+    for (let i = 0; i < 120; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: -Math.random() * canvas.height,
+        r: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speed: Math.random() * 3 + 2,
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.2,
+        opacity: Math.random() * 0.6 + 0.4,
+      });
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.y += p.speed;
+        p.angle += p.spin;
+        p.x += Math.sin(p.angle) * 1.5;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = p.color;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 1.6);
+        ctx.restore();
+      });
+      confettiAnimRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (confettiAnimRef.current) cancelAnimationFrame(confettiAnimRef.current);
+    };
+  }, [showChampion]);
+
   // fromCompletedMatch state
   useEffect(() => {
     const state = location.state as { fromCompletedMatch?: string } | null;
@@ -651,14 +732,37 @@ const TournamentBracketPage = () => {
   if (showChampion) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+        {/* Arka plan görseli */}
         <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon" />
-        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-8">
+
+        {/* Konfeti canvas */}
+        <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
+
+        {/* İçerik - alt yarı */}
+        <div className="relative z-20 flex flex-col items-center justify-start w-full h-full pt-[55%]">
           {wonReward && (
             <div className="text-center">
-              <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
+              {/* Konturlu "Ödülünüz" yazısı */}
+              <h2
+                className="text-white text-3xl font-black mb-4 tracking-widest uppercase"
+                style={{
+                  textShadow: `
+                  0 0 20px rgba(255, 215, 0, 0.9),
+                  0 0 40px rgba(255, 215, 0, 0.6),
+                  0 0 60px rgba(255, 215, 0, 0.3),
+                  2px 2px 0px #000,
+                  -2px -2px 0px #000,
+                  2px -2px 0px #000,
+                  -2px 2px 0px #000,
+                  0 0 80px rgba(255, 165, 0, 0.4)
+                `,
+                }}
+              >
+                🏆 Ödülünüz
+              </h2>
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES]}
-                className="w-32 h-auto mx-auto drop-shadow-2xl mt-4"
+                className="w-32 h-auto mx-auto drop-shadow-2xl"
                 alt="Kazanılan Ödül"
               />
             </div>
