@@ -877,11 +877,7 @@ const GamePage = ({
     if (!user?.id) return;
 
     // Güncel kredi sayısını kontrol et
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("game_credits, bonus_credits")
-      .eq("id", user.id)
-      .single();
+    const { data: profileData } = await supabase.from("profiles").select("game_credits, bonus_credits").eq("id", user.id).single();
 
     const currentCredits = (profileData?.game_credits ?? 0) + (profileData?.bonus_credits ?? 0);
     setUserCredits(currentCredits);
@@ -915,8 +911,8 @@ const GamePage = ({
         console.error("[Ad Reward] Kredi verme hatası:", error);
       } else {
         console.log("[Ad Reward] ✅ +1 kredi verildi, yeni:", newGameCredits);
-        toast({ title: "Tebrikler! 🎉", description: "+1 Sayfa Eklendi!" });
-        window.dispatchEvent(new CustomEvent("refreshProfile"));
+        toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı kazandınız!" });
+        window.dispatchEvent(new CustomEvent('refreshProfile'));
       }
     };
 
@@ -3375,8 +3371,7 @@ const GamePage = ({
 
   // 1. Değiştir Jokeri - 5 harf değiştir (3 sesli, 2 sessiz)
   const useDegisTirJoker = async () => {
-    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
-      return;
+    if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     playSpecialSound("/degistir.mp3");
 
@@ -3463,8 +3458,7 @@ const GamePage = ({
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
   const useFisildaJoker = async () => {
-    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
-      return;
+    if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     // ✅ HEMEN FEEDBACK VER
     playSpecialSound("/fisilda.mp3");
@@ -3648,8 +3642,7 @@ const GamePage = ({
 
   // 3. Sen Yaz Jokeri - Otomatik kelime üret ve gönder
   const useSenYazJoker = async () => {
-    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent)
-      return;
+    if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded || showCountdown || !!preparingOpponent) return;
 
     playSpecialSound("/senyaz.mp3");
 
@@ -4025,13 +4018,11 @@ const GamePage = ({
     const initializeGame = async () => {
       fadeOutBackgroundMusic(1500);
 
-      console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode, "urlMatchId:", urlMatchId);
+      console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode);
 
       // Turnuva modunda kredi düşürme - katılırken zaten 3 hak düşürüldü
-      // URL'de matchId varsa veya tournament parametresi varsa da turnuva modu sayılır
-      const isTournamentGame = gameMode === "tournament" || !!urlMatchId || !!searchParams.get("tournament");
-      if (isTournamentGame) {
-        console.log("Tournament mode - credits already deducted on join, skipping credit consumption");
+      if (gameMode === "tournament") {
+        console.log("Tournament mode - credits already deducted on join, skipping");
         return;
       }
 
@@ -5764,10 +5755,35 @@ const GamePage = ({
           filter: `id=eq.${tournamentMatch.id}`,
         },
         (payload) => {
-          console.log("🔄 Tournament match güncellendi (secondary):", payload.new);
-          // ✅ Bu subscription sadece maç durumunu izler (completed vs in_progress)
-          // Skor sync'i primary subscription (tournament-match-xxx) üzerinden yapılıyor
-          // Duplicate skor güncellemelerini önlemek için burada skor sync YAPILMAZ
+          console.log("🔄 Tournament match güncellendi:", payload.new);
+
+          // Rakip skorunu real-time güncelle
+          const newMatch = payload.new as any;
+          const currentUserId = user?.id;
+
+          if (currentUserId) {
+            const isPlayer1 = String(newMatch.player1_id) === String(currentUserId);
+            const newOpponentScore = isPlayer1 ? (newMatch.player2_score ?? 0) : (newMatch.player1_score ?? 0);
+            const newPlayerScore = isPlayer1 ? (newMatch.player1_score ?? 0) : (newMatch.player2_score ?? 0);
+
+            console.log("🔄 Real-time tournament sync:", {
+              isPlayer1,
+              newPlayerScore,
+              newOpponentScore,
+            });
+
+            // 🔥 Functional update kullan - closure sorunu yok!
+            setOpponentScore((prev) => {
+              if (newOpponentScore !== prev) {
+                console.log("🔄 Rakip skoru güncellendi:", prev, "->", newOpponentScore);
+                return newOpponentScore;
+              }
+              return prev;
+            });
+
+            // Kendi skorumuzu güncelleme - kendi skorumuz zaten local'de güncel
+            // Sadece rakipten gelen skor güncellemesini al
+          }
         },
       )
       .subscribe((status) => {
@@ -5777,7 +5793,10 @@ const GamePage = ({
     tournamentChannelRef.current = tournamentChannel;
 
     return () => {
+      // Cleanup sadece component unmount olduğunda
       console.log("⚠️ [GamePage] Turnuva real-time useEffect cleanup");
+      // NOT: Channel'ı burada temizlemiyoruz çünkü bağlantı koruması aktif
+      // Sadece tournamentMatch değiştiğinde veya gameMode değiştiğinde temizle
     };
   }, [gameMode, tournamentMatch?.id, user?.id]);
 
@@ -5881,13 +5900,13 @@ const GamePage = ({
     let cancelled = false;
 
     const scheduleNextAIWord = () => {
-      if (cancelled || gameEndedRef.current) return;
+      if (cancelled) return;
       // Turnuva modunda daha agresif: 1.5-10 saniye, diğer modlarda 2.5-17.5
       const minDelay = gameMode === "tournament" ? 2500 : 2500;
       const maxDelay = gameMode === "tournament" ? 25000 : 25000;
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
       setTimeout(async () => {
-        if (cancelled || gameEndedRef.current) return;
+        if (cancelled) return;
         try {
           const potentialWords = [
             // Kısa kelimeler (3-4 harf) - kolay, sık
@@ -6042,12 +6061,6 @@ const GamePage = ({
                     : 0;
               const points = basePoints + lengthBonus;
 
-              // ✅ Oyun bittiyse skor güncellemesi yapma
-              if (gameEndedRef.current) {
-                console.log("⚠️ Oyun bitti, bot skor güncellemesi atlanıyor");
-                break;
-              }
-
               const currentOpponentScore = opponentScoreRef.current;
               console.log(
                 `🤖 AI used word in ${gameMode}: ${word} with ${points} points (Total opponents: ${currentOpponentScore + points})`,
@@ -6090,39 +6103,32 @@ const GamePage = ({
           }
 
           if (!wordUsed) {
-            // ✅ Oyun bittiyse fallback skor da verme
-            if (gameEndedRef.current) {
-              console.log("⚠️ Oyun bitti, bot fallback skor atlanıyor");
-            } else {
-              // Fallback: kelime listesi tükendi, puan ver
-              const fallbackPoints =
-                gameMode === "tournament"
-                  ? Math.floor(Math.random() * 20) + 10 // 10-29
-                  : Math.floor(Math.random() * 6) + 3; // 3-8
-              const currentOpponentScore = opponentScoreRef.current;
-              const newScore = currentOpponentScore + fallbackPoints;
-              setOpponentScore(newScore);
-              console.log(
-                `🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`,
-              );
+            // Fallback: kelime listesi tükendi, puan ver
+            const fallbackPoints =
+              gameMode === "tournament"
+                ? Math.floor(Math.random() * 20) + 10 // 10-29
+                : Math.floor(Math.random() * 6) + 3; // 3-8
+            const currentOpponentScore = opponentScoreRef.current;
+            const newScore = currentOpponentScore + fallbackPoints;
+            setOpponentScore(newScore);
+            console.log(`🤖 AI couldn't find unused word, got fallback ${fallbackPoints} points (Total: ${newScore})`);
 
-              if (gameMode === "tournament" && tournamentMatch && user) {
-                const isPlayer1 = tournamentMatch.player1_id === user.id;
-                const updateField = isPlayer1 ? "player2_score" : "player1_score";
+            if (gameMode === "tournament" && tournamentMatch && user) {
+              const isPlayer1 = tournamentMatch.player1_id === user.id;
+              const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
-                try {
-                  await supabase
-                    .from("tournament_matches")
-                    .update({
-                      [updateField]: newScore,
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", tournamentMatch.id);
-                } catch (error) {
-                  console.error("❌ Bot fallback score update error:", error);
-                }
+              try {
+                await supabase
+                  .from("tournament_matches")
+                  .update({
+                    [updateField]: newScore,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", tournamentMatch.id);
+              } catch (error) {
+                console.error("❌ Bot fallback score update error:", error);
               }
-            } // close else (gameEndedRef check)
+            }
           }
         } catch (error) {
           console.error("🤖 AI word selection error:", error);

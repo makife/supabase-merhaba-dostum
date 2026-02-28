@@ -249,6 +249,10 @@ serve(async (req) => {
               headers: { "apns-priority": "10" },
               payload: { aps: { sound: "default", badge: 1 } },
             },
+            data: {
+              type: "credit_refresh",
+              credits: String(newTotal),
+            },
           },
         };
 
