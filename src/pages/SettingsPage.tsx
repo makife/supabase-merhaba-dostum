@@ -152,7 +152,7 @@ const SettingsPage = () => {
       if (checked) {
         // Önce switch'i aç (optimistic update)
         setNotifications(true);
-        
+
         const permissionGranted = await requestPermissions();
         console.log("🔔 İzin sonucu:", permissionGranted);
 
@@ -292,7 +292,7 @@ const SettingsPage = () => {
       <div class="space-y-4">
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
-          <p class="text-lg font-medium">Versiyon 4.9.0</p>
+          <p class="text-lg font-medium">Versiyon 5.1.6</p>
         </div>
         
         <div class="space-y-3">
