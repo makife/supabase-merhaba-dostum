@@ -7528,7 +7528,9 @@ const GamePage = ({
                   <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 flex items-center space-x-2">
                     <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
                     <span className="text-xs font-medium text-amber-200">
-                      Turnuva maçı! Kazanırsan sonraki tura geçeceksin.
+                      {tournamentMatch?.round === 3
+                        ? "Final maçı! Kazanırsan sürpriz ödülün sahibi olacaksın."
+                        : "Turnuva maçı! Kazanırsan sonraki tura geçeceksin."}
                     </span>
                   </div>
                 )}
