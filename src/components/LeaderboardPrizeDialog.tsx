@@ -20,12 +20,14 @@ const LeaderboardPrizeDialog = () => {
     if (!user) return;
 
     const checkPrizeNotifications = async () => {
+      // type = "system" ve mesajda liderlik ödülü keyword'ü ara
       const { data, error } = await supabase
         .from("notifications")
         .select("id, message")
         .eq("user_id", user.id)
-        .eq("type", "leaderboard_prize")
+        .eq("type", "system")
         .eq("is_read", false)
+        .ilike("message", "%liderlik tablosunda 1. oldun%")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
