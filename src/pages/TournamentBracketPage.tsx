@@ -749,6 +749,7 @@ const TournamentBracketPage = () => {
         </div>
       </div>
     );
+  }
 
   if (showEliminated) {
     return (
