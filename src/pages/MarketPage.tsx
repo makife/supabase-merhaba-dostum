@@ -57,14 +57,14 @@ const MarketPage = () => {
   const { isAdLoading, initializeAdMob, loadRewardedAd, showRewardedAd } = useAdMob();
   const { isLoading: isSubscriptionLoading, purchaseSubscription, restoreSubscriptions } = useNativeSubscriptions();
   const { isLoading: isRestoreLoading, purchasePackage } = useNativePurchases();
-  
+
   // AdMob'u sayfa yüklendiğinde initialize et
   useEffect(() => {
     initializeAdMob();
   }, [initializeAdMob]);
 
   // 🔄 Global Resync Hook - bağlantı geri geldiğinde profil verilerini otomatik tazele
-  usePageResync(refreshProfile, 'MarketPage', false);
+  usePageResync(refreshProfile, "MarketPage", false);
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -137,7 +137,7 @@ const MarketPage = () => {
       type: "joker",
       subtype: "joker_senyaz",
       name: "Sen Yaz",
-      description: "Kendi kelimeni yaz",
+      description: "Senin yerine kelime yazar",
       priceInInk: 20,
       value: 1,
       image: "/senyazIkon.png",
@@ -275,7 +275,7 @@ const MarketPage = () => {
 
     setShowConfirmation(false);
     setPurchaseLoading(true);
-    window.dispatchEvent(new CustomEvent('purchaseStarted'));
+    window.dispatchEvent(new CustomEvent("purchaseStarted"));
     try {
       // 🔥 FIX: Önce veritabanından güncel değerleri çek (stale state önleme)
       const { data: freshProfile, error: freshError } = await supabase
@@ -337,9 +337,9 @@ const MarketPage = () => {
         const newGameCredits = currentGameCredits + addToGame;
         const newBonusCredits = currentBonusCredits + addToBonus;
 
-        const updateData: any = { 
-          game_credits: newGameCredits, 
-          bonus_credits: newBonusCredits 
+        const updateData: any = {
+          game_credits: newGameCredits,
+          bonus_credits: newBonusCredits,
         };
         if (newGameCredits >= 5) {
           updateData.last_credit_refresh = null;
@@ -403,10 +403,10 @@ const MarketPage = () => {
 
     try {
       console.log("[Market] 📺 Reklam yükleniyor...");
-      
+
       // 🔧 Önce reklamı yükle - başarısız olursa devam etme
       const adLoaded = await loadRewardedAd();
-      
+
       if (!adLoaded) {
         console.log("[Market] ❌ Reklam yüklenemedi");
         toast({
@@ -416,9 +416,9 @@ const MarketPage = () => {
         });
         return;
       }
-      
+
       console.log("[Market] ✅ Reklam yüklendi, gösteriliyor...");
-      
+
       // 🔧 Reklamı göster
       const adShown = await showRewardedAd();
 
@@ -430,7 +430,7 @@ const MarketPage = () => {
         } else {
           await nativeStorage.setItem(STORAGE_KEYS.AD_COUNT, (storedCount + 1).toString());
         }
-        
+
         // Profili yenile - giveReward içindeki refreshProfile event'i zaten tetikleniyor
         // Ek olarak burada da kısa bir gecikmeyle yeniliyoruz
         setTimeout(() => refreshProfile(), 500);
