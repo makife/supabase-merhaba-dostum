@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Smile } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { playNativeSound } from "@/services/nativeAudioService";
 
 const EMOJIS = [
   { id: "gulen", src: "/emojiler/gulenEmoji.png", label: "Gülen" },
@@ -79,6 +80,8 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
           setOpponentEmoji(overlay);
           if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
           opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+          // Rakipten emoji geldiğinde ses çal
+          playNativeSound('beep', 0.5);
         }
       })
       .subscribe();
@@ -109,6 +112,9 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
       setPlayerEmoji({ userId, emojiSrc, timestamp: Date.now() });
       if (playerTimerRef.current) clearTimeout(playerTimerRef.current);
       playerTimerRef.current = setTimeout(() => setPlayerEmoji(null), 3000);
+
+      // Emoji gönderildiğinde ses çal
+      playNativeSound('beep', 0.5);
 
       setShowPicker(false);
       setCooldown(true);
