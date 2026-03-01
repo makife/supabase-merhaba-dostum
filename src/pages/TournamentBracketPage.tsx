@@ -181,6 +181,7 @@ const TournamentBracketPage = () => {
   const expiredMatchCheckRef = useRef<NodeJS.Timeout | null>(null);
   const tournamentEndToastShownRef = useRef(false);
   const roundWinSoundPlayedRef = useRef<Set<number>>(new Set());
+  const championSoundPlayedRef = useRef(false);
 
   // Component içine ekle (useRef'ler yanına)
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -189,6 +190,9 @@ const TournamentBracketPage = () => {
   useEffect(() => {
     if (!user || !matches.length || !currentTournament) return;
 
+    // Şampiyon sesi zaten çalındıysa tur sesini çalma
+    if (championSoundPlayedRef.current) return;
+
     // Turnuva tamamlandıysa tur atlama sesi çalma (final sesiyle çakışmayı önle)
     if (currentTournament.status !== "in_progress") return;
 
@@ -196,8 +200,11 @@ const TournamentBracketPage = () => {
     const isFinalCompleted = matches.some((m) => m.round === 3 && m.status === "completed");
     if (isFinalCompleted) return;
 
+    // Round 3 maçı varsa (final başlamış demek), tur sesi çalma - şampiyon sesiyle çakışabilir
+    const hasFinalMatch = matches.some((m) => m.round === 3);
+    if (hasFinalMatch) return;
+
     // Sadece "bir önceki tur" için ses çal:
-    // current_round=2 ise round 1, current_round=3 ise round 2
     const justCompletedRound = (currentTournament.current_round || 1) - 1;
     if (justCompletedRound !== 1 && justCompletedRound !== 2) return;
 
@@ -585,6 +592,7 @@ const TournamentBracketPage = () => {
 
       if (finalMatch.winner_id === user.id) {
         // Şampiyon
+        championSoundPlayedRef.current = true;
         setShowChampion(true);
         playSpecialSound("/sampiyon.mp3", 0.8);
         giveChampionReward();
