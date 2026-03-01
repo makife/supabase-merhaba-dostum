@@ -212,6 +212,25 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         console.log("🔄 Rematch gönderiliyor:", { from: userId.slice(-8), to: opponentId.slice(-8) });
 
+        // 🔒 HAK KONTROLÜ: Göndermeden önce yeterli hak var mı kontrol et
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("game_credits, bonus_credits")
+          .eq("id", userId)
+          .single();
+
+        const senderCredits = (senderProfile?.game_credits || 0) + (senderProfile?.bonus_credits || 0);
+        if (senderCredits < 1) {
+          toast({
+            title: "Yetersiz Hak",
+            description: "Oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
+            variant: "destructive",
+            duration: 3000,
+          });
+          navigate("/market");
+          return false;
+        }
+
         // Clear own opt-out since we want to rematch
         await supabase.from("rematch_opt_outs").delete().eq("user_id", userId);
 
