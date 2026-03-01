@@ -35,11 +35,18 @@ export function useActivityTracker() {
       }
     }, 20000);
 
-    // Capacitor App state listener - sadece kullanıcı gerçekten
-    // uygulamayı aktif açtığında tetiklenir (push bildirimi hariç)
+    // Capacitor App state listener - push bildirimi arka planda uyandırınca
+    // isActive=true gelebilir, bu yüzden visibility + gecikme kontrolü ekle
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        updateLastSeen();
+        // Push wake vs gerçek foreground ayrımı: 500ms bekle, hâlâ visible ise güncelle
+        setTimeout(() => {
+          if (document.visibilityState === "visible") {
+            updateLastSeen();
+          } else {
+            console.log("⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor");
+          }
+        }, 500);
       }
     });
 
