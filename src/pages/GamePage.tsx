@@ -7572,11 +7572,11 @@ const GamePage = ({
                             fontSize: "2.25rem",
                             textShadow: "0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4)",
                           }}
-                          initial={{ x: 250, opacity: 0 }}
-                          animate={{ x: -250, opacity: [0, 1, 1, 0] }}
-                          transition={{ duration: 3, ease: "easeInOut" }}
+                          initial={{ x: 0, opacity: 0 }}
+                          animate={{ x: [0, 0, -300], opacity: [0, 1, 0] }}
+                          transition={{ duration: 3, times: [0, 0.33, 1], ease: "easeInOut" }}
                         >
-                          <span>⏰ Süre</span>
+                          <span>Süre</span>
                           <span>Azalıyor!</span>
                         </motion.div>
                       </motion.div>
