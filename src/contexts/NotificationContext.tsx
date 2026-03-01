@@ -28,6 +28,23 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
       label: "✅ Katıl",
       onClick: async () => {
         toast.dismiss(toastId);
+
+        // 🔒 Kredi kontrolü
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("game_credits, bonus_credits")
+            .eq("id", user.id)
+            .single();
+          
+          const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+          if (totalCredits < 1) {
+            toast.error("Yetersiz Hak! Oyun hakkınız bulunmamaktadır.", { duration: 3000 });
+            navigate("/market");
+            return;
+          }
+        }
+
         await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
 
         // Davet edene kabul bildirimi gönder
@@ -38,8 +55,8 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
           .maybeSingle();
 
         if (roomData?.host_id && user) {
-          const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
-          await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", true);
+          const { data: userProfile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+          await sendInviteResponseNotification(roomData.host_id, userProfile?.username || "Oyuncu", true);
         }
 
         navigate(`/private-room/waiting/${notification.related_id}`);
