@@ -252,7 +252,6 @@ serve(async (req) => {
             data: {
               type: "credit_refresh",
               credits: String(newTotal),
-              suppress_presence: "true",
             },
           },
         };
