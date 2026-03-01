@@ -7483,6 +7483,7 @@ const GamePage = ({
                           · Maç {tournamentMatch.match_number}
                         </div>
                       )}
+                      <div className="relative">
                       <div
                         className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
                           displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
@@ -7505,8 +7506,32 @@ const GamePage = ({
                             letterSpacing: "0.1em",
                           }}
                         >
-                          {formatTime(displayTime)}
+                        {formatTime(displayTime)}
                         </span>
+                      </div>
+                      {/* Süre Azalıyor marquee animation - 30 saniyede tetiklenir */}
+                      <AnimatePresence>
+                        {timeWarningPlayed && displayTime <= 30 && displayTime >= 27 && (
+                          <motion.div
+                            className="absolute left-0 right-0 flex items-center justify-center overflow-hidden pointer-events-none"
+                            style={{ top: "100%", marginTop: "4px" }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <motion.span
+                              className="text-xs font-bold text-red-400 whitespace-nowrap"
+                              style={{ textShadow: "0 0 8px rgba(239,68,68,0.6)" }}
+                              initial={{ x: 80, opacity: 0 }}
+                              animate={{ x: -80, opacity: [0, 1, 1, 0] }}
+                              transition={{ duration: 3, ease: "easeInOut" }}
+                            >
+                              ⏰ Süre Azalıyor!
+                            </motion.span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                       </div>
                     </div>
                   ) : (
