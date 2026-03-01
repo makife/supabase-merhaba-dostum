@@ -187,22 +187,31 @@ const TournamentBracketPage = () => {
   const confettiAnimRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!user || !matches.length) return;
+    if (!user || !matches.length || !currentTournament) return;
 
-    const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
-    if (finalMatch?.winner_id) return; // Final sesine karışma
+    // Turnuva tamamlandıysa tur atlama sesi çalma (final sesiyle çakışmayı önle)
+    if (currentTournament.status !== "in_progress") return;
 
-    [1, 2].forEach((round) => {
-      if (roundWinSoundPlayedRef.current.has(round)) return;
+    // Final sonuçlandıysa tur atlama sesi çalma (şampiyon sesiyle çakışmayı önle)
+    const isFinalCompleted = matches.some((m) => m.round === 3 && m.status === "completed");
+    if (isFinalCompleted) return;
 
-      const match = matches.find((m) => m.round === round && m.status === "completed" && m.winner_id === user.id);
+    // Sadece "bir önceki tur" için ses çal:
+    // current_round=2 ise round 1, current_round=3 ise round 2
+    const justCompletedRound = (currentTournament.current_round || 1) - 1;
+    if (justCompletedRound !== 1 && justCompletedRound !== 2) return;
 
-      if (match) {
-        roundWinSoundPlayedRef.current.add(round);
-        playSpecialSound("/turKazanma.mp3", 0.8);
-      }
-    });
-  }, [matches, user]);
+    if (roundWinSoundPlayedRef.current.has(justCompletedRound)) return;
+
+    const wonMatch = matches.find(
+      (m) => m.round === justCompletedRound && m.status === "completed" && m.winner_id === user.id,
+    );
+
+    if (wonMatch) {
+      roundWinSoundPlayedRef.current.add(justCompletedRound);
+      playSpecialSound("/turKazanma.mp3", 0.8);
+    }
+  }, [matches, user, currentTournament, playSpecialSound]);
 
   // useEffect ekle (diğer useEffect'lerin yanına)
   useEffect(() => {
