@@ -7509,29 +7509,7 @@ const GamePage = ({
                         {formatTime(displayTime)}
                         </span>
                       </div>
-                      {/* Süre Azalıyor marquee animation - 30 saniyede tetiklenir */}
-                      <AnimatePresence>
-                        {timeWarningPlayed && displayTime <= 30 && displayTime >= 27 && (
-                          <motion.div
-                            className="absolute left-0 right-0 flex items-center justify-center overflow-hidden pointer-events-none"
-                            style={{ top: "100%", marginTop: "4px" }}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <motion.span
-                              className="text-xs font-bold text-red-400 whitespace-nowrap"
-                              style={{ textShadow: "0 0 8px rgba(239,68,68,0.6)" }}
-                              initial={{ x: 80, opacity: 0 }}
-                              animate={{ x: -80, opacity: [0, 1, 1, 0] }}
-                              transition={{ duration: 3, ease: "easeInOut" }}
-                            >
-                              ⏰ Süre Azalıyor!
-                            </motion.span>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {/* Süre Azalıyor - moved to avatar cards overlay below */}
                       </div>
                     </div>
                   ) : (
@@ -7577,6 +7555,33 @@ const GamePage = ({
 
                 {/* Scores - Oyuncu kartları */}
                 <div className="grid grid-cols-2 gap-3 relative mb-2">
+                  {/* Süre Azalıyor - avatar kartlarının ortasından kayan büyük yazı */}
+                  <AnimatePresence>
+                    {timeWarningPlayed && displayTime <= 30 && displayTime >= 27 && (
+                      <motion.div
+                        className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none"
+                        style={{ zIndex: 50 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <motion.div
+                          className="flex flex-col items-center leading-none font-black text-red-400 whitespace-nowrap"
+                          style={{
+                            fontSize: "2.25rem",
+                            textShadow: "0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4)",
+                          }}
+                          initial={{ x: 250, opacity: 0 }}
+                          animate={{ x: -250, opacity: [0, 1, 1, 0] }}
+                          transition={{ duration: 3, ease: "easeInOut" }}
+                        >
+                          <span>⏰ Süre</span>
+                          <span>Azalıyor!</span>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   {/* Oyuncu kartı */}
                   <div
                     className="relative rounded-2xl border border-white/10 overflow-hidden"
