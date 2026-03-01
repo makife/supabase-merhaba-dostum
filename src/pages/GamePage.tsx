@@ -5413,6 +5413,12 @@ const GamePage = ({
           lastDisplayedSecond = remainingSeconds;
           timeLeftRef.current = remainingSeconds;
           setDisplayTime(remainingSeconds);
+
+          // 🔊 30 saniyeye gelince süre azalıyor sesini çal
+          if (remainingSeconds === 30 && !timeWarningPlayed) {
+            setTimeWarningPlayed(true);
+            playTimeWarningSequence();
+          }
         }
 
         // Süre Bitti Kontrolü
