@@ -466,18 +466,57 @@ export const useSounds = () => {
     [soundsEnabled, getActiveSoundPack, getAvailableAudio, playGeneratedSound, unlockAudioForMobile],
   );
 
-  // Diğer fonksiyonları da stabilize et
+  // Süre azalıyor sesi - 30 saniyeye gelince fade-out ile çalar
+  const timeWarningAudioRef = useRef<HTMLAudioElement | null>(null);
+  const timeWarningFadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
-    // Play 3 quick beeps for time warning
-    setTimeout(() => playGeneratedSound(1000, 0.15), 0);
-    setTimeout(() => playGeneratedSound(1000, 0.15), 200);
-    setTimeout(() => playGeneratedSound(1000, 0.15), 400);
-  }, [soundsEnabled, playGeneratedSound, unlockAudioForMobile]);
+    // Önceki varsa temizle
+    if (timeWarningFadeRef.current) {
+      clearInterval(timeWarningFadeRef.current);
+      timeWarningFadeRef.current = null;
+    }
+    if (timeWarningAudioRef.current) {
+      timeWarningAudioRef.current.pause();
+      timeWarningAudioRef.current = null;
+    }
+
+    try {
+      const basePath = window.location.origin;
+      const audio = new Audio(`${basePath}/sureAzaliyor.mp3`);
+      audio.volume = 0.7;
+      timeWarningAudioRef.current = audio;
+
+      audio.play().then(() => {
+        // Fade-out: her 500ms'de volume azalt
+        const fadeInterval = setInterval(() => {
+          if (!timeWarningAudioRef.current) {
+            clearInterval(fadeInterval);
+            return;
+          }
+          const newVol = timeWarningAudioRef.current.volume - 0.05;
+          if (newVol <= 0) {
+            timeWarningAudioRef.current.pause();
+            timeWarningAudioRef.current = null;
+            clearInterval(fadeInterval);
+            timeWarningFadeRef.current = null;
+          } else {
+            timeWarningAudioRef.current.volume = newVol;
+          }
+        }, 500);
+        timeWarningFadeRef.current = fadeInterval;
+      }).catch(err => {
+        console.warn("sureAzaliyor.mp3 çalınamadı:", err);
+      });
+    } catch (err) {
+      console.warn("sureAzaliyor.mp3 error:", err);
+    }
+  }, [soundsEnabled, unlockAudioForMobile]);
 
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
