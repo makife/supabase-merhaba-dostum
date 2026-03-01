@@ -1958,31 +1958,18 @@ export type Database = {
         Args: { room_id: string }
         Returns: Json
       }
-      get_season_leaderboard:
-        | {
-            Args: { limit_count?: number; season_start_date?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_position: number
-              season_score: number
-              user_id: string
-              username: string
-            }[]
-          }
-        | {
-            Args: { limit_count?: number; season_start_date?: string }
-            Returns: {
-              avatar_url: string
-              games_played: number
-              games_won: number
-              rank_position: number
-              season_score: number
-              user_id: string
-              username: string
-            }[]
-          }
+      get_season_leaderboard: {
+        Args: { limit_count?: number; season_start_date?: string }
+        Returns: {
+          avatar_url: string
+          games_played: number
+          games_won: number
+          rank_position: number
+          season_score: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_server_time: { Args: never; Returns: string }
       get_tournament_status: {
         Args: { p_tournament_id: string }
