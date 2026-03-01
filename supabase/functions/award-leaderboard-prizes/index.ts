@@ -32,23 +32,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // TEST MODU: { "test": true, "userId": "...", "prizeType": "monthly" }
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    if (body.test === true && body.userId) {
-      const prizeType = body.prizeType || "monthly";
-      const prize = PRIZES[prizeType];
-      if (!prize) {
-        return new Response(
-          JSON.stringify({ error: "Gecersiz prizeType. weekly / monthly / season olmali." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      await awardPrize(supabase, body.userId, prize);
-      return new Response(
-        JSON.stringify({ success: true, message: `Test: ${prizeType} odulu verildi`, userId: body.userId }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Turkiye saati = UTC+3
     const now = new Date();
@@ -61,68 +45,104 @@ Deno.serve(async (req) => {
     const month = turkeyNow.getUTCMonth();
 
     const results: string[] = [];
-    const todayStr = turkeyNow.toISOString().split('T')[0];
 
-    // Çift ödül koruması: bugün zaten ödül verilmiş mi?
+    console.log(`🕐 Turkey time: day=${dayOfWeek} hour=${hour} date=${dateOfMonth} month=${month}`);
+
+    // Çift ödül koruması: Bu periyot için zaten ödül verilmiş mi?
+    // Hem 'system' hem 'leaderboard_prize' type'larını kontrol et
     const alreadyAwarded = async (prizeType: string): Promise<boolean> => {
+      const label = PRIZES[prizeType].label;
+      
+      // Periyoda göre kontrol aralığı belirle
+      let sinceDate: string;
+      if (prizeType === "weekly") {
+        // Bu haftanın Pazartesi gününden itibaren kontrol et
+        const monday = new Date(turkeyNow);
+        monday.setUTCDate(monday.getUTCDate() - ((dayOfWeek + 6) % 7));
+        monday.setUTCHours(0, 0, 0, 0);
+        sinceDate = monday.toISOString();
+      } else if (prizeType === "monthly") {
+        // Bu ayın 1'inden itibaren kontrol et
+        const monthStart = new Date(turkeyNow);
+        monthStart.setUTCDate(1);
+        monthStart.setUTCHours(0, 0, 0, 0);
+        sinceDate = monthStart.toISOString();
+      } else {
+        // Sezon başlangıcından itibaren kontrol et
+        const seasonMonth = month < 4 ? 0 : month < 8 ? 4 : 8;
+        const seasonStart = new Date(turkeyNow);
+        seasonStart.setUTCMonth(seasonMonth);
+        seasonStart.setUTCDate(1);
+        seasonStart.setUTCHours(0, 0, 0, 0);
+        sinceDate = seasonStart.toISOString();
+      }
+
       const { data } = await supabase
         .from("notifications")
         .select("id")
-        .eq("type", "leaderboard_prize")
-        .gte("created_at", todayStr + "T00:00:00Z")
-        .like("message", `%${PRIZES[prizeType].label}%`)
+        .in("type", ["leaderboard_prize", "system"])
+        .gte("created_at", sinceDate)
+        .like("message", `%${label} liderlik%`)
         .limit(1);
-      return data && data.length > 0;
+      
+      const found = data && data.length > 0;
+      if (found) {
+        console.log(`⚠️ ${prizeType} prize already awarded since ${sinceDate}, skipping`);
+      }
+      return found;
     };
 
-    // Weekly (Her Pazartesi 00:00 Turkiye saati)
+    // Weekly (Her Pazartesi 00:00-00:59 Turkiye saati)
     if (dayOfWeek === 1 && hour < 1) {
       if (await alreadyAwarded("weekly")) {
-        results.push("Weekly prize already awarded today, skipping");
+        results.push("Weekly prize already awarded, skipping");
       } else {
         const winner = await findWeeklyWinner(supabase);
         if (winner) {
           await awardPrize(supabase, winner, PRIZES.weekly);
           results.push(`Weekly winner: ${winner}`);
+        } else {
+          results.push("No weekly winner found");
         }
       }
-      await resetWeeklyStats(supabase);
+      await cleanupOldStats(supabase, "weekly_stats", "week_start", 56);
       results.push("Weekly stats cleanup done");
     }
 
-    // Monthly (Her ayin 1'i 00:00 Turkiye saati)
+    // Monthly (Her ayin 1'i 00:00-00:59 Turkiye saati)
     if (dateOfMonth === 1 && hour < 1) {
       if (await alreadyAwarded("monthly")) {
-        results.push("Monthly prize already awarded today, skipping");
+        results.push("Monthly prize already awarded, skipping");
       } else {
         const winner = await findMonthlyWinner(supabase);
         if (winner) {
           await awardPrize(supabase, winner, PRIZES.monthly);
           results.push(`Monthly winner: ${winner}`);
+        } else {
+          results.push("No monthly winner found");
         }
       }
-      await resetMonthlyStats(supabase);
+      await cleanupOldStats(supabase, "monthly_stats", "month_start", 180);
       results.push("Monthly stats cleanup done");
     }
 
     // Season (Mayis 1, Eylul 1, Ocak 1 Turkiye saati)
-    const seasonResetMonths = [0, 4, 8];
+    const seasonResetMonths = [0, 4, 8]; // Ocak, Mayıs, Eylül
     if (seasonResetMonths.includes(month) && dateOfMonth === 1 && hour < 1) {
       if (await alreadyAwarded("season")) {
-        results.push("Season prize already awarded today, skipping");
+        results.push("Season prize already awarded, skipping");
       } else {
-        const prevSeasonStart = new Date(turkeyNow);
-        prevSeasonStart.setUTCMonth(month - 4);
-        prevSeasonStart.setUTCDate(1);
-        prevSeasonStart.setUTCHours(0, 0, 0, 0);
-
-        const winner = await findSeasonWinner(supabase, prevSeasonStart.toISOString(), turkeyNow.toISOString());
+        const winner = await findSeasonWinner(supabase);
         if (winner) {
           await awardPrize(supabase, winner, PRIZES.season);
           results.push(`Season winner: ${winner}`);
+        } else {
+          results.push("No season winner found");
         }
       }
     }
+
+    console.log(`✅ Results: ${JSON.stringify(results)}`);
 
     return new Response(
       JSON.stringify({ success: true, results, timestamp: now.toISOString() }),
@@ -138,9 +158,11 @@ Deno.serve(async (req) => {
 });
 
 async function findWeeklyWinner(supabase: any): Promise<string | null> {
+  // Geçen haftanın verilerini bul (mevcut hafta değil, önceki hafta)
   const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 1 });
   if (error) { console.error("Weekly leaderboard error:", error); return null; }
   if (!data || data.length === 0) return null;
+  console.log(`📊 Weekly winner found: ${data[0].user_id} with score ${data[0].weekly_score}`);
   return data[0].user_id;
 }
 
@@ -148,13 +170,15 @@ async function findMonthlyWinner(supabase: any): Promise<string | null> {
   const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 1 });
   if (error) { console.error("Monthly leaderboard error:", error); return null; }
   if (!data || data.length === 0) return null;
+  console.log(`📊 Monthly winner found: ${data[0].user_id} with score ${data[0].monthly_score}`);
   return data[0].user_id;
 }
 
-async function findSeasonWinner(supabase: any, seasonStart: string, seasonEnd: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 1, season_start_date: seasonStart });
+async function findSeasonWinner(supabase: any): Promise<string | null> {
+  const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 1 });
   if (error) { console.error("Season leaderboard error:", error); return null; }
   if (!data || data.length === 0) return null;
+  console.log(`📊 Season winner found: ${data[0].user_id} with score ${data[0].season_score}`);
   return data[0].user_id;
 }
 
@@ -203,6 +227,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     }
   }
 
+  // Şampiyonluk sayacını artır
   const { data: currentProfile } = await supabase
     .from("profiles")
     .select(prize.countColumn)
@@ -220,6 +245,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
       .eq("id", userId);
   }
 
+  // Rozet ver (sadece ilk kez)
   const { data: existingBadge } = await supabase
     .from("user_badges")
     .select("id")
@@ -232,52 +258,32 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
       user_id: userId,
       badge_id: prize.badgeId,
     });
-    console.log(`Badge ${prize.badgeId} awarded to ${userId}`);
+    console.log(`🏅 Badge ${prize.badgeId} awarded to ${userId}`);
   }
 
+  // Bildirim gönder - type: leaderboard_prize
   await supabase.from("notifications").insert({
     user_id: userId,
     type: "leaderboard_prize",
     message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`,
   });
 
-  console.log(`Prize awarded to ${userId}: ${JSON.stringify(prize)}`);
+  console.log(`🎁 Prize awarded to ${userId}: ${prize.label}`);
 }
 
-async function resetWeeklyStats(supabase: any) {
-  // weekly_stats tablosundaki geçen haftanın kayıtlarını sıfırlamaya gerek yok
-  // çünkü her hafta yeni kayıt oluşuyor (week_start ile)
-  // Ama eski haftaların temizliğini yapalım (8 haftadan eski)
-  const eightWeeksAgo = new Date();
-  eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
-  const cutoff = eightWeeksAgo.toISOString().split('T')[0];
+async function cleanupOldStats(supabase: any, table: string, dateColumn: string, daysOld: number) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  const cutoff = cutoffDate.toISOString().split('T')[0];
 
   const { error } = await supabase
-    .from("weekly_stats")
+    .from(table)
     .delete()
-    .lt("week_start", cutoff);
+    .lt(dateColumn, cutoff);
 
   if (error) {
-    console.error("Weekly stats cleanup error:", error);
+    console.error(`${table} cleanup error:`, error);
   } else {
-    console.log("Weekly stats cleaned up (older than 8 weeks)");
-  }
-}
-
-async function resetMonthlyStats(supabase: any) {
-  // monthly_stats tablosundaki eski ayların temizliği (6 aydan eski)
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const cutoff = sixMonthsAgo.toISOString().split('T')[0];
-
-  const { error } = await supabase
-    .from("monthly_stats")
-    .delete()
-    .lt("month_start", cutoff);
-
-  if (error) {
-    console.error("Monthly stats cleanup error:", error);
-  } else {
-    console.log("Monthly stats cleaned up (older than 6 months)");
+    console.log(`🧹 ${table} cleaned up (older than ${daysOld} days)`);
   }
 }
