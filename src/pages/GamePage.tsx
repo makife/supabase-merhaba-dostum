@@ -2774,7 +2774,7 @@ const GamePage = ({
         p_game_duration: gameDuration,
         p_first_word_time: firstWordTime,
         p_game_mode: gameMode,
-        p_bonus_points: isWinner ? 50 : 0, // Galibiyet bonusu varsa ekle
+        p_bonus_points: isWinner ? 50 : (gameScore === opponentScoreRef.current ? 25 : 0), // Galibiyet/beraberlik bonusu
       });
 
       console.log("📊 RPC sonucu:", { data, error });
@@ -6734,53 +6734,9 @@ const GamePage = ({
           });
       }
 
-      // Total score güncelleme (vs-computer modunda) - ASYNC, AWAIT'LEME
-      // award_disconnect_bonus RPC ile tüm tablolara atomik güncelleme
-      if (user && gameMode === "vs-computer") {
-        supabase
-          .from("profiles")
-          .select("total_score")
-          .eq("id", user.id)
-          .single()
-          .then((response) => {
-            if (response.error) {
-              console.error("❌ Total score fetch error:", response.error);
-              return;
-            }
-
-            const currentProfile = response.data;
-            const calculateLevel = (totalScore: number) => {
-              const baseExp = 1000;
-              const expIncreasePerLevel = 100;
-              let level = 1;
-              let totalExpNeeded = 0;
-              let currentLevelExp = baseExp;
-              while (totalScore >= totalExpNeeded + currentLevelExp) {
-                totalExpNeeded += currentLevelExp;
-                level++;
-                currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
-              }
-              return level;
-            };
-
-            const currentLevel = calculateLevel(currentProfile?.total_score || 0);
-            const levelMultiplier = 1 + (currentLevel - 1) * 0.1;
-            const bonusPoints = Math.floor(result.points * levelMultiplier);
-
-            // 🔥 FIX: Direkt profiles güncelleme yerine RPC kullan
-            // Bu tüm tablolara (profiles, weekly_stats, monthly_stats) atomik güncelleme yapar
-            supabase
-              .rpc("award_disconnect_bonus", {
-                p_user_id: user.id,
-                p_bonus_points: bonusPoints,
-              })
-              .then((rpcResponse) => {
-                if (rpcResponse.error) {
-                  console.error("❌ VS-Bot score RPC error:", rpcResponse.error);
-                }
-              });
-          });
-      }
+      // ❌ KALDIRILDI: VS-Computer modunda her kelime gönderildiğinde award_disconnect_bonus çağrılıyordu
+      // Bu, oyun sonunda update_game_stats ile AYNI puanlar tekrar yazıldığı için ÇİFT PUAN'a neden oluyordu.
+      // Artık tüm puan hesaplaması sadece oyun sonunda update_game_stats RPC ile yapılıyor.
     } finally {
       submissionLockRef.current = false;
     }
