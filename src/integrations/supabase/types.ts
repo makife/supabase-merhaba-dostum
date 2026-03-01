@@ -1958,18 +1958,31 @@ export type Database = {
         Args: { room_id: string }
         Returns: Json
       }
-      get_season_leaderboard: {
-        Args: { limit_count?: number; season_start_date?: string }
-        Returns: {
-          avatar_url: string
-          games_played: number
-          games_won: number
-          rank_position: number
-          season_score: number
-          user_id: string
-          username: string
-        }[]
-      }
+      get_season_leaderboard:
+        | {
+            Args: { limit_count?: number; season_start_date?: string }
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              rank_position: number
+              season_score: number
+              user_id: string
+              username: string
+            }[]
+          }
+        | {
+            Args: { limit_count?: number; season_start_date?: string }
+            Returns: {
+              avatar_url: string
+              games_played: number
+              games_won: number
+              rank_position: number
+              season_score: number
+              user_id: string
+              username: string
+            }[]
+          }
       get_server_time: { Args: never; Returns: string }
       get_tournament_status: {
         Args: { p_tournament_id: string }
@@ -2019,10 +2032,15 @@ export type Database = {
         Args: { tournament_id: string }
         Returns: undefined
       }
-      increment_weekly_score: {
-        Args: { p_amount: number; p_user_id: string; p_week_start: string }
-        Returns: undefined
-      }
+      increment_weekly_score:
+        | {
+            Args: { p_amount: number; p_user_id: string; p_week_start: string }
+            Returns: undefined
+          }
+        | {
+            Args: { p_amount: number; p_user_id: string; p_week_start: string }
+            Returns: undefined
+          }
       leave_tournament_with_transfer: {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
@@ -2184,19 +2202,32 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_game_stats: {
-        Args: {
-          p_bonus_points?: number
-          p_first_word_time: number
-          p_game_duration: number
-          p_game_mode: string
-          p_is_winner: boolean
-          p_score: number
-          p_user_id: string
-          p_words: Json
-        }
-        Returns: undefined
-      }
+      update_game_stats:
+        | {
+            Args: {
+              p_bonus_points?: number
+              p_first_word_time?: number
+              p_game_mode?: string
+              p_is_winner: boolean
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_bonus_points?: number
+              p_first_word_time: number
+              p_game_duration: number
+              p_game_mode: string
+              p_is_winner: boolean
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
