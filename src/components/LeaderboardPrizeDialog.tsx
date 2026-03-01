@@ -103,7 +103,7 @@ const LeaderboardPrizeDialog = () => {
       }
     };
 
-    const timeout = setTimeout(checkPrizeNotifications, 12000);
+    const timeout = setTimeout(checkPrizeNotifications, 3000);
     return () => clearTimeout(timeout);
   }, [user]);
 
