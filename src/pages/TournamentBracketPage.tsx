@@ -576,8 +576,14 @@ const TournamentBracketPage = () => {
 
   // Champion / eliminated + tournament end toast for all participants
   useEffect(() => {
-    if (!user || !matches.length) return;
-    const finalMatch = matches.find((m) => m.round === 3 && m.status === "completed");
+    if (!user || !matches.length || !currentTournament || !tournamentId) return;
+
+    // Final sesi sadece turnuva gerçekten tamamlandığında çalışsın
+    if (currentTournament.status !== "completed") return;
+
+    const finalMatch = matches.find(
+      (m) => m.tournament_id === tournamentId && m.round === 3 && m.status === "completed",
+    );
     if (!finalMatch?.winner_id) return;
 
     const isInFinal = finalMatch.player1_id === user.id || finalMatch.player2_id === user.id;
@@ -650,7 +656,7 @@ const TournamentBracketPage = () => {
         });
       }
     }
-  }, [matches, user, participants, showChampion, showEliminated]);
+  }, [matches, user, participants, currentTournament, tournamentId, showChampion, showEliminated]);
 
   const giveChampionReward = async () => {
     if (!user || !profile) return;
