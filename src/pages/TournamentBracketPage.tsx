@@ -188,7 +188,7 @@ const TournamentBracketPage = () => {
   const confettiAnimRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!user || !matches.length || !currentTournament) return;
+    if (!user || !matches.length || !currentTournament || !tournamentId) return;
 
     // Şampiyon sesi zaten çalındıysa tur sesini çalma
     if (championSoundPlayedRef.current) return;
@@ -210,11 +210,26 @@ const TournamentBracketPage = () => {
       (m) => m.round === justCompletedRound && m.status === "completed" && m.winner_id === user.id,
     );
 
-    if (wonMatch) {
+    if (!wonMatch) return;
+
+    let cancelled = false;
+    (async () => {
+      // Aynı tur sesi aynı turnuva-maç kombinasyonunda bir kez çalsın (sayfaya tekrar dönünce tekrar etmesin)
+      const roundSoundKey = `tournament_round_win_sound_${tournamentId}_${wonMatch.id}`;
+      const alreadyPlayed = await nativeStorage.getItem(roundSoundKey);
+      if (alreadyPlayed || cancelled) return;
+
+      await nativeStorage.setItem(roundSoundKey, "1");
+      if (cancelled) return;
+
       roundWinSoundPlayedRef.current.add(justCompletedRound);
       playSpecialSound("/turKazanma.mp3", 0.8);
-    }
-  }, [matches, user, currentTournament, playSpecialSound]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matches, user, currentTournament, playSpecialSound, tournamentId]);
 
   // useEffect ekle (diğer useEffect'lerin yanına)
   useEffect(() => {
@@ -437,12 +452,13 @@ const TournamentBracketPage = () => {
 
     // Herhangi bir oyuncu expired maç kontrolü ve ilerleme yapabilir (idempotent)
     const checkExpired = async () => {
+      const expiredGraceMs = 3000;
       const { data: expired } = await supabase
         .from("tournament_matches")
         .select("*")
         .eq("tournament_id", tournamentId)
         .eq("status", "in_progress")
-        .lt("ends_at", new Date(serverNow()).toISOString());
+        .lt("ends_at", new Date(serverNow() - expiredGraceMs).toISOString());
 
       if (!expired?.length) {
         // Expired maç yoksa bile, tüm maçlar tamamlanmışsa advance dene

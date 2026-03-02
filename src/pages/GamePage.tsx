@@ -77,6 +77,7 @@ interface TournamentMatch {
   updated_at?: string;
   room_id?: string;
   countdown_started_at?: string;
+  ends_at?: string | null;
 }
 
 interface GamePageProps {
@@ -5279,20 +5280,29 @@ const GamePage = ({
           const TOURNAMENT_START_OFFSET_MS = 12000;
 
           if (gameMode === "tournament" && tournamentMatch) {
-            // 🔒 SERVER TIME SYNC - countdown_started_at kullan
-            if (tournamentMatch.countdown_started_at) {
+            // 🔒 SERVER-AUTHORITY: ends_at varsa doğrudan onu kullan (tek gerçek kaynak)
+            if (tournamentMatch.ends_at) {
+              endsAtTimestamp = new Date(tournamentMatch.ends_at).getTime();
+              gameStartTimestamp = endsAtTimestamp - 120 * 1000;
+
+              console.log("🏆 Tournament timer: Authoritative ends_at kullanılıyor", {
+                endsAt: tournamentMatch.ends_at,
+                gameStart: new Date(gameStartTimestamp).toISOString(),
+              });
+            } else if (tournamentMatch.countdown_started_at) {
+              // Fallback: eski kayıtlar için countdown_started_at tabanlı hesap
               const countdownStartTime = new Date(tournamentMatch.countdown_started_at).getTime();
               gameStartTimestamp = countdownStartTime + TOURNAMENT_START_OFFSET_MS;
               endsAtTimestamp = gameStartTimestamp + 120 * 1000;
 
-              console.log("🏆 Tournament timer: Server timing", {
+              console.log("🏆 Tournament timer: Fallback countdown_started_at", {
                 countdownStart: new Date(countdownStartTime).toISOString(),
                 gameStart: new Date(gameStartTimestamp).toISOString(),
                 endsAt: new Date(endsAtTimestamp).toISOString(),
                 offsetUsed: TOURNAMENT_START_OFFSET_MS,
               });
             } else {
-              console.warn("⚠️ Tournament countdown_started_at missing, using fallback");
+              console.warn("⚠️ Tournament timing verisi eksik, fallback kullanılıyor");
               gameStartTimestamp = Date.now() + serverTimeOffset;
               endsAtTimestamp = gameStartTimestamp + 120 * 1000;
             }
