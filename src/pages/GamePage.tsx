@@ -7355,29 +7355,36 @@ const GamePage = ({
     setShowCountdown(false);
     countdownCompletedAtRef.current = Date.now();
 
-    // 🔧 KRİTİK FIX: Timer HER ZAMAN 120 saniyeden başlamalı
-    // Countdown tam bu anda bitti, oyun ŞİMDİ başlıyor
-    // ends_at = ŞİMDİ + 120 saniye
+    // 🔒 Turnuvada süreyi her zaman server'daki ends_at üzerinden kullan
     const nowServer = Date.now() + serverTimeOffset;
-    const endsAtTimestamp = nowServer + 120 * 1000;
+    let endsAtTimestamp = nowServer + 120 * 1000;
 
-    console.log("⏱️ Timer HEMEN 120'den başlatılıyor:", {
+    if (gameMode === "tournament" && tournamentMatch?.ends_at) {
+      const parsedEndsAt = new Date(tournamentMatch.ends_at).getTime();
+      if (Number.isFinite(parsedEndsAt) && parsedEndsAt > 0) {
+        endsAtTimestamp = parsedEndsAt;
+      }
+    }
+
+    const remainingSeconds = Math.max(0, Math.min(120, Math.floor((endsAtTimestamp - nowServer) / 1000)));
+
+    console.log("⏱️ Countdown sonrası timer server ends_at ile ayarlandı:", {
       now: new Date(nowServer).toISOString(),
       endsAt: new Date(endsAtTimestamp).toISOString(),
-      displayTime: 120,
+      displayTime: remainingSeconds,
+      mode: gameMode,
     });
 
-    // Timer değerlerini set et - HER ZAMAN 120'den başla
     endsAtTimestampRef.current = endsAtTimestamp;
-    timeLeftRef.current = 120;
-    setDisplayTime(120);
+    timeLeftRef.current = remainingSeconds;
+    setDisplayTime(remainingSeconds);
 
     // Start game immediately
     setGameStarted(true);
     gameHasStartedRef.current = true;
     gameStartedRef.current = true;
 
-    console.log("✅ Oyun başladı - timer 120 saniyeden başlatıldı");
+    console.log("✅ Oyun başladı - timer server ile senkron");
   };
 
   return (
