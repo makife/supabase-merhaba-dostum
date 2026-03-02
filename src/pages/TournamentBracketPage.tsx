@@ -200,6 +200,10 @@ const TournamentBracketPage = () => {
     const isFinalCompleted = matches.some((m) => m.round === 3 && m.status === "completed");
     if (isFinalCompleted) return;
 
+    // Kullanıcının final maçı bittiyse tur sesi çalma
+    const myFinalMatch = matches.find((m) => m.round === 3 && (m.player1_id === user.id || m.player2_id === user.id));
+    if (myFinalMatch?.status === "completed" || myFinalMatch?.winner_id) return;
+
     // Sadece "bir önceki tur" için ses çal (round 1 veya 2 kazanıldığında):
     const justCompletedRound = (currentTournament.current_round || 1) - 1;
     if (justCompletedRound !== 1 && justCompletedRound !== 2) return;
@@ -219,8 +223,26 @@ const TournamentBracketPage = () => {
       const alreadyPlayed = await nativeStorage.getItem(roundSoundKey);
       if (alreadyPlayed || cancelled) return;
 
-      await nativeStorage.setItem(roundSoundKey, "1");
+      // Sunucudan güncel durumu doğrula (stale state yüzünden finalde tur sesi çalmasın)
+      const [{ data: latestTournament }, { data: latestFinalMatch }] = await Promise.all([
+        supabase.from("tournaments").select("status").eq("id", tournamentId).maybeSingle(),
+        supabase
+          .from("tournament_matches")
+          .select("status, winner_id")
+          .eq("tournament_id", tournamentId)
+          .eq("round", 3)
+          .maybeSingle(),
+      ]);
+
       if (cancelled) return;
+
+      const serverTournamentCompleted = latestTournament?.status !== "in_progress";
+      const serverFinalCompleted = latestFinalMatch?.status === "completed" || !!latestFinalMatch?.winner_id;
+
+      if (championSoundPlayedRef.current || serverTournamentCompleted || serverFinalCompleted) return;
+
+      await nativeStorage.setItem(roundSoundKey, "1");
+      if (cancelled || championSoundPlayedRef.current) return;
 
       roundWinSoundPlayedRef.current.add(justCompletedRound);
       playSpecialSound("/turKazanma.mp3", 0.8);
