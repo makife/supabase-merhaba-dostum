@@ -200,11 +200,7 @@ const TournamentBracketPage = () => {
     const isFinalCompleted = matches.some((m) => m.round === 3 && m.status === "completed");
     if (isFinalCompleted) return;
 
-    // Round 3 maçı varsa (final başlamış demek), tur sesi çalma - şampiyon sesiyle çakışabilir
-    const hasFinalMatch = matches.some((m) => m.round === 3);
-    if (hasFinalMatch) return;
-
-    // Sadece "bir önceki tur" için ses çal:
+    // Sadece "bir önceki tur" için ses çal (round 1 veya 2 kazanıldığında):
     const justCompletedRound = (currentTournament.current_round || 1) - 1;
     if (justCompletedRound !== 1 && justCompletedRound !== 2) return;
 
@@ -371,13 +367,11 @@ const TournamentBracketPage = () => {
             .eq("id", match.id);
         } else {
           const now = new Date();
-          const endsAt = new Date(now.getTime() + 132 * 1000).toISOString();
           await supabase
             .from("tournament_matches")
             .update({
               status: "in_progress",
               countdown_started_at: now.toISOString(),
-              ends_at: endsAt,
             })
             .eq("id", match.id);
         }
@@ -448,7 +442,7 @@ const TournamentBracketPage = () => {
         .select("*")
         .eq("tournament_id", tournamentId)
         .eq("status", "in_progress")
-        .lt("ends_at", new Date().toISOString());
+        .lt("ends_at", new Date(serverNow()).toISOString());
 
       if (!expired?.length) {
         // Expired maç yoksa bile, tüm maçlar tamamlanmışsa advance dene
