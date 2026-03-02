@@ -53,10 +53,6 @@ import java.util.Locale;
         @Permission(
             alias = "camera",
             strings = { Manifest.permission.CAMERA }
-        ),
-        @Permission(
-            alias = "photos",
-            strings = { "android.permission.READ_MEDIA_IMAGES" }
         )
     }
 )
@@ -103,12 +99,18 @@ public class NativeCameraPlugin extends Plugin {
             return;
         }
         
-        // Android 6-12 - READ_EXTERNAL_STORAGE gerekli
+        // Android 6-12 - READ_EXTERNAL_STORAGE gerekli (runtime permission)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) 
                 != PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "🖼️ READ_EXTERNAL_STORAGE izni isteniyor...");
-                requestPermissionForAlias("photos", call, "galleryPermissionCallback");
+                ActivityCompat.requestPermissions(
+                    getActivity(),
+                    new String[]{ Manifest.permission.READ_EXTERNAL_STORAGE },
+                    REQUEST_GALLERY
+                );
+                // İzin sonrası kullanıcı tekrar deneyecek
+                call.reject("Depolama izni gerekli. Lütfen izin verdikten sonra tekrar deneyin.");
                 return;
             }
         }
