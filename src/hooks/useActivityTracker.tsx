@@ -36,17 +36,21 @@ export function useActivityTracker() {
     }, 20000);
 
     // Capacitor App state listener - push bildirimi arka planda uyandırınca
-    // isActive=true gelebilir, bu yüzden visibility + gecikme kontrolü ekle
+    // isActive=true gelebilir, bu yüzden visibility + focus + gecikme kontrolü ekle
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        // Push wake vs gerçek foreground ayrımı: 500ms bekle, hâlâ visible ise güncelle
+        // Push wake vs gerçek foreground ayrımı: 1500ms bekle, visible VE focused ise güncelle
+        // Bazı Android cihazlarda push wake sırasında visibilityState="visible" oluyor
+        // ama document.hasFocus() false kalıyor - bu ayrımı kullanıyoruz
         setTimeout(() => {
-          if (document.visibilityState === "visible") {
+          const isVisible = document.visibilityState === "visible";
+          const hasFocus = document.hasFocus();
+          if (isVisible && hasFocus) {
             updateLastSeen();
           } else {
-            console.log("⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor");
+            console.log(`⏭️ ActivityTracker: Push wake algılandı (visible=${isVisible}, focus=${hasFocus}), online güncelleme atlanıyor`);
           }
-        }, 500);
+        }, 1500);
       }
     });
 
