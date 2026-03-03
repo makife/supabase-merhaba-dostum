@@ -295,8 +295,6 @@ export const useSounds = () => {
       audioCache.current.set('joker_senyaz', createAudioPool('senyaz.mp3', 3));
       // Sampiyon sesi
       audioCache.current.set('special_sampiyon', createAudioPool('sampiyon.mp3', 2));
-      // Tur kazanma sesi
-      audioCache.current.set('special_turKazanma', createAudioPool('turKazanma.mp3', 2));
       // Çark sesi
       audioCache.current.set('special_cark', createAudioPool('carkSesi.mp3', 2));
     } catch (error) {
@@ -647,7 +645,7 @@ export const useSounds = () => {
         else if (soundFile.includes('fisilda.mp3')) cacheKey = 'joker_fisilda';
         else if (soundFile.includes('senyaz.mp3')) cacheKey = 'joker_senyaz';
         else if (soundFile.includes('sampiyon.mp3')) cacheKey = 'special_sampiyon';
-        else if (soundFile.includes('turKazanma.mp3')) cacheKey = 'special_turKazanma';
+        
         else if (soundFile.includes('carkSesi.mp3')) cacheKey = 'special_cark';
         
         if (cacheKey) {

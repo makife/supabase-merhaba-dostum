@@ -88,6 +88,36 @@ const PlayerRow = ({
   </div>
 );
 
+// ── Bileşen: Maç zamanlayıcı ──────────────────────────────────────────────────
+const MatchTimer = ({ endsAt }: { endsAt: string | null }) => {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const { serverNow } = useServerTimeContext();
+
+  useEffect(() => {
+    if (!endsAt) { setRemaining(null); return; }
+    const endTime = new Date(endsAt).getTime();
+    const tick = () => {
+      const left = Math.max(0, Math.floor((endTime - serverNow()) / 1000));
+      setRemaining(left);
+    };
+    tick();
+    const interval = setInterval(tick, 500);
+    return () => clearInterval(interval);
+  }, [endsAt, serverNow]);
+
+  if (remaining === null) return null;
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const isLow = remaining <= 15 && remaining > 0;
+
+  return (
+    <div className={`flex items-center gap-1 ${isLow ? "text-red-400 animate-pulse" : "text-sky-300"}`}>
+      <Clock className="w-3 h-3" />
+      <span className="text-[10px] font-bold tabular-nums">{mins}:{secs.toString().padStart(2, "0")}</span>
+    </div>
+  );
+};
+
 // ── Bileşen: Maç kartı ────────────────────────────────────────────────────────
 const MatchCard = ({ match, round }: { match: any; round: 1 | 2 | 3 }) => {
   const info = ROUND_INFO[round];
@@ -118,6 +148,7 @@ const MatchCard = ({ match, round }: { match: any; round: 1 | 2 | 3 }) => {
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Maç {match.match_number}</span>
         <div className="flex items-center gap-1.5">
+          {isInProgress && <MatchTimer endsAt={match.ends_at} />}
           <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
           <span className="text-[10px] text-white/50">{statusText}</span>
         </div>
@@ -245,7 +276,7 @@ const TournamentBracketPage = () => {
       if (cancelled || championSoundPlayedRef.current) return;
 
       roundWinSoundPlayedRef.current.add(justCompletedRound);
-      playSpecialSound("/turKazanma.mp3", 0.8);
+      playSpecialSound("/sampiyon.mp3", 0.8);
     })();
 
     return () => {
@@ -664,7 +695,7 @@ const TournamentBracketPage = () => {
                 color: "#fef2f2",
               }}
             >
-              <p className="text-base font-medium">🏆 Turnuva Sona Erdi</p>
+              <p className="text-base font-medium text-white">🏆 Turnuva Sona Erdi</p>
 
               <p className="mt-1 text-sm text-red-200 font-normal">Şampiyon: {winnerName} — İyi oyun!</p>
             </div>
@@ -684,6 +715,9 @@ const TournamentBracketPage = () => {
             color: "#fefce8",
           },
           descriptionClassName: "!text-amber-200",
+          classNames: {
+            title: "!text-yellow-100",
+          },
           icon: "🥇",
         });
       }
