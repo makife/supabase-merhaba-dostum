@@ -1964,15 +1964,16 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
+        const tournamentScoreMultiplier = userIsWinner ? 10 : 1; // Turnuvada beraberlik yok
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
-          p_score: finalUserScore * 10,
+          p_score: finalUserScore * tournamentScoreMultiplier,
           p_words: playerWordsWithScores,
           p_is_winner: userIsWinner,
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: "tournament",
-          p_bonus_points: userIsWinner ? 50 : 25, // Galibiyet/beraberlik bonusu
+          p_bonus_points: 0,
         });
 
         if (statsError) {
@@ -2767,15 +2768,17 @@ const GamePage = ({
         p_game_duration: gameDuration,
       });
 
+      const isTie = gameScore === opponentScoreRef.current;
+      const multiplier = isWinner ? 10 : isTie ? 5 : 1;
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
-        p_score: gameScore * 10,
+        p_score: gameScore * multiplier,
         p_words: words,
         p_is_winner: isWinner,
         p_game_duration: gameDuration,
         p_first_word_time: firstWordTime,
         p_game_mode: gameMode,
-        p_bonus_points: isWinner ? 50 : (gameScore === opponentScoreRef.current ? 25 : 0), // Galibiyet/beraberlik bonusu
+        p_bonus_points: 0,
       });
 
       console.log("📊 RPC sonucu:", { data, error });
@@ -2865,15 +2868,17 @@ const GamePage = ({
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
         const isWinner = finalUserScore > finalOpponentScore;
+        const isTie = finalUserScore === finalOpponentScore;
+        const scoreMultiplier = isWinner ? 10 : isTie ? 5 : 1;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
-          p_score: finalUserScore * 10,
+          p_score: finalUserScore * scoreMultiplier,
           p_words: playerWordsWithScores,
           p_is_winner: isWinner,
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: gameMode,
-          p_bonus_points: isWinner ? 50 : finalUserScore === finalOpponentScore ? 25 : 0, // Galibiyet/beraberlik bonusu
+          p_bonus_points: 0,
         });
 
         if (error) {
@@ -4393,7 +4398,8 @@ const GamePage = ({
       console.log("🏆 Checking winner with scores - Player:", currentPlayerScore, "Opponent:", currentOpponentScore);
 
       let gameResult: "player" | "opponent" | "tie";
-      let bonusPoints = 0;
+      // Skor çarpanı: Kazanma=x10, Beraberlik=x5, Kaybetme=x1
+      let scoreMultiplier = 1;
 
       // Tournament: rely on backend for winner, avoid client-side decision
       if (gameMode === "tournament") {
@@ -4406,7 +4412,7 @@ const GamePage = ({
         // vs-computer için mevcut mantık
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          bonusPoints = 50;
+          scoreMultiplier = 10;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4423,7 +4429,7 @@ const GamePage = ({
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
           gameResult = "tie";
-          bonusPoints = 25;
+          scoreMultiplier = 5;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4441,7 +4447,7 @@ const GamePage = ({
 
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          bonusPoints = 50;
+          scoreMultiplier = 10;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4459,7 +4465,7 @@ const GamePage = ({
         } else {
           // Beraberlik (tournament mode buraya gelmez, zaten backend'de handle edilir)
           gameResult = "tie";
-          bonusPoints = 25;
+          scoreMultiplier = 5;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4483,13 +4489,13 @@ const GamePage = ({
             // 8 parametreli versiyon - bonus puanlar da dahil edildi (haftalık/aylık liderlik için kritik)
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
-              p_score: currentPlayerScore * 10,
+              p_score: currentPlayerScore * scoreMultiplier,
               p_words: playerWordsWithScores,
               p_is_winner: gameResult === "player",
               p_game_duration: gameDuration,
               p_first_word_time: firstWordTime,
               p_game_mode: gameMode,
-              p_bonus_points: bonusPoints, // YENİ: Bonus puanlar artık RPC içinde işleniyor
+              p_bonus_points: 0,
             });
 
             if (error) {
@@ -4548,14 +4554,14 @@ const GamePage = ({
         }
       }
 
-      // Bonus puanlar artık update_game_stats RPC içinde işleniyor (p_bonus_points parametresi)
-      // Sadece kullanıcıya toast göster
-      if (user && bonusPoints > 0) {
-        console.log("✅ Bonus puanlar RPC içinde işlendi:", bonusPoints);
+      // Skor çarpanı bilgisi toast
+      if (user && gameResult !== "opponent") {
+        const multiplierLabel = gameResult === "player" ? "Kazanma (x10)" : "Beraberlik (x5)";
+        const finalScore = currentPlayerScore * scoreMultiplier;
         setTimeout(() => {
           toast({
-            title: gameResult === "player" ? "Kazanma Bonusu!" : "Beraberlik Bonusu!",
-            description: `+${bonusPoints} bonus EXP kazandınız!`,
+            title: `${multiplierLabel}`,
+            description: `${currentPlayerScore} puan → ${finalScore} EXP olarak kaydedildi!`,
             duration: 2000,
           });
         }, 1000);
