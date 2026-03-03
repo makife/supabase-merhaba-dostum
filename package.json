@@ -11,11 +11,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor-community/admob": "^8.0.0",          // 7.2.0 → 8.0.0 (eğer destekliyorsa, yoksa alternatif bak)
+    "@capacitor-community/admob": "^8.0.0",
     "@capacitor-community/native-audio": "^8.0.0",
     "@capacitor/app": "^8.0.0",
     "@capacitor/camera": "^8.0.0",
-    "@capacitor/core": "^8.0.0",                     // zaten 8, iyi
+    "@capacitor/core": "^8.0.0",
     "@capacitor/local-notifications": "^8.0.0",
     "@capacitor/network": "^8.0.0",
     "@capacitor/preferences": "^8.0.0",
