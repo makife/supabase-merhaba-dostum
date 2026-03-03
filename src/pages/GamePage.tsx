@@ -4393,9 +4393,9 @@ const GamePage = ({
 
   const checkWinnerWithScores = useCallback(
     async (currentPlayerScore: number, currentOpponentScore: number) => {
-      if (gameEnded || winner !== null) return;
-
-      console.log("🏆 Checking winner with scores - Player:", currentPlayerScore, "Opponent:", currentOpponentScore);
+      // gameEnded state'i bazı akışlarda checkWinner çağrısından önce set ediliyor.
+      // Bu durumda erken çıkmak skor/istatistik RPC'sini tamamen kaçırıyor.
+      if (winner !== null) return;
 
       let gameResult: "player" | "opponent" | "tie";
       // Skor çarpanı: Kazanma=x10, Beraberlik=x5, Kaybetme=x1
