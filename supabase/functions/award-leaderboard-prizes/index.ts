@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .like("message", `%${label} liderlik%`)
         .limit(1);
       
-      const found = data && data.length > 0;
+      const found = !!(data && data.length > 0);
       if (found) {
         console.log(`⚠️ ${prizeType} prize already awarded since ${sinceDate}, skipping`);
       }
