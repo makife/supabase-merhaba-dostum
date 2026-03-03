@@ -25,12 +25,16 @@ export function useActivityTracker() {
       }
     };
 
-    // İlk güncelleme
-    updateLastSeen();
+    // İlk güncelleme - sadece gerçekten foreground'daysa
+    if (document.visibilityState === "visible" && document.hasFocus()) {
+      updateLastSeen();
+    } else {
+      console.log("⏭️ ActivityTracker: İlk mount'ta push wake algılandı, online güncelleme atlanıyor");
+    }
 
-    // Her 20 saniyede bir heartbeat - sadece uygulama görünürse
+    // Her 20 saniyede bir heartbeat - sadece uygulama görünür VE odaklıysa
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && document.hasFocus()) {
         updateLastSeen();
       }
     }, 20000);
