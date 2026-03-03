@@ -1966,7 +1966,7 @@ const GamePage = ({
 
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
-          p_score: finalUserScore,
+          p_score: finalUserScore * 10,
           p_words: playerWordsWithScores,
           p_is_winner: userIsWinner,
           p_game_duration: gameDuration,
@@ -2769,7 +2769,7 @@ const GamePage = ({
 
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
-        p_score: gameScore,
+        p_score: gameScore * 10,
         p_words: words,
         p_is_winner: isWinner,
         p_game_duration: gameDuration,
@@ -2867,7 +2867,7 @@ const GamePage = ({
         const isWinner = finalUserScore > finalOpponentScore;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
-          p_score: finalUserScore,
+          p_score: finalUserScore * 10,
           p_words: playerWordsWithScores,
           p_is_winner: isWinner,
           p_game_duration: gameDuration,
@@ -4483,7 +4483,7 @@ const GamePage = ({
             // 8 parametreli versiyon - bonus puanlar da dahil edildi (haftalık/aylık liderlik için kritik)
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
-              p_score: currentPlayerScore,
+              p_score: currentPlayerScore * 10,
               p_words: playerWordsWithScores,
               p_is_winner: gameResult === "player",
               p_game_duration: gameDuration,
