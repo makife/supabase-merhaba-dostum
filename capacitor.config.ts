@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.ergan.kelimele',
-  appName: 'supabase-merhaba-dostum',
+  appName: 'Kelimele',
   webDir: 'dist',
 
   android: {
