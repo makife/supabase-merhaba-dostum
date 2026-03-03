@@ -1,13 +1,10 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.kelimeci',
+  appId: 'com.ergan.kelimele',
   appName: 'supabase-merhaba-dostum',
   webDir: 'dist',
-  server: {
-    url: 'https://3b5b6132-76aa-4286-88ad-82b8da5a6692.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+
   android: {
     allowMixedContent: true,
     captureInput: false,
