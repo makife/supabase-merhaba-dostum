@@ -111,7 +111,7 @@ export const useAdMob = () => {
 
       // Gerçek ID'ler
       const REAL_AD_ID = isIOS 
-        ? "ca-app-pub-4768026665961339/6383991586" 
+        ? "ca-app-pub-4768026665961339/6920222714" 
         : "ca-app-pub-4768026665961339/4806604463";
 
       // Google Test ID - HER ZAMAN ÇALIŞMALI
