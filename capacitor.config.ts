@@ -43,7 +43,7 @@ const config: CapacitorConfig = {
     AdMob: {
       appId: 'ca-app-pub-4768026665961339~9319477813',
       androidAppId: 'ca-app-pub-4768026665961339~9319477813',
-      iosAppId: 'ca-app-pub-4768026665961339~6286120368'
+      iosAppId: 'ca-app-pub-4768026665961339~4109751189'
     },
     ScreenOrientation: {
       orientation: 'portrait'
