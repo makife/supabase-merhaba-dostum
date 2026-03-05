@@ -61,10 +61,13 @@ const WordHuntPage = () => {
     }, 1000);
   }, [playSound, hasPlayedToday]);
 
-  // Save score when game finishes
+  // Save score with time bonus when game finishes
   useEffect(() => {
-    if (gameState === "finished" && score >= 0 && !hasPlayedToday) {
-      saveScore(score, foundWords.length);
+    if (gameState === "finished" && !hasPlayedToday) {
+      const timeBonus = Math.floor(timeLeft * 2);
+      const finalScore = score + timeBonus;
+      setScore(finalScore);
+      saveScore(finalScore, foundWords.length);
     }
   }, [gameState]);
 
