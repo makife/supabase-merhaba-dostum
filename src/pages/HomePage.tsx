@@ -783,63 +783,63 @@ const HomePage = () => {
             {/* Kelime Avı */}
             <div
               onClick={() => { playSound("buttonClick"); navigate("/challenge/word-hunt"); }}
-              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_hunt ? "border-emerald-400/40 opacity-70" : "border-white/10"}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 ${challengeStatus.word_hunt ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  🔍
+                  {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
                 </div>
-                <Badge className="bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-[9px] px-2 py-0.5">
-                  Kolay
+                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_hunt ? "bg-emerald-400/30 text-emerald-200 border-emerald-400/40" : "bg-emerald-400/20 text-emerald-200 border-emerald-400/30"}`}>
+                  {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Kolay"}
                 </Badge>
               </div>
               <div className="relative z-10">
                 <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
-                <p className="text-[10px] text-white/70 font-medium">Harflerden kelime bul</p>
+                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.word_hunt ? "Yarın tekrar gel!" : "Harflerden kelime bul"}</p>
               </div>
             </div>
 
             {/* Anagram */}
             <div
               onClick={() => { playSound("buttonClick"); navigate("/challenge/anagram"); }}
-              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.anagram ? "border-violet-400/40 opacity-70" : "border-white/10"}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 ${challengeStatus.anagram ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  🔤
+                  {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
                 </div>
-                <Badge className="bg-violet-400/20 text-violet-200 border-violet-400/30 text-[9px] px-2 py-0.5">
-                  Orta
+                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.anagram ? "bg-violet-400/30 text-violet-200 border-violet-400/40" : "bg-violet-400/20 text-violet-200 border-violet-400/30"}`}>
+                  {challengeStatus.anagram ? "✓ Tamamlandı" : "Orta"}
                 </Badge>
               </div>
               <div className="relative z-10">
                 <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Anagram</h3>
-                <p className="text-[10px] text-white/70 font-medium">Karışık harfleri çöz</p>
+                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.anagram ? "Yarın tekrar gel!" : "Karışık harfleri çöz"}</p>
               </div>
             </div>
 
             {/* Kelime Zinciri */}
             <div
               onClick={() => { playSound("buttonClick"); navigate("/challenge/word-chain"); }}
-              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_chain ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 ${challengeStatus.word_chain ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  ⛓️
+                  {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
                 </div>
-                <Badge className="bg-amber-400/20 text-amber-200 border-amber-400/30 text-[9px] px-2 py-0.5">
-                  Zor
+                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_chain ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>
+                  {challengeStatus.word_chain ? "✓ Tamamlandı" : "Zor"}
                 </Badge>
               </div>
               <div className="relative z-10">
                 <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Zinciri</h3>
-                <p className="text-[10px] text-white/70 font-medium">Son harfle yeni kelime</p>
+                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.word_chain ? "Yarın tekrar gel!" : "Son harfle yeni kelime"}</p>
               </div>
             </div>
           </div>
