@@ -48,6 +48,7 @@ const GridSimonSaysPage = React.lazy(() => import("@/pages/GridSimonSays"));
 const ReactorRunnerPage = React.lazy(() => import("@/pages/DinoRunner"));
 const NeonBlitzPage = React.lazy(() => import("@/pages/NeonBlitz"));
 const SnakeGamePage = React.lazy(() => import("@/pages/SnakeGame"));
+const MiniGamesPage = React.lazy(() => import("@/pages/MiniGamesPage"));
 const MorlesGamePage = React.lazy(() => import("@/pages/MorlesGame"));
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
@@ -401,6 +402,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <WheelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mini-games"
+          element={
+            <ProtectedRoute>
+              <MiniGamesPage />
             </ProtectedRoute>
           }
         />
