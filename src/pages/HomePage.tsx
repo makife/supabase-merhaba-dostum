@@ -848,6 +848,27 @@ const HomePage = () => {
           </div>
         </div>
 
+        {/* GÜNLÜK ÇARK */}
+        <div className="px-5 mt-6">
+          <div
+            onClick={() => { playSound("buttonClick"); navigate("/wheel"); }}
+            className="w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border border-red-500/30 shadow-lg shadow-red-500/10"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-2xl" />
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
+              🎡
+            </div>
+            <div className="relative z-10 flex-1">
+              <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Günlük Çark</h3>
+              <p className="text-[10px] text-white/70 font-medium">Şansını dene, ödüller kazan!</p>
+            </div>
+            <div className="relative z-10 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </div>
+
         {/* İSTATİSTİKLER */}
         <div className="px-5 mt-4 pb-12">
           {" "}
