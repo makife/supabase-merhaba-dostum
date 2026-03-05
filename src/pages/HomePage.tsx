@@ -19,7 +19,8 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 
-import { Bot, Users, Trophy, Clock, Target, Crown, Zap, Gift, Star, Flame, Gamepad2, Sparkles } from "lucide-react";
+import { Bot, Users, Trophy, Clock, Target, Crown, Zap, Gift, Star, Flame, Gamepad2, Sparkles, Check } from "lucide-react";
+import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChallenge";
 
 // --- YARDIMCI SABİTLER ---
 
@@ -164,6 +165,14 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>({ word_hunt: false, anagram: false, word_chain: false });
+
+  // Fetch daily challenge completion status
+  useEffect(() => {
+    if (user?.id) {
+      getDailyChallengeStatus(user.id).then(setChallengeStatus);
+    }
+  }, [user?.id]);
 
   const [greeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem("sessionGreeting");
