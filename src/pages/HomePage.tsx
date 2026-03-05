@@ -774,7 +774,7 @@ const HomePage = () => {
         </div>
 
         {/* GÜNLÜK CHALLENGE'LAR */}
-        <div className="mt-8 pl-5">
+        <div className="mt-6 pl-5">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-4 bg-amber-500 rounded-full" />
             <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
@@ -871,7 +871,7 @@ const HomePage = () => {
         </div>
 
         {/* İSTATİSTİKLER */}
-        <div className="px-5 mt-4 pb-12">
+        <div className="px-5 mt-6 pb-12">
           {" "}
           {/* Alt boşluğu biraz artırdım, menüye girmesin */}
           <div className="grid grid-cols-3 gap-3">
