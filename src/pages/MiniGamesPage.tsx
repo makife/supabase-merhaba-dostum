@@ -12,7 +12,6 @@ const MiniGamesPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const miniGamesConfig = [
-    { id: "wheel", title: "Çark", icon: "🎡", description: "Şansını dene!", gradient: "from-rose-500 to-rose-700", route: "/wheel" },
     { id: "snake", title: "Yılan", icon: "🐍", description: "Klasik yılan oyunu", gradient: "from-green-500 to-emerald-700", route: "/snake-game" },
     { id: "reactor", title: "Reaktör", icon: "☢️", description: "Hızlı kaç!", gradient: "from-red-500 to-orange-700", route: "/reactor-runner" },
     { id: "memory", title: "Hafıza", icon: "🧠", description: "Kartları eşle", gradient: "from-purple-500 to-violet-700", route: "/memory-game", disabled: !canPlayMemory, cooldown: timeUntilNextPlay },
