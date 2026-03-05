@@ -281,6 +281,31 @@ const WordChainPage = () => {
           </div>
         )}
       </div>
+
+      {/* Fixed keyboard at bottom when playing */}
+      {gameState === "playing" && (
+        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe">
+          <TurkishKeyboard
+            onKeyPress={(letter) => {
+              if (currentWord.length === 0) {
+                setCurrentWord(requiredLetter + letter);
+              } else {
+                setCurrentWord((prev) => prev + letter);
+              }
+              playSound("buttonClick");
+            }}
+            onBackspace={() => {
+              setCurrentWord((prev) => {
+                if (prev.length <= 1) return requiredLetter;
+                return prev.slice(0, -1);
+              });
+            }}
+            onSubmit={submitWord}
+            disabled={gameState !== "playing"}
+            highlightLetter={requiredLetter}
+          />
+        </div>
+      )}
     </div>
   );
 };
