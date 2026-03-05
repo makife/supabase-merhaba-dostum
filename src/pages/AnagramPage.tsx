@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
-import { ArrowLeft, Clock, Check, SkipForward, Trophy } from "lucide-react";
+import { ArrowLeft, Clock, Check, SkipForward, Trophy, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { loadChallengeWordlist, getRandomWord } from "@/utils/challengeWordlist";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 
 const LEVELS = [
   { wordLen: 3, timeLimit: 30, points: 15 },
@@ -20,13 +22,13 @@ const shuffleWord = (word: string): string => {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   const shuffled = arr.join("");
-  // Ensure it's actually shuffled
   return shuffled === word ? shuffleWord(word) : shuffled;
 };
 
 const AnagramPage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("anagram");
 
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<"ready" | "playing" | "finished">("ready");
@@ -40,11 +42,20 @@ const AnagramPage = () => {
   const [correctCount, setCorrectCount] = useState(0);
   const [results, setResults] = useState<{ word: string; correct: boolean; points: number }[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const scoreSavedRef = useRef(false);
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
+
+  // Save score when finished
+  useEffect(() => {
+    if (gameState === "finished" && !scoreSavedRef.current && !hasPlayedToday) {
+      scoreSavedRef.current = true;
+      saveScore(score, correctCount);
+    }
+  }, [gameState]);
 
   const loadLevel = useCallback((level: number) => {
     const config = LEVELS[level];
@@ -64,7 +75,6 @@ const AnagramPage = () => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          // Time's up for this level
           handleLevelEnd(false, word, level);
           return 0;
         }
@@ -76,7 +86,7 @@ const AnagramPage = () => {
   const handleLevelEnd = (correct: boolean, word: string, level: number) => {
     if (timerRef.current) clearInterval(timerRef.current);
     const points = correct ? LEVELS[level].points : 0;
-    
+
     setResults(prev => [...prev, { word, correct, points }]);
     if (correct) {
       setScore(prev => prev + points);
@@ -88,7 +98,6 @@ const AnagramPage = () => {
       toast.error(`Cevap: ${word}`);
     }
 
-    // Next level or finish
     setTimeout(() => {
       if (level < LEVELS.length - 1) {
         const next = level + 1;
@@ -101,6 +110,11 @@ const AnagramPage = () => {
   };
 
   const startGame = () => {
+    if (hasPlayedToday) {
+      toast.error("Bugün zaten oynadın! Yarın tekrar gel 🕐");
+      return;
+    }
+    scoreSavedRef.current = false;
     setCurrentLevel(0);
     setScore(0);
     setCorrectCount(0);
@@ -118,7 +132,6 @@ const AnagramPage = () => {
     setUserAnswer(newAnswer);
     playSound("buttonClick");
 
-    // Auto-check when all letters selected
     if (newAnswer.length === targetWord.length) {
       setTimeout(() => {
         const isCorrect = newAnswer === targetWord;
@@ -134,11 +147,9 @@ const AnagramPage = () => {
     setUserAnswer(newSelected.map(i => scrambled[i]).join(""));
   };
 
-  const skipLevel = () => {
-    handleLevelEnd(false, targetWord, currentLevel);
-  };
+  const skipLevel = () => handleLevelEnd(false, targetWord, currentLevel);
 
-  if (loading) {
+  if (loading || challengeLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
         <div className="w-8 h-8 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
@@ -148,7 +159,6 @@ const AnagramPage = () => {
 
   return (
     <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #12082a 0%, #1e1045 50%, #2d1560 100%)" }}>
-      {/* Header */}
       <div className="px-5 pt-12 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => { navigate(-1); playSound("buttonClick"); }} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
@@ -167,31 +177,40 @@ const AnagramPage = () => {
         )}
       </div>
 
-      {/* Game Content */}
       <div className="flex-1 overflow-y-auto px-5 pb-8">
         {gameState === "ready" && (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">🔤</div>
             <div className="text-center">
               <h2 className="text-xl font-bold text-white mb-2">Anagram Challenge</h2>
-              <p className="text-sm text-slate-400 max-w-xs">
-                5 seviye karışık harf! Doğru kelimeyi bul. Her seviye daha zor!
-              </p>
+              <p className="text-sm text-slate-400 max-w-xs">5 seviye karışık harf! Doğru kelimeyi bul.</p>
             </div>
             <div className="flex flex-col gap-1.5 text-xs text-slate-500">
               {LEVELS.map((l, i) => (
                 <span key={i}>Seviye {i + 1}: {l.wordLen} harf — {l.points} puan — {l.timeLimit}s</span>
               ))}
             </div>
-            <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-violet-500/30">
-              Başla! 🚀
-            </button>
+
+            {hasPlayedToday ? (
+              <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span className="text-sm text-slate-400">Bugün oynadın!</span>
+                <span className="text-sm font-bold text-violet-400">{todayScore} puan</span>
+              </div>
+            ) : (
+              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-violet-500/30">
+                Başla! 🚀
+              </button>
+            )}
+
+            <div className="w-full max-w-sm mt-2">
+              <ChallengeLeaderboard leaderboard={leaderboard} />
+            </div>
           </div>
         )}
 
         {gameState === "playing" && (
           <div className="flex flex-col items-center gap-6 mt-8">
-            {/* Level Indicator */}
             <div className="flex items-center gap-2">
               {LEVELS.map((_, i) => (
                 <div key={i} className={`w-8 h-1.5 rounded-full transition-all ${
@@ -199,19 +218,15 @@ const AnagramPage = () => {
                 }`} />
               ))}
             </div>
-
             <div className="text-center">
               <span className="text-xs text-slate-500 uppercase tracking-wider">Seviye {currentLevel + 1}/{LEVELS.length}</span>
               <p className="text-sm text-violet-300 font-medium mt-1">{LEVELS[currentLevel].wordLen} harfli kelime</p>
             </div>
-
-            {/* Score */}
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-400" />
               <span className="font-bold text-amber-400">{score} puan</span>
             </div>
 
-            {/* Answer Slots */}
             <div className="flex gap-2 mb-2">
               {targetWord.split("").map((_, i) => (
                 <div key={i} className={`w-12 h-14 rounded-xl border-2 flex items-center justify-center text-xl font-black transition-all ${
@@ -222,28 +237,21 @@ const AnagramPage = () => {
               ))}
             </div>
 
-            {/* Scrambled Letters */}
             <div className="flex flex-wrap gap-3 justify-center">
               {scrambled.split("").map((letter, i) => {
                 const isUsed = selectedLetters.includes(i);
                 return (
-                  <button
-                    key={i}
-                    onClick={() => handleLetterClick(i)}
-                    disabled={isUsed}
+                  <button key={i} onClick={() => handleLetterClick(i)} disabled={isUsed}
                     className={`w-14 h-14 rounded-xl flex items-center justify-center text-xl font-black transition-all active:scale-90 ${
-                      isUsed
-                        ? "bg-white/5 border border-white/5 text-slate-700 scale-90"
+                      isUsed ? "bg-white/5 border border-white/5 text-slate-700 scale-90"
                         : "bg-gradient-to-b from-violet-500/40 to-purple-600/40 border border-violet-400/30 text-white hover:from-violet-400/50 hover:to-purple-500/50"
-                    }`}
-                  >
+                    }`}>
                     {letter}
                   </button>
                 );
               })}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 mt-4">
               <button onClick={undoLetter} disabled={selectedLetters.length === 0} className="px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white active:scale-95 transition-transform disabled:opacity-30">
                 Geri Al ↩
@@ -256,7 +264,7 @@ const AnagramPage = () => {
         )}
 
         {gameState === "finished" && (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">{correctCount >= 4 ? "🏆" : correctCount >= 2 ? "🎉" : "💪"}</div>
             <div className="text-center">
               <h2 className="text-2xl font-black text-white mb-1">Bitti!</h2>
@@ -278,14 +286,13 @@ const AnagramPage = () => {
               ))}
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={startGame} className="px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl font-bold text-white active:scale-95 transition-transform">
-                Tekrar Oyna 🔄
-              </button>
-              <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
-                Ana Sayfa
-              </button>
+            <div className="w-full max-w-sm">
+              <ChallengeLeaderboard leaderboard={leaderboard} />
             </div>
+
+            <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+              Ana Sayfa
+            </button>
           </div>
         )}
       </div>

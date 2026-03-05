@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
-import { ArrowLeft, Clock, Send, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clock, Send, Trophy, RotateCcw, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
   loadChallengeWordlist,
@@ -9,14 +9,17 @@ import {
   generateLetterPool,
   canFormWord,
 } from "@/utils/challengeWordlist";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 
-const GAME_DURATION = 120; // 2 minutes
+const GAME_DURATION = 120;
 const LETTER_COUNT = 14;
 
 const WordHuntPage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("word_hunt");
 
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<"ready" | "playing" | "finished">("ready");
@@ -33,6 +36,10 @@ const WordHuntPage = () => {
   }, []);
 
   const startGame = useCallback(() => {
+    if (hasPlayedToday) {
+      toast.error("Bugün zaten oynadın! Yarın tekrar gel 🕐");
+      return;
+    }
     const pool = generateLetterPool(LETTER_COUNT);
     setLetters(pool);
     setFoundWords([]);
@@ -52,7 +59,14 @@ const WordHuntPage = () => {
         return prev - 1;
       });
     }, 1000);
-  }, [playSound]);
+  }, [playSound, hasPlayedToday]);
+
+  // Save score when game finishes
+  useEffect(() => {
+    if (gameState === "finished" && score >= 0 && !hasPlayedToday) {
+      saveScore(score, foundWords.length);
+    }
+  }, [gameState]);
 
   const handleLetterClick = (letter: string, index: number) => {
     if (gameState !== "playing") return;
@@ -72,7 +86,6 @@ const WordHuntPage = () => {
 
   const submitWord = () => {
     if (gameState !== "playing" || currentWord.length < 3) return;
-
     const upper = currentWord.toLocaleUpperCase("tr-TR");
 
     if (foundWords.includes(upper)) {
@@ -80,13 +93,11 @@ const WordHuntPage = () => {
       setCurrentWord("");
       return;
     }
-
     if (!canFormWord(upper, letters)) {
       toast.error("Bu harfler havuzda yok!");
       setCurrentWord("");
       return;
     }
-
     if (!isValidWord(upper)) {
       toast.error("Geçersiz kelime!");
       playSound("wrongWord");
@@ -102,9 +113,7 @@ const WordHuntPage = () => {
     toast.success(`+${points} puan! 🎯`);
   };
 
-  const clearWord = () => {
-    setCurrentWord("");
-  };
+  const clearWord = () => setCurrentWord("");
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -112,7 +121,7 @@ const WordHuntPage = () => {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  if (loading) {
+  if (loading || challengeLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
         <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
@@ -144,7 +153,7 @@ const WordHuntPage = () => {
       {/* Game Content */}
       <div className="flex-1 overflow-y-auto px-5 pb-8">
         {gameState === "ready" && (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">🔍</div>
             <div className="text-center">
               <h2 className="text-xl font-bold text-white mb-2">Kelime Avı</h2>
@@ -158,15 +167,30 @@ const WordHuntPage = () => {
               <span>• 5 harf = 35 puan</span>
               <span>• 6+ harf = 50+ puan</span>
             </div>
-            <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-emerald-500/30">
-              Başla! 🚀
-            </button>
+
+            {hasPlayedToday ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm text-slate-400">Bugün oynadın!</span>
+                  <span className="text-sm font-bold text-emerald-400">{todayScore} puan</span>
+                </div>
+              </div>
+            ) : (
+              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-emerald-500/30">
+                Başla! 🚀
+              </button>
+            )}
+
+            {/* Leaderboard */}
+            <div className="w-full max-w-sm mt-2">
+              <ChallengeLeaderboard leaderboard={leaderboard} />
+            </div>
           </div>
         )}
 
         {gameState === "playing" && (
           <div className="flex flex-col gap-5 mt-4">
-            {/* Score */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-amber-400" />
@@ -175,22 +199,16 @@ const WordHuntPage = () => {
               <span className="text-xs text-slate-500">{foundWords.length} kelime bulundu</span>
             </div>
 
-            {/* Letter Pool */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
               <div className="flex flex-wrap gap-2.5 justify-center">
                 {letters.map((letter, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleLetterClick(letter, i)}
-                    className="w-12 h-12 rounded-xl bg-gradient-to-b from-emerald-500/30 to-emerald-700/30 border border-emerald-400/30 flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform hover:from-emerald-400/40 hover:to-emerald-600/40"
-                  >
+                  <button key={i} onClick={() => handleLetterClick(letter, i)} className="w-12 h-12 rounded-xl bg-gradient-to-b from-emerald-500/30 to-emerald-700/30 border border-emerald-400/30 flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform hover:from-emerald-400/40 hover:to-emerald-600/40">
                     {letter}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Current Word Input */}
             <div className="flex gap-2">
               <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center">
                 <input
@@ -207,16 +225,11 @@ const WordHuntPage = () => {
                   </button>
                 )}
               </div>
-              <button
-                onClick={submitWord}
-                disabled={currentWord.length < 3}
-                className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 disabled:active:scale-100 shadow-lg shadow-emerald-500/30"
-              >
+              <button onClick={submitWord} disabled={currentWord.length < 3} className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 disabled:active:scale-100 shadow-lg shadow-emerald-500/30">
                 <Send className="w-5 h-5 text-white" />
               </button>
             </div>
 
-            {/* Found Words */}
             {foundWords.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Bulunan Kelimeler</h3>
@@ -233,7 +246,7 @@ const WordHuntPage = () => {
         )}
 
         {gameState === "finished" && (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">🏆</div>
             <div className="text-center">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
@@ -253,14 +266,14 @@ const WordHuntPage = () => {
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button onClick={startGame} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl font-bold text-white active:scale-95 transition-transform">
-                Tekrar Oyna 🔄
-              </button>
-              <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
-                Ana Sayfa
-              </button>
+            {/* Leaderboard */}
+            <div className="w-full max-w-sm">
+              <ChallengeLeaderboard leaderboard={leaderboard} />
             </div>
+
+            <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+              Ana Sayfa
+            </button>
           </div>
         )}
       </div>
