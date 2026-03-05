@@ -284,7 +284,7 @@ const WordChainPage = () => {
 
       {/* Fixed keyboard at bottom when playing */}
       {gameState === "playing" && (
-        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe">
+        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe mb-12">
           <TurkishKeyboard
             onKeyPress={(letter) => {
               if (currentWord.length === 0) {
