@@ -850,6 +850,10 @@ const HomePage = () => {
 
         {/* GÜNLÜK ÇARK */}
         <div className="px-5 mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-1 h-4 bg-red-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Çark</h3>
+          </div>
           <div
             onClick={() => { playSound("buttonClick"); navigate("/wheel"); }}
             className="w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border border-red-500/30 shadow-lg shadow-red-500/10"
@@ -860,11 +864,8 @@ const HomePage = () => {
               🎡
             </div>
             <div className="relative z-10 flex-1">
-              <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Günlük Çark</h3>
-              <p className="text-[10px] text-white/70 font-medium">Şansını dene, ödüller kazan!</p>
-            </div>
-            <div className="relative z-10 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
+              <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Şansını Dene!</h3>
+              <p className="text-[10px] text-white/70 font-medium">Çarkı çevir, ödüller kazan!</p>
             </div>
           </div>
         </div>
