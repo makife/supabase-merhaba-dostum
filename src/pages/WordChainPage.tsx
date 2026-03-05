@@ -97,18 +97,18 @@ const WordChainPage = () => {
 
     if (upper[0] !== requiredLetter) {
       toast.error(`"${requiredLetter}" harfi ile başlamalı!`);
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
     if (chain.includes(upper)) {
       toast.error("Bu kelimeyi zaten kullandın!");
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
     if (!isValidWord(upper)) {
       toast.error("Geçersiz kelime!");
       playSound("wrongWord");
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
 
@@ -123,7 +123,7 @@ const WordChainPage = () => {
     setChain(newChain);
     setRequiredLetter(newLastLetter);
     setScore((prev) => parseFloat((prev + points).toFixed(2)));
-    setCurrentWord("");
+    setCurrentWord(newLastLetter);
     if (newChain.length > longestChain) setLongestChain(newChain.length);
     playSound("correctWord");
     toast.success(`+${points.toFixed(1)} puan! (${basePoints}÷${elapsedSec.toFixed(0)}s) Zincir: ${newChain.length} 🔗`);
