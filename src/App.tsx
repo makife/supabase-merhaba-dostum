@@ -417,6 +417,30 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/challenge/word-hunt"
+          element={
+            <ProtectedRoute>
+              <WordHuntPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenge/anagram"
+          element={
+            <ProtectedRoute>
+              <AnagramPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenge/word-chain"
+          element={
+            <ProtectedRoute>
+              <WordChainPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/private-room/waiting/:roomCode"
           element={
             <ProtectedRoute>
