@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Dinamik import için helper fonksiyonlar
 const getPushNotifications = async () => {
   try {
     const module = await import("@capacitor/push-notifications");
@@ -49,62 +48,73 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
 
   const steps = [
     {
-      title: "KVKK Onayı",
-      description: "Kişisel verilerinizin korunması ve kullanımı hakkında",
+      title: "Gizlilik & KVKK",
+      description: "Kişisel verilerinizin korunması",
       icon: Shield,
       content: (
         <div className="space-y-4">
-          <div className="max-h-60 overflow-y-auto p-4 bg-muted rounded-lg text-sm">
-            <h4 className="font-semibold mb-2">Kişisel Verilerin Korunması</h4>
-            <p className="mb-3">
-              Kelimele uygulaması, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında kişisel
-              verilerinizin korunmasına ve gizliliğinize önem vermektedir.
+          <div
+            className="max-h-52 overflow-y-auto p-4 rounded-2xl text-sm space-y-3"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <h4 className="font-semibold text-white/90">Kişisel Verilerin Korunması</h4>
+            <p className="text-white/55 leading-relaxed">
+              Kelimele uygulaması, 6698 sayılı KVKK kapsamında kişisel verilerinizin korunmasına önem vermektedir.
             </p>
 
-            <h4 className="font-semibold mb-2">Toplanan Veriler</h4>
-            <ul className="list-disc list-inside mb-3 space-y-1">
-              <li>E-posta adresi (hesap oluşturma için)</li>
-              <li>Kullanıcı adı ve profil bilgileri</li>
-              <li>Oyun istatistikleri ve başarılar</li>
-              <li>Cihaz bilgileri (uygulama performansı için)</li>
+            <h4 className="font-semibold text-white/90">Toplanan Veriler</h4>
+            <ul className="text-white/55 space-y-1 leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> E-posta adresi
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Kullanıcı adı ve profil bilgileri
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Oyun istatistikleri ve başarılar
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Cihaz bilgileri
+              </li>
             </ul>
 
-            <h4 className="font-semibold mb-2">Verilerin Kullanımı</h4>
-            <ul className="list-disc list-inside mb-3 space-y-1">
-              <li>Oyun deneyiminizi kişiselleştirmek</li>
-              <li>Hesap güvenliğinizi sağlamak</li>
-              <li>Liderlik tabloları ve istatistikler oluşturmak</li>
-              <li>Uygulama performansını iyileştirmek</li>
+            <h4 className="font-semibold text-white/90">Verilerin Kullanımı</h4>
+            <ul className="text-white/55 space-y-1 leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Oyun deneyiminizi kişiselleştirmek
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Hesap güvenliğinizi sağlamak
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-0.5">›</span> Liderlik tabloları oluşturmak
+              </li>
             </ul>
 
-            <h4 className="font-semibold mb-2">Veri Güvenliği</h4>
-            <p className="mb-3">
-              Tüm kişisel verileriniz şifrelenerek güvenli sunucularda saklanır. Verileriniz üçüncü taraflarla
-              paylaşılmaz ve satılmaz.
+            <h4 className="font-semibold text-white/90">Veri Güvenliği</h4>
+            <p className="text-white/55 leading-relaxed">
+              Tüm verileriniz şifrelenerek güvenli sunucularda saklanır. Üçüncü taraflarla paylaşılmaz ve satılmaz.
             </p>
 
-            <h4 className="font-semibold mb-2">Haklarınız</h4>
-            <p className="mb-3">
-              KVKK kapsamında verilerinize erişme, düzeltme, silme ve veri işlemenin durdurulmasını talep etme haklarına
-              sahipsiniz.
-            </p>
-
-            <p className="text-xs text-muted-foreground mt-4">İletişim: info@kelimele.site</p>
+            <p className="text-xs text-white/30 pt-2">İletişim: info@kelimele.site</p>
           </div>
 
           <div
-            className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer active:bg-muted/50"
+            className="flex items-start gap-3 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98]"
+            style={{
+              background: kvkkAccepted ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.04)",
+              border: kvkkAccepted ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.08)",
+            }}
             onClick={() => setKvkkAccepted(!kvkkAccepted)}
           >
             <Checkbox
               id="kvkk"
               checked={kvkkAccepted}
               onCheckedChange={(checked) => setKvkkAccepted(!!checked)}
-              className="mt-0.5"
+              className="mt-0.5 border-white/30 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
             />
-            <label htmlFor="kvkk" className="text-sm cursor-pointer select-none">
-              KVKK metnini okudum, anladım ve kabul ediyorum. Kişisel verilerimin yukarıda belirtilen amaçlarla
-              işlenmesine onay veriyorum.
+            <label htmlFor="kvkk" className="text-sm text-white/70 cursor-pointer select-none leading-relaxed">
+              KVKK metnini okudum, anladım ve kişisel verilerimin işlenmesine onay veriyorum.
             </label>
           </div>
         </div>
@@ -116,57 +126,74 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       icon: Bell,
       content: (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-white/50 leading-relaxed">
             Kelimele'nin tüm özelliklerinden faydalanabilmek için aşağıdaki izinlere ihtiyacımız var:
           </p>
 
           <div className="space-y-3">
             {/* Bildirim İzni */}
-            <div className="p-4 border rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Bell className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Bildirimler</p>
-                    <p className="text-xs text-muted-foreground">Oyun davetleri ve önemli güncellemeler için</p>
-                  </div>
+            <div
+              className="p-4 rounded-2xl flex items-center justify-between transition-all"
+              style={{
+                background: permissionsGranted.notifications ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.04)",
+                border: permissionsGranted.notifications
+                  ? "1px solid rgba(34,197,94,0.25)"
+                  : "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(99,102,241,0.15)" }}
+                >
+                  <Bell className="w-5 h-5 text-indigo-400" />
                 </div>
-                {permissionsGranted.notifications && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                <div>
+                  <p className="font-semibold text-white/90 text-sm">Bildirimler</p>
+                  <p className="text-xs text-white/45">Oyun davetleri ve güncellemeler</p>
+                </div>
               </div>
+              {permissionsGranted.notifications && <CheckCircle2 className="w-5 h-5 text-green-400" />}
             </div>
 
             {/* Kamera İzni */}
-            <div className="p-4 border rounded-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Camera className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Kamera</p>
-                    <p className="text-xs text-muted-foreground">Profil fotoğrafı çekmek için</p>
-                  </div>
+            <div
+              className="p-4 rounded-2xl flex items-center justify-between transition-all"
+              style={{
+                background: permissionsGranted.camera ? "rgba(34,197,94,0.08)" : "rgba(255,255,255,0.04)",
+                border: permissionsGranted.camera
+                  ? "1px solid rgba(34,197,94,0.25)"
+                  : "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(99,102,241,0.15)" }}
+                >
+                  <Camera className="w-5 h-5 text-indigo-400" />
                 </div>
-                {permissionsGranted.camera && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                <div>
+                  <p className="font-semibold text-white/90 text-sm">Kamera & Galeri</p>
+                  <p className="text-xs text-white/45">Profil fotoğrafı için</p>
+                </div>
               </div>
+              {permissionsGranted.camera && <CheckCircle2 className="w-5 h-5 text-green-400" />}
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">* Bu izinleri daha sonra ayarlardan değiştirebilirsiniz</p>
+          <p className="text-xs text-white/30">* İzinleri daha sonra ayarlardan değiştirebilirsiniz</p>
         </div>
       ),
     },
   ];
 
-  // Push token'ı veritabanına kaydet
   const savePushToken = async (userId: string, token: string) => {
     try {
-      console.log("📱 Push token kaydediliyor:", token.substring(0, 20) + "...");
       const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
-
       if (error) {
-        console.error("Push token kaydetme hatası:", error);
         localStorage.setItem("push_token_pending", JSON.stringify({ userId, token }));
       } else {
-        console.log("✅ Push token veritabanına kaydedildi");
         localStorage.removeItem("push_token_pending");
       }
     } catch (error) {
@@ -177,36 +204,24 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   const requestPermissions = async () => {
     const granted = { notifications: false, camera: false };
 
-    // Bildirim izni
     if (isMobile) {
       try {
         const PushNotifications = await getPushNotifications();
         if (PushNotifications) {
-          console.log("📱 Bildirim izni isteniyor...");
           const permission = await PushNotifications.requestPermissions();
-          console.log("📱 Bildirim izni sonucu:", permission.receive);
-
           if (permission.receive === "granted") {
             PushNotifications.addListener("registration", async (token) => {
-              console.log("✅ Push token alındı:", token.value.substring(0, 20) + "...");
-
               if (user?.id) {
                 await savePushToken(user.id, token.value);
               } else {
-                console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
                 localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
               }
             });
-
             PushNotifications.addListener("registrationError", (error: any) => {
-              console.error("❌ Push registration hatası:", error.error);
+              console.error("Push registration hatası:", error.error);
             });
-
             await PushNotifications.register();
             granted.notifications = true;
-            console.log("✅ Bildirim izni verildi ve register çağrıldı");
-          } else {
-            console.log("❌ Bildirim izni reddedildi");
           }
         }
       } catch (err) {
@@ -216,20 +231,17 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       try {
         const permission = await Notification.requestPermission();
         granted.notifications = permission === "granted";
-        console.log("🌐 Web bildirim izni:", permission);
       } catch (err) {
         console.error("Web bildirim izni hatası:", err);
       }
     }
 
-    // Kamera izni
     if (isMobile) {
       try {
         const CapacitorCamera = await getCapacitorCamera();
         if (CapacitorCamera) {
           const permission = await CapacitorCamera.requestPermissions();
           granted.camera = permission.camera === "granted";
-          console.log("📷 Kamera izni:", permission.camera);
         }
       } catch (err) {
         console.error("Kamera izni hatası:", err);
@@ -249,47 +261,27 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       setCurrentStep(1);
     } else if (currentStep === 1) {
       setIsLoading(true);
-
       try {
-        // --- EMNİYET KEMERİ BAŞLANGIÇ ---
-        // İzin isteme işlemine 5 saniyelik süre tanı.
-        // Eğer 5 saniyede cevap gelmezse (pencere açılmazsa veya takılırsa) hata fırlat ve devam et.
-
         const permissionPromise = requestPermissions();
-
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
-
-        // Hangisi önce biterse onu kabul et
         await Promise.race([permissionPromise, timeoutPromise]);
-        // --- EMNİYET KEMERİ BİTİŞ ---
-
-        // İzin verilsin veya verilmesin, kod buradan aşağıya akmaya devam eder.
 
         localStorage.setItem("kelimeci-onboarding-completed", "true");
-
         const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
-        settings.notifications = true; // Varsayılan olarak true varsayıyoruz, zaten verilmediyse çalışmaz
+        settings.notifications = true;
         localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
 
-        console.log("✅ Onboarding tamamlandı");
         window.dispatchEvent(new Event("permissionsCompleted"));
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
       } catch (error) {
-        console.error("İzin işlemi hatası veya zaman aşımı:", error);
-
-        // Hata olsa bile (veya timeout olsa bile) kullanıcıyı içeri al
         localStorage.setItem("kelimeci-onboarding-completed", "true");
         toast.info("Kurulum tamamlandı.");
       } finally {
-        // Burası HER TÜRLÜ çalışır ve yükleniyor ekranını kapatır
         setIsLoading(false);
         onComplete();
-
         const introCompleted = localStorage.getItem("kelimeci-intro-completed");
         if (onShowIntro && !introCompleted) {
-          setTimeout(() => {
-            onShowIntro();
-          }, 400);
+          setTimeout(() => onShowIntro(), 400);
         }
       }
     }
@@ -299,13 +291,9 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
     localStorage.setItem("kelimeci-onboarding-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
-
-    // Skip'te de intro dialog'u göster
     const introCompleted = localStorage.getItem("kelimeci-intro-completed");
     if (onShowIntro && !introCompleted) {
-      setTimeout(() => {
-        onShowIntro();
-      }, 400);
+      setTimeout(() => onShowIntro(), 400);
     }
   };
 
@@ -314,44 +302,102 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-sm w-[calc(100%-2rem)] rounded-3xl border-0 p-0 shadow-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(145deg, #0f1729 0%, #1a1a2e 50%, #16213e 100%)",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07)",
+        }}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
-          <div className="flex items-center space-x-3 mb-2">
-            <CurrentIcon className="w-6 h-6 text-primary" />
-            <DialogTitle>{steps[currentStep].title}</DialogTitle>
-          </div>
-          <DialogDescription>{steps[currentStep].description}</DialogDescription>
-        </DialogHeader>
+        {/* Glow efekti */}
+        <div
+          className="absolute -top-20 -right-20 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)" }}
+        />
+        <div
+          className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)" }}
+        />
 
-        <div className="py-4">{steps[currentStep].content}</div>
-
-        <div className="flex justify-between items-center">
-          <Button variant="ghost" onClick={handleSkip}>
-            Atla
-          </Button>
-
-          <div className="flex space-x-2">
-            {currentStep > 0 && (
-              <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
-                Geri
-              </Button>
-            )}
-            <Button onClick={handleNext} disabled={(currentStep === 0 && !kvkkAccepted) || isLoading}>
-              {isLoading ? "Yükleniyor..." : currentStep === steps.length - 1 ? "Tamamla" : "İleri"}
-            </Button>
+        {/* Header */}
+        <div className="relative z-10 px-6 pt-7 pb-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex items-center gap-3 mb-1">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.3)" }}
+            >
+              <CurrentIcon className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white leading-tight">{steps[currentStep].title}</h2>
+              <p className="text-xs text-white/40">{steps[currentStep].description}</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-center space-x-2 mt-2">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`h-2 w-2 rounded-full transition-colors ${index === currentStep ? "bg-primary" : "bg-muted"}`}
-            />
-          ))}
+        {/* İçerik */}
+        <div className="relative z-10 px-6 py-5">{steps[currentStep].content}</div>
+
+        {/* Footer */}
+        <div
+          className="relative z-10 px-6 pb-6 pt-4 flex items-center justify-between"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <button
+            onClick={handleSkip}
+            className="text-sm text-white/35 hover:text-white/60 transition-colors px-2 py-1"
+          >
+            Atla
+          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Adım göstergesi */}
+            <div className="flex gap-1.5 mr-3">
+              {steps.map((_, index) => (
+                <div
+                  key={index}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: index === currentStep ? "16px" : "6px",
+                    height: "6px",
+                    background: index === currentStep ? "#6366f1" : "rgba(255,255,255,0.2)",
+                  }}
+                />
+              ))}
+            </div>
+
+            {currentStep > 0 && (
+              <button
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white/60 hover:text-white/90 transition-colors"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                Geri
+              </button>
+            )}
+
+            <button
+              onClick={handleNext}
+              disabled={(currentStep === 0 && !kvkkAccepted) || isLoading}
+              className="px-5 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-40"
+              style={{
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                boxShadow: "0 4px 15px rgba(99,102,241,0.35)",
+              }}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Yükleniyor
+                </span>
+              ) : currentStep === steps.length - 1 ? (
+                "Tamamla"
+              ) : (
+                "İleri"
+              )}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
