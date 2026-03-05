@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { ArrowLeft, Clock, Send, Trophy, Link, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { TurkishKeyboard } from "@/components/TurkishKeyboard";
 import {
   loadChallengeWordlist,
   isValidWord,
@@ -234,21 +235,14 @@ const WordChainPage = () => {
               <span className="text-4xl font-black text-amber-400">{requiredLetter}</span>
             </div>
 
-            <div className="flex gap-2">
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center">
-                <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
-                <input
-                  ref={inputRef}
-                  value={currentWord.length > 0 ? currentWord.slice(1) : ""}
-                  onChange={(e) => setCurrentWord(requiredLetter + e.target.value.toLocaleUpperCase("tr-TR"))}
-                  onKeyDown={(e) => e.key === "Enter" && submitWord()}
-                  placeholder="devamını yaz..."
-                  className="bg-transparent text-white font-bold text-lg w-full outline-none placeholder:text-slate-600"
-                />
-              </div>
-              <button onClick={submitWord} disabled={currentWord.length < 3} className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 disabled:active:scale-100 shadow-lg shadow-amber-500/30">
-                <Send className="w-5 h-5 text-white" />
-              </button>
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center min-h-[56px]">
+              <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
+              <span className="text-white font-bold text-lg">
+                {currentWord.length > 1 ? currentWord.slice(1) : ""}
+              </span>
+              {currentWord.length <= 1 && (
+                <span className="text-slate-600 text-lg">devamını yaz...</span>
+              )}
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-h-60 overflow-y-auto">
