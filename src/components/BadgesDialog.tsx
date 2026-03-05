@@ -103,7 +103,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
             {earnedBadges.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-primary">Kazanılan Rozetler ({earnedBadges.length})</h3>
-                <div className="grid grid-cols-1 gap-3"
+                <div className="grid grid-cols-1 gap-3">
                   {earnedBadges.map((badge) => (
                     <div
                       key={badge.id}
@@ -133,7 +133,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                 <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
                   Kilitli Rozetler ({lockedBadges.length})
                 </h3>
-                <div className="grid grid-cols-1 gap-3"
+                <div className="grid grid-cols-1 gap-3">
                   {lockedBadges.map((badge) => {
                     const currentValue =
                       userStats && badge.condition_type ? getCurrentValue(badge.condition_type, userStats) : 0;
