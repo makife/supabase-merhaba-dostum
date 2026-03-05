@@ -152,7 +152,7 @@ const WordChainPage = () => {
   if (loading || challengeLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
-        <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -174,7 +174,7 @@ const WordChainPage = () => {
           </button>
           <div>
             <h1 className="text-lg font-black text-white">⛓️ Kelime Zinciri</h1>
-            <p className="text-[10px] text-amber-400/80">Son harfle yeni kelime</p>
+            <p className="text-[10px] text-yellow-400">Son harfle yeni kelime</p>
           </div>
         </div>
         {gameState === "playing" && (
@@ -203,10 +203,10 @@ const WordChainPage = () => {
               <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
                 <Lock className="w-4 h-4 text-slate-500" />
                 <span className="text-sm text-slate-400">Bugün oynadın!</span>
-                <span className="text-sm font-bold text-amber-400">{todayScore} puan</span>
+                <span className="text-sm font-bold text-yellow-400">{todayScore} puan</span>
               </div>
             ) : (
-              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-amber-500/30">
+              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-yellow-500/40">
                 Başla! 🚀
               </button>
             )}
@@ -221,8 +221,8 @@ const WordChainPage = () => {
           <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-amber-400">{score} puan</span>
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="font-bold text-yellow-400">{score} puan</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-400">
                 <Link className="w-3.5 h-3.5" />
@@ -231,7 +231,7 @@ const WordChainPage = () => {
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center min-h-[48px]">
-              <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
+              <span className="text-yellow-400 font-bold text-lg mr-1">{requiredLetter}</span>
               <span className="text-white font-bold text-lg">
                 {currentWord.length > 1 ? currentWord.slice(1) : ""}
               </span>
@@ -244,8 +244,8 @@ const WordChainPage = () => {
               <div className="flex flex-wrap gap-1.5 items-center">
                 {chain.map((word, i) => (
                   <div key={i} className="flex items-center gap-1">
-                    <span className="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-[11px] font-bold border border-amber-500/20">{word}</span>
-                    {i < chain.length - 1 && <span className="text-amber-500/50 text-[10px]">→</span>}
+                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-lg text-[11px] font-bold border border-yellow-500/30">{word}</span>
+                    {i < chain.length - 1 && <span className="text-yellow-500/60 text-[10px]">→</span>}
                   </div>
                 ))}
                 <div ref={chainEndRef} />
@@ -259,14 +259,14 @@ const WordChainPage = () => {
             <div className="text-6xl">{chain.length >= 10 ? "🏆" : chain.length >= 5 ? "🔥" : "⛓️"}</div>
             <div className="text-center">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
-              <p className="text-4xl font-black text-amber-400">{score} Puan</p>
+              <p className="text-4xl font-black text-yellow-400">{score} Puan</p>
               <p className="text-sm text-slate-400 mt-2">Zincir uzunluğu: {chain.length} kelime</p>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs max-h-40 overflow-y-auto">
               <div className="flex flex-wrap gap-1.5">
                 {chain.map((word, i) => (
-                  <span key={i} className="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-[10px] font-bold">{word}</span>
+                  <span key={i} className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-lg text-[10px] font-bold">{word}</span>
                 ))}
               </div>
             </div>
@@ -284,7 +284,7 @@ const WordChainPage = () => {
 
       {/* Fixed keyboard at bottom when playing */}
       {gameState === "playing" && (
-        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe mb-12">
+        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe mb-20">
           <TurkishKeyboard
             onKeyPress={(letter) => {
               if (currentWord.length === 0) {
