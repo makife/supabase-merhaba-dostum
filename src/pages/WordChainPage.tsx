@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { ArrowLeft, Clock, Send, Trophy, Link, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { TurkishKeyboard } from "@/components/TurkishKeyboard";
 import {
   loadChallengeWordlist,
   isValidWord,
@@ -62,7 +63,7 @@ const WordChainPage = () => {
 
     setChain([starter]);
     setRequiredLetter(lastLetter);
-    setCurrentWord("");
+    setCurrentWord(lastLetter);
     setScore(10);
     setTimeLeft(GAME_DURATION);
     setLongestChain(1);
@@ -96,18 +97,18 @@ const WordChainPage = () => {
 
     if (upper[0] !== requiredLetter) {
       toast.error(`"${requiredLetter}" harfi ile başlamalı!`);
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
     if (chain.includes(upper)) {
       toast.error("Bu kelimeyi zaten kullandın!");
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
     if (!isValidWord(upper)) {
       toast.error("Geçersiz kelime!");
       playSound("wrongWord");
-      setCurrentWord("");
+      setCurrentWord(requiredLetter);
       return;
     }
 
@@ -122,7 +123,7 @@ const WordChainPage = () => {
     setChain(newChain);
     setRequiredLetter(newLastLetter);
     setScore((prev) => parseFloat((prev + points).toFixed(2)));
-    setCurrentWord("");
+    setCurrentWord(newLastLetter);
     if (newChain.length > longestChain) setLongestChain(newChain.length);
     playSound("correctWord");
     toast.success(`+${points.toFixed(1)} puan! (${basePoints}÷${elapsedSec.toFixed(0)}s) Zincir: ${newChain.length} 🔗`);
@@ -184,7 +185,7 @@ const WordChainPage = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-8">
+      <div className={`flex-1 overflow-y-auto px-5 ${gameState === "playing" ? "pb-2" : "pb-8"}`}>
         {gameState === "ready" && (
           <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">⛓️</div>
@@ -217,7 +218,7 @@ const WordChainPage = () => {
         )}
 
         {gameState === "playing" && (
-          <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-amber-400" />
@@ -229,35 +230,22 @@ const WordChainPage = () => {
               </div>
             </div>
 
-            <div className="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
-              <span className="text-sm text-amber-300/80">Sıradaki harf:</span>
-              <span className="text-4xl font-black text-amber-400">{requiredLetter}</span>
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center min-h-[48px]">
+              <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
+              <span className="text-white font-bold text-lg">
+                {currentWord.length > 1 ? currentWord.slice(1) : ""}
+              </span>
+              {currentWord.length <= 1 && (
+                <span className="text-slate-600 text-lg">devamını yaz...</span>
+              )}
             </div>
 
-            <div className="flex gap-2">
-              <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center">
-                <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
-                <input
-                  ref={inputRef}
-                  value={currentWord.length > 0 ? currentWord.slice(1) : ""}
-                  onChange={(e) => setCurrentWord(requiredLetter + e.target.value.toLocaleUpperCase("tr-TR"))}
-                  onKeyDown={(e) => e.key === "Enter" && submitWord()}
-                  placeholder="devamını yaz..."
-                  className="bg-transparent text-white font-bold text-lg w-full outline-none placeholder:text-slate-600"
-                />
-              </div>
-              <button onClick={submitWord} disabled={currentWord.length < 3} className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30 disabled:active:scale-100 shadow-lg shadow-amber-500/30">
-                <Send className="w-5 h-5 text-white" />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-h-60 overflow-y-auto">
-              <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Zincir</h3>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 max-h-36 overflow-y-auto">
               <div className="flex flex-wrap gap-1.5 items-center">
                 {chain.map((word, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/20">{word}</span>
-                    {i < chain.length - 1 && <span className="text-amber-500/50 text-xs">→</span>}
+                  <div key={i} className="flex items-center gap-1">
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-[11px] font-bold border border-amber-500/20">{word}</span>
+                    {i < chain.length - 1 && <span className="text-amber-500/50 text-[10px]">→</span>}
                   </div>
                 ))}
                 <div ref={chainEndRef} />
@@ -293,6 +281,31 @@ const WordChainPage = () => {
           </div>
         )}
       </div>
+
+      {/* Fixed keyboard at bottom when playing */}
+      {gameState === "playing" && (
+        <div className="shrink-0 border-t border-white/5 bg-black/40 backdrop-blur-md pb-safe">
+          <TurkishKeyboard
+            onKeyPress={(letter) => {
+              if (currentWord.length === 0) {
+                setCurrentWord(requiredLetter + letter);
+              } else {
+                setCurrentWord((prev) => prev + letter);
+              }
+              playSound("buttonClick");
+            }}
+            onBackspace={() => {
+              setCurrentWord((prev) => {
+                if (prev.length <= 1) return requiredLetter;
+                return prev.slice(0, -1);
+              });
+            }}
+            onSubmit={submitWord}
+            disabled={gameState !== "playing"}
+            highlightLetter={requiredLetter}
+          />
+        </div>
+      )}
     </div>
   );
 };

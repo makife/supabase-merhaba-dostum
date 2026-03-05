@@ -59,7 +59,12 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
                 {entry.username}
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
               </span>
-              <span className="text-xs font-bold text-amber-400">{typeof entry.score === 'number' ? entry.score.toFixed(2) : entry.score}</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-xs font-bold text-amber-400">{typeof entry.score === 'number' ? entry.score.toFixed(2) : entry.score}</span>
+                {entry.words_found > 0 && (
+                  <span className="text-[9px] text-slate-500">({entry.words_found})</span>
+                )}
+              </div>
             </div>
           );
         })}
