@@ -1152,7 +1152,7 @@ const ProfilePage = () => {
           </div>
           <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4">
             {earnedBadges.length > 0 ? (
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-3">
                 {earnedBadges.slice(0, 6).map((badge) => (
                   <div
                     key={badge.id}
@@ -1200,7 +1200,9 @@ const ProfilePage = () => {
             {profileData.tournamentsPlayed > 0 && (
               <>
                 <div className="border-t border-white/10 pt-4 mt-4">
-                  <p className="text-sm font-bold text-white/70 mb-3 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-amber-400" /> Turnuva Performansı</p>
+                  <p className="text-sm font-bold text-white/70 mb-3 flex items-center gap-1.5">
+                    <Trophy className="w-4 h-4 text-amber-400" /> Turnuva Performansı
+                  </p>
                 </div>
                 <DetailRow label="Kazanılan Turnuva" value={profileData.tournamentsWon.toString()} highlight="green" />
                 <DetailRow label="Kaybedilen Turnuva" value={profileData.tournamentsLost.toString()} highlight="red" />
@@ -1216,9 +1218,21 @@ const ProfilePage = () => {
             <div className="border-t border-white/10 pt-4 mt-4">
               <p className="text-sm font-bold text-white/70 mb-3">🏆 Liderlik Şampiyonlukları</p>
             </div>
-            <DetailRow label="Sezon Şampiyonluğu" value={profileData.seasonFirstCount > 0 ? profileData.seasonFirstCount.toString() : "Yok"} highlight={profileData.seasonFirstCount > 0 ? "yellow" : undefined} />
-            <DetailRow label="Haftalık 1.'lik" value={profileData.weeklyFirstCount > 0 ? profileData.weeklyFirstCount.toString() : "Yok"} highlight={profileData.weeklyFirstCount > 0 ? "green" : undefined} />
-            <DetailRow label="Aylık 1.'lik" value={profileData.monthlyFirstCount > 0 ? profileData.monthlyFirstCount.toString() : "Yok"} highlight={profileData.monthlyFirstCount > 0 ? "green" : undefined} />
+            <DetailRow
+              label="Sezon Şampiyonluğu"
+              value={profileData.seasonFirstCount > 0 ? profileData.seasonFirstCount.toString() : "Yok"}
+              highlight={profileData.seasonFirstCount > 0 ? "yellow" : undefined}
+            />
+            <DetailRow
+              label="Haftalık 1.'lik"
+              value={profileData.weeklyFirstCount > 0 ? profileData.weeklyFirstCount.toString() : "Yok"}
+              highlight={profileData.weeklyFirstCount > 0 ? "green" : undefined}
+            />
+            <DetailRow
+              label="Aylık 1.'lik"
+              value={profileData.monthlyFirstCount > 0 ? profileData.monthlyFirstCount.toString() : "Yok"}
+              highlight={profileData.monthlyFirstCount > 0 ? "green" : undefined}
+            />
           </div>
         </div>
       </div>
