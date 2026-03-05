@@ -92,6 +92,42 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_scores: {
+        Row: {
+          avatar_url: string | null
+          challenge_type: string
+          created_at: string
+          date: string
+          id: string
+          score: number
+          user_id: string
+          username: string
+          words_found: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          challenge_type: string
+          created_at?: string
+          date?: string
+          id?: string
+          score?: number
+          user_id: string
+          username?: string
+          words_found?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          challenge_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          score?: number
+          user_id?: string
+          username?: string
+          words_found?: number
+        }
+        Relationships: []
+      }
       daily_leaderboard: {
         Row: {
           avatar_url: string | null
