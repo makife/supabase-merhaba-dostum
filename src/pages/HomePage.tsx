@@ -779,7 +779,7 @@ const HomePage = () => {
             <div className="w-1 h-4 bg-amber-500 rounded-full" />
             <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-6 pr-5 scrollbar-hide">
+          <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
             {/* Kelime Avı */}
             <div
               onClick={() => { playSound("buttonClick"); navigate("/challenge/word-hunt"); }}
