@@ -792,7 +792,7 @@ const HomePage = () => {
                   {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
                 </div>
                 <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_hunt ? "bg-emerald-400/30 text-emerald-200 border-emerald-400/40" : "bg-emerald-400/20 text-emerald-200 border-emerald-400/30"}`}>
-                  {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Kolay"}
+                  {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Oyna"}
                 </Badge>
               </div>
               <div className="relative z-10">
@@ -813,7 +813,7 @@ const HomePage = () => {
                   {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
                 </div>
                 <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.anagram ? "bg-violet-400/30 text-violet-200 border-violet-400/40" : "bg-violet-400/20 text-violet-200 border-violet-400/30"}`}>
-                  {challengeStatus.anagram ? "✓ Tamamlandı" : "Orta"}
+                  {challengeStatus.anagram ? "✓ Tamamlandı" : "Oyna"}
                 </Badge>
               </div>
               <div className="relative z-10">
@@ -834,7 +834,7 @@ const HomePage = () => {
                   {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
                 </div>
                 <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_chain ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>
-                  {challengeStatus.word_chain ? "✓ Tamamlandı" : "Zor"}
+                  {challengeStatus.word_chain ? "✓ Tamamlandı" : "Oyna"}
                 </Badge>
               </div>
               <div className="relative z-10">
