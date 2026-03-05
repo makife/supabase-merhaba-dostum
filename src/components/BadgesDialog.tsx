@@ -136,13 +136,13 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
             {/* Kilitli Rozetler */}
             {lockedBadges.length > 0 && (
               <div>
-<<<<<<< Updated upstream
+
                 <h3 className="text-base font-semibold mb-3 text-white/50">Kilitli Rozetler ({lockedBadges.length})</h3>
                 <div className="grid grid-cols-1 gap-3">
                   {lockedBadges.map((badge) => {
                     const currentValue =
                       userStats && badge.condition_type ? getCurrentValue(badge.condition_type, userStats) : 0;
-=======
+
                 <h3 className="text-base font-semibold mb-3 text-white/50">
                   Kilitli Rozetler ({lockedBadges.length})
                 </h3>
@@ -152,20 +152,20 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                       userStats && badge.condition_type
                         ? getCurrentValue(badge.condition_type, userStats)
                         : 0;
->>>>>>> Stashed changes
+
                     const targetValue = badge.condition_value || 1;
                     const progressPercent = Math.min((currentValue / targetValue) * 100, 100);
                     const hasProgress = userStats && badge.condition_type && badge.condition_value;
 
                     return (
-<<<<<<< Updated upstream
+
                       <div key={badge.id} className="p-4 rounded-xl border border-white/10 bg-white/5">
-=======
+
                       <div
                         key={badge.id}
                         className="p-4 rounded-xl border border-white/10 bg-white/5"
                       >
->>>>>>> Stashed changes
+
                         <div className="flex items-start gap-4">
                           <div className="relative shrink-0">
                             <div className="text-4xl grayscale opacity-40">{badge.icon}</div>
@@ -182,13 +182,12 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                                   <span>{formatProgress(currentValue, targetValue)}</span>
                                 </div>
                                 <Progress value={progressPercent} className="h-1.5" />
-<<<<<<< Updated upstream
+
                                 <div className="text-xs text-right text-white/35">%{Math.round(progressPercent)}</div>
-=======
+
                                 <div className="text-xs text-right text-white/35">
                                   %{Math.round(progressPercent)}
                                 </div>
->>>>>>> Stashed changes
                               </div>
                             )}
                           </div>
