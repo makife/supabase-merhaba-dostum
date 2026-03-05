@@ -50,6 +50,9 @@ const NeonBlitzPage = React.lazy(() => import("@/pages/NeonBlitz"));
 const SnakeGamePage = React.lazy(() => import("@/pages/SnakeGame"));
 const MiniGamesPage = React.lazy(() => import("@/pages/MiniGamesPage"));
 const MorlesGamePage = React.lazy(() => import("@/pages/MorlesGame"));
+const WordHuntPage = React.lazy(() => import("@/pages/WordHuntPage"));
+const AnagramPage = React.lazy(() => import("@/pages/AnagramPage"));
+const WordChainPage = React.lazy(() => import("@/pages/WordChainPage"));
 import { Capacitor } from "@capacitor/core";
 import { useImmersiveBars } from "@/hooks/useImmersiveBars";
 import { SafeStatusBar, SafeNavigationBar, SafePushNotifications } from "@/utils/safePluginWrapper";
@@ -410,6 +413,30 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <MiniGamesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenge/word-hunt"
+          element={
+            <ProtectedRoute>
+              <WordHuntPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenge/anagram"
+          element={
+            <ProtectedRoute>
+              <AnagramPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/challenge/word-chain"
+          element={
+            <ProtectedRoute>
+              <WordChainPage />
             </ProtectedRoute>
           }
         />
