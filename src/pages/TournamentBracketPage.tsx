@@ -94,7 +94,10 @@ const MatchTimer = ({ endsAt }: { endsAt: string | null }) => {
   const { serverNow } = useServerTimeContext();
 
   useEffect(() => {
-    if (!endsAt) { setRemaining(null); return; }
+    if (!endsAt) {
+      setRemaining(null);
+      return;
+    }
     const endTime = new Date(endsAt).getTime();
     const tick = () => {
       const left = Math.max(0, Math.floor((endTime - serverNow()) / 1000));
@@ -113,7 +116,9 @@ const MatchTimer = ({ endsAt }: { endsAt: string | null }) => {
   return (
     <div className={`flex items-center gap-1 ${isLow ? "text-red-400 animate-pulse" : "text-sky-300"}`}>
       <Clock className="w-3 h-3" />
-      <span className="text-[10px] font-bold tabular-nums">{mins}:{secs.toString().padStart(2, "0")}</span>
+      <span className="text-[10px] font-bold tabular-nums">
+        {mins}:{secs.toString().padStart(2, "0")}
+      </span>
     </div>
   );
 };
@@ -276,7 +281,7 @@ const TournamentBracketPage = () => {
       if (cancelled || championSoundPlayedRef.current) return;
 
       roundWinSoundPlayedRef.current.add(justCompletedRound);
-      playSpecialSound("/sampiyon.mp3", 0.8);
+      playSpecialSound("/turKazanma.mp3", 0.8);
     })();
 
     return () => {
