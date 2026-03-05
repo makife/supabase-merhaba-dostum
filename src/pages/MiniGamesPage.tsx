@@ -18,8 +18,6 @@ const MiniGamesPage = () => {
     { id: "memory", title: "Hafıza", icon: "🧠", description: "Kartları eşle", gradient: "from-purple-500 to-violet-700", route: "/memory-game", disabled: !canPlayMemory, cooldown: timeUntilNextPlay },
     { id: "neon", title: "Refleks", icon: "⚡", description: "Hızını test et", gradient: "from-cyan-500 to-blue-700", route: "/neon-blitz" },
     { id: "puzzle", title: "Puzzle", icon: "🧩", description: "Bulmacayı çöz", gradient: "from-blue-500 to-indigo-700", route: "/puzzle-game" },
-    { id: "simon", title: "Takip", icon: "🎯", description: "Sırayı hatırla", gradient: "from-indigo-500 to-purple-700", route: "/grid-simon-says" },
-    { id: "morles", title: "Kule", icon: "🏗️", description: "Kuleleri yık", gradient: "from-teal-500 to-emerald-700", route: "/morles-game" },
   ];
 
   return (
