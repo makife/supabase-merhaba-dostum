@@ -37,11 +37,14 @@ const WordChainPage = () => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  // Save score when finished
+  // Save score with time bonus when finished
   useEffect(() => {
     if (gameState === "finished" && !scoreSavedRef.current && !hasPlayedToday) {
       scoreSavedRef.current = true;
-      saveScore(score, chain.length);
+      const timeBonus = Math.floor(timeLeft * 2);
+      const finalScore = score + timeBonus;
+      setScore(finalScore);
+      saveScore(finalScore, chain.length);
     }
   }, [gameState]);
 
