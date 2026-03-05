@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Award, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Award, Lock } from "lucide-react";
 
 interface BadgeData {
   id: string;
@@ -42,34 +42,34 @@ interface BadgesDialogProps {
 // condition_type'a göre kullanıcının mevcut değerini döndür
 const getCurrentValue = (conditionType: string, stats: UserStats): number => {
   switch (conditionType) {
-    case 'total_games':
+    case "total_games":
       return stats.total_games || 0;
-    case 'total_score':
+    case "total_score":
       return stats.total_score || 0;
-    case 'win_streak':
+    case "win_streak":
       return stats.win_streak || 0;
-    case 'total_words':
+    case "total_words":
       return stats.total_words_created || 0;
-    case 'longest_word':
+    case "longest_word":
       return stats.longest_word_length || 0;
-    case 'tournament_wins':
-    case 'tournaments_won':
+    case "tournament_wins":
+    case "tournaments_won":
       return stats.tournament_wins || 0;
-    case 'degistir_joker_used':
+    case "degistir_joker_used":
       return stats.degistir_joker_used || 0;
-    case 'fisilida_joker_used':
+    case "fisilida_joker_used":
       return stats.fisilida_joker_used || 0;
-    case 'senyaz_joker_used':
+    case "senyaz_joker_used":
       return stats.senyaz_joker_used || 0;
-    case 'vs_bot_games':
+    case "vs_bot_games":
       return stats.vs_bot_games || 0;
-    case 'private_room_games':
+    case "private_room_games":
       return stats.private_room_games || 0;
-    case 'random_match_games':
+    case "random_match_games":
       return stats.random_match_games || 0;
-    case 'wins':
+    case "wins":
       return stats.wins || 0;
-    case 'fast_typing':
+    case "fast_typing":
       return stats.fastest_word_time || 0;
     default:
       return 0;
@@ -78,13 +78,13 @@ const getCurrentValue = (conditionType: string, stats: UserStats): number => {
 
 // Formatlanmış ilerleme metni
 const formatProgress = (current: number, target: number): string => {
-  if (current >= target) return 'Tamamlandı!';
-  return `${current.toLocaleString('tr-TR')} / ${target.toLocaleString('tr-TR')}`;
+  if (current >= target) return "Tamamlandı!";
+  return `${current.toLocaleString("tr-TR")} / ${target.toLocaleString("tr-TR")}`;
 };
 
 export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDialogProps) => {
-  const earnedBadges = badges.filter(b => b.earned);
-  const lockedBadges = badges.filter(b => !b.earned);
+  const earnedBadges = badges.filter((b) => b.earned);
+  const lockedBadges = badges.filter((b) => !b.earned);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,20 +94,16 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
             <Award className="w-6 h-6 text-primary" />
             Rozetler
           </DialogTitle>
-          <DialogDescription>
-            Kazanılan ve kilitli rozetlerinizi görüntüleyin
-          </DialogDescription>
+          <DialogDescription>Kazanılan ve kilitli rozetlerinizi görüntüleyin</DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="h-[60vh] pr-4">
           <div className="space-y-6">
             {/* Kazanılan Rozetler */}
             {earnedBadges.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-primary">
-                  Kazanılan Rozetler ({earnedBadges.length})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <h3 className="text-lg font-semibold mb-3 text-primary">Kazanılan Rozetler ({earnedBadges.length})</h3>
+                <div className="grid grid-cols-2 gap-3">
                   {earnedBadges.map((badge) => (
                     <div
                       key={badge.id}
@@ -120,7 +116,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                           <p className="text-sm text-muted-foreground">{badge.description}</p>
                           {badge.earned_at && (
                             <Badge variant="secondary" className="mt-2 text-xs">
-                              {new Date(badge.earned_at).toLocaleDateString('tr-TR')}
+                              {new Date(badge.earned_at).toLocaleDateString("tr-TR")}
                             </Badge>
                           )}
                         </div>
@@ -137,20 +133,16 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                 <h3 className="text-lg font-semibold mb-3 text-muted-foreground">
                   Kilitli Rozetler ({lockedBadges.length})
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {lockedBadges.map((badge) => {
-                    const currentValue = userStats && badge.condition_type 
-                      ? getCurrentValue(badge.condition_type, userStats) 
-                      : 0;
+                    const currentValue =
+                      userStats && badge.condition_type ? getCurrentValue(badge.condition_type, userStats) : 0;
                     const targetValue = badge.condition_value || 1;
                     const progressPercent = Math.min((currentValue / targetValue) * 100, 100);
                     const hasProgress = userStats && badge.condition_type && badge.condition_value;
 
                     return (
-                      <div
-                        key={badge.id}
-                        className="p-4 rounded-lg border border-border bg-muted/30"
-                      >
+                      <div key={badge.id} className="p-4 rounded-lg border border-border bg-muted/30">
                         <div className="flex items-start gap-3">
                           <div className="relative">
                             <div className="text-4xl grayscale opacity-50">{badge.icon}</div>
@@ -159,7 +151,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-muted-foreground mb-1">{badge.name}</h4>
                             <p className="text-sm text-muted-foreground/70">{badge.description}</p>
-                            
+
                             {/* İlerleme Çubuğu */}
                             {hasProgress && (
                               <div className="mt-3 space-y-1">
@@ -167,10 +159,7 @@ export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDi
                                   <span>İlerleme</span>
                                   <span>{formatProgress(currentValue, targetValue)}</span>
                                 </div>
-                                <Progress 
-                                  value={progressPercent} 
-                                  className="h-2"
-                                />
+                                <Progress value={progressPercent} className="h-2" />
                                 <div className="text-xs text-right text-muted-foreground/70">
                                   %{Math.round(progressPercent)}
                                 </div>
