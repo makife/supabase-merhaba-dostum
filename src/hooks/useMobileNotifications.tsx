@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SafePushNotifications } from "@/utils/safePluginWrapper";
+import { suppressActivityForPush } from "@/hooks/useActivityTracker";
 
 // Dinamik import için tipler
 type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
@@ -80,6 +81,8 @@ export const useMobileNotifications = () => {
 
         SafePushNotifications.addListener("pushNotificationReceived", (notification: any) => {
           console.log("📬 Push notification received:", notification);
+          // Push alındığında activity tracker'ı 15sn bastır (yanlış "online" bildirimi önleme)
+          suppressActivityForPush(15000);
           showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
         });
 
