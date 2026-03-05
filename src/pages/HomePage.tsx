@@ -781,43 +781,75 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* MINI OYUNLAR */}
+        {/* GÜNLÜK CHALLENGE'LAR */}
         <div className="mt-8 pl-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-rose-500 rounded-full" />
-            <h3 className="text-xs font-black text-white uppercase tracking-widest">Mini Eğlence</h3>
+            <div className="w-1 h-4 bg-amber-500 rounded-full" />
+            <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-6 pr-5 scrollbar-hide">
-            {miniGamesConfig.map((game) => {
-              const isWheel = game.id === "wheel";
-              return (
-                <div
-                  key={game.id}
-                  onClick={() => {
-                    navigate(game.route);
-                    playSound("buttonClick");
-                  }}
-                  className={`flex-shrink-0 w-20 flex flex-col items-center gap-2 group ${game.disabled ? "opacity-30 grayscale" : ""}`}
-                >
-                  <div
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-2xl relative overflow-hidden transition-all duration-300 group-active:scale-90 border
-                      ${
-                        isWheel
-                          ? "bg-gradient-to-br from-rose-500 to-rose-700 border-rose-400/50 shadow-rose-500/20"
-                          : "bg-[#16213e] border-white/5 hover:border-white/20"
-                      }`}
-                  >
-                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {game.icon}
-                  </div>
-                  <span
-                    className={`text-[10px] font-bold text-center leading-tight ${isWheel ? "text-rose-400" : "text-slate-500"}`}
-                  >
-                    {game.title}
-                  </span>
+            {/* Kelime Avı */}
+            <div
+              onClick={() => { playSound("buttonClick"); toast.info("Kelime Avı yakında geliyor! 🎯"); }}
+              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                  🔍
                 </div>
-              );
-            })}
+                <Badge className="bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-[9px] px-2 py-0.5">
+                  Kolay
+                </Badge>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
+                <p className="text-[10px] text-white/70 font-medium">Harflerden kelime bul</p>
+              </div>
+            </div>
+
+            {/* Anagram */}
+            <div
+              onClick={() => { playSound("buttonClick"); toast.info("Anagram yakında geliyor! 🔤"); }}
+              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                  🔤
+                </div>
+                <Badge className="bg-violet-400/20 text-violet-200 border-violet-400/30 text-[9px] px-2 py-0.5">
+                  Orta
+                </Badge>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Anagram</h3>
+                <p className="text-[10px] text-white/70 font-medium">Karışık harfleri çöz</p>
+              </div>
+            </div>
+
+            {/* Kelime Zinciri */}
+            <div
+              onClick={() => { playSound("buttonClick"); toast.info("Kelime Zinciri yakında geliyor! ⛓️"); }}
+              className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
+              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                  ⛓️
+                </div>
+                <Badge className="bg-amber-400/20 text-amber-200 border-amber-400/30 text-[9px] px-2 py-0.5">
+                  Zor
+                </Badge>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Zinciri</h3>
+                <p className="text-[10px] text-white/70 font-medium">Son harfle yeni kelime</p>
+              </div>
+            </div>
           </div>
         </div>
 
