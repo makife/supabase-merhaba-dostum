@@ -1,5 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bot,
@@ -31,178 +30,222 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        // Eğer pencere kapanmaya çalışıyorsa (X'e basıldıysa isOpen false gelir)
-        // handleComplete fonksiyonunu çalıştırarak hem kapatırız hem kaydederiz.
-        if (!isOpen) {
-          handleComplete();
-        }
+        if (!isOpen) handleComplete();
       }}
     >
       <DialogContent
-        className="max-w-md max-h-[85vh]"
-        // Dışarı tıklayınca kapanmasını istemiyorsan bunlar kalsın
+        className="max-w-sm w-[calc(100%-2rem)] rounded-3xl border-0 p-0 shadow-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(145deg, #0f1729 0%, #1a1a2e 50%, #16213e 100%)",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07)",
+        }}
         onInteractOutside={(e) => e.preventDefault()}
-        // ESC ile kapanmasını istemiyorsan bu kalsın
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
-          <div className="flex items-center justify-center mb-2">
+        {/* Glow efektleri */}
+        <div
+          className="absolute -top-20 -right-20 w-52 h-52 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)" }}
+        />
+        <div
+          className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)" }}
+        />
+
+        {/* Header */}
+        <div
+          className="relative z-10 px-6 pt-7 pb-5 text-center"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center justify-center mb-3">
             <div className="relative">
-              <Sparkles className="w-10 h-10 text-yellow-500 animate-pulse" />
-              <Gift className="w-6 h-6 text-primary absolute -bottom-1 -right-1" />
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                style={{ background: "rgba(234,179,8,0.15)", border: "1px solid rgba(234,179,8,0.25)" }}
+              >
+                <Sparkles className="w-7 h-7 text-yellow-400 animate-pulse" />
+              </div>
+              <div
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(99,102,241,0.3)", border: "1px solid rgba(99,102,241,0.4)" }}
+              >
+                <Gift className="w-3.5 h-3.5 text-indigo-300" />
+              </div>
             </div>
           </div>
-          <DialogTitle className="text-center text-xl">Kelimele'ye Hoş Geldin! 🎉</DialogTitle>
-          <DialogDescription className="text-center">Seni aramızda görmekten mutluluk duyuyoruz</DialogDescription>
-        </DialogHeader>
+          <h2 className="text-lg font-bold text-white mb-1">Kelimele'ye Hoş Geldin! 🎉</h2>
+          <p className="text-sm text-white/45">Seni aramızda görmekten mutluluk duyuyoruz</p>
+        </div>
 
-        <ScrollArea className="h-[50vh] pr-4">
-          <div className="space-y-4 text-sm">
-            {/* Hoşgeldin Joker Hediyesi */}
-            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">
-                <Gift className="w-5 h-5 text-yellow-500" />
-                Hoş Geldin Hediyesi!
+        {/* İçerik */}
+        <ScrollArea className="relative z-10 h-[52vh] px-6 py-5">
+          <div className="space-y-3 text-sm pr-1">
+            {/* Hoşgeldin Hediyesi */}
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}
+            >
+              <h3 className="font-bold text-yellow-400 flex items-center gap-2 mb-3">
+                <Gift className="w-4 h-4" /> Hoş Geldin Hediyesi!
               </h3>
-              <p className="text-muted-foreground mb-2">
-                Sana özel <span className="font-bold text-primary">3'er adet joker</span> hediye ettik:
+              <p className="text-white/55 text-xs mb-3">
+                Sana özel <span className="font-bold text-yellow-300">3'er adet joker</span> hediye ettik:
               </p>
-              <ul className="space-y-1 ml-2">
-                <li className="flex items-center gap-2">
-                  <img src="/degistirIkon.png" alt="Değiştir" className="w-5 h-5" />
-                  <span>
-                    <strong>3x Değiştir Jokeri:</strong> Harfleri yenile
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <img src="/fisildaIkon.png" alt="Fısılda" className="w-5 h-5" />
-                  <span>
-                    <strong>3x Fısılda Jokeri:</strong> Kelime önerisi al
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <img src="/senyazIkon.png" alt="Sen Yaz" className="w-5 h-5" />
-                  <span>
-                    <strong>3x Sen Yaz Jokeri:</strong> AI sana kelime yazsın
-                  </span>
-                </li>
-              </ul>
+              <div className="space-y-2">
+                {[
+                  { icon: "/degistirIkon.png", label: "3x Değiştir Jokeri", desc: "Harfleri yenile" },
+                  { icon: "/fisildaIkon.png", label: "3x Fısılda Jokeri", desc: "Kelime önerisi al" },
+                  { icon: "/senyazIkon.png", label: "3x Sen Yaz Jokeri", desc: "AI sana kelime yazsın" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-3 p-2 rounded-xl"
+                    style={{ background: "rgba(255,255,255,0.04)" }}
+                  >
+                    <img src={item.icon} alt={item.label} className="w-7 h-7 object-contain" />
+                    <div>
+                      <p className="text-white/85 font-semibold text-xs">{item.label}</p>
+                      <p className="text-white/40 text-[11px]">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Oyun Modları */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <h3 className="font-bold text-primary flex items-center gap-2">
-                <Gamepad2 className="w-5 h-5" />
-                Oyun Modları
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <h3 className="font-bold text-white/80 flex items-center gap-2 mb-3">
+                <Gamepad2 className="w-4 h-4 text-indigo-400" /> Oyun Modları
               </h3>
-
               <div className="space-y-2">
-                <div className="flex items-start gap-3 p-2 bg-blue-500/10 rounded-lg">
-                  <Bot className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-blue-500">Yapay Zekaya Karşı</p>
-                    <p className="text-xs text-muted-foreground">
-                      AI rakibine karşı antrenman yap! Oyunu öğrenmek için ideal mod.
-                    </p>
+                {[
+                  {
+                    icon: Bot,
+                    color: "#60a5fa",
+                    bg: "rgba(96,165,250,0.1)",
+                    label: "Yapay Zekaya Karşı",
+                    desc: "AI rakibine karşı antrenman yap!",
+                  },
+                  {
+                    icon: Zap,
+                    color: "#c084fc",
+                    bg: "rgba(192,132,252,0.1)",
+                    label: "Rastgele Eşleşme",
+                    desc: "Gerçek oyuncularla eşleş ve rekabet et!",
+                  },
+                  {
+                    icon: Users,
+                    color: "#4ade80",
+                    bg: "rgba(74,222,128,0.1)",
+                    label: "Özel Oda",
+                    desc: "Arkadaşlarınla özel oda oluştur!",
+                  },
+                  {
+                    icon: Trophy,
+                    color: "#fbbf24",
+                    bg: "rgba(251,191,36,0.1)",
+                    label: "Turnuva",
+                    desc: "8 kişilik turnuvalara katıl, ödüller kazan!",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-start gap-3 p-3 rounded-xl"
+                    style={{ background: item.bg }}
+                  >
+                    <item.icon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: item.color }} />
+                    <div>
+                      <p className="font-semibold text-xs" style={{ color: item.color }}>
+                        {item.label}
+                      </p>
+                      <p className="text-white/45 text-[11px] mt-0.5">{item.desc}</p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2 bg-purple-500/10 rounded-lg">
-                  <Zap className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-purple-500">Rastgele Eşleşme</p>
-                    <p className="text-xs text-muted-foreground">Gerçek oyuncularla eşleş ve rekabet et!</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2 bg-green-500/10 rounded-lg">
-                  <Users className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-green-500">Özel Oda</p>
-                    <p className="text-xs text-muted-foreground">Arkadaşlarınla özel oda oluştur ve davet et!</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-2 bg-yellow-500/10 rounded-lg">
-                  <Trophy className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-yellow-500">Turnuva</p>
-                    <p className="text-xs text-muted-foreground">
-                      8 kişilik turnuvalara katıl, şampiyon ol ve ödüller kazan!
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
             {/* Sohbet */}
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">
-                <MessageSquare className="w-5 h-5" />
-                Sohbet
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <h3 className="font-bold text-white/80 flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-sky-400" /> Sohbet
               </h3>
-              <p className="text-muted-foreground text-xs">
-                Diğer oyuncularla sohbet et, arkadaşlık kur! Genel sohbet odasında herkesle iletişim kurabilir veya özel
-                mesaj gönderebilirsin.
+              <p className="text-white/45 text-xs leading-relaxed">
+                Diğer oyuncularla sohbet et, arkadaşlık kur! Genel sohbet veya özel mesaj gönder.
               </p>
             </div>
 
             {/* Mini Oyunlar */}
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">
-                <Dices className="w-5 h-5" />
-                Mini Oyunlar
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <h3 className="font-bold text-white/80 flex items-center gap-2 mb-3">
+                <Dices className="w-4 h-4 text-orange-400" /> Mini Oyunlar
               </h3>
-              <p className="text-muted-foreground text-xs mb-2">
-                Eğlenceli mini oyunlarla vakit geçir ve ödüller kazan:
-              </p>
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 text-xs bg-background/50 p-2 rounded">
-                  <Brain className="w-4 h-4 text-pink-500" />
-                  <span>Hafıza Oyunu</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs bg-background/50 p-2 rounded">
-                  <Puzzle className="w-4 h-4 text-orange-500" />
-                  <span>Puzzle</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs bg-background/50 p-2 rounded">
-                  <Target className="w-4 h-4 text-cyan-500" />
-                  <span>Yılan Oyunu</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs bg-background/50 p-2 rounded">
-                  <Sparkles className="w-4 h-4 text-indigo-500" />
-                  <span>Ve daha fazlası...</span>
-                </div>
+                {[
+                  { icon: Brain, color: "#f472b6", label: "Hafıza Oyunu" },
+                  { icon: Puzzle, color: "#fb923c", label: "Puzzle" },
+                  { icon: Target, color: "#22d3ee", label: "Yılan Oyunu" },
+                  { icon: Sparkles, color: "#818cf8", label: "Ve daha fazlası..." },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-2 p-2.5 rounded-xl text-xs"
+                    style={{ background: "rgba(255,255,255,0.04)" }}
+                  >
+                    <item.icon className="w-4 h-4 flex-shrink-0" style={{ color: item.color }} />
+                    <span className="text-white/60">{item.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Günlük Çark */}
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">🎡 Günlük Çark</h3>
-              <p className="text-muted-foreground text-xs">
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}
+            >
+              <h3 className="font-bold text-purple-300 mb-2">🎡 Günlük Çark</h3>
+              <p className="text-white/45 text-xs leading-relaxed">
                 Her gün çarkı çevir ve sürpriz ödüller kazan! Jokerler, mürekkep ve daha fazlası seni bekliyor.
               </p>
             </div>
 
             {/* İpucu */}
-            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-              <h3 className="font-bold text-primary flex items-center gap-2 mb-2">💡 İpucu</h3>
-              <p className="text-muted-foreground text-xs">
-                İlk olarak <strong>"Yapay Zekaya Karşı"</strong> modunda antrenman yapmanı öneriyoruz. Böylece oyunu
-                öğrenip rakiplerine karşı hazır olabilirsin!
+            <div
+              className="p-4 rounded-2xl"
+              style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+            >
+              <h3 className="font-bold text-indigo-300 mb-2">💡 İpucu</h3>
+              <p className="text-white/45 text-xs leading-relaxed">
+                İlk olarak <span className="text-indigo-300 font-semibold">"Yapay Zekaya Karşı"</span> modunda antrenman
+                yapmanı öneriyoruz. Böylece oyunu öğrenip rakiplerine karşı hazır olabilirsin!
               </p>
             </div>
           </div>
         </ScrollArea>
 
-        <div className="pt-4 border-t">
-          <Button
+        {/* Footer */}
+        <div className="relative z-10 px-6 pb-6 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <button
             onClick={handleComplete}
-            className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+            className="w-full py-3 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+              boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
+            }}
           >
-            <Sparkles className="w-4 h-4 mr-2" />
+            <Sparkles className="w-4 h-4" />
             Hadi Başlayalım!
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>
