@@ -63,7 +63,7 @@ const WordChainPage = () => {
 
     setChain([starter]);
     setRequiredLetter(lastLetter);
-    setCurrentWord("");
+    setCurrentWord(lastLetter);
     setScore(10);
     setTimeLeft(GAME_DURATION);
     setLongestChain(1);
