@@ -406,6 +406,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/mini-games"
+          element={
+            <ProtectedRoute>
+              <MiniGamesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/private-room/waiting/:roomCode"
           element={
             <ProtectedRoute>
