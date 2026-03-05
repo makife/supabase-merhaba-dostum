@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
-import { useMemoryGame } from "@/hooks/useMemoryGame";
+// useMemoryGame artık MiniGamesPage'de kullanılıyor
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
@@ -160,7 +160,7 @@ const HomePage = () => {
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
 
-  const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
+  // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
