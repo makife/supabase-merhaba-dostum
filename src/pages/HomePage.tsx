@@ -773,7 +773,7 @@ const HomePage = () => {
           <div className="flex gap-4 overflow-x-auto pb-6 pr-5 scrollbar-hide">
             {/* Kelime Avı */}
             <div
-              onClick={() => { playSound("buttonClick"); toast.info("Kelime Avı yakında geliyor! 🎯"); }}
+              onClick={() => { playSound("buttonClick"); navigate("/challenge/word-hunt"); }}
               className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
@@ -794,7 +794,7 @@ const HomePage = () => {
 
             {/* Anagram */}
             <div
-              onClick={() => { playSound("buttonClick"); toast.info("Anagram yakında geliyor! 🔤"); }}
+              onClick={() => { playSound("buttonClick"); navigate("/challenge/anagram"); }}
               className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
@@ -815,7 +815,7 @@ const HomePage = () => {
 
             {/* Kelime Zinciri */}
             <div
-              onClick={() => { playSound("buttonClick"); toast.info("Kelime Zinciri yakında geliyor! ⛓️"); }}
+              onClick={() => { playSound("buttonClick"); navigate("/challenge/word-chain"); }}
               className="flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border border-white/10 shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl" />
