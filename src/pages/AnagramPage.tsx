@@ -43,6 +43,7 @@ const AnagramPage = () => {
   const [results, setResults] = useState<{ word: string; correct: boolean; points: number }[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const scoreSavedRef = useRef(false);
+  const timeBonusRef = useRef(0);
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
@@ -85,14 +86,17 @@ const AnagramPage = () => {
 
   const handleLevelEnd = (correct: boolean, word: string, level: number) => {
     if (timerRef.current) clearInterval(timerRef.current);
-    const points = correct ? LEVELS[level].points : 0;
+    const basePoints = correct ? LEVELS[level].points : 0;
+    const levelTimeBonus = correct ? Math.floor(timeLeft * 1.5) : 0;
+    const totalPoints = basePoints + levelTimeBonus;
+    if (correct) timeBonusRef.current += levelTimeBonus;
 
-    setResults(prev => [...prev, { word, correct, points }]);
+    setResults(prev => [...prev, { word, correct, points: totalPoints }]);
     if (correct) {
-      setScore(prev => prev + points);
+      setScore(prev => prev + totalPoints);
       setCorrectCount(prev => prev + 1);
       playSound("correctWord");
-      toast.success(`Doğru! +${points} puan 🎉`);
+      toast.success(`Doğru! +${basePoints} + ⏱${levelTimeBonus} bonus 🎉`);
     } else {
       playSound("wrongWord");
       toast.error(`Cevap: ${word}`);
@@ -114,6 +118,7 @@ const AnagramPage = () => {
       toast.error("Bugün zaten oynadın! Yarın tekrar gel 🕐");
       return;
     }
+    timeBonusRef.current = 0;
     scoreSavedRef.current = false;
     setCurrentLevel(0);
     setScore(0);
