@@ -29,6 +29,7 @@ const WordHuntPage = () => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWordTimeRef = useRef<number>(0); // timestamp of last scored word (or game start)
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
@@ -47,6 +48,7 @@ const WordHuntPage = () => {
     setTimeLeft(GAME_DURATION);
     setCurrentWord("");
     setGameState("playing");
+    lastWordTimeRef.current = Date.now();
     playSound("buttonClick");
 
     timerRef.current = setInterval(() => {
@@ -61,12 +63,11 @@ const WordHuntPage = () => {
     }, 1000);
   }, [playSound, hasPlayedToday]);
 
-  // Save score with time bonus when game finishes
+  // Save score when game finishes
   useEffect(() => {
     if (gameState === "finished" && !hasPlayedToday) {
-      const timeBonus = Math.floor(timeLeft * 2);
-      const finalScore = score + timeBonus;
-      setScore(finalScore);
+      // Score is already calculated per-word with time factor, save as-is
+      const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, foundWords.length);
     }
   }, [gameState]);
@@ -108,12 +109,16 @@ const WordHuntPage = () => {
       return;
     }
 
-    const points = calculateWordPoints(upper);
-    setScore((prev) => prev + points);
+    const basePoints = calculateWordPoints(upper);
+    const now = Date.now();
+    const elapsedSec = Math.max(1, (now - lastWordTimeRef.current) / 1000);
+    const points = parseFloat((basePoints / elapsedSec).toFixed(2));
+    lastWordTimeRef.current = now;
+    setScore((prev) => parseFloat((prev + points).toFixed(2)));
     setFoundWords((prev) => [...prev, upper]);
     setCurrentWord("");
     playSound("correctWord");
-    toast.success(`+${points} puan! 🎯`);
+    toast.success(`+${points.toFixed(1)} puan! (${basePoints}÷${elapsedSec.toFixed(0)}s) 🎯`);
   };
 
   const clearWord = () => setCurrentWord("");
@@ -253,7 +258,7 @@ const WordHuntPage = () => {
             <div className="text-6xl">🏆</div>
             <div className="text-center">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
-              <p className="text-4xl font-black text-emerald-400">{score} Puan</p>
+              <p className="text-4xl font-black text-emerald-400">{score.toFixed(2)} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{foundWords.length} kelime buldun</p>
             </div>
 
