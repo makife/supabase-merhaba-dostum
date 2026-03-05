@@ -786,7 +786,8 @@ const HomePage = () => {
               className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_hunt ? "border-emerald-400/40 opacity-70" : "border-white/10"}`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 ${challengeStatus.word_hunt ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 backdrop-blur-[1px] select-none pointer-events-none z-[1] drop-shadow-lg">1</span>
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
                   {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
@@ -807,7 +808,8 @@ const HomePage = () => {
               className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.anagram ? "border-violet-400/40 opacity-70" : "border-white/10"}`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 ${challengeStatus.anagram ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 backdrop-blur-[1px] select-none pointer-events-none z-[1] drop-shadow-lg">2</span>
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
                   {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
@@ -828,7 +830,8 @@ const HomePage = () => {
               className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_chain ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 ${challengeStatus.word_chain ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-              <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 backdrop-blur-[1px] select-none pointer-events-none z-[1] drop-shadow-lg">3</span>
               <div className="relative z-10 flex justify-between items-start">
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
                   {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
