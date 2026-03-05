@@ -31,19 +31,18 @@ const WordChainPage = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chainEndRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
+  const lastWordTimeRef = useRef<number>(0);
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  // Save score with time bonus when finished
+  // Save score when finished
   useEffect(() => {
     if (gameState === "finished" && !scoreSavedRef.current && !hasPlayedToday) {
       scoreSavedRef.current = true;
-      const timeBonus = Math.floor(timeLeft * 2);
-      const finalScore = score + timeBonus;
-      setScore(finalScore);
+      const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, chain.length);
     }
   }, [gameState]);
@@ -68,6 +67,7 @@ const WordChainPage = () => {
     setTimeLeft(GAME_DURATION);
     setLongestChain(1);
     setGameState("playing");
+    lastWordTimeRef.current = Date.now();
     playSound("buttonClick");
 
     timerRef.current = setInterval(() => {
@@ -112,16 +112,20 @@ const WordChainPage = () => {
     }
 
     const newChain = [...chain, upper];
-    const points = calculateWordPoints(upper, newChain.length);
+    const basePoints = calculateWordPoints(upper, newChain.length);
+    const now = Date.now();
+    const elapsedSec = Math.max(1, (now - lastWordTimeRef.current) / 1000);
+    const points = parseFloat((basePoints / elapsedSec).toFixed(2));
+    lastWordTimeRef.current = now;
     const newLastLetter = upper[upper.length - 1];
 
     setChain(newChain);
     setRequiredLetter(newLastLetter);
-    setScore((prev) => prev + points);
+    setScore((prev) => parseFloat((prev + points).toFixed(2)));
     setCurrentWord("");
     if (newChain.length > longestChain) setLongestChain(newChain.length);
     playSound("correctWord");
-    toast.success(`+${points} puan! Zincir: ${newChain.length} 🔗`);
+    toast.success(`+${points.toFixed(1)} puan! (${basePoints}÷${elapsedSec.toFixed(0)}s) Zincir: ${newChain.length} 🔗`);
 
     const available = getWordsStartingWith(newLastLetter);
     const unusedAvailable = available.filter(w => !newChain.includes(w));
