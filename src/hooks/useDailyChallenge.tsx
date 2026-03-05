@@ -53,6 +53,7 @@ export function useDailyChallenge(challengeType: ChallengeType) {
           .eq("challenge_type", challengeType)
           .eq("date", todayDate)
           .order("score", { ascending: false })
+          .order("created_at", { ascending: true })
           .limit(50),
       ]);
 
@@ -104,6 +105,7 @@ export function useDailyChallenge(challengeType: ChallengeType) {
         .eq("challenge_type", challengeType)
         .eq("date", todayDate)
         .order("score", { ascending: false })
+        .order("created_at", { ascending: true })
         .limit(50);
       if (data) setLeaderboard(data as any);
       return true;
