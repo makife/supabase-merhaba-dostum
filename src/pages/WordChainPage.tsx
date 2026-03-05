@@ -185,7 +185,7 @@ const WordChainPage = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-8">
+      <div className={`flex-1 overflow-y-auto px-5 ${gameState === "playing" ? "pb-2" : "pb-8"}`}>
         {gameState === "ready" && (
           <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="text-6xl">⛓️</div>
@@ -218,7 +218,7 @@ const WordChainPage = () => {
         )}
 
         {gameState === "playing" && (
-          <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-amber-400" />
@@ -230,12 +230,7 @@ const WordChainPage = () => {
               </div>
             </div>
 
-            <div className="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
-              <span className="text-sm text-amber-300/80">Sıradaki harf:</span>
-              <span className="text-4xl font-black text-amber-400">{requiredLetter}</span>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center min-h-[56px]">
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center min-h-[48px]">
               <span className="text-amber-400 font-bold text-lg mr-1">{requiredLetter}</span>
               <span className="text-white font-bold text-lg">
                 {currentWord.length > 1 ? currentWord.slice(1) : ""}
@@ -245,13 +240,12 @@ const WordChainPage = () => {
               )}
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-h-60 overflow-y-auto">
-              <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Zincir</h3>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 max-h-36 overflow-y-auto">
               <div className="flex flex-wrap gap-1.5 items-center">
                 {chain.map((word, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/20">{word}</span>
-                    {i < chain.length - 1 && <span className="text-amber-500/50 text-xs">→</span>}
+                  <div key={i} className="flex items-center gap-1">
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-[11px] font-bold border border-amber-500/20">{word}</span>
+                    {i < chain.length - 1 && <span className="text-amber-500/50 text-[10px]">→</span>}
                   </div>
                 ))}
                 <div ref={chainEndRef} />
