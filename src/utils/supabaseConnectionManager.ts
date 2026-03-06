@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
+import { matchmakingMode } from "@/utils/matchmakingMode";
 
 // Global state
 let isMonitoring = false;
@@ -140,6 +141,11 @@ const reconnectRealtime = async (): Promise<boolean> => {
  * Ana sağlık kontrolü döngüsü
  */
 const runHealthCheck = async () => {
+  // 🚀 Matchmaking aktifken health check atla
+  if (matchmakingMode.isActive()) {
+    return;
+  }
+
   const isHealthy = checkConnectionHealth();
 
   if (isHealthy) {
