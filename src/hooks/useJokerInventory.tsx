@@ -20,7 +20,6 @@ export const useJokerInventory = () => {
   // 🔥 Subscription guard - aynı user için tekrar oluşturma
   const subscriptionUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<any>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   
   // 🔥 KRİTİK: User ref - closure sorununu çözmek için
   const userRef = useRef(user);
@@ -149,14 +148,7 @@ export const useJokerInventory = () => {
     
     channelRef.current = channel;
 
-    // Fallback polling (daha uzun interval)
-    pollingRef.current = setInterval(() => {
-      loadJokers();
-    }, 30000); // 30 saniye
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
+    // ✅ Polling kaldırıldı - sadece Realtime subscription ile güncelleniyor
   }, [user?.id, loadJokers]);
 
   const useJoker = async (jokerType: keyof JokerInventory) => {

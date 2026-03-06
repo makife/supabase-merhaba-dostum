@@ -918,9 +918,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     fetchOnlineUsers();
 
-    // 🔥 OPTIMIZE: 5s → 30s polling (eskisi çok agresifti)
-    const pollingInterval = setInterval(fetchOnlineUsers, 30000);
-
+    // ✅ Polling kaldırıldı - sadece Realtime subscription ile güncelleniyor
     const channel = supabase
       .channel("presence_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" as any }, (payload) => {
@@ -933,7 +931,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(pollingInterval);
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
