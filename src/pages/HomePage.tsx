@@ -409,7 +409,7 @@ const HomePage = () => {
   useEffect(() => {
     console.log("🏠 [HomePage] Mount - ilk veri yüklemesi...");
     refreshProfile(true);
-    loadJokers();
+    // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
   const handleGameModeClick = (modeId: string) => {
