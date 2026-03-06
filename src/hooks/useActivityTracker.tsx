@@ -53,7 +53,7 @@ export function useActivityTracker() {
     };
 
     // İlk güncelleme - sadece gerçekten foreground'daysa
-    if (document.visibilityState === "visible" && document.hasFocus() && !isPushSuppressed()) {
+    if (document.visibilityState === "visible" && !isPushSuppressed()) {
       updateLastSeen();
     } else {
       console.log("⏭️ ActivityTracker: İlk mount'ta push wake algılandı, online güncelleme atlanıyor");
@@ -61,7 +61,7 @@ export function useActivityTracker() {
 
     // Her 45 saniyede bir heartbeat - sadece uygulama görünür VE odaklıysa (optimize edildi, eskisi 20s idi)
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible" && document.hasFocus()) {
+      if (document.visibilityState === "visible") {
         updateLastSeen();
       }
     }, 45000);
@@ -71,11 +71,10 @@ export function useActivityTracker() {
       if (isActive) {
         setTimeout(() => {
           const isVisible = document.visibilityState === "visible";
-          const hasFocus = document.hasFocus();
-          if (isVisible && hasFocus && !isPushSuppressed()) {
+          if (isVisible && !isPushSuppressed()) {
             updateLastSeen();
           } else {
-            console.log(`⏭️ ActivityTracker: Push wake algılandı (visible=${isVisible}, focus=${hasFocus}, suppressed=${isPushSuppressed()}), online güncelleme atlanıyor`);
+            console.log(`⏭️ ActivityTracker: Push wake algılandı (visible=${isVisible}, suppressed=${isPushSuppressed()}), online güncelleme atlanıyor`);
           }
         }, 1500);
       }
