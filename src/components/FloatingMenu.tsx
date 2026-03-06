@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { useMusic } from "@/contexts/MusicContext";
 import { Button } from "@/components/ui/button";
@@ -28,44 +29,21 @@ import {
   Gamepad2,
 } from "lucide-react";
 
-// --- Yardımcı Fonksiyonlar ---
-const isUserBanned = async (userId: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("banned_until")
-      .eq("id", userId as any)
-      .single();
-    if (error || !data) return false;
-    const result = data as { banned_until: string | null };
-    if (!result.banned_until) return false;
-    return new Date(result.banned_until) > new Date();
-  } catch (error) {
-    console.error("Ban kontrolü hatası:", error);
-    return false;
-  }
+// --- Yardımcı Fonksiyonlar --- (OPTIMIZE: Ban kontrolü artık UserContext profile'dan yapılıyor)
+const isUserBannedFromProfile = (profile: any): boolean => {
+  if (!profile?.banned_until) return false;
+  return new Date(profile.banned_until) > new Date();
 };
 
-const getBanTimeLeft = async (userId: string): Promise<string> => {
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("banned_until")
-      .eq("id", userId as any)
-      .single();
-    if (error || !data) return "yok";
-    const result = data as { banned_until: string | null };
-    if (!result.banned_until) return "yok";
-    const banTime = new Date(result.banned_until).getTime();
-    const now = Date.now();
-    const diff = banTime - now;
-    if (diff <= 0) return "yok";
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours} saat ${minutes} dakika`;
-  } catch (error) {
-    return "bilinmiyor";
-  }
+const getBanTimeLeftFromProfile = (profile: any): string => {
+  if (!profile?.banned_until) return "yok";
+  const banTime = new Date(profile.banned_until).getTime();
+  const now = Date.now();
+  const diff = banTime - now;
+  if (diff <= 0) return "yok";
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours} saat ${minutes} dakika`;
 };
 
 const menuItems = [
