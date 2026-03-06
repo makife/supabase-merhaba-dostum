@@ -859,7 +859,7 @@ const ProfilePage = () => {
             <h1 className="text-lg font-bold text-white">{isOwnProfile ? "Profil" : `${profileData.username}`}</h1>
             {isUserOnline && !isOwnProfile && (
               <div className="flex items-center gap-1 mt-0.5">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <div className="w-3 h-3 bg-green-500 rounded-full" />
                 <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
               </div>
             )}

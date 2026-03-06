@@ -448,7 +448,7 @@ export default function ChatPage() {
                       <div className="flex items-center space-x-2">
                         {isUserOnline(targetUser.id) && (
                           <div
-                            className="w-3 h-3 bg-green-500 rounded-full animate-pulse border border-white shadow-sm"
+                            className="w-4 h-4 bg-green-500 rounded-full border border-white shadow-sm"
                             title="Çevrimiçi"
                           />
                         )}
