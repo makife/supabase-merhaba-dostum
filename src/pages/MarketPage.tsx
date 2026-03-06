@@ -229,7 +229,16 @@ const MarketPage = () => {
     }
 
     try {
-      const newBalance = (profile?.ink_count || 0) + pack.amount;
+      // 🔥 FIX: Stale state önleme - güncel veriyi DB'den çek
+      const { data: freshProfile, error: freshError } = await supabase
+        .from("profiles")
+        .select("ink_count")
+        .eq("id", user.id)
+        .single();
+      
+      if (freshError || !freshProfile) throw freshError || new Error("Profil bulunamadı");
+      
+      const newBalance = (freshProfile.ink_count || 0) + pack.amount;
       const { error } = await supabase.from("profiles").update({ ink_count: newBalance }).eq("id", user.id);
 
       if (error) throw error;
