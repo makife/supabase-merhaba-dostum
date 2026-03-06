@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
-import { supabase } from "@/integrations/supabase/client";
+// supabase import kaldırıldı — updateLastSeen artık useActivityTracker'da
 import { updateForegroundTime } from "@/utils/coldStartTime";
 
 // Global app foreground state - accessible from anywhere
@@ -77,19 +77,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   }, 0);
 };
 
-// Update last_seen in database to track user activity
-const updateLastSeen = async () => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("profiles").update({ last_seen: new Date().toISOString() }).eq("id", user.id);
-  } catch (error) {
-    // Sessizce devam et
-  }
-};
+// ✅ updateLastSeen kaldırıldı — useActivityTracker zaten bu işi yapıyor
 
 // 🔥 GLOBAL LISTENER - Sadece 1 kez kurulur
 let globalListenerInitialized = false;
@@ -171,47 +159,19 @@ export const initAppStateListener = () => {
 export function useAppForegroundState() {
   const [isInForeground, setIsInForeground] = useState(true);
   const isNative = Capacitor.isNativePlatform();
-  const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    isMountedRef.current = true;
-
     const handleStateChange = (inForeground: boolean) => {
-      if (!isMountedRef.current) return;
       setIsInForeground(inForeground);
-
-      if (inForeground) {
-        setTimeout(() => updateLastSeen(), 0);
-      }
     };
 
     // Subscribe to global state changes
     const unsubscribe = subscribeToForegroundState(handleStateChange);
 
-    // Start periodic last_seen updates (every 30 seconds when in foreground)
-    const startLastSeenUpdates = () => {
-      if (lastSeenIntervalRef.current) {
-        clearInterval(lastSeenIntervalRef.current);
-      }
-
-      updateLastSeen();
-
-      lastSeenIntervalRef.current = setInterval(() => {
-        if (getIsAppInForeground() && isMountedRef.current) {
-          updateLastSeen();
-        }
-      }, 30000);
-    };
-
-    startLastSeenUpdates();
+    // ✅ Polling kaldırıldı - last_seen artık sadece useActivityTracker tarafından yönetiliyor
 
     return () => {
-      isMountedRef.current = false;
       unsubscribe();
-      if (lastSeenIntervalRef.current) {
-        clearInterval(lastSeenIntervalRef.current);
-      }
     };
   }, [isNative]);
 
