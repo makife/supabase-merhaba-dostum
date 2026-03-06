@@ -48,6 +48,7 @@ interface UserStats {
 const LeaderboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isUserOnline } = useUser();
   const { toast } = useToast();
   const [allTimeLeaders, setAllTimeLeaders] = useState<LeaderboardEntry[]>([]);
   const [weeklyLeaders, setWeeklyLeaders] = useState<LeaderboardEntry[]>([]);
@@ -59,7 +60,7 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
-  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  
 
   // 4-aylık sezon başlangıç tarihi hesapla (Ocak-Nisan, Mayıs-Ağustos, Eylül-Aralık)
   const getSeasonStart = (): string => {
@@ -181,24 +182,9 @@ const LeaderboardPage = () => {
     }
   };
 
-  const fetchOnlineUsers = async () => {
-    try {
-      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-      const { data } = await supabase
-        .from("user_presence")
-        .select("user_id")
-        .eq("is_online", true)
-        .gte("last_seen", oneMinuteAgo);
-      if (data) {
-        setOnlineUserIds(new Set(data.map((d) => d.user_id)));
-      }
-    } catch (e) {
-      console.error("Error fetching online users:", e);
-    }
-  };
 
   const handleLeaderboardResync = useCallback(async () => {
-    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders(), fetchOnlineUsers()]);
+    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
 
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
@@ -322,7 +308,7 @@ const LeaderboardPage = () => {
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  {onlineUserIds.has(leader.user_id) && (
+                  {isUserOnline(leader.user_id) && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1a1a2e] rounded-full animate-pulse" />
                   )}
                 </div>
