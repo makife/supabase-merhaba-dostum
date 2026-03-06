@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,19 +77,7 @@ const handleForegroundStateChange = (inForeground: boolean) => {
   }, 0);
 };
 
-// Update last_seen in database to track user activity
-const updateLastSeen = async () => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("profiles").update({ last_seen: new Date().toISOString() }).eq("id", user.id);
-  } catch (error) {
-    // Sessizce devam et
-  }
-};
+// ✅ updateLastSeen kaldırıldı — useActivityTracker zaten bu işi yapıyor
 
 // 🔥 GLOBAL LISTENER - Sadece 1 kez kurulur
 let globalListenerInitialized = false;
