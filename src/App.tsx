@@ -74,6 +74,7 @@ import { useForceReloadOnResume } from "@/hooks/useForceReloadOnResume";
 import { toast } from "sonner";
 import { useAdMob } from "@/hooks/useAdMob";
 import { useFriendOnlineToast } from "@/hooks/useFriendOnlineToast";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
 
 const queryClient = new QueryClient();
 
@@ -224,6 +225,7 @@ const AppRoutes = () => {
   useSessionRecovery();
   useForceReloadOnResume();
   useFriendOnlineToast();
+  useActivityTracker();
 
   // 🔥 AdMob'u uygulama başlangıcında initialize et
   const { initializeAdMob } = useAdMob();
