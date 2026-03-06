@@ -5,6 +5,7 @@ import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromSt
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 import { Capacitor } from "@capacitor/core";
+import { matchmakingMode } from "@/utils/matchmakingMode";
 
 interface OnlineUser {
   id: string;
