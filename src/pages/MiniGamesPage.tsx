@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
-import { FloatingMenu } from "@/components/FloatingMenu";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
@@ -9,7 +8,7 @@ const MiniGamesPage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
   const { canPlay: canPlayMemory, timeUntilNextPlay } = useMemoryGame();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
 
   const miniGamesConfig = [
     { id: "snake", title: "Yılan", icon: "🐍", description: "Klasik yılan oyunu", gradient: "from-green-500 to-emerald-700", route: "/snake-game" },
@@ -39,7 +38,7 @@ const MiniGamesPage = () => {
       </div>
 
       {/* Grid */}
-      <div className={`flex-1 overflow-y-auto px-5 pb-28 transition-[opacity,transform] duration-300 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}>
+      <div className="flex-1 overflow-y-auto px-5 pb-28">
         <div className="grid grid-cols-2 gap-4 mt-2">
           {miniGamesConfig.map((game) => (
             <div
@@ -74,9 +73,6 @@ const MiniGamesPage = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <FloatingMenu onOpenChange={setIsMenuOpen} />
-      </div>
     </div>
   );
 };
