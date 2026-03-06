@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.award-leaderboard-prizes]
 verify_jwt = false
+
+[functions.award-challenge-prizes]
+verify_jwt = false
