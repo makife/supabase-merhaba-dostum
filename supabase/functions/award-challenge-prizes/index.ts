@@ -18,12 +18,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Body'den tarih override alınabilir (manuel düzeltme için)
+    let overrideDate: string | null = null;
+    try {
+      const body = await req.json();
+      if (body?.date) overrideDate = body.date;
+    } catch { /* no body */ }
+
     // Dünün tarihi (Türkiye saati)
-    const now = new Date();
-    const turkeyNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
-    const yesterday = new Date(turkeyNow);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const yesterdayDate = yesterday.toISOString().split("T")[0];
+    let yesterdayDate: string;
+    if (overrideDate) {
+      yesterdayDate = overrideDate;
+    } else {
+      const now = new Date();
+      const turkeyNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+      const yesterday = new Date(turkeyNow);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      yesterdayDate = yesterday.toISOString().split("T")[0];
+    }
 
     console.log(`🏆 Checking challenge prizes for date: ${yesterdayDate}`);
 
