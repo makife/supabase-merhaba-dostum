@@ -19,7 +19,21 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 
-import { Bot, Users, Trophy, Clock, Target, Crown, Zap, Gift, Star, Flame, Gamepad2, Sparkles, Check } from "lucide-react";
+import {
+  Bot,
+  Users,
+  Trophy,
+  Clock,
+  Target,
+  Crown,
+  Zap,
+  Gift,
+  Star,
+  Flame,
+  Gamepad2,
+  Sparkles,
+  Check,
+} from "lucide-react";
 import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChallenge";
 
 // --- YARDIMCI SABİTLER ---
@@ -463,511 +477,562 @@ const HomePage = () => {
 
   return (
     <>
-    <LeaderboardPrizeDialog />
-    <div
-      className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
-      style={{ background: levelBgColors.bg || "#1a1a2e" }}
-    >
-      {/* Light Effects */}
+      <LeaderboardPrizeDialog />
       <div
-        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500 opacity-30`}
-      />
+        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
+        style={{ background: levelBgColors.bg || "#1a1a2e" }}
+      >
+        {/* Light Effects */}
+        <div
+          className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500 opacity-30`}
+        />
 
-      {/* --------------------------------------------------------
+        {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
-      <div
-        className={`flex-none z-30 pb-4 relative shadow-2xl transition-[opacity,transform] duration-300 border-b border-white/5 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
-        style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
-      >
-        {/* HEADER (Profil & Mürekkep) */}
-        <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-          {/* Profil */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
-            <div className="relative">
-              <div
-                className={`w-12 h-12 rounded-full p-[2px] shadow-lg ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
-              >
-                <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
-                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
-                </Avatar>
-              </div>
-              {isPremium && (
-                <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
-                  <Crown className="w-2.5 h-2.5 text-white" />
-                </div>
-              )}
-            </div>
-            <div>
-              <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
-                {profile?.username || "Misafir"}
-              </h2>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
-            </div>
-          </div>
-
-          {/* Mürekkep */}
-          <div
-            onClick={() => {
-              playSound("buttonClick");
-              navigate("/market");
-            }}
-            className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all shadow-xl cursor-pointer"
-          >
-            <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
-              <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
-            </div>
-            <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-            <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
-              <span className="text-xs leading-none text-white font-bold">+</span>
-            </div>
-          </div>
-        </div>
-
-        {/* --- LEVEL VE XP KARTI --- */}
-        <div className="px-5 mt-2">
-          {(() => {
-            const level = levelData.level;
-            let starGradient = "from-amber-400 to-orange-500";
-            let shadowColor = "shadow-orange-500/20";
-
-            if (level >= 70) {
-              starGradient = "from-slate-400 to-slate-600";
-              shadowColor = "shadow-slate-500/20";
-            } else if (level >= 40) {
-              starGradient = "from-blue-400 to-blue-600";
-              shadowColor = "shadow-blue-500/20";
-            } else if (level >= 25) {
-              starGradient = "from-emerald-400 to-green-600";
-              shadowColor = "shadow-green-500/20";
-            } else if (level >= 10) {
-              starGradient = "from-purple-500 to-indigo-600";
-              shadowColor = "shadow-purple-500/20";
-            }
-
-            return (
-              <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-xl">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-lg ${shadowColor}`}
-                  >
-                    <Star className="w-6 h-6 text-white fill-white" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">Seviye {level}</span>
-                      <span className="text-[10px] text-slate-500 font-mono">
-                        {levelData.experience}/{levelData.nextLevelExp} XP
-                      </span>
-                    </div>
-                    <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
-                      <div
-                        className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                  <span className="text-sm font-mono font-bold text-red-500">
-                    {(profile?.total_score || 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* --- JOKERLER --- */}
-        <div className="px-5 mt-3">
-          <div className="bg-[#16213e]/60 backdrop-blur-sm rounded-2xl p-3 border border-white/5 flex justify-around shadow-inner">
-            {[
-              { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
-              { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
-              { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
-            ].map((j, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
-                onClick={() => navigate("/market")}
-              >
-                <img
-                  src={j.img}
-                  className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
-                  alt={j.name}
-                />
-                <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* INFO PANELS (SÜRE & HAK) */}
-        <div className="px-5 mt-2 space-y-2">
-          {isPremium && premiumTimeLeft && (
-            <div
-              className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
-                vipType === "yearly"
-                  ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
-                  : vipType === "monthly"
-                    ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
-                    : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
-              }`}
-            >
-              <div className="flex items-center gap-2">
+        <div
+          className={`flex-none z-30 pb-4 relative shadow-2xl transition-[opacity,transform] duration-300 border-b border-white/5 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
+          style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
+        >
+          {/* HEADER (Profil & Mürekkep) */}
+          <div className="px-5 pt-6 pb-2 flex items-center justify-between">
+            {/* Profil */}
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
+              <div className="relative">
                 <div
-                  className={`p-1.5 rounded-full ${
-                    vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                  className={`w-12 h-12 rounded-full p-[2px] shadow-lg ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                >
+                  <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
+                    <AvatarImage
+                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
+                  </Avatar>
+                </div>
+                {isPremium && (
+                  <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
+                    <Crown className="w-2.5 h-2.5 text-white" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
+                  {profile?.username || "Misafir"}
+                </h2>
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
+              </div>
+            </div>
+
+            {/* Mürekkep */}
+            <div
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/market");
+              }}
+              className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all shadow-xl cursor-pointer"
+            >
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
+              </div>
+              <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
+              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
+                <span className="text-xs leading-none text-white font-bold">+</span>
+              </div>
+            </div>
+          </div>
+
+          {/* --- LEVEL VE XP KARTI --- */}
+          <div className="px-5 mt-2">
+            {(() => {
+              const level = levelData.level;
+              let starGradient = "from-amber-400 to-orange-500";
+              let shadowColor = "shadow-orange-500/20";
+
+              if (level >= 70) {
+                starGradient = "from-slate-400 to-slate-600";
+                shadowColor = "shadow-slate-500/20";
+              } else if (level >= 40) {
+                starGradient = "from-blue-400 to-blue-600";
+                shadowColor = "shadow-blue-500/20";
+              } else if (level >= 25) {
+                starGradient = "from-emerald-400 to-green-600";
+                shadowColor = "shadow-green-500/20";
+              } else if (level >= 10) {
+                starGradient = "from-purple-500 to-indigo-600";
+                shadowColor = "shadow-purple-500/20";
+              }
+
+              return (
+                <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-lg ${shadowColor}`}
+                    >
+                      <Star className="w-6 h-6 text-white fill-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">Seviye {level}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {levelData.experience}/{levelData.nextLevelExp} XP
+                        </span>
+                      </div>
+                      <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
+                        <div
+                          className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                    <span className="text-sm font-mono font-bold text-red-500">
+                      {(profile?.total_score || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* --- JOKERLER --- */}
+          <div className="px-5 mt-3">
+            <div className="bg-[#16213e]/60 backdrop-blur-sm rounded-2xl p-3 border border-white/5 flex justify-around shadow-inner">
+              {[
+                { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
+                { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
+                { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+              ].map((j, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
+                  onClick={() => navigate("/market")}
+                >
+                  <img
+                    src={j.img}
+                    className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                    alt={j.name}
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* INFO PANELS (SÜRE & HAK) */}
+          <div className="px-5 mt-2 space-y-2">
+            {isPremium && premiumTimeLeft && (
+              <div
+                className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+                  vipType === "yearly"
+                    ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
+                    : vipType === "monthly"
+                      ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                      : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`p-1.5 rounded-full ${
+                      vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
+                    }`}
+                  >
+                    <Crown
+                      className={`w-5 h-5 ${
+                        vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span
+                      className={`text-sm font-bold ${
+                        vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                      }`}
+                    >
+                      {vipType === "yearly"
+                        ? "⭐ VIP Yazar (Yıllık)"
+                        : vipType === "monthly"
+                          ? "💎 VIP Yazar (Aylık)"
+                          : "VIP Yazar"}
+                    </span>
+                    <span
+                      className={`text-[10px] ${
+                        vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
+                      }`}
+                    >
+                      Sınırsız hak • Günlük joker • 2x XP
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className={`px-2 py-1 rounded-lg ${
+                    vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
                   }`}
                 >
-                  <Crown
-                    className={`w-5 h-5 ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-500"
-                    }`}
-                  />
-                </div>
-                <div className="flex flex-col">
                   <span
-                    className={`text-sm font-bold ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
+                    className={`text-xs font-mono font-bold ${
+                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
                     }`}
                   >
-                    {vipType === "yearly"
-                      ? "⭐ VIP Yazar (Yıllık)"
-                      : vipType === "monthly"
-                        ? "💎 VIP Yazar (Aylık)"
-                        : "VIP Yazar"}
-                  </span>
-                  <span
-                    className={`text-[10px] ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
-                    }`}
-                  >
-                    Sınırsız hak • Günlük joker • 2x XP
+                    {premiumTimeLeft}
                   </span>
                 </div>
               </div>
+            )}
+
+            {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`px-2 py-1 rounded-lg ${
-                  vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
+                className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 shadow-xl ${
+                  isUnlimitedLivesActive(profile)
+                    ? getUnlimitedType(profile) === "maraton"
+                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
+                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
+                    : "bg-[#16213e]/80 border-white/10"
                 }`}
               >
                 <span
-                  className={`text-xs font-mono font-bold ${
-                    vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
+                  className={`text-xs font-medium ${
+                    isUnlimitedLivesActive(profile)
+                      ? getUnlimitedType(profile) === "maraton"
+                        ? "text-amber-400"
+                        : "text-blue-400"
+                      : "text-slate-500"
                   }`}
                 >
-                  {premiumTimeLeft}
+                  {isUnlimitedLivesActive(profile)
+                    ? getUnlimitedType(profile) === "maraton"
+                      ? "🔥 Maraton Modu"
+                      : "⚡ Sınırsız Akış"
+                    : "Kalan Sayfalarım"}
                 </span>
-              </div>
-            </div>
-          )}
 
-          {(!isPremium || isUnlimitedLivesActive(profile)) && (
-            <div className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 shadow-xl ${
-              isUnlimitedLivesActive(profile)
-                ? getUnlimitedType(profile) === "maraton"
-                  ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
-                  : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
-                : "bg-[#16213e]/80 border-white/10"
-            }`}>
-              <span className={`text-xs font-medium ${
-                isUnlimitedLivesActive(profile)
-                  ? getUnlimitedType(profile) === "maraton"
-                    ? "text-amber-400"
-                    : "text-blue-400"
-                  : "text-slate-500"
-              }`}>
-                {isUnlimitedLivesActive(profile)
-                  ? getUnlimitedType(profile) === "maraton"
-                    ? "🔥 Maraton Modu"
-                    : "⚡ Sınırsız Akış"
-                  : "Kalan Sayfalarım"}
-              </span>
-
-              {isUnlimitedLivesActive(profile) ? (
-                <div className="flex items-center gap-2">
-                  {unlimitedTimeLeft ? (
-                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
-                      getUnlimitedType(profile) === "maraton"
-                        ? "bg-amber-500/20 border-amber-500/30"
-                        : "bg-blue-500/20 border-blue-500/30"
-                    }`}>
-                      <Clock className={`w-3 h-3 animate-pulse ${
-                        getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
-                      }`} />
-                      <span className={`text-xs font-mono font-bold tabular-nums ${
-                        getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
-                      }`}>
-                        {unlimitedTimeLeft}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-5 bg-slate-700 rounded animate-pulse" />
-                  )}
-                  <Badge className={`text-[10px] px-2 py-0.5 border ${
-                    getUnlimitedType(profile) === "maraton"
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                      : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                  }`}>
-                    Sınırsız
-                  </Badge>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {totalCredits > 5 ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1 opacity-50">
+                {isUnlimitedLivesActive(profile) ? (
+                  <div className="flex items-center gap-2">
+                    {unlimitedTimeLeft ? (
+                      <div
+                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
+                          getUnlimitedType(profile) === "maraton"
+                            ? "bg-amber-500/20 border-amber-500/30"
+                            : "bg-blue-500/20 border-blue-500/30"
+                        }`}
+                      >
+                        <Clock
+                          className={`w-3 h-3 animate-pulse ${
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-xs font-mono font-bold tabular-nums ${
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
+                          }`}
+                        >
+                          {unlimitedTimeLeft}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-5 bg-slate-700 rounded animate-pulse" />
+                    )}
+                    <Badge
+                      className={`text-[10px] px-2 py-0.5 border ${
+                        getUnlimitedType(profile) === "maraton"
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                      }`}
+                    >
+                      Sınırsız
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {totalCredits > 5 ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1 opacity-50">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                          ))}
+                        </div>
+                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
+                          + {totalCredits - 5} Sayfa
+                        </Badge>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1">
                         {Array.from({ length: 5 }, (_, i) => (
-                          <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                          <div
+                            key={i}
+                            className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
+                          />
                         ))}
                       </div>
-                      <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                        + {totalCredits - 5} Sayfa
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <div
-                          key={i}
-                          className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    )}
 
-                  {timeUntilNextCredit && totalCredits < 5 && (
-                    <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
-                      {timeUntilNextCredit}
-                    </span>
-                  )}
+                    {timeUntilNextCredit && totalCredits < 5 && (
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                        {timeUntilNextCredit}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* HEDİYE BANNER */}
+          {isPremium && isGiftPremium(profile) && (
+            <div className="px-5 mt-4">
+              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
+                  <Gift className="w-5 h-5 text-white animate-bounce" />
                 </div>
-              )}
+                <div className="flex-1 z-10">
+                  <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
+                  <p className="text-[10px] text-white/90">
+                    Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* HEDİYE BANNER */}
-        {isPremium && isGiftPremium(profile) && (
-          <div className="px-5 mt-4">
-            <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
-                <Gift className="w-5 h-5 text-white animate-bounce" />
-              </div>
-              <div className="flex-1 z-10">
-                <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
-                <p className="text-[10px] text-white/90">
-                  Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* --------------------------------------------------------
+        {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
-      <div
-        className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 transition-[opacity,transform] duration-300 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
-      >
-        {/* OYUN MODLARI */}
-        <div className="px-5 mt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-indigo-500 rounded-full" />
-            <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
+        <div
+          className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 transition-[opacity,transform] duration-300 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
+        >
+          {/* OYUN MODLARI */}
+          <div className="px-5 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {gameModesConfig.map((mode) => (
+                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {gameModesConfig.map((mode) => (
-              <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
-            ))}
-          </div>
-        </div>
 
-        {/* GÜNLÜK CHALLENGE'LAR */}
-        <div className="mt-6 pl-5">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-amber-500 rounded-full" />
-            <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
-            {/* Kelime Avı */}
-            <div
-              onClick={() => { playSound("buttonClick"); navigate("/challenge/word-hunt"); }}
-              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_hunt ? "border-emerald-400/40 opacity-70" : "border-white/10"}`}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 ${challengeStatus.word_hunt ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">1</span>
-              <div className="relative z-10 flex justify-between items-start">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
+          {/* GÜNLÜK CHALLENGE'LAR */}
+          <div className="mt-6 pl-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-amber-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
+              {/* Kelime Avı */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/word-hunt");
+                }}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_hunt ? "border-emerald-400/40 opacity-70" : "border-white/10"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 ${challengeStatus.word_hunt ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                />
+                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
+                  1
+                </span>
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                    {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_hunt ? "bg-emerald-400/30 text-emerald-200 border-emerald-400/40" : "bg-emerald-400/20 text-emerald-200 border-emerald-400/30"}`}
+                  >
+                    {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
-                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_hunt ? "bg-emerald-400/30 text-emerald-200 border-emerald-400/40" : "bg-emerald-400/20 text-emerald-200 border-emerald-400/30"}`}>
-                  {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Oyna"}
-                </Badge>
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
-                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.word_hunt ? "Yarın tekrar gel!" : "Harflerden kelime bul"}</p>
-              </div>
-            </div>
-
-            {/* Anagram */}
-            <div
-              onClick={() => { playSound("buttonClick"); navigate("/challenge/anagram"); }}
-              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.anagram ? "border-violet-400/40 opacity-70" : "border-white/10"}`}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 ${challengeStatus.anagram ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">2</span>
-              <div className="relative z-10 flex justify-between items-start">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
+                <div className="relative z-10">
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
+                  <p className="text-[10px] text-white/70 font-medium">
+                    {challengeStatus.word_hunt ? "Yarın tekrar gel!" : "Harflerden kelime bul"}
+                  </p>
                 </div>
-                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.anagram ? "bg-violet-400/30 text-violet-200 border-violet-400/40" : "bg-violet-400/20 text-violet-200 border-violet-400/30"}`}>
-                  {challengeStatus.anagram ? "✓ Tamamlandı" : "Oyna"}
-                </Badge>
               </div>
-              <div className="relative z-10">
-                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Anagram</h3>
-                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.anagram ? "Yarın tekrar gel!" : "Karışık harfleri çöz"}</p>
-              </div>
-            </div>
 
-            {/* Kelime Zinciri */}
-            <div
-              onClick={() => { playSound("buttonClick"); navigate("/challenge/word-chain"); }}
-              className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_chain ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 ${challengeStatus.word_chain ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`} />
-               <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">3</span>
-              <div className="relative z-10 flex justify-between items-start">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                  {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
+              {/* Anagram */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/anagram");
+                }}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.anagram ? "border-violet-400/40 opacity-70" : "border-white/10"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 ${challengeStatus.anagram ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                />
+                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
+                  2
+                </span>
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                    {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.anagram ? "bg-violet-400/30 text-violet-200 border-violet-400/40" : "bg-violet-400/20 text-violet-200 border-violet-400/30"}`}
+                  >
+                    {challengeStatus.anagram ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
-                <Badge className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_chain ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>
-                  {challengeStatus.word_chain ? "✓ Tamamlandı" : "Oyna"}
-                </Badge>
+                <div className="relative z-10">
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Anagram</h3>
+                  <p className="text-[10px] text-white/70 font-medium">
+                    {challengeStatus.anagram ? "Yarın tekrar gel!" : "Karışık harfleri çöz"}
+                  </p>
+                </div>
               </div>
-              <div className="relative z-10">
-                <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Zinciri</h3>
-                <p className="text-[10px] text-white/70 font-medium">{challengeStatus.word_chain ? "Yarın tekrar gel!" : "Son harfle yeni kelime"}</p>
+
+              {/* Kelime Zinciri */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/word-chain");
+                }}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_chain ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 ${challengeStatus.word_chain ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                />
+                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
+                  3
+                </span>
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                    {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_chain ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                  >
+                    {challengeStatus.word_chain ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
+                </div>
+                <div className="relative z-10">
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Zinciri</h3>
+                  <p className="text-[10px] text-white/70 font-medium">
+                    {challengeStatus.word_chain ? "Yarın tekrar gel!" : "Son harfle yeni kelime"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* GÜNLÜK ÇARK */}
-        <div className="px-5 mt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-4 bg-red-500 rounded-full" />
-            <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Çark</h3>
-          </div>
-          <div
-            onClick={() => { playSound("buttonClick"); navigate("/wheel"); }}
-            className="w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border border-red-500/30 shadow-lg shadow-red-500/10"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-2xl" />
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
-              🎡
+          {/* GÜNLÜK ÇARK */}
+          <div className="px-5 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-red-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Şans Çarkı</h3>
             </div>
-            <div className="relative z-10 flex-1">
-              <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Şansını Dene!</h3>
-              <p className="text-[10px] text-white/70 font-medium">Çarkı çevir, ödüller kazan!</p>
+            <div
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/wheel");
+              }}
+              className="w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border border-red-500/30 shadow-lg shadow-red-500/10"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-2xl" />
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
+                🎡
+              </div>
+              <div className="relative z-10 flex-1">
+                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Şansını Dene!</h3>
+                <p className="text-[10px] text-white/70 font-medium">Çarkı çevir, ödüller kazan!</p>
+              </div>
+            </div>
+          </div>
+
+          {/* İSTATİSTİKLER */}
+          <div className="px-5 mt-6 pb-12">
+            {" "}
+            {/* Alt boşluğu biraz artırdım, menüye girmesin */}
+            <div className="grid grid-cols-3 gap-3">
+              <StatWidget
+                icon={Target}
+                value={profile?.daily_games || 0}
+                label="Oyun"
+                colorClass="rose"
+                // !bg-[#16213e] kullanarak içindeki beyazı zorla eziyoruz
+                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+              />
+              <StatWidget
+                icon={Flame}
+                value={profile?.win_streak || 0}
+                label="Seri"
+                colorClass="orange"
+                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+              />
+              <StatWidget
+                icon={Trophy}
+                value={profile?.wins || 0}
+                label="Zafer"
+                colorClass="amber"
+                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+              />
             </div>
           </div>
         </div>
 
-        {/* İSTATİSTİKLER */}
-        <div className="px-5 mt-6 pb-12">
-          {" "}
-          {/* Alt boşluğu biraz artırdım, menüye girmesin */}
-          <div className="grid grid-cols-3 gap-3">
-            <StatWidget
-              icon={Target}
-              value={profile?.daily_games || 0}
-              label="Oyun"
-              colorClass="rose"
-              // !bg-[#16213e] kullanarak içindeki beyazı zorla eziyoruz
-              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
-            />
-            <StatWidget
-              icon={Flame}
-              value={profile?.win_streak || 0}
-              label="Seri"
-              colorClass="orange"
-              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
-            />
-            <StatWidget
-              icon={Trophy}
-              value={profile?.wins || 0}
-              label="Zafer"
-              colorClass="amber"
-              className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* --- MODALLAR --- */}
-      {selectedMode && selectedMode === "private-room" ? (
-        <PrivateRoomModal
-          onClose={() => setSelectedMode(null)}
-          onStartGame={(matchId, type) => {
-            setSelectedMode(null);
-            navigate(`/game/random-match?room=${matchId}&type=${type}`);
-          }}
-        />
-      ) : selectedMode ? (
-        <GameModeSelector
-          mode={selectedMode}
-          onStart={(type) => {
-            if (selectedMode === "tournament") navigate("/tournament", { state: { gameType: type } });
-            else if (selectedMode === "random-match") {
-              setMatchmakingGameType(type);
-              setMatchmakingKey(Date.now());
-              setShowMatchmaking(true);
-              setTimeout(() => startSearch(type), 100);
-            } else navigate(`/game/${selectedMode}?type=${type}`);
-            setSelectedMode(null);
-          }}
-          onClose={() => setSelectedMode(null)}
-        />
-      ) : null}
-
-      {showMatchmaking && (
-        <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
-          {" "}
-          {/* Flashbang etkisini önlemek için koyu arka plan */}
-          <SlotMatchmaking
-            key={`matchmaking-${matchmakingKey}`}
-            onCancel={() => {
-              cancelSearch();
-              setShowMatchmaking(false);
+        {/* --- MODALLAR --- */}
+        {selectedMode && selectedMode === "private-room" ? (
+          <PrivateRoomModal
+            onClose={() => setSelectedMode(null)}
+            onStartGame={(matchId, type) => {
+              setSelectedMode(null);
+              navigate(`/game/random-match?room=${matchId}&type=${type}`);
             }}
-            searchProgress={searchProgress}
           />
+        ) : selectedMode ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(type) => {
+              if (selectedMode === "tournament") navigate("/tournament", { state: { gameType: type } });
+              else if (selectedMode === "random-match") {
+                setMatchmakingGameType(type);
+                setMatchmakingKey(Date.now());
+                setShowMatchmaking(true);
+                setTimeout(() => startSearch(type), 100);
+              } else navigate(`/game/${selectedMode}?type=${type}`);
+              setSelectedMode(null);
+            }}
+            onClose={() => setSelectedMode(null)}
+          />
+        ) : null}
+
+        {showMatchmaking && (
+          <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
+            {" "}
+            {/* Flashbang etkisini önlemek için koyu arka plan */}
+            <SlotMatchmaking
+              key={`matchmaking-${matchmakingKey}`}
+              onCancel={() => {
+                cancelSearch();
+                setShowMatchmaking(false);
+              }}
+              searchProgress={searchProgress}
+            />
+          </div>
+        )}
+
+        <div className="fixed bottom-0 left-0 right-0 z-50">
+          <FloatingMenu onOpenChange={setIsMenuOpen} />
         </div>
-      )}
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <FloatingMenu onOpenChange={setIsMenuOpen} />
+        <AvatarViewDialog
+          open={showAvatarView}
+          onOpenChange={setShowAvatarView}
+          avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
+          username={profile?.username || "Oyuncu"}
+        />
       </div>
-
-      <AvatarViewDialog
-        open={showAvatarView}
-        onOpenChange={setShowAvatarView}
-        avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
-        username={profile?.username || "Oyuncu"}
-      />
-    </div>
     </>
   );
 };
