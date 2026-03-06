@@ -27,7 +27,7 @@ export const useAdMob = () => {
   // ✅ Senkron platform kontrolü - dinamik import KULLANMA
   const isNativePlatform = Capacitor.isNativePlatform();
   const platform = Capacitor.getPlatform();
-  
+
   console.log("[AdMob] Platform:", platform, "isNative:", isNativePlatform);
 
   // Initialize AdMob
@@ -105,14 +105,12 @@ export const useAdMob = () => {
       }
 
       // 👇 GELİŞTİRME MODU AYARI (Test reklamları için TRUE yap)
-      const IS_DEVELOPMENT_MODE = true;
+      const IS_DEVELOPMENT_MODE = false;
 
       const isIOS = platform === "ios";
 
       // Gerçek ID'ler
-      const REAL_AD_ID = isIOS 
-        ? "ca-app-pub-4768026665961339/6920222714" 
-        : "ca-app-pub-4768026665961339/4806604463";
+      const REAL_AD_ID = isIOS ? "ca-app-pub-4768026665961339/6920222714" : "ca-app-pub-4768026665961339/4806604463";
 
       // Google Test ID - HER ZAMAN ÇALIŞMALI
       const TEST_AD_ID = "ca-app-pub-3940256099942544/5224354917";
@@ -120,7 +118,9 @@ export const useAdMob = () => {
       // Mod'a göre ID seç
       const adIdToUse = IS_DEVELOPMENT_MODE ? TEST_AD_ID : REAL_AD_ID;
 
-      console.log(`[AdMob] 📺 Loading ad... Platform: ${isIOS ? "iOS" : "Android"}, Mode: ${IS_DEVELOPMENT_MODE ? "TEST" : "REAL"}`);
+      console.log(
+        `[AdMob] 📺 Loading ad... Platform: ${isIOS ? "iOS" : "Android"}, Mode: ${IS_DEVELOPMENT_MODE ? "TEST" : "REAL"}`,
+      );
       console.log(`[AdMob] 📺 Ad ID: ${adIdToUse}`);
 
       await admobModule.AdMob.prepareRewardVideoAd({
@@ -149,11 +149,7 @@ export const useAdMob = () => {
     }
 
     try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("ink_count")
-        .eq("id", user.id)
-        .single();
+      const { data: profile } = await supabase.from("profiles").select("ink_count").eq("id", user.id).single();
 
       // +1 Mürekkep ver
       const newInkCount = (profile?.ink_count || 0) + 1;
@@ -169,7 +165,7 @@ export const useAdMob = () => {
       if (error) throw error;
       console.log("[AdMob] ✅ Reward given successfully, new ink:", newInkCount);
       // 🔧 KRİTİK: Profili hemen yenile - UI anında güncellensin
-      window.dispatchEvent(new CustomEvent('refreshProfile'));
+      window.dispatchEvent(new CustomEvent("refreshProfile"));
     } catch (error) {
       console.error("[AdMob] ❌ Failed to give reward:", error);
       toast({
@@ -181,40 +177,39 @@ export const useAdMob = () => {
   }, [user, toast]);
 
   // Show rewarded ad - optional custom reward callback
-  const showRewardedAd = useCallback(async (customReward?: () => Promise<void>): Promise<boolean> => {
-    if (!isNativePlatform) {
-      toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
-      return false;
-    }
-
-    try {
-      const admobModule = await getAdMobModule();
-      if (!admobModule) {
-        console.error("[AdMob] AdMob module not found");
+  const showRewardedAd = useCallback(
+    async (customReward?: () => Promise<void>): Promise<boolean> => {
+      if (!isNativePlatform) {
+        toast({ title: "Bilgi", description: "Reklamlar sadece mobil uygulamada çalışır" });
         return false;
       }
 
-      const { AdMob, RewardAdPluginEvents } = admobModule;
+      try {
+        const admobModule = await getAdMobModule();
+        if (!admobModule) {
+          console.error("[AdMob] AdMob module not found");
+          return false;
+        }
 
-      return new Promise<boolean>((resolve) => {
-        let resolved = false;
-        
-        const cleanup = async (listeners: any[]) => {
-          for (const listener of listeners) {
-            try {
-              await listener.remove();
-            } catch (e) {
-              // ignore
+        const { AdMob, RewardAdPluginEvents } = admobModule;
+
+        return new Promise<boolean>((resolve) => {
+          let resolved = false;
+
+          const cleanup = async (listeners: any[]) => {
+            for (const listener of listeners) {
+              try {
+                await listener.remove();
+              } catch (e) {
+                // ignore
+              }
             }
-          }
-        };
+          };
 
-        const setupListeners = async () => {
-          const listeners: any[] = [];
+          const setupListeners = async () => {
+            const listeners: any[] = [];
 
-          const dismissedListener = await AdMob.addListener(
-            RewardAdPluginEvents.Dismissed,
-            () => {
+            const dismissedListener = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
               console.log("[AdMob] 📺 Ad dismissed");
               setIsAdReady(false);
               if (!resolved) {
@@ -222,13 +217,10 @@ export const useAdMob = () => {
                 cleanup(listeners);
                 resolve(true);
               }
-            }
-          );
-          listeners.push(dismissedListener);
+            });
+            listeners.push(dismissedListener);
 
-          const failedListener = await AdMob.addListener(
-            RewardAdPluginEvents.FailedToShow,
-            (error: any) => {
+            const failedListener = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (error: any) => {
               console.error("[AdMob] ❌ Ad failed to show:", error);
               setIsAdReady(false);
               toast({
@@ -241,59 +233,57 @@ export const useAdMob = () => {
                 cleanup(listeners);
                 resolve(false);
               }
-            }
-          );
-          listeners.push(failedListener);
+            });
+            listeners.push(failedListener);
 
-          const rewardedListener = await AdMob.addListener(
-            RewardAdPluginEvents.Rewarded,
-            async (reward: any) => {
+            const rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, async (reward: any) => {
               console.log("[AdMob] 🎉 User earned reward:", reward);
               if (customReward) {
                 await customReward();
               } else {
                 await giveReward();
-                toast({ 
-                  title: "Tebrikler! 🎉", 
-                  description: "+1 Mürekkep kazandınız!" 
+                toast({
+                  title: "Tebrikler! 🎉",
+                  description: "+1 Mürekkep kazandınız!",
                 });
               }
-            }
-          );
-          listeners.push(rewardedListener);
+            });
+            listeners.push(rewardedListener);
 
-          // Timeout cleanup
-          setTimeout(() => {
+            // Timeout cleanup
+            setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                cleanup(listeners);
+                resolve(false);
+              }
+            }, 120000); // 2 dakika timeout
+          };
+
+          setupListeners();
+
+          console.log("[AdMob] 📺 Showing rewarded ad...");
+          AdMob.showRewardVideoAd().catch((error: any) => {
+            console.error("[AdMob] ❌ Show ad error:", error);
             if (!resolved) {
               resolved = true;
-              cleanup(listeners);
               resolve(false);
             }
-          }, 120000); // 2 dakika timeout
-        };
-
-        setupListeners();
-
-        console.log("[AdMob] 📺 Showing rewarded ad...");
-        AdMob.showRewardVideoAd().catch((error: any) => {
-          console.error("[AdMob] ❌ Show ad error:", error);
-          if (!resolved) {
-            resolved = true;
-            resolve(false);
-          }
+          });
         });
-      });
-    } catch (error) {
-      console.error("[AdMob] ❌ Failed to show rewarded ad:", error);
-      setIsAdReady(false);
-      toast({
-        title: "Reklam Hazır Değil",
-        description: "Reklam yüklenemedi, lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [isNativePlatform, giveReward, toast]);
+      } catch (error) {
+        console.error("[AdMob] ❌ Failed to show rewarded ad:", error);
+        setIsAdReady(false);
+        toast({
+          title: "Reklam Hazır Değil",
+          description: "Reklam yüklenemedi, lütfen tekrar deneyin.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    },
+    [isNativePlatform, giveReward, toast],
+  );
 
   return {
     isAdLoading,
