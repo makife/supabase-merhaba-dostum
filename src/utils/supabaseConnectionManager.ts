@@ -209,8 +209,8 @@ export const startConnectionMonitor = () => {
   // İlk kontrol
   runHealthCheck();
 
-  // Periyodik kontrol - her 3 saniyede bir (daha agresif)
-  healthCheckInterval = setInterval(runHealthCheck, 3000);
+  // Periyodik kontrol - her 15 saniyede bir (optimize edildi, eskisi 3s idi)
+  healthCheckInterval = setInterval(runHealthCheck, 15000);
 
   // Visibility change - sayfa görünür olduğunda hemen kontrol et
   const handleVisibility = () => {

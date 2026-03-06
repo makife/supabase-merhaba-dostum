@@ -59,12 +59,12 @@ export function useActivityTracker() {
       console.log("⏭️ ActivityTracker: İlk mount'ta push wake algılandı, online güncelleme atlanıyor");
     }
 
-    // Her 20 saniyede bir heartbeat - sadece uygulama görünür VE odaklıysa
+    // Her 45 saniyede bir heartbeat - sadece uygulama görünür VE odaklıysa (optimize edildi, eskisi 20s idi)
     const interval = setInterval(() => {
       if (document.visibilityState === "visible" && document.hasFocus()) {
         updateLastSeen();
       }
-    }, 20000);
+    }, 45000);
 
     // Capacitor App state listener
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
