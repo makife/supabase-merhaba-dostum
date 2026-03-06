@@ -97,6 +97,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       if (progress >= 100) {
         clearInterval(id);
         setIsSearching(false);
+        matchmakingMode.deactivate();
         console.log("⏰ Arama tamamlandı - oyuncu bulunamadı");
       }
     }, 1000);
@@ -266,6 +267,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           clearProgressTimer();
           setSearchProgress(100);
           setIsSearching(false);
+          matchmakingMode.deactivate();
           onMatchFound?.(targetRoom.id);
           return;
         }
@@ -508,6 +510,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       console.error("❌ Matchmaking hatası:", error);
       setIsSearching(false);
       clearProgressTimer();
+      matchmakingMode.deactivate();
       toast({
         title: "Arama Hatası",
         description: "Eşleşme araması başlatılamadı",
@@ -551,6 +554,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
     setIsSearching(false);
     setCurrentRoom(null);
+    matchmakingMode.deactivate();
 
     toast({
       title: "Arama İptal Edildi",
