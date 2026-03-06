@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
-import { supabase } from "@/integrations/supabase/client";
+// supabase import kaldırıldı — updateLastSeen artık useActivityTracker'da
 import { updateForegroundTime } from "@/utils/coldStartTime";
 
 // Global app foreground state - accessible from anywhere
