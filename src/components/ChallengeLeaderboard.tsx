@@ -32,12 +32,12 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full">
-      <div className="flex items-center gap-2 mb-3">
+    <div className={`bg-white/5 border border-white/10 rounded-2xl p-4 w-full ${scrollable ? "flex-1 min-h-0 flex flex-col" : ""}`}>
+      <div className="flex items-center gap-2 mb-3 shrink-0">
         <Trophy className="w-4 h-4 text-amber-400" />
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</h3>
       </div>
-      <div className="space-y-1.5 max-h-64 overflow-y-auto">
+      <div className={`space-y-1.5 ${scrollable ? "flex-1 min-h-0 overflow-y-auto" : "max-h-64 overflow-y-auto"}`}>
         {leaderboard.map((entry, i) => {
           const isMe = entry.user_id === user?.id;
           return (
