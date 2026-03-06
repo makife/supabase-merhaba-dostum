@@ -191,17 +191,44 @@ const HomePage = () => {
     } catch {}
     return { word_hunt: false, anagram: false, word_chain: false };
   });
+  const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
+    try {
+      const cached = sessionStorage.getItem("wheelSpinsLeft");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed._date === new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" })) {
+          return parsed.spins;
+        }
+      }
+    } catch {}
+    return null;
+  });
 
-  // Fetch daily challenge completion status
+  // Fetch daily challenge completion status & wheel spin availability
   useEffect(() => {
-    if (user?.id) {
-      getDailyChallengeStatus(user.id).then((status) => {
-        const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
-        sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
-        setChallengeStatus(status);
+    if (!user?.id) return;
+    getDailyChallengeStatus(user.id).then((status) => {
+      const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
+      sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
+      setChallengeStatus(status);
+    });
+
+    // Check wheel spins
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+    supabase
+      .from("wheel_spins")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle()
+      .then(({ data: spinData }) => {
+        const dailyAvailable = !spinData ? 1 : 0;
+        const bonus = profile?.bonus_spins || 0;
+        const total = dailyAvailable + bonus;
+        setWheelSpinsLeft(total);
+        sessionStorage.setItem("wheelSpinsLeft", JSON.stringify({ spins: total, _date: today }));
       });
-    }
-  }, [user?.id]);
+  }, [user?.id, profile?.bonus_spins]);
 
   const [greeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem("sessionGreeting");
