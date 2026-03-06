@@ -14,12 +14,13 @@ interface LeaderboardEntry {
 interface Props {
   leaderboard: LeaderboardEntry[];
   title?: string;
+  scrollable?: boolean;
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
 const rankBgs = ["bg-amber-500/20", "bg-slate-400/10", "bg-amber-700/10"];
 
-export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama" }: Props) => {
+export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false }: Props) => {
   const { user } = useAuth();
 
   if (leaderboard.length === 0) {
