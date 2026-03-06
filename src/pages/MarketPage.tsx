@@ -848,9 +848,19 @@ const MarketPage = () => {
 
               {/* Standart Bilgilendirme */}
               <span className="block mt-2">
-                Bu işlem için mürekkep haznenizden{" "}
-                <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
-                Onaylıyor musunuz?
+                {quantityToBuy > 1 && itemToBuy?.type === "joker" ? (
+                  <>
+                    <span className="font-bold text-indigo-600">{quantityToBuy} adet {itemToBuy?.name}</span> için mürekkep haznenizden{" "}
+                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
+                    Onaylıyor musunuz?
+                  </>
+                ) : (
+                  <>
+                    Bu işlem için mürekkep haznenizden{" "}
+                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
+                    Onaylıyor musunuz?
+                  </>
+                )}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
