@@ -10,9 +10,21 @@ const POINTS_PER_LETTER = 5;
 const WORD_BONUS = 20;
 
 const SAFE_FALLBACK = [
-  "ELMAS", "KALEM", "SABAH", "DENIZ", "BAHAR",
-  "ORMAN", "FENER", "ARABA", "EVLER", "KAPAK",
-  "TARAF", "KITAP", "YAŞAM", "SEZON", "ÇIZGI",
+  "ELMAS",
+  "KALEM",
+  "SABAH",
+  "DENIZ",
+  "BAHAR",
+  "ORMAN",
+  "FENER",
+  "ARABA",
+  "EVLER",
+  "KAPAK",
+  "TARAF",
+  "KITAP",
+  "YAŞAM",
+  "SEZON",
+  "ÇIZGI",
 ];
 
 const generateColor = () => {
@@ -53,9 +65,12 @@ const NeonBlitz: React.FC = () => {
 
   useEffect(() => {
     fetch("/wordlist.txt")
-      .then(r => r.text())
-      .then(text => {
-        const words = text.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+      .then((r) => r.text())
+      .then((text) => {
+        const words = text
+          .split(/\r?\n/)
+          .map((w) => w.trim().toUpperCase())
+          .filter((w) => w.length === 5);
         if (words.length > 0) wordListRef.current = words;
       })
       .catch(() => {});
@@ -70,7 +85,7 @@ const NeonBlitz: React.FC = () => {
 
   const pickWord = () => {
     const list = wordListRef.current;
-    const available = list.filter(w => !usedWordsRef.current.has(w));
+    const available = list.filter((w) => !usedWordsRef.current.has(w));
     const pool = available.length > 0 ? available : list;
     if (available.length === 0) usedWordsRef.current.clear();
     return pool[Math.floor(Math.random() * pool.length)];
@@ -78,7 +93,9 @@ const NeonBlitz: React.FC = () => {
 
   const pickTile = (exclude: number | null): number => {
     let t: number;
-    do { t = Math.floor(Math.random() * GRID_SIZE); } while (t === exclude);
+    do {
+      t = Math.floor(Math.random() * GRID_SIZE);
+    } while (t === exclude);
     return t;
   };
 
@@ -97,7 +114,10 @@ const NeonBlitz: React.FC = () => {
 
     // requestAnimationFrame loop
     const tick = () => {
-      if (!isPlayingRef.current) { clearTimer(); return; }
+      if (!isPlayingRef.current) {
+        clearTimer();
+        return;
+      }
       const elapsed = Date.now() - turnStartRef.current;
       const remaining = maxTimeRef.current - elapsed;
       if (remaining <= 0) {
@@ -151,61 +171,64 @@ const NeonBlitz: React.FC = () => {
     }, 50);
   }, [beginTurn]);
 
-  const handleTileClick = useCallback((id: number) => {
-    if (!isPlayingRef.current) return;
+  const handleTileClick = useCallback(
+    (id: number) => {
+      if (!isPlayingRef.current) return;
 
-    if (id !== activeTileRef.current) {
-      // Yanlış karo
-      isPlayingRef.current = false;
-      clearTimer();
-      setGameState("GAMEOVER");
-      return;
-    }
+      if (id !== activeTileRef.current) {
+        // Yanlış karo
+        isPlayingRef.current = false;
+        clearTimer();
+        setGameState("GAMEOVER");
+        return;
+      }
 
-    // Doğru karo
-    clearTimer(); // Önce mevcut timer'ı durdur
+      // Doğru karo
+      clearTimer(); // Önce mevcut timer'ı durdur
 
-    const newScore = scoreRef.current + POINTS_PER_LETTER;
-    scoreRef.current = newScore;
-    setScore(newScore);
+      const newScore = scoreRef.current + POINTS_PER_LETTER;
+      scoreRef.current = newScore;
+      setScore(newScore);
 
-    const word = currentWordRef.current;
-    const nextIdx = letterIndexRef.current + 1;
+      const word = currentWordRef.current;
+      const nextIdx = letterIndexRef.current + 1;
 
-    if (nextIdx >= word.length) {
-      // Kelime tamamlandı
-      const bonusScore = newScore + WORD_BONUS;
-      scoreRef.current = bonusScore;
-      setScore(bonusScore);
+      if (nextIdx >= word.length) {
+        // Kelime tamamlandı
+        const bonusScore = newScore + WORD_BONUS;
+        scoreRef.current = bonusScore;
+        setScore(bonusScore);
 
-      const newCompleted = [...completedWordsRef.current, word];
-      completedWordsRef.current = newCompleted;
-      setCompletedWords([...newCompleted]);
+        const newCompleted = [...completedWordsRef.current, word];
+        completedWordsRef.current = newCompleted;
+        setCompletedWords([...newCompleted]);
 
-      levelRef.current += 1;
-      setLevel(levelRef.current);
-      maxTimeRef.current = Math.max(500, maxTimeRef.current * 0.9);
+        levelRef.current += 1;
+        setLevel(levelRef.current);
+        maxTimeRef.current = Math.max(500, maxTimeRef.current * 0.9);
 
-      setBonusVisible(true);
-      setTimeout(() => setBonusVisible(false), 900);
+        setBonusVisible(true);
+        setTimeout(() => setBonusVisible(false), 900);
 
-      // Yeni kelime
-      const newWord = pickWord();
-      usedWordsRef.current.add(newWord);
-      currentWordRef.current = newWord;
-      letterIndexRef.current = 0;
-      setCurrentWord(newWord);
-      setLetterIndex(0);
-      setThemeColor(generateColor());
-    } else {
-      // Sonraki harf
-      letterIndexRef.current = nextIdx;
-      setLetterIndex(nextIdx);
-    }
+        // Yeni kelime
+        const newWord = pickWord();
+        usedWordsRef.current.add(newWord);
+        currentWordRef.current = newWord;
+        letterIndexRef.current = 0;
+        setCurrentWord(newWord);
+        setLetterIndex(0);
+        setThemeColor(generateColor());
+      } else {
+        // Sonraki harf
+        letterIndexRef.current = nextIdx;
+        setLetterIndex(nextIdx);
+      }
 
-    // Her durumda yeni tur başlat
-    beginTurn();
-  }, [beginTurn]);
+      // Her durumda yeni tur başlat
+      beginTurn();
+    },
+    [beginTurn],
+  );
 
   const returnToMenu = () => {
     clearTimer();
@@ -213,7 +236,13 @@ const NeonBlitz: React.FC = () => {
     setGameState("MENU");
   };
 
-  useEffect(() => () => { clearTimer(); isPlayingRef.current = false; }, []);
+  useEffect(
+    () => () => {
+      clearTimer();
+      isPlayingRef.current = false;
+    },
+    [],
+  );
 
   // ─── RENDER ─────────────────────────────────────────────────────
 
@@ -221,11 +250,18 @@ const NeonBlitz: React.FC = () => {
     <div style={s.center}>
       <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>DOKUNSANA</h1>
       <p style={s.subtitle}>Kelimeyi Harf Harf Tamamla</p>
-      <button onClick={startGame} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 20px ${themeColor}88`, marginBottom: 14 }}>
+      <button
+        onClick={startGame}
+        style={{ ...s.btn, background: themeColor, boxShadow: `0 0 20px ${themeColor}88`, marginBottom: 14 }}
+      >
         <Play size={20} style={{ marginRight: 8 }} /> OYNA
       </button>
-      <button onClick={() => navigate("/")} style={{ ...s.outlineBtn, borderColor: "rgba(255,255,255,0.25)", color: "#aaa" }}>
-        <LogOut size={17} style={{ marginRight: 8 }} /> Çıkış
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Geri Dön
       </button>
     </div>
   );
@@ -236,7 +272,9 @@ const NeonBlitz: React.FC = () => {
       <div style={s.gameWrap}>
         {/* Header */}
         <div style={s.header}>
-          <button onClick={returnToMenu} style={s.iconBtn}><ArrowLeft size={22} color="#fff" /></button>
+          <button onClick={returnToMenu} style={s.iconBtn}>
+            <ArrowLeft size={22} color="#fff" />
+          </button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: "bold" }}>
             <span style={{ color: themeColor }}>LVL {level}</span>
             <span>{score} puan</span>
@@ -245,27 +283,34 @@ const NeonBlitz: React.FC = () => {
 
         {/* Progress bar — transition YOK, anlık güncelleniyor */}
         <div style={s.progWrap}>
-          <div style={{
-            ...s.progBar,
-            width: `${timeLeft}%`,
-            background: themeColor,
-            boxShadow: `0 0 8px ${themeColor}`,
-            // Transition kasıtlı olarak yok — interval zaten çok sık güncelliyor
-          }} />
+          <div
+            style={{
+              ...s.progBar,
+              width: `${timeLeft}%`,
+              background: themeColor,
+              boxShadow: `0 0 8px ${themeColor}`,
+              // Transition kasıtlı olarak yok — interval zaten çok sık güncelliyor
+            }}
+          />
         </div>
 
         {/* Kelime harfleri */}
         <div style={s.wordRow}>
           {currentWord.split("").map((ch, i) => (
-            <div key={i} style={{
-              ...s.letterBox,
-              background: i < letterIndex ? `${themeColor}25` : i === letterIndex ? themeColor : "rgba(255,255,255,0.04)",
-              color: i === letterIndex ? "#000" : i < letterIndex ? themeColor : "#444",
-              borderColor: i === letterIndex ? themeColor : i < letterIndex ? `${themeColor}55` : "rgba(255,255,255,0.1)",
-              boxShadow: i === letterIndex ? `0 0 12px ${themeColor}` : "none",
-              transform: i === letterIndex ? "scale(1.18)" : "scale(1)",
-              fontWeight: i <= letterIndex ? 900 : 600,
-            }}>
+            <div
+              key={i}
+              style={{
+                ...s.letterBox,
+                background:
+                  i < letterIndex ? `${themeColor}25` : i === letterIndex ? themeColor : "rgba(255,255,255,0.04)",
+                color: i === letterIndex ? "#000" : i < letterIndex ? themeColor : "#444",
+                borderColor:
+                  i === letterIndex ? themeColor : i < letterIndex ? `${themeColor}55` : "rgba(255,255,255,0.1)",
+                boxShadow: i === letterIndex ? `0 0 12px ${themeColor}` : "none",
+                transform: i === letterIndex ? "scale(1.18)" : "scale(1)",
+                fontWeight: i <= letterIndex ? 900 : 600,
+              }}
+            >
               {ch}
             </div>
           ))}
@@ -280,13 +325,17 @@ const NeonBlitz: React.FC = () => {
           {Array.from({ length: GRID_SIZE }).map((_, i) => {
             const isActive = i === activeTile;
             return (
-              <button key={i} onClick={() => handleTileClick(i)} style={{
-                ...s.tile,
-                background: isActive ? themeColor : "rgba(255,255,255,0.04)",
-                borderColor: isActive ? "#fff" : "rgba(255,255,255,0.08)",
-                boxShadow: isActive ? `0 0 22px ${themeColor}, 0 0 44px ${themeColor}44` : "none",
-                transform: isActive ? "scale(1.06)" : "scale(1)",
-              }}>
+              <button
+                key={i}
+                onClick={() => handleTileClick(i)}
+                style={{
+                  ...s.tile,
+                  background: isActive ? themeColor : "rgba(255,255,255,0.04)",
+                  borderColor: isActive ? "#fff" : "rgba(255,255,255,0.08)",
+                  boxShadow: isActive ? `0 0 22px ${themeColor}, 0 0 44px ${themeColor}44` : "none",
+                  transform: isActive ? "scale(1.06)" : "scale(1)",
+                }}
+              >
                 {isActive && (
                   <span style={{ fontSize: "1.9rem", fontWeight: 900, color: "#000", fontFamily: "Georgia, serif" }}>
                     {activeLetter}
@@ -299,12 +348,21 @@ const NeonBlitz: React.FC = () => {
 
         {/* Bonus animasyonu */}
         {bonusVisible && (
-          <div style={{
-            position: "absolute", top: "38%", left: "50%", transform: "translateX(-50%)",
-            color: themeColor, fontSize: "1.7rem", fontWeight: 900,
-            textShadow: `0 0 20px ${themeColor}`, animation: "floatUp 0.9s ease forwards",
-            pointerEvents: "none", zIndex: 100,
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "38%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: themeColor,
+              fontSize: "1.7rem",
+              fontWeight: 900,
+              textShadow: `0 0 20px ${themeColor}`,
+              animation: "floatUp 0.9s ease forwards",
+              pointerEvents: "none",
+              zIndex: 100,
+            }}
+          >
             +{WORD_BONUS} BONUS!
           </div>
         )}
@@ -312,10 +370,15 @@ const NeonBlitz: React.FC = () => {
         {/* Tamamlanan kelimeler */}
         {completedWords.length > 0 && (
           <div style={s.wordListBox}>
-            <div style={s.wordListTitle}><BookOpen size={12} style={{ marginRight: 5 }} />Tamamlananlar</div>
+            <div style={s.wordListTitle}>
+              <BookOpen size={12} style={{ marginRight: 5 }} />
+              Tamamlananlar
+            </div>
             <div style={s.wordTags}>
               {completedWords.map((w, i) => (
-                <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>{w}</span>
+                <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>
+                  {w}
+                </span>
               ))}
             </div>
           </div>
@@ -326,22 +389,33 @@ const NeonBlitz: React.FC = () => {
 
   const renderGameOver = () => (
     <div style={s.center}>
-      <Trophy size={52} color={themeColor} style={{ marginBottom: 14, filter: `drop-shadow(0 0 12px ${themeColor})` }} />
+      <Trophy
+        size={52}
+        color={themeColor}
+        style={{ marginBottom: 14, filter: `drop-shadow(0 0 12px ${themeColor})` }}
+      />
       <h2 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: 8 }}>OYUN BİTTİ</h2>
       <div style={{ fontSize: "2.4rem", fontWeight: 900, marginBottom: 4 }}>
         {score} <span style={{ fontSize: "1rem", color: "#888" }}>puan</span>
       </div>
-      <div style={{ color: "#888", marginBottom: 4 }}>Level: <span style={{ color: themeColor }}>{level}</span></div>
+      <div style={{ color: "#888", marginBottom: 4 }}>
+        Level: <span style={{ color: themeColor }}>{level}</span>
+      </div>
       <div style={{ color: "#888", marginBottom: 20 }}>
         Tamamlanan: <span style={{ color: themeColor }}>{completedWords.length} kelime</span>
       </div>
 
       {completedWords.length > 0 && (
         <div style={{ ...s.wordListBox, marginBottom: 24, maxWidth: 300 }}>
-          <div style={s.wordListTitle}><BookOpen size={12} style={{ marginRight: 5 }} />Kelimeler</div>
+          <div style={s.wordListTitle}>
+            <BookOpen size={12} style={{ marginRight: 5 }} />
+            Kelimeler
+          </div>
           <div style={s.wordTags}>
             {completedWords.map((w, i) => (
-              <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>{w}</span>
+              <span key={i} style={{ ...s.tag, borderColor: `${themeColor}55`, color: themeColor }}>
+                {w}
+              </span>
             ))}
           </div>
         </div>
@@ -370,29 +444,152 @@ const NeonBlitz: React.FC = () => {
 
 const s: { [k: string]: React.CSSProperties } = {
   app: {
-    width: "100%", height: "100vh", backgroundColor: "#0a0a0f", color: "#fff",
-    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    fontFamily: "'Segoe UI', sans-serif", overflow: "hidden", userSelect: "none",
-    position: "absolute", top: 0, left: 0, zIndex: 50,
+    width: "100%",
+    height: "100vh",
+    backgroundColor: "#0a0a0f",
+    color: "#fff",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "'Segoe UI', sans-serif",
+    overflow: "hidden",
+    userSelect: "none",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 50,
   },
-  center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, position: "relative" },
-  gameWrap: { width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 18px", maxWidth: 460, position: "relative", overflowY: "auto" },
-  header: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingTop: 8 },
+  center: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    padding: 24,
+    position: "relative",
+  },
+  gameWrap: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "14px 18px",
+    maxWidth: 460,
+    position: "relative",
+    overflowY: "auto",
+  },
+  header: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingTop: 8,
+  },
   title: { fontSize: "2.7rem", fontWeight: 900, marginBottom: 8, letterSpacing: 3, color: "#fff" },
   subtitle: { fontSize: "0.95rem", color: "#666", marginBottom: 34, letterSpacing: 1 },
-  btn: { padding: "13px 32px", fontSize: "1.05rem", fontWeight: "bold", color: "#000", border: "none", borderRadius: 50, cursor: "pointer", display: "flex", alignItems: "center" },
-  outlineBtn: { padding: "11px 24px", fontSize: "0.9rem", fontWeight: "bold", backgroundColor: "transparent", border: "2px solid", borderRadius: 50, cursor: "pointer", display: "flex", alignItems: "center" },
-  iconBtn: { background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.08)" },
-  progWrap: { width: "100%", height: 10, backgroundColor: "#1e1e2e", border: "1px solid #2a2a3a", borderRadius: 10, marginBottom: 18, overflow: "hidden" },
+  btn: {
+    padding: "13px 32px",
+    fontSize: "1.05rem",
+    fontWeight: "bold",
+    color: "#000",
+    border: "none",
+    borderRadius: 50,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+  },
+  outlineBtn: {
+    padding: "11px 24px",
+    fontSize: "0.9rem",
+    fontWeight: "bold",
+    backgroundColor: "transparent",
+    border: "2px solid",
+    borderRadius: 50,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+  },
+  iconBtn: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: 8,
+    borderRadius: "50%",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  progWrap: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#1e1e2e",
+    border: "1px solid #2a2a3a",
+    borderRadius: 10,
+    marginBottom: 18,
+    overflow: "hidden",
+  },
   progBar: { height: "100%", borderRadius: 10 },
   wordRow: { display: "flex", gap: 7, marginBottom: 10 },
-  letterBox: { width: 42, height: 46, borderRadius: 9, border: "2px solid", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", transition: "all 0.15s", fontFamily: "Georgia, serif" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 11, width: "100%", maxWidth: 330, marginBottom: 14 },
-  tile: { borderRadius: 13, border: "2px solid", cursor: "pointer", transition: "all 0.1s", outline: "none", WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "1/1", width: "100%" },
-  wordListBox: { width: "100%", maxWidth: 330, backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "9px 12px" },
-  wordListTitle: { fontSize: "0.7rem", color: "#555", display: "flex", alignItems: "center", marginBottom: 7, letterSpacing: 1, textTransform: "uppercase" as const },
+  letterBox: {
+    width: 42,
+    height: 46,
+    borderRadius: 9,
+    border: "2px solid",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "1.2rem",
+    transition: "all 0.15s",
+    fontFamily: "Georgia, serif",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 11,
+    width: "100%",
+    maxWidth: 330,
+    marginBottom: 14,
+  },
+  tile: {
+    borderRadius: 13,
+    border: "2px solid",
+    cursor: "pointer",
+    transition: "all 0.1s",
+    outline: "none",
+    WebkitTapHighlightColor: "transparent",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    aspectRatio: "1/1",
+    width: "100%",
+  },
+  wordListBox: {
+    width: "100%",
+    maxWidth: 330,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.07)",
+    borderRadius: 10,
+    padding: "9px 12px",
+  },
+  wordListTitle: {
+    fontSize: "0.7rem",
+    color: "#555",
+    display: "flex",
+    alignItems: "center",
+    marginBottom: 7,
+    letterSpacing: 1,
+    textTransform: "uppercase" as const,
+  },
   wordTags: { display: "flex", flexWrap: "wrap" as const, gap: 5 },
-  tag: { fontSize: "0.75rem", fontWeight: "bold", padding: "2px 9px", borderRadius: 20, border: "1px solid", letterSpacing: 1 },
+  tag: {
+    fontSize: "0.75rem",
+    fontWeight: "bold",
+    padding: "2px 9px",
+    borderRadius: 20,
+    border: "1px solid",
+    letterSpacing: 1,
+  },
 };
 
 export default NeonBlitz;
