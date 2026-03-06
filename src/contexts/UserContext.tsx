@@ -5,6 +5,7 @@ import { supabase, setGlobalAccessToken, getGlobalAccessToken, loadSessionFromSt
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 import { Capacitor } from "@capacitor/core";
+import { matchmakingMode } from "@/utils/matchmakingMode";
 
 interface OnlineUser {
   id: string;
@@ -873,28 +874,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  // User presence management
+  // User presence management (OPTIMIZE: heartbeat useActivityTracker'a bırakıldı, polling 5s → 30s)
   useEffect(() => {
     if (!user?.id) return;
 
-    const updatePresence = async () => {
-      try {
-        await supabase.from("user_presence" as any).upsert({
-          user_id: user.id,
-          is_online: true,
-          last_seen: new Date().toISOString(),
-        });
-      } catch (error) {
-        console.error("Error updating presence:", error);
-      }
-    };
+    // 🔥 updatePresence KALDIRILDI — useActivityTracker zaten user_presence + profiles.last_seen yazıyor
+    // Burada sadece online kullanıcı listesini çekiyoruz
 
     const fetchOnlineUsers = async () => {
+      // 🚀 Matchmaking aktifken atla
+      if (matchmakingMode.isActive()) return;
+
       try {
         const { data }: any = await supabase
           .from("user_presence" as any)
           .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
-          .gte("last_seen", new Date(Date.now() - 45 * 1000).toISOString());
+          .gte("last_seen", new Date(Date.now() - 60 * 1000).toISOString());
 
         if (data) {
           const newUsers = data.map((item: any) => ({
@@ -917,16 +912,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const handleBeforeUnload = () => setUserOffline();
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        updatePresence();
         fetchOnlineUsers();
       }
     };
 
-    updatePresence();
     fetchOnlineUsers();
 
-    const heartbeatInterval = setInterval(updatePresence, 30000);
-    const pollingInterval = setInterval(fetchOnlineUsers, 5000);
+    // 🔥 OPTIMIZE: 5s → 30s polling (eskisi çok agresifti)
+    const pollingInterval = setInterval(fetchOnlineUsers, 30000);
 
     const channel = supabase
       .channel("presence_changes")
@@ -940,7 +933,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(heartbeatInterval);
       clearInterval(pollingInterval);
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
       window.removeEventListener("beforeunload", handleBeforeUnload);
