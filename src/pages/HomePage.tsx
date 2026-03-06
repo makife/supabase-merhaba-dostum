@@ -963,17 +963,32 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className="w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border border-red-500/30 shadow-lg shadow-red-500/10"
+              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border shadow-lg ${
+                wheelSpinsLeft === 0
+                  ? "border-red-400/40 opacity-70 shadow-none"
+                  : "border-red-500/30 shadow-red-500/10"
+              }`}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 opacity-90 group-hover:opacity-100 transition-opacity rounded-2xl" />
+              <div className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
+                wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
+              } transition-opacity rounded-2xl`} />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
-                🎡
+                {wheelSpinsLeft === 0 ? <Check className="w-6 h-6 text-red-300" /> : "🎡"}
               </div>
               <div className="relative z-10 flex-1">
-                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">Şansını Dene!</h3>
-                <p className="text-[10px] text-white/70 font-medium">Çarkı çevir, ödüller kazan!</p>
+                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">
+                  {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
+                </h3>
+                <p className="text-[10px] text-white/70 font-medium">
+                  {wheelSpinsLeft === 0 ? "Yarın tekrar gel!" : "Çarkı çevir, ödüller kazan!"}
+                </p>
               </div>
+              {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
+                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 text-white border-white/30">
+                  x{wheelSpinsLeft} hak
+                </Badge>
+              )}
             </div>
           </div>
 
