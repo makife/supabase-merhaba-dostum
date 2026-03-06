@@ -72,6 +72,12 @@ const MarketPage = () => {
   // Onay Penceresi State'leri
   const [itemToBuy, setItemToBuy] = useState<StationeryItem | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [quantityToBuy, setQuantityToBuy] = useState(1);
+
+  // Joker adet seçici state'leri
+  const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const QUANTITY_OPTIONS = [1, 3, 5, 10];
 
   const isNativePlatform = Capacitor.isNativePlatform();
 
