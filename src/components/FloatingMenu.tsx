@@ -64,6 +64,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { profile } = useUser();
   const { playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
