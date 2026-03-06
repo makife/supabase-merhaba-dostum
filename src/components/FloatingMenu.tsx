@@ -105,9 +105,10 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
   const handleChatOpen = async () => {
     playSound("buttonClick");
-    const isBanned = await isUserBanned(user.id);
+    // 🔥 OPTIMIZE: Artık DB sorgusu yok, cache'den kontrol
+    const isBanned = isUserBannedFromProfile(profile);
     if (isBanned) {
-      const timeLeft = await getBanTimeLeft(user.id);
+      const timeLeft = getBanTimeLeftFromProfile(profile);
       toast.error(`Sohbet yasağınız bulunuyor. 🚫\nKalan süre: ${timeLeft}\nYasak sebebi: Yasaklı kelime kullanımı`, {
         duration: 7000,
         icon: "⏰",
