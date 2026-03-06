@@ -265,11 +265,13 @@ const MarketPage = () => {
   };
 
   // 1. DÜĞMEYE BASINCA: Kontrol et ve Onay Penceresini Aç
-  const handleSpendInk = (item: StationeryItem) => {
+  const handleSpendInk = (item: StationeryItem, quantity = 1) => {
     if (!user || !profile) return;
     playSound("buttonClick");
 
-    if ((profile.ink_count || 0) < item.priceInInk) {
+    const totalPrice = item.priceInInk * quantity;
+
+    if ((profile.ink_count || 0) < totalPrice) {
       toast({
         title: "Yetersiz Mürekkep 💧",
         description: "Yeterli mürekkebiniz yok. Mürekkep Dükkanına göz atın!",
@@ -279,9 +281,17 @@ const MarketPage = () => {
       return;
     }
 
-    // Onay penceresi için veriyi hazırla ve aç
-    setItemToBuy(item);
+    // Çoklu alım için item'ı kopyala ve fiyat/değeri çarp
+    const adjustedItem: StationeryItem = {
+      ...item,
+      priceInInk: totalPrice,
+      value: item.value * quantity,
+    };
+
+    setQuantityToBuy(quantity);
+    setItemToBuy(adjustedItem);
     setShowConfirmation(true);
+    setOpenDropdown(null);
   };
 
   // 2. ONAY VERİLİRSE: Asıl satın alma işlemi
