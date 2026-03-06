@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { App } from "@capacitor/app";
+import { matchmakingMode } from "@/utils/matchmakingMode";
 
 /**
  * Push bildirimi alındığında heartbeat'i geçici olarak bastırmak için
@@ -28,6 +29,11 @@ export function useActivityTracker() {
       // Push suppression aktifse güncelleme yapma
       if (isPushSuppressed()) {
         console.log("⏭️ ActivityTracker: Push suppression aktif, heartbeat atlanıyor");
+        return;
+      }
+
+      // 🚀 Matchmaking aktifken heartbeat atla
+      if (matchmakingMode.isActive()) {
         return;
       }
 
