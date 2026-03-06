@@ -359,7 +359,7 @@ const MarketPage = () => {
           .eq("id", user.id);
       }
 
-      await refreshProfile();
+      await refreshProfile(true);
 
       // Başarı sesi çal (Varsa 'success' yoksa 'buttonClick')
       // Eğer useSounds hook'unda 'success' tanımlı değilse hata verebilir,
