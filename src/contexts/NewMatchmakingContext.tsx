@@ -6,6 +6,7 @@ import { matchBanlist } from "@/utils/matchBanlist";
 import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 import { getGlobalServerNow } from "./ServerTimeContext";
+import { matchmakingMode } from "@/utils/matchmakingMode";
 
 interface MatchmakingRoom {
   id: string;
@@ -120,6 +121,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setSearchTimeout(false);
     setCurrentGameType("timed");
 
+    // 🚀 Arka plan polling'lerini devam ettir
+    matchmakingMode.deactivate();
+
     console.log("✅ Matchmaking tamamen temizlendi");
   };
 
@@ -132,6 +136,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
+
+      // 🚀 Arka plan polling'lerini duraklat
+      matchmakingMode.activate();
 
       // Store current game type globally for App.tsx callback
       (window as any).__currentMatchmakingType = gameType;
