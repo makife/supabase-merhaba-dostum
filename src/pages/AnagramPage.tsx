@@ -190,34 +190,34 @@ const AnagramPage = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-8">
+      <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {gameState === "ready" && (
-          <div className="flex flex-col items-center justify-center gap-6 pt-8">
-            <div className="text-6xl">🔤</div>
-            <div className="text-center">
+          <div className="flex flex-col items-center gap-5 pt-6 flex-1 min-h-0">
+            <div className="text-6xl shrink-0">🔤</div>
+            <div className="text-center shrink-0">
               <h2 className="text-xl font-bold text-white mb-2">Anagram Challenge</h2>
               <p className="text-sm text-slate-400 max-w-xs">5 seviye karışık harf! Doğru kelimeyi bul.</p>
             </div>
-            <div className="flex flex-col gap-1.5 text-xs text-slate-500">
+            <div className="flex flex-col gap-1.5 text-xs text-slate-500 shrink-0">
               {LEVELS.map((l, i) => (
                 <span key={i}>Seviye {i + 1}: {l.wordLen} harf — {l.points} puan — {l.timeLimit}s</span>
               ))}
             </div>
 
             {hasPlayedToday ? (
-              <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
+              <div className="shrink-0 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
                 <Lock className="w-4 h-4 text-slate-500" />
                 <span className="text-sm text-slate-400">Bugün oynadın!</span>
                 <span className="text-sm font-bold text-violet-400">{todayScore} puan</span>
               </div>
             ) : (
-              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-violet-500/30">
+              <button onClick={startGame} className="shrink-0 px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-violet-500/30">
                 Başla! 🚀
               </button>
             )}
 
-            <div className="w-full max-w-sm mt-2">
-              <ChallengeLeaderboard leaderboard={leaderboard} />
+            <div className="w-full max-w-sm mt-2 flex-1 min-h-0 flex flex-col">
+              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
           </div>
         )}
@@ -277,15 +277,15 @@ const AnagramPage = () => {
         )}
 
         {gameState === "finished" && (
-          <div className="flex flex-col items-center justify-center gap-6 pt-8">
-            <div className="text-6xl">{correctCount >= 4 ? "🏆" : correctCount >= 2 ? "🎉" : "💪"}</div>
-            <div className="text-center">
+          <div className="flex flex-col items-center gap-5 pt-6 flex-1 min-h-0">
+            <div className="text-6xl shrink-0">{correctCount >= 4 ? "🏆" : correctCount >= 2 ? "🎉" : "💪"}</div>
+            <div className="text-center shrink-0">
               <h2 className="text-2xl font-black text-white mb-1">Bitti!</h2>
               <p className="text-4xl font-black text-violet-400">{score} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{correctCount}/{LEVELS.length} doğru</p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs shrink-0">
               {results.map((r, i) => (
                 <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                   <div className="flex items-center gap-2">
@@ -299,11 +299,11 @@ const AnagramPage = () => {
               ))}
             </div>
 
-            <div className="w-full max-w-sm">
-              <ChallengeLeaderboard leaderboard={leaderboard} />
+            <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
+              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
 
-            <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+            <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
               Ana Sayfa
             </button>
           </div>

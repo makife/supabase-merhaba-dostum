@@ -167,17 +167,17 @@ const WordHuntPage = () => {
       </div>
 
       {/* Game Content */}
-      <div className="flex-1 overflow-y-auto px-5 pb-8">
+      <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {gameState === "ready" && (
-          <div className="flex flex-col items-center justify-center gap-6 pt-8">
-            <div className="text-6xl">🔍</div>
-            <div className="text-center">
+          <div className="flex flex-col items-center gap-5 pt-6 flex-1 min-h-0">
+            <div className="text-6xl shrink-0">🔍</div>
+            <div className="text-center shrink-0">
               <h2 className="text-xl font-bold text-white mb-2">Kelime Avı</h2>
               <p className="text-sm text-slate-400 max-w-xs">
                 Verilen harflerden 2 dakika içinde mümkün olduğunca çok kelime bul!
               </p>
             </div>
-            <div className="flex flex-col gap-2 text-xs text-slate-500">
+            <div className="flex flex-col gap-2 text-xs text-slate-500 shrink-0">
               <span>• 3 harf = 10 puan</span>
               <span>• 4 harf = 20 puan</span>
               <span>• 5 harf = 35 puan</span>
@@ -185,7 +185,7 @@ const WordHuntPage = () => {
             </div>
 
             {hasPlayedToday ? (
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-3 shrink-0">
                 <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
                   <Lock className="w-4 h-4 text-slate-500" />
                   <span className="text-sm text-slate-400">Bugün oynadın!</span>
@@ -193,14 +193,14 @@ const WordHuntPage = () => {
                 </div>
               </div>
             ) : (
-              <button onClick={startGame} className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-emerald-500/30">
+              <button onClick={startGame} className="shrink-0 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform shadow-lg shadow-emerald-500/30">
                 Başla! 🚀
               </button>
             )}
 
             {/* Leaderboard */}
-            <div className="w-full max-w-sm mt-2">
-              <ChallengeLeaderboard leaderboard={leaderboard} />
+            <div className="w-full max-w-sm mt-2 flex-1 min-h-0 flex flex-col">
+              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
           </div>
         )}
@@ -262,16 +262,16 @@ const WordHuntPage = () => {
         )}
 
         {gameState === "finished" && (
-          <div className="flex flex-col items-center justify-center gap-6 pt-8">
-            <div className="text-6xl">🏆</div>
-            <div className="text-center">
+          <div className="flex flex-col items-center gap-5 pt-6 flex-1 min-h-0">
+            <div className="text-6xl shrink-0">🏆</div>
+            <div className="text-center shrink-0">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
               <p className="text-4xl font-black text-emerald-400">{score.toFixed(2)} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{foundWords.length} kelime buldun</p>
             </div>
 
             {foundWords.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs max-h-24 overflow-y-auto shrink-0">
                 <div className="flex flex-wrap gap-2 justify-center">
                   {foundWords.map((word, i) => (
                     <span key={i} className="px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-[10px] font-bold">
@@ -283,11 +283,11 @@ const WordHuntPage = () => {
             )}
 
             {/* Leaderboard */}
-            <div className="w-full max-w-sm">
-              <ChallengeLeaderboard leaderboard={leaderboard} />
+            <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
+              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
 
-            <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+            <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
               Ana Sayfa
             </button>
           </div>
