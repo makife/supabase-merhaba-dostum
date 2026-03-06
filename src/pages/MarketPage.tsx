@@ -13,7 +13,7 @@ import { usePageResync } from "@/hooks/useGlobalResync";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
-import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw } from "lucide-react";
+import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, ChevronDown } from "lucide-react";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import {
   AlertDialog,
