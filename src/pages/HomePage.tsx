@@ -165,12 +165,27 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>({ word_hunt: false, anagram: false, word_chain: false });
+  const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
+    try {
+      const cached = sessionStorage.getItem("challengeStatus");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed._date === new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" })) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return { word_hunt: false, anagram: false, word_chain: false };
+  });
 
   // Fetch daily challenge completion status
   useEffect(() => {
     if (user?.id) {
-      getDailyChallengeStatus(user.id).then(setChallengeStatus);
+      getDailyChallengeStatus(user.id).then((status) => {
+        const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
+        sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
+        setChallengeStatus(status);
+      });
     }
   }, [user?.id]);
 
