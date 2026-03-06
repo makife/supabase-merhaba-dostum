@@ -234,7 +234,7 @@ const MarketPage = () => {
 
       if (error) throw error;
 
-      await refreshProfile();
+      await refreshProfile(true);
       playSound("buttonClick");
       toast({
         title: "Satın Alma Başarılı! 💧",
