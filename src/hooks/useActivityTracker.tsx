@@ -52,6 +52,19 @@ export function useActivityTracker() {
       }
     };
 
+    // 🔥 Arka plana geçince offline yap (push spam önleme)
+    const setOffline = async () => {
+      try {
+        await supabase
+          .from("user_presence")
+          .update({ is_online: false })
+          .eq("user_id", user.id);
+        console.log("😴 ActivityTracker: Kullanıcı offline yapıldı (arka plan)");
+      } catch (error) {
+        console.error("Error setting offline:", error);
+      }
+    };
+
     // İlk güncelleme - sadece gerçekten foreground'daysa
     if (document.visibilityState === "visible" && !isPushSuppressed()) {
       updateLastSeen();
@@ -66,6 +79,16 @@ export function useActivityTracker() {
       }
     }, 45000);
 
+    // 🔥 Visibility change: arka plana geçince offline, öne gelince online
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        setOffline();
+      } else if (document.visibilityState === "visible" && !isPushSuppressed()) {
+        updateLastSeen();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     // Capacitor App state listener
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
@@ -77,11 +100,15 @@ export function useActivityTracker() {
             console.log(`⏭️ ActivityTracker: Push wake algılandı (visible=${isVisible}, suppressed=${isPushSuppressed()}), online güncelleme atlanıyor`);
           }
         }, 1500);
+      } else {
+        // Uygulama arka plana geçince offline yap
+        setOffline();
       }
     });
 
     return () => {
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       appStateListenerPromise.then((l) => l.remove());
     };
   }, [user]);
