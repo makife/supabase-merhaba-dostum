@@ -72,8 +72,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
 
   useEffect(() => {
     const tick = () => {
-      const endDate =
-        tab === "all-time" ? getSeasonEnd() : tab === "weekly" ? getWeekEnd() : getMonthEnd();
+      const endDate = tab === "all-time" ? getSeasonEnd() : tab === "weekly" ? getWeekEnd() : getMonthEnd();
       const ms = endDate.getTime() - Date.now();
       setRemaining(formatCountdown(ms));
     };
@@ -86,11 +85,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
   const { prizes } = config;
 
   const borderColor =
-    tab === "all-time"
-      ? "border-red-500/30"
-      : tab === "weekly"
-        ? "border-blue-500/30"
-        : "border-green-500/30";
+    tab === "all-time" ? "border-red-500/30" : tab === "weekly" ? "border-blue-500/30" : "border-green-500/30";
 
   const bgGlow =
     tab === "all-time"
@@ -99,12 +94,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
         ? "from-blue-500/10 to-cyan-500/10"
         : "from-green-500/10 to-emerald-500/10";
 
-  const timerColor =
-    tab === "all-time"
-      ? "text-red-400"
-      : tab === "weekly"
-        ? "text-blue-400"
-        : "text-green-400";
+  const timerColor = tab === "all-time" ? "text-red-400" : tab === "weekly" ? "text-blue-400" : "text-green-400";
 
   return (
     <div
@@ -116,11 +106,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
       <div className="flex items-center gap-3 relative z-10">
         {/* Gift Image */}
         <div className="flex-shrink-0">
-          <img
-            src={config.image}
-            alt="Hediye"
-            className="w-14 h-14 object-contain drop-shadow-lg"
-          />
+          <img src={config.image} alt="Hediye" className="w-14 h-14 object-contain drop-shadow-lg" />
         </div>
 
         {/* Prize Info */}
@@ -128,9 +114,7 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
           {/* Countdown */}
           <div className="flex items-center gap-1.5 mb-1.5">
             <Clock className={`w-3.5 h-3.5 ${timerColor}`} />
-            <span className={`text-xs font-bold ${timerColor}`}>
-              Hediye için: {remaining}
-            </span>
+            <span className={`text-xs font-bold ${timerColor}`}>Ödül için: {remaining}</span>
           </div>
 
           {/* Prize items */}
@@ -149,15 +133,12 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
             </span>
             {prizes.oyunHakki && (
               <span className="flex items-center gap-1">
-                <Gift className="w-3.5 h-3.5 text-amber-400" />
-                +{prizes.oyunHakki} Oyun Sayfası
+                <Gift className="w-3.5 h-3.5 text-amber-400" />+{prizes.oyunHakki} Oyun Sayfası
               </span>
             )}
           </div>
 
-          <p className="text-[10px] text-slate-500 mt-1">
-            🏆 1. sıradaki oyuncuya verilecek
-          </p>
+          <p className="text-[10px] text-slate-500 mt-1">🏆 1. sıradaki oyuncuya verilecek</p>
         </div>
       </div>
     </div>
