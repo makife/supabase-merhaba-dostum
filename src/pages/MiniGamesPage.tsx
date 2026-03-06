@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { useMemoryGame } from "@/hooks/useMemoryGame";
-import { FloatingMenu } from "@/components/FloatingMenu";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
@@ -74,9 +73,6 @@ const MiniGamesPage = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <FloatingMenu onOpenChange={setIsMenuOpen} />
-      </div>
     </div>
   );
 };
