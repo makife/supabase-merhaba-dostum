@@ -882,7 +882,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       {onlineUsers.length > 0 && (
         <div className="p-4 bg-white/5 border-b border-white/10">
           <div className="flex items-center space-x-2 mb-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="w-3.5 h-3.5 bg-green-500 rounded-full"></div>
             <span className="text-sm font-medium text-green-400">Çevrimiçi</span>
           </div>
           <div className="space-y-2">
@@ -978,7 +978,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 </div>
                 <div className="flex items-center space-x-2">
                   {isUserOnline(targetUser.id) && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                   )}
                   {isUserBlocked(targetUser.id) ? (
                     <Button
@@ -1142,7 +1142,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                     {/* Online indicator - sadece gerçek kullanıcılar için */}
                     {message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full" title="Çevrimiçi"></div>
                     )}
 
                     <span className="text-xs text-gray-400">{formatTime(message.created_at)}</span>
