@@ -66,7 +66,7 @@ import { OnboardingPermissions } from "@/components/OnboardingPermissions";
 import { WelcomeIntroDialog } from "@/components/WelcomeIntroDialog";
 import { BackButtonDialog } from "@/hooks/useBackButton";
 import { initNativeAudio, isNativePlatform } from "@/services/nativeAudioService";
-import { connectionHealthMonitor } from "@/utils/connectionHealthMonitor";
+// connectionHealthMonitor kaldırıldı — supabaseConnectionManager yeterli
 import { startConnectionMonitor, stopConnectionMonitor } from "@/utils/supabaseConnectionManager";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { initEventHub } from "@/utils/foregroundEventHub";

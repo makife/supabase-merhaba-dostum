@@ -171,47 +171,19 @@ export const initAppStateListener = () => {
 export function useAppForegroundState() {
   const [isInForeground, setIsInForeground] = useState(true);
   const isNative = Capacitor.isNativePlatform();
-  const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    isMountedRef.current = true;
-
     const handleStateChange = (inForeground: boolean) => {
-      if (!isMountedRef.current) return;
       setIsInForeground(inForeground);
-
-      if (inForeground) {
-        setTimeout(() => updateLastSeen(), 0);
-      }
     };
 
     // Subscribe to global state changes
     const unsubscribe = subscribeToForegroundState(handleStateChange);
 
-    // Start periodic last_seen updates (every 30 seconds when in foreground)
-    const startLastSeenUpdates = () => {
-      if (lastSeenIntervalRef.current) {
-        clearInterval(lastSeenIntervalRef.current);
-      }
-
-      updateLastSeen();
-
-      lastSeenIntervalRef.current = setInterval(() => {
-        if (getIsAppInForeground() && isMountedRef.current) {
-          updateLastSeen();
-        }
-      }, 30000);
-    };
-
-    startLastSeenUpdates();
+    // ✅ Polling kaldırıldı - last_seen artık sadece useActivityTracker tarafından yönetiliyor
 
     return () => {
-      isMountedRef.current = false;
       unsubscribe();
-      if (lastSeenIntervalRef.current) {
-        clearInterval(lastSeenIntervalRef.current);
-      }
     };
   }, [isNative]);
 
