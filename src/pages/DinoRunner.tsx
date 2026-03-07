@@ -454,16 +454,6 @@ const DinoRunner = () => {
           onPointerDown={handleJump}
           style={{ background: bgGradient }} // Inline style ile dinamik renk
         >
-          {renderState.clouds.map((c) => (
-            <div
-              key={c.id}
-              className="cloud"
-              style={{ transform: `translate3d(${c.x}px, ${-c.y}px, 0)` }}
-            >
-              ☁️
-            </div>
-          ))}
-
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
           {renderState.letters.map((l) => (
@@ -483,17 +473,13 @@ const DinoRunner = () => {
           {renderState.obstacles.map((o) => (
             <div
               key={o.id}
-              className={`obstacle ${o.type}`}
+              className={`obstacle obs-${o.type}`}
               style={{
                 width: o.width,
                 height: o.height,
                 transform: `translate3d(${o.x}px, ${-GROUND_HEIGHT}px, 0)`,
               }}
-            >
-              {o.type === "short" && "🌵"}
-              {o.type === "tall" && "🌲"}
-              {o.type === "box" && "🪨"}
-            </div>
+            />
           ))}
 
           <div
@@ -504,10 +490,10 @@ const DinoRunner = () => {
               transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ☢️
+            ⚛
           </div>
 
-          <div className="ground" style={{ backgroundPosition: `${-renderState.groundOffset}px 0`, height: GROUND_HEIGHT }}></div>
+          <div className="ground" />
 
           <div className="hud">
             {wordNotification ? (
