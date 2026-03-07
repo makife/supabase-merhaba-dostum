@@ -467,7 +467,11 @@ const DinoRunner = () => {
           style={{ background: bgGradient }} // Inline style ile dinamik renk
         >
           {renderState.clouds.map((c) => (
-            <div key={c.id} className="cloud" style={{ left: c.x, bottom: c.y }}>
+            <div
+              key={c.id}
+              className="cloud"
+              style={{ transform: `translate3d(${c.x}px, ${-c.y}px, 0)` }}
+            >
               ☁️
             </div>
           ))}
@@ -478,7 +482,11 @@ const DinoRunner = () => {
             <div
               key={l.id}
               className="letter-box"
-              style={{ left: l.x, bottom: l.y + GROUND_HEIGHT, width: l.width, height: l.height }}
+              style={{
+                width: l.width,
+                height: l.height,
+                transform: `translate3d(${l.x}px, ${-(l.y + GROUND_HEIGHT)}px, 0)`,
+              }}
             >
               <div className="letter-inner">{l.char}</div>
             </div>
@@ -488,7 +496,11 @@ const DinoRunner = () => {
             <div
               key={o.id}
               className={`obstacle ${o.type}`}
-              style={{ left: o.x, bottom: GROUND_HEIGHT, width: o.width, height: o.height }}
+              style={{
+                width: o.width,
+                height: o.height,
+                transform: `translate3d(${o.x}px, ${-GROUND_HEIGHT}px, 0)`,
+              }}
             >
               {o.type === "short" && "🌵"}
               {o.type === "tall" && "🌲"}
@@ -499,11 +511,9 @@ const DinoRunner = () => {
           <div
             className="reactor"
             style={{
-              left: DINO_LEFT,
-              bottom: renderState.dinoY + GROUND_HEIGHT,
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
-              transform: `rotate(${renderState.dinoRotation}deg)`,
+              transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
             ☢️
