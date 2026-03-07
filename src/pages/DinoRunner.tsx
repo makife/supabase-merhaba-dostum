@@ -39,13 +39,15 @@ const DinoRunner = () => {
   const [level, setLevel] = useState(1);
   const [bgGradient, setBgGradient] = useState("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
-  // Fiziksel Render State'leri
-  const [dinoY, setDinoY] = useState(0);
-  const [dinoRotation, setDinoRotation] = useState(0);
-  const [obstacles, setObstacles] = useState([]);
-  const [letters, setLetters] = useState([]);
-  const [clouds, setClouds] = useState([]);
-  const [groundOffset, setGroundOffset] = useState(0);
+  // Fiziksel Render State'leri - TEK BATCH STATE
+  const [renderState, setRenderState] = useState({
+    dinoY: 0,
+    dinoRotation: 0,
+    obstacles: [] as any[],
+    letters: [] as any[],
+    clouds: [] as any[],
+    groundOffset: 0,
+  });
 
   // --- KELİME VE FEEDBACK SİSTEMİ ---
   const [wordList, setWordList] = useState<string[]>([]);
