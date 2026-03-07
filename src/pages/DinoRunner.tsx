@@ -425,6 +425,9 @@ const DinoRunner = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameState]);
 
+  const liveScore = Math.floor(scoreRef.current / 5) + wordBonusRef.current;
+  const shownScore = gameState === "gameOver" ? score : liveScore;
+
   return (
     <div className="page-wrapper">
       <div className="game-container">
