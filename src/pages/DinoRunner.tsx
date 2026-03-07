@@ -385,19 +385,7 @@ const DinoRunner = () => {
       pickNewWord();
     }
 
-    // Bulutlar (in-place update, düşük GC)
-    for (let i = cloudsRef.current.length - 1; i >= 0; i--) {
-      cloudsRef.current[i].x -= cloudsRef.current[i].speed;
-      if (cloudsRef.current[i].x <= -100) cloudsRef.current.splice(i, 1);
-    }
-    if (Math.random() < 0.02) {
-      cloudsRef.current.push({
-        id: Math.random(),
-        x: GAME_WIDTH,
-        y: 150 + Math.random() * 100,
-        speed: 0.5 + Math.random(),
-      });
-    }
+    // Bulutlar kaldırıldı - gereksiz DOM + paint yükü
 
     // --- HER FRAME RENDER (60FPS) ---
     setRenderState({
@@ -405,7 +393,7 @@ const DinoRunner = () => {
       dinoRotation: dinoRotationRef.current,
       obstacles: obstaclesRef.current,
       letters: activeLetters,
-      clouds: cloudsRef.current,
+      clouds: [],
       groundOffset: groundOffsetRef.current,
     });
 
