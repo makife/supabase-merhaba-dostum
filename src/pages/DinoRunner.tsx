@@ -496,7 +496,7 @@ const DinoRunner = () => {
               transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ⚛
+            ☢️
           </div>
 
           <div className="ground" />
