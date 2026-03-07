@@ -199,8 +199,7 @@ const DinoRunner = () => {
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
-    setObstacles([]);
-    setLetters([]);
+    setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0 });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
