@@ -253,10 +253,7 @@ const DinoRunner = () => {
     speedRef.current += 0.0003;
     scoreRef.current += 1;
 
-    setDinoY(dinoYRef.current);
-    setDinoRotation(dinoRotationRef.current);
-    setScore(Math.floor(scoreRef.current / 5));
-    setGroundOffset((prev) => (prev + speedRef.current) % 40);
+    const groundOffsetVal = (renderState.groundOffset + speedRef.current) % 40;
 
     const dinoRect = {
       x: DINO_LEFT + 5,
@@ -307,7 +304,7 @@ const DinoRunner = () => {
         return;
       }
     }
-    setObstacles([...obstaclesRef.current]);
+    // obstacles updated via ref, will batch render below
 
     // Harfler
     lettersRef.current = lettersRef.current
@@ -353,7 +350,7 @@ const DinoRunner = () => {
     });
 
     const activeLetters = lettersRef.current.filter((l) => !l.collected);
-    setLetters(activeLetters);
+    // letters updated via ref, will batch render below
 
     // Kelime Bitiş Kontrolü
     if (currentWord && spawnIndexRef.current >= currentWord.length && activeLetters.length === 0) {
@@ -395,7 +392,18 @@ const DinoRunner = () => {
         y: 150 + Math.random() * 100,
         speed: 0.5 + Math.random(),
       });
-    setClouds([...cloudsRef.current]);
+    // clouds updated via ref, will batch render below
+
+    // --- TEK BATCH RENDER ---
+    setScore(Math.floor(scoreRef.current / 5));
+    setRenderState({
+      dinoY: dinoYRef.current,
+      dinoRotation: dinoRotationRef.current,
+      obstacles: [...obstaclesRef.current],
+      letters: lettersRef.current.filter((l) => !l.collected),
+      clouds: [...cloudsRef.current],
+      groundOffset: groundOffsetVal,
+    });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
