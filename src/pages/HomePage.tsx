@@ -191,7 +191,7 @@ const HomePage = () => {
         }
       }
     } catch {}
-    return { word_hunt: false, anagram: false, word_chain: false };
+    return { word_hunt: false, anagram: false, word_chain: false, puzzle: false };
   });
   const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
     try {
@@ -853,16 +853,16 @@ const HomePage = () => {
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
-              {/* Kelime Avı */}
+              {/* Kelime Puzzle */}
               <div
                 onClick={() => {
                   playSound("buttonClick");
-                  navigate("/challenge/word-hunt");
+                  navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_hunt ? "border-emerald-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-purple-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-700 ${challengeStatus.word_hunt ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -870,18 +870,18 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.word_hunt ? <Check className="w-6 h-6 text-emerald-300" /> : "🔍"}
+                    {challengeStatus.puzzle ? <Check className="w-6 h-6 text-purple-300" /> : "🧩"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_hunt ? "bg-emerald-400/30 text-emerald-200 border-emerald-400/40" : "bg-emerald-400/20 text-emerald-200 border-emerald-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-purple-400/30 text-purple-200 border-purple-400/40" : "bg-purple-400/20 text-purple-200 border-purple-400/30"}`}
                   >
-                    {challengeStatus.word_hunt ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Puzzle</h3>
                   <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.word_hunt ? "Yarın tekrar gel!" : "Harflerden kelime bul"}
+                    {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
                   </p>
                 </div>
               </div>

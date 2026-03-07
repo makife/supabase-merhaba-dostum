@@ -5,7 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CHALLENGE_TYPES = ["word_hunt", "anagram", "word_chain"];
+const CHALLENGE_TYPES = ["puzzle", "anagram", "word_chain"];
+
+// Her challenge türü için ödül tanımları
+const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
+  puzzle: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
+  anagram: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
+  word_chain: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -74,10 +81,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // bonus_spins artır
+      const reward = CHALLENGE_REWARDS[challengeType];
+
+      // Ödül ver
       const { data: profile } = await supabase
         .from("profiles")
-        .select("bonus_spins")
+        .select(`${reward.field}`)
         .eq("id", topScorer.user_id)
         .single();
 
@@ -85,7 +94,7 @@ Deno.serve(async (req) => {
         await supabase
           .from("profiles")
           .update({
-            bonus_spins: (profile.bonus_spins || 0) + 1,
+            [reward.field]: ((profile as any)[reward.field] || 0) + reward.amount,
             updated_at: new Date().toISOString(),
           })
           .eq("id", topScorer.user_id);
@@ -93,7 +102,7 @@ Deno.serve(async (req) => {
 
       // Bildirim gönder
       const challengeNames: Record<string, string> = {
-        word_hunt: "Kelime Avı",
+        puzzle: "Kelime Puzzle",
         anagram: "Anagram",
         word_chain: "Kelime Zinciri",
       };
@@ -101,11 +110,11 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: topScorer.user_id,
         type: "challenge_prize",
-        message: `🎯 Tebrikler! Dünkü ${challengeNames[challengeType]} challenge'ında 1. oldun! +1 Çark çevirme hakkı kazandın! 🎡`,
+        message: `🎯 Tebrikler! Dünkü ${challengeNames[challengeType]} challenge'ında 1. oldun! +${reward.label} kazandın!`,
       });
 
       results.push(`${challengeType}: Winner ${topScorer.username} (${topScorer.score})`);
-      console.log(`🎡 +1 bonus spin awarded to ${topScorer.username} for ${challengeType}`);
+      console.log(`🎁 +${reward.label} awarded to ${topScorer.username} for ${challengeType}`);
     }
 
     console.log(`✅ Results: ${JSON.stringify(results)}`);
