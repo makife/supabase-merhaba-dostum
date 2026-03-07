@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback, useMemo } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -116,15 +116,16 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 // --- BİLEŞENLER ---
 
-const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
+const StatWidget = memo(({ icon: Icon, value, label, colorClass }: any) => (
   <div className="flex-1 bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
     <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
     <span className="text-lg font-bold text-white tracking-tight">{value}</span>
     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
   </div>
-);
+));
+StatWidget.displayName = "StatWidget";
 
-const GameModeCard = ({ mode, onClick }: any) => (
+const GameModeCard = memo(({ mode, onClick }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
@@ -151,7 +152,8 @@ const GameModeCard = ({ mode, onClick }: any) => (
       <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
     </div>
   </div>
-);
+));
+GameModeCard.displayName = "GameModeCard";
 
 // --- ANA SAYFA ---
 
