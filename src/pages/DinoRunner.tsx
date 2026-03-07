@@ -213,6 +213,8 @@ const DinoRunner = () => {
     
   };
 
+  const isGroundedRef = useRef(true);
+
   const handleJump = (e) => {
     if (e) {
       e.preventDefault();
@@ -222,7 +224,10 @@ const DinoRunner = () => {
       startGame();
       return;
     }
-    velocityRef.current = JUMP_FORCE;
+    if (isGroundedRef.current) {
+      velocityRef.current = JUMP_FORCE;
+      isGroundedRef.current = false;
+    }
   };
 
   const checkCollision = (rect1, rect2) => {
@@ -244,6 +249,7 @@ const DinoRunner = () => {
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
+      isGroundedRef.current = true;
     }
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
@@ -490,7 +496,7 @@ const DinoRunner = () => {
               transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ⚛
+            ☢️
           </div>
 
           <div className="ground" />
