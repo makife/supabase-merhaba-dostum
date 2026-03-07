@@ -181,6 +181,11 @@ const DinoRunner = () => {
   };
 
   const startGame = () => {
+    if (hasPlayedToday) {
+      toast.info("Bugünkü challenge'ı zaten tamamladın! Yarın tekrar gel 🎯");
+      return;
+    }
+
     setGameState("playing");
     gameStateRef.current = "playing";
 
@@ -209,8 +214,6 @@ const DinoRunner = () => {
 
     pickNewWord();
     playSound(440, "triangle");
-
-    
   };
 
   const handleJump = (e) => {
@@ -524,22 +527,30 @@ const DinoRunner = () => {
                       <p>Kelime Bonusu: +{wordBonusRef.current}</p>
                     )}
                     <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginTop: '8px'}}>Toplam: {score}</p>
-                    {hasPlayedToday && todayScore !== null && (
+                    {todayScore !== null && (
                       <p style={{fontSize: '12px', color: '#aaa', marginTop: '4px'}}>Bugünkü en iyi: {todayScore}</p>
                     )}
+                  </div>
+                ) : hasPlayedToday ? (
+                  <div>
+                    <p style={{color: '#aaa', marginBottom: '8px'}}>Bugünkü challenge tamamlandı! ✅</p>
+                    <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700'}}>Puanın: {todayScore}</p>
+                    <p style={{fontSize: '12px', color: '#888', marginTop: '8px'}}>Yarın tekrar dene 🎯</p>
                   </div>
                 ) : (
                   <p>Harfleri topla, engellerden kaç!</p>
                 )}
-                <button
-                  className="start-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startGame();
-                  }}
-                >
-                  {gameState === "waiting" ? "BAŞLAT" : "TEKRAR DENE"}
-                </button>
+                {!hasPlayedToday && (
+                  <button
+                    className="start-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startGame();
+                    }}
+                  >
+                    {gameState === "waiting" ? "BAŞLAT" : "TEKRAR DENE"}
+                  </button>
+                )}
               </div>
             </div>
           )}
