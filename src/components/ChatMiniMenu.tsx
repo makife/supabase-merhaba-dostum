@@ -59,23 +59,22 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     },
   ];
 
-  // FloatingMenu ile aynı row stili
+  // FloatingMenu ile aynı row stili — opak bg-gray-800
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "ring-1 ring-white/20 " +
-    "active:scale-95 transition-all duration-150 ease-out " +
-    "shadow-[0_2px_16px_rgba(0,0,0,0.45)]";
+    "bg-gray-800 " +
+    "border-2 border-gray-600 " +
+    "active:bg-gray-700 " +
+    "shadow-md";
 
-  const staggerStyle = (i: number): React.CSSProperties => ({
-    transitionDelay: isOpen ? `${i * 45}ms` : "0ms",
-    willChange: isOpen ? "transform, opacity" : "auto",
-  });
+  const slideStyle: React.CSSProperties = {
+    transform: isOpen ? "translateX(0)" : "translateX(110%)",
+  };
 
   const itemAnim = () =>
-    `transform transition-all duration-200 ease-out ${
-      isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95 pointer-events-none"
-    }`;
+    "transition-transform duration-200 ease-out " +
+    (!isOpen ? "pointer-events-none" : "");
 
   return (
     <div className="relative">
@@ -91,16 +90,12 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       )}
 
       {/* Menu items — toggle butonunun altına açılıyor */}
-      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50">
-        {menuItems.map((item, index) => (
-          <div key={item.title} className={itemAnim()} style={staggerStyle(index)}>
+      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50 overflow-hidden">
+        {menuItems.map((item) => (
+          <div key={item.title} className={itemAnim()} style={slideStyle}>
             <div
               onClick={() => handleMenuClick(item.action)}
-              className={`${rowBase} ${
-                item.isActive
-                  ? "bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.22)]"
-                  : "bg-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.16)]"
-              }`}
+              className={rowBase}
             >
               {/* Sol renkli dot — aktifse dolu, değilse soluk */}
               <span
