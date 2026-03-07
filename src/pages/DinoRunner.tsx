@@ -83,7 +83,6 @@ const DinoRunner = () => {
   const nextObstacleTimeRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
-  const lastRenderAtRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const PRAISE_WORDS = [
@@ -211,7 +210,7 @@ const DinoRunner = () => {
     pickNewWord();
     playSound(440, "triangle");
 
-    lastRenderAtRef.current = 0;
+    
   };
 
   const handleJump = (e) => {
