@@ -90,16 +90,12 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       )}
 
       {/* Menu items — toggle butonunun altına açılıyor */}
-      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50">
-        {menuItems.map((item, index) => (
-          <div key={item.title} className={itemAnim()} style={staggerStyle(index)}>
+      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50 overflow-hidden">
+        {menuItems.map((item) => (
+          <div key={item.title} className={itemAnim()} style={slideStyle}>
             <div
               onClick={() => handleMenuClick(item.action)}
-              className={`${rowBase} ${
-                item.isActive
-                  ? "bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.22)]"
-                  : "bg-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.16)]"
-              }`}
+              className={rowBase}
             >
               {/* Sol renkli dot — aktifse dolu, değilse soluk */}
               <span
