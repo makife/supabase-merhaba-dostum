@@ -567,7 +567,15 @@ const ProfilePage = () => {
   }, [user, isOwnProfile]);
 
   useEffect(() => {
-    fetchBadges();
+    const loadBadges = async () => {
+      await fetchBadges();
+      // Kendi profilimizse, hak edilen rozetleri kontrol et ve sonra tekrar çek
+      if (isOwnProfile && user) {
+        await checkBadges(user.id);
+        await fetchBadges();
+      }
+    };
+    loadBadges();
   }, [viewedUserId]);
 
   const refreshProfileData = useCallback(async () => {
