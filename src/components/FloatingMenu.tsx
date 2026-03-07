@@ -173,7 +173,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         style={{ contain: "layout style", willChange: isOpen ? "contents" : "auto" }}
       >
         {/* ── 1. MÜZİK ── */}
-        <div className={itemAnim()} style={staggerStyle(0)}>
+        <div className={itemAnim()} style={slideStyle}>
           <div
             onClick={() => {
               setMusicEnabled(!musicEnabled);
@@ -199,7 +199,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item, index) => (
-          <div key={item.route} className={itemAnim()} style={staggerStyle(index + 1)}>
+          <div key={item.route} className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
               <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
@@ -221,7 +221,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
         {/* ── 3. MODERATÖR ── */}
         {!roleLoading && isModerator && (
-          <div className={itemAnim()} style={staggerStyle(menuItems.length + 1)}>
+          <div className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
               <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Moderatör</span>
@@ -233,7 +233,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         )}
 
         {/* ── 4. SOHBET ── */}
-        <div className={itemAnim()} style={staggerStyle(menuItems.length + 2)}>
+        <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleChatOpen} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
             <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Sohbet</span>
@@ -251,7 +251,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         </div>
 
         {/* ── 5. ÇIKIŞ ── */}
-        <div className={itemAnim()} style={staggerStyle(menuItems.length + 3)}>
+        <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleLogout} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
             <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">Çıkış</span>
