@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback, useMemo } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -116,15 +116,16 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 // --- BİLEŞENLER ---
 
-const StatWidget = ({ icon: Icon, value, label, colorClass }: any) => (
+const StatWidget = memo(({ icon: Icon, value, label, colorClass }: any) => (
   <div className="flex-1 bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
     <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
     <span className="text-lg font-bold text-white tracking-tight">{value}</span>
     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
   </div>
-);
+));
+StatWidget.displayName = "StatWidget";
 
-const GameModeCard = ({ mode, onClick }: any) => (
+const GameModeCard = memo(({ mode, onClick }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
@@ -151,7 +152,8 @@ const GameModeCard = ({ mode, onClick }: any) => (
       <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
     </div>
   </div>
-);
+));
+GameModeCard.displayName = "GameModeCard";
 
 // --- ANA SAYFA ---
 
@@ -178,7 +180,7 @@ const HomePage = () => {
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
   const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
     try {
       const cached = sessionStorage.getItem("challengeStatus");
@@ -412,7 +414,7 @@ const HomePage = () => {
     // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
-  const handleGameModeClick = (modeId: string) => {
+  const handleGameModeClick = useCallback((modeId: string) => {
     playSound("buttonClick");
     if (
       !isPremium &&
@@ -425,7 +427,7 @@ const HomePage = () => {
     }
     if (modeId === "tournament") navigate("/tournament");
     else setSelectedMode(modeId);
-  };
+  }, [playSound, isPremium, profile?.game_credits, profile?.bonus_credits, profile?.unlimited_lives_until, navigate]);
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
@@ -434,7 +436,7 @@ const HomePage = () => {
   };
 
   // --- CONFIG ---
-  const gameModesConfig = [
+  const gameModesConfig = useMemo(() => [
     {
       id: "random-match",
       title: "Rastgele Rakip",
@@ -471,7 +473,7 @@ const HomePage = () => {
       glowColor: "emerald",
       isLive: false,
     },
-  ];
+  ], []);
 
   // miniGamesConfig artık MiniGamesPage'e taşındı
 
@@ -518,7 +520,7 @@ const HomePage = () => {
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-none z-30 pb-4 relative border-b border-white/5 ${isMenuOpen ? "pointer-events-none" : ""}`}
+          className="flex-none z-30 pb-4 relative border-b border-white/5"
           style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
         >
           {/* HEADER (Profil & Mürekkep) */}
@@ -829,7 +831,7 @@ const HomePage = () => {
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 ${isMenuOpen ? "pointer-events-none" : ""}`}
+          className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28"
         >
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
@@ -1065,7 +1067,7 @@ const HomePage = () => {
         )}
 
         <div className="fixed bottom-0 left-0 right-0 z-50">
-          <FloatingMenu onOpenChange={setIsMenuOpen} />
+          <FloatingMenu />
         </div>
 
         <AvatarViewDialog
