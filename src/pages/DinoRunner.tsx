@@ -249,6 +249,7 @@ const DinoRunner = () => {
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
+      isGroundedRef.current = true;
     }
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
