@@ -170,7 +170,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
       {/* Menu items listesi — contain ile layout izole, GPU layer tek */}
       <div
-        className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
+        className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 overflow-hidden ${!isOpen ? "pointer-events-none" : ""}`}
         style={{ contain: "layout style", willChange: isOpen ? "contents" : "auto" }}
       >
         {/* ── 1. MÜZİK ── */}
