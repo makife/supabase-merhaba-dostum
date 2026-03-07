@@ -181,6 +181,11 @@ const DinoRunner = () => {
   };
 
   const startGame = () => {
+    if (hasPlayedToday) {
+      toast.info("Bugünkü challenge'ı zaten tamamladın! Yarın tekrar gel 🎯");
+      return;
+    }
+
     setGameState("playing");
     gameStateRef.current = "playing";
 
@@ -209,8 +214,6 @@ const DinoRunner = () => {
 
     pickNewWord();
     playSound(440, "triangle");
-
-    
   };
 
   const handleJump = (e) => {
