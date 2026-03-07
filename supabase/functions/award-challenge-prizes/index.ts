@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
       puzzle: "Kelime Puzzle",
       reaktor: "Reaktör Koşusu",
       neon_blitz: "Refleks",
+      memory: "Kelime Hafıza",
     };
 
     for (const challengeType of CHALLENGE_TYPES) {
