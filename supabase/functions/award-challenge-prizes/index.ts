@@ -10,7 +10,7 @@ const CHALLENGE_TYPES = ["puzzle", "reaktor", "word_chain"];
 // Her challenge türü için ödül tanımları
 const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
   puzzle: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
-  reaktor: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
+  reaktor: { type: "credits", field: "game_credits", amount: 3, label: "3 Oyun Sayfası 📄" },
   word_chain: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
 };
 
