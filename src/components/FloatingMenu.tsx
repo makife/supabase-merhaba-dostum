@@ -145,15 +145,16 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
-  // PERFORMANS: will-change kaldırıldı — 12 ayrı GPU layer yerine tek container layer
-  // Stagger delay azaltıldı, transition süresi kısaltıldı
+  // PERFORMANS: translateX slide-in — GPU composite only, CPU yükü minimum
   const staggerStyle = (i: number): React.CSSProperties => ({
-    transitionDelay: isOpen ? `${i * 30}ms` : "0ms",
+    transitionDelay: isOpen ? `${i * 25}ms` : "0ms",
+    transform: isOpen ? "translateX(0)" : "translateX(100%)",
+    opacity: isOpen ? 1 : 0,
   });
 
   const itemAnim = () =>
-    "transition-[opacity] duration-150 ease-out " +
-    (isOpen ? "opacity-100" : "opacity-0 pointer-events-none");
+    "transition-[transform,opacity] duration-200 ease-out " +
+    (!isOpen ? "pointer-events-none" : "");
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
