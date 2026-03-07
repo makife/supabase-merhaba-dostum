@@ -12,6 +12,9 @@ const DinoRunner = () => {
     }
   };
 
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore } = useDailyChallenge("reaktor");
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
   // --- RENK PALETLERİ ---
   const getRandomGradient = () => {
     const gradients = [
@@ -31,7 +34,7 @@ const DinoRunner = () => {
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  
+  const [completedWords, setCompletedWords] = useState<string[]>([]);
   // Level ve Görünüm State'leri
   const [level, setLevel] = useState(1);
   const [bgGradient, setBgGradient] = useState("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
