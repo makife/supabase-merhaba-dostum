@@ -144,10 +144,10 @@ const PuzzleGamePage: React.FC = () => {
     const newMoves = gameState.moves + 1;
     const wasRunning = gameState.isRunning;
 
-    const isSolved = newBoard.every((value, i) => {
-      if (i === newBoard.length - 1) return value === 0;
-      return value === i + 1;
-    });
+    // Check by letters, not tile numbers (handles duplicate letters)
+    const currentLetters = newBoard.slice(0, -1).map((n) => gameState.targetWord[n - 1] || "");
+    const targetLetters = gameState.targetWord.split("");
+    const isSolved = newBoard[newBoard.length - 1] === 0 && currentLetters.every((letter, i) => letter === targetLetters[i]);
 
     if (isSolved) {
       playSound("correctWord");
