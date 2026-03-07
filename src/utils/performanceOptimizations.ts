@@ -208,7 +208,7 @@ export const analyzeBundleUsage = () => {
     'LoadingScreen', 
     'TournamentCard', 
     'PrivateChat',
-    'HeaderAnimation'
+    
   ];
 
   return {
