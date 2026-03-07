@@ -191,7 +191,7 @@ const HomePage = () => {
         }
       }
     } catch {}
-    return { word_hunt: false, anagram: false, word_chain: false, puzzle: false };
+    return { word_hunt: false, anagram: false, word_chain: false, puzzle: false, reaktor: false, neon_blitz: false, memory: false };
   });
   const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
     try {
@@ -948,6 +948,40 @@ const HomePage = () => {
                   <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Refleks</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+              {/* Hafıza Oyunu */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/memory");
+                }}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-green-400/40 opacity-70" : "border-white/10"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                />
+                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
+                  4
+                </span>
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
+                    {challengeStatus.memory ? <Check className="w-6 h-6 text-green-300" /> : "🧠"}
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-green-400/30 text-green-200 border-green-400/40" : "bg-green-400/20 text-green-200 border-green-400/30"}`}
+                  >
+                    {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
+                </div>
+                <div className="relative z-10">
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Hafıza</h3>
+                  <p className="text-[10px] text-white/70 font-medium">
+                    {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
                   </p>
                 </div>
               </div>
