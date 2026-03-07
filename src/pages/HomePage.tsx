@@ -520,7 +520,7 @@ const HomePage = () => {
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-none z-30 pb-4 relative border-b border-white/5 ${isMenuOpen ? "pointer-events-none" : ""}`}
+          className="flex-none z-30 pb-4 relative border-b border-white/5"
           style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
         >
           {/* HEADER (Profil & Mürekkep) */}
@@ -831,7 +831,7 @@ const HomePage = () => {
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 ${isMenuOpen ? "pointer-events-none" : ""}`}
+          className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28"
         >
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
@@ -1067,7 +1067,7 @@ const HomePage = () => {
         )}
 
         <div className="fixed bottom-0 left-0 right-0 z-50">
-          <FloatingMenu onOpenChange={setIsMenuOpen} />
+          <FloatingMenu />
         </div>
 
         <AvatarViewDialog
