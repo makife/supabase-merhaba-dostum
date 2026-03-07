@@ -889,7 +889,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         const { data }: any = await supabase
           .from("user_presence" as any)
           .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
-          .gte("last_seen", new Date(Date.now() - 60 * 1000).toISOString());
+          .eq("is_online", true)
+          .gte("last_seen", new Date(Date.now() - 90 * 1000).toISOString());
 
         if (data) {
           const newUsers = data.map((item: any) => ({

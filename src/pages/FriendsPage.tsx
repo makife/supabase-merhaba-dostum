@@ -139,7 +139,7 @@ const FriendsPage = () => {
     fetchFriends();
   }, [fetchFriends]);
 
-  // Realtime subscription
+  // Realtime subscription - friendships + presence changes
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -149,6 +149,14 @@ const FriendsPage = () => {
         schema: "public",
         table: "friendships",
       }, () => {
+        fetchFriends();
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "user_presence",
+      }, () => {
+        // Arkadaşın online durumu değiştiğinde listeyi yenile
         fetchFriends();
       })
       .subscribe();

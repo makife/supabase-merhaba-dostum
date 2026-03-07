@@ -123,12 +123,12 @@ export const useFriendOnlineToast = () => {
           const isNowOnline = newRecord.is_online === true;
 
           // Sadece kesin false → true geçişinde toast göster
-          // (oldRecord.is_online Supabase'de bazen boş geldiği için kendi state'imizi kullanıyoruz)
           if (isNowOnline && prevOnline === false) {
-            // Cooldown: aynı arkadaş için 5 dakika içinde tekrar toast gösterme
+            // Cooldown: aynı arkadaş için 30 dakika içinde tekrar toast gösterme
+            // (arka plan/ön plan geçişlerinden kaynaklanan spam'i önler)
             const lastToast = lastToastTimeRef.current.get(newRecord.user_id) || 0;
             const now = Date.now();
-            if (now - lastToast < 5 * 60 * 1000) {
+            if (now - lastToast < 30 * 60 * 1000) {
               onlineStateRef.current.set(newRecord.user_id, isNowOnline);
               return;
             }
