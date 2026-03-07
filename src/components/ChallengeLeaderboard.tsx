@@ -15,12 +15,13 @@ interface Props {
   leaderboard: LeaderboardEntry[];
   title?: string;
   scrollable?: boolean;
+  showLevel?: boolean;
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
 const rankBgs = ["bg-amber-500/20", "bg-slate-400/10", "bg-amber-700/10"];
 
-export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false }: Props) => {
+export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false, showLevel = false }: Props) => {
   const { user } = useAuth();
 
   if (leaderboard.length === 0) {
@@ -61,7 +62,11 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs font-bold text-amber-400">{typeof entry.score === 'number' ? entry.score.toFixed(2) : entry.score}</span>
+                {showLevel ? (
+                  <span className="text-xs font-bold text-cyan-400">Lvl {Math.floor(typeof entry.score === 'number' ? entry.score : Number(entry.score))}</span>
+                ) : (
+                  <span className="text-xs font-bold text-amber-400">{typeof entry.score === 'number' ? entry.score.toFixed(2) : entry.score}</span>
+                )}
                 {entry.words_found > 0 && (
                   <span className="text-[9px] text-slate-500">({entry.words_found})</span>
                 )}
