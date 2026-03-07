@@ -77,6 +77,7 @@ const DinoRunner = () => {
   const collectedIndicesRef = useRef<Set<number>>(new Set());
   const wordsClearedRef = useRef(0);
   const completedWordsRef = useRef<string[]>([]);
+  const wordBonusRef = useRef(0);
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
@@ -197,6 +198,7 @@ const DinoRunner = () => {
 
     completedWordsRef.current = [];
     setCompletedWords([]);
+    wordBonusRef.current = 0;
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
@@ -340,7 +342,6 @@ const DinoRunner = () => {
       if (checkCollision(dinoRect, hitBox)) {
         letter.collected = true;
         playSound(1000, "square", 0.1);
-        setScore((s) => s + 50);
         
         // Yeni: Set güncelleme
         const newSet = new Set(collectedIndicesRef.current);
@@ -361,8 +362,8 @@ const DinoRunner = () => {
       if (isWordComplete) {
         // Track completed word for bonus scoring
         completedWordsRef.current.push(currentWord);
+        wordBonusRef.current += currentWord.length * 5;
         setCompletedWords([...completedWordsRef.current]);
-        setScore((s) => s + 500);
         showFeedback(true);
         
         // Level Mantığı
@@ -396,7 +397,7 @@ const DinoRunner = () => {
     // clouds updated via ref, will batch render below
 
     // --- TEK BATCH RENDER ---
-    setScore(Math.floor(scoreRef.current / 5));
+    // score renderState üzerinden re-render alıyor, ekstra setScore yok
     setRenderState({
       dinoY: dinoYRef.current,
       dinoRotation: dinoRotationRef.current,
