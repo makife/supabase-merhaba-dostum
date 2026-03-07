@@ -39,13 +39,15 @@ const DinoRunner = () => {
   const [level, setLevel] = useState(1);
   const [bgGradient, setBgGradient] = useState("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
-  // Fiziksel Render State'leri
-  const [dinoY, setDinoY] = useState(0);
-  const [dinoRotation, setDinoRotation] = useState(0);
-  const [obstacles, setObstacles] = useState([]);
-  const [letters, setLetters] = useState([]);
-  const [clouds, setClouds] = useState([]);
-  const [groundOffset, setGroundOffset] = useState(0);
+  // Fiziksel Render State'leri - TEK BATCH STATE
+  const [renderState, setRenderState] = useState({
+    dinoY: 0,
+    dinoRotation: 0,
+    obstacles: [] as any[],
+    letters: [] as any[],
+    clouds: [] as any[],
+    groundOffset: 0,
+  });
 
   // --- KELİME VE FEEDBACK SİSTEMİ ---
   const [wordList, setWordList] = useState<string[]>([]);
@@ -68,6 +70,7 @@ const DinoRunner = () => {
   const cloudsRef = useRef([]);
   const scoreRef = useRef(0);
   const isMutedRef = useRef(false);
+  const groundOffsetRef = useRef(0);
 
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
@@ -197,8 +200,7 @@ const DinoRunner = () => {
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
-    setObstacles([]);
-    setLetters([]);
+    setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0 });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
@@ -252,10 +254,7 @@ const DinoRunner = () => {
     speedRef.current += 0.0003;
     scoreRef.current += 1;
 
-    setDinoY(dinoYRef.current);
-    setDinoRotation(dinoRotationRef.current);
-    setScore(Math.floor(scoreRef.current / 5));
-    setGroundOffset((prev) => (prev + speedRef.current) % 40);
+    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current) % 40;
 
     const dinoRect = {
       x: DINO_LEFT + 5,
@@ -306,7 +305,7 @@ const DinoRunner = () => {
         return;
       }
     }
-    setObstacles([...obstaclesRef.current]);
+    // obstacles updated via ref, will batch render below
 
     // Harfler
     lettersRef.current = lettersRef.current
@@ -352,7 +351,7 @@ const DinoRunner = () => {
     });
 
     const activeLetters = lettersRef.current.filter((l) => !l.collected);
-    setLetters(activeLetters);
+    // letters updated via ref, will batch render below
 
     // Kelime Bitiş Kontrolü
     if (currentWord && spawnIndexRef.current >= currentWord.length && activeLetters.length === 0) {
@@ -394,7 +393,18 @@ const DinoRunner = () => {
         y: 150 + Math.random() * 100,
         speed: 0.5 + Math.random(),
       });
-    setClouds([...cloudsRef.current]);
+    // clouds updated via ref, will batch render below
+
+    // --- TEK BATCH RENDER ---
+    setScore(Math.floor(scoreRef.current / 5));
+    setRenderState({
+      dinoY: dinoYRef.current,
+      dinoRotation: dinoRotationRef.current,
+      obstacles: [...obstaclesRef.current],
+      letters: lettersRef.current.filter((l) => !l.collected),
+      clouds: [...cloudsRef.current],
+      groundOffset: groundOffsetRef.current,
+    });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
@@ -450,7 +460,7 @@ const DinoRunner = () => {
           onPointerDown={handleJump}
           style={{ background: bgGradient }} // Inline style ile dinamik renk
         >
-          {clouds.map((c) => (
+          {renderState.clouds.map((c) => (
             <div key={c.id} className="cloud" style={{ left: c.x, bottom: c.y }}>
               ☁️
             </div>
@@ -458,7 +468,7 @@ const DinoRunner = () => {
 
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
-          {letters.map((l) => (
+          {renderState.letters.map((l) => (
             <div
               key={l.id}
               className="letter-box"
@@ -468,7 +478,7 @@ const DinoRunner = () => {
             </div>
           ))}
 
-          {obstacles.map((o) => (
+          {renderState.obstacles.map((o) => (
             <div
               key={o.id}
               className={`obstacle ${o.type}`}
@@ -484,16 +494,16 @@ const DinoRunner = () => {
             className="reactor"
             style={{
               left: DINO_LEFT,
-              bottom: dinoY + GROUND_HEIGHT,
+              bottom: renderState.dinoY + GROUND_HEIGHT,
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
-              transform: `rotate(${dinoRotation}deg)`,
+              transform: `rotate(${renderState.dinoRotation}deg)`,
             }}
           >
             ☢️
           </div>
 
-          <div className="ground" style={{ backgroundPosition: `${-groundOffset}px 0`, height: GROUND_HEIGHT }}></div>
+          <div className="ground" style={{ backgroundPosition: `${-renderState.groundOffset}px 0`, height: GROUND_HEIGHT }}></div>
 
           <div className="hud">
             {wordNotification ? (
