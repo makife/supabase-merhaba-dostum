@@ -223,7 +223,6 @@ const DinoRunner = () => {
       return;
     }
     velocityRef.current = JUMP_FORCE;
-    playSound(600 + Math.random() * 200, "sine");
   };
 
   const checkCollision = (rect1, rect2) => {
