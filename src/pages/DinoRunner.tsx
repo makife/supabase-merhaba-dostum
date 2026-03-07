@@ -705,11 +705,43 @@ const DinoRunner = () => {
             border-color: #666;
         }
 
-        .cloud { position: absolute; font-size: 24px; opacity: 0.5; }
-        .reactor { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 34px; z-index: 10; filter: drop-shadow(0 0 8px #00ff00); }
-        .obstacle { position: absolute; display: flex; align-items: flex-end; justify-content: center; font-size: 28px; filter: grayscale(0.4) brightness(0.8); }
+        .cloud {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            font-size: 24px;
+            opacity: 0.5;
+        }
+        .reactor {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            z-index: 10;
+            text-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+        }
+        .obstacle {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 28px;
+        }
 
-        .letter-box { position: absolute; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .letter-box {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
         .letter-inner {
             width: 32px;
             height: 32px;
@@ -720,7 +752,7 @@ const DinoRunner = () => {
             display: flex; align-items: center;
             justify-content: center;
             font-weight: 900;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
             font-size: 20px; font-family: 'Arial Black', sans-serif;
         }
 
