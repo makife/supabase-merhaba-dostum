@@ -72,7 +72,8 @@ const DinoRunner = () => {
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
   const collectedIndicesRef = useRef<Set<number>>(new Set());
-  const wordsClearedRef = useRef(0); // Level takibi için sayaç
+  const wordsClearedRef = useRef(0);
+  const completedWordsRef = useRef<string[]>([]);
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
