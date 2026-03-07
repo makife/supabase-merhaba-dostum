@@ -5,12 +5,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CHALLENGE_TYPES = ["puzzle", "anagram", "word_chain"];
+const CHALLENGE_TYPES = ["puzzle", "reaktor", "word_chain"];
 
 // Her challenge türü için ödül tanımları
 const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
   puzzle: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
-  anagram: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
+  reaktor: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
   word_chain: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
 };
 
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
       // Bildirim gönder
       const challengeNames: Record<string, string> = {
         puzzle: "Kelime Puzzle",
-        anagram: "Anagram",
+        reaktor: "Reaktör Koşusu",
         word_chain: "Kelime Zinciri",
       };
 

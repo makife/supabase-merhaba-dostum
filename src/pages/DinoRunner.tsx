@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Trophy } from "lucide-react";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { toast } from "sonner";
 
 const DinoRunner = () => {
   const navigate = () => {
