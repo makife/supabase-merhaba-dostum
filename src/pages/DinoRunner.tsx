@@ -83,7 +83,6 @@ const DinoRunner = () => {
   const nextObstacleTimeRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
-  const lastRenderAtRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const PRAISE_WORDS = [
@@ -211,7 +210,7 @@ const DinoRunner = () => {
     pickNewWord();
     playSound(440, "triangle");
 
-    lastRenderAtRef.current = 0;
+    
   };
 
   const handleJump = (e) => {
@@ -265,10 +264,11 @@ const DinoRunner = () => {
       height: DINO_HEIGHT - 10,
     };
 
-    // Engeller
-    obstaclesRef.current = obstaclesRef.current
-      .map((obs) => ({ ...obs, x: obs.x - speedRef.current }))
-      .filter((obs) => obs.x > -OBSTACLE_WIDTH);
+    // Engeller (in-place update, düşük GC)
+    for (let i = obstaclesRef.current.length - 1; i >= 0; i--) {
+      obstaclesRef.current[i].x -= speedRef.current;
+      if (obstaclesRef.current[i].x <= -OBSTACLE_WIDTH) obstaclesRef.current.splice(i, 1);
+    }
 
     if (Date.now() > nextObstacleTimeRef.current) {
       const types = ["short", "tall", "box"];
@@ -309,10 +309,11 @@ const DinoRunner = () => {
     }
     // obstacles updated via ref, will batch render below
 
-    // Harfler
-    lettersRef.current = lettersRef.current
-      .map((l) => ({ ...l, x: l.x - speedRef.current }))
-      .filter((l) => l.x > -LETTER_SIZE);
+    // Harfler (in-place update, düşük GC)
+    for (let i = lettersRef.current.length - 1; i >= 0; i--) {
+      lettersRef.current[i].x -= speedRef.current;
+      if (lettersRef.current[i].x <= -LETTER_SIZE) lettersRef.current.splice(i, 1);
+    }
 
     const currentWord = targetWordRef.current;
 
@@ -385,30 +386,29 @@ const DinoRunner = () => {
       pickNewWord();
     }
 
-    // Bulutlar
-    cloudsRef.current = cloudsRef.current.map((c) => ({ ...c, x: c.x - c.speed })).filter((c) => c.x > -100);
-    if (Math.random() < 0.02)
+    // Bulutlar (in-place update, düşük GC)
+    for (let i = cloudsRef.current.length - 1; i >= 0; i--) {
+      cloudsRef.current[i].x -= cloudsRef.current[i].speed;
+      if (cloudsRef.current[i].x <= -100) cloudsRef.current.splice(i, 1);
+    }
+    if (Math.random() < 0.02) {
       cloudsRef.current.push({
         id: Math.random(),
         x: GAME_WIDTH,
         y: 150 + Math.random() * 100,
         speed: 0.5 + Math.random(),
       });
-    // clouds updated via ref, will batch render below
-
-    // --- RENDER THROTTLE (~30 FPS UI, 60 FPS fizik) ---
-    const now = performance.now();
-    if (now - lastRenderAtRef.current >= 33) {
-      lastRenderAtRef.current = now;
-      setRenderState({
-        dinoY: dinoYRef.current,
-        dinoRotation: dinoRotationRef.current,
-        obstacles: [...obstaclesRef.current],
-        letters: lettersRef.current.filter((l) => !l.collected),
-        clouds: [...cloudsRef.current],
-        groundOffset: groundOffsetRef.current,
-      });
     }
+
+    // --- HER FRAME RENDER (60FPS) ---
+    setRenderState({
+      dinoY: dinoYRef.current,
+      dinoRotation: dinoRotationRef.current,
+      obstacles: obstaclesRef.current,
+      letters: activeLetters,
+      clouds: cloudsRef.current,
+      groundOffset: groundOffsetRef.current,
+    });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
