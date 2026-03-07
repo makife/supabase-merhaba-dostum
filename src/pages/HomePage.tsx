@@ -180,7 +180,7 @@ const HomePage = () => {
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
   const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
     try {
       const cached = sessionStorage.getItem("challengeStatus");
