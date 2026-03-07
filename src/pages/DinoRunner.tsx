@@ -83,6 +83,7 @@ const DinoRunner = () => {
   const nextObstacleTimeRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
+  const lastRenderAtRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const PRAISE_WORDS = [
@@ -210,8 +211,7 @@ const DinoRunner = () => {
     pickNewWord();
     playSound(440, "triangle");
 
-    if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
+    lastRenderAtRef.current = 0;
   };
 
   const handleJump = (e) => {
@@ -396,16 +396,19 @@ const DinoRunner = () => {
       });
     // clouds updated via ref, will batch render below
 
-    // --- TEK BATCH RENDER ---
-    // score renderState üzerinden re-render alıyor, ekstra setScore yok
-    setRenderState({
-      dinoY: dinoYRef.current,
-      dinoRotation: dinoRotationRef.current,
-      obstacles: [...obstaclesRef.current],
-      letters: lettersRef.current.filter((l) => !l.collected),
-      clouds: [...cloudsRef.current],
-      groundOffset: groundOffsetRef.current,
-    });
+    // --- RENDER THROTTLE (~30 FPS UI, 60 FPS fizik) ---
+    const now = performance.now();
+    if (now - lastRenderAtRef.current >= 33) {
+      lastRenderAtRef.current = now;
+      setRenderState({
+        dinoY: dinoYRef.current,
+        dinoRotation: dinoRotationRef.current,
+        obstacles: [...obstaclesRef.current],
+        letters: lettersRef.current.filter((l) => !l.collected),
+        clouds: [...cloudsRef.current],
+        groundOffset: groundOffsetRef.current,
+      });
+    }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
