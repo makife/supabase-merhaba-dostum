@@ -829,6 +829,7 @@ const ProfilePage = () => {
 
       if (isOwnProfile && user) {
         await checkBadges(user.id);
+        await fetchBadges(); // checkBadges yeni rozet verdiyse tekrar çek
       }
 
       toast.success("İstatistikler güncellendi!");
