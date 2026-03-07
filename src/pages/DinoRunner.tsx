@@ -467,7 +467,11 @@ const DinoRunner = () => {
           style={{ background: bgGradient }} // Inline style ile dinamik renk
         >
           {renderState.clouds.map((c) => (
-            <div key={c.id} className="cloud" style={{ left: c.x, bottom: c.y }}>
+            <div
+              key={c.id}
+              className="cloud"
+              style={{ transform: `translate3d(${c.x}px, ${-c.y}px, 0)` }}
+            >
               ☁️
             </div>
           ))}
@@ -478,7 +482,11 @@ const DinoRunner = () => {
             <div
               key={l.id}
               className="letter-box"
-              style={{ left: l.x, bottom: l.y + GROUND_HEIGHT, width: l.width, height: l.height }}
+              style={{
+                width: l.width,
+                height: l.height,
+                transform: `translate3d(${l.x}px, ${-(l.y + GROUND_HEIGHT)}px, 0)`,
+              }}
             >
               <div className="letter-inner">{l.char}</div>
             </div>
@@ -488,7 +496,11 @@ const DinoRunner = () => {
             <div
               key={o.id}
               className={`obstacle ${o.type}`}
-              style={{ left: o.x, bottom: GROUND_HEIGHT, width: o.width, height: o.height }}
+              style={{
+                width: o.width,
+                height: o.height,
+                transform: `translate3d(${o.x}px, ${-GROUND_HEIGHT}px, 0)`,
+              }}
             >
               {o.type === "short" && "🌵"}
               {o.type === "tall" && "🌲"}
@@ -499,11 +511,9 @@ const DinoRunner = () => {
           <div
             className="reactor"
             style={{
-              left: DINO_LEFT,
-              bottom: renderState.dinoY + GROUND_HEIGHT,
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
-              transform: `rotate(${renderState.dinoRotation}deg)`,
+              transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
             ☢️
@@ -695,11 +705,43 @@ const DinoRunner = () => {
             border-color: #666;
         }
 
-        .cloud { position: absolute; font-size: 24px; opacity: 0.5; }
-        .reactor { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 34px; z-index: 10; filter: drop-shadow(0 0 8px #00ff00); }
-        .obstacle { position: absolute; display: flex; align-items: flex-end; justify-content: center; font-size: 28px; filter: grayscale(0.4) brightness(0.8); }
+        .cloud {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            font-size: 24px;
+            opacity: 0.5;
+        }
+        .reactor {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            z-index: 10;
+            text-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+        }
+        .obstacle {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 28px;
+        }
 
-        .letter-box { position: absolute; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .letter-box {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
         .letter-inner {
             width: 32px;
             height: 32px;
@@ -710,7 +752,7 @@ const DinoRunner = () => {
             display: flex; align-items: center;
             justify-content: center;
             font-weight: 900;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
             font-size: 20px; font-family: 'Arial Black', sans-serif;
         }
 
