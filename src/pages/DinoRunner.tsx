@@ -403,7 +403,7 @@ const DinoRunner = () => {
       obstacles: [...obstaclesRef.current],
       letters: lettersRef.current.filter((l) => !l.collected),
       clouds: [...cloudsRef.current],
-      groundOffset: groundOffsetVal,
+      groundOffset: groundOffsetRef.current,
     });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
