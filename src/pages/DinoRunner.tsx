@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Trophy } from "lucide-react";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { toast } from "sonner";
 
 const DinoRunner = () => {
   const navigate = () => {
@@ -9,6 +11,9 @@ const DinoRunner = () => {
       window.location.href = "/";
     }
   };
+
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore } = useDailyChallenge("reaktor");
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // --- RENK PALETLERİ ---
   const getRandomGradient = () => {
@@ -29,7 +34,7 @@ const DinoRunner = () => {
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  
+  const [completedWords, setCompletedWords] = useState<string[]>([]);
   // Level ve Görünüm State'leri
   const [level, setLevel] = useState(1);
   const [bgGradient, setBgGradient] = useState("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
@@ -67,7 +72,8 @@ const DinoRunner = () => {
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
   const collectedIndicesRef = useRef<Set<number>>(new Set());
-  const wordsClearedRef = useRef(0); // Level takibi için sayaç
+  const wordsClearedRef = useRef(0);
+  const completedWordsRef = useRef<string[]>([]);
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
@@ -186,6 +192,8 @@ const DinoRunner = () => {
     wordsClearedRef.current = 0;
     setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
+    completedWordsRef.current = [];
+    setCompletedWords([]);
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
@@ -281,7 +289,20 @@ const DinoRunner = () => {
         setGameState("gameOver");
         gameStateRef.current = "gameOver";
         playSound(150, "sawtooth", 0.5);
-        if (Math.floor(scoreRef.current / 5) > highScore) setHighScore(Math.floor(scoreRef.current / 5));
+        const distanceScore = Math.floor(scoreRef.current / 5);
+        // Word bonus: completed word length * 5 for each completed word
+        const wordBonus = completedWordsRef.current.reduce((sum, w) => sum + w.length * 5, 0);
+        const finalScore = distanceScore + wordBonus;
+        setScore(finalScore);
+        if (finalScore > highScore) setHighScore(finalScore);
+        // Save to daily challenge
+        if (!hasPlayedToday) {
+          saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
+            if (saved) {
+              toast.success(`🎯 Challenge puanın kaydedildi: ${finalScore}`);
+            }
+          });
+        }
         return;
       }
     }
@@ -339,6 +360,9 @@ const DinoRunner = () => {
       const isWordComplete = collectedIndicesRef.current.size === currentWord.length;
 
       if (isWordComplete) {
+        // Track completed word for bonus scoring
+        completedWordsRef.current.push(currentWord);
+        setCompletedWords([...completedWordsRef.current]);
         setScore((s) => s + 500);
         showFeedback(true);
         
@@ -415,8 +439,8 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={toggleMute} className="icon-btn" title="Sesi Aç/Kapat">
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          <button onClick={() => setShowLeaderboard(true)} className="icon-btn" title="Sıralamalar">
+            <Trophy size={24} />
           </button>
         </div>
 
@@ -493,7 +517,20 @@ const DinoRunner = () => {
             <div className="overlay">
               <div className="card">
                 <h2>{gameState === "waiting" ? "REAKTÖR KOŞUSU" : "SİSTEM ÇÖKTÜ!"}</h2>
-                <p>{gameState === "waiting" ? "Harfleri topla, engellerden kaç!" : `Puanın: ${score}`}</p>
+                {gameState === "gameOver" ? (
+                  <div>
+                    <p>Mesafe Puanı: {Math.floor(scoreRef.current / 5)}</p>
+                    {completedWords.length > 0 && (
+                      <p>Kelime Bonusu: +{completedWords.reduce((s, w) => s + w.length * 5, 0)}</p>
+                    )}
+                    <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginTop: '8px'}}>Toplam: {score}</p>
+                    {hasPlayedToday && todayScore !== null && (
+                      <p style={{fontSize: '12px', color: '#aaa', marginTop: '4px'}}>Bugünkü en iyi: {todayScore}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p>Harfleri topla, engellerden kaç!</p>
+                )}
                 <button
                   className="start-btn"
                   onClick={(e) => {
@@ -518,6 +555,34 @@ const DinoRunner = () => {
           </button>
         </div>
       </div>
+
+      {/* LEADERBOARD MODAL */}
+      {showLeaderboard && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}} onClick={() => setShowLeaderboard(false)}>
+          <div style={{background:'#1a1a2e',borderRadius:'20px',padding:'24px',maxWidth:'400px',width:'100%',maxHeight:'80vh',overflow:'auto',border:'1px solid rgba(255,255,255,0.1)'}} onClick={e => e.stopPropagation()}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+              <h3 style={{color:'white',fontSize:'18px',fontWeight:'bold'}}>🏆 Günlük Sıralama</h3>
+              <button onClick={() => setShowLeaderboard(false)} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:'8px',padding:'6px 12px',cursor:'pointer'}}>✕</button>
+            </div>
+            {leaderboard.length === 0 ? (
+              <p style={{color:'#888',textAlign:'center',padding:'20px'}}>Henüz kimse oynamamış</p>
+            ) : (
+              leaderboard.map((entry, i) => (
+                <div key={entry.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px',borderRadius:'12px',background: i === 0 ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',marginBottom:'8px',border: i === 0 ? '1px solid rgba(255,215,0,0.3)' : '1px solid transparent'}}>
+                  <span style={{width:'24px',textAlign:'center',fontWeight:'bold',color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#888',fontSize:'14px'}}>{i + 1}</span>
+                  <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                    {entry.avatar_url ? <img src={entry.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:'14px'}}>👤</span>}
+                  </div>
+                  <div style={{flex:1}}>
+                    <span style={{color:'white',fontSize:'13px',fontWeight:'600'}}>{entry.username}</span>
+                  </div>
+                  <span style={{color:'#FFD700',fontWeight:'bold',fontSize:'14px'}}>{entry.score}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* Sayfa Geneli */

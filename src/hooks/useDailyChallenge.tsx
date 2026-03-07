@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type ChallengeType = "word_hunt" | "anagram" | "word_chain" | "puzzle";
+export type ChallengeType = "word_hunt" | "anagram" | "word_chain" | "puzzle" | "reaktor";
 
 interface ChallengeScore {
   id: string;
@@ -131,6 +131,7 @@ export async function getDailyChallengeStatus(userId: string): Promise<Record<Ch
     anagram: false,
     word_chain: false,
     puzzle: false,
+    reaktor: false,
   };
 
   if (data) {

@@ -886,16 +886,16 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Anagram */}
+              {/* Reaktör */}
               <div
                 onClick={() => {
                   playSound("buttonClick");
-                  navigate("/challenge/anagram");
+                  navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.anagram ? "border-violet-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-red-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-700 ${challengeStatus.anagram ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-red-500 via-orange-600 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -903,18 +903,18 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.anagram ? <Check className="w-6 h-6 text-violet-300" /> : "🔤"}
+                    {challengeStatus.reaktor ? <Check className="w-6 h-6 text-red-300" /> : "☢️"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.anagram ? "bg-violet-400/30 text-violet-200 border-violet-400/40" : "bg-violet-400/20 text-violet-200 border-violet-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-red-400/30 text-red-200 border-red-400/40" : "bg-red-400/20 text-red-200 border-red-400/30"}`}
                   >
-                    {challengeStatus.anagram ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Anagram</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Reaktör Koşusu</h3>
                   <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.anagram ? "Yarın tekrar gel!" : "Karışık harfleri çöz"}
+                    {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
                   </p>
                 </div>
               </div>

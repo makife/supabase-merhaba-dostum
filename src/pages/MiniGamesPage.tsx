@@ -12,7 +12,6 @@ const MiniGamesPage = () => {
 
   const miniGamesConfig = [
     { id: "snake", title: "Yılan", icon: "🐍", description: "Klasik yılan oyunu", gradient: "from-green-500 to-emerald-700", route: "/snake-game" },
-    { id: "reactor", title: "Reaktör", icon: "☢️", description: "Hızlı kaç!", gradient: "from-red-500 to-orange-700", route: "/reactor-runner" },
     { id: "memory", title: "Hafıza", icon: "🧠", description: "Kartları eşle", gradient: "from-purple-500 to-violet-700", route: "/memory-game", disabled: !canPlayMemory, cooldown: timeUntilNextPlay },
     { id: "neon", title: "Refleks", icon: "⚡", description: "Hızını test et", gradient: "from-cyan-500 to-blue-700", route: "/neon-blitz" },
     

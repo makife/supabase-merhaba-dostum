@@ -435,10 +435,10 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/challenge/anagram"
+          path="/challenge/reaktor"
           element={
             <ProtectedRoute>
-              <AnagramPage />
+              <ReactorRunnerPage />
             </ProtectedRoute>
           }
         />
