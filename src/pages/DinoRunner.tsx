@@ -292,7 +292,7 @@ const DinoRunner = () => {
         playSound(150, "sawtooth", 0.5);
         const distanceScore = Math.floor(scoreRef.current / 5);
         // Word bonus: completed word length * 5 for each completed word
-        const wordBonus = completedWordsRef.current.reduce((sum, w) => sum + w.length * 5, 0);
+        const wordBonus = wordBonusRef.current;
         const finalScore = distanceScore + wordBonus;
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
@@ -445,7 +445,7 @@ const DinoRunner = () => {
             </div>
             <div className="score-item">
               <span className="label">PUAN</span>
-              <span className="value">{score}</span>
+              <span className="value">{shownScore}</span>
             </div>
             <div className="score-item">
               <span className="label">REKOR</span>
@@ -535,7 +535,7 @@ const DinoRunner = () => {
                   <div>
                     <p>Mesafe Puanı: {Math.floor(scoreRef.current / 5)}</p>
                     {completedWords.length > 0 && (
-                      <p>Kelime Bonusu: +{completedWords.reduce((s, w) => s + w.length * 5, 0)}</p>
+                      <p>Kelime Bonusu: +{wordBonusRef.current}</p>
                     )}
                     <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginTop: '8px'}}>Toplam: {score}</p>
                     {hasPlayedToday && todayScore !== null && (
