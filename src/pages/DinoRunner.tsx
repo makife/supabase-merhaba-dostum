@@ -420,8 +420,8 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={toggleMute} className="icon-btn" title="Sesi Aç/Kapat">
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          <button onClick={() => setShowLeaderboard(true)} className="icon-btn" title="Sıralamalar">
+            <Trophy size={24} />
           </button>
         </div>
 
