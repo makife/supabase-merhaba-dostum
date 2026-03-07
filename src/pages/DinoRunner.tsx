@@ -192,6 +192,8 @@ const DinoRunner = () => {
     wordsClearedRef.current = 0;
     setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
 
+    completedWordsRef.current = [];
+    setCompletedWords([]);
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
@@ -358,6 +360,9 @@ const DinoRunner = () => {
       const isWordComplete = collectedIndicesRef.current.size === currentWord.length;
 
       if (isWordComplete) {
+        // Track completed word for bonus scoring
+        completedWordsRef.current.push(currentWord);
+        setCompletedWords([...completedWordsRef.current]);
         setScore((s) => s + 500);
         showFeedback(true);
         
