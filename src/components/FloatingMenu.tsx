@@ -140,34 +140,27 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
     "bg-[rgba(255,255,255,0.10)] " +
-    "border-2 border-white/40 " + // 👈 2px ve daha belirgin
-    "hover:bg-[rgba(255,255,255,0.16)] hover:ring-white/60 " +
-    "active:scale-95 transition-colors duration-150 " +
+    "border-2 border-white/40 " +
+    "active:bg-[rgba(255,255,255,0.20)] " +
     "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
-  // DEĞİŞTİRİLENLER:
-  // 1. scale kaldırıldı → boyut hesabı yok = titreme yok
-  // 2. will-change artık dinamik değil, sabit string = layout thrashing yok
-  // 3. translate-y-2 (küçük kayma), eskiden translate-y-3 idi
+  // PERFORMANS: will-change kaldırıldı — 12 ayrı GPU layer yerine tek container layer
+  // Stagger delay azaltıldı, transition süresi kısaltıldı
   const staggerStyle = (i: number): React.CSSProperties => ({
-    transitionDelay: isOpen ? `${i * 40}ms` : "0ms",
-    willChange: "transform, opacity", // sabit — state'e göre değişmiyor
+    transitionDelay: isOpen ? `${i * 30}ms` : "0ms",
   });
 
   const itemAnim = () =>
-    "transition-[transform,opacity] duration-200 ease-out " +
-    (isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none");
-  // scale-95 → kaldırıldı (titreme sebebiydi)
+    "transition-[opacity] duration-150 ease-out " +
+    (isOpen ? "opacity-100" : "opacity-0 pointer-events-none");
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      {/* Overlay — blur YOK, sadece koyu opacity
-          blur-md büyük ekran alanında GPU'yu çok zorlar (Snapdragon 680)
-          bg-black/50 aynı "odak" hissini verir, sıfır GPU ek yükü */}
+      {/* Overlay — transition yok, anında göster/gizle = sıfır GPU yükü */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 -z-10 transition-opacity duration-200"
+          className="fixed inset-0 bg-black/50 -z-10"
           onClick={() => {
             setIsOpen(false);
             onOpenChange?.(false);
@@ -175,9 +168,10 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         />
       )}
 
-      {/* Menu items listesi */}
+      {/* Menu items listesi — contain ile layout izole, GPU layer tek */}
       <div
         className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
+        style={{ contain: "layout style", willChange: isOpen ? "contents" : "auto" }}
       >
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim()} style={staggerStyle(0)}>
@@ -273,17 +267,14 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <div className="fixed bottom-4 right-4" data-onboarding="floating-menu">
         <button
           onClick={handleToggle}
-          // willChange sabit inline style — toggle sırasında layout thrashing önler
-          style={{ willChange: "transform" }}
           className={`
             relative w-[72px] h-[72px] rounded-full
             flex items-center justify-center
-            transition-transform duration-200 ease-out
-            active:scale-90 hover:scale-105
+            active:scale-90
             ${
               isOpen
                 ? "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
-                : "bg-gradient-to-br from-white to-gray-200 shadow-[0_6px_28px_rgba(255,255,255,0.15)] ring-2 ring-white/30"
+                : "bg-gradient-to-br from-white to-gray-200 shadow-[0_4px_20px_rgba(255,255,255,0.15)] ring-2 ring-white/30"
             }
           `}
         >
