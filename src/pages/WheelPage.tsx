@@ -211,17 +211,23 @@ const WheelPage = () => {
       giveReward(reward);
 
       setIsSpinning(false);
-      // Kalan hakları güncelle
-      setTotalSpins(prev => Math.max(0, prev - 1));
-      setCanSpin(totalSpins > 1); // 1'den fazla hak varsa hâlâ çevirebilir
       
-      showRewardToast(reward);
+      const remaining = totalSpins - 1;
+      setTotalSpins(remaining);
+      setCanSpin(remaining > 0);
+      
+      // Toast'u kalan hakka göre göster
+      if (remaining <= 0) {
+        showRewardToast(reward, true);
+      } else {
+        showRewardToast(reward, false);
+      }
       
       // Kazanma sesini çal
       if (soundsRef.current) {
         soundsRef.current.playSpecialSound("/win.mp3", 0.6);
       }
-      refreshProfile(); // Profile'ı güncelle (bonus_spins değişmiş olabilir)
+      refreshProfile();
     }, 8500);
   };
 
@@ -320,11 +326,17 @@ const WheelPage = () => {
     }
   };
 
-  const showRewardToast = (reward: WheelReward) => {
+  const showRewardToast = (reward: WheelReward, isLastSpin: boolean) => {
     if (reward.type === "empty") {
-      toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
-        style: { background: "#374151", color: "white" },
-      });
+      if (isLastSpin) {
+        toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
+          style: { background: "#374151", color: "white" },
+        });
+      } else {
+        toast("😔 Bu sefer pas! Hâlâ çevirme hakkın var.", {
+          style: { background: "#374151", color: "white" },
+        });
+      }
     } else {
       toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
         style: { background: "#10B981", color: "white" },
