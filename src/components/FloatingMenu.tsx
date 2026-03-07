@@ -145,11 +145,10 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
-  // PERFORMANS: translateX slide-in — GPU composite only, CPU yükü minimum
-  const staggerStyle = (i: number): React.CSSProperties => ({
-    transitionDelay: isOpen ? `${i * 25}ms` : "0ms",
+  // PERFORMANS: Stagger kaldırıldı — tüm kartlar aynı anda açılır, tek composite işlemi
+  const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(110%)",
-  });
+  };
 
   const itemAnim = () =>
     "transition-transform duration-200 ease-out " +
