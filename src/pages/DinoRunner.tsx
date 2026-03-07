@@ -182,6 +182,7 @@ const DinoRunner = () => {
 
   const startGame = () => {
     if (hasPlayedToday) return;
+    markAsPlayed();
 
     setGameState("playing");
     gameStateRef.current = "playing";

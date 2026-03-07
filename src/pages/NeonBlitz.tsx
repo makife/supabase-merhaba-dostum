@@ -115,6 +115,7 @@ const NeonBlitz: React.FC = () => {
 
   const startGame = useCallback(() => {
     if (hasPlayedToday) return;
+    markAsPlayed();
 
     clearTimer();
     isPlayingRef.current = false;
@@ -146,7 +147,7 @@ const NeonBlitz: React.FC = () => {
       isPlayingRef.current = true;
       beginTurn();
     }, 50);
-  }, [beginTurn, hasPlayedToday]);
+  }, [beginTurn, hasPlayedToday, markAsPlayed]);
 
   // Save score on game over
   useEffect(() => {
