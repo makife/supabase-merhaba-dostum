@@ -745,15 +745,13 @@ const DinoRunner = () => {
         .letter-inner {
             width: 32px;
             height: 32px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 3px solid #FFD700;
+            background: #FFD700;
             border-radius: 50%;
-            color: #d32f2f;
+            color: #222;
             display: flex; align-items: center;
             justify-content: center;
             font-weight: 900;
-            box-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
-            font-size: 20px; font-family: 'Arial Black', sans-serif;
+            font-size: 18px; font-family: 'Arial Black', sans-serif;
         }
 
         .ground {
