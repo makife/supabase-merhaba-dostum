@@ -451,6 +451,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/challenge/neon-blitz"
+          element={
+            <ProtectedRoute>
+              <NeonBlitzPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/private-room/waiting/:roomCode"
           element={
             <ProtectedRoute>
