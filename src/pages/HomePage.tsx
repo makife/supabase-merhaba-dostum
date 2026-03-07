@@ -414,7 +414,7 @@ const HomePage = () => {
     // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
-  const handleGameModeClick = (modeId: string) => {
+  const handleGameModeClick = useCallback((modeId: string) => {
     playSound("buttonClick");
     if (
       !isPremium &&
@@ -427,7 +427,7 @@ const HomePage = () => {
     }
     if (modeId === "tournament") navigate("/tournament");
     else setSelectedMode(modeId);
-  };
+  }, [playSound, isPremium, profile?.game_credits, profile?.bonus_credits, profile?.unlimited_lives_until, navigate]);
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
@@ -436,7 +436,7 @@ const HomePage = () => {
   };
 
   // --- CONFIG ---
-  const gameModesConfig = [
+  const gameModesConfig = useMemo(() => [
     {
       id: "random-match",
       title: "Rastgele Rakip",
@@ -473,7 +473,7 @@ const HomePage = () => {
       glowColor: "emerald",
       isLive: false,
     },
-  ];
+  ], []);
 
   // miniGamesConfig artık MiniGamesPage'e taşındı
 
