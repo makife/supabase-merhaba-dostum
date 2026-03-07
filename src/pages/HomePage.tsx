@@ -951,7 +951,6 @@ const HomePage = () => {
                   </p>
                 </div>
               </div>
-            </div>
 
               {/* Hafıza Oyunu */}
               <div
