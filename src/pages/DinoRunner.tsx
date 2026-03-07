@@ -385,19 +385,7 @@ const DinoRunner = () => {
       pickNewWord();
     }
 
-    // Bulutlar (in-place update, düşük GC)
-    for (let i = cloudsRef.current.length - 1; i >= 0; i--) {
-      cloudsRef.current[i].x -= cloudsRef.current[i].speed;
-      if (cloudsRef.current[i].x <= -100) cloudsRef.current.splice(i, 1);
-    }
-    if (Math.random() < 0.02) {
-      cloudsRef.current.push({
-        id: Math.random(),
-        x: GAME_WIDTH,
-        y: 150 + Math.random() * 100,
-        speed: 0.5 + Math.random(),
-      });
-    }
+    // Bulutlar kaldırıldı - gereksiz DOM + paint yükü
 
     // --- HER FRAME RENDER (60FPS) ---
     setRenderState({
@@ -405,7 +393,7 @@ const DinoRunner = () => {
       dinoRotation: dinoRotationRef.current,
       obstacles: obstaclesRef.current,
       letters: activeLetters,
-      clouds: cloudsRef.current,
+      clouds: [],
       groundOffset: groundOffsetRef.current,
     });
 
@@ -466,16 +454,6 @@ const DinoRunner = () => {
           onPointerDown={handleJump}
           style={{ background: bgGradient }} // Inline style ile dinamik renk
         >
-          {renderState.clouds.map((c) => (
-            <div
-              key={c.id}
-              className="cloud"
-              style={{ transform: `translate3d(${c.x}px, ${-c.y}px, 0)` }}
-            >
-              ☁️
-            </div>
-          ))}
-
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
           {renderState.letters.map((l) => (
@@ -495,17 +473,13 @@ const DinoRunner = () => {
           {renderState.obstacles.map((o) => (
             <div
               key={o.id}
-              className={`obstacle ${o.type}`}
+              className={`obstacle obs-${o.type}`}
               style={{
                 width: o.width,
                 height: o.height,
                 transform: `translate3d(${o.x}px, ${-GROUND_HEIGHT}px, 0)`,
               }}
-            >
-              {o.type === "short" && "🌵"}
-              {o.type === "tall" && "🌲"}
-              {o.type === "box" && "🪨"}
-            </div>
+            />
           ))}
 
           <div
@@ -516,10 +490,10 @@ const DinoRunner = () => {
               transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ☢️
+            ⚛
           </div>
 
-          <div className="ground" style={{ backgroundPosition: `${-renderState.groundOffset}px 0`, height: GROUND_HEIGHT }}></div>
+          <div className="ground" />
 
           <div className="hud">
             {wordNotification ? (
@@ -705,13 +679,6 @@ const DinoRunner = () => {
             border-color: #666;
         }
 
-        .cloud {
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            font-size: 24px;
-            opacity: 0.5;
-        }
         .reactor {
             position: absolute;
             left: 0;
@@ -719,18 +686,25 @@ const DinoRunner = () => {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 34px;
+            font-size: 30px;
             z-index: 10;
-            text-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+            color: #00ff00;
         }
         .obstacle {
             position: absolute;
             left: 0;
             bottom: 0;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            font-size: 28px;
+            border-radius: 4px;
+        }
+        .obs-short {
+            background: #4a7c3f;
+        }
+        .obs-tall {
+            background: #2d5a27;
+        }
+        .obs-box {
+            background: #666;
+            border-radius: 6px;
         }
 
         .letter-box {
@@ -757,9 +731,9 @@ const DinoRunner = () => {
         .ground {
             position: absolute;
             bottom: 0; left: 0; width: 100%;
-            background: #111; border-top: 3px solid #444;
-            background-image: linear-gradient(90deg, #333 2px, transparent 2px);
-            background-size: 50px 100%;
+            height: 30px;
+            background: #222;
+            border-top: 2px solid #555;
         }
 
         .hud {
