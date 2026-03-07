@@ -5,12 +5,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CHALLENGE_TYPES = ["puzzle", "reaktor", "neon_blitz"];
+const CHALLENGE_TYPES = ["puzzle", "reaktor", "neon_blitz", "memory"];
 
-// Her challenge türü için ödül tanımları (puzzle ve reaktor sabit ödüller)
+// Her challenge türü için ödül tanımları
 const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
   puzzle: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
   reaktor: { type: "credits", field: "game_credits", amount: 3, label: "3 Oyun Sayfası 📄" },
+  memory: { type: "spins", field: "bonus_spins", amount: 1, label: "1 Çark Çevirme Hakkı 🎡" },
 };
 
 // Neon blitz level-based rewards

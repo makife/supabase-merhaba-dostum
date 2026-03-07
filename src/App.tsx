@@ -459,6 +459,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/challenge/memory"
+          element={
+            <ProtectedRoute>
+              <MemoryGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/private-room/waiting/:roomCode"
           element={
             <ProtectedRoute>
