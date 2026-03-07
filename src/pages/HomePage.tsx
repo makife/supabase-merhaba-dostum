@@ -919,16 +919,16 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Kelime Zinciri */}
+              {/* Refleks (Neon Blitz) */}
               <div
                 onClick={() => {
                   playSound("buttonClick");
-                  navigate("/challenge/word-chain");
+                  navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.word_chain ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-cyan-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-600 to-red-700 ${challengeStatus.word_chain ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -936,18 +936,18 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.word_chain ? <Check className="w-6 h-6 text-amber-300" /> : "⛓️"}
+                    {challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-cyan-300" /> : "⚡"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.word_chain ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-cyan-400/30 text-cyan-200 border-cyan-400/40" : "bg-cyan-400/20 text-cyan-200 border-cyan-400/30"}`}
                   >
-                    {challengeStatus.word_chain ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Zinciri</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Refleks</h3>
                   <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.word_chain ? "Yarın tekrar gel!" : "Son harfle yeni kelime"}
+                    {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
                   </p>
                 </div>
               </div>

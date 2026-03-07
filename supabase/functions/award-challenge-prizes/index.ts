@@ -5,13 +5,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CHALLENGE_TYPES = ["puzzle", "reaktor", "word_chain"];
+const CHALLENGE_TYPES = ["puzzle", "reaktor", "neon_blitz"];
 
-// Her challenge türü için ödül tanımları
+// Her challenge türü için ödül tanımları (puzzle ve reaktor sabit ödüller)
 const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
   puzzle: { type: "ink", field: "ink_count", amount: 3, label: "3 Mürekkep Damlası 🖊️" },
   reaktor: { type: "credits", field: "game_credits", amount: 3, label: "3 Oyun Sayfası 📄" },
-  word_chain: { type: "spin", field: "bonus_spins", amount: 1, label: "1 Çark Hakkı 🎡" },
+};
+
+// Neon blitz level-based rewards
+function getNeonBlitzRewards(level: number): { fields: Record<string, number>; label: string } | null {
+  if (level >= 25) {
+    return {
+      fields: { fisilida_joker_used: -2, degistir_joker_used: -2, senyaz_joker_used: -2 },
+      label: "2 Fısılda + 2 Değiştir + 2 Senyaz"
+    };
+  } else if (level >= 20) {
+    return {
+      fields: { fisilida_joker_used: -2, degistir_joker_used: -2 },
+      label: "2 Fısılda + 2 Değiştir"
+    };
+  } else if (level >= 15) {
+    return {
+      fields: { fisilida_joker_used: -2 },
+      label: "2 Fısılda"
+    };
+  }
+  return null;
+}
+
+// Joker field mappings (inventory fields in profiles)
+const JOKER_INVENTORY_FIELDS: Record<string, string> = {
+  fisilida_joker_used: "hint_credits",   // fısılda = hint_credits
+  degistir_joker_used: "bonus_credits",  // değiştir = bonus_credits  
+  senyaz_joker_used: "bonus_spins",      // senyaz = bonus_spins
 };
 
 Deno.serve(async (req) => {
@@ -25,14 +52,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Body'den tarih override alınabilir (manuel düzeltme için)
     let overrideDate: string | null = null;
     try {
       const body = await req.json();
       if (body?.date) overrideDate = body.date;
     } catch { /* no body */ }
 
-    // Dünün tarihi (Türkiye saati)
     let yesterdayDate: string;
     if (overrideDate) {
       yesterdayDate = overrideDate;
@@ -51,7 +76,7 @@ Deno.serve(async (req) => {
       .from("notifications")
       .select("id")
       .eq("type", "challenge_prize")
-      .gte("created_at", `${yesterdayDate}T21:00:00Z`) // Turkey midnight = 21:00 UTC
+      .gte("created_at", `${yesterdayDate}T21:00:00Z`)
       .limit(1);
 
     if (alreadyDone && alreadyDone.length > 0) {
@@ -63,58 +88,118 @@ Deno.serve(async (req) => {
     }
 
     const results: string[] = [];
+    const challengeNames: Record<string, string> = {
+      puzzle: "Kelime Puzzle",
+      reaktor: "Reaktör Koşusu",
+      neon_blitz: "Refleks",
+    };
 
     for (const challengeType of CHALLENGE_TYPES) {
-      // Her challenge türünün birincisini bul
-      const { data: topScorer } = await supabase
-        .from("challenge_scores")
-        .select("user_id, username, score")
-        .eq("challenge_type", challengeType)
-        .eq("date", yesterdayDate)
-        .order("score", { ascending: false })
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      if (challengeType === "neon_blitz") {
+        // Neon blitz: level-based rewards for ALL qualifying players
+        const { data: allScores } = await supabase
+          .from("challenge_scores")
+          .select("user_id, username, score")
+          .eq("challenge_type", "neon_blitz")
+          .eq("date", yesterdayDate);
 
-      if (!topScorer || !topScorer.user_id) {
-        results.push(`${challengeType}: No players`);
-        continue;
-      }
+        if (!allScores || allScores.length === 0) {
+          results.push("neon_blitz: No players");
+          continue;
+        }
 
-      const reward = CHALLENGE_REWARDS[challengeType];
+        let awarded = 0;
+        for (const player of allScores) {
+          const level = Number(player.score);
+          const rewards = getNeonBlitzRewards(level);
+          if (!rewards) continue;
 
-      // Ödül ver
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select(`${reward.field}`)
-        .eq("id", topScorer.user_id)
-        .single();
+          // Get current profile
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("hint_credits, bonus_credits, bonus_spins")
+            .eq("id", player.user_id)
+            .single();
 
-      if (profile) {
-        await supabase
+          if (!profile) continue;
+
+          // Build update object
+          const updateObj: Record<string, any> = { updated_at: new Date().toISOString() };
+          
+          if (level >= 15) {
+            // +2 fısılda (hint_credits)
+            updateObj.hint_credits = ((profile as any).hint_credits || 0) + 2;
+          }
+          if (level >= 20) {
+            // +2 değiştir (bonus_credits)
+            updateObj.bonus_credits = ((profile as any).bonus_credits || 0) + 2;
+          }
+          if (level >= 25) {
+            // +2 senyaz (bonus_spins)
+            updateObj.bonus_spins = ((profile as any).bonus_spins || 0) + 2;
+          }
+
+          await supabase
+            .from("profiles")
+            .update(updateObj)
+            .eq("id", player.user_id);
+
+          // Bildirim gönder
+          await supabase.from("notifications").insert({
+            user_id: player.user_id,
+            type: "challenge_prize",
+            message: `🎯 Dünkü Refleks challenge'ında Level ${level}'e ulaştın! +${rewards.label} kazandın!`,
+          });
+
+          awarded++;
+          console.log(`🎁 Neon blitz: ${player.username} (Lvl ${level}) → ${rewards.label}`);
+        }
+
+        results.push(`neon_blitz: ${awarded} players awarded`);
+      } else {
+        // Standard challenge: top 1 winner
+        const { data: topScorer } = await supabase
+          .from("challenge_scores")
+          .select("user_id, username, score")
+          .eq("challenge_type", challengeType)
+          .eq("date", yesterdayDate)
+          .order("score", { ascending: false })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (!topScorer || !topScorer.user_id) {
+          results.push(`${challengeType}: No players`);
+          continue;
+        }
+
+        const reward = CHALLENGE_REWARDS[challengeType];
+
+        const { data: profile } = await supabase
           .from("profiles")
-          .update({
-            [reward.field]: ((profile as any)[reward.field] || 0) + reward.amount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", topScorer.user_id);
+          .select(`${reward.field}`)
+          .eq("id", topScorer.user_id)
+          .single();
+
+        if (profile) {
+          await supabase
+            .from("profiles")
+            .update({
+              [reward.field]: ((profile as any)[reward.field] || 0) + reward.amount,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", topScorer.user_id);
+        }
+
+        await supabase.from("notifications").insert({
+          user_id: topScorer.user_id,
+          type: "challenge_prize",
+          message: `🎯 Tebrikler! Dünkü ${challengeNames[challengeType]} challenge'ında 1. oldun! +${reward.label} kazandın!`,
+        });
+
+        results.push(`${challengeType}: Winner ${topScorer.username} (${topScorer.score})`);
+        console.log(`🎁 +${reward.label} awarded to ${topScorer.username} for ${challengeType}`);
       }
-
-      // Bildirim gönder
-      const challengeNames: Record<string, string> = {
-        puzzle: "Kelime Puzzle",
-        reaktor: "Reaktör Koşusu",
-        word_chain: "Kelime Zinciri",
-      };
-
-      await supabase.from("notifications").insert({
-        user_id: topScorer.user_id,
-        type: "challenge_prize",
-        message: `🎯 Tebrikler! Dünkü ${challengeNames[challengeType]} challenge'ında 1. oldun! +${reward.label} kazandın!`,
-      });
-
-      results.push(`${challengeType}: Winner ${topScorer.username} (${topScorer.score})`);
-      console.log(`🎁 +${reward.label} awarded to ${topScorer.username} for ${challengeType}`);
     }
 
     console.log(`✅ Results: ${JSON.stringify(results)}`);
