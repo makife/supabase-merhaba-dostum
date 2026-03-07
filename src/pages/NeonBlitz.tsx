@@ -226,8 +226,14 @@ const NeonBlitz: React.FC = () => {
 
   const renderMenu = () => (
     <div style={s.center}>
-      <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>DOKUNSANA</h1>
-      <p style={s.subtitle}>Kelimeyi Harf Harf Tamamla</p>
+      <button
+        onClick={() => navigate(-1)}
+        style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
+      >
+        <ArrowLeft size={22} color="#fff" />
+      </button>
+      <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>REFLEKS</h1>
+      <p style={s.subtitle}>Hızlı Olan Kazanır</p>
 
       {hasPlayedToday ? (
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -263,13 +269,6 @@ const NeonBlitz: React.FC = () => {
         </div>
       )}
 
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Geri Dön
-      </button>
     </div>
   );
 
