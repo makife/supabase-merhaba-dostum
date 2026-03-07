@@ -427,6 +427,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/challenge/puzzle"
+          element={
+            <ProtectedRoute>
+              <PuzzleGamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/challenge/anagram"
           element={
             <ProtectedRoute>
