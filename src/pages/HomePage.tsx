@@ -518,7 +518,7 @@ const HomePage = () => {
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-none z-30 pb-4 relative transition-[opacity,transform] duration-300 border-b border-white/5 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
+          className={`flex-none z-30 pb-4 relative border-b border-white/5 ${isMenuOpen ? "pointer-events-none" : ""}`}
           style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
         >
           {/* HEADER (Profil & Mürekkep) */}
@@ -829,7 +829,7 @@ const HomePage = () => {
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
         <div
-          className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 transition-[opacity,transform] duration-300 ${isMenuOpen ? "opacity-30 scale-[0.98]" : ""}`}
+          className={`flex-1 flex flex-col overflow-y-auto relative z-10 pb-28 ${isMenuOpen ? "pointer-events-none" : ""}`}
         >
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
