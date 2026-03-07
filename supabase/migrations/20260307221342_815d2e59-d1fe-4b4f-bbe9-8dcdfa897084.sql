@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.check_and_award_badges_simple(p_user_id text);
