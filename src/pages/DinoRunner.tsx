@@ -679,13 +679,6 @@ const DinoRunner = () => {
             border-color: #666;
         }
 
-        .cloud {
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            font-size: 24px;
-            opacity: 0.5;
-        }
         .reactor {
             position: absolute;
             left: 0;
@@ -693,18 +686,25 @@ const DinoRunner = () => {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 34px;
+            font-size: 30px;
             z-index: 10;
-            text-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+            color: #00ff00;
         }
         .obstacle {
             position: absolute;
             left: 0;
             bottom: 0;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            font-size: 28px;
+            border-radius: 4px;
+        }
+        .obs-short {
+            background: #4a7c3f;
+        }
+        .obs-tall {
+            background: #2d5a27;
+        }
+        .obs-box {
+            background: #666;
+            border-radius: 6px;
         }
 
         .letter-box {
@@ -731,9 +731,9 @@ const DinoRunner = () => {
         .ground {
             position: absolute;
             bottom: 0; left: 0; width: 100%;
-            background: #111; border-top: 3px solid #444;
-            background-image: linear-gradient(90deg, #333 2px, transparent 2px);
-            background-size: 50px 100%;
+            height: 30px;
+            background: #222;
+            border-top: 2px solid #555;
         }
 
         .hud {
