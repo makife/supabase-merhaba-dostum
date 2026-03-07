@@ -139,9 +139,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "bg-[rgba(255,255,255,0.10)] " +
-    "border-2 border-white/40 " +
-    "active:bg-[rgba(255,255,255,0.20)] " +
+    "bg-gray-800 " +
+    "border-2 border-gray-600 " +
+    "active:bg-gray-700 " +
     "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
