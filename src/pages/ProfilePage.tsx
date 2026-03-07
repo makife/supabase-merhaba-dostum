@@ -567,7 +567,15 @@ const ProfilePage = () => {
   }, [user, isOwnProfile]);
 
   useEffect(() => {
-    fetchBadges();
+    const loadBadges = async () => {
+      await fetchBadges();
+      // Kendi profilimizse, hak edilen rozetleri kontrol et ve sonra tekrar çek
+      if (isOwnProfile && user) {
+        await checkBadges(user.id);
+        await fetchBadges();
+      }
+    };
+    loadBadges();
   }, [viewedUserId]);
 
   const refreshProfileData = useCallback(async () => {
@@ -821,6 +829,7 @@ const ProfilePage = () => {
 
       if (isOwnProfile && user) {
         await checkBadges(user.id);
+        await fetchBadges(); // checkBadges yeni rozet verdiyse tekrar çek
       }
 
       toast.success("İstatistikler güncellendi!");
