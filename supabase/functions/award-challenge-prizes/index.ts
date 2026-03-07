@@ -116,7 +116,6 @@ Deno.serve(async (req) => {
           const rewards = getNeonBlitzRewards(level);
           if (!rewards) continue;
 
-          // Get current profile
           const { data: profile } = await supabase
             .from("profiles")
             .select("hint_credits, bonus_credits, bonus_spins")
@@ -125,28 +124,13 @@ Deno.serve(async (req) => {
 
           if (!profile) continue;
 
-          // Build update object
           const updateObj: Record<string, any> = { updated_at: new Date().toISOString() };
-          
-          if (level >= 15) {
-            // +2 fısılda (hint_credits)
-            updateObj.hint_credits = ((profile as any).hint_credits || 0) + 2;
-          }
-          if (level >= 20) {
-            // +2 değiştir (bonus_credits)
-            updateObj.bonus_credits = ((profile as any).bonus_credits || 0) + 2;
-          }
-          if (level >= 25) {
-            // +2 senyaz (bonus_spins)
-            updateObj.bonus_spins = ((profile as any).bonus_spins || 0) + 2;
-          }
+          if (level >= 15) updateObj.hint_credits = ((profile as any).hint_credits || 0) + 2;
+          if (level >= 20) updateObj.bonus_credits = ((profile as any).bonus_credits || 0) + 2;
+          if (level >= 25) updateObj.bonus_spins = ((profile as any).bonus_spins || 0) + 2;
 
-          await supabase
-            .from("profiles")
-            .update(updateObj)
-            .eq("id", player.user_id);
+          await supabase.from("profiles").update(updateObj).eq("id", player.user_id);
 
-          // Bildirim gönder
           await supabase.from("notifications").insert({
             user_id: player.user_id,
             type: "challenge_prize",
@@ -158,6 +142,45 @@ Deno.serve(async (req) => {
         }
 
         results.push(`neon_blitz: ${awarded} players awarded`);
+      } else if (challengeType === "memory") {
+        // Memory: ALL players who completed get +1 bonus_spins
+        const { data: allScores } = await supabase
+          .from("challenge_scores")
+          .select("user_id, username, score")
+          .eq("challenge_type", "memory")
+          .eq("date", yesterdayDate);
+
+        if (!allScores || allScores.length === 0) {
+          results.push("memory: No players");
+          continue;
+        }
+
+        let awarded = 0;
+        for (const player of allScores) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("bonus_spins")
+            .eq("id", player.user_id)
+            .single();
+
+          if (!profile) continue;
+
+          await supabase.from("profiles").update({
+            bonus_spins: ((profile as any).bonus_spins || 0) + 1,
+            updated_at: new Date().toISOString(),
+          }).eq("id", player.user_id);
+
+          await supabase.from("notifications").insert({
+            user_id: player.user_id,
+            type: "challenge_prize",
+            message: `🧠 Dünkü Kelime Hafıza challenge'ını tamamladın! +1 Çark Çevirme Hakkı 🎡 kazandın!`,
+          });
+
+          awarded++;
+          console.log(`🎁 Memory: ${player.username} → +1 bonus_spin`);
+        }
+
+        results.push(`memory: ${awarded} players awarded`);
       } else {
         // Standard challenge: top 1 winner
         const { data: topScorer } = await supabase
