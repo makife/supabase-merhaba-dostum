@@ -269,13 +269,6 @@ const NeonBlitz: React.FC = () => {
         </div>
       )}
 
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Geri Dön
-      </button>
     </div>
   );
 
