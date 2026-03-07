@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { RefreshCw, Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
+import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import { useSounds } from "@/hooks/useSounds";
+import { toast } from "sonner";
 
 interface Kart {
   id: number;
@@ -11,19 +16,23 @@ interface Kart {
   eslestirmeId: number;
 }
 
-type Zorluk = "kolay" | "zor";
+const GRID_PAIRS = 12; // 12 çift = 24 kart = ~5x5 (1 boş)
+const SURE = 90;
 
 const WordMemoryGame = () => {
+  const navigate = useNavigate();
+  const { playSound } = useSounds();
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("memory");
+
   const [kartlar, setKartlar] = useState<Kart[]>([]);
   const [secilenKartlar, setSecilenKartlar] = useState<number[]>([]);
   const [hamle, setHamle] = useState(0);
   const [oyunBitti, setOyunBitti] = useState(false);
   const [gameLoading, setGameLoading] = useState(false);
-  const [canPlay, setCanPlay] = useState(true);
-  const [zorluk, setZorluk] = useState<Zorluk>("kolay");
-  const [kalanSure, setKalanSure] = useState(60);
+  const [kalanSure, setKalanSure] = useState(SURE);
   const [oyunBasladi, setOyunBasladi] = useState(false);
   const [wordList, setWordList] = useState<string[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const renkler = [
     "from-purple-400 to-purple-600",
@@ -41,7 +50,6 @@ const WordMemoryGame = () => {
     "from-rose-400 to-rose-600",
   ];
 
-  // Wordlist'i yükle
   useEffect(() => {
     const loadWordList = async () => {
       try {
@@ -50,33 +58,10 @@ const WordMemoryGame = () => {
         const words = text
           .split("\n")
           .map((w) => w.trim().toUpperCase())
-          .filter((w) => w.length >= 4 && w.length <= 7); // 4-7 harfli kelimeler
+          .filter((w) => w.length >= 4 && w.length <= 7);
         setWordList(words);
-      } catch (error) {
-        console.error("Wordlist yüklenemedi:", error);
-        // Fallback kelimeler
-        setWordList([
-          "BAHÇE",
-          "KALEM",
-          "DÜNYA",
-          "GÜNEŞ",
-          "DENIZ",
-          "YILDIZ",
-          "ÇIÇEK",
-          "KITAP",
-          "PENCERE",
-          "KAHVE",
-          "MÜZIK",
-          "OYUN",
-          "RENK",
-          "HAVA",
-          "BILGISAYAR",
-          "TELEFON",
-          "ARABA",
-          "OKUL",
-          "EVREN",
-          "HAYAT",
-        ]);
+      } catch {
+        setWordList(["BAHÇE", "KALEM", "DÜNYA", "GÜNEŞ", "DENIZ", "YILDIZ", "ÇIÇEK", "KITAP", "PENCERE", "KAHVE", "MÜZIK", "OYUN"]);
       }
     };
     loadWordList();
@@ -85,7 +70,6 @@ const WordMemoryGame = () => {
   // Süre sayacı
   useEffect(() => {
     if (!oyunBasladi || oyunBitti || kalanSure <= 0) return;
-
     const timer = setInterval(() => {
       setKalanSure((prev) => {
         if (prev <= 1) {
@@ -95,108 +79,89 @@ const WordMemoryGame = () => {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [oyunBasladi, oyunBitti, kalanSure]);
 
-  // Rastgele kelime seç
+  // Save score when completed
+  useEffect(() => {
+    if (!oyunBitti || hasPlayedToday) return;
+    const kazandi = kartlar.length > 0 && kartlar.every((k) => k.eslesti);
+    if (kazandi && hamle > 0) {
+      // Score: higher = better. 10000 / (time_spent * moves)
+      const timeSpent = SURE - kalanSure;
+      const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
+      saveScore(rawScore, hamle);
+      toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
+    }
+  }, [oyunBitti]);
+
   const rastgeleKelimeAl = (adet: number): string[] => {
     if (wordList.length === 0) return [];
     const secilenler: string[] = [];
     const kopyaListe = [...wordList];
-
     for (let i = 0; i < adet && kopyaListe.length > 0; i++) {
       const randomIndex = Math.floor(Math.random() * kopyaListe.length);
       secilenler.push(kopyaListe[randomIndex]);
       kopyaListe.splice(randomIndex, 1);
     }
-
     return secilenler;
   };
 
-  // Kelimenin harflerini karıştır
   const harfleriKaristir = (kelime: string): string => {
     const harfler = kelime.split("");
     let karisik = [...harfler];
-
     for (let i = 0; i < 5; i++) {
       const idx1 = Math.floor(Math.random() * karisik.length);
       const idx2 = Math.floor(Math.random() * karisik.length);
       [karisik[idx1], karisik[idx2]] = [karisik[idx2], karisik[idx1]];
     }
-
     if (karisik.join("") === kelime && karisik.length > 1) {
       [karisik[0], karisik[1]] = [karisik[1], karisik[0]];
     }
-
     return karisik.join("");
   };
 
-  // Oyunu başlat
-  const oyunuBaslat = (secilenZorluk: Zorluk) => {
-    if (wordList.length === 0) return;
-
+  const oyunuBaslat = () => {
+    if (wordList.length === 0 || hasPlayedToday) return;
     setGameLoading(true);
-    setZorluk(secilenZorluk);
 
-    const kartSayisi = secilenZorluk === "kolay" ? 8 : 12; // 16 kart (8 çift) veya 24 kart (12 çift)
-    const sure = secilenZorluk === "kolay" ? 60 : 90;
-
-    // Rastgele kelimeler seç
-    const secilenKelimeler = rastgeleKelimeAl(kartSayisi);
-
-    // Tüm renkleri karıştır
-    const kartToplamSayisi = kartSayisi * 2;
+    const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
+    const kartToplamSayisi = GRID_PAIRS * 2;
     const kullanilacakRenkler = [];
     for (let i = 0; i < kartToplamSayisi; i++) {
       kullanilacakRenkler.push(renkler[i % renkler.length]);
     }
     const karisikRenkler = kullanilacakRenkler.sort(() => Math.random() - 0.5);
 
-    // Kartları oluştur
     const yeniKartlar: Kart[] = [];
     secilenKelimeler.forEach((kelime, index) => {
       const karisikKelime = harfleriKaristir(kelime);
-
       yeniKartlar.push({
-        id: index * 2,
-        kelime: kelime,
-        tip: "duzgun",
-        acik: false,
-        eslesti: false,
-        renk: karisikRenkler[index * 2],
-        eslestirmeId: index,
+        id: index * 2, kelime, tip: "duzgun", acik: false, eslesti: false,
+        renk: karisikRenkler[index * 2], eslestirmeId: index,
       });
-
       yeniKartlar.push({
-        id: index * 2 + 1,
-        kelime: karisikKelime,
-        tip: "karisik",
-        acik: false,
-        eslesti: false,
-        renk: karisikRenkler[index * 2 + 1],
-        eslestirmeId: index,
+        id: index * 2 + 1, kelime: karisikKelime, tip: "karisik", acik: false, eslesti: false,
+        renk: karisikRenkler[index * 2 + 1], eslestirmeId: index,
       });
     });
 
     const karisikKartlar = yeniKartlar.sort(() => Math.random() - 0.5);
-
     setTimeout(() => {
       setKartlar(karisikKartlar);
       setSecilenKartlar([]);
       setHamle(0);
       setOyunBitti(false);
-      setKalanSure(sure);
+      setKalanSure(SURE);
       setOyunBasladi(true);
       setGameLoading(false);
     }, 500);
   };
 
-  // Kart tıklama işlemi
   const kartTikla = (kartIndex: number) => {
     if (secilenKartlar.length === 2) return;
     if (kartlar[kartIndex].acik || kartlar[kartIndex].eslesti) return;
-    if (oyunBitti) return;
+    if (oyunBitti || hasPlayedToday) return;
 
     const yeniKartlar = [...kartlar];
     yeniKartlar[kartIndex].acik = true;
@@ -207,23 +172,22 @@ const WordMemoryGame = () => {
 
     if (yeniSecilenler.length === 2) {
       setHamle(hamle + 1);
-
       const [birinci, ikinci] = yeniSecilenler;
-
       if (kartlar[birinci].eslestirmeId === kartlar[ikinci].eslestirmeId) {
+        playSound("correctWord");
         setTimeout(() => {
           const eslesmisKartlar = [...yeniKartlar];
           eslesmisKartlar[birinci].eslesti = true;
           eslesmisKartlar[ikinci].eslesti = true;
           setKartlar(eslesmisKartlar);
           setSecilenKartlar([]);
-
           if (eslesmisKartlar.every((kart) => kart.eslesti)) {
             setOyunBitti(true);
             setOyunBasladi(false);
           }
         }, 600);
       } else {
+        playSound("wrongWord");
         setTimeout(() => {
           const kapaliKartlar = [...yeniKartlar];
           kapaliKartlar[birinci].acik = false;
@@ -235,194 +199,148 @@ const WordMemoryGame = () => {
     }
   };
 
-  const gridCols = zorluk === "kolay" ? "grid-cols-4" : "grid-cols-5";
   const kazandi = oyunBitti && kartlar.length > 0 && kartlar.every((k) => k.eslesti);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Geri Dön Butonu */}
-        <div className="mb-4">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Geri Dön
-          </button>
-        </div>
+  if (challengeLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
+        <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-        {/* Başlık */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            🧠 Kelime Hafıza Oyunu 🎯
-          </h1>
-          <p className="text-purple-200">Kelimeleri karışık halleriyle eşleştir!</p>
-          <div className="mt-3 bg-white/10 backdrop-blur-sm rounded-lg p-3 inline-block">
-            <p className="text-yellow-300 text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              İpucu: Düzgün yazılmış kelimeyi karışık haliyle eşleştir
-            </p>
+  return (
+    <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}>
+      {/* Header */}
+      <div className="px-5 pt-12 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => { navigate(-1); playSound("buttonClick"); }} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+            <ArrowLeft className="w-5 h-5 text-white" />
+          </button>
+          <div>
+            <h1 className="text-lg font-black text-white">🧠 Kelime Hafıza</h1>
+            <p className="text-[10px] text-purple-400/80">Kelimeleri karışık halleriyle eşleştir</p>
           </div>
         </div>
+        <button onClick={() => setShowLeaderboard(!showLeaderboard)} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+          <Trophy className="w-5 h-5 text-amber-400" />
+        </button>
+      </div>
 
-        {/* Zorluk Seçimi veya Oyun İstatistikleri */}
-        {!oyunBasladi && kartlar.length === 0 ? (
-          <div className="mb-6 space-y-4">
-            <h2 className="text-xl font-bold text-white text-center mb-4">Zorluk Seviyesi Seç</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => oyunuBaslat("kolay")}
-                disabled={gameLoading || wordList.length === 0}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 
-                       disabled:opacity-50 text-white p-6 rounded-lg transform transition-all duration-200 
-                       hover:scale-105 active:scale-95"
-              >
-                <div className="text-3xl mb-2">😊</div>
-                <div className="font-bold text-lg">KOLAY</div>
-                <div className="text-sm mt-2">4x4 Izgara</div>
-                <div className="text-sm flex items-center justify-center gap-1 mt-1">
-                  <Clock className="w-4 h-4" />
-                  60 saniye
-                </div>
-              </button>
-
-              <button
-                onClick={() => oyunuBaslat("zor")}
-                disabled={gameLoading || wordList.length === 0}
-                className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 
-                       disabled:opacity-50 text-white p-6 rounded-lg transform transition-all duration-200 
-                       hover:scale-105 active:scale-95"
-              >
-                <div className="text-3xl mb-2">🔥</div>
-                <div className="font-bold text-lg">ZOR</div>
-                <div className="text-sm mt-2">5x5 Izgara</div>
-                <div className="text-sm flex items-center justify-center gap-1 mt-1">
-                  <Clock className="w-4 h-4" />
-                  90 saniye
-                </div>
-              </button>
-            </div>
-            {gameLoading && (
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                <p className="text-white mt-2">Kelimeler hazırlanıyor...</p>
-              </div>
-            )}
+      <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
+        {showLeaderboard ? (
+          <div className="flex-1 flex flex-col min-h-0 mt-4">
+            <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Hafıza Sıralaması" scrollable />
+            <button onClick={() => setShowLeaderboard(false)} className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+              Oyuna Dön
+            </button>
           </div>
         ) : (
-          <>
-            {/* Skorlar ve Süre */}
-            {oyunBasladi && (
-              <div className="flex justify-between items-center mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{hamle}</div>
-                  <div className="text-sm text-purple-200">Hamle</div>
+          <div className="flex flex-col gap-4 mt-2 flex-1 overflow-y-auto">
+            {/* Start screen */}
+            {!oyunBasladi && kartlar.length === 0 && !oyunBitti && (
+              <div className="flex flex-col items-center gap-4 mt-8">
+                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 w-full">
+                  <div className="text-center">
+                    <div className="text-4xl mb-3">🧠</div>
+                    <h2 className="text-xl font-bold text-white mb-2">Kelime Hafıza Oyunu</h2>
+                    <p className="text-sm text-white/60 mb-1">5x5 Izgara • {SURE} saniye</p>
+                    <p className="text-xs text-yellow-300/80 flex items-center justify-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Düzgün kelimeyi karışık haliyle eşleştir
+                    </p>
+                    <p className="text-xs text-green-300/80 mt-2">🎡 Tamamlarsan +1 çark çevirme hakkı!</p>
+                  </div>
                 </div>
 
-                <div className="text-center">
-                  <div
-                    className={`text-2xl font-bold flex items-center gap-2 ${
-                      kalanSure <= 10 ? "text-red-400 animate-pulse" : "text-white"
-                    }`}
+                {hasPlayedToday ? (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full">
+                    <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
+                    {todayScore && (
+                      <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { oyunuBaslat(); playSound("buttonClick"); }}
+                    disabled={gameLoading || wordList.length === 0}
+                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform disabled:opacity-50 shadow-lg shadow-purple-500/30"
                   >
-                    <Clock className="w-6 h-6" />
-                    {Math.floor(kalanSure / 60)}:{(kalanSure % 60).toString().padStart(2, "0")}
-                  </div>
-                  <div className="text-sm text-purple-200">Süre</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">
-                    {kartlar.filter((kart) => kart.eslesti).length / 2}
-                  </div>
-                  <div className="text-sm text-purple-200">Çift</div>
-                </div>
+                    {gameLoading ? "Hazırlanıyor..." : "🚀 Başlat"}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Oyun Tamamlandı veya Süre Doldu */}
+            {/* Stats */}
+            {oyunBasladi && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 text-white/80">
+                    <Clock size={14} />
+                    <span className={`text-sm font-mono ${kalanSure <= 10 ? "text-red-400 animate-pulse" : ""}`}>
+                      {Math.floor(kalanSure / 60)}:{(kalanSure % 60).toString().padStart(2, "0")}
+                    </span>
+                  </div>
+                  <span className="text-sm text-white/80">Hamle: <span className="font-bold text-white">{hamle}</span></span>
+                </div>
+                <span className="text-sm text-white/80">Çift: <span className="font-bold text-white">{kartlar.filter((k) => k.eslesti).length / 2}/{GRID_PAIRS}</span></span>
+              </div>
+            )}
+
+            {/* Game Over */}
             {oyunBitti && (
-              <div
-                className={`text-center mb-6 rounded-lg p-4 ${
-                  kazandi
-                    ? "bg-gradient-to-r from-yellow-400 to-orange-500 transform animate-bounce"
-                    : "bg-gradient-to-r from-gray-600 to-gray-700"
-                }`}
-              >
+              <div className={`p-4 rounded-xl text-center ${kazandi ? "bg-green-500/20 border border-green-400/30" : "bg-red-500/20 border border-red-400/30"}`}>
                 {kazandi ? (
                   <>
-                    <Trophy className="w-12 h-12 text-white mx-auto mb-2" />
-                    <h2 className="text-2xl font-bold text-white">Tebrikler! 🎉</h2>
-                    <p className="text-white">Oyunu {hamle} hamlede tamamladın!</p>
-                    <p className="text-white/90 text-sm mt-1">
-                      {zorluk === "kolay" ? "Kolay mod" : "Zor mod"} - {kalanSure} saniye kaldı
-                    </p>
+                    <Trophy className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                    <div className="text-green-400 font-bold text-lg">🎉 Tebrikler!</div>
+                    <div className="text-white/80 text-sm mt-1">{hamle} hamlede tamamladın!</div>
+                    <div className="text-amber-400 font-bold text-lg mt-2">
+                      Skor: {((SURE - kalanSure) > 0 ? (10000 / ((SURE - kalanSure) * hamle)).toFixed(2) : 0)}
+                    </div>
+                    <div className="text-green-300 text-xs mt-2">🎡 +1 çark çevirme hakkı gün sonunda verilecek!</div>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-12 h-12 text-white mx-auto mb-2" />
-                    <h2 className="text-2xl font-bold text-white">Süre Doldu! ⏱️</h2>
-                    <p className="text-white">{kartlar.filter((k) => k.eslesti).length / 2} çift eşleştirdin</p>
+                    <Clock className="w-10 h-10 text-red-400 mx-auto mb-2" />
+                    <div className="text-red-400 font-bold text-lg">Süre Doldu! ⏱️</div>
+                    <div className="text-white/80 text-sm">{kartlar.filter((k) => k.eslesti).length / 2} çift eşleştirdin</div>
                   </>
                 )}
-                <button
-                  onClick={() => {
-                    setKartlar([]);
-                    setOyunBasladi(false);
-                  }}
-                  className="mt-4 bg-white text-purple-900 px-6 py-2 rounded-lg font-bold 
-                         hover:bg-purple-100 transition-all"
-                >
-                  Yeni Oyun
-                </button>
               </div>
             )}
 
-            {/* Kart Izgarası */}
+            {/* Card Grid - 5 columns */}
             {kartlar.length > 0 && (
-              <div className={`grid ${gridCols} gap-3 mb-6`}>
+              <div className="grid grid-cols-5 gap-2">
                 {kartlar.map((kart, index) => (
                   <div
                     key={`${kart.kelime}-${kart.id}`}
                     onClick={() => kartTikla(index)}
-                    className="aspect-square relative cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    className="aspect-square relative cursor-pointer transform transition-all duration-300"
                     style={{ perspective: "1000px" }}
                   >
                     <div
-                      className={`w-full h-full relative transition-transform duration-600 ${
-                        kart.acik || kart.eslesti ? "[transform:rotateY(180deg)]" : ""
-                      }`}
+                      className={`w-full h-full relative transition-transform duration-500 ${kart.acik || kart.eslesti ? "[transform:rotateY(180deg)]" : ""}`}
                       style={{ transformStyle: "preserve-3d" }}
                     >
-                      {/* Kart Arka Yüzü */}
                       <div
-                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg border-2 border-white/30 flex items-center justify-center"
+                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg border border-white/20 flex items-center justify-center"
                         style={{ backfaceVisibility: "hidden" }}
                       >
-                        <div className="text-3xl">📝</div>
+                        <div className="text-2xl">📝</div>
                       </div>
-
-                      {/* Kart Ön Yüzü */}
                       <div
-                        className={`absolute inset-0 w-full h-full rounded-lg border-2 border-white/30 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
-                          kart.eslesti ? "opacity-20 scale-95" : ""
-                        } transition-all duration-300 [transform:rotateY(180deg)]`}
+                        className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${kart.eslesti ? "opacity-20 scale-95" : ""} transition-all duration-300 [transform:rotateY(180deg)]`}
                         style={{ backfaceVisibility: "hidden" }}
                       >
-                        {/* Kelime */}
-                        <div
-                          className={`text-white font-bold px-2 text-center break-all ${
-                            kart.kelime.length > 6 ? "text-xs" : kart.kelime.length > 5 ? "text-sm" : "text-base"
-                          } ${kart.eslesti ? "grayscale" : ""}`}
-                        >
+                        <div className={`text-white font-bold px-1 text-center break-all ${kart.kelime.length > 6 ? "text-[8px]" : kart.kelime.length > 5 ? "text-[9px]" : "text-[10px]"}`}>
                           {kart.kelime}
                         </div>
-
-                        {/* Eşleşme Efekti */}
                         {kart.eslesti && (
                           <div className="absolute inset-0 bg-green-500/20 rounded-lg flex items-center justify-center">
-                            <div className="text-4xl">✓</div>
+                            <div className="text-2xl">✓</div>
                           </div>
                         )}
                       </div>
@@ -431,20 +349,15 @@ const WordMemoryGame = () => {
                 ))}
               </div>
             )}
-          </>
-        )}
 
-        {/* Oyun Kuralları */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm text-purple-200">
-          <h3 className="font-bold text-white mb-2">🎮 Nasıl Oynanır?</h3>
-          <ul className="space-y-1 list-disc list-inside">
-            <li>Her kelime 2 kartta bulunur: biri düzgün, biri karışık</li>
-            <li>BAHÇE ve AHBEÇ gibi eşleşmeleri bul</li>
-            <li>Süre dolmadan tüm çiftleri eşleştir!</li>
-            <li>Kolay: 4x4 ızgara, 60 saniye</li>
-            <li>Zor: 5x5 ızgara, 90 saniye</li>
-          </ul>
-        </div>
+            {/* Home button */}
+            {(oyunBitti || hasPlayedToday) && (
+              <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                Ana Sayfa
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
