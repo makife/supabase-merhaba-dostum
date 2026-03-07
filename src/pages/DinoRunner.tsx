@@ -77,6 +77,7 @@ const DinoRunner = () => {
   const collectedIndicesRef = useRef<Set<number>>(new Set());
   const wordsClearedRef = useRef(0);
   const completedWordsRef = useRef<string[]>([]);
+  const wordBonusRef = useRef(0);
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
@@ -197,6 +198,7 @@ const DinoRunner = () => {
 
     completedWordsRef.current = [];
     setCompletedWords([]);
+    wordBonusRef.current = 0;
     obstaclesRef.current = [];
     lettersRef.current = [];
     cloudsRef.current = [];
@@ -290,7 +292,7 @@ const DinoRunner = () => {
         playSound(150, "sawtooth", 0.5);
         const distanceScore = Math.floor(scoreRef.current / 5);
         // Word bonus: completed word length * 5 for each completed word
-        const wordBonus = completedWordsRef.current.reduce((sum, w) => sum + w.length * 5, 0);
+        const wordBonus = wordBonusRef.current;
         const finalScore = distanceScore + wordBonus;
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
@@ -340,7 +342,6 @@ const DinoRunner = () => {
       if (checkCollision(dinoRect, hitBox)) {
         letter.collected = true;
         playSound(1000, "square", 0.1);
-        setScore((s) => s + 50);
         
         // Yeni: Set güncelleme
         const newSet = new Set(collectedIndicesRef.current);
@@ -361,8 +362,8 @@ const DinoRunner = () => {
       if (isWordComplete) {
         // Track completed word for bonus scoring
         completedWordsRef.current.push(currentWord);
+        wordBonusRef.current += currentWord.length * 5;
         setCompletedWords([...completedWordsRef.current]);
-        setScore((s) => s + 500);
         showFeedback(true);
         
         // Level Mantığı
@@ -396,7 +397,7 @@ const DinoRunner = () => {
     // clouds updated via ref, will batch render below
 
     // --- TEK BATCH RENDER ---
-    setScore(Math.floor(scoreRef.current / 5));
+    // score renderState üzerinden re-render alıyor, ekstra setScore yok
     setRenderState({
       dinoY: dinoYRef.current,
       dinoRotation: dinoRotationRef.current,
@@ -424,6 +425,9 @@ const DinoRunner = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameState]);
 
+  const liveScore = Math.floor(scoreRef.current / 5) + wordBonusRef.current;
+  const shownScore = gameState === "gameOver" ? score : liveScore;
+
   return (
     <div className="page-wrapper">
       <div className="game-container">
@@ -441,7 +445,7 @@ const DinoRunner = () => {
             </div>
             <div className="score-item">
               <span className="label">PUAN</span>
-              <span className="value">{score}</span>
+              <span className="value">{shownScore}</span>
             </div>
             <div className="score-item">
               <span className="label">REKOR</span>
@@ -531,7 +535,7 @@ const DinoRunner = () => {
                   <div>
                     <p>Mesafe Puanı: {Math.floor(scoreRef.current / 5)}</p>
                     {completedWords.length > 0 && (
-                      <p>Kelime Bonusu: +{completedWords.reduce((s, w) => s + w.length * 5, 0)}</p>
+                      <p>Kelime Bonusu: +{wordBonusRef.current}</p>
                     )}
                     <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginTop: '8px'}}>Toplam: {score}</p>
                     {hasPlayedToday && todayScore !== null && (
