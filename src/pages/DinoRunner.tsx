@@ -12,7 +12,7 @@ const DinoRunner = () => {
     }
   };
 
-  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore } = useDailyChallenge("reaktor");
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // --- RENK PALETLERİ ---

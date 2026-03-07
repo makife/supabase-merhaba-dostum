@@ -22,7 +22,7 @@ const SURE = 90;
 const WordMemoryGame = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("memory");
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } = useDailyChallenge("memory");
 
   const [kartlar, setKartlar] = useState<Kart[]>([]);
   const [secilenKartlar, setSecilenKartlar] = useState<number[]>([]);

@@ -24,7 +24,7 @@ const generateColor = () => {
 
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPlayedToday, todayScore, leaderboard, loading, saveScore } = useDailyChallenge("neon_blitz");
+  const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
   const [score, setScore] = useState(0);
