@@ -15,7 +15,7 @@ const MiniGamesPage = () => {
     { id: "reactor", title: "Reaktör", icon: "☢️", description: "Hızlı kaç!", gradient: "from-red-500 to-orange-700", route: "/reactor-runner" },
     { id: "memory", title: "Hafıza", icon: "🧠", description: "Kartları eşle", gradient: "from-purple-500 to-violet-700", route: "/memory-game", disabled: !canPlayMemory, cooldown: timeUntilNextPlay },
     { id: "neon", title: "Refleks", icon: "⚡", description: "Hızını test et", gradient: "from-cyan-500 to-blue-700", route: "/neon-blitz" },
-    { id: "puzzle", title: "Puzzle", icon: "🧩", description: "Bulmacayı çöz", gradient: "from-blue-500 to-indigo-700", route: "/puzzle-game" },
+    
   ];
 
   return (
