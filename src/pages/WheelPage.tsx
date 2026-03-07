@@ -326,11 +326,17 @@ const WheelPage = () => {
     }
   };
 
-  const showRewardToast = (reward: WheelReward) => {
+  const showRewardToast = (reward: WheelReward, isLastSpin: boolean) => {
     if (reward.type === "empty") {
-      toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
-        style: { background: "#374151", color: "white" },
-      });
+      if (isLastSpin) {
+        toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
+          style: { background: "#374151", color: "white" },
+        });
+      } else {
+        toast("😔 Bu sefer pas! Hâlâ çevirme hakkın var.", {
+          style: { background: "#374151", color: "white" },
+        });
+      }
     } else {
       toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
         style: { background: "#10B981", color: "white" },
