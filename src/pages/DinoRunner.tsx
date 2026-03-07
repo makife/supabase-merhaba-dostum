@@ -70,6 +70,7 @@ const DinoRunner = () => {
   const cloudsRef = useRef([]);
   const scoreRef = useRef(0);
   const isMutedRef = useRef(false);
+  const groundOffsetRef = useRef(0);
 
   // Kelime Mantığı Ref'leri
   const targetWordRef = useRef("");
@@ -253,7 +254,7 @@ const DinoRunner = () => {
     speedRef.current += 0.0003;
     scoreRef.current += 1;
 
-    const groundOffsetVal = (renderState.groundOffset + speedRef.current) % 40;
+    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current) % 40;
 
     const dinoRect = {
       x: DINO_LEFT + 5,
