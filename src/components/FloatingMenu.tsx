@@ -148,12 +148,11 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   // PERFORMANS: translateX slide-in — GPU composite only, CPU yükü minimum
   const staggerStyle = (i: number): React.CSSProperties => ({
     transitionDelay: isOpen ? `${i * 25}ms` : "0ms",
-    transform: isOpen ? "translateX(0)" : "translateX(100%)",
-    opacity: isOpen ? 1 : 0,
+    transform: isOpen ? "translateX(0)" : "translateX(110%)",
   });
 
   const itemAnim = () =>
-    "transition-[transform,opacity] duration-200 ease-out " +
+    "transition-transform duration-200 ease-out " +
     (!isOpen ? "pointer-events-none" : "");
 
   return (
