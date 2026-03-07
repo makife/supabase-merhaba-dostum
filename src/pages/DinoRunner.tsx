@@ -213,8 +213,6 @@ const DinoRunner = () => {
     
   };
 
-  const isGroundedRef = useRef(true);
-
   const handleJump = (e) => {
     if (e) {
       e.preventDefault();
@@ -224,10 +222,7 @@ const DinoRunner = () => {
       startGame();
       return;
     }
-    if (isGroundedRef.current) {
-      velocityRef.current = JUMP_FORCE;
-      isGroundedRef.current = false;
-    }
+    velocityRef.current = JUMP_FORCE;
   };
 
   const checkCollision = (rect1, rect2) => {
@@ -249,7 +244,6 @@ const DinoRunner = () => {
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
-      isGroundedRef.current = true;
     }
     if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
       dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
