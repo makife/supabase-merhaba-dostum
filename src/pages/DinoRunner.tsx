@@ -401,19 +401,15 @@ const DinoRunner = () => {
       });
     }
 
-    // --- RENDER THROTTLE (~30 FPS UI, 60 FPS fizik) ---
-    const now = performance.now();
-    if (now - lastRenderAtRef.current >= 33) {
-      lastRenderAtRef.current = now;
-      setRenderState({
-        dinoY: dinoYRef.current,
-        dinoRotation: dinoRotationRef.current,
-        obstacles: [...obstaclesRef.current],
-        letters: lettersRef.current.filter((l) => !l.collected),
-        clouds: [...cloudsRef.current],
-        groundOffset: groundOffsetRef.current,
-      });
-    }
+    // --- HER FRAME RENDER (60FPS) ---
+    setRenderState({
+      dinoY: dinoYRef.current,
+      dinoRotation: dinoRotationRef.current,
+      obstacles: obstaclesRef.current,
+      letters: activeLetters,
+      clouds: cloudsRef.current,
+      groundOffset: groundOffsetRef.current,
+    });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
   };
