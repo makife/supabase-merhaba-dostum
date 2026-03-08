@@ -162,7 +162,7 @@ const WordMemoryGame = () => {
   const kartTikla = (kartIndex: number) => {
     if (secilenKartlar.length === 2) return;
     if (kartlar[kartIndex].acik || kartlar[kartIndex].eslesti) return;
-    if (oyunBitti || hasPlayedToday) return;
+    if (oyunBitti) return;
 
     const yeniKartlar = [...kartlar];
     yeniKartlar[kartIndex].acik = true;
