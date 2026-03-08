@@ -928,19 +928,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
       .subscribe();
 
-    // 🔄 Hafif polling fallback - Realtime koptuğunda bile güncel kalsın
-    const pollingInterval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchOnlineUsers();
-      }
-    }, 30000); // 30 saniyede bir
+    // Polling kaldırıldı - Realtime yeterli
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
-      clearInterval(pollingInterval);
+      // pollingInterval kaldırıldı
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
