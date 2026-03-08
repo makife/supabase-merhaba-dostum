@@ -48,7 +48,7 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 8000;
+const SPIN_DURATION = 7000;
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
