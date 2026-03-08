@@ -121,6 +121,7 @@ const PuzzleGamePage: React.FC = () => {
         ? parseFloat((10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2))
         : 0;
       saveScore(rawScore, gameState.moves);
+      markAsPlayed();
     }
   }, [gameState.isCompleted]);
 
