@@ -139,20 +139,10 @@ Deno.serve(async (req) => {
           const rewards = getNeonBlitzRewards(level);
           if (!rewards) continue;
 
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("hint_credits, bonus_credits, bonus_spins")
-            .eq("id", player.user_id)
-            .single();
-
-          if (!profile) continue;
-
-          const updateObj: Record<string, any> = { updated_at: new Date().toISOString() };
-          if (level >= 15) updateObj.hint_credits = ((profile as any).hint_credits || 0) + 2;
-          if (level >= 20) updateObj.bonus_credits = ((profile as any).bonus_credits || 0) + 2;
-          if (level >= 25) updateObj.bonus_spins = ((profile as any).bonus_spins || 0) + 2;
-
-          await supabase.from("profiles").update(updateObj).eq("id", player.user_id);
+          // Write jokers to user_inventory (correct location)
+          for (const item of rewards.items) {
+            await upsertInventoryItem(supabase, player.user_id, item.item_type, item.quantity);
+          }
 
           await supabase.from("notifications").insert({
             user_id: player.user_id,
