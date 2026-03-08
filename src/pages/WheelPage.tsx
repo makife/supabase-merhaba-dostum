@@ -59,9 +59,9 @@ const WheelPage = () => {
   const [isSpinning, setIsSpinning] = useState(false);
   const spinLockRef = useRef(false);
   const [canSpin, setCanSpin] = useState(false);
-  const [rotation, setRotation] = useState(0);
+  const rotationRef = useRef(0);
+  const wheelRef = useRef<HTMLDivElement>(null);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
-  const [transitionDuration, setTransitionDuration] = useState(0);
   const [totalSpins, setTotalSpins] = useState(0); // Toplam çevirme hakkı (günlük + bonus)
   const [isLoading, setIsLoading] = useState(true); // UI'ı hemen göster, veriyi arka planda çek
   
