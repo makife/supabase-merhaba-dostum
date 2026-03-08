@@ -427,7 +427,15 @@ const WheelPage = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-4 mt-2">
+        <div
+          className="flex flex-col items-center gap-4 mt-2"
+          onPointerDownCapture={(e) => {
+            if (isSpinning || spinLockRef.current) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
           {/* Çevirme Hakkı Sayacı */}
           {totalSpins > 0 && !isSpinning && (
             <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-2 rounded-full border border-yellow-500/30">
@@ -438,8 +446,8 @@ const WheelPage = () => {
           )}
           
           <Button
-            onClick={spinWheel}
-            disabled={!canSpin || isSpinning}
+            onClick={isSpinning || spinLockRef.current ? undefined : spinWheel}
+            disabled={!canSpin || isSpinning || spinLockRef.current}
             size="lg"
             className={`
               w-full max-w-xs h-14 text-xl font-bold rounded-2xl shadow-xl transition-all duration-300
