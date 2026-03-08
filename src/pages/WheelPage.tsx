@@ -383,10 +383,10 @@ const WheelPage = () => {
 
           <div className="absolute inset-0 rounded-full border-[12px] border-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.5)] bg-slate-900 overflow-hidden relative">
             <div
+              ref={wheelRef}
               className={`w-full h-full ${isSpinning ? "pointer-events-none" : ""}`}
               style={{
-                transform: `rotate(${rotation}deg)`,
-                transition: isSpinning ? `transform ${transitionDuration}ms ${timingFunction}` : "none",
+                transform: `rotate(${rotationRef.current}deg)`,
                 willChange: isSpinning ? "transform" : "auto",
               }}
             >
