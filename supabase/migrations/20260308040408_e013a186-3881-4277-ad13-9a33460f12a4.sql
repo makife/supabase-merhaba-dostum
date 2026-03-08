@@ -1,0 +1,1 @@
+DELETE FROM challenge_scores WHERE date = (now() AT TIME ZONE 'Europe/Istanbul')::date;
