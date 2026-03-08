@@ -48,7 +48,7 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 8500;
+const SPIN_DURATION = 8000;
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
@@ -346,7 +346,7 @@ const WheelPage = () => {
       // Reflow: transition'ın garanti başlaması için
       void wheelRef.current.offsetHeight;
 
-      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.75, 0.3, 1)`;
       wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
 
