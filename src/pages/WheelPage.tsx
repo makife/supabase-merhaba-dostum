@@ -49,6 +49,9 @@ const RAW_SEGMENTS: WheelReward[] = [
 ];
 
 const SPIN_DURATION = 7000;
+const PHASE_ACCEL_END = 3000;   // 0-3s: hızlanma
+const PHASE_CRUISE_END = 5000;  // 3-5s: sabit max hız
+// 5-7s: yavaşlama
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
@@ -74,6 +77,7 @@ const WheelPage = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef(0);
   const spinFinishTimeoutRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
@@ -197,6 +201,9 @@ const WheelPage = () => {
     return () => {
       if (spinFinishTimeoutRef.current) {
         window.clearTimeout(spinFinishTimeoutRef.current);
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
     };
   }, []);
@@ -347,36 +354,69 @@ const WheelPage = () => {
     const requiredRotation = 360 - targetCenterAngle;
     const currentMod = rotationRef.current % 360;
     let distanceToTarget = requiredRotation - currentMod;
+    if (distanceToTarget < 0) distanceToTarget += 360;
 
-    if (distanceToTarget < 0) {
-      distanceToTarget += 360;
-    }
-
-    const finalRotation = rotationRef.current + 360 * 8 + distanceToTarget;
+    const totalRotation = 360 * 8 + distanceToTarget;
+    const startRotation = rotationRef.current;
+    const finalRotation = startRotation + totalRotation;
 
     if (wheelRef.current) {
       wheelRef.current.style.transition = "none";
-      wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
-
-      // Reflow: transition'ın garanti başlaması için
-      void wheelRef.current.offsetHeight;
-
-      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.0, 0.7, 0.1, 1)`;
-      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
 
-    if (spinFinishTimeoutRef.current) {
-      window.clearTimeout(spinFinishTimeoutRef.current);
-    }
+    // 3-phase easing: accelerate (0-3s), cruise (3-5s), decelerate (5-7s)
+    const easeThreePhase = (t: number): number => {
+      const t1 = PHASE_ACCEL_END / SPIN_DURATION;   // 3/7
+      const t2 = PHASE_CRUISE_END / SPIN_DURATION;   // 5/7
 
-    spinFinishTimeoutRef.current = window.setTimeout(() => {
-      rotationRef.current = finalRotation;
-      if (wheelRef.current) {
-        wheelRef.current.style.transition = "none";
+      // Max speed = cruise speed. We need total area under speed curve = 1
+      // Phase 1 (accelerate): triangle area = 0.5 * t1 * vMax
+      // Phase 2 (cruise): rectangle area = (t2 - t1) * vMax
+      // Phase 3 (decelerate): triangle area = 0.5 * (1 - t2) * vMax
+      // Total = vMax * (0.5*t1 + (t2-t1) + 0.5*(1-t2)) = 1
+      const vMax = 1 / (0.5 * t1 + (t2 - t1) + 0.5 * (1 - t2));
+
+      if (t <= t1) {
+        // Accelerating: quadratic ease-in
+        const phase = t / t1;
+        return 0.5 * vMax * t1 * phase * phase;
+      } else if (t <= t2) {
+        // Cruising at max speed
+        const accelDist = 0.5 * vMax * t1;
+        return accelDist + vMax * (t - t1);
+      } else {
+        // Decelerating: quadratic ease-out
+        const accelDist = 0.5 * vMax * t1;
+        const cruiseDist = vMax * (t2 - t1);
+        const decelDuration = 1 - t2;
+        const phase = (t - t2) / decelDuration;
+        const decelDist = vMax * decelDuration * (phase - 0.5 * phase * phase);
+        return accelDist + cruiseDist + decelDist;
       }
-      finishSpin(reward);
-      spinFinishTimeoutRef.current = null;
-    }, SPIN_DURATION + 80);
+    };
+
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / SPIN_DURATION, 1);
+      const progress = easeThreePhase(t);
+      const currentDeg = startRotation + totalRotation * progress;
+
+      if (wheelRef.current) {
+        wheelRef.current.style.transform = `rotate(${currentDeg}deg)`;
+      }
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        rotationRef.current = finalRotation;
+        rafRef.current = null;
+        finishSpin(reward);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
   };
 
   return (
