@@ -363,9 +363,9 @@ const WheelPage = () => {
     }
 
     const easeFourPhase = (t: number): number => {
-      const p1 = 1000 / SPIN_DURATION;  // 0-1s
-      const p2 = 2000 / SPIN_DURATION;  // 1-2s
-      const p3 = 4000 / SPIN_DURATION;  // 2-4s
+      const p1 = 500 / SPIN_DURATION;   // 0-0.5s
+      const p2 = 2000 / SPIN_DURATION;  // 0.5-2s
+      const p3 = 3000 / SPIN_DURATION;  // 2-3s
 
       const v3 = 1;
       const v2 = 0.6;
