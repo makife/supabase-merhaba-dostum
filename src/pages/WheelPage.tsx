@@ -57,6 +57,7 @@ const WheelPage = () => {
   const navigate = useNavigate();
 
   const [isSpinning, setIsSpinning] = useState(false);
+  const spinLockRef = useRef(false);
   const [canSpin, setCanSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
