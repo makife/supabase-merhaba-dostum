@@ -184,11 +184,12 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }).eq("id", player.user_id);
 
-          await supabase.from("notifications").insert({
+          const { error: notifError } = await supabase.from("notifications").insert({
             user_id: player.user_id,
             type: "challenge_prize",
             message: `🧠 Dünkü Kelime Hafıza challenge'ını tamamladın! +1 Çark Çevirme Hakkı 🎡 kazandın!`,
           });
+          if (notifError) console.error(`❌ Notification insert error (memory): ${notifError.message}`);
 
           awarded++;
           console.log(`🎁 Memory: ${player.username} → +1 bonus_spin`);
