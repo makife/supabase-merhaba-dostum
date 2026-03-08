@@ -135,28 +135,43 @@ const WheelPage = () => {
 
   usePageResync(handleWheelResync, "WheelPage", false);
 
-  useEffect(() => {
-    const loadSounds = async () => {
-      try {
-        soundsRef.current = {
-          playSpecialSound: (path: string, volume = 0.7) => {
-            if (Capacitor.isNativePlatform()) {
-              import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-                playSpecialNativeSound(path, volume);
-              });
-            } else {
-              const audio = new Audio(path);
-              audio.volume = volume;
-              audio.play().catch(() => {});
-            }
-          },
-        };
-      } catch (e) {
-        console.warn("Ses modülü yüklenemedi:", e);
-      }
-    };
+  const preloadedAudioRef = useRef<HTMLAudioElement | null>(null);
 
-    loadSounds();
+  useEffect(() => {
+    // Preload wheel sound for instant playback
+    if (!Capacitor.isNativePlatform()) {
+      const audio = new Audio("/carkSesi.mp3");
+      audio.preload = "auto";
+      audio.load();
+      preloadedAudioRef.current = audio;
+    }
+
+    soundsRef.current = {
+      playSpecialSound: (path: string, volume = 0.7) => {
+        if (Capacitor.isNativePlatform()) {
+          import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
+            playSpecialNativeSound(path, volume);
+          });
+        } else {
+          // Use preloaded audio for wheel sound
+          if (path === "/carkSesi.mp3" && preloadedAudioRef.current) {
+            const audio = preloadedAudioRef.current;
+            audio.currentTime = 0;
+            audio.volume = volume;
+            audio.play().catch(() => {});
+            // Prepare next preload
+            const next = new Audio("/carkSesi.mp3");
+            next.preload = "auto";
+            next.load();
+            preloadedAudioRef.current = next;
+          } else {
+            const audio = new Audio(path);
+            audio.volume = volume;
+            audio.play().catch(() => {});
+          }
+        }
+      },
+    };
   }, []);
 
   // Sadece mount'ta ve user değiştiğinde kontrol et
