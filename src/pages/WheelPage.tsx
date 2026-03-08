@@ -173,7 +173,8 @@ const WheelPage = () => {
   };
 
   const spinWheel = async () => {
-    if (!user || !canSpin || isSpinning) return;
+    if (!user || !canSpin || isSpinning || spinLockRef.current) return;
+    spinLockRef.current = true;
 
     // Sesi asenkron başlatmayı dene, UI'ı bloklamasın
     setTimeout(() => {
