@@ -338,32 +338,30 @@ const WheelPage = () => {
     }
 
     const finalRotation = rotationRef.current + 360 * 8 + distanceToTarget;
-    const startRotation = rotationRef.current;
-    const startTime = performance.now();
 
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / SPIN_DURATION, 1);
-      const easedProgress = easeOutCubic(progress);
-      const currentRotation = startRotation + (finalRotation - startRotation) * easedProgress;
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = "none";
+      wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
 
-      if (wheelRef.current) {
-        wheelRef.current.style.transform = `rotate(${currentRotation}deg)`;
-      }
+      // Reflow: transition'ın garanti başlaması için
+      void wheelRef.current.offsetHeight;
 
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      rotationRef.current = finalRotation;
-      finishSpin(reward);
-    };
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
-    animationFrameRef.current = requestAnimationFrame(animate);
+
+    if (spinFinishTimeoutRef.current) {
+      window.clearTimeout(spinFinishTimeoutRef.current);
+    }
+
+    spinFinishTimeoutRef.current = window.setTimeout(() => {
+      rotationRef.current = finalRotation;
+      if (wheelRef.current) {
+        wheelRef.current.style.transition = "none";
+      }
+      finishSpin(reward);
+      spinFinishTimeoutRef.current = null;
+    }, SPIN_DURATION + 80);
   };
 
   return (
