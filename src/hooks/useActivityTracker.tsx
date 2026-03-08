@@ -92,14 +92,14 @@ export function useActivityTracker() {
     // Capacitor App state listener
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        setTimeout(() => {
-          const isVisible = document.visibilityState === "visible";
-          if (isVisible && !isPushSuppressed()) {
-            updateLastSeen();
-          } else {
-            console.log(`⏭️ ActivityTracker: Push wake algılandı (visible=${isVisible}, suppressed=${isPushSuppressed()}), online güncelleme atlanıyor`);
-          }
-        }, 1500);
+        // Push suppression kontrolü - ama gecikme olmadan hemen kontrol et
+        if (isPushSuppressed()) {
+          console.log(`⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor`);
+          return;
+        }
+        // 🔥 Anında online yap (eski 1500ms gecikme kaldırıldı)
+        console.log("🟢 ActivityTracker: App active → anında online yapılıyor");
+        updateLastSeen();
       } else {
         // Uygulama arka plana geçince offline yap
         setOffline();
