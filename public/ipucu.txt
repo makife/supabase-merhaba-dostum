@@ -14,5 +14,7 @@ Market sayfasından reklam izle butonuyla her gün reklam izleyerek 5 mürekkep 
 Genel sohbet sayfasında rumuzların önüne "@" sembolü ekleyerek ilgili kişilere mention gönderebilirsin.
 Özel sohbet pencerelerini sola kaydırarak silebilir ve engelle butonuyla kişileri engelleyebilirsin.
 Sohbet sayfasından veya liderlik sayfasından kişilerin avatarlarına tıklayarak profil bilgilerine ulaşabilirsin.
-Farklı eğlenceleri deneyimlemen için ana sayfaya mini oyunlar ekledik.
+Lider sıralamalarında büyük ödüller seni bekliyor.
 Genel sohbet sayfasında gönderilen mesajlara emojili tepki ekleyebilirsin.
+Düello & Görevler kısmından günlük oyunları tamamlayarak ödüller kazanabilirsin.
+Online bildirimi almak istemezsen arkadaşlar sayfasından bu özelliği kapatabilirsin.
