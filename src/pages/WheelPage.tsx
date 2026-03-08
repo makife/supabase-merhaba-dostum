@@ -77,6 +77,7 @@ const WheelPage = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef(0);
   const spinFinishTimeoutRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
