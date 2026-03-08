@@ -90,6 +90,7 @@ const WordMemoryGame = () => {
       const timeSpent = SURE - kalanSure;
       const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
       saveScore(rawScore, hamle);
+      markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
     }
   }, [oyunBitti]);
@@ -122,7 +123,7 @@ const WordMemoryGame = () => {
 
   const oyunuBaslat = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
-    markAsPlayed();
+    // markAsPlayed oyun bitince çağrılacak
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
