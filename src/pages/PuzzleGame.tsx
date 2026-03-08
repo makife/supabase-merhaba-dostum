@@ -99,7 +99,6 @@ const PuzzleGamePage: React.FC = () => {
       targetWord: randomWord,
       started: true,
     });
-    markAsPlayed();
   }, []);
 
   // Don't auto-initialize — wait for user to click start
@@ -122,6 +121,7 @@ const PuzzleGamePage: React.FC = () => {
         ? parseFloat((10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2))
         : 0;
       saveScore(rawScore, gameState.moves);
+      markAsPlayed();
     }
   }, [gameState.isCompleted]);
 
