@@ -121,9 +121,11 @@ const WordMemoryGame = () => {
     return karisik.join("");
   };
 
+  const ilkKartAcildiRef = React.useRef(false);
+
   const oyunuBaslat = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
-    markAsPlayed();
+    ilkKartAcildiRef.current = false;
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
@@ -163,6 +165,12 @@ const WordMemoryGame = () => {
     if (secilenKartlar.length === 2) return;
     if (kartlar[kartIndex].acik || kartlar[kartIndex].eslesti) return;
     if (oyunBitti) return;
+
+    // İlk kart açıldığında oynadı olarak işaretle
+    if (!ilkKartAcildiRef.current) {
+      ilkKartAcildiRef.current = true;
+      markAsPlayed();
+    }
 
     const yeniKartlar = [...kartlar];
     yeniKartlar[kartIndex].acik = true;
