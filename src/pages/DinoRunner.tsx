@@ -534,6 +534,10 @@ const DinoRunner = () => {
                     <p style={{color: '#aaa', marginBottom: '8px'}}>Bugünkü challenge tamamlandı! ✅</p>
                     <p style={{fontSize: '20px', fontWeight: 'bold', color: '#FFD700'}}>Puanın: {todayScore}</p>
                     <p style={{fontSize: '12px', color: '#888', marginTop: '8px'}}>Yarın tekrar dene 🎯</p>
+                    <div style={{marginTop: '10px', background: 'rgba(255,165,0,0.15)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: '8px', padding: '8px 12px'}}>
+                      <p style={{fontSize: '12px', color: '#FFD700', fontWeight: 'bold'}}>🏆 1. Lik Ödülü</p>
+                      <p style={{fontSize: '14px', color: '#fff', marginTop: '4px'}}>📄 3 Oyun Sayfası</p>
+                    </div>
                   </div>
                 ) : (
                   <div>
