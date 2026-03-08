@@ -213,6 +213,7 @@ const WheelPage = () => {
       giveReward(reward);
 
       setIsSpinning(false);
+      spinLockRef.current = false;
       
       const remaining = totalSpins - 1;
       setTotalSpins(remaining);
