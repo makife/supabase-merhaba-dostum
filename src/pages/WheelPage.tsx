@@ -172,13 +172,16 @@ const WheelPage = () => {
   useEffect(() => {
     if (wheelRef.current) {
       wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
+      wheelRef.current.style.willChange = "transform";
+      wheelRef.current.style.backfaceVisibility = "hidden";
+      wheelRef.current.style.transformOrigin = "50% 50%";
     }
   }, []);
 
   useEffect(() => {
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (spinFinishTimeoutRef.current) {
+        window.clearTimeout(spinFinishTimeoutRef.current);
       }
     };
   }, []);
