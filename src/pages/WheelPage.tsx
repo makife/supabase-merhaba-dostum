@@ -350,7 +350,10 @@ const WheelPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden">
+    <div
+      className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden"
+      style={{ touchAction: isSpinning ? "none" : "auto" }}
+    >
       {/* ⚡️ OPTİMİZASYON: Arkaplan efektlerini basitleştirdik. 
         blur-[100px] mobil cihazlarda GPU'yu çok yorar. 
         Bunun yerine daha basit bir gradient veya daha düşük blur kullanmalısın.
@@ -358,6 +361,32 @@ const WheelPage = () => {
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-30">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/40 to-blue-900/40" />
       </div>
+
+      {isSpinning && (
+        <div
+          className="fixed inset-0 z-50"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onPointerMove={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onWheel={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        />
+      )}
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <div className="flex items-center justify-start">
