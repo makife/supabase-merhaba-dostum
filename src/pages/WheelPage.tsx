@@ -379,10 +379,6 @@ const WheelPage = () => {
             <div
               ref={wheelRef}
               className="w-full h-full"
-              style={{
-                transform: `rotate(${rotationRef.current}deg)`,
-                willChange: isSpinning ? "transform" : "auto",
-              }}
             >
               <svg viewBox="-1 -1 2 2" className="w-full h-full transform -rotate-90">
                 {renderedSegments.map((segment, index) => (
