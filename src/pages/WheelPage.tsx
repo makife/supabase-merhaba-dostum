@@ -202,6 +202,9 @@ const WheelPage = () => {
       if (spinFinishTimeoutRef.current) {
         window.clearTimeout(spinFinishTimeoutRef.current);
       }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
   }, []);
 
