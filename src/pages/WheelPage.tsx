@@ -361,7 +361,7 @@ const WheelPage = () => {
       // Reflow: transition'ın garanti başlaması için
       void wheelRef.current.offsetHeight;
 
-      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.05, 0.45, 0.15, 1)`;
+      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.0, 0.7, 0.1, 1)`;
       wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
 
