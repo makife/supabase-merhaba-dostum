@@ -859,10 +859,10 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-purple-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-600 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -870,10 +870,10 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.puzzle ? <Check className="w-6 h-6 text-purple-300" /> : "🧩"}
+                    {challengeStatus.puzzle ? <Check className="w-6 h-6 text-amber-300" /> : "🧩"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-purple-400/30 text-purple-200 border-purple-400/40" : "bg-purple-400/20 text-purple-200 border-purple-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -892,10 +892,10 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-red-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-red-500 via-orange-600 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-600 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -903,10 +903,10 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.reaktor ? <Check className="w-6 h-6 text-red-300" /> : "☢️"}
+                    {challengeStatus.reaktor ? <Check className="w-6 h-6 text-amber-300" /> : "☢️"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-red-400/30 text-red-200 border-red-400/40" : "bg-red-400/20 text-red-200 border-red-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -925,10 +925,10 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-cyan-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-600 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -936,10 +936,10 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-cyan-300" /> : "⚡"}
+                    {challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-amber-300" /> : "⚡"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-cyan-400/30 text-cyan-200 border-cyan-400/40" : "bg-cyan-400/20 text-cyan-200 border-cyan-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -958,10 +958,10 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-green-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-600 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-7xl font-bungee text-white/10 select-none pointer-events-none z-[1] drop-shadow-lg">
@@ -969,10 +969,10 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl shadow-inner">
-                    {challengeStatus.memory ? <Check className="w-6 h-6 text-green-300" /> : "🧠"}
+                    {challengeStatus.memory ? <Check className="w-6 h-6 text-amber-300" /> : "🧠"}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-green-400/30 text-green-200 border-green-400/40" : "bg-green-400/20 text-green-200 border-green-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
