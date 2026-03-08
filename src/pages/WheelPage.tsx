@@ -68,8 +68,6 @@ const WheelPage = () => {
   // useSounds lazy load - sadece spin sırasında yükle
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
-  // Bezier eğrisini state'te tutmaya gerek yok, sabit bir string
-  const timingFunction = "cubic-bezier(0.2, 0, 0.1, 1)";
 
   // ⚡️ OPTİMİZASYON: Koordinat hesaplamalarını useMemo içine aldık.
   // Bu sayede her render'da (spin sırasında) tekrar tekrar matematik işlemi yapılmaz.
