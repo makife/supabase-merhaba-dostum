@@ -429,14 +429,25 @@ const MarketPage = () => {
     try {
       console.log("[Market] 📺 Reklam yükleniyor...");
 
-      // 🔧 Önce reklamı yükle - başarısız olursa devam etme
-      const adLoaded = await loadRewardedAd();
+      // 🔧 Önce reklamı yükle - başarısız olursa 1 kez retry yap
+      let adLoaded = await loadRewardedAd();
 
-      if (!adLoaded) {
-        console.log("[Market] ❌ Reklam yüklenemedi");
+      // Eğer hata objesi döndüyse veya false ise, 1 kez daha dene
+      if (!adLoaded || (adLoaded && typeof adLoaded === 'object' && !adLoaded.success)) {
+        console.log("[Market] ⚠️ İlk deneme başarısız, 2 saniye sonra tekrar deneniyor...");
+        await new Promise(r => setTimeout(r, 2000));
+        adLoaded = await loadRewardedAd();
+      }
+
+      // Hala başarısız
+      if (!adLoaded || (adLoaded && typeof adLoaded === 'object' && !adLoaded.success)) {
+        const errorDetail = (typeof adLoaded === 'object' && adLoaded?.error) 
+          ? adLoaded.error 
+          : "Reklam sunucusuna ulaşılamadı";
+        console.log("[Market] ❌ Reklam yüklenemedi:", errorDetail);
         toast({
           title: "Reklam Yüklenemedi",
-          description: "Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.",
+          description: `Hata: ${errorDetail}`,
           variant: "destructive",
         });
         return;
