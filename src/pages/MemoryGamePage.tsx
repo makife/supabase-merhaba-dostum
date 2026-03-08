@@ -166,6 +166,12 @@ const WordMemoryGame = () => {
     if (kartlar[kartIndex].acik || kartlar[kartIndex].eslesti) return;
     if (oyunBitti) return;
 
+    // İlk kart açıldığında oynadı olarak işaretle
+    if (!ilkKartAcildiRef.current) {
+      ilkKartAcildiRef.current = true;
+      markAsPlayed();
+    }
+
     const yeniKartlar = [...kartlar];
     yeniKartlar[kartIndex].acik = true;
     setKartlar(yeniKartlar);
