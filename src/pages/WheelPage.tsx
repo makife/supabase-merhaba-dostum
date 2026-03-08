@@ -362,35 +362,42 @@ const WheelPage = () => {
       wheelRef.current.style.transition = "none";
     }
 
-    // 3-phase easing: accelerate (0-3s), cruise (3-5s), decelerate (5-7s)
-    const easeThreePhase = (t: number): number => {
-      const t1 = PHASE_ACCEL_END / SPIN_DURATION;   // 3/7
-      const t2 = PHASE_CRUISE_END / SPIN_DURATION;   // 5/7
+    const easeFourPhase = (t: number): number => {
+      const p1 = 1000 / SPIN_DURATION;  // 0-1s
+      const p2 = 2000 / SPIN_DURATION;  // 1-2s
+      const p3 = 4000 / SPIN_DURATION;  // 2-4s
 
-      // Max speed = cruise speed. We need total area under speed curve = 1
-      // Phase 1 (accelerate): triangle area = 0.5 * t1 * vMax
-      // Phase 2 (cruise): rectangle area = (t2 - t1) * vMax
-      // Phase 3 (decelerate): triangle area = 0.5 * (1 - t2) * vMax
-      // Total = vMax * (0.5*t1 + (t2-t1) + 0.5*(1-t2)) = 1
-      const vMax = 1 / (0.5 * t1 + (t2 - t1) + 0.5 * (1 - t2));
+      const v3 = 1;
+      const v2 = 0.6;
+      const v1 = 0.3;
 
-      if (t <= t1) {
-        // Accelerating: quadratic ease-in
-        const phase = t / t1;
-        return 0.5 * vMax * t1 * phase * phase;
-      } else if (t <= t2) {
-        // Cruising at max speed
-        const accelDist = 0.5 * vMax * t1;
-        return accelDist + vMax * (t - t1);
-      } else {
-        // Decelerating: quadratic ease-out
-        const accelDist = 0.5 * vMax * t1;
-        const cruiseDist = vMax * (t2 - t1);
-        const decelDuration = 1 - t2;
-        const phase = (t - t2) / decelDuration;
-        const decelDist = vMax * decelDuration * (phase - 0.5 * phase * phase);
-        return accelDist + cruiseDist + decelDist;
+      const area = 0.5 * p1 * v1
+                 + 0.5 * (v1 + v2) * (p2 - p1)
+                 + 0.5 * (v2 + v3) * (p3 - p2)
+                 + 0.5 * v3 * (1 - p3);
+      const s = 1 / area;
+      const sv1 = v1 * s, sv2 = v2 * s, sv3 = v3 * s;
+
+      if (t <= p1) {
+        const f = t / p1;
+        return 0.5 * sv1 * p1 * f * f;
       }
+      const d1 = 0.5 * sv1 * p1;
+      if (t <= p2) {
+        const f = (t - p1) / (p2 - p1);
+        const dur = p2 - p1;
+        return d1 + sv1 * dur * f + 0.5 * (sv2 - sv1) * dur * f * f;
+      }
+      const d2 = d1 + 0.5 * (sv1 + sv2) * (p2 - p1);
+      if (t <= p3) {
+        const f = (t - p2) / (p3 - p2);
+        const dur = p3 - p2;
+        return d2 + sv2 * dur * f + 0.5 * (sv3 - sv2) * dur * f * f;
+      }
+      const d3 = d2 + 0.5 * (sv2 + sv3) * (p3 - p2);
+      const f = (t - p3) / (1 - p3);
+      const dur = 1 - p3;
+      return d3 + sv3 * dur * (f - 0.5 * f * f);
     };
 
     const startTime = performance.now();
