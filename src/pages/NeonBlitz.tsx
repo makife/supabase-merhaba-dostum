@@ -236,6 +236,15 @@ const NeonBlitz: React.FC = () => {
       <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>REFLEKS</h1>
       <p style={s.subtitle}>Hızlı Olan Kazanır</p>
 
+      <div style={{ background: 'rgba(255,165,0,0.1)', border: '1px solid rgba(255,165,0,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, width: '100%', maxWidth: 320 }}>
+        <p style={{ fontSize: 12, color: '#FFD700', fontWeight: 'bold', marginBottom: 6, textAlign: 'center' }}>🏆 Level Ödülleri</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <p style={{ fontSize: 11, color: '#ccc' }}>📌 Lvl 15-19: <span style={{ color: '#a78bfa' }}>+2 Fısılda</span></p>
+          <p style={{ fontSize: 11, color: '#ccc' }}>📌 Lvl 20-24: <span style={{ color: '#a78bfa' }}>+2 Fısılda</span>, <span style={{ color: '#60a5fa' }}>+2 Değiştir</span></p>
+          <p style={{ fontSize: 11, color: '#ccc' }}>📌 Lvl 25+: <span style={{ color: '#a78bfa' }}>+2 Fısılda</span>, <span style={{ color: '#60a5fa' }}>+2 Değiştir</span>, <span style={{ color: '#4ade80' }}>+2 Senyaz</span></p>
+        </div>
+      </div>
+
       {hasPlayedToday ? (
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <p style={{ color: "#4ade80", fontWeight: "bold", fontSize: "1rem", marginBottom: 6 }}>
