@@ -14,33 +14,56 @@ const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: n
   memory: { type: "spins", field: "bonus_spins", amount: 1, label: "1 Çark Çevirme Hakkı 🎡" },
 };
 
-// Neon blitz level-based rewards
-function getNeonBlitzRewards(level: number): { fields: Record<string, number>; label: string } | null {
+// Neon blitz level-based rewards (written to user_inventory)
+function getNeonBlitzRewards(level: number): { items: { item_type: string; quantity: number }[]; label: string } | null {
   if (level >= 25) {
     return {
-      fields: { fisilida_joker_used: -2, degistir_joker_used: -2, senyaz_joker_used: -2 },
+      items: [
+        { item_type: "fisilida", quantity: 2 },
+        { item_type: "degistir", quantity: 2 },
+        { item_type: "senyaz", quantity: 2 },
+      ],
       label: "2 Fısılda + 2 Değiştir + 2 Senyaz"
     };
   } else if (level >= 20) {
     return {
-      fields: { fisilida_joker_used: -2, degistir_joker_used: -2 },
+      items: [
+        { item_type: "fisilida", quantity: 2 },
+        { item_type: "degistir", quantity: 2 },
+      ],
       label: "2 Fısılda + 2 Değiştir"
     };
   } else if (level >= 15) {
     return {
-      fields: { fisilida_joker_used: -2 },
+      items: [
+        { item_type: "fisilida", quantity: 2 },
+      ],
       label: "2 Fısılda"
     };
   }
   return null;
 }
 
-// Joker field mappings (inventory fields in profiles)
-const JOKER_INVENTORY_FIELDS: Record<string, string> = {
-  fisilida_joker_used: "hint_credits",   // fısılda = hint_credits
-  degistir_joker_used: "bonus_credits",  // değiştir = bonus_credits  
-  senyaz_joker_used: "bonus_spins",      // senyaz = bonus_spins
-};
+// Helper: upsert joker into user_inventory
+async function upsertInventoryItem(supabase: any, userId: string, itemType: string, addQuantity: number) {
+  const { data: existing } = await supabase
+    .from("user_inventory")
+    .select("id, quantity")
+    .eq("user_id", userId)
+    .eq("item_type", itemType)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("user_inventory")
+      .update({ quantity: (existing.quantity || 0) + addQuantity, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+  } else {
+    await supabase
+      .from("user_inventory")
+      .insert({ user_id: userId, item_type: itemType, quantity: addQuantity });
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -116,20 +139,10 @@ Deno.serve(async (req) => {
           const rewards = getNeonBlitzRewards(level);
           if (!rewards) continue;
 
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("hint_credits, bonus_credits, bonus_spins")
-            .eq("id", player.user_id)
-            .single();
-
-          if (!profile) continue;
-
-          const updateObj: Record<string, any> = { updated_at: new Date().toISOString() };
-          if (level >= 15) updateObj.hint_credits = ((profile as any).hint_credits || 0) + 2;
-          if (level >= 20) updateObj.bonus_credits = ((profile as any).bonus_credits || 0) + 2;
-          if (level >= 25) updateObj.bonus_spins = ((profile as any).bonus_spins || 0) + 2;
-
-          await supabase.from("profiles").update(updateObj).eq("id", player.user_id);
+          // Write jokers to user_inventory (correct location)
+          for (const item of rewards.items) {
+            await upsertInventoryItem(supabase, player.user_id, item.item_type, item.quantity);
+          }
 
           await supabase.from("notifications").insert({
             user_id: player.user_id,
