@@ -4,7 +4,7 @@
  * - Saves scores to challenge_scores table
  * - Fetches leaderboard for each challenge type
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -31,8 +31,21 @@ export function useDailyChallenge(challengeType: ChallengeType) {
   const [todayScore, setTodayScore] = useState<number | null>(null);
   const [leaderboard, setLeaderboard] = useState<ChallengeScore[]>([]);
   const [loading, setLoading] = useState(true);
+  const markedRef = useRef(false);
 
   const todayDate = getTurkeyDate();
+
+  const refreshLeaderboard = useCallback(async () => {
+    const { data } = await supabase
+      .from("challenge_scores" as any)
+      .select("id, user_id, username, avatar_url, score, words_found, date")
+      .eq("challenge_type", challengeType)
+      .eq("date", todayDate)
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: true })
+      .limit(50);
+    if (data) setLeaderboard(data as any);
+  }, [challengeType, todayDate]);
 
   // Check if already played today & fetch leaderboard
   useEffect(() => {
@@ -60,6 +73,7 @@ export function useDailyChallenge(challengeType: ChallengeType) {
       if (myScoreRes.data) {
         setHasPlayedToday(true);
         setTodayScore((myScoreRes.data as any).score);
+        markedRef.current = true;
       }
 
       if (leaderboardRes.data) {
@@ -72,11 +86,59 @@ export function useDailyChallenge(challengeType: ChallengeType) {
     fetchData();
   }, [user, challengeType, todayDate]);
 
-  // Save score after game ends
-  const saveScore = useCallback(async (score: number, wordsFound: number) => {
-    if (!user || hasPlayedToday) return false;
+  // Mark as played immediately (score 0) — called when game starts
+  const markAsPlayed = useCallback(async () => {
+    if (!user || markedRef.current) return;
+    markedRef.current = true;
 
-    // Get username from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("id", user.id)
+      .single();
+
+    await supabase
+      .from("challenge_scores" as any)
+      .insert({
+        user_id: user.id,
+        challenge_type: challengeType,
+        score: 0,
+        words_found: 0,
+        date: todayDate,
+        username: profile?.username || "Anonim",
+        avatar_url: profile?.avatar_url || null,
+      });
+
+    setHasPlayedToday(true);
+    setTodayScore(0);
+    await refreshLeaderboard();
+  }, [user, challengeType, todayDate, refreshLeaderboard]);
+
+  // Save/update score after game ends
+  const saveScore = useCallback(async (score: number, wordsFound: number) => {
+    if (!user) return false;
+
+    if (markedRef.current) {
+      // Already marked — update existing row (only if score > 0)
+      if (score <= 0) return false;
+
+      const { error } = await supabase
+        .from("challenge_scores" as any)
+        .update({ score, words_found: wordsFound })
+        .eq("user_id", user.id)
+        .eq("challenge_type", challengeType)
+        .eq("date", todayDate);
+
+      if (!error) {
+        setTodayScore(score);
+        await refreshLeaderboard();
+        return true;
+      }
+      console.error("[DailyChallenge] Update error:", error);
+      return false;
+    }
+
+    // First time — insert
     const { data: profile } = await supabase
       .from("profiles")
       .select("username, avatar_url")
@@ -96,25 +158,17 @@ export function useDailyChallenge(challengeType: ChallengeType) {
       });
 
     if (!error) {
+      markedRef.current = true;
       setHasPlayedToday(true);
       setTodayScore(score);
-      // Refresh leaderboard
-      const { data } = await supabase
-        .from("challenge_scores" as any)
-        .select("id, user_id, username, avatar_url, score, words_found, date")
-        .eq("challenge_type", challengeType)
-        .eq("date", todayDate)
-        .order("score", { ascending: false })
-        .order("created_at", { ascending: true })
-        .limit(50);
-      if (data) setLeaderboard(data as any);
+      await refreshLeaderboard();
       return true;
     }
     console.error("[DailyChallenge] Save error:", error);
     return false;
-  }, [user, hasPlayedToday, challengeType, todayDate]);
+  }, [user, challengeType, todayDate, refreshLeaderboard]);
 
-  return { hasPlayedToday, todayScore, leaderboard, loading, saveScore };
+  return { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed };
 }
 
 // Static helper to check completion status for homepage

@@ -24,7 +24,7 @@ const generateColor = () => {
 
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPlayedToday, todayScore, leaderboard, loading, saveScore } = useDailyChallenge("neon_blitz");
+  const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
   const [score, setScore] = useState(0);
@@ -115,6 +115,7 @@ const NeonBlitz: React.FC = () => {
 
   const startGame = useCallback(() => {
     if (hasPlayedToday) return;
+    markAsPlayed();
 
     clearTimer();
     isPlayingRef.current = false;
@@ -146,7 +147,7 @@ const NeonBlitz: React.FC = () => {
       isPlayingRef.current = true;
       beginTurn();
     }, 50);
-  }, [beginTurn, hasPlayedToday]);
+  }, [beginTurn, hasPlayedToday, markAsPlayed]);
 
   // Save score on game over
   useEffect(() => {

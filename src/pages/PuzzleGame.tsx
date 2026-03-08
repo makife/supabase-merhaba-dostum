@@ -22,7 +22,7 @@ const WORD_LENGTH = 8;
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("puzzle");
+  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } = useDailyChallenge("puzzle");
 
   const wordsRef = useRef<string[]>([]);
   const [isWordsLoaded, setIsWordsLoaded] = useState(false);
@@ -137,6 +137,11 @@ const PuzzleGamePage: React.FC = () => {
 
   const makeMove = (index: number) => {
     if (gameState.isCompleted || hasPlayedToday || !isValidMove(index, gameState.emptyIndex)) return;
+
+    // İlk hamle yapılınca oynanmış say
+    if (!gameState.isRunning) {
+      markAsPlayed();
+    }
 
     const newBoard = [...gameState.board];
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
