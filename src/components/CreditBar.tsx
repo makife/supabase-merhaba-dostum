@@ -142,12 +142,11 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
       
       <div className="space-y-1">
         {/* 5 Parçalı Progress Bar */}
-        <div className="flex gap-1 h-2.5 w-full">
+        <div className="flex gap-1 h-3 w-full">
           {segments.map((color, index) => (
-            <div
-              key={index}
-              className={`flex-1 rounded-full transition-colors duration-300 border border-white/90 ring-1 ring-inset ring-white/90 ${color}`}
-            />
+            <div key={index} className="flex-1 rounded-full border border-white p-[1px]">
+              <div className={`h-full w-full rounded-full transition-colors duration-300 ${color}`} />
+            </div>
           ))}
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
