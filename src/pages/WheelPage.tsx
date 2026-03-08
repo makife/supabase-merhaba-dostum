@@ -160,8 +160,11 @@ const WheelPage = () => {
     loadSounds();
   }, []);
 
+  // Sadece mount'ta ve user değiştiğinde kontrol et
+  const initialCheckDone = useRef(false);
   useEffect(() => {
-    if (user && profile) {
+    if (user && profile && !initialCheckDone.current) {
+      initialCheckDone.current = true;
       checkDailySpinAvailability();
     }
   }, [user, profile, checkDailySpinAvailability]);
