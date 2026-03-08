@@ -203,7 +203,6 @@ const WheelPage = () => {
 
     // Doğrudan DOM'a uygula — React re-render'dan bağımsız
     if (wheelRef.current) {
-      wheelRef.current.style.transition = `transform 8500ms cubic-bezier(0.2, 0, 0.1, 1)`;
       wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
 
