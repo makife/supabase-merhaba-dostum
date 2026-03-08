@@ -919,7 +919,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     fetchOnlineUsers();
 
-    // ✅ Polling kaldırıldı - sadece Realtime subscription ile güncelleniyor
+    // ✅ Realtime + polling fallback (Realtime kopunca liste donmasın)
     const channel = supabase
       .channel("presence_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" as any }, (payload) => {
@@ -928,11 +928,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
       .subscribe();
 
+    // 🔄 Hafif polling fallback - Realtime koptuğunda bile güncel kalsın
+    const pollingInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchOnlineUsers();
+      }
+    }, 30000); // 30 saniyede bir
+
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
+      clearInterval(pollingInterval);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
