@@ -139,9 +139,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
-    "bg-white " +
-    "border-2 border-gray-200 " +
-    "active:bg-gray-100 " +
+    "bg-gray-700 " +
+    "border-2 border-gray-600 " +
+    "active:bg-gray-600 " +
     "shadow-md";
 
   // ─── Stagger animasyonu ───────────────────────────────────────────────────
@@ -183,7 +183,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
             <span
               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`}
             />
-            <span className="text-xs font-semibold text-gray-900 whitespace-nowrap tracking-wide">
+            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">
               {musicEnabled ? "Ses Açık" : "Ses Kapalı"}
             </span>
             <div
@@ -201,7 +201,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           <div key={item.route} className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
-              <span className="text-xs font-semibold text-gray-900 whitespace-nowrap tracking-wide">{item.title}</span>
+              <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">{item.title}</span>
               <div className="relative flex-shrink-0">
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/10 ${item.iconColor} brightness-125`}
@@ -223,7 +223,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           <div className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
-              <span className="text-xs font-semibold text-gray-900 whitespace-nowrap tracking-wide">Moderatör</span>
+              <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Moderatör</span>
               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-300 flex-shrink-0">
                 <Shield className="w-4 h-4" />
               </div>
@@ -235,7 +235,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleChatOpen} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
-            <span className="text-xs font-semibold text-gray-900 whitespace-nowrap tracking-wide">Sohbet</span>
+            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Sohbet</span>
             <div className="relative flex-shrink-0">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20 text-teal-300">
                 <MessageCircle className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleLogout} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
-            <span className="text-xs font-semibold text-gray-900 whitespace-nowrap tracking-wide">Çıkış</span>
+            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Çıkış</span>
             <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 text-red-300 flex-shrink-0">
               <LogOut className="w-4 h-4" />
             </div>
