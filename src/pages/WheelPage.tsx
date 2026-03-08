@@ -103,8 +103,16 @@ const WheelPage = () => {
     });
   }, []);
 
+  const bonusSpinsRef = useRef(profile?.bonus_spins || 0);
+  
+  // bonus_spins değiştiğinde ref'i güncelle ama re-render tetikleme
+  useEffect(() => {
+    bonusSpinsRef.current = profile?.bonus_spins || 0;
+  }, [profile?.bonus_spins]);
+
   const checkDailySpinAvailability = useCallback(async () => {
     if (!user) return;
+    if (spinLockRef.current) return; // Spin sırasında kontrol yapma
 
     const today = getTodayLocalDate();
     const { data: spinData } = await supabase
@@ -115,12 +123,12 @@ const WheelPage = () => {
       .maybeSingle();
 
     const dailySpinAvailable = !spinData;
-    const bonusSpins = profile?.bonus_spins || 0;
+    const bonusSpins = bonusSpinsRef.current;
     const total = (dailySpinAvailable ? 1 : 0) + bonusSpins;
 
     setTotalSpins(total);
     setCanSpin(total > 0 && !spinLockRef.current);
-  }, [user, profile?.bonus_spins]);
+  }, [user]);
 
   const handleWheelResync = useCallback(async () => {
     await checkDailySpinAvailability();
