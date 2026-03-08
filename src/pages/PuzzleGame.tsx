@@ -14,6 +14,7 @@ interface GameState {
   isRunning: boolean;
   isCompleted: boolean;
   targetWord: string;
+  started: boolean;
 }
 
 const DIFFICULTY = 3 as const;
@@ -36,6 +37,7 @@ const PuzzleGamePage: React.FC = () => {
     isRunning: false,
     isCompleted: false,
     targetWord: "",
+    started: false,
   });
 
   // Load words
@@ -95,12 +97,12 @@ const PuzzleGamePage: React.FC = () => {
       isRunning: false,
       isCompleted: false,
       targetWord: randomWord,
+      started: true,
     });
+    markAsPlayed();
   }, []);
 
-  useEffect(() => {
-    if (isWordsLoaded) initializeBoard();
-  }, [isWordsLoaded]);
+  // Don't auto-initialize — wait for user to click start
 
   // Timer counting UP
   useEffect(() => {
@@ -137,11 +139,6 @@ const PuzzleGamePage: React.FC = () => {
 
   const makeMove = (index: number) => {
     if (gameState.isCompleted || hasPlayedToday || !isValidMove(index, gameState.emptyIndex)) return;
-
-    // İlk hamle yapılınca oynanmış say
-    if (!gameState.isRunning) {
-      markAsPlayed();
-    }
 
     const newBoard = [...gameState.board];
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
