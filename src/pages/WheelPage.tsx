@@ -57,6 +57,7 @@ const WheelPage = () => {
   const navigate = useNavigate();
 
   const [isSpinning, setIsSpinning] = useState(false);
+  const spinLockRef = useRef(false);
   const [canSpin, setCanSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
@@ -172,7 +173,8 @@ const WheelPage = () => {
   };
 
   const spinWheel = async () => {
-    if (!user || !canSpin || isSpinning) return;
+    if (!user || !canSpin || isSpinning || spinLockRef.current) return;
+    spinLockRef.current = true;
 
     // Sesi asenkron başlatmayı dene, UI'ı bloklamasın
     setTimeout(() => {
@@ -211,6 +213,7 @@ const WheelPage = () => {
       giveReward(reward);
 
       setIsSpinning(false);
+      spinLockRef.current = false;
       
       const remaining = totalSpins - 1;
       setTotalSpins(remaining);
