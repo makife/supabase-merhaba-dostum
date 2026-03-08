@@ -175,6 +175,7 @@ const WheelPage = () => {
   const spinWheel = async () => {
     if (!user || !canSpin || isSpinning || spinLockRef.current) return;
     spinLockRef.current = true;
+    setCanSpin(false); // İlk frame'de tekrar tıklamayı fiziksel olarak da kapat
 
     // Sesi asenkron başlatmayı dene, UI'ı bloklamasın
     setTimeout(() => {
