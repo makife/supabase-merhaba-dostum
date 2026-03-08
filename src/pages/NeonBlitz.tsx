@@ -151,12 +151,11 @@ const NeonBlitz: React.FC = () => {
 
   // Save score on game over
   useEffect(() => {
-    if (gameState === "GAMEOVER" && !hasPlayedToday) {
+    if (gameState === "GAMEOVER") {
       const finalLevel = levelRef.current;
       const finalWords = completedWordsRef.current.length;
       saveScore(finalLevel, finalWords).then((saved) => {
         if (saved) {
-          // Show reward toast based on level
           if (finalLevel >= 25) {
             toast.success("🎉 Harika! 2 Fısılda + 2 Değiştir + 2 Senyaz kazandın!", { duration: 5000 });
           } else if (finalLevel >= 20) {

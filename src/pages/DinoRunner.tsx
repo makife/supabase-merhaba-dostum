@@ -297,13 +297,11 @@ const DinoRunner = () => {
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
-        if (!hasPlayedToday) {
-          saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
-            if (saved) {
-              toast.success(`🎯 Challenge puanın kaydedildi: ${finalScore}`);
-            }
-          });
-        }
+        saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
+          if (saved) {
+            toast.success(`🎯 Challenge puanın kaydedildi: ${finalScore}`);
+          }
+        });
         return;
       }
     }

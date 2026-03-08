@@ -117,11 +117,7 @@ const PuzzleGamePage: React.FC = () => {
 
   // Save score when completed
   useEffect(() => {
-    if (gameState.isCompleted && !hasPlayedToday && gameState.moves > 0) {
-      // Score = time / moves (lower is better, but we invert for leaderboard: higher = better)
-      // Actually: score = moves / time means fewer moves & less time = lower. 
-      // For "1st place = best", we want higher score = better.
-      // score = 10000 / (timeElapsed * moves) — higher is better
+    if (gameState.isCompleted && gameState.moves > 0) {
       const rawScore = gameState.timeElapsed > 0 
         ? parseFloat((10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2))
         : 0;
