@@ -257,7 +257,7 @@ const WordMemoryGame = () => {
                 {hasPlayedToday ? (
                   <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full">
                     <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
-                    {todayScore && (
+                    {todayScore != null && todayScore > 0 && (
                       <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>
                     )}
                   </div>
