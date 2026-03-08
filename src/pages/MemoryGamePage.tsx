@@ -84,10 +84,9 @@ const WordMemoryGame = () => {
 
   // Save score when completed
   useEffect(() => {
-    if (!oyunBitti || hasPlayedToday) return;
+    if (!oyunBitti) return;
     const kazandi = kartlar.length > 0 && kartlar.every((k) => k.eslesti);
     if (kazandi && hamle > 0) {
-      // Score: higher = better. 10000 / (time_spent * moves)
       const timeSpent = SURE - kalanSure;
       const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
       saveScore(rawScore, hamle);
