@@ -384,6 +384,7 @@ const WheelPage = () => {
               className={`w-full h-full ${isSpinning ? "pointer-events-none" : ""}`}
               style={{
                 transform: `rotate(${rotationRef.current}deg)`,
+                transition: isSpinning ? "transform 8500ms cubic-bezier(0.2, 0, 0.1, 1)" : "none",
                 willChange: isSpinning ? "transform" : "auto",
               }}
             >
