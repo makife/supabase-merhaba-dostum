@@ -146,7 +146,7 @@ export const CreditBar = ({ showRefresh = false }: CreditBarProps) => {
           {segments.map((color, index) => (
             <div
               key={index}
-              className={`flex-1 rounded-full transition-colors duration-300 border border-white ${color}`}
+              className={`flex-1 rounded-full transition-colors duration-300 ring-1 ring-white ${color}`}
             />
           ))}
         </div>
