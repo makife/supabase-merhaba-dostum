@@ -81,7 +81,7 @@ const LeaderboardPrizeDialog = () => {
         .from("notifications")
         .select("id, message")
         .eq("user_id", user.id)
-        .eq("type", "system")
+        .eq("type", "leaderboard_prize")
         .eq("is_read", false)
         .ilike("message", "%liderlik tablosunda 1. oldun%")
         .order("created_at", { ascending: false })
