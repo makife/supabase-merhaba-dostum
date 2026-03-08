@@ -1,0 +1,1 @@
+UPDATE profiles SET bonus_spins = 50 WHERE id = '7fe7b3a0-eea7-4379-8011-ae7409008664';
