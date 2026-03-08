@@ -935,7 +935,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     return () => {
       console.log("⚠️ [UserContext] Presence cleanup ATLANYOR (bağlantı koruması)");
-      clearInterval(pollingInterval);
+      // pollingInterval kaldırıldı
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
