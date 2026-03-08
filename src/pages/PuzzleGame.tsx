@@ -14,6 +14,7 @@ interface GameState {
   isRunning: boolean;
   isCompleted: boolean;
   targetWord: string;
+  started: boolean;
 }
 
 const DIFFICULTY = 3 as const;
@@ -36,6 +37,7 @@ const PuzzleGamePage: React.FC = () => {
     isRunning: false,
     isCompleted: false,
     targetWord: "",
+    started: false,
   });
 
   // Load words
@@ -95,12 +97,12 @@ const PuzzleGamePage: React.FC = () => {
       isRunning: false,
       isCompleted: false,
       targetWord: randomWord,
+      started: true,
     });
+    markAsPlayed();
   }, []);
 
-  useEffect(() => {
-    if (isWordsLoaded) initializeBoard();
-  }, [isWordsLoaded]);
+  // Don't auto-initialize — wait for user to click start
 
   // Timer counting UP
   useEffect(() => {
@@ -137,11 +139,6 @@ const PuzzleGamePage: React.FC = () => {
 
   const makeMove = (index: number) => {
     if (gameState.isCompleted || hasPlayedToday || !isValidMove(index, gameState.emptyIndex)) return;
-
-    // İlk hamle yapılınca oynanmış say
-    if (!gameState.isRunning) {
-      markAsPlayed();
-    }
 
     const newBoard = [...gameState.board];
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
@@ -223,83 +220,112 @@ const PuzzleGamePage: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-4 mt-2 flex-1 overflow-y-auto">
-            {/* Stats */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5 text-white/80">
-                  <Timer size={14} />
-                  <span className="text-sm font-mono">{formatTime(gameState.timeElapsed)}</span>
+            {/* Start Screen */}
+            {!gameState.started && !gameState.isCompleted && (
+              <div className="flex flex-col items-center gap-4 mt-8">
+                <div className="bg-white/10 p-5 rounded-xl backdrop-blur-sm border border-white/10 w-full text-center">
+                  <div className="text-4xl mb-3">🧩</div>
+                  <h2 className="text-xl font-bold text-white mb-2">Kelime Puzzle</h2>
+                  <p className="text-sm text-white/60 mb-1">3x3 ızgarada harfleri doğru sıraya diz</p>
+                  <div className="mt-3 bg-amber-500/10 border border-amber-400/20 rounded-lg p-3">
+                    <p className="text-xs text-amber-300 font-bold">🏆 1. Lik Ödülü</p>
+                    <p className="text-sm text-white mt-1">🖊️ 3 Damla Mürekkep</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-white/80">
-                  <span className="text-sm">Hamle: <span className="font-bold text-white">{gameState.moves}</span></span>
-                </div>
-              </div>
-              {hasPlayedToday && (
-                <div className="px-3 py-1 bg-purple-500/20 border border-purple-400/30 rounded-xl">
-                  <span className="text-xs text-purple-300 font-bold">Skor: {todayScore}</span>
-                </div>
-              )}
-            </div>
 
-            {/* Target Word */}
-            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/10">
-              <div className="text-center">
-                <div className="text-white/60 text-xs uppercase mb-1 flex items-center justify-center gap-1">
-                  <Type size={12} />
-                  Hedef Kelime
-                </div>
-                <div className="text-2xl font-bold text-white tracking-widest font-mono">{gameState.targetWord}</div>
-              </div>
-            </div>
+                {hasPlayedToday ? (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full">
+                    <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
+                    {todayScore != null && (
+                      <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { initializeBoard(); playSound("buttonClick"); }}
+                    disabled={!isWordsLoaded}
+                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform disabled:opacity-50 shadow-lg shadow-purple-500/30"
+                  >
+                    🚀 Başlat
+                  </button>
+                )}
 
-            {/* Game Board */}
-            <div className="grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm" style={{ gridTemplateColumns: `repeat(${DIFFICULTY}, 1fr)` }}>
-              {gameState.board.map((number, index) => (
-                <button
-                  key={index}
-                  onClick={() => makeMove(index)}
-                  disabled={gameState.isCompleted || hasPlayedToday}
-                  className={`aspect-square rounded-lg font-bold text-2xl transition-all duration-200 transform flex items-center justify-center ${
-                    number === 0
-                      ? "bg-transparent"
-                      : `bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg border-2 border-white/20 ${
-                          isValidMove(index, gameState.emptyIndex) && !gameState.isCompleted && !hasPlayedToday
-                            ? "hover:scale-105 active:scale-95 hover:shadow-cyan-400/50 cursor-pointer"
-                            : "cursor-not-allowed opacity-70"
-                        }`
-                  }`}
-                >
-                  {number !== 0 && getLetterForTile(number)}
+                <button onClick={() => navigate("/")} className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                  Ana Sayfa
                 </button>
-              ))}
-            </div>
-
-            {/* Completed */}
-            {gameState.isCompleted && (
-              <div className="p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
-                <div className="text-green-400 font-bold text-lg mb-1">🎉 Harika!</div>
-                <div className="text-white font-semibold mb-1">"{gameState.targetWord}"</div>
-                <div className="text-white/80 text-sm">
-                  {gameState.moves} hamlede, {formatTime(gameState.timeElapsed)} sürede tamamladın!
-                </div>
-                <div className="text-amber-400 font-bold text-lg mt-2">
-                  Skor: {gameState.timeElapsed > 0 ? (10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2) : 0}
-                </div>
               </div>
             )}
 
-            {/* Already played today */}
-            {hasPlayedToday && !gameState.isCompleted && (
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-                <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
-              </div>
-            )}
+            {/* Game Area - only show when started */}
+            {gameState.started && (
+              <>
+                {/* Stats */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5 text-white/80">
+                      <Timer size={14} />
+                      <span className="text-sm font-mono">{formatTime(gameState.timeElapsed)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-white/80">
+                      <span className="text-sm">Hamle: <span className="font-bold text-white">{gameState.moves}</span></span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Home button */}
-            {(gameState.isCompleted || hasPlayedToday) && (
-              <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
-                Ana Sayfa
-              </button>
+                {/* Target Word */}
+                <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/10">
+                  <div className="text-center">
+                    <div className="text-white/60 text-xs uppercase mb-1 flex items-center justify-center gap-1">
+                      <Type size={12} />
+                      Hedef Kelime
+                    </div>
+                    <div className="text-2xl font-bold text-white tracking-widest font-mono">{gameState.targetWord}</div>
+                  </div>
+                </div>
+
+                {/* Game Board */}
+                <div className="grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm" style={{ gridTemplateColumns: `repeat(${DIFFICULTY}, 1fr)` }}>
+                  {gameState.board.map((number, index) => (
+                    <button
+                      key={index}
+                      onClick={() => makeMove(index)}
+                      disabled={gameState.isCompleted || hasPlayedToday}
+                      className={`aspect-square rounded-lg font-bold text-2xl transition-all duration-200 transform flex items-center justify-center ${
+                        number === 0
+                          ? "bg-transparent"
+                          : `bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg border-2 border-white/20 ${
+                              isValidMove(index, gameState.emptyIndex) && !gameState.isCompleted && !hasPlayedToday
+                                ? "hover:scale-105 active:scale-95 hover:shadow-cyan-400/50 cursor-pointer"
+                                : "cursor-not-allowed opacity-70"
+                            }`
+                      }`}
+                    >
+                      {number !== 0 && getLetterForTile(number)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Completed */}
+                {gameState.isCompleted && (
+                  <div className="p-4 bg-green-500/20 border border-green-400/30 rounded-xl text-center">
+                    <div className="text-green-400 font-bold text-lg mb-1">🎉 Harika!</div>
+                    <div className="text-white font-semibold mb-1">"{gameState.targetWord}"</div>
+                    <div className="text-white/80 text-sm">
+                      {gameState.moves} hamlede, {formatTime(gameState.timeElapsed)} sürede tamamladın!
+                    </div>
+                    <div className="text-amber-400 font-bold text-lg mt-2">
+                      Skor: {gameState.timeElapsed > 0 ? (10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2) : 0}
+                    </div>
+                  </div>
+                )}
+
+                {/* Home button */}
+                {(gameState.isCompleted || hasPlayedToday) && (
+                  <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                    Ana Sayfa
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
