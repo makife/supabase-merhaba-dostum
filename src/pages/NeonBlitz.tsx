@@ -274,8 +274,26 @@ const NeonBlitz: React.FC = () => {
       </div>
 
       {showLeaderboard && (
-        <div style={{ width: "100%", maxWidth: 380, marginBottom: 16 }}>
-          <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Refleks Sıralaması" showLevel />
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }} onClick={() => setShowLeaderboard(false)}>
+          <div
+            style={{
+              background: '#1a1a2e', border: `1px solid ${themeColor}33`,
+              borderRadius: 16, padding: 20, width: '100%', maxWidth: 400,
+              maxHeight: '80vh', overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>🏆 Günlük Refleks Sıralaması</h3>
+              <button onClick={() => setShowLeaderboard(false)} style={{ background: 'none', border: 'none', color: '#888', fontSize: 22, cursor: 'pointer' }}>✕</button>
+            </div>
+            <ChallengeLeaderboard leaderboard={leaderboard} title="" showLevel />
+          </div>
         </div>
       )}
 
