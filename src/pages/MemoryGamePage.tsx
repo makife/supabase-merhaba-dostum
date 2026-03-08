@@ -123,7 +123,7 @@ const WordMemoryGame = () => {
 
   const oyunuBaslat = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
-    // markAsPlayed oyun bitince çağrılacak
+    markAsPlayed();
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
