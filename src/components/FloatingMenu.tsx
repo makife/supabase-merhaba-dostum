@@ -140,7 +140,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
     "bg-[#1a2744] " +
-    "border-2 border-white " +
+    "border border-white/80 " +
     "active:bg-gray-600 " +
     "shadow-md";
 
