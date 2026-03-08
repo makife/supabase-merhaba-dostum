@@ -928,12 +928,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
       .subscribe();
 
-    // 🔄 Hafif polling fallback - Realtime koptuğunda bile güncel kalsın
-    const pollingInterval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchOnlineUsers();
-      }
-    }, 30000); // 30 saniyede bir
+    // Polling kaldırıldı - Realtime yeterli
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
