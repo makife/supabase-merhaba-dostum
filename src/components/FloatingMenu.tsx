@@ -26,7 +26,7 @@ import {
   VolumeX,
   LogOut,
   Users,
-  Gamepad2,
+  
 } from "lucide-react";
 
 // --- Yardımcı Fonksiyonlar --- (OPTIMIZE: Ban kontrolü artık UserContext profile'dan yapılıyor)
