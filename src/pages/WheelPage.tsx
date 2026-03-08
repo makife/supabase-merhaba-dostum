@@ -158,6 +158,13 @@ const WheelPage = () => {
     }
   }, [user, profile, checkDailySpinAvailability]);
 
+  // İlk mount'ta wheel elementine başlangıç rotation'ı uygula (JSX'ten bağımsız)
+  useEffect(() => {
+    if (wheelRef.current) {
+      wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
