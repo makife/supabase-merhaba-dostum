@@ -121,9 +121,11 @@ const WordMemoryGame = () => {
     return karisik.join("");
   };
 
+  const ilkKartAcildiRef = React.useRef(false);
+
   const oyunuBaslat = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
-    markAsPlayed();
+    ilkKartAcildiRef.current = false;
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
