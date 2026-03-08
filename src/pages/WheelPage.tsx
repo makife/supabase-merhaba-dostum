@@ -49,9 +49,7 @@ const RAW_SEGMENTS: WheelReward[] = [
 ];
 
 const SPIN_DURATION = 7000;
-const PHASE_ACCEL_END = 1000;   // 0-1s: hızlanma
-const PHASE_CRUISE_END = 4000;  // 1-4s: sabit max hız
-// 4-7s: yavaşlama
+// 4 fazlı: 0-1s hızlanma, 1-2s daha hızlı, 2-4s çok hızlı, 4-7s yavaşlama
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
