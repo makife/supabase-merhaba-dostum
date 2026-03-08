@@ -192,7 +192,7 @@ const WheelPage = () => {
     const segmentAngle = 360 / RAW_SEGMENTS.length;
     const targetCenterAngle = rewardIndex * segmentAngle + segmentAngle / 2;
     const requiredRotation = 360 - targetCenterAngle;
-    const currentMod = rotation % 360;
+    const currentMod = rotationRef.current % 360;
     let distanceToTarget = requiredRotation - currentMod;
 
     if (distanceToTarget < 0) {
@@ -200,10 +200,14 @@ const WheelPage = () => {
     }
 
     const extraSpins = 360 * 8;
-    const finalRotation = rotation + extraSpins + distanceToTarget;
+    const finalRotation = rotationRef.current + extraSpins + distanceToTarget;
+    rotationRef.current = finalRotation;
 
-    setTransitionDuration(8500);
-    setRotation(finalRotation);
+    // Doğrudan DOM'a uygula — React re-render'dan bağımsız
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = `transform 8500ms cubic-bezier(0.2, 0, 0.1, 1)`;
+      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
+    }
 
     setTimeout(async () => {
       setLastReward(reward);
