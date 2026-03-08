@@ -300,9 +300,8 @@ const DinoRunner = () => {
         saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
           if (saved) {
             toast.success(`🎯 Challenge puanın kaydedildi: ${finalScore}`);
-            }
-          });
-        }
+          }
+        });
         return;
       }
     }
