@@ -400,7 +400,14 @@ const WheelPage = () => {
             >
               <svg viewBox="-1 -1 2 2" className="w-full h-full transform -rotate-90">
                 {renderedSegments.map((segment, index) => (
-                  <g key={index} className={segment.isGrandPrize ? "drop-shadow-[0_0_2px_rgba(255,215,0,0.8)]" : ""}>
+                  <g
+                    key={index}
+                    className={
+                      segment.isGrandPrize && !isSpinning
+                        ? "drop-shadow-[0_0_2px_rgba(255,215,0,0.8)]"
+                        : ""
+                    }
+                  >
                     <path
                       d={segment.pathData}
                       fill={segment.color}
@@ -417,8 +424,8 @@ const WheelPage = () => {
                       dominantBaseline="middle"
                       transform={`rotate(${segment.rotateAngle} 0 0)`}
                       style={{
-                        textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                        filter: segment.isGrandPrize ? "drop-shadow(0 0 1px black)" : "none",
+                        textShadow: isSpinning ? "none" : "1px 1px 2px rgba(0,0,0,0.8)",
+                        filter: segment.isGrandPrize && !isSpinning ? "drop-shadow(0 0 1px black)" : "none",
                       }}
                     >
                       {segment.text}
