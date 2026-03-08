@@ -133,11 +133,16 @@ export const useAdMob = () => {
       setIsAdLoading(false);
       return true;
     } catch (error: any) {
+      const errorMsg = error?.message || error?.errorMessage || JSON.stringify(error) || "Bilinmeyen hata";
       console.error("[AdMob] ❌ Failed to load rewarded ad:", error);
+      console.error("[AdMob] ❌ Error message:", errorMsg);
+      console.error("[AdMob] ❌ Error code:", error?.code);
       console.error("[AdMob] ❌ Error details:", JSON.stringify(error));
       setIsAdReady(false);
       setIsAdLoading(false);
-      return false;
+      
+      // Return error info so caller can show meaningful message
+      return { success: false, error: errorMsg, code: error?.code } as any;
     }
   }, [isAdLoading, isNativePlatform, isInitialized, initializeAdMob, platform, toast]);
 

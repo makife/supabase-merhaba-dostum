@@ -891,11 +891,18 @@ const GamePage = ({
 
     await initializeAdMob();
 
-    const loaded = await loadRewardedAd();
-    if (!loaded) {
+    let loaded: any = await loadRewardedAd();
+    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
+      console.log("[GamePage] ⚠️ İlk reklam yükleme başarısız, retry...");
+      await new Promise(r => setTimeout(r, 2000));
+      loaded = await loadRewardedAd();
+    }
+    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
+      const errorDetail = (typeof loaded === 'object' && loaded !== null && loaded.error) 
+        ? String(loaded.error) : "Reklam sunucusuna ulaşılamadı";
       toast({
         title: "Reklam Yüklenemedi",
-        description: "Lütfen biraz bekleyip tekrar deneyin.",
+        description: `Hata: ${errorDetail}`,
         variant: "destructive",
       });
       return;
