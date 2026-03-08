@@ -20,7 +20,6 @@ interface WheelReward {
   color: string;
 }
 
-// Renkleri dışarıda tanımla ki her renderda oluşmasın
 const WHEEL_COLORS = {
   blue: "#3B82F6",
   green: "#10B981",
@@ -31,7 +30,6 @@ const WHEEL_COLORS = {
   indigo: "#6366f1",
 };
 
-// Statik segment verisi (useMemo içinde işlenecek)
 const RAW_SEGMENTS: WheelReward[] = [
   { type: "credits", value: 1, text: "1 Oyun", color: WHEEL_COLORS.blue },
   { type: "joker", value: 1, item: "degistir", text: "Değiştir", color: WHEEL_COLORS.green },
@@ -50,6 +48,18 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
+const SPIN_DURATION = 8500;
+
+const getTodayLocalDate = () => {
+  const dateObj = new Date();
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
 const WheelPage = () => {
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
@@ -57,20 +67,17 @@ const WheelPage = () => {
   const navigate = useNavigate();
 
   const [isSpinning, setIsSpinning] = useState(false);
-  const spinLockRef = useRef(false);
   const [canSpin, setCanSpin] = useState(false);
-  const rotationRef = useRef(0);
-  const wheelRef = useRef<HTMLDivElement>(null);
+  const [totalSpins, setTotalSpins] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
-  const [totalSpins, setTotalSpins] = useState(0); // Toplam çevirme hakkı (günlük + bonus)
-  const [isLoading, setIsLoading] = useState(true); // UI'ı hemen göster, veriyi arka planda çek
-  
-  // useSounds lazy load - sadece spin sırasında yükle
+
+  const spinLockRef = useRef(false);
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const rotationRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
-
-  // ⚡️ OPTİMİZASYON: Koordinat hesaplamalarını useMemo içine aldık.
-  // Bu sayede her render'da (spin sırasında) tekrar tekrar matematik işlemi yapılmaz.
   const renderedSegments = useMemo(() => {
     const getCoordinatesForPercent = (percent: number) => {
       const x = Math.cos(2 * Math.PI * percent);
@@ -87,73 +94,19 @@ const WheelPage = () => {
       const segmentAngle = 360 / RAW_SEGMENTS.length;
       const rotateAngle = index * segmentAngle + segmentAngle / 2;
 
-      // SVG Path string'ini burada oluşturuyoruz
-      const pathData = `M 0 0 L ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} Z`;
-
       return {
         ...segment,
-        pathData,
+        pathData: `M 0 0 L ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} Z`,
         rotateAngle,
         isGrandPrize: segment.type === "ink",
       };
     });
-  }, []); // Bağımlılık dizisi boş, sadece 1 kere hesaplanır.
-
-  const handleWheelResync = useCallback(async () => {
-    await checkDailySpinAvailability();
-  }, [user]);
-
-  usePageResync(handleWheelResync, "WheelPage", false);
-
-  // 🔥 OPTİMİZASYON: useSounds'ı lazy load et - sayfa açılışını yavaşlatmasın
-  useEffect(() => {
-    // Ses modülünü arka planda yükle
-    const loadSounds = async () => {
-      try {
-        const { useSounds } = await import("@/hooks/useSounds");
-        // Hook'u component dışında çağıramayız, bu yüzden doğrudan fonksiyon kullan
-        soundsRef.current = {
-          playSpecialSound: (path: string, volume = 0.7) => {
-            // Native platformda NativeAudio kullan
-            if (Capacitor.isNativePlatform()) {
-              import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-                playSpecialNativeSound(path, volume);
-              });
-            } else {
-              // Web'de basit Audio kullan
-              const audio = new Audio(path);
-              audio.volume = volume;
-              audio.play().catch(() => {});
-            }
-          }
-        };
-      } catch (e) {
-        console.warn("Ses modülü yüklenemedi:", e);
-      }
-    };
-    loadSounds();
   }, []);
 
-  // Spin availability kontrolünü arka planda yap
-  useEffect(() => {
-    if (user && profile) {
-      // Önce UI'ı göster, sonra veriyi kontrol et
-      setIsLoading(false);
-      checkDailySpinAvailability();
-    }
-  }, [user, profile?.bonus_spins]);
-
-  const checkDailySpinAvailability = async () => {
+  const checkDailySpinAvailability = useCallback(async () => {
     if (!user) return;
-    
-    // Yerel tarih kullan (UTC problemi çözümü)
-    const dateObj = new Date();
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
 
-    // Bugünkü çevirme yapılmış mı kontrol et
+    const today = getTodayLocalDate();
     const { data: spinData } = await supabase
       .from("wheel_spins")
       .select("id")
@@ -161,28 +114,195 @@ const WheelPage = () => {
       .eq("date", today)
       .maybeSingle();
 
-    const dailySpinAvailable = !spinData; // Bugün çevirilmediyse 1 hak var
+    const dailySpinAvailable = !spinData;
     const bonusSpins = profile?.bonus_spins || 0;
-    
-    // Toplam hak = günlük (eğer kullanılmadıysa 1) + bonus
     const total = (dailySpinAvailable ? 1 : 0) + bonusSpins;
+
     setTotalSpins(total);
-    setCanSpin(total > 0);
+    setCanSpin(total > 0 && !spinLockRef.current);
+  }, [user, profile?.bonus_spins]);
+
+  const handleWheelResync = useCallback(async () => {
+    await checkDailySpinAvailability();
+  }, [checkDailySpinAvailability]);
+
+  usePageResync(handleWheelResync, "WheelPage", false);
+
+  useEffect(() => {
+    const loadSounds = async () => {
+      try {
+        soundsRef.current = {
+          playSpecialSound: (path: string, volume = 0.7) => {
+            if (Capacitor.isNativePlatform()) {
+              import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
+                playSpecialNativeSound(path, volume);
+              });
+            } else {
+              const audio = new Audio(path);
+              audio.volume = volume;
+              audio.play().catch(() => {});
+            }
+          },
+        };
+      } catch (e) {
+        console.warn("Ses modülü yüklenemedi:", e);
+      }
+    };
+
+    loadSounds();
+  }, []);
+
+  useEffect(() => {
+    if (user && profile) {
+      checkDailySpinAvailability();
+    }
+  }, [user, profile, checkDailySpinAvailability]);
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  const showRewardToast = (reward: WheelReward, isLastSpin: boolean) => {
+    if (reward.type === "empty") {
+      toast(
+        isLastSpin
+          ? "😔 Bugün şansın yokmuş! Yarın tekrar dene."
+          : "😔 Bu sefer pas! Hâlâ çevirme hakkın var.",
+        {
+          style: { background: "#374151", color: "white" },
+        }
+      );
+      return;
+    }
+
+    toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
+      style: { background: "#10B981", color: "white" },
+    });
   };
 
-  const spinWheel = async () => {
-    if (!user || !canSpin || isSpinning || spinLockRef.current) return;
-    spinLockRef.current = true;
-    setCanSpin(false); // İlk frame'de tekrar tıklamayı fiziksel olarak da kapat
+  const consumeSpinAndSave = async (reward: WheelReward) => {
+    if (!user) return;
 
-    // Sesi asenkron başlatmayı dene, UI'ı bloklamasın
-    setTimeout(() => {
-      if (soundsRef.current) {
-        soundsRef.current.playSpecialSound("/carkSesi.mp3", 0.8);
+    const today = getTodayLocalDate();
+    const { data: spinData } = await supabase
+      .from("wheel_spins")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle();
+
+    const dailySpinAvailable = !spinData;
+
+    if (dailySpinAvailable) {
+      await supabase.from("wheel_spins").insert({
+        user_id: user.id,
+        date: today,
+        reward_type: reward.type,
+        reward_value: reward.value,
+        reward_item: reward.item || null,
+      });
+      return;
+    }
+
+    const currentBonusSpins = profile?.bonus_spins || 0;
+    if (currentBonusSpins > 0) {
+      await supabase
+        .from("profiles")
+        .update({ bonus_spins: currentBonusSpins - 1 })
+        .eq("id", user.id);
+    }
+  };
+
+  const giveReward = async (reward: WheelReward) => {
+    if (!user || reward.type === "empty") return;
+
+    if (reward.type === "credits") {
+      const { data: freshProfile } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits")
+        .eq("id", user.id)
+        .single();
+
+      if (!freshProfile) return;
+
+      const currentGameCredits = freshProfile.game_credits || 0;
+      const currentBonusCredits = freshProfile.bonus_credits || 0;
+      const creditsToAdd = reward.value;
+
+      const spaceInGameCredits = Math.max(0, 5 - currentGameCredits);
+      const addToGame = Math.min(creditsToAdd, spaceInGameCredits);
+      const addToBonus = creditsToAdd - addToGame;
+
+      await supabase
+        .from("profiles")
+        .update({
+          game_credits: currentGameCredits + addToGame,
+          bonus_credits: currentBonusCredits + addToBonus,
+        })
+        .eq("id", user.id);
+      return;
+    }
+
+    if (reward.type === "joker" && reward.item) {
+      await updateInventory(reward.item, reward.value);
+      return;
+    }
+
+    if (reward.type === "ink") {
+      const { data: freshProfile } = await supabase
+        .from("profiles")
+        .select("ink_count")
+        .eq("id", user.id)
+        .single();
+
+      const currentInk = freshProfile?.ink_count || 0;
+      await supabase
+        .from("profiles")
+        .update({ ink_count: currentInk + reward.value })
+        .eq("id", user.id);
+    }
+  };
+
+  const finishSpin = useCallback(
+    async (reward: WheelReward) => {
+      try {
+        setLastReward(reward);
+        await consumeSpinAndSave(reward);
+        await giveReward(reward);
+
+        setTotalSpins((prev) => {
+          const remaining = Math.max(prev - 1, 0);
+          setCanSpin(remaining > 0);
+          showRewardToast(reward, remaining <= 0);
+          return remaining;
+        });
+
+        soundsRef.current?.playSpecialSound("/win.mp3", 0.6);
+        await refreshProfile();
+      } catch (error) {
+        console.error("[Wheel] Spin finalize error:", error);
+        toast.error("Bir hata oluştu, lütfen tekrar dene.");
+        await checkDailySpinAvailability();
+      } finally {
+        setIsSpinning(false);
+        spinLockRef.current = false;
       }
-    }, 0);
+    },
+    [checkDailySpinAvailability, refreshProfile]
+  );
 
+  const spinWheel = () => {
+    if (!user || !canSpin || isSpinning || spinLockRef.current) return;
+
+    spinLockRef.current = true;
     setIsSpinning(true);
+    setCanSpin(false);
+
+    soundsRef.current?.playSpecialSound("/carkSesi.mp3", 0.8);
 
     const rewardIndex = Math.floor(Math.random() * RAW_SEGMENTS.length);
     const reward = RAW_SEGMENTS[rewardIndex];
@@ -197,156 +317,33 @@ const WheelPage = () => {
       distanceToTarget += 360;
     }
 
-    const extraSpins = 360 * 8;
-    const finalRotation = rotationRef.current + extraSpins + distanceToTarget;
-    rotationRef.current = finalRotation;
+    const finalRotation = rotationRef.current + 360 * 8 + distanceToTarget;
+    const startRotation = rotationRef.current;
+    const startTime = performance.now();
 
-    // Doğrudan DOM'a uygula — React re-render'dan bağımsız
-    if (wheelRef.current) {
-      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / SPIN_DURATION, 1);
+      const easedProgress = easeOutCubic(progress);
+      const currentRotation = startRotation + (finalRotation - startRotation) * easedProgress;
+
+      if (wheelRef.current) {
+        wheelRef.current.style.transform = `rotate(${currentRotation}deg)`;
+      }
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      rotationRef.current = finalRotation;
+      finishSpin(reward);
+    };
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
-
-    setTimeout(async () => {
-      setLastReward(reward);
-      
-      // Hangi hak kullanıldığını belirle ve kaydet
-      await consumeSpinAndSave(reward);
-      
-      giveReward(reward);
-
-      setIsSpinning(false);
-      spinLockRef.current = false;
-      
-      const remaining = totalSpins - 1;
-      setTotalSpins(remaining);
-      setCanSpin(remaining > 0);
-      
-      // Toast'u kalan hakka göre göster
-      if (remaining <= 0) {
-        showRewardToast(reward, true);
-      } else {
-        showRewardToast(reward, false);
-      }
-      
-      // Kazanma sesini çal
-      if (soundsRef.current) {
-        soundsRef.current.playSpecialSound("/win.mp3", 0.6);
-      }
-      refreshProfile();
-    }, 8500);
-  };
-
-  // Çevirme hakkını tüket ve kaydı yap
-  const consumeSpinAndSave = async (reward: WheelReward) => {
-    if (!user) return;
-    
-    // Yerel tarih kullan
-    const dateObj = new Date();
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
-    
-    // Bugün çevirme yapılmış mı kontrol et
-    const { data: spinData } = await supabase
-      .from("wheel_spins")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("date", today)
-      .maybeSingle();
-
-    const dailySpinAvailable = !spinData;
-
-    if (dailySpinAvailable) {
-      // Günlük hakkı kullan - wheel_spins'e kaydet
-      await supabase.from("wheel_spins").insert({
-        user_id: user.id,
-        date: today,
-        reward_type: reward.type,
-        reward_value: reward.value,
-        reward_item: reward.item || null,
-      });
-    } else {
-      // Bonus hakkı kullan - bonus_spins'i azalt
-      const currentBonusSpins = profile?.bonus_spins || 0;
-      if (currentBonusSpins > 0) {
-        await supabase
-          .from("profiles")
-          .update({ bonus_spins: currentBonusSpins - 1 })
-          .eq("id", user.id);
-      }
-    }
-  };
-
-  const giveReward = async (reward: WheelReward) => {
-    if (!user || reward.type === "empty") return;
-
-    if (reward.type === "credits") {
-      // 🔥 KRİTİK FİX: Önce güncel değeri veritabanından çek!
-      // Bu sayede eski cache değeri üzerine yazmayı önlüyoruz
-      const { data: freshProfile } = await supabase
-        .from("profiles")
-        .select("game_credits, bonus_credits")
-        .eq("id", user.id)
-        .single();
-      
-      if (freshProfile) {
-        // Kredi ekleme mantığı: önce game_credits 5'e tamamla, kalan bonus'a
-        const currentGameCredits = freshProfile.game_credits || 0;
-        const currentBonusCredits = freshProfile.bonus_credits || 0;
-        const creditsToAdd = reward.value;
-        
-        // game_credits 5'e kadar doldur
-        const spaceInGameCredits = Math.max(0, 5 - currentGameCredits);
-        const addToGame = Math.min(creditsToAdd, spaceInGameCredits);
-        const addToBonus = creditsToAdd - addToGame;
-        
-        await supabase
-          .from("profiles")
-          .update({ 
-            game_credits: currentGameCredits + addToGame,
-            bonus_credits: currentBonusCredits + addToBonus
-          })
-          .eq("id", user.id);
-        
-        console.log(`[Wheel] Credits added: game +${addToGame}, bonus +${addToBonus}`);
-      }
-      refreshProfile();
-    } else if (reward.type === "joker" && reward.item) {
-      await updateInventory(reward.item, reward.value);
-    } else if (reward.type === "ink") {
-      // 🔥 FIX: Güncel ink değerini veritabanından çek
-      const { data: freshProfile } = await supabase
-        .from("profiles")
-        .select("ink_count")
-        .eq("id", user.id)
-        .single();
-      
-      const currentInk = freshProfile?.ink_count || 0;
-      await supabase
-        .from("profiles")
-        .update({ ink_count: currentInk + reward.value })
-        .eq("id", user.id);
-      refreshProfile();
-    }
-  };
-
-  const showRewardToast = (reward: WheelReward, isLastSpin: boolean) => {
-    if (reward.type === "empty") {
-      if (isLastSpin) {
-        toast("😔 Bugün şansın yokmuş! Yarın tekrar dene.", {
-          style: { background: "#374151", color: "white" },
-        });
-      } else {
-        toast("😔 Bu sefer pas! Hâlâ çevirme hakkın var.", {
-          style: { background: "#374151", color: "white" },
-        });
-      }
-    } else {
-      toast.success(`🎉 Tebrikler! ${reward.text} kazandın!`, {
-        style: { background: "#10B981", color: "white" },
-      });
-    }
+    animationFrameRef.current = requestAnimationFrame(animate);
   };
 
   return (
@@ -354,39 +351,11 @@ const WheelPage = () => {
       className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden"
       style={{ touchAction: isSpinning ? "none" : "auto" }}
     >
-      {/* ⚡️ OPTİMİZASYON: Arkaplan efektlerini basitleştirdik. 
-        blur-[100px] mobil cihazlarda GPU'yu çok yorar. 
-        Bunun yerine daha basit bir gradient veya daha düşük blur kullanmalısın.
-      */}
+      {isSpinning && <div className="fixed inset-0 z-50" aria-hidden="true" />}
+
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-30">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/40 to-blue-900/40" />
       </div>
-
-      {isSpinning && (
-        <div
-          className="fixed inset-0 z-50"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onPointerMove={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onTouchMove={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onWheel={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        />
-      )}
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <div className="flex items-center justify-start">
@@ -404,16 +373,14 @@ const WheelPage = () => {
         </div>
 
         <div className="relative w-full aspect-square max-w-[360px] mx-auto">
-          {/* Efekt optimize edildi: blur-xl yerine daha hafif gölge */}
-          <div className="absolute inset-2 bg-gradient-to-tr from-yellow-500/10 to-purple-500/10 rounded-full animate-pulse"></div>
+          <div className="absolute inset-2 bg-gradient-to-tr from-yellow-500/10 to-purple-500/10 rounded-full animate-pulse" />
 
           <div className="absolute inset-0 rounded-full border-[12px] border-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.5)] bg-slate-900 overflow-hidden relative">
             <div
               ref={wheelRef}
-              className={`w-full h-full ${isSpinning ? "pointer-events-none" : ""}`}
+              className="w-full h-full"
               style={{
                 transform: `rotate(${rotationRef.current}deg)`,
-                transition: isSpinning ? "transform 8500ms cubic-bezier(0.2, 0, 0.1, 1)" : "none",
                 willChange: isSpinning ? "transform" : "auto",
               }}
             >
@@ -425,7 +392,6 @@ const WheelPage = () => {
                       fill={segment.color}
                       stroke={segment.isGrandPrize ? "#FFD700" : "#1e293b"}
                       strokeWidth={segment.isGrandPrize ? "0.04" : "0.01"}
-                      style={{ zIndex: segment.isGrandPrize ? 10 : 1 }}
                     />
                     <text
                       x="0.65"
@@ -454,20 +420,11 @@ const WheelPage = () => {
           </div>
 
           <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 z-30 filter drop-shadow-lg">
-            <div className="w-8 h-10 bg-red-600 clip-path-polygon-[50%_100%,_0%_0%,_100%_0%] rounded-t-sm border-t-2 border-red-400"></div>
+            <div className="w-8 h-10 bg-red-600 clip-path-polygon-[50%_100%,_0%_0%,_100%_0%] rounded-t-sm border-t-2 border-red-400" />
           </div>
         </div>
 
-        <div
-          className="flex flex-col items-center gap-4 mt-2"
-          onPointerDownCapture={(e) => {
-            if (isSpinning || spinLockRef.current) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-        >
-          {/* Çevirme Hakkı Sayacı */}
+        <div className="flex flex-col items-center gap-4 mt-2">
           {totalSpins > 0 && !isSpinning && (
             <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 px-4 py-2 rounded-full border border-yellow-500/30">
               <Sparkles className="w-4 h-4 text-yellow-400" />
@@ -475,9 +432,9 @@ const WheelPage = () => {
               <span className="text-gray-400 text-sm">çevirme hakkı</span>
             </div>
           )}
-          
+
           <Button
-            onClick={isSpinning || spinLockRef.current ? undefined : spinWheel}
+            onClick={spinWheel}
             disabled={!canSpin || isSpinning || spinLockRef.current}
             size="lg"
             className={`
