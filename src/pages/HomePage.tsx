@@ -850,7 +850,7 @@ const HomePage = () => {
           <div className="mt-6 pl-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-4 bg-amber-500 rounded-full" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Günlük Challenge</h3>
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Düello & Görev</h3>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
               {/* Kelime Puzzle */}
