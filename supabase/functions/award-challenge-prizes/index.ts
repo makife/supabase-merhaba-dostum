@@ -144,11 +144,12 @@ Deno.serve(async (req) => {
             await upsertInventoryItem(supabase, player.user_id, item.item_type, item.quantity);
           }
 
-          await supabase.from("notifications").insert({
+          const { error: notifError } = await supabase.from("notifications").insert({
             user_id: player.user_id,
             type: "challenge_prize",
             message: `🎯 Dünkü Refleks challenge'ında Level ${level}'e ulaştın! +${rewards.label} kazandın!`,
           });
+          if (notifError) console.error(`❌ Notification insert error (neon_blitz): ${notifError.message}`);
 
           awarded++;
           console.log(`🎁 Neon blitz: ${player.username} (Lvl ${level}) → ${rewards.label}`);
