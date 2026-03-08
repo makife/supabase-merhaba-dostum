@@ -58,7 +58,6 @@ const getTodayLocalDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const WheelPage = () => {
   const { user } = useAuth();
@@ -74,7 +73,7 @@ const WheelPage = () => {
   const spinLockRef = useRef(false);
   const wheelRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const spinFinishTimeoutRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
@@ -173,13 +172,16 @@ const WheelPage = () => {
   useEffect(() => {
     if (wheelRef.current) {
       wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
+      wheelRef.current.style.willChange = "transform";
+      wheelRef.current.style.backfaceVisibility = "hidden";
+      wheelRef.current.style.transformOrigin = "50% 50%";
     }
   }, []);
 
   useEffect(() => {
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (spinFinishTimeoutRef.current) {
+        window.clearTimeout(spinFinishTimeoutRef.current);
       }
     };
   }, []);
@@ -336,32 +338,30 @@ const WheelPage = () => {
     }
 
     const finalRotation = rotationRef.current + 360 * 8 + distanceToTarget;
-    const startRotation = rotationRef.current;
-    const startTime = performance.now();
 
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / SPIN_DURATION, 1);
-      const easedProgress = easeOutCubic(progress);
-      const currentRotation = startRotation + (finalRotation - startRotation) * easedProgress;
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = "none";
+      wheelRef.current.style.transform = `rotate(${rotationRef.current}deg)`;
 
-      if (wheelRef.current) {
-        wheelRef.current.style.transform = `rotate(${currentRotation}deg)`;
-      }
+      // Reflow: transition'ın garanti başlaması için
+      void wheelRef.current.offsetHeight;
 
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      rotationRef.current = finalRotation;
-      finishSpin(reward);
-    };
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+      wheelRef.current.style.transition = `transform ${SPIN_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
     }
-    animationFrameRef.current = requestAnimationFrame(animate);
+
+    if (spinFinishTimeoutRef.current) {
+      window.clearTimeout(spinFinishTimeoutRef.current);
+    }
+
+    spinFinishTimeoutRef.current = window.setTimeout(() => {
+      rotationRef.current = finalRotation;
+      if (wheelRef.current) {
+        wheelRef.current.style.transition = "none";
+      }
+      finishSpin(reward);
+      spinFinishTimeoutRef.current = null;
+    }, SPIN_DURATION + 80);
   };
 
   return (
@@ -400,7 +400,14 @@ const WheelPage = () => {
             >
               <svg viewBox="-1 -1 2 2" className="w-full h-full transform -rotate-90">
                 {renderedSegments.map((segment, index) => (
-                  <g key={index} className={segment.isGrandPrize ? "drop-shadow-[0_0_2px_rgba(255,215,0,0.8)]" : ""}>
+                  <g
+                    key={index}
+                    className={
+                      segment.isGrandPrize && !isSpinning
+                        ? "drop-shadow-[0_0_2px_rgba(255,215,0,0.8)]"
+                        : ""
+                    }
+                  >
                     <path
                       d={segment.pathData}
                       fill={segment.color}
@@ -417,8 +424,8 @@ const WheelPage = () => {
                       dominantBaseline="middle"
                       transform={`rotate(${segment.rotateAngle} 0 0)`}
                       style={{
-                        textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                        filter: segment.isGrandPrize ? "drop-shadow(0 0 1px black)" : "none",
+                        textShadow: isSpinning ? "none" : "1px 1px 2px rgba(0,0,0,0.8)",
+                        filter: segment.isGrandPrize && !isSpinning ? "drop-shadow(0 0 1px black)" : "none",
                       }}
                     >
                       {segment.text}
