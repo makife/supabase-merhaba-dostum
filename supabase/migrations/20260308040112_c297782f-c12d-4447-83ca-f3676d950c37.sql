@@ -1,0 +1,1 @@
+DELETE FROM challenge_scores WHERE user_id = '7fe7b3a0-eea7-4379-8011-ae7409008664' AND challenge_type = 'memory' AND date = (now() AT TIME ZONE 'Europe/Istanbul')::date;
