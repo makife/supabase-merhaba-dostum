@@ -58,7 +58,6 @@ const getTodayLocalDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const WheelPage = () => {
   const { user } = useAuth();
@@ -74,7 +73,7 @@ const WheelPage = () => {
   const spinLockRef = useRef(false);
   const wheelRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const spinFinishTimeoutRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
