@@ -59,17 +59,15 @@ const WheelPage = () => {
   const [isSpinning, setIsSpinning] = useState(false);
   const spinLockRef = useRef(false);
   const [canSpin, setCanSpin] = useState(false);
-  const [rotation, setRotation] = useState(0);
+  const rotationRef = useRef(0);
+  const wheelRef = useRef<HTMLDivElement>(null);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
-  const [transitionDuration, setTransitionDuration] = useState(0);
   const [totalSpins, setTotalSpins] = useState(0); // Toplam çevirme hakkı (günlük + bonus)
   const [isLoading, setIsLoading] = useState(true); // UI'ı hemen göster, veriyi arka planda çek
   
   // useSounds lazy load - sadece spin sırasında yükle
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
 
-  // Bezier eğrisini state'te tutmaya gerek yok, sabit bir string
-  const timingFunction = "cubic-bezier(0.2, 0, 0.1, 1)";
 
   // ⚡️ OPTİMİZASYON: Koordinat hesaplamalarını useMemo içine aldık.
   // Bu sayede her render'da (spin sırasında) tekrar tekrar matematik işlemi yapılmaz.
@@ -192,7 +190,7 @@ const WheelPage = () => {
     const segmentAngle = 360 / RAW_SEGMENTS.length;
     const targetCenterAngle = rewardIndex * segmentAngle + segmentAngle / 2;
     const requiredRotation = 360 - targetCenterAngle;
-    const currentMod = rotation % 360;
+    const currentMod = rotationRef.current % 360;
     let distanceToTarget = requiredRotation - currentMod;
 
     if (distanceToTarget < 0) {
@@ -200,10 +198,14 @@ const WheelPage = () => {
     }
 
     const extraSpins = 360 * 8;
-    const finalRotation = rotation + extraSpins + distanceToTarget;
+    const finalRotation = rotationRef.current + extraSpins + distanceToTarget;
+    rotationRef.current = finalRotation;
 
-    setTransitionDuration(8500);
-    setRotation(finalRotation);
+    // Doğrudan DOM'a uygula — React re-render'dan bağımsız
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = `transform 8500ms cubic-bezier(0.2, 0, 0.1, 1)`;
+      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`;
+    }
 
     setTimeout(async () => {
       setLastReward(reward);
@@ -379,10 +381,10 @@ const WheelPage = () => {
 
           <div className="absolute inset-0 rounded-full border-[12px] border-slate-800 shadow-[0_0_20px_rgba(0,0,0,0.5)] bg-slate-900 overflow-hidden relative">
             <div
+              ref={wheelRef}
               className={`w-full h-full ${isSpinning ? "pointer-events-none" : ""}`}
               style={{
-                transform: `rotate(${rotation}deg)`,
-                transition: isSpinning ? `transform ${transitionDuration}ms ${timingFunction}` : "none",
+                transform: `rotate(${rotationRef.current}deg)`,
                 willChange: isSpinning ? "transform" : "auto",
               }}
             >
