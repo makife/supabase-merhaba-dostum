@@ -231,11 +231,12 @@ Deno.serve(async (req) => {
             .eq("id", topScorer.user_id);
         }
 
-        await supabase.from("notifications").insert({
+        const { error: notifError } = await supabase.from("notifications").insert({
           user_id: topScorer.user_id,
           type: "challenge_prize",
           message: `🎯 Tebrikler! Dünkü ${challengeNames[challengeType]} challenge'ında 1. oldun! +${reward.label} kazandın!`,
         });
+        if (notifError) console.error(`❌ Notification insert error (${challengeType}): ${notifError.message}`);
 
         results.push(`${challengeType}: Winner ${topScorer.username} (${topScorer.score})`);
         console.log(`🎁 +${reward.label} awarded to ${topScorer.username} for ${challengeType}`);
