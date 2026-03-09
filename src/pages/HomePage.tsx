@@ -811,7 +811,7 @@ const HomePage = () => {
           {/* HEDİYE BANNER */}
           {isPremium && isGiftPremium(profile) && (
             <div className="px-5 mt-4">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
+              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
                   <Gift className="w-5 h-5 text-white animate-bounce" />
