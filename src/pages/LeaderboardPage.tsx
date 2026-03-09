@@ -372,7 +372,7 @@ const LeaderboardPage = () => {
     return (
       <div
         className="fixed inset-0 flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+        style={{ background: "linear-gradient(135deg, #232345 0%, #1f2c52 100%)" }}
       >
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
