@@ -628,7 +628,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="bg-[#16213e]/60 backdrop-blur-sm rounded-2xl p-3 border border-white/5 flex justify-around shadow-inner">
+            <div className="bg-[#16213e] rounded-2xl p-3 border border-white/5 flex justify-around">
               {[
                 { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
                 { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
