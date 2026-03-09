@@ -238,9 +238,9 @@ const FriendsPage = () => {
   const offlineFriends = friends.filter((f) => !f.is_online);
 
   return (
-    <div className="min-h-screen text-white" style={{ background: "#ff7f00" }}>
+    <div className="min-h-screen text-white" style={{ background: "#264d59" }}>
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-[#ff7f00] border-b border-white/10 px-4 py-3">
+      <div className="sticky top-0 z-40 bg-[#264d59] border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate("/")} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-5 h-5" />
