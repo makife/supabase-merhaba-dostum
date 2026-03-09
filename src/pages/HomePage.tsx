@@ -1045,7 +1045,7 @@ const HomePage = () => {
                 value={profile?.win_streak || 0}
                 label="Seri"
                 colorClass="orange"
-                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+                className="!bg-[#16213e] !border-white/10 !text-white"
               />
               <StatWidget
                 icon={Trophy}
