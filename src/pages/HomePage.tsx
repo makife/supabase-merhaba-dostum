@@ -529,7 +529,7 @@ const HomePage = () => {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
               <div className="relative">
                 <div
-                  className={`w-12 h-12 rounded-full p-[2px] shadow-lg ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                  className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
                   <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
                     <AvatarImage
