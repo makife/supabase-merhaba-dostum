@@ -713,7 +713,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 shadow-xl ${
+                className={`flex items-center justify-between border rounded-xl p-2 px-3 ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
