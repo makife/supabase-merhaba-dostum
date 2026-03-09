@@ -593,7 +593,7 @@ const HomePage = () => {
               }
 
               return (
-                <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+                <div className="bg-[#380835] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center`}
