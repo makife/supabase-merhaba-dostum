@@ -117,7 +117,7 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = memo(({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="flex-1 bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-xl">
+  <div className="flex-1 bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
     <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
     <span className="text-lg font-bold text-white tracking-tight">{value}</span>
     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
@@ -128,7 +128,7 @@ StatWidget.displayName = "StatWidget";
 const GameModeCard = memo(({ mode, onClick }: any) => (
   <div
     onClick={onClick}
-    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
+    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
     style={{ transform: "translateZ(0)" }}
   >
     <div
@@ -529,7 +529,7 @@ const HomePage = () => {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
               <div className="relative">
                 <div
-                  className={`w-12 h-12 rounded-full p-[2px] shadow-lg ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                  className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
                   <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
                     <AvatarImage
@@ -559,7 +559,7 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/market");
               }}
-              className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all shadow-xl cursor-pointer"
+              className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
             >
               <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
                 <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
@@ -593,10 +593,10 @@ const HomePage = () => {
               }
 
               return (
-                <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+                <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center shadow-lg ${shadowColor}`}
+                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center`}
                     >
                       <Star className="w-6 h-6 text-white fill-white" />
                     </div>
@@ -654,7 +654,7 @@ const HomePage = () => {
           <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
               <div
-                className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+                className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
                     ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
                     : vipType === "monthly"
@@ -713,7 +713,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 shadow-xl ${
+                className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
@@ -811,7 +811,7 @@ const HomePage = () => {
           {/* HEDİYE BANNER */}
           {isPremium && isGiftPremium(profile) && (
             <div className="px-5 mt-4">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden shadow-lg shadow-pink-200">
+              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
                   <Gift className="w-5 h-5 text-white animate-bounce" />
@@ -859,7 +859,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
@@ -892,7 +892,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
@@ -925,7 +925,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
@@ -958,7 +958,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
@@ -998,10 +998,10 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border shadow-lg ${
+              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
                 wheelSpinsLeft === 0
-                  ? "border-red-400/40 opacity-70 shadow-none"
-                  : "border-red-500/30 shadow-red-500/10"
+                  ? "border-red-400/40 opacity-70"
+                  : "border-red-500/30"
               }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
@@ -1038,21 +1038,21 @@ const HomePage = () => {
                 label="Oyun"
                 colorClass="rose"
                 // !bg-[#16213e] kullanarak içindeki beyazı zorla eziyoruz
-                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+                className="!bg-[#16213e] !border-white/10 !text-white"
               />
               <StatWidget
                 icon={Flame}
                 value={profile?.win_streak || 0}
                 label="Seri"
                 colorClass="orange"
-                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+                className="!bg-[#16213e] !border-white/10 !text-white"
               />
               <StatWidget
                 icon={Trophy}
                 value={profile?.wins || 0}
                 label="Zafer"
                 colorClass="amber"
-                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+                className="!bg-[#16213e] !border-white/10 !text-white"
               />
             </div>
           </div>
