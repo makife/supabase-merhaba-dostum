@@ -843,9 +843,9 @@ const ProfilePage = () => {
   const isPremium = profileData.premiumUntil && new Date(profileData.premiumUntil) > new Date();
 
   return (
-    <div className="min-h-screen overflow-hidden" style={{ background: "#4d2600" }}>
+    <div className="min-h-screen overflow-hidden" style={{ background: "#ff7f00" }}>
       {/* HEADER */}
-      <div className="sticky top-0 z-50 bg-[#4d2600] border-b border-white/10">
+      <div className="sticky top-0 z-50 bg-[#ff7f00] border-b border-white/10">
         <div className="px-5 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
