@@ -393,7 +393,7 @@ const LeaderboardPage = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
       {/* Header */}
-      <div className="flex-none z-30 bg-[#2a2035] border-b border-white/5 shadow-2xl">
+      <div className="flex-none z-30 bg-[#2d2015] border-b border-white/5 shadow-2xl">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-4">
             <Button
