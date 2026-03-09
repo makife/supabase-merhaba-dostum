@@ -387,7 +387,7 @@ const LeaderboardPage = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
-      style={{ background: "#2d2015" }}
+      style={{ background: "#4d2600" }}
     >
       {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
