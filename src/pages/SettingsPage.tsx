@@ -313,7 +313,7 @@ const SettingsPage = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
-      style={{ background: "#ff7f00" }}
+      style={{ background: "#264d59" }}
     >
       {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
