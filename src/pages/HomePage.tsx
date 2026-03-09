@@ -559,7 +559,7 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/market");
               }}
-              className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all shadow-xl cursor-pointer"
+              className="flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
             >
               <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
                 <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
