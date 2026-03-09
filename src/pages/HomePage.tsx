@@ -128,7 +128,7 @@ StatWidget.displayName = "StatWidget";
 const GameModeCard = memo(({ mode, onClick }: any) => (
   <div
     onClick={onClick}
-    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600 shadow-lg hover:shadow-${mode.glowColor}-500/20`}
+    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
     style={{ transform: "translateZ(0)" }}
   >
     <div
