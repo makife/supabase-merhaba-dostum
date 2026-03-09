@@ -843,9 +843,9 @@ const ProfilePage = () => {
   const isPremium = profileData.premiumUntil && new Date(profileData.premiumUntil) > new Date();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#182038] via-[#232345] to-[#1f2c52] overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#241a2e] via-[#2a2035] to-[#2d2540] overflow-hidden">
       {/* HEADER */}
-      <div className="sticky top-0 z-50 bg-[#1f2c52]/80 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-50 bg-[#2d2540]/80 backdrop-blur-md border-b border-white/10">
         <div className="px-5 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
