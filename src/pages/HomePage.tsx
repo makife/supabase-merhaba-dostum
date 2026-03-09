@@ -654,7 +654,7 @@ const HomePage = () => {
           <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
               <div
-                className={`flex items-center justify-between rounded-xl p-3 px-4 shadow-lg border-2 ${
+                className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
                     ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
                     : vipType === "monthly"
