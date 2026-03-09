@@ -482,9 +482,9 @@ const HomePage = () => {
   // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
     return {
-      bg: "#2d2015",
+      bg: "#4d2600",
       gradient: "from-[#ff6b6b]/40",
-      headerBg: "#2d2015",
+      headerBg: "#4d2600",
     };
 
     /*
