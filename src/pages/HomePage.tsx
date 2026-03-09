@@ -718,7 +718,7 @@ const HomePage = () => {
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
                       : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
-                    : "bg-[#16213e]/80 border-white/10"
+                    : "bg-[#16213e] border-white/10"
                 }`}
               >
                 <span
