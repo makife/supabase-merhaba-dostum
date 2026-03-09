@@ -859,7 +859,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border shadow-lg relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} transition-opacity rounded-3xl`}
