@@ -372,7 +372,7 @@ const LeaderboardPage = () => {
     return (
       <div
         className="fixed inset-0 flex items-center justify-center"
-        style={{ background: "#4d2600" }}
+        style={{ background: "#ff7f00" }}
       >
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
