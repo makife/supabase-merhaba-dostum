@@ -313,13 +313,13 @@ const SettingsPage = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #2a2035 0%, #2d2540 100%)" }}
+      style={{ background: "#2d2015" }}
     >
       {/* Light Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
       {/* Header */}
-      <div className="flex-none z-30 bg-[#2a2035] border-b border-white/5 shadow-2xl">
+      <div className="flex-none z-30 bg-[#2d2015] border-b border-white/5 shadow-2xl">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between">
             <Button
