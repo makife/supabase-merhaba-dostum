@@ -998,10 +998,10 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border shadow-lg ${
+              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
                 wheelSpinsLeft === 0
-                  ? "border-red-400/40 opacity-70 shadow-none"
-                  : "border-red-500/30 shadow-red-500/10"
+                  ? "border-red-400/40 opacity-70"
+                  : "border-red-500/30"
               }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
