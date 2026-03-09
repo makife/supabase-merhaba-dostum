@@ -1052,7 +1052,7 @@ const HomePage = () => {
                 value={profile?.wins || 0}
                 label="Zafer"
                 colorClass="amber"
-                className="!bg-[#16213e] !border-white/10 !text-white shadow-xl"
+                className="!bg-[#16213e] !border-white/10 !text-white"
               />
             </div>
           </div>
