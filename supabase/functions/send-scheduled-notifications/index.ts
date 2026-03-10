@@ -148,9 +148,8 @@ serve(async (req) => {
 
     // Kredi bildirimleri artık ayrı fonksiyonda: send-credit-notification
 
-    // ========== 2. WHEEL SPIN REMINDERS (Günde 2 kez: 09:00 ve 20:00) ==========
-    // Kullanıcı çarkı çevirmediyse GÜNDE 2 KEZ hatırlatma gönder
-    console.log('🎡 Checking wheel spin reminders (daily limit: 2)...');
+    // ========== WHEEL SPIN REMINDERS (Günde 1 kez: 20:00 Türkiye saati) ==========
+    console.log('🎡 Checking wheel spin reminders (daily limit: 1)...');
 
     const today = new Date().toISOString().split('T')[0];
     const todayStart = new Date(today).toISOString();
@@ -183,25 +182,18 @@ serve(async (req) => {
 
       console.log(`Found ${usersToRemind.length} users who haven't spun the wheel today`);
 
-      // GÜNDE 2 KEZ - Bugün kaç hatırlatma gönderilmiş kontrol et
+      // GÜNDE 1 KEZ - Bugün hatırlatma gönderilmiş mi kontrol et
       const { data: todayReminders } = await supabase
         .from('notifications')
         .select('user_id')
         .eq('type', 'wheel_reminder')
         .gte('created_at', todayStart);
 
-      // Her kullanıcı için bugün kaç hatırlatma gönderildiğini say
-      const reminderCountMap = new Map<string, number>();
-      (todayReminders || []).forEach(n => {
-        reminderCountMap.set(n.user_id, (reminderCountMap.get(n.user_id) || 0) + 1);
-      });
+      const remindedUsers = new Set((todayReminders || []).map(n => n.user_id));
 
       for (const user of usersToRemind) {
-        const sentCount = reminderCountMap.get(user.id) || 0;
-        
-        // Günde maksimum 2 hatırlatma
-        if (sentCount >= 2) {
-          console.log(`⏭️ Skipping ${user.username} - already reminded ${sentCount} times today`);
+        // Bugün zaten hatırlatma gönderilmişse atla
+        if (remindedUsers.has(user.id)) {
           continue;
         }
 
