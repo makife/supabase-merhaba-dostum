@@ -1216,39 +1216,53 @@ const GamePage = ({
   const levelUpCheckedRef = useRef(false);
   const preScoreRef = useRef<number | null>(null);
 
-  // Capture score snapshot when game starts
+  // Capture score snapshot when game starts OR before game starts (whichever comes first)
   useEffect(() => {
-    if (gameStarted && !gameEnded && preScoreRef.current === null && profile?.total_score != null) {
-      preScoreRef.current = profile.total_score;
-      preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
-      console.log("🏆 Pre-level captured at game start:", preLevelRef.current, "score:", profile.total_score);
-    }
-  }, [gameStarted, gameEnded, profile?.total_score]);
-
-  // Also capture immediately if profile is already loaded before game starts
-  useEffect(() => {
-    if (profile?.total_score != null && preLevelRef.current === 0 && !gameStarted && !gameEnded) {
-      preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
-      preScoreRef.current = profile.total_score;
-      console.log("🏆 Pre-level captured early:", preLevelRef.current, "score:", profile.total_score);
+    if (gameEnded) return; // Don't recapture after game ends
+    if (profile?.total_score != null) {
+      if (preScoreRef.current === null) {
+        preScoreRef.current = profile.total_score;
+        preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
+        console.log("🏆 Pre-level captured:", preLevelRef.current, "score:", profile.total_score, "gameStarted:", gameStarted);
+      }
     }
   }, [profile?.total_score, gameStarted, gameEnded]);
 
-  // 🏆 Level-up detection: check after game ends and profile refreshes
+  // 🏆 Level-up detection: check after game ends with polling fallback
   useEffect(() => {
-    if (gameEnded && profile?.total_score != null && preLevelRef.current > 0 && !levelUpCheckedRef.current) {
-      // Only check if score actually increased from pre-game snapshot
+    if (!gameEnded || levelUpCheckedRef.current || preLevelRef.current <= 0) return;
+
+    const checkLevelUp = () => {
+      const currentScore = profile?.total_score ?? 0;
       const preScore = preScoreRef.current ?? 0;
-      if (profile.total_score > preScore) {
-        const currentLevel = calcLevelFromScore(profile.total_score || 0);
-        console.log("🏆 Level check:", { preLevel: preLevelRef.current, currentLevel, score: profile.total_score, preScore });
+      console.log("🏆 Level check:", { preLevel: preLevelRef.current, currentScore, preScore });
+      if (currentScore > preScore) {
+        const currentLevel = calcLevelFromScore(currentScore);
+        console.log("🏆 Level compare:", { preLevel: preLevelRef.current, currentLevel });
         if (currentLevel > preLevelRef.current) {
           levelUpCheckedRef.current = true;
           setNewLevel(currentLevel);
           setTimeout(() => setShowLevelUp(true), 1500);
+          return true;
         }
       }
-    }
+      return false;
+    };
+
+    // Immediate check
+    if (checkLevelUp()) return;
+
+    // Poll every 2s for up to 10s to catch delayed profile refresh
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      console.log("🏆 Level poll attempt:", attempts);
+      if (checkLevelUp() || attempts >= 5) {
+        clearInterval(interval);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [gameEnded, profile?.total_score]);
 
   // 🎮 Arka plan disconnect için gameStarted ref'ini senkronize tut
