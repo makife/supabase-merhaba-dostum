@@ -2069,6 +2069,7 @@ const GamePage = ({
       setGameStarted(false);
       setGameEnded(false);
       preLevelRef.current = 0;
+      preScoreRef.current = null;
       levelUpCheckedRef.current = false;
       leaveRoom();
 
