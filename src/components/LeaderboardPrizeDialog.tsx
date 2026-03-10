@@ -171,7 +171,7 @@ const LeaderboardPrizeDialog = () => {
               initial={{ scale: 0, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-              className={`w-20 h-20 bg-gradient-to-br ${theme.trophy} rounded-full flex items-center justify-center shadow-2xl ${theme.trophyshadow} mb-4`}
+              className={`w-20 h-20 bg-gradient-to-br ${theme.trophy} rounded-full flex items-center justify-center mb-4`}
             >
               <Trophy className="w-10 h-10 text-white" />
             </motion.div>
