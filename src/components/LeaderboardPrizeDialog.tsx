@@ -248,7 +248,7 @@ const LeaderboardPrizeDialog = () => {
           >
             <Button
               onClick={handleClose}
-              className={`w-full bg-gradient-to-r ${theme.button} ${theme.buttonHover} text-white font-bold py-3 rounded-xl shadow-lg ${theme.buttonshadow}`}
+              className={`w-full bg-gradient-to-r ${theme.button} text-white font-bold py-3 rounded-xl`}
             >
               <PartyPopper className="w-4 h-4 mr-2" />
               Harika!
