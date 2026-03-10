@@ -16,6 +16,7 @@ interface Props {
   title?: string;
   scrollable?: boolean;
   showLevel?: boolean;
+  frameTheme?: "all-time" | "monthly" | "weekly";
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
