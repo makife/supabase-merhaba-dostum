@@ -215,7 +215,7 @@ const ChallengePrizeDialog = () => {
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleClose(); }}>
       <DialogContent
-        className={`${theme.border} text-white max-w-sm p-0 overflow-hidden`}
+        className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
         style={{ backgroundColor: theme.bg }}
       >
         {/* Top glow */}
