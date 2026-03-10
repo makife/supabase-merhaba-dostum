@@ -58,7 +58,7 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
               <span className={`w-6 text-center font-black text-sm ${i < 3 ? rankColors[i] : "text-slate-600"}`}>
                 {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
               </span>
-              <Avatar className="w-7 h-7">
+              <Avatar className={`w-7 h-7 ${frameColors[frameTheme]}`}>
                 <AvatarImage src={entry.avatar_url || undefined} />
                 <AvatarFallback className="bg-white/10 text-[10px] text-white">
                   {(entry.username || "?")[0]}
