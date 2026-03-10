@@ -1213,19 +1213,23 @@ const GamePage = ({
   }, [gameEnded]);
 
   // 🏆 Level-up detection: save level before game starts
+  const levelUpCheckedRef = useRef(false);
   useEffect(() => {
-    if (gameStarted && profile?.total_score != null && preLevelRef.current === 0) {
+    if (profile?.total_score != null && preLevelRef.current === 0 && !gameEnded) {
       preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
+      console.log("🏆 Pre-level captured:", preLevelRef.current, "score:", profile.total_score);
     }
-  }, [gameStarted, profile?.total_score]);
+  }, [profile?.total_score, gameEnded]);
 
   // 🏆 Level-up detection: check after game ends and profile refreshes
   useEffect(() => {
-    if (gameEnded && profile?.total_score != null && preLevelRef.current > 0) {
+    if (gameEnded && profile?.total_score != null && preLevelRef.current > 0 && !levelUpCheckedRef.current) {
       const currentLevel = calcLevelFromScore(profile.total_score || 0);
+      console.log("🏆 Level check:", { preLevel: preLevelRef.current, currentLevel, score: profile.total_score });
       if (currentLevel > preLevelRef.current) {
+        levelUpCheckedRef.current = true;
         setNewLevel(currentLevel);
-        setTimeout(() => setShowLevelUp(true), 1500); // Show after results appear
+        setTimeout(() => setShowLevelUp(true), 1500);
       }
     }
   }, [gameEnded, profile?.total_score]);
@@ -2047,6 +2051,8 @@ const GamePage = ({
       setOpponentScore(0);
       setGameStarted(false);
       setGameEnded(false);
+      preLevelRef.current = 0;
+      levelUpCheckedRef.current = false;
       leaveRoom();
 
       // ⚠️ KRİTİK: DEVRE DIŞI - Bağlantı koruması
@@ -2474,6 +2480,8 @@ const GamePage = ({
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
+    preLevelRef.current = 0;
+    levelUpCheckedRef.current = false;
     gameEndedRef.current = false; // 🔒 Reset ref too
     gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
     gameHasStartedRef.current = false; // 🔒 KRİTİK: Bu ref sıfırlanmazsa handleCountdownComplete çalışmaz!
