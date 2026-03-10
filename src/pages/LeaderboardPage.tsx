@@ -289,7 +289,7 @@ const LeaderboardPage = () => {
                 {/* Rank Icon */}
                 <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
 
-                {/* Avatar */}
+              {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <div
                     className={`w-12 h-12 rounded-full p-[2px] ${
@@ -299,7 +299,15 @@ const LeaderboardPage = () => {
                     }`}
                   >
                     <Avatar
-                      className="w-full h-full cursor-pointer border-2 border-[#1a1a2e] hover:scale-110 transition-transform"
+                      className={`w-full h-full cursor-pointer hover:scale-110 transition-transform ${
+                        activeTab === "all-time"
+                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900"
+                          : activeTab === "monthly"
+                          ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
+                          : activeTab === "weekly"
+                          ? "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
+                          : ""
+                      }`}
                       onClick={() => navigate(`/profile/${leader.user_id}`)}
                     >
                       <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />

@@ -16,12 +16,19 @@ interface Props {
   title?: string;
   scrollable?: boolean;
   showLevel?: boolean;
+  frameTheme?: "all-time" | "monthly" | "weekly";
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
 const rankBgs = ["bg-amber-500/20", "bg-slate-400/10", "bg-amber-700/10"];
 
-export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false, showLevel = false }: Props) => {
+const frameColors = {
+  "all-time": "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900",
+  "monthly": "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900",
+  "weekly": "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
+};
+
+export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false, showLevel = false, frameTheme = "all-time" }: Props) => {
   const { user } = useAuth();
 
   if (leaderboard.length === 0) {
@@ -51,7 +58,7 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
               <span className={`w-6 text-center font-black text-sm ${i < 3 ? rankColors[i] : "text-slate-600"}`}>
                 {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
               </span>
-              <Avatar className="w-7 h-7">
+              <Avatar className={`w-7 h-7 ${frameColors[frameTheme]}`}>
                 <AvatarImage src={entry.avatar_url || undefined} />
                 <AvatarFallback className="bg-white/10 text-[10px] text-white">
                   {(entry.username || "?")[0]}
