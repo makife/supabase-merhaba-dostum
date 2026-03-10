@@ -1212,6 +1212,24 @@ const GamePage = ({
     }
   }, [gameEnded]);
 
+  // 🏆 Level-up detection: save level before game starts
+  useEffect(() => {
+    if (gameStarted && profile?.total_score != null && preLevelRef.current === 0) {
+      preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
+    }
+  }, [gameStarted, profile?.total_score]);
+
+  // 🏆 Level-up detection: check after game ends and profile refreshes
+  useEffect(() => {
+    if (gameEnded && profile?.total_score != null && preLevelRef.current > 0) {
+      const currentLevel = calcLevelFromScore(profile.total_score || 0);
+      if (currentLevel > preLevelRef.current) {
+        setNewLevel(currentLevel);
+        setTimeout(() => setShowLevelUp(true), 1500); // Show after results appear
+      }
+    }
+  }, [gameEnded, profile?.total_score]);
+
   // 🎮 Arka plan disconnect için gameStarted ref'ini senkronize tut
   useEffect(() => {
     gameStartedRef.current = gameStarted;
