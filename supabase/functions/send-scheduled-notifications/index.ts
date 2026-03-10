@@ -237,14 +237,14 @@ serve(async (req) => {
           const sent = await sendFirebaseNotification(message);
           if (sent) {
             results.wheelReminders++;
-            console.log(`✅ Wheel reminder #${sentCount + 1} sent to ${user.username}`);
+            console.log(`✅ Wheel reminder sent to ${user.username}`);
 
             await supabase
               .from('notifications')
               .insert({
                 user_id: user.id,
                 type: 'wheel_reminder',
-                message: `Günlük çark hatırlatması #${sentCount + 1} gönderildi`,
+                message: 'Günlük çark hatırlatması gönderildi',
               });
           }
         }
