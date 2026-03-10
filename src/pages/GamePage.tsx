@@ -53,10 +53,26 @@ import {
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
+import { LevelUpDialog } from "@/components/LevelUpDialog";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+
+// Level calculation helper (same formula as LevelProgress)
+function calcLevelFromScore(totalScore: number): number {
+  const baseExp = 1000;
+  const expIncreasePerLevel = 100;
+  let level = 1;
+  let totalExpNeeded = 0;
+  let currentLevelExp = baseExp;
+  while (totalScore >= totalExpNeeded + currentLevelExp) {
+    totalExpNeeded += currentLevelExp;
+    level++;
+    currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+  }
+  return level;
+}
 
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
@@ -1196,6 +1212,24 @@ const GamePage = ({
     }
   }, [gameEnded]);
 
+  // 🏆 Level-up detection: save level before game starts
+  useEffect(() => {
+    if (gameStarted && profile?.total_score != null && preLevelRef.current === 0) {
+      preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
+    }
+  }, [gameStarted, profile?.total_score]);
+
+  // 🏆 Level-up detection: check after game ends and profile refreshes
+  useEffect(() => {
+    if (gameEnded && profile?.total_score != null && preLevelRef.current > 0) {
+      const currentLevel = calcLevelFromScore(profile.total_score || 0);
+      if (currentLevel > preLevelRef.current) {
+        setNewLevel(currentLevel);
+        setTimeout(() => setShowLevelUp(true), 1500); // Show after results appear
+      }
+    }
+  }, [gameEnded, profile?.total_score]);
+
   // 🎮 Arka plan disconnect için gameStarted ref'ini senkronize tut
   useEffect(() => {
     gameStartedRef.current = gameStarted;
@@ -1209,6 +1243,10 @@ const GamePage = ({
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
+  // Level-up detection
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [newLevel, setNewLevel] = useState(0);
+  const preLevelRef = useRef<number>(0);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
@@ -8087,6 +8125,9 @@ const GamePage = ({
         )}
 
         {/* RematchDialog artık App.tsx'te global olarak render ediliyor */}
+
+        {/* Level Up Dialog */}
+        <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
       </>
     </LayoutGroup>
   );
