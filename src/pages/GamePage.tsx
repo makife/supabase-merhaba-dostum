@@ -2051,6 +2051,8 @@ const GamePage = ({
       setOpponentScore(0);
       setGameStarted(false);
       setGameEnded(false);
+      preLevelRef.current = 0;
+      levelUpCheckedRef.current = false;
       leaveRoom();
 
       // ⚠️ KRİTİK: DEVRE DIŞI - Bağlantı koruması
