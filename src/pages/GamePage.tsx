@@ -2499,6 +2499,7 @@ const GamePage = ({
     setGameStarted(false);
     setGameEnded(false);
     preLevelRef.current = 0;
+    preScoreRef.current = null;
     levelUpCheckedRef.current = false;
     gameEndedRef.current = false; // 🔒 Reset ref too
     gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
