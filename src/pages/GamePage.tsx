@@ -7429,6 +7429,8 @@ const GamePage = ({
             </div>
           </CardContent>
         </Card>
+        {/* Level Up Dialog - gameEnded bloğu içinde */}
+        <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
       </div>
     );
   }
