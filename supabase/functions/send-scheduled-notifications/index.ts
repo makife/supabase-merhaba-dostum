@@ -203,9 +203,7 @@ serve(async (req) => {
               token: user.push_token,
               notification: {
                 title: '🎡 Günlük Çarkını Çevirmeyi Unutma!',
-                body: sentCount === 0 
-                  ? 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!' 
-                  : 'Son hatırlatma! Çarkını çevirmeden gün bitmesin! 🎁',
+                body: 'Bugün henüz çarkını çevirmedin. Ücretsiz ödül kazanabilirsin!',
               },
               android: {
                 priority: 'high',
