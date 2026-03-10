@@ -8107,6 +8107,9 @@ const GamePage = ({
         )}
 
         {/* RematchDialog artık App.tsx'te global olarak render ediliyor */}
+
+        {/* Level Up Dialog */}
+        <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
       </>
     </LayoutGroup>
   );
