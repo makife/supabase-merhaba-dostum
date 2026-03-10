@@ -18,6 +18,7 @@ import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
+import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 
 import {
   Bot,
@@ -507,6 +508,7 @@ const HomePage = () => {
   return (
     <>
       <LeaderboardPrizeDialog />
+      <ChallengePrizeDialog />
       <div
         className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
         style={{ background: levelBgColors.bg || "#1a1a2e" }}
