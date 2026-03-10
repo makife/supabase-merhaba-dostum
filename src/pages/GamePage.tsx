@@ -2480,6 +2480,8 @@ const GamePage = ({
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
+    preLevelRef.current = 0;
+    levelUpCheckedRef.current = false;
     gameEndedRef.current = false; // 🔒 Reset ref too
     gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
     gameHasStartedRef.current = false; // 🔒 KRİTİK: Bu ref sıfırlanmazsa handleCountdownComplete çalışmaz!
