@@ -1225,6 +1225,10 @@ const GamePage = ({
   const [matchmakingTimeout, setMatchmakingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const [showResults, setShowResults] = useState(false);
+  // Level-up detection
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [newLevel, setNewLevel] = useState(0);
+  const preLevelRef = useRef<number>(0);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
