@@ -230,7 +230,7 @@ const ChallengePrizeDialog = () => {
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 20 }}
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-              className={`w-20 h-20 bg-gradient-to-br ${theme.iconBg} rounded-full flex items-center justify-center shadow-2xl ${theme.iconShadow} mb-4`}
+              className={`w-20 h-20 bg-gradient-to-br ${theme.iconBg} rounded-full flex items-center justify-center mb-4`}
             >
               <span className="text-4xl">{theme.icon}</span>
             </motion.div>
