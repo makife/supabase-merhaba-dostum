@@ -158,7 +158,7 @@ const LeaderboardPrizeDialog = () => {
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleClose(); }}>
       <DialogContent
-        className={`${theme.border} text-white max-w-sm p-0 overflow-hidden`}
+        className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
         style={{ backgroundColor: theme.bg }}
       >
         {/* Top glow */}
@@ -171,7 +171,7 @@ const LeaderboardPrizeDialog = () => {
               initial={{ scale: 0, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-              className={`w-20 h-20 bg-gradient-to-br ${theme.trophy} rounded-full flex items-center justify-center shadow-2xl ${theme.trophyshadow} mb-4`}
+              className={`w-20 h-20 bg-gradient-to-br ${theme.trophy} rounded-full flex items-center justify-center mb-4`}
             >
               <Trophy className="w-10 h-10 text-white" />
             </motion.div>
@@ -248,7 +248,7 @@ const LeaderboardPrizeDialog = () => {
           >
             <Button
               onClick={handleClose}
-              className={`w-full bg-gradient-to-r ${theme.button} ${theme.buttonHover} text-white font-bold py-3 rounded-xl shadow-lg ${theme.buttonshadow}`}
+              className={`w-full bg-gradient-to-r ${theme.button} text-white font-bold py-3 rounded-xl`}
             >
               <PartyPopper className="w-4 h-4 mr-2" />
               Harika!

@@ -215,7 +215,7 @@ const ChallengePrizeDialog = () => {
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleClose(); }}>
       <DialogContent
-        className={`${theme.border} text-white max-w-sm p-0 overflow-hidden`}
+        className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
         style={{ backgroundColor: theme.bg }}
       >
         {/* Top glow */}
@@ -230,7 +230,7 @@ const ChallengePrizeDialog = () => {
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 20 }}
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-              className={`w-20 h-20 bg-gradient-to-br ${theme.iconBg} rounded-full flex items-center justify-center shadow-2xl ${theme.iconShadow} mb-4`}
+              className={`w-20 h-20 bg-gradient-to-br ${theme.iconBg} rounded-full flex items-center justify-center mb-4`}
             >
               <span className="text-4xl">{theme.icon}</span>
             </motion.div>
@@ -320,7 +320,7 @@ const ChallengePrizeDialog = () => {
           >
             <Button
               onClick={handleClose}
-              className={`w-full bg-gradient-to-r ${theme.button} ${theme.buttonHover} text-white font-bold py-3 rounded-xl shadow-lg ${theme.buttonShadow}`}
+              className={`w-full bg-gradient-to-r ${theme.button} text-white font-bold py-3 rounded-xl`}
             >
               <PartyPopper className="w-4 h-4 mr-2" />
               {currentIndex < notifications.length - 1 ? "Sonraki Ödül →" : "Harika!"}
