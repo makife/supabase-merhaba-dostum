@@ -1212,24 +1212,41 @@ const GamePage = ({
     }
   }, [gameEnded]);
 
-  // 🏆 Level-up detection: save level before game starts
+  // 🏆 Level-up detection: save level when game starts
   const levelUpCheckedRef = useRef(false);
+  const preScoreRef = useRef<number | null>(null);
+
+  // Capture score snapshot when game starts
   useEffect(() => {
-    if (profile?.total_score != null && preLevelRef.current === 0 && !gameEnded) {
+    if (gameStarted && !gameEnded && preScoreRef.current === null && profile?.total_score != null) {
+      preScoreRef.current = profile.total_score;
       preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
-      console.log("🏆 Pre-level captured:", preLevelRef.current, "score:", profile.total_score);
+      console.log("🏆 Pre-level captured at game start:", preLevelRef.current, "score:", profile.total_score);
     }
-  }, [profile?.total_score, gameEnded]);
+  }, [gameStarted, gameEnded, profile?.total_score]);
+
+  // Also capture immediately if profile is already loaded before game starts
+  useEffect(() => {
+    if (profile?.total_score != null && preLevelRef.current === 0 && !gameStarted && !gameEnded) {
+      preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
+      preScoreRef.current = profile.total_score;
+      console.log("🏆 Pre-level captured early:", preLevelRef.current, "score:", profile.total_score);
+    }
+  }, [profile?.total_score, gameStarted, gameEnded]);
 
   // 🏆 Level-up detection: check after game ends and profile refreshes
   useEffect(() => {
     if (gameEnded && profile?.total_score != null && preLevelRef.current > 0 && !levelUpCheckedRef.current) {
-      const currentLevel = calcLevelFromScore(profile.total_score || 0);
-      console.log("🏆 Level check:", { preLevel: preLevelRef.current, currentLevel, score: profile.total_score });
-      if (currentLevel > preLevelRef.current) {
-        levelUpCheckedRef.current = true;
-        setNewLevel(currentLevel);
-        setTimeout(() => setShowLevelUp(true), 1500);
+      // Only check if score actually increased from pre-game snapshot
+      const preScore = preScoreRef.current ?? 0;
+      if (profile.total_score > preScore) {
+        const currentLevel = calcLevelFromScore(profile.total_score || 0);
+        console.log("🏆 Level check:", { preLevel: preLevelRef.current, currentLevel, score: profile.total_score, preScore });
+        if (currentLevel > preLevelRef.current) {
+          levelUpCheckedRef.current = true;
+          setNewLevel(currentLevel);
+          setTimeout(() => setShowLevelUp(true), 1500);
+        }
       }
     }
   }, [gameEnded, profile?.total_score]);
