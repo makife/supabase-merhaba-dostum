@@ -1367,6 +1367,27 @@ const FriendRequestSection = ({
     check();
   }, [userId, viewedUserId]);
 
+  useEffect(() => {
+    if (!userId || !viewedUserId) return;
+
+    const channel = supabase
+      .channel("friendship-status")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "friendships",
+        },
+        () => {
+          check(); // her değişiklikte tekrar kontrol et
+        },
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [userId, viewedUserId]);
+
   const sendRequest = async () => {
     const { error } = await supabase.from("friendships").insert({
       user_id: userId,
