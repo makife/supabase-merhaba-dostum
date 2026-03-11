@@ -553,7 +553,7 @@ const DinoRunner = () => {
                     className="start-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      playSound("buttonClick");
+                      playButtonSound("buttonClick");
                       startGame();
                     }}
                   >
