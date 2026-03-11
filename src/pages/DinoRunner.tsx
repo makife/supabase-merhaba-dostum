@@ -14,7 +14,7 @@ const DinoRunner = () => {
   };
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
-  const { playSound } = useSounds();
+  const { playSound: playButtonSound } = useSounds();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // --- RENK PALETLERİ ---
