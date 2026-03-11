@@ -154,8 +154,11 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           </Button>
 
           <button
-            onClick={onClose}
-            className="w-full mt-4 text-xs font-medium text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
+            onClick={() => {
+              playSound("buttonClick");
+              onClose();
+            }}
+            className="w-full mt-2 text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
           >
             İPTAL ET
           </button>
