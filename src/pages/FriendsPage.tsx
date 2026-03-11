@@ -22,6 +22,7 @@ interface FriendItem {
 const FriendsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [friends, setFriends] = useState<FriendItem[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendItem[]>([]);
   const [loading, setLoading] = useState(true);

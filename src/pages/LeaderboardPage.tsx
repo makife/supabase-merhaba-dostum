@@ -48,6 +48,7 @@ interface UserStats {
 
 const LeaderboardPage = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const { user } = useAuth();
   const { isUserOnline } = useUser();
   const { toast } = useToast();

@@ -66,6 +66,7 @@ const WheelPage = () => {
   const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [canSpin, setCanSpin] = useState(false);

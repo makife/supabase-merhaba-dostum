@@ -50,6 +50,7 @@ const ProfilePage = () => {
   const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
     useAvatarUpload();
   const { id: routeId } = useParams();
+  const { playSound } = useSounds();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
   const [isEditing, setIsEditing] = useState(false);
