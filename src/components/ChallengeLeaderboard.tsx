@@ -17,6 +17,7 @@ interface Props {
   scrollable?: boolean;
   showLevel?: boolean;
   frameTheme?: "all-time" | "monthly" | "weekly";
+  showCompletionOnly?: boolean;
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
@@ -34,6 +35,7 @@ export const ChallengeLeaderboard = ({
   scrollable = false,
   showLevel = false,
   frameTheme = "all-time",
+  showCompletionOnly = false,
 }: Props) => {
   const { user } = useAuth();
 
@@ -77,7 +79,24 @@ export const ChallengeLeaderboard = ({
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
-                {entry.score > 0 ? <span className="text-base">✅</span> : <span className="text-base">❌</span>}
+                {showCompletionOnly ? (
+                  entry.score > 0 ? (
+                    <span className="text-base">✅</span>
+                  ) : (
+                    <span className="text-base">❌</span>
+                  )
+                ) : showLevel ? (
+                  <span className="text-xs font-bold text-cyan-400">
+                    Lvl {Math.floor(typeof entry.score === "number" ? entry.score : Number(entry.score))}
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-amber-400">
+                    {typeof entry.score === "number" ? entry.score.toFixed(2) : entry.score}
+                  </span>
+                )}
+                {!showCompletionOnly && entry.words_found > 0 && (
+                  <span className="text-[9px] text-slate-500">({entry.words_found})</span>
+                )}
               </div>
             </div>
           );
