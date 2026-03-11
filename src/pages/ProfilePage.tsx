@@ -1379,14 +1379,31 @@ const FriendRequestSection = ({
 
   const acceptRequest = async () => {
     if (!friendshipId) return;
+
     await supabase
       .from("friendships")
       .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", friendshipId);
-    toast.success("Arkadaşlık kabul edildi! 🎉");
+
+    // Kabul eden kişinin adını al
+    const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+    const accepterName = myProfile?.username || "Bir oyuncu";
+
+    // Daveti gönderen kişiye notification ekle
+    await supabase.from("notifications").insert({
+      user_id: viewedUserId, // daveti gönderen kişi
+      type: "friend_request_accepted",
+      message: `${accepterName} arkadaşlık davetini kabul etti! 🎉`,
+      related_id: userId,
+    });
+
+    // Push notification gönder (eğer sendFriendRequestNotification gibi bir fonksiyonun varsa)
+    await sendFriendAcceptedNotification(viewedUserId!, accepterName);
+
+    // Toast sadece kabul edene local göster (opsiyonel, kaldırabilirsin)
+    toast.success("Arkadaşlık kabul edildi!");
     setFriendshipStatus("accepted");
   };
-
   const openChat = async () => {
     const participants = [userId, viewedUserId].sort();
     const chatId = `chat_${participants.join("_")}`;
