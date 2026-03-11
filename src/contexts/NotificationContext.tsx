@@ -36,7 +36,7 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
             .select("game_credits, bonus_credits")
             .eq("id", user.id)
             .single();
-          
+
           const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
           if (totalCredits < 1) {
             toast.error("Yetersiz Hak! Oyun hakkınız bulunmamaktadır.", { duration: 3000 });
@@ -55,7 +55,11 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
           .maybeSingle();
 
         if (roomData?.host_id && user) {
-          const { data: userProfile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+          const { data: userProfile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", user.id)
+            .maybeSingle();
           await sendInviteResponseNotification(roomData.host_id, userProfile?.username || "Oyuncu", true);
         }
 
@@ -129,14 +133,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   // Satın alma sırasında toast'u bastırmak için global event dinle
   useEffect(() => {
-    const suppressOn = () => { 
+    const suppressOn = () => {
       purchaseSuppressRef.current = true;
       // 5 saniye sonra otomatik kapat (güvenlik)
-      setTimeout(() => { purchaseSuppressRef.current = false; }, 5000);
+      setTimeout(() => {
+        purchaseSuppressRef.current = false;
+      }, 5000);
     };
-    window.addEventListener('purchaseStarted', suppressOn);
+    window.addEventListener("purchaseStarted", suppressOn);
     return () => {
-      window.removeEventListener('purchaseStarted', suppressOn);
+      window.removeEventListener("purchaseStarted", suppressOn);
     };
   }, []);
 
@@ -267,6 +273,17 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             action: {
               label: "Git",
               onClick: () => navigate("/friends"),
+            },
+          });
+          return;
+        }
+
+        if (notification.type === "friend_request_accepted") {
+          toast.success(`🎉 ${notification.message}`, {
+            duration: 8000,
+            action: {
+              label: "Profile Git",
+              onClick: () => navigate(`/profile/${notification.related_id}`),
             },
           });
           return;
