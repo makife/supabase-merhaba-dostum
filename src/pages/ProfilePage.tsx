@@ -852,6 +852,7 @@ const ProfilePage = () => {
             variant="ghost"
             size="icon"
             onClick={() => {
+              playSound("buttonClick");
               const fromPage = location.state?.from;
               if (fromPage === "/chat") {
                 navigate("/chat");

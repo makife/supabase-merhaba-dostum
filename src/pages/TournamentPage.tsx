@@ -95,7 +95,7 @@ const TournamentPage = () => {
 
           {/* Yenile butonu */}
           <button
-            onClick={fetchTournaments}
+            onClick={() => { playSound("buttonClick"); fetchTournaments(); }}
             disabled={loading}
             className="w-10 h-10 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform hover:bg-white/12 disabled:opacity-40"
           >

@@ -582,7 +582,7 @@ const DinoRunner = () => {
           <div style={{background:'#1a1a2e',borderRadius:'20px',padding:'24px',maxWidth:'400px',width:'100%',maxHeight:'80vh',overflow:'auto',border:'1px solid rgba(255,255,255,0.1)'}} onClick={e => e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
               <h3 style={{color:'white',fontSize:'18px',fontWeight:'bold'}}>🏆 Günlük Sıralama</h3>
-              <button onClick={() => setShowLeaderboard(false)} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:'8px',padding:'6px 12px',cursor:'pointer'}}>✕</button>
+              <button onClick={() => { playSound("buttonClick"); setShowLeaderboard(false); }} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:'8px',padding:'6px 12px',cursor:'pointer'}}>✕</button>
             </div>
             {leaderboard.length === 0 ? (
               <p style={{color:'#888',textAlign:'center',padding:'20px'}}>Henüz kimse oynamamış</p>

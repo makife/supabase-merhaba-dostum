@@ -275,7 +275,7 @@ const WordChainPage = () => {
               <ChallengeLeaderboard leaderboard={leaderboard} />
             </div>
 
-            <button onClick={() => navigate("/")} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+            <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
               Ana Sayfa
             </button>
           </div>

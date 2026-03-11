@@ -427,17 +427,17 @@ const NeonBlitz: React.FC = () => {
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginBottom: 16 }}>
         {!hasPlayedToday && (
-          <button onClick={startGame} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}>
+          <button onClick={() => { playSound("buttonClick"); startGame(); }} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}>
             <RefreshCw size={17} style={{ marginRight: 8 }} /> Tekrar Dene
           </button>
         )}
         <button
-          onClick={() => { setShowLeaderboard(!showLeaderboard); }}
+          onClick={() => { playSound("buttonClick"); setShowLeaderboard(!showLeaderboard); }}
           style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}
         >
           <Trophy size={17} style={{ marginRight: 6 }} /> Sıralama
         </button>
-        <button onClick={returnToMenu} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
+        <button onClick={() => { playSound("buttonClick"); returnToMenu(); }} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
           Menüye Dön
         </button>
       </div>

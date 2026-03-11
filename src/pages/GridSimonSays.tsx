@@ -81,7 +81,7 @@ const GridSimonSays = () => {
 
   // Ana sayfaya dönüş fonksiyonu
   const handleGoBack = () => {
-    // Eğer oyun devam ediyorsa belki bir onay sorabilirsin ama şimdilik direkt çıkarıyoruz
+    playSound("buttonClick");
     navigate("/");
   };
 

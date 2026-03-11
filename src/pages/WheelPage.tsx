@@ -438,7 +438,7 @@ const WheelPage = () => {
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <div className="flex items-center justify-start">
-          <Button onClick={() => navigate("/")} variant="ghost" className="text-white hover:bg-white/10">
+          <Button onClick={() => { playSound("buttonClick"); navigate("/"); }} variant="ghost" className="text-white hover:bg-white/10">
             <ArrowLeft className="w-6 h-6 mr-2" />
             Ana Menü
           </Button>

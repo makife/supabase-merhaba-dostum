@@ -406,7 +406,7 @@ const LeaderboardPage = () => {
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-4">
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => { playSound("buttonClick"); navigate("/"); }}
               className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
