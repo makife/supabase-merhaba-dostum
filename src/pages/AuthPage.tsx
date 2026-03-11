@@ -166,7 +166,7 @@ const AuthPage = () => {
           {/* Tab başlıkları */}
           <div className="px-4 pt-5 pb-3 border-b border-white/5 flex gap-2">
             <button
-              onClick={() => setActiveTab("signin")}
+              onClick={() => { playSound("buttonClick"); setActiveTab("signin"); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all
                 ${
                   activeTab === "signin"
