@@ -16,6 +16,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, user } = useAuth();
   const { toast } = useToast();
+  const { playSound } = useSounds();
 
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
