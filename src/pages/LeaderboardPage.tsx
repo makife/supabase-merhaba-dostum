@@ -258,7 +258,7 @@ const LeaderboardPage = () => {
     <div className="space-y-3">
       {leaders.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-20 h-20 bg-[#16213e]/50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-20 h-20 bg-[#1e2d45] rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 font-medium">Henüz oyun oynayan yok</p>
@@ -272,7 +272,7 @@ const LeaderboardPage = () => {
           return (
             <div
               key={leader.user_id}
-              className={`relative group rounded-2xl p-4 transition-all duration-300 border backdrop-blur-md ${
+              className={`relative group rounded-2xl p-4 transition-all duration-300 border ${
                 isTopThree
                   ? leader.rank === 1
                     ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border-amber-400/30 shadow-lg shadow-amber-500/10"
@@ -280,8 +280,8 @@ const LeaderboardPage = () => {
                       ? "bg-gradient-to-r from-slate-400/20 via-slate-300/20 to-slate-400/20 border-slate-300/30 shadow-lg shadow-slate-400/10"
                       : "bg-gradient-to-r from-orange-600/20 via-orange-500/20 to-orange-600/20 border-orange-500/30 shadow-lg shadow-orange-600/10"
                   : isCurrentUser
-                    ? "bg-[#16213e]/80 border-indigo-400/30 shadow-lg shadow-indigo-500/10"
-                    : "bg-[#16213e]/60 border-white/10 hover:border-white/20 hover:bg-[#16213e]/80"
+                    ? "bg-[#1e2d45] border-indigo-400/30 shadow-lg shadow-indigo-500/10"
+                    : "bg-[#1e2d45] border-indigo-500/20"
               }`}
             >
               {/* Hover Effect */}
@@ -408,7 +408,7 @@ const LeaderboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <Button
               onClick={() => { playSound("buttonClick"); navigate("/"); }}
-              className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
+              className="bg-[#1e2d45] border border-indigo-500/20 text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
@@ -426,7 +426,7 @@ const LeaderboardPage = () => {
 
           {/* User Stats Card */}
           {currentStats && (
-            <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+            <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 shadow-xl">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-amber-500" />
@@ -466,7 +466,7 @@ const LeaderboardPage = () => {
           {/* Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-[#16213e]/60 border border-white/10 rounded-xl p-1 h-auto">
+              <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
                 <TabsTrigger
                   value="all-time"
                   className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-slate-400 transition-all"
