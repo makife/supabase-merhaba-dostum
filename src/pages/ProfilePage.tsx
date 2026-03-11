@@ -1334,31 +1334,23 @@ const FriendRequestSection = ({
       console.log("🔐 Session:", session?.user?.id);
       console.log("🔍 Friendship check - userId:", userId, "viewedUserId:", viewedUserId);
 
-      const { data: all, error: allError } = await supabase.from("friendships").select("*").limit(5);
-
-      console.log("🗂️ Tüm friendships:", all, "error:", allError);
-
       const { data: data1, error: e1 } = await supabase
-        .schema("public")
         .from("friendships")
         .select("id, user_id, friend_id, status")
         .eq("user_id", userId)
-        .eq("friend_id", viewedUserId)
-        .maybeSingle();
+        .eq("friend_id", viewedUserId);
 
-      console.log("data1:", data1, "error1:", e1);
+      console.log("data1 (array):", data1, "error1:", e1);
 
       const { data: data2, error: e2 } = await supabase
-        .schema("public")
         .from("friendships")
         .select("id, user_id, friend_id, status")
         .eq("user_id", viewedUserId)
-        .eq("friend_id", userId)
-        .maybeSingle();
+        .eq("friend_id", userId);
 
-      console.log("data2:", data2, "error2:", e2);
+      console.log("data2 (array):", data2, "error2:", e2);
 
-      const data = data1 || data2;
+      const data = data1?.[0] || data2?.[0];
 
       if (data) {
         setFriendshipId(data.id);
