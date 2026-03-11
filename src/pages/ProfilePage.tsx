@@ -1328,24 +1328,28 @@ const FriendRequestSection = ({
 
   useEffect(() => {
     const check = async () => {
-      console.log("🔍 Friendship check başlıyor - userId:", userId, "viewedUserId:", viewedUserId);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log("🔐 Session:", session?.user?.id);
 
-      const { data: data1 } = await supabase
+      const { data: data1, error: e1 } = await supabase
         .from("friendships")
         .select("id, user_id, friend_id, status")
         .eq("user_id", userId)
         .eq("friend_id", viewedUserId)
         .maybeSingle();
 
-      const { data: data2 } = await supabase
+      console.log("data1:", data1, "error1:", e1);
+
+      const { data: data2, error: e2 } = await supabase
         .from("friendships")
         .select("id, user_id, friend_id, status")
         .eq("user_id", viewedUserId)
         .eq("friend_id", userId)
         .maybeSingle();
 
-      const data = data1 || data2;
-      console.log("🔍 Friendship data:", data);
+      console.log("data2:", data2, "error2:", e2);
 
       if (data) {
         setFriendshipId(data.id);
