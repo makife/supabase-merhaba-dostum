@@ -424,7 +424,7 @@ const DinoRunner = () => {
       <div className="game-container">
         {/* ÜST BAR */}
         <div className="top-bar">
-          <button onClick={navigate} className="icon-btn">
+          <button onClick={() => { playSound("buttonClick"); navigate(); }} className="icon-btn">
             <ArrowLeft size={24} />
             <span className="btn-text">GERİ</span>
           </button>
