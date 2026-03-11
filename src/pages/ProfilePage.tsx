@@ -1364,11 +1364,8 @@ const FriendRequestSection = ({
       }
       setLoading(false);
     };
-    check();
-  }, [userId, viewedUserId]);
 
-  useEffect(() => {
-    if (!userId || !viewedUserId) return;
+    check();
 
     const channel = supabase
       .channel("friendship-status")
@@ -1380,12 +1377,14 @@ const FriendRequestSection = ({
           table: "friendships",
         },
         () => {
-          check(); // her değişiklikte tekrar kontrol et
+          check();
         },
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId, viewedUserId]);
 
   const sendRequest = async () => {
