@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 
 interface FriendItem {
   friendship_id: string;
@@ -29,6 +30,7 @@ const FriendsPage = () => {
   const [tab, setTab] = useState<"friends" | "pending">("friends");
   const [friendOnlineNotify, setFriendOnlineNotify] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
+  const { sendFriendAcceptedNotification } = useSmartNotifications();
 
   // Fetch friend online notify preference
   useEffect(() => {
@@ -48,16 +50,14 @@ const FriendsPage = () => {
     if (!user) return;
     setNotifyLoading(true);
     try {
-      const { error } = await supabase
-        .from("user_settings")
-        .upsert(
-          {
-            user_id: user.id,
-            friend_online_notify: checked,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" },
-        );
+      const { error } = await supabase.from("user_settings").upsert(
+        {
+          user_id: user.id,
+          friend_online_notify: checked,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
 
       if (error) throw error;
       setFriendOnlineNotify(checked);
@@ -89,15 +89,10 @@ const FriendsPage = () => {
       }
 
       // Get unique friend IDs
-      const friendIds = data.map((f) =>
-        f.user_id === user.id ? f.friend_id : f.user_id
-      );
+      const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       // Fetch profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .in("id", friendIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds);
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -109,9 +104,7 @@ const FriendsPage = () => {
         .gte("last_seen", oneMinuteAgo);
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
-      const profileMap = new Map(
-        profiles?.map((p) => [p.id, p]) || []
-      );
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
       const items: FriendItem[] = data.map((f) => {
         const friendId = f.user_id === user.id ? f.friend_id : f.user_id;
@@ -146,27 +139,37 @@ const FriendsPage = () => {
     if (!user) return;
     const channel = supabase
       .channel("friendships-realtime")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "friendships",
-      }, () => {
-        fetchFriends();
-      })
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "user_presence",
-      }, () => {
-        // Arkadaşın online durumu değiştiğinde listeyi yenile
-        fetchFriends();
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "friendships",
+        },
+        () => {
+          fetchFriends();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_presence",
+        },
+        () => {
+          // Arkadaşın online durumu değiştiğinde listeyi yenile
+          fetchFriends();
+        },
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, fetchFriends]);
 
-  const handleAccept = async (friendshipId: string) => {
+  const handleAccept = async (friendshipId: string, senderId: string) => {
     const { error } = await supabase
       .from("friendships")
       .update({ status: "accepted", updated_at: new Date().toISOString() })
@@ -175,16 +178,24 @@ const FriendsPage = () => {
     if (error) {
       toast.error("Kabul edilemedi");
     } else {
-      toast.success("Arkadaşlık kabul edildi! 🎉");
+      const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", user!.id).single();
+      const accepterName = myProfile?.username || "Bir oyuncu";
+
+      await supabase.from("notifications").insert({
+        user_id: senderId,
+        type: "friend_request_accepted",
+        message: `${accepterName} arkadaşlık davetini kabul etti! 🎉`,
+        related_id: user!.id,
+      });
+
+      await sendFriendAcceptedNotification(senderId, accepterName);
+
       fetchFriends();
     }
   };
 
   const handleReject = async (friendshipId: string) => {
-    const { error } = await supabase
-      .from("friendships")
-      .delete()
-      .eq("id", friendshipId);
+    const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
 
     if (error) {
       toast.error("Reddedilemedi");
@@ -195,10 +206,7 @@ const FriendsPage = () => {
   };
 
   const handleRemoveFriend = async (friendshipId: string, username: string) => {
-    const { error } = await supabase
-      .from("friendships")
-      .delete()
-      .eq("id", friendshipId);
+    const { error } = await supabase.from("friendships").delete().eq("id", friendshipId);
 
     if (error) {
       toast.error("Arkadaş çıkarılamadı");
@@ -244,7 +252,13 @@ const FriendsPage = () => {
       {/* Header */}
       <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+          <button
+            onClick={() => {
+              playSound("buttonClick");
+              navigate("/");
+            }}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
@@ -264,11 +278,7 @@ const FriendsPage = () => {
             <Bell className="w-4 h-4 text-amber-400" />
             <span className="text-xs text-zinc-300">Arkadaş online bildirimi</span>
           </div>
-          <Switch
-            checked={friendOnlineNotify}
-            onCheckedChange={toggleFriendOnlineNotify}
-            disabled={notifyLoading}
-          />
+          <Switch checked={friendOnlineNotify} onCheckedChange={toggleFriendOnlineNotify} disabled={notifyLoading} />
         </div>
 
         {/* Tabs */}
@@ -276,9 +286,7 @@ const FriendsPage = () => {
           <button
             onClick={() => setTab("friends")}
             className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors ${
-              tab === "friends"
-                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
-                : "bg-white/5 text-zinc-400"
+              tab === "friends" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-white/5 text-zinc-400"
             }`}
           >
             Arkadaşlar ({friends.length})
@@ -292,7 +300,7 @@ const FriendsPage = () => {
             }`}
           >
             Davetler ({pendingRequests.length})
-            {pendingRequests.filter(p => !p.is_sender).length > 0 && (
+            {pendingRequests.filter((p) => !p.is_sender).length > 0 && (
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
             )}
           </button>
@@ -350,25 +358,31 @@ const FriendsPage = () => {
               )}
             </>
           )
+        ) : /* Pending tab */
+        pendingRequests.length === 0 ? (
+          <div className="text-center py-16 space-y-3">
+            <UserPlus className="w-12 h-12 mx-auto text-zinc-600" />
+            <p className="text-zinc-500 text-sm">Bekleyen davet yok</p>
+          </div>
         ) : (
-          /* Pending tab */
-          pendingRequests.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <UserPlus className="w-12 h-12 mx-auto text-zinc-600" />
-              <p className="text-zinc-500 text-sm">Bekleyen davet yok</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Gelen davetler */}
-              {pendingRequests.filter(p => !p.is_sender).length > 0 && (
-                <>
-                  <p className="text-xs font-bold text-amber-400 uppercase tracking-wider px-1">Gelen Davetler</p>
-                  {pendingRequests.filter(p => !p.is_sender).map((req) => (
-                    <div key={req.friendship_id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10">
+          <div className="space-y-2">
+            {/* Gelen davetler */}
+            {pendingRequests.filter((p) => !p.is_sender).length > 0 && (
+              <>
+                <p className="text-xs font-bold text-amber-400 uppercase tracking-wider px-1">Gelen Davetler</p>
+                {pendingRequests
+                  .filter((p) => !p.is_sender)
+                  .map((req) => (
+                    <div
+                      key={req.friendship_id}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10"
+                    >
                       <button onClick={() => navigate(`/profile/${req.friend_id}`, { state: { from: "/friends" } })}>
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={req.avatar_url || ""} />
-                          <AvatarFallback className="bg-amber-600 text-white text-xs">{req.username[0]?.toUpperCase()}</AvatarFallback>
+                          <AvatarFallback className="bg-amber-600 text-white text-xs">
+                            {req.username[0]?.toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                       </button>
                       <div className="flex-1 min-w-0">
@@ -376,40 +390,57 @@ const FriendsPage = () => {
                         <p className="text-[10px] text-zinc-500">Arkadaşlık daveti gönderdi</p>
                       </div>
                       <div className="flex gap-1.5">
-                        <button onClick={() => handleAccept(req.friendship_id)} className="p-2 rounded-xl bg-green-600 hover:bg-green-500 transition-colors">
+                        <button
+                          onClick={() => handleAccept(req.friendship_id)}
+                          className="p-2 rounded-xl bg-green-600 hover:bg-green-500 transition-colors"
+                        >
                           <Check className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleReject(req.friendship_id)} className="p-2 rounded-xl bg-red-600/30 hover:bg-red-600/50 transition-colors">
+                        <button
+                          onClick={() => handleReject(req.friendship_id)}
+                          className="p-2 rounded-xl bg-red-600/30 hover:bg-red-600/50 transition-colors"
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
-                </>
-              )}
-              {/* Gönderilen davetler */}
-              {pendingRequests.filter(p => p.is_sender).length > 0 && (
-                <>
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-1 mt-4">Gönderilen Davetler</p>
-                  {pendingRequests.filter(p => p.is_sender).map((req) => (
-                    <div key={req.friendship_id} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 opacity-70">
+              </>
+            )}
+            {/* Gönderilen davetler */}
+            {pendingRequests.filter((p) => p.is_sender).length > 0 && (
+              <>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-1 mt-4">
+                  Gönderilen Davetler
+                </p>
+                {pendingRequests
+                  .filter((p) => p.is_sender)
+                  .map((req) => (
+                    <div
+                      key={req.friendship_id}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 opacity-70"
+                    >
                       <Avatar className="w-10 h-10">
                         <AvatarImage src={req.avatar_url || ""} />
-                        <AvatarFallback className="bg-zinc-600 text-white text-xs">{req.username[0]?.toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="bg-zinc-600 text-white text-xs">
+                          {req.username[0]?.toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{req.username}</p>
                         <p className="text-[10px] text-zinc-500">Yanıt bekleniyor...</p>
                       </div>
-                      <button onClick={() => handleReject(req.friendship_id)} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 transition-colors text-[10px]">
+                      <button
+                        onClick={() => handleReject(req.friendship_id)}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 transition-colors text-[10px]"
+                      >
                         İptal
                       </button>
                     </div>
                   ))}
-                </>
-              )}
-            </div>
-          )
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -454,10 +485,16 @@ const FriendCard = ({
       </button>
 
       <div className="flex gap-1.5">
-        <button onClick={onMessage} className="p-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 transition-colors">
+        <button
+          onClick={onMessage}
+          className="p-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 transition-colors"
+        >
           <MessageCircle className="w-4 h-4" />
         </button>
-        <button onClick={onRemove} className="p-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 transition-colors">
+        <button
+          onClick={onRemove}
+          className="p-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 transition-colors"
+        >
           <UserMinus className="w-4 h-4" />
         </button>
       </div>
