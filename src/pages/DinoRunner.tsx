@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 const DinoRunner = () => {
