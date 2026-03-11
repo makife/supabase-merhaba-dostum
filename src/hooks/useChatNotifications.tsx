@@ -214,6 +214,22 @@ export function useChatNotifications() {
               });
             }
 
+            if (notif.type === "friend_request") {
+              showInAppNotification(
+                "🤝 Arkadaşlık Daveti",
+                notif.message,
+                notif.related_id ? `/profile/${notif.related_id}` : undefined,
+              );
+            }
+
+            if (notif.type === "friend_request_accepted") {
+              showInAppNotification(
+                "🎉 Arkadaşlık Kabul Edildi",
+                notif.message,
+                notif.related_id ? `/profile/${notif.related_id}` : undefined,
+              );
+            }
+
             if (notif.type === "tournament_end") {
               toast.success("🏆 Turnuva Sona Erdi!", {
                 description: notif.message,
