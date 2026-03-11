@@ -1328,7 +1328,9 @@ const FriendRequestSection = ({
 
   useEffect(() => {
     const check = async () => {
-      const { data } = await supabase
+      console.log("🔍 Friendship check başlıyor - userId:", userId, "viewedUserId:", viewedUserId);
+
+      const { data, error } = await supabase
         .from("friendships")
         .select("id, user_id, friend_id, status")
         .or(
@@ -1336,12 +1338,25 @@ const FriendRequestSection = ({
         )
         .maybeSingle();
 
+      console.log("🔍 Friendship data:", data, "error:", error);
+
       if (data) {
         setFriendshipId(data.id);
+        console.log(
+          "✅ friendshipId set:",
+          data.id,
+          "status:",
+          data.status,
+          "data.user_id:",
+          data.user_id,
+          "userId:",
+          userId,
+        );
         if (data.status === "accepted") setFriendshipStatus("accepted");
         else if (data.status === "pending" && data.user_id === userId) setFriendshipStatus("pending_sent");
         else if (data.status === "pending") setFriendshipStatus("pending_received");
       } else {
+        console.log("❌ Friendship bulunamadı");
         setFriendshipStatus("none");
       }
       setLoading(false);
