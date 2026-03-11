@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // Navigate eklendi
+import { useNavigate } from "react-router-dom";
+import { useSounds } from "@/hooks/useSounds";
 
 // TypeScript hatası için global tanım
 declare global {
@@ -10,7 +11,8 @@ declare global {
 }
 
 const GridSimonSays = () => {
-  const navigate = useNavigate(); // Hook'u başlattık
+  const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [gameState, setGameState] = useState("waiting");
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
@@ -79,7 +81,7 @@ const GridSimonSays = () => {
 
   // Ana sayfaya dönüş fonksiyonu
   const handleGoBack = () => {
-    // Eğer oyun devam ediyorsa belki bir onay sorabilirsin ama şimdilik direkt çıkarıyoruz
+    playSound("buttonClick");
     navigate("/");
   };
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
@@ -24,6 +25,7 @@ const generateColor = () => {
 
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
@@ -227,7 +229,7 @@ const NeonBlitz: React.FC = () => {
   const renderMenu = () => (
     <div style={s.center}>
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => { playSound("buttonClick"); navigate(-1); }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
       >
         <ArrowLeft size={22} color="#fff" />
@@ -304,7 +306,7 @@ const NeonBlitz: React.FC = () => {
     return (
       <div style={s.gameWrap}>
         <div style={s.header}>
-          <button onClick={returnToMenu} style={s.iconBtn}>
+          <button onClick={() => { playSound("buttonClick"); returnToMenu(); }} style={s.iconBtn}>
             <ArrowLeft size={22} color="#fff" />
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: "bold" }}>
@@ -425,17 +427,17 @@ const NeonBlitz: React.FC = () => {
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginBottom: 16 }}>
         {!hasPlayedToday && (
-          <button onClick={startGame} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}>
+          <button onClick={() => { playSound("buttonClick"); startGame(); }} style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}>
             <RefreshCw size={17} style={{ marginRight: 8 }} /> Tekrar Dene
           </button>
         )}
         <button
-          onClick={() => { setShowLeaderboard(!showLeaderboard); }}
+          onClick={() => { playSound("buttonClick"); setShowLeaderboard(!showLeaderboard); }}
           style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}
         >
           <Trophy size={17} style={{ marginRight: 6 }} /> Sıralama
         </button>
-        <button onClick={returnToMenu} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
+        <button onClick={() => { playSound("buttonClick"); returnToMenu(); }} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
           Menüye Dön
         </button>
       </div>

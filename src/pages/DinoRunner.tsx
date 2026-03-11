@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 const DinoRunner = () => {
@@ -13,6 +14,7 @@ const DinoRunner = () => {
   };
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
+  const { playSound: playButtonSound } = useSounds();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // --- RENK PALETLERİ ---
@@ -422,7 +424,7 @@ const DinoRunner = () => {
       <div className="game-container">
         {/* ÜST BAR */}
         <div className="top-bar">
-          <button onClick={navigate} className="icon-btn">
+          <button onClick={() => { playButtonSound("buttonClick"); navigate(); }} className="icon-btn">
             <ArrowLeft size={24} />
             <span className="btn-text">GERİ</span>
           </button>
@@ -442,7 +444,7 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={() => setShowLeaderboard(true)} className="icon-btn" title="Sıralamalar">
+          <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
             <Trophy size={24} />
           </button>
         </div>
@@ -551,6 +553,7 @@ const DinoRunner = () => {
                     className="start-btn"
                     onClick={(e) => {
                       e.stopPropagation();
+                      playButtonSound("buttonClick");
                       startGame();
                     }}
                   >
@@ -579,7 +582,7 @@ const DinoRunner = () => {
           <div style={{background:'#1a1a2e',borderRadius:'20px',padding:'24px',maxWidth:'400px',width:'100%',maxHeight:'80vh',overflow:'auto',border:'1px solid rgba(255,255,255,0.1)'}} onClick={e => e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
               <h3 style={{color:'white',fontSize:'18px',fontWeight:'bold'}}>🏆 Günlük Sıralama</h3>
-              <button onClick={() => setShowLeaderboard(false)} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:'8px',padding:'6px 12px',cursor:'pointer'}}>✕</button>
+              <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(false); }} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:'8px',padding:'6px 12px',cursor:'pointer'}}>✕</button>
             </div>
             {leaderboard.length === 0 ? (
               <p style={{color:'#888',textAlign:'center',padding:'20px'}}>Henüz kimse oynamamış</p>

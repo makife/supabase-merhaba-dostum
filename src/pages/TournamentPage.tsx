@@ -8,10 +8,12 @@ import { useTournamentContext } from "@/contexts/TournamentContext";
 import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const { tournaments, loading, createTournament, joinTournament, fetchTournaments, hasLeftTournament } =
     useTournamentContext();
   const { profile, isPremium } = useUser();
@@ -78,7 +80,7 @@ const TournamentPage = () => {
         <div className="flex items-center justify-between">
           {/* Ana Sayfa butonu */}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => { playSound("buttonClick"); navigate("/"); }}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/8 ring-1 ring-white/10 active:scale-90 transition-transform hover:bg-white/12"
           >
             <Home className="w-4 h-4 text-white/70" />
@@ -93,7 +95,7 @@ const TournamentPage = () => {
 
           {/* Yenile butonu */}
           <button
-            onClick={fetchTournaments}
+            onClick={() => { playSound("buttonClick"); fetchTournaments(); }}
             disabled={loading}
             className="w-10 h-10 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform hover:bg-white/12 disabled:opacity-40"
           >

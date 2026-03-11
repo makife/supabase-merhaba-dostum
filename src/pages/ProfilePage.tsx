@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { useSounds } from "@/hooks/useSounds";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -49,6 +50,7 @@ const ProfilePage = () => {
   const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
     useAvatarUpload();
   const { id: routeId } = useParams();
+  const { playSound } = useSounds();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
   const [isEditing, setIsEditing] = useState(false);
@@ -851,6 +853,7 @@ const ProfilePage = () => {
             variant="ghost"
             size="icon"
             onClick={() => {
+              playSound("buttonClick");
               const fromPage = location.state?.from;
               if (fromPage === "/chat") {
                 navigate("/chat");

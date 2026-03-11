@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSounds } from "@/hooks/useSounds";
 import {
   Play,
   Pause,
@@ -104,9 +105,11 @@ interface Position {
 
 const MorlesGame = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
 
   const goBack = () => {
     try {
+      playSound("buttonClick");
       navigate("/");
     } catch (e) {
       window.location.href = "/";

@@ -246,7 +246,7 @@ const PuzzleGamePage: React.FC = () => {
                   </button>
                 )}
 
-                <button onClick={() => navigate("/")} className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
                   Ana Sayfa
                 </button>
               </div>
@@ -317,7 +317,7 @@ const PuzzleGamePage: React.FC = () => {
 
                 {/* Home button */}
                 {(gameState.isCompleted || hasPlayedToday) && (
-                  <button onClick={() => navigate("/")} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                  <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
                     Ana Sayfa
                   </button>
                 )}

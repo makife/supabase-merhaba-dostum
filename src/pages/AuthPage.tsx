@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, user } = useAuth();
   const { toast } = useToast();
+  const { playSound } = useSounds();
 
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
@@ -164,7 +166,7 @@ const AuthPage = () => {
           {/* Tab başlıkları */}
           <div className="px-4 pt-5 pb-3 border-b border-white/5 flex gap-2">
             <button
-              onClick={() => setActiveTab("signin")}
+              onClick={() => { playSound("buttonClick"); setActiveTab("signin"); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all
                 ${
                   activeTab === "signin"
@@ -175,7 +177,7 @@ const AuthPage = () => {
               Giriş Yap
             </button>
             <button
-              onClick={() => setActiveTab("signup")}
+              onClick={() => { playSound("buttonClick"); setActiveTab("signup"); }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all
                 ${
                   activeTab === "signup"

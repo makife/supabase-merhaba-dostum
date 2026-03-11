@@ -499,7 +499,7 @@ const MarketPage = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => { playSound("buttonClick"); navigate("/"); }}
             className="border-2 border-white/70 text-white bg-white/10 hover:bg-white/20 shrink-0 relative z-20 shadow-md h-9 w-9"
           >
             <ArrowLeft className="w-5 h-5" />

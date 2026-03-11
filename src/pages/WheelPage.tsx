@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 
 interface WheelReward {
@@ -65,6 +66,7 @@ const WheelPage = () => {
   const { profile, refreshProfile } = useUser();
   const { updateInventory } = useUserPurchases();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [canSpin, setCanSpin] = useState(false);
@@ -437,7 +439,7 @@ const WheelPage = () => {
 
       <div className="w-full max-w-md z-10 flex flex-col gap-6">
         <div className="flex items-center justify-start">
-          <Button onClick={() => navigate("/")} variant="ghost" className="text-white hover:bg-white/10">
+          <Button onClick={() => { playSound("buttonClick"); navigate("/"); }} variant="ghost" className="text-white hover:bg-white/10">
             <ArrowLeft className="w-6 h-6 mr-2" />
             Ana Menü
           </Button>

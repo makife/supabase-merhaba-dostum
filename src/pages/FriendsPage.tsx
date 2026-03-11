@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface FriendItem {
   friendship_id: string;
@@ -21,6 +22,7 @@ interface FriendItem {
 const FriendsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [friends, setFriends] = useState<FriendItem[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -242,7 +244,7 @@ const FriendsPage = () => {
       {/* Header */}
       <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+          <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">

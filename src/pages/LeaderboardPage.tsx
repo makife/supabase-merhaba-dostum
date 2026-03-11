@@ -10,6 +10,7 @@ import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import {
   ArrowLeft,
   Trophy,
@@ -47,6 +48,7 @@ interface UserStats {
 
 const LeaderboardPage = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const { user } = useAuth();
   const { isUserOnline } = useUser();
   const { toast } = useToast();
@@ -405,7 +407,7 @@ const LeaderboardPage = () => {
         <div className="px-5 py-4">
           <div className="flex items-center justify-between mb-4">
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => { playSound("buttonClick"); navigate("/"); }}
               className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
