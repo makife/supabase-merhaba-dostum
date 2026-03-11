@@ -22,7 +22,14 @@ const SURE = 90;
 const WordMemoryGame = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } = useDailyChallenge("memory");
+  const {
+    hasPlayedToday,
+    todayScore,
+    leaderboard,
+    loading: challengeLoading,
+    saveScore,
+    markAsPlayed,
+  } = useDailyChallenge("memory");
 
   const [kartlar, setKartlar] = useState<Kart[]>([]);
   const [secilenKartlar, setSecilenKartlar] = useState<number[]>([]);
@@ -61,7 +68,20 @@ const WordMemoryGame = () => {
           .filter((w) => w.length >= 4 && w.length <= 7);
         setWordList(words);
       } catch {
-        setWordList(["BAHÇE", "KALEM", "DÜNYA", "GÜNEŞ", "DENIZ", "YILDIZ", "ÇIÇEK", "KITAP", "PENCERE", "KAHVE", "MÜZIK", "OYUN"]);
+        setWordList([
+          "BAHÇE",
+          "KALEM",
+          "DÜNYA",
+          "GÜNEŞ",
+          "DENIZ",
+          "YILDIZ",
+          "ÇIÇEK",
+          "KITAP",
+          "PENCERE",
+          "KAHVE",
+          "MÜZIK",
+          "OYUN",
+        ]);
       }
     };
     loadWordList();
@@ -140,12 +160,22 @@ const WordMemoryGame = () => {
     secilenKelimeler.forEach((kelime, index) => {
       const karisikKelime = harfleriKaristir(kelime);
       yeniKartlar.push({
-        id: index * 2, kelime, tip: "duzgun", acik: false, eslesti: false,
-        renk: karisikRenkler[index * 2], eslestirmeId: index,
+        id: index * 2,
+        kelime,
+        tip: "duzgun",
+        acik: false,
+        eslesti: false,
+        renk: karisikRenkler[index * 2],
+        eslestirmeId: index,
       });
       yeniKartlar.push({
-        id: index * 2 + 1, kelime: karisikKelime, tip: "karisik", acik: false, eslesti: false,
-        renk: karisikRenkler[index * 2 + 1], eslestirmeId: index,
+        id: index * 2 + 1,
+        kelime: karisikKelime,
+        tip: "karisik",
+        acik: false,
+        eslesti: false,
+        renk: karisikRenkler[index * 2 + 1],
+        eslestirmeId: index,
       });
     });
 
@@ -212,18 +242,30 @@ const WordMemoryGame = () => {
 
   if (challengeLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
         <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}>
+    <div
+      className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}
+    >
       {/* Header */}
       <div className="px-5 pt-12 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => { navigate(-1); playSound("buttonClick"); }} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+          <button
+            onClick={() => {
+              navigate(-1);
+              playSound("buttonClick");
+            }}
+            className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          >
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
@@ -231,7 +273,10 @@ const WordMemoryGame = () => {
             <p className="text-[10px] text-purple-400/80">Kelimeleri karışık halleriyle eşleştir</p>
           </div>
         </div>
-        <button onClick={() => setShowLeaderboard(!showLeaderboard)} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+        <button
+          onClick={() => setShowLeaderboard(!showLeaderboard)}
+          className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+        >
           <Trophy className="w-5 h-5 text-amber-400" />
         </button>
       </div>
@@ -239,8 +284,16 @@ const WordMemoryGame = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {showLeaderboard ? (
           <div className="flex-1 flex flex-col min-h-0 mt-4">
-            <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Hafıza Sıralaması" scrollable />
-            <button onClick={() => setShowLeaderboard(false)} className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+            <ChallengeLeaderboard
+              leaderboard={leaderboard}
+              title="Günlük Hafıza Sıralaması"
+              scrollable
+              showCompletionOnly
+            />
+            <button
+              onClick={() => setShowLeaderboard(false)}
+              className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
+            >
               Oyuna Dön
             </button>
           </div>
@@ -271,7 +324,10 @@ const WordMemoryGame = () => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => { oyunuBaslat(); playSound("buttonClick"); }}
+                    onClick={() => {
+                      oyunuBaslat();
+                      playSound("buttonClick");
+                    }}
                     disabled={gameLoading || wordList.length === 0}
                     className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform disabled:opacity-50 shadow-lg shadow-purple-500/30"
                   >
@@ -291,22 +347,31 @@ const WordMemoryGame = () => {
                       {Math.floor(kalanSure / 60)}:{(kalanSure % 60).toString().padStart(2, "0")}
                     </span>
                   </div>
-                  <span className="text-sm text-white/80">Hamle: <span className="font-bold text-white">{hamle}</span></span>
+                  <span className="text-sm text-white/80">
+                    Hamle: <span className="font-bold text-white">{hamle}</span>
+                  </span>
                 </div>
-                <span className="text-sm text-white/80">Çift: <span className="font-bold text-white">{kartlar.filter((k) => k.eslesti).length / 2}/{GRID_PAIRS}</span></span>
+                <span className="text-sm text-white/80">
+                  Çift:{" "}
+                  <span className="font-bold text-white">
+                    {kartlar.filter((k) => k.eslesti).length / 2}/{GRID_PAIRS}
+                  </span>
+                </span>
               </div>
             )}
 
             {/* Game Over */}
             {oyunBitti && (
-              <div className={`p-4 rounded-xl text-center ${kazandi ? "bg-green-500/20 border border-green-400/30" : "bg-red-500/20 border border-red-400/30"}`}>
+              <div
+                className={`p-4 rounded-xl text-center ${kazandi ? "bg-green-500/20 border border-green-400/30" : "bg-red-500/20 border border-red-400/30"}`}
+              >
                 {kazandi ? (
                   <>
                     <Trophy className="w-10 h-10 text-green-400 mx-auto mb-2" />
                     <div className="text-green-400 font-bold text-lg">🎉 Tebrikler!</div>
                     <div className="text-white/80 text-sm mt-1">{hamle} hamlede tamamladın!</div>
                     <div className="text-amber-400 font-bold text-lg mt-2">
-                      Skor: {((SURE - kalanSure) > 0 ? (10000 / ((SURE - kalanSure) * hamle)).toFixed(2) : 0)}
+                      Skor: {SURE - kalanSure > 0 ? (10000 / ((SURE - kalanSure) * hamle)).toFixed(2) : 0}
                     </div>
                     <div className="text-green-300 text-xs mt-2">🎡 +1 çark çevirme hakkı gün sonunda verilecek!</div>
                   </>
@@ -314,7 +379,9 @@ const WordMemoryGame = () => {
                   <>
                     <Clock className="w-10 h-10 text-red-400 mx-auto mb-2" />
                     <div className="text-red-400 font-bold text-lg">Süre Doldu! ⏱️</div>
-                    <div className="text-white/80 text-sm">{kartlar.filter((k) => k.eslesti).length / 2} çift eşleştirdin</div>
+                    <div className="text-white/80 text-sm">
+                      {kartlar.filter((k) => k.eslesti).length / 2} çift eşleştirdin
+                    </div>
                   </>
                 )}
               </div>
@@ -344,7 +411,9 @@ const WordMemoryGame = () => {
                         className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${kart.eslesti ? "opacity-20 scale-95" : ""} transition-all duration-300 [transform:rotateY(180deg)]`}
                         style={{ backfaceVisibility: "hidden" }}
                       >
-                        <div className={`text-white font-bold px-1 text-center break-all ${kart.kelime.length > 6 ? "text-[8px]" : kart.kelime.length > 5 ? "text-[9px]" : "text-[10px]"}`}>
+                        <div
+                          className={`text-white font-bold px-1 text-center break-all ${kart.kelime.length > 6 ? "text-[8px]" : kart.kelime.length > 5 ? "text-[9px]" : "text-[10px]"}`}
+                        >
                           {kart.kelime}
                         </div>
                         {kart.eslesti && (
@@ -361,7 +430,13 @@ const WordMemoryGame = () => {
 
             {/* Home button */}
             {(oyunBitti || hasPlayedToday) && (
-              <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+              <button
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/");
+                }}
+                className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
+              >
                 Ana Sayfa
               </button>
             )}
