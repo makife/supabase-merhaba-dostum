@@ -44,7 +44,6 @@ import {
 const ProfilePage = () => {
   const { user } = useAuth();
   const { profile } = useUser();
-  const { sendFriendRequestNotification, sendFriendAcceptedNotification } = useSmartNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [jokers, setJokers] = useState({ degistir: 0, fisilida: 0, senYaz: 0 });
@@ -1325,7 +1324,7 @@ const FriendRequestSection = ({
   );
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { sendFriendRequestNotification } = useSmartNotifications();
+  const { sendFriendRequestNotification, sendFriendAcceptedNotification } = useSmartNotifications();
 
   useEffect(() => {
     const check = async () => {
