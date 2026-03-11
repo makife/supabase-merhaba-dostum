@@ -10,6 +10,7 @@ import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import {
   ArrowLeft,
   Trophy,
