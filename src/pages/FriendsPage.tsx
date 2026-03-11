@@ -170,23 +170,31 @@ const FriendsPage = () => {
   }, [user, fetchFriends]);
 
   const handleAccept = async (friendshipId: string, senderId: string) => {
+    console.log("🤝 handleAccept - friendshipId:", friendshipId, "senderId:", senderId);
+
     const { error } = await supabase
       .from("friendships")
       .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", friendshipId);
 
+    console.log("✅ update error:", error);
+
     if (error) {
       toast.error("Kabul edilemedi");
     } else {
       const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", user!.id).single();
+
+      console.log("👤 myProfile:", myProfile);
       const accepterName = myProfile?.username || "Bir oyuncu";
 
-      await supabase.from("notifications").insert({
+      const { error: notifError } = await supabase.from("notifications").insert({
         user_id: senderId,
         type: "friend_request_accepted",
         message: `${accepterName} arkadaşlık davetini kabul etti! 🎉`,
         related_id: user!.id,
       });
+
+      console.log("🔔 notifError:", notifError);
 
       await sendFriendAcceptedNotification(senderId, accepterName);
 
