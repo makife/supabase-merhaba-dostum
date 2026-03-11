@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Trophy, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 
 interface WheelReward {
