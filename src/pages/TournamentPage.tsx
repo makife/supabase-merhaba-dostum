@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 const TournamentPage = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const { tournaments, loading, createTournament, joinTournament, fetchTournaments, hasLeftTournament } =
     useTournamentContext();
   const { profile, isPremium } = useUser();
