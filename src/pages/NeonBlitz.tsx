@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
