@@ -11,7 +11,8 @@ declare global {
 }
 
 const GridSimonSays = () => {
-  const navigate = useNavigate(); // Hook'u başlattık
+  const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [gameState, setGameState] = useState("waiting");
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
