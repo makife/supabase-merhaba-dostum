@@ -306,7 +306,7 @@ const NeonBlitz: React.FC = () => {
     return (
       <div style={s.gameWrap}>
         <div style={s.header}>
-          <button onClick={returnToMenu} style={s.iconBtn}>
+          <button onClick={() => { playSound("buttonClick"); returnToMenu(); }} style={s.iconBtn}>
             <ArrowLeft size={22} color="#fff" />
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: "bold" }}>
