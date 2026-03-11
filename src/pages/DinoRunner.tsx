@@ -444,7 +444,7 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={() => setShowLeaderboard(true)} className="icon-btn" title="Sıralamalar">
+          <button onClick={() => { playSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
             <Trophy size={24} />
           </button>
         </div>
