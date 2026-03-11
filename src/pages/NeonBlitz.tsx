@@ -229,7 +229,7 @@ const NeonBlitz: React.FC = () => {
   const renderMenu = () => (
     <div style={s.center}>
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => { playSound("buttonClick"); navigate(-1); }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
       >
         <ArrowLeft size={22} color="#fff" />
