@@ -8,6 +8,7 @@ import { useTournamentContext } from "@/contexts/TournamentContext";
 import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useSounds } from "@/hooks/useSounds";
 import { toast } from "sonner";
 
 const TournamentPage = () => {
