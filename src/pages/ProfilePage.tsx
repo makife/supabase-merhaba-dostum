@@ -1397,13 +1397,6 @@ const FriendRequestSection = ({
       related_id: userId,
     });
 
-    // Push notification gönder (eğer sendFriendRequestNotification gibi bir fonksiyonun varsa)
-    await sendFriendAcceptedNotification(viewedUserId!, accepterName);
-
-    // Toast sadece kabul edene local göster (opsiyonel, kaldırabilirsin)
-    toast.success("Arkadaşlık kabul edildi!");
-    setFriendshipStatus("accepted");
-  };
   const openChat = async () => {
     const participants = [userId, viewedUserId].sort();
     const chatId = `chat_${participants.join("_")}`;
