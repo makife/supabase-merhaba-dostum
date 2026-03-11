@@ -86,16 +86,18 @@ export const ChallengeLeaderboard = ({
                     <span className="text-base">❌</span>
                   )
                 ) : showLevel ? (
-                  <span className="text-xs font-bold text-cyan-400">
+                  <span className="text-xs font-bold text-cyan-400 w-10 text-right">
                     Lvl {Math.floor(typeof entry.score === "number" ? entry.score : Number(entry.score))}
                   </span>
                 ) : (
-                  <span className="text-xs font-bold text-amber-400">
+                  <span className="text-xs font-bold text-amber-400 w-10 text-right">
                     {typeof entry.score === "number" ? entry.score.toFixed(2) : entry.score}
                   </span>
                 )}
-                {!showCompletionOnly && entry.words_found > 0 && (
-                  <span className="text-[9px] text-slate-500">({entry.words_found})</span>
+                {!showCompletionOnly && (
+                  <span className="text-[9px] text-slate-500 w-8">
+                    {entry.words_found > 0 ? `(${entry.words_found})` : ""}
+                  </span>
                 )}
               </div>
             </div>
