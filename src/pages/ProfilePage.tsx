@@ -847,7 +847,7 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
       {/* HEADER */}
-      <div className="sticky top-0 z-50 bg-[#16213e]/80 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20">
         <div className="px-5 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
@@ -883,7 +883,7 @@ const ProfilePage = () => {
       <div className="overflow-y-auto pb-20" style={{ height: "calc(100vh - 73px)" }}>
         {/* PROFILE HEADER CARD */}
         <div className="px-5 pt-6 pb-4">
-          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+          <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl" />
             <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
@@ -1037,7 +1037,7 @@ const ProfilePage = () => {
         {/* PREMIUM INFO */}
         {subscriptionInfo && (
           <div className="px-5 mb-6">
-            <div className="bg-gradient-to-br from-amber-500/20 to-orange-600/20 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-amber-500/20 to-orange-600/20 border border-amber-500/30 rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
                   <Crown className="w-5 h-5 text-white" />
@@ -1104,7 +1104,7 @@ const ProfilePage = () => {
               <div className="w-1 h-4 bg-amber-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Turnuva</h3>
             </div>
-            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-600/20 border border-amber-500/30 rounded-2xl p-5">
               <div className="grid grid-cols-4 gap-4 text-center">
                 <div>
                   <Users className="w-5 h-5 mx-auto mb-1 text-amber-400" />
@@ -1162,13 +1162,13 @@ const ProfilePage = () => {
               Tümünü Gör
             </Button>
           </div>
-          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4">
+          <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4">
             {earnedBadges.length > 0 ? (
               <div className="flex flex-col gap-3">
                 {earnedBadges.slice(0, 6).map((badge) => (
                   <div
                     key={badge.id}
-                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2"
+                    className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-3 py-2"
                   >
                     <span className="text-2xl">{badge.icon}</span>
                     <div>
@@ -1193,7 +1193,7 @@ const ProfilePage = () => {
             <div className="w-1 h-4 bg-cyan-500 rounded-full" />
             <h3 className="text-xs font-black text-white uppercase tracking-widest">Detaylı İstatistikler</h3>
           </div>
-          <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-5 space-y-4">
             <DetailRow label="Toplam Puan" value={profileData.totalScore.toLocaleString()} />
             <DetailRow
               label="En Uzun Kelime"
@@ -1211,7 +1211,7 @@ const ProfilePage = () => {
 
             {profileData.tournamentsPlayed > 0 && (
               <>
-                <div className="border-t border-white/10 pt-4 mt-4">
+                <div className="border-t border-indigo-500/20 pt-4 mt-4">
                   <p className="text-sm font-bold text-white/70 mb-3 flex items-center gap-1.5">
                     <Trophy className="w-4 h-4 text-amber-400" /> Turnuva Performansı
                   </p>
@@ -1227,7 +1227,7 @@ const ProfilePage = () => {
               </>
             )}
 
-            <div className="border-t border-white/10 pt-4 mt-4">
+            <div className="border-t border-indigo-500/20 pt-4 mt-4">
               <p className="text-sm font-bold text-white/70 mb-3">🏆 Liderlik Şampiyonlukları</p>
             </div>
             <DetailRow
@@ -1267,7 +1267,7 @@ const ProfilePage = () => {
 // HELPER COMPONENTS
 
 const StatCard = ({ icon: Icon, value, label, colorClass }: any) => (
-  <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden shadow-xl">
+  <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden shadow-xl">
     <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-10`} />
     <Icon className="w-5 h-5 mb-1 text-white relative z-10" />
     <span className="text-base font-bold text-white tracking-tight relative z-10">{value}</span>
@@ -1276,7 +1276,7 @@ const StatCard = ({ icon: Icon, value, label, colorClass }: any) => (
 );
 
 const JokerCard = ({ icon, value, label }: any) => (
-  <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
+  <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
     <img src={`/${icon}`} alt={label} className="w-8 h-8 mb-1 object-contain" />
     <span className="text-lg font-bold text-white">{value}</span>
     <span className="text-[10px] text-white/60 font-medium uppercase tracking-wide">{label}</span>
