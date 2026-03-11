@@ -1330,28 +1330,26 @@ const FriendRequestSection = ({
     const check = async () => {
       console.log("🔍 Friendship check başlıyor - userId:", userId, "viewedUserId:", viewedUserId);
 
-      const { data, error } = await supabase
+      const { data: data1 } = await supabase
         .from("friendships")
         .select("id, user_id, friend_id, status")
-        .or(
-          `and(user_id.eq.${userId},friend_id.eq.${viewedUserId}),and(user_id.eq.${viewedUserId},friend_id.eq.${userId})`,
-        )
+        .eq("user_id", userId)
+        .eq("friend_id", viewedUserId)
         .maybeSingle();
 
-      console.log("🔍 Friendship data:", data, "error:", error);
+      const { data: data2 } = await supabase
+        .from("friendships")
+        .select("id, user_id, friend_id, status")
+        .eq("user_id", viewedUserId)
+        .eq("friend_id", userId)
+        .maybeSingle();
+
+      const data = data1 || data2;
+      console.log("🔍 Friendship data:", data);
 
       if (data) {
         setFriendshipId(data.id);
-        console.log(
-          "✅ friendshipId set:",
-          data.id,
-          "status:",
-          data.status,
-          "data.user_id:",
-          data.user_id,
-          "userId:",
-          userId,
-        );
+        console.log("✅ friendshipId set:", data.id, "status:", data.status);
         if (data.status === "accepted") setFriendshipStatus("accepted");
         else if (data.status === "pending" && data.user_id === userId) setFriendshipStatus("pending_sent");
         else if (data.status === "pending") setFriendshipStatus("pending_received");
