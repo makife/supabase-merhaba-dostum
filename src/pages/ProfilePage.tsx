@@ -1393,30 +1393,35 @@ const FriendRequestSection = ({
   };
 
   const acceptRequest = async () => {
-    console.log("acceptRequest - userId:", userId, "viewedUserId:", viewedUserId);
-    if (!friendshipId) return;
+    console.log("🤝 acceptRequest çalıştı - friendshipId:", friendshipId);
+    if (!friendshipId) {
+      console.log("❌ friendshipId yok");
+      return;
+    }
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("friendships")
       .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", friendshipId);
 
-    // Kabul eden kişinin adını al
+    console.log("✅ friendship update error:", updateError);
+
     const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+
+    console.log("👤 myProfile:", myProfile);
     const accepterName = myProfile?.username || "Bir oyuncu";
 
-    // Daveti gönderen kişiye notification ekle
-    await supabase.from("notifications").insert({
-      user_id: viewedUserId, // daveti gönderen kişi
+    const { error: notifError } = await supabase.from("notifications").insert({
+      user_id: viewedUserId,
       type: "friend_request_accepted",
       message: `${accepterName} arkadaşlık davetini kabul etti! 🎉`,
       related_id: userId,
     });
 
-    // Push notification gönder (eğer sendFriendRequestNotification gibi bir fonksiyonun varsa)
+    console.log("🔔 notification insert error:", notifError);
+
     await sendFriendAcceptedNotification(viewedUserId!, accepterName);
 
-    // Toast sadece kabul edene local göster (opsiyonel, kaldırabilirsin)
     toast.success("Arkadaşlık kabul edildi!");
     setFriendshipStatus("accepted");
   };
