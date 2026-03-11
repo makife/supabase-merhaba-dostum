@@ -258,7 +258,7 @@ const FriendsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-4 py-3">
+      <div className="sticky top-0 z-40 bg-[#1e2d45] border-b border-indigo-500/20 px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -281,7 +281,7 @@ const FriendsPage = () => {
         </div>
 
         {/* Friend Online Notify Toggle */}
-        <div className="flex items-center justify-between mt-3 px-1 py-2 rounded-xl bg-white/5 border border-white/10">
+        <div className="flex items-center justify-between mt-3 px-1 py-2 rounded-xl bg-[#1e2d45] border border-indigo-500/20">
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-amber-400" />
             <span className="text-xs text-zinc-300">Arkadaş online bildirimi</span>
@@ -383,7 +383,7 @@ const FriendsPage = () => {
                   .map((req) => (
                     <div
                       key={req.friendship_id}
-                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-[#1e2d45] border border-indigo-500/20"
                     >
                       <button onClick={() => navigate(`/profile/${req.friend_id}`, { state: { from: "/friends" } })}>
                         <Avatar className="w-10 h-10">
@@ -426,7 +426,7 @@ const FriendsPage = () => {
                   .map((req) => (
                     <div
                       key={req.friendship_id}
-                      className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 opacity-70"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-[#1e2d45] border border-indigo-500/20 opacity-70"
                     >
                       <Avatar className="w-10 h-10">
                         <AvatarImage src={req.avatar_url || ""} />
@@ -470,7 +470,7 @@ const FriendCard = ({
   const [showActions, setShowActions] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors">
+    <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#1e2d45] border border-indigo-500/20 hover:bg-white/[0.07] transition-colors">
       <button onClick={onProfile} className="relative">
         <Avatar className="w-11 h-11">
           <AvatarImage src={friend.avatar_url || ""} />
