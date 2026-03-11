@@ -24,11 +24,17 @@ const rankBgs = ["bg-amber-500/20", "bg-slate-400/10", "bg-amber-700/10"];
 
 const frameColors = {
   "all-time": "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900",
-  "monthly": "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900",
-  "weekly": "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
+  monthly: "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900",
+  weekly: "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900",
 };
 
-export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama", scrollable = false, showLevel = false, frameTheme = "all-time" }: Props) => {
+export const ChallengeLeaderboard = ({
+  leaderboard,
+  title = "Günlük Sıralama",
+  scrollable = false,
+  showLevel = false,
+  frameTheme = "all-time",
+}: Props) => {
   const { user } = useAuth();
 
   if (leaderboard.length === 0) {
@@ -40,7 +46,9 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
   }
 
   return (
-    <div className={`bg-white/5 border border-white/10 rounded-2xl p-4 w-full ${scrollable ? "flex-1 min-h-0 flex flex-col" : ""}`}>
+    <div
+      className={`bg-white/5 border border-white/10 rounded-2xl p-4 w-full ${scrollable ? "flex-1 min-h-0 flex flex-col" : ""}`}
+    >
       <div className="flex items-center gap-2 mb-3 shrink-0">
         <Trophy className="w-4 h-4 text-amber-400" />
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</h3>
@@ -69,14 +77,7 @@ export const ChallengeLeaderboard = ({ leaderboard, title = "Günlük Sıralama"
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
-                {showLevel ? (
-                  <span className="text-xs font-bold text-cyan-400">Lvl {Math.floor(typeof entry.score === 'number' ? entry.score : Number(entry.score))}</span>
-                ) : (
-                  <span className="text-xs font-bold text-amber-400">{typeof entry.score === 'number' ? entry.score.toFixed(2) : entry.score}</span>
-                )}
-                {entry.words_found > 0 && (
-                  <span className="text-[9px] text-slate-500">({entry.words_found})</span>
-                )}
+                {entry.score > 0 ? <span className="text-base">✅</span> : <span className="text-base">❌</span>}
               </div>
             </div>
           );
