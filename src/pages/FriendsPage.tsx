@@ -391,7 +391,7 @@ const FriendsPage = () => {
                       </div>
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => handleAccept(req.friendship_id)}
+                          onClick={() => handleAccept(req.friendship_id, req.friend_id)}
                           className="p-2 rounded-xl bg-green-600 hover:bg-green-500 transition-colors"
                         >
                           <Check className="w-4 h-4" />
