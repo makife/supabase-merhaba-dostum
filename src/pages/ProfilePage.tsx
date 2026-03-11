@@ -1378,6 +1378,7 @@ const FriendRequestSection = ({
   };
 
   const acceptRequest = async () => {
+    console.log("acceptRequest - userId:", userId, "viewedUserId:", viewedUserId);
     if (!friendshipId) return;
 
     await supabase
