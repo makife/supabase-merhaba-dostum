@@ -105,9 +105,11 @@ interface Position {
 
 const MorlesGame = () => {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
 
   const goBack = () => {
     try {
+      playSound("buttonClick");
       navigate("/");
     } catch (e) {
       window.location.href = "/";

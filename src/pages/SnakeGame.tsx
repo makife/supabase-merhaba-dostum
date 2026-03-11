@@ -35,7 +35,10 @@ function useInterval(callback: () => void, delay: number | null) {
 }
 
 const SnakeGame = () => {
+  const { playSound: playButtonSound } = useSounds();
+
   const navigate = () => {
+    playButtonSound("buttonClick");
     if (window.history.length > 1) {
       window.history.back();
     } else {
