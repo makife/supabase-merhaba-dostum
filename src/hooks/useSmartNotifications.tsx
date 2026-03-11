@@ -135,6 +135,20 @@ export function useSmartNotifications() {
     [sendPushNotification],
   );
 
+  // Arkadaşlık kabul bildirimi
+  const sendFriendAcceptedNotification = useCallback(
+    async (receiverId: string, accepterUsername: string) => {
+      await sendPushNotification(
+        receiverId,
+        "🎉 Arkadaşlık Kabul Edildi",
+        `${accepterUsername} arkadaşlık davetini kabul etti!`,
+        { type: "friend_request_accepted" },
+        true,
+      );
+    },
+    [sendPushNotification],
+  );
+
   return {
     showInAppToast,
     sendPushNotification,
@@ -143,5 +157,6 @@ export function useSmartNotifications() {
     sendGameInviteNotification,
     sendTournamentNotification,
     sendFriendRequestNotification,
+    sendFriendAcceptedNotification,
   };
 }
