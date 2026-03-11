@@ -8,6 +8,8 @@
     <string>Daha alakalı reklamlar göstermek için kullanım verileriniz kullanılabilir.</string>
     <key>com.apple.developer.game-center</key>
 	<true/>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Profil fotoğrafı seçmek için galeri erişimi gereklidir.</string>
 	<key>NSCameraUsageDescription</key>
