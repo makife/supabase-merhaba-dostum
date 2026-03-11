@@ -438,19 +438,19 @@ const LeaderboardPage = () => {
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                <div className="bg-[#0f1829] rounded-xl p-2 text-center">
                   <div className="text-lg font-bold text-amber-500">#{currentStats.rank || "—"}</div>
                   <div className="text-[10px] text-slate-400">Sıra</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                <div className="bg-[#0f1829] rounded-xl p-2 text-center">
                   <div className="text-lg font-bold text-indigo-400">{currentStats.score}</div>
                   <div className="text-[10px] text-slate-400">Puan</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                <div className="bg-[#0f1829] rounded-xl p-2 text-center">
                   <div className="text-lg font-bold text-blue-400">{currentStats.games_played}</div>
                   <div className="text-[10px] text-slate-400">Oyun</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-xl p-2 text-center">
+                <div className="bg-[#0f1829] rounded-xl p-2 text-center">
                   <div className="text-lg font-bold text-green-400">{currentStats.wins}</div>
                   <div className="text-[10px] text-slate-400">Zafer</div>
                 </div>
