@@ -1332,6 +1332,7 @@ const FriendRequestSection = ({
         data: { session },
       } = await supabase.auth.getSession();
       console.log("🔐 Session:", session?.user?.id);
+      console.log("🔍 Friendship check - userId:", userId, "viewedUserId:", viewedUserId);
 
       const { data: data1, error: e1 } = await supabase
         .from("friendships")
@@ -1350,6 +1351,8 @@ const FriendRequestSection = ({
         .maybeSingle();
 
       console.log("data2:", data2, "error2:", e2);
+
+      const data = data1 || data2;
 
       if (data) {
         setFriendshipId(data.id);
