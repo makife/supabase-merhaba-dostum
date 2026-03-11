@@ -241,13 +241,13 @@ const SettingsPage = () => {
         <p>Kelimele oyunu hakkında soru, görüş ve önerilerinizi iletişim butonuna tıklayarak açılan formu doldurup iletebilirsiniz:</p>
         
         <div class="space-y-3">
-          <div class="p-3 bg-slate-800/60 rounded-lg border border-white/10">
+          <div class="p-3 bg-[#0f1829] rounded-lg border border-indigo-500/20">
             <h4 class="font-medium text-white">E-posta Desteği</h4>
             <p class="text-sm text-slate-400">team@kelimele.site</p>
             <p class="text-sm text-slate-300">24 saat içinde yanıtlanır</p>
           </div>
           
-          <div class="p-3 bg-slate-800/60 rounded-lg border border-white/10">
+          <div class="p-3 bg-[#0f1829] rounded-lg border border-indigo-500/20">
             <h4 class="font-medium text-white">Teknik Sorunlar</h4>
             <p class="text-sm text-slate-300">Uygulama ile ilgili teknik sorunları bildirin. Cihaz modelinizi ve hatanın ne zaman oluştuğunu belirtmeyi unutmayın.</p>
           </div>
@@ -302,7 +302,7 @@ const SettingsPage = () => {
           </section>
         </div>
         
-        <div class="text-center text-xs text-slate-500 border-t border-white/10 pt-3">
+        <div class="text-center text-xs text-slate-500 border-t border-indigo-500/20 pt-3">
           <p>© 2025 Ergan Yazılım</p>
         </div>
       </div>
@@ -319,12 +319,12 @@ const SettingsPage = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
       {/* Header */}
-      <div className="flex-none z-30 bg-[#1a1a2e] border-b border-white/5 shadow-2xl">
+      <div className="flex-none z-30 bg-[#1e2d45] border-b border-indigo-500/20 shadow-2xl">
         <div className="px-5 py-4">
           <div className="flex items-center justify-between">
             <Button
               onClick={() => { playSound("buttonClick"); navigate("/"); }}
-              className="bg-[#16213e]/80 hover:bg-[#16213e] border border-white/10 text-white"
+              className="bg-[#1e2d45] border border-indigo-500/20 text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Geri
@@ -345,7 +345,7 @@ const SettingsPage = () => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 relative z-10">
         {/* Game Settings */}
-        <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+        <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Smartphone className="w-5 h-5 text-white" />
@@ -355,7 +355,7 @@ const SettingsPage = () => {
 
           <div className="space-y-4">
             {/* Notifications */}
-            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+            <div className="flex items-center justify-between p-3 bg-[#0f1829] rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
                   <Bell className="w-5 h-5 text-amber-400" />
@@ -373,7 +373,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Sounds */}
-            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+            <div className="flex items-center justify-between p-3 bg-[#0f1829] rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Volume className="w-5 h-5 text-blue-400" />
@@ -394,7 +394,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Music */}
-            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-colors">
+            <div className="flex items-center justify-between p-3 bg-[#0f1829] rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <Music className="w-5 h-5 text-purple-400" />
@@ -417,7 +417,7 @@ const SettingsPage = () => {
         </div>
 
         {/* Support & Info */}
-        <div className="bg-[#16213e]/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
+        <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
               <Info className="w-5 h-5 text-white" />
@@ -428,7 +428,7 @@ const SettingsPage = () => {
           <div className="space-y-2">
             <button
               onClick={openHowToPlay}
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <PlayCircle className="w-5 h-5 text-indigo-400" />
               <span className="text-white font-medium">Nasıl Oynanır</span>
@@ -436,7 +436,7 @@ const SettingsPage = () => {
 
             <button
               onClick={openSupport}
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <HelpCircle className="w-5 h-5 text-blue-400" />
               <span className="text-white font-medium">Yardım & Destek</span>
@@ -444,7 +444,7 @@ const SettingsPage = () => {
 
             <button
               onClick={openPrivacyPolicy}
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <Shield className="w-5 h-5 text-green-400" />
               <span className="text-white font-medium">Gizlilik Politikası</span>
@@ -452,7 +452,7 @@ const SettingsPage = () => {
 
             <button
               onClick={openAbout}
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <Info className="w-5 h-5 text-purple-400" />
               <span className="text-white font-medium">Hakkımızda</span>
@@ -460,7 +460,7 @@ const SettingsPage = () => {
 
             <button
               onClick={() => setContactOpen(true)} // <-- değişti
-              className="w-full flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all active:scale-95"
+              className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <Mail className="w-5 h-5 text-cyan-400" />
               <span className="text-white font-medium">İletişim</span>
@@ -470,7 +470,7 @@ const SettingsPage = () => {
 
         {/* Admin Panel */}
         {user?.email === "info@kelimele.site" && (
-          <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-md border border-red-400/30 rounded-2xl p-4 shadow-xl">
+          <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-400/30 rounded-2xl p-4 shadow-xl">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5 text-white" />
@@ -497,7 +497,7 @@ const SettingsPage = () => {
         )}
 
         {/* Delete Account */}
-        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 backdrop-blur-md border border-red-400/20 rounded-2xl p-4 shadow-xl">
+        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-400/20 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 bg-red-500/30 rounded-lg flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -519,7 +519,7 @@ const SettingsPage = () => {
         </div>
 
         {/* Version */}
-        <div className="bg-[#16213e]/40 backdrop-blur-md border border-white/5 rounded-2xl p-4 text-center">
+        <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 text-center">
           <p className="text-sm text-slate-400">Kelimele v1.0.0</p>
           <p className="text-xs text-slate-500 mt-1">© 2025 Ergan Yazılım</p>
         </div>
@@ -530,7 +530,7 @@ const SettingsPage = () => {
 
       {/* Modal Dialog */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-[#16213e] border-white/10 text-white">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-[#1e2d45] border-indigo-500/20 text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-white">{modalContent.title}</DialogTitle>
           </DialogHeader>
@@ -543,7 +543,7 @@ const SettingsPage = () => {
 
       {/* Delete Confirmation Dialogs */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
+        <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
           <DialogHeader>
             <DialogTitle className="text-red-400 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
@@ -587,7 +587,7 @@ const SettingsPage = () => {
       <ContactDialog open={contactOpen} onOpenChange={setContactOpen} />
 
       <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
-        <DialogContent className="bg-[#16213e] border-red-400/30 text-white">
+        <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
           <DialogHeader>
             <DialogTitle className="text-red-400 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-2" />
