@@ -95,7 +95,7 @@ const FriendsPage = () => {
       const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds);
 
       // Fetch presence with server-side filtering
-      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+      const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
       const { data: presenceData } = await supabase
         .from("user_presence")
         .select("user_id, is_online, last_seen")
