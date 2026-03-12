@@ -99,6 +99,7 @@ const PuzzleGamePage: React.FC = () => {
       targetWord: randomWord,
       started: true,
     });
+    scoreSavedRef.current = false;
   }, []);
 
   // Don't auto-initialize — wait for user to click start
@@ -114,16 +115,18 @@ const PuzzleGamePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [gameState.isRunning, gameState.isCompleted]);
 
+  const scoreSavedRef = useRef(false);
+
   // Save score when completed
   useEffect(() => {
-    if (gameState.isCompleted && gameState.moves > 0) {
-      const rawScore = gameState.timeElapsed > 0 
-        ? parseFloat((10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2))
-        : 0;
+    if (gameState.isCompleted && gameState.moves > 0 && !scoreSavedRef.current) {
+      scoreSavedRef.current = true;
+      const elapsed = gameState.timeElapsed > 0 ? gameState.timeElapsed : 1;
+      const rawScore = parseFloat((10000 / (elapsed * gameState.moves)).toFixed(2));
       saveScore(rawScore, gameState.moves);
       markAsPlayed();
     }
-  }, [gameState.isCompleted]);
+  }, [gameState.isCompleted, gameState.moves, gameState.timeElapsed]);
 
   const isValidMove = (index: number, emptyIndex: number) => {
     const row = Math.floor(index / DIFFICULTY);

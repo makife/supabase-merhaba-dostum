@@ -210,11 +210,20 @@ const HomePage = () => {
   // Fetch daily challenge completion status & wheel spin availability
   useEffect(() => {
     if (!user?.id) return;
-    getDailyChallengeStatus(user.id).then((status) => {
-      const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
-      sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
-      setChallengeStatus(status);
-    });
+    const fetchChallengeStatus = () => {
+      sessionStorage.removeItem("challengeStatus");
+      getDailyChallengeStatus(user.id).then((status) => {
+        const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
+        sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
+        setChallengeStatus(status);
+      });
+    };
+    fetchChallengeStatus();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchChallengeStatus();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     // Check wheel spins
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
@@ -231,6 +240,8 @@ const HomePage = () => {
         setWheelSpinsLeft(total);
         sessionStorage.setItem("wheelSpinsLeft", JSON.stringify({ spins: total, _date: today }));
       });
+
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [user?.id, profile?.bonus_spins]);
 
   const [greeting] = useState(() => {
