@@ -487,7 +487,7 @@ const s: { [k: string]: React.CSSProperties } = {
   },
   gameWrap: {
     width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
-    padding: "14px 18px", maxWidth: 460, position: "relative", overflowY: "auto",
+    padding: "14px 18px", maxWidth: 460, position: "relative", overflow: "hidden",
   },
   header: {
     width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -530,6 +530,7 @@ const s: { [k: string]: React.CSSProperties } = {
   wordListBox: {
     width: "100%", maxWidth: 330, backgroundColor: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "9px 12px",
+    maxHeight: 90, overflowY: "auto" as const,
   },
   wordListTitle: {
     fontSize: "0.7rem", color: "#555", display: "flex", alignItems: "center",
