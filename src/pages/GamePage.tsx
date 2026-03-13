@@ -2876,21 +2876,19 @@ const GamePage = ({
 
         // Rank puanı güncelle - sadece rastgele eşleşme
         if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
-          const rpChange = isWinner ? 50 : isTie ? 0 : -30;
-          if (rpChange !== 0) {
-            const { data: currentProfile } = await supabase
-              .from("profiles")
-              .select("rank_points")
-              .eq("id", userId)
-              .single();
-            const currentRP = (currentProfile as any)?.rank_points || 0;
-            const newRP = Math.max(0, currentRP + rpChange);
-            await supabase
-              .from("profiles")
-              .update({ rank_points: newRP } as any)
-              .eq("id", userId);
-            console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
-          }
+          const rpChange = isWinner ? 50 : isTie ? 10 : -30;
+          const { data: currentProfile } = await supabase
+            .from("profiles")
+            .select("rank_points")
+            .eq("id", userId)
+            .single();
+          const currentRP = (currentProfile as any)?.rank_points || 0;
+          const newRP = Math.max(0, currentRP + rpChange);
+          await supabase
+            .from("profiles")
+            .update({ rank_points: newRP } as any)
+            .eq("id", userId);
+          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
         }
       }
     } catch (error) {
@@ -2995,21 +2993,19 @@ const GamePage = ({
 
         // Rank puanı güncelle - sadece rastgele eşleşme
         if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
-          const rpChange = isWinner ? 50 : isTie ? 0 : -30;
-          if (rpChange !== 0) {
-            const { data: currentProfile } = await supabase
-              .from("profiles")
-              .select("rank_points")
-              .eq("id", user.id)
-              .single();
-            const currentRP = (currentProfile as any)?.rank_points || 0;
-            const newRP = Math.max(0, currentRP + rpChange);
-            await supabase
-              .from("profiles")
-              .update({ rank_points: newRP } as any)
-              .eq("id", user.id);
-            console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
-          }
+        const rpChange = isWinner ? 50 : isTie ? 10 : -30;
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("rank_points")
+          .eq("id", user.id)
+          .single();
+        const currentRP = (currentProfile as any)?.rank_points || 0;
+        const newRP = Math.max(0, currentRP + rpChange);
+        await supabase
+          .from("profiles")
+          .update({ rank_points: newRP } as any)
+          .eq("id", user.id);
+        console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
         }
       }
     }
