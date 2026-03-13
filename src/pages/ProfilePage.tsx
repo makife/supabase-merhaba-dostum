@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { RankBadge } from "@/components/RankBadge";
 import { useUser } from "@/contexts/UserContext";
 import { useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
