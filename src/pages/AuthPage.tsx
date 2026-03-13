@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import kelimeleLogo from "/kelimeleLogo.png";
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { Browser } from "@capacitor/browser";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -134,48 +134,28 @@ const AuthPage = () => {
     setLoading(true);
     try {
       const isNative = Capacitor.isNativePlatform();
+      const redirectUrl = isNative ? "kelimele://auth/callback" : window.location.origin;
 
-      if (isNative) {
-        // Native: Google'ın kendi popup'ı açılır
-        const googleUser = await GoogleAuth.signIn();
-        const { error } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: googleUser.authentication.idToken,
-        });
-        if (error) {
-          toast({
-            title: "Google Giriş Hatası",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Web: normal OAuth redirect
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-        if (error) {
-          toast({
-            title: "Google Giriş Hatası",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: isNative,
+        },
+      });
+      if (error) {
+        toast({ title: "Google Giriş Hatası", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (isNative && data?.url) {
+        await Browser.open({ url: data.url });
       }
     } catch (err: any) {
-      toast({
-        title: "Google Giriş Hatası",
-        description: err?.message || "Bir hata oluştu",
-        variant: "destructive",
-      });
+      toast({ title: "Google Giriş Hatası", description: err?.message || "Bir hata oluştu", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
