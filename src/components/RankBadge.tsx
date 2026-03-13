@@ -28,14 +28,15 @@ export const RankBadge = ({
   const nextTier = getNextRankTier(rankPoints);
 
   const imageClass = rounded ? 'rounded-2xl' : '';
+  const frameClass = rounded ? 'border-4 border-yellow-400/60 shadow-xl' : '';
 
   return (
     <div className="flex flex-col items-center gap-1 w-full">
-      <div className={`${sizeMap[size]} relative`}>
+      <div className={`${sizeMap[size]} relative ${frameClass} ${imageClass} overflow-hidden`}>
         <img
           src={tier.image}
           alt={tier.name}
-          className={`w-full h-full object-contain drop-shadow-lg ${imageClass}`}
+          className="w-full h-full object-contain"
         />
       </div>
       {showLabel && (
