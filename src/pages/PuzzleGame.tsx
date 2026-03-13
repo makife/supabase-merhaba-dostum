@@ -35,7 +35,14 @@ const getDailyWord = (words: string[]): string => {
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
-  const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } = useDailyChallenge("puzzle");
+  const {
+    hasPlayedToday,
+    todayScore,
+    leaderboard,
+    loading: challengeLoading,
+    saveScore,
+    markAsPlayed,
+  } = useDailyChallenge("puzzle");
 
   const wordsRef = useRef<string[]>([]);
   const [isWordsLoaded, setIsWordsLoaded] = useState(false);
@@ -160,7 +167,8 @@ const PuzzleGamePage: React.FC = () => {
 
     const currentLetters = newBoard.slice(0, -1).map((n) => gameState.targetWord[n - 1] || "");
     const targetLetters = gameState.targetWord.split("");
-    const isSolved = newBoard[newBoard.length - 1] === 0 && currentLetters.every((letter, i) => letter === targetLetters[i]);
+    const isSolved =
+      newBoard[newBoard.length - 1] === 0 && currentLetters.every((letter, i) => letter === targetLetters[i]);
 
     if (isSolved) {
       playSound("correctWord");
@@ -197,7 +205,10 @@ const PuzzleGamePage: React.FC = () => {
 
   if (!isWordsLoaded || challengeLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
         <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -208,11 +219,20 @@ const PuzzleGamePage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}>
+    <div
+      className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}
+    >
       {/* Header */}
       <div className="px-5 pt-12 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => { navigate(-1); playSound("buttonClick"); }} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+          <button
+            onClick={() => {
+              navigate(-1);
+              playSound("buttonClick");
+            }}
+            className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          >
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
@@ -220,7 +240,10 @@ const PuzzleGamePage: React.FC = () => {
             <p className="text-[10px] text-purple-400/80">Harfleri doğru sıraya diz</p>
           </div>
         </div>
-        <button onClick={() => setShowLeaderboard(!showLeaderboard)} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
+        <button
+          onClick={() => setShowLeaderboard(!showLeaderboard)}
+          className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+        >
           <Trophy className="w-5 h-5 text-amber-400" />
         </button>
       </div>
@@ -228,8 +251,17 @@ const PuzzleGamePage: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {showLeaderboard ? (
           <div className="flex-1 flex flex-col min-h-0 mt-4">
-            <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Puzzle Sıralaması" scrollable showPuzzleColumns ascendingSort />
-            <button onClick={() => setShowLeaderboard(false)} className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+            <ChallengeLeaderboard
+              leaderboard={leaderboard}
+              title="Günlük Puzzle Sıralaması"
+              scrollable
+              showPuzzleColumns
+              ascendingSort
+            />
+            <button
+              onClick={() => setShowLeaderboard(false)}
+              className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
+            >
               Oyuna Dön
             </button>
           </div>
@@ -252,13 +284,14 @@ const PuzzleGamePage: React.FC = () => {
                 {hasPlayedToday ? (
                   <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full">
                     <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
-                    {todayScore != null && (
-                      <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>
-                    )}
+                    {todayScore != null && <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>}
                   </div>
                 ) : (
                   <button
-                    onClick={() => { initializeBoard(); playSound("buttonClick"); }}
+                    onClick={() => {
+                      initializeBoard();
+                      playSound("buttonClick");
+                    }}
                     disabled={!isWordsLoaded}
                     className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl font-bold text-white text-lg active:scale-95 transition-transform disabled:opacity-50 shadow-lg shadow-purple-500/30"
                   >
@@ -266,7 +299,13 @@ const PuzzleGamePage: React.FC = () => {
                   </button>
                 )}
 
-                <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                <button
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/");
+                  }}
+                  className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
+                >
                   Ana Sayfa
                 </button>
               </div>
@@ -283,7 +322,9 @@ const PuzzleGamePage: React.FC = () => {
                       <span className="text-sm font-mono">{formatTime(gameState.timeElapsed)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-white/80">
-                      <span className="text-sm">Hamle: <span className="font-bold text-white">{gameState.moves}</span></span>
+                      <span className="text-sm">
+                        Hamle: <span className="font-bold text-white">{gameState.moves}</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -295,12 +336,17 @@ const PuzzleGamePage: React.FC = () => {
                       <Type size={12} />
                       Hedef Kelime
                     </div>
-                    <div className="text-2xl font-bold text-white tracking-widest font-mono">{gameState.targetWord}</div>
+                    <div className="text-2xl font-bold text-white tracking-widest font-mono">
+                      {gameState.targetWord}
+                    </div>
                   </div>
                 </div>
 
                 {/* Game Board */}
-                <div className="grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm" style={{ gridTemplateColumns: `repeat(${DIFFICULTY}, 1fr)` }}>
+                <div
+                  className="grid gap-2 p-4 bg-black/20 rounded-2xl backdrop-blur-sm"
+                  style={{ gridTemplateColumns: `repeat(${DIFFICULTY}, 1fr)` }}
+                >
                   {gameState.board.map((number, index) => (
                     <button
                       key={index}
@@ -330,14 +376,20 @@ const PuzzleGamePage: React.FC = () => {
                       {gameState.moves} hamlede, {formatTime(gameState.timeElapsed)} sürede tamamladın!
                     </div>
                     <div className="text-amber-400 font-bold text-lg mt-2">
-                      Skor: {calculateScore()} (düşük = iyi)
+                      Skor: {calculateScore()} (en düşük skor = en iyi sıralama)
                     </div>
                   </div>
                 )}
 
                 {/* Home button */}
                 {(gameState.isCompleted || hasPlayedToday) && (
-                  <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
+                  <button
+                    onClick={() => {
+                      playSound("buttonClick");
+                      navigate("/");
+                    }}
+                    className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
+                  >
                     Ana Sayfa
                   </button>
                 )}
