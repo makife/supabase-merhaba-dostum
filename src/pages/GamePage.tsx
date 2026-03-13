@@ -2973,6 +2973,25 @@ const GamePage = ({
           console.log("İstatistikler güncellendi - gameMode:", gameMode);
           await forceRefreshProfile?.();
         }
+
+        // Rank puanı güncelle - sadece rastgele eşleşme
+        if (gameMode === "random-match" || gameMode === "random-match-timed" || gameMode === "random-match-score") {
+          const rpChange = isWinner ? 50 : isTie ? 0 : -30;
+          if (rpChange !== 0) {
+            const { data: currentProfile } = await supabase
+              .from("profiles")
+              .select("rank_points")
+              .eq("id", user.id)
+              .single();
+            const currentRP = (currentProfile as any)?.rank_points || 0;
+            const newRP = Math.max(0, currentRP + rpChange);
+            await supabase
+              .from("profiles")
+              .update({ rank_points: newRP } as any)
+              .eq("id", user.id);
+            console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+          }
+        }
       }
     }
 
