@@ -1028,6 +1028,22 @@ const ProfilePage = () => {
                 )}
               </div>
 
+              {/* Rank Progress - XP barının üstünde */}
+              <div className="w-full space-y-2 mb-3">
+                <div className="flex justify-between text-xs text-yellow-400">
+                  <span className="font-bold">{getRankTier(profileData.rankPoints).name}</span>
+                  <span className="text-yellow-400/70">{profileData.rankPoints} RP</span>
+                </div>
+                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-lg"
+                    style={{ width: `${getRankProgress(profileData.rankPoints)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+
               {/* Level Progress */}
               <div className="w-full space-y-2">
                 <div className="flex justify-between text-xs text-white/70">
