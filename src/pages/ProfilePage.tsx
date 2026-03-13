@@ -82,6 +82,7 @@ const ProfilePage = () => {
     weeklyFirstCount: 0,
     monthlyFirstCount: 0,
     seasonFirstCount: 0,
+    rankPoints: 0,
   });
 
   const [badges, setBadges] = useState<
