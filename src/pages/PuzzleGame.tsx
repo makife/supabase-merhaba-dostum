@@ -274,7 +274,7 @@ const PuzzleGamePage: React.FC = () => {
                   <div className="text-4xl mb-3">🧩</div>
                   <h2 className="text-xl font-bold text-white mb-2">Kelime Puzzle</h2>
                   <p className="text-sm text-white/60 mb-1">3x3 ızgarada harfleri doğru sıraya diz</p>
-                  <p className="text-xs text-white/40 mt-1">Skor = Hamle + Süre÷5 (düşük = iyi)</p>
+                  <p className="text-xs text-white/40 mt-1">Skor = Hamle + Süre÷5 (en düşük puan = en iyi sıralama)</p>
                   <div className="mt-3 bg-amber-500/10 border border-amber-400/20 rounded-lg p-3">
                     <p className="text-xs text-amber-300 font-bold">🏆 1. Lik Ödülü</p>
                     <p className="text-sm text-white mt-1">🖊️ 3 Damla Mürekkep</p>
