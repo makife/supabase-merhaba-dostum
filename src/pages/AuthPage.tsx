@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import kelimeleLogo from "/kelimeleLogo.png";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 
 const AuthPage = () => {
   const navigate = useNavigate();
