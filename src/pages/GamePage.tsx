@@ -54,6 +54,8 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import { LevelUpDialog } from "@/components/LevelUpDialog";
+import { RankUpDialog } from "@/components/RankUpDialog";
+import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
