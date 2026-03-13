@@ -2984,7 +2984,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = isWinner ? 10 : isTie ? 5 : 1;
+        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 0;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
