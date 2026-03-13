@@ -18,6 +18,7 @@ export const RANK_TIERS: RankTier[] = [
 
 export const RANK_WIN_POINTS = 50;
 export const RANK_LOSS_POINTS = -30;
+export const RANK_DRAW_POINTS = 10;
 
 export function getRankTier(rankPoints: number): RankTier {
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
