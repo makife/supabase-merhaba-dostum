@@ -621,6 +621,23 @@ const GlobalRematchDialogWrapper = () => {
 const AppProviders = () => {
   return (
     <BrowserRouter>
+      const OAuthCallback = () => {
+  useEffect(() => {
+    const handleCallback = async () => {
+      const url = window.location.href;
+      if (url.includes('code=')) {
+        const urlObj = new URL(url);
+        const code = urlObj.searchParams.get('code');
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+          window.history.replaceState({}, '', '/');
+        }
+      }
+    };
+    handleCallback();
+  }, []);
+  return null;
+};
       <AuthProvider>
         <UserProvider>
           <ThemeProvider>
