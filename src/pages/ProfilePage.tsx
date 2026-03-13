@@ -959,7 +959,13 @@ const ProfilePage = () => {
 
                 {/* Rank Badge (sağ taraf) */}
                 <div className="relative z-10">
-                  <RankBadge rankPoints={profileData.rankPoints} size="md" showLabel={true} showProgress={true} />
+                  <RankBadge 
+                    rankPoints={profileData.rankPoints} 
+                    size="md" 
+                    showLabel={false} 
+                    showProgress={false}
+                    rounded={true}
+                  />
                 </div>
               </div>
 
