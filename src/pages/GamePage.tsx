@@ -4694,7 +4694,7 @@ const GamePage = ({
 
       // Skor çarpanı bilgisi toast
       if (user && gameResult !== "opponent") {
-        const multiplierLabel = gameResult === "player" ? "Kazanma (x10)" : "Beraberlik (x5)";
+        const multiplierLabel = gameResult === "player" ? "Kazanma (x5)" : "Beraberlik (x2)";
         const finalScore = currentPlayerScore * scoreMultiplier;
         setTimeout(() => {
           toast({
