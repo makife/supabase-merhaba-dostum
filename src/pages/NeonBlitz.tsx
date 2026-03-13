@@ -437,9 +437,9 @@ const NeonBlitz: React.FC = () => {
         >
           <Trophy size={17} style={{ marginRight: 6 }} /> Sıralama
         </button>
-        <button onClick={() => { playSound("buttonClick"); returnToMenu(); }} style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}>
-          Menüye Dön
-        </button>
+        <button onClick={() => { playSound("buttonClick"); navigate("/"); }} style={...}>
+  Ana Sayfaya Dön
+</button>
       </div>
 
       {hasPlayedToday && (
