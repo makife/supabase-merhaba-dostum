@@ -117,17 +117,14 @@ const ProfilePage = () => {
   }>({});
 
   const calculateLevel = (totalScore: number) => {
-    const baseExp = 1000;
-    const expIncreasePerLevel = 100;
-
     let level = 1;
     let totalExpNeeded = 0;
-    let currentLevelExp = baseExp;
+    let currentLevelExp = 1000;
 
     while (totalScore >= totalExpNeeded + currentLevelExp) {
       totalExpNeeded += currentLevelExp;
       level++;
-      currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      currentLevelExp = level * 1000;
     }
 
     const experience = totalScore - totalExpNeeded;
