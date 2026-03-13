@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Preferences } from "@capacitor/preferences";
+import { Capacitor } from "@capacitor/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,10 +131,16 @@ const AuthPage = () => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    
+    // Native platformda kelimele:// deeplink scheme kullan
+    const isNative = Capacitor.isNativePlatform();
+    const redirectUrl = isNative ? 'kelimele://auth/callback' : window.location.origin;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: isNative,
       },
     });
     if (error) {
