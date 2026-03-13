@@ -4585,7 +4585,7 @@ const GamePage = ({
 
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          scoreMultiplier = 10;
+          scoreMultiplier = 5;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4603,7 +4603,7 @@ const GamePage = ({
         } else {
           // Beraberlik (tournament mode buraya gelmez, zaten backend'de handle edilir)
           gameResult = "tie";
-          scoreMultiplier = 5;
+          scoreMultiplier = 2;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
