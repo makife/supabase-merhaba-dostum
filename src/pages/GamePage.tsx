@@ -2889,11 +2889,18 @@ const GamePage = ({
             .single();
           const currentRP = (currentProfile as any)?.rank_points || 0;
           const newRP = Math.max(0, currentRP + rpChange);
+          const oldTier = getRankTier(currentRP);
+          const newTier = getRankTier(newRP);
           await supabase
             .from("profiles")
             .update({ rank_points: newRP } as any)
             .eq("id", userId);
           console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+          // Rank tier değişimi kontrolü (yükselme)
+          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+            setRankUpTier(newTier);
+            setTimeout(() => setShowRankUp(true), 2000);
+          }
         }
       }
     } catch (error) {
