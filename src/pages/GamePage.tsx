@@ -8224,6 +8224,7 @@ const GamePage = ({
 
         {/* Level Up Dialog */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
+        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </>
     </LayoutGroup>
   );
