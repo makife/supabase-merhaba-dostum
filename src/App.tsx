@@ -229,7 +229,7 @@ const AppRoutes = () => {
 
   // 🔥 AdMob'u uygulama başlangıcında initialize et
   const { initializeAdMob } = useAdMob();
-  
+
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       console.log("[App] 🎬 Initializing AdMob at app startup...");
@@ -256,6 +256,32 @@ const AppRoutes = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let urlListener: any;
+
+    const setup = async () => {
+      const { App: CapApp } = await import("@capacitor/app");
+      urlListener = await CapApp.addListener("appUrlOpen", async ({ url }) => {
+        console.log("[App] appUrlOpen:", url);
+        if (url.includes("kelimele://auth/callback")) {
+          const urlObj = new URL(url);
+          const code = urlObj.searchParams.get("code");
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code);
+          }
+        }
+      });
+    };
+
+    setup();
+
+    return () => {
+      urlListener?.remove();
+    };
+  }, []);
+
   const handleLoadingComplete = () => {
     console.log("[App] Loading completed");
     setCustomLoading(false);
@@ -269,277 +295,283 @@ const AppRoutes = () => {
 
   return (
     <>
-      <React.Suspense fallback={<div className="fixed inset-0 bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" /></div>}>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthPage />} />
-        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-        <Route
-          path="/game/:mode"
-          element={
-            <ProtectedRoute>
-              <GamePageWrapper />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/:id"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/market"
-          element={
-            <ProtectedRoute>
-              <MarketPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/test-matchmaking"
-          element={
-            <ProtectedRoute>
-              <TestMatchmakingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sync-test"
-          element={
-            <ProtectedRoute>
-              <SyncTestPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/nakama-game"
-          element={
-            <ProtectedRoute>
-              <NakamaGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaderboard"
-          element={
-            <ProtectedRoute>
-              <LeaderboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/friends"
-          element={
-            <ProtectedRoute>
-              <FriendsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament"
-          element={
-            <ProtectedRoute>
-              <TournamentPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/waiting/:tournamentId"
-          element={
-            <ProtectedRoute>
-              <TournamentWaitingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/bracket/:tournamentId"
-          element={
-            <ProtectedRoute>
-              <TournamentBracketPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tournament/game/:matchId"
-          element={
-            <ProtectedRoute>
-              <GamePage gameMode="tournament" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/wheel"
-          element={
-            <ProtectedRoute>
-              <WheelPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/mini-games"
-          element={
-            <ProtectedRoute>
-              <MiniGamesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/word-hunt"
-          element={
-            <ProtectedRoute>
-              <WordHuntPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/puzzle"
-          element={
-            <ProtectedRoute>
-              <PuzzleGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/reaktor"
-          element={
-            <ProtectedRoute>
-              <ReactorRunnerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/word-chain"
-          element={
-            <ProtectedRoute>
-              <WordChainPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/neon-blitz"
-          element={
-            <ProtectedRoute>
-              <NeonBlitzPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/challenge/memory"
-          element={
-            <ProtectedRoute>
-              <MemoryGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/private-room/waiting/:roomCode"
-          element={
-            <ProtectedRoute>
-              <PrivateRoomWaitingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/memory-game"
-          element={
-            <ProtectedRoute>
-              <MemoryGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/puzzle-game"
-          element={
-            <ProtectedRoute>
-              <PuzzleGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/grid-simon-says"
-          element={
-            <ProtectedRoute>
-              <GridSimonSaysPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reactor-runner"
-          element={
-            <ProtectedRoute>
-              <ReactorRunnerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/neon-blitz"
-          element={
-            <ProtectedRoute>
-              <NeonBlitzPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/snake-game"
-          element={
-            <ProtectedRoute>
-              <SnakeGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/morles-game"
-          element={
-            <ProtectedRoute>
-              <MorlesGamePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/moderator"
-          element={
-            <ModeratorRoute>
-              <ModeratorPage />
-            </ModeratorRoute>
-          }
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <React.Suspense
+        fallback={
+          <div className="fixed inset-0 bg-slate-950 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        }
+      >
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthPage />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/game/:mode"
+            element={
+              <ProtectedRoute>
+                <GamePageWrapper />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/market"
+            element={
+              <ProtectedRoute>
+                <MarketPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/test-matchmaking"
+            element={
+              <ProtectedRoute>
+                <TestMatchmakingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sync-test"
+            element={
+              <ProtectedRoute>
+                <SyncTestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/nakama-game"
+            element={
+              <ProtectedRoute>
+                <NakamaGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <ProtectedRoute>
+                <FriendsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tournament"
+            element={
+              <ProtectedRoute>
+                <TournamentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tournament/waiting/:tournamentId"
+            element={
+              <ProtectedRoute>
+                <TournamentWaitingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tournament/bracket/:tournamentId"
+            element={
+              <ProtectedRoute>
+                <TournamentBracketPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tournament/game/:matchId"
+            element={
+              <ProtectedRoute>
+                <GamePage gameMode="tournament" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wheel"
+            element={
+              <ProtectedRoute>
+                <WheelPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mini-games"
+            element={
+              <ProtectedRoute>
+                <MiniGamesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/word-hunt"
+            element={
+              <ProtectedRoute>
+                <WordHuntPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/puzzle"
+            element={
+              <ProtectedRoute>
+                <PuzzleGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/reaktor"
+            element={
+              <ProtectedRoute>
+                <ReactorRunnerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/word-chain"
+            element={
+              <ProtectedRoute>
+                <WordChainPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/neon-blitz"
+            element={
+              <ProtectedRoute>
+                <NeonBlitzPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/challenge/memory"
+            element={
+              <ProtectedRoute>
+                <MemoryGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/private-room/waiting/:roomCode"
+            element={
+              <ProtectedRoute>
+                <PrivateRoomWaitingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/memory-game"
+            element={
+              <ProtectedRoute>
+                <MemoryGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/puzzle-game"
+            element={
+              <ProtectedRoute>
+                <PuzzleGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/grid-simon-says"
+            element={
+              <ProtectedRoute>
+                <GridSimonSaysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reactor-runner"
+            element={
+              <ProtectedRoute>
+                <ReactorRunnerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/neon-blitz"
+            element={
+              <ProtectedRoute>
+                <NeonBlitzPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/snake-game"
+            element={
+              <ProtectedRoute>
+                <SnakeGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/morles-game"
+            element={
+              <ProtectedRoute>
+                <MorlesGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/moderator"
+            element={
+              <ModeratorRoute>
+                <ModeratorPage />
+              </ModeratorRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </React.Suspense>
       <RoomAutoNavigator />
       <GlobalRematchDialogWrapper />
