@@ -99,7 +99,9 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          moves_count: number | null
           score: number
+          time_seconds: number | null
           user_id: string
           username: string
           words_found: number
@@ -110,7 +112,9 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          moves_count?: number | null
           score?: number
+          time_seconds?: number | null
           user_id: string
           username?: string
           words_found?: number
@@ -121,7 +125,9 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          moves_count?: number | null
           score?: number
+          time_seconds?: number | null
           user_id?: string
           username?: string
           words_found?: number
