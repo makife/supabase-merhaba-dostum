@@ -63,15 +63,13 @@ import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
-  const baseExp = 1000;
-  const expIncreasePerLevel = 100;
   let level = 1;
   let totalExpNeeded = 0;
-  let currentLevelExp = baseExp;
+  let currentLevelExp = 1000;
   while (totalScore >= totalExpNeeded + currentLevelExp) {
     totalExpNeeded += currentLevelExp;
     level++;
-    currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+    currentLevelExp = level * 1000;
   }
   return level;
 }
@@ -2049,7 +2047,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = userIsWinner ? 10 : 1; // Turnuvada beraberlik yok
+        const tournamentScoreMultiplier = userIsWinner ? 5 : 0; // Turnuvada beraberlik yok, kaybetme=0
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
@@ -2984,7 +2982,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = isWinner ? 10 : isTie ? 5 : 1;
+        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 0;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
@@ -4536,8 +4534,8 @@ const GamePage = ({
       if (winner !== null) return;
 
       let gameResult: "player" | "opponent" | "tie";
-      // Skor çarpanı: Kazanma=x10, Beraberlik=x5, Kaybetme=x1
-      let scoreMultiplier = 1;
+      // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=0
+      let scoreMultiplier = 0;
 
       // Tournament: rely on backend for winner, avoid client-side decision
       if (gameMode === "tournament") {
@@ -4550,7 +4548,7 @@ const GamePage = ({
         // vs-computer için mevcut mantık
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          scoreMultiplier = 10;
+          scoreMultiplier = 5;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4567,7 +4565,7 @@ const GamePage = ({
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
           gameResult = "tie";
-          scoreMultiplier = 5;
+          scoreMultiplier = 2;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4585,7 +4583,7 @@ const GamePage = ({
 
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          scoreMultiplier = 10;
+          scoreMultiplier = 5;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4603,7 +4601,7 @@ const GamePage = ({
         } else {
           // Beraberlik (tournament mode buraya gelmez, zaten backend'de handle edilir)
           gameResult = "tie";
-          scoreMultiplier = 5;
+          scoreMultiplier = 2;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4694,7 +4692,7 @@ const GamePage = ({
 
       // Skor çarpanı bilgisi toast
       if (user && gameResult !== "opponent") {
-        const multiplierLabel = gameResult === "player" ? "Kazanma (x10)" : "Beraberlik (x5)";
+        const multiplierLabel = gameResult === "player" ? "Kazanma (x5)" : "Beraberlik (x2)";
         const finalScore = currentPlayerScore * scoreMultiplier;
         setTimeout(() => {
           toast({

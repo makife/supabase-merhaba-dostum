@@ -17,17 +17,16 @@ export const LevelProgress = ({ className = "" }: LevelProgressProps) => {
   const levelData = useMemo(() => {
     const totalScore = profile?.total_score || 0;
     
-    const baseExp = 1000;
-    const expIncreasePerLevel = 100;
-    
+    // Her seviye, seviye numarası × 1000 XP gerektirir
+    // Seviye 1→2: 1000, Seviye 2→3: 2000, Seviye 3→4: 3000 ...
     let level = 1;
     let totalExpNeeded = 0;
-    let currentLevelExp = baseExp;
+    let currentLevelExp = 1000; // Seviye 1 için 1000 XP
 
     while (totalScore >= totalExpNeeded + currentLevelExp) {
       totalExpNeeded += currentLevelExp;
       level++;
-      currentLevelExp = baseExp + (level - 1) * expIncreasePerLevel;
+      currentLevelExp = level * 1000; // Sonraki seviye = seviye × 1000
     }
 
     const experience = totalScore - totalExpNeeded;
