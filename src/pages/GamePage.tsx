@@ -2049,7 +2049,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = userIsWinner ? 10 : 1; // Turnuvada beraberlik yok
+        const tournamentScoreMultiplier = userIsWinner ? 5 : 0; // Turnuvada beraberlik yok, kaybetme=0
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
