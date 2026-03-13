@@ -147,8 +147,7 @@ const AuthPage = () => {
         return;
       }
       if (isNative && data?.url) {
-        const { Browser } = await import("@capacitor/browser");
-        await Browser.open({ url: data.url });
+        window.open(data.url, "_blank");
       }
     } catch (err: any) {
       toast({ title: "Google Giriş Hatası", description: err?.message || "Bir hata oluştu", variant: "destructive" });
