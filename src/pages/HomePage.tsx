@@ -142,9 +142,7 @@ const GameModeCard = memo(({ mode, onClick }: any) => (
         <mode.icon className="w-6 h-6 text-white" />
       </div>
       {mode.isLive && (
-        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">
-          CANLI
-        </Badge>
+        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       )}
     </div>
 
@@ -181,7 +179,7 @@ const HomePage = () => {
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
-  
+
   const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
     try {
       const cached = sessionStorage.getItem("challengeStatus");
@@ -192,7 +190,15 @@ const HomePage = () => {
         }
       }
     } catch {}
-    return { word_hunt: false, anagram: false, word_chain: false, puzzle: false, reaktor: false, neon_blitz: false, memory: false };
+    return {
+      word_hunt: false,
+      anagram: false,
+      word_chain: false,
+      puzzle: false,
+      reaktor: false,
+      neon_blitz: false,
+      memory: false,
+    };
   });
   const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
     try {
@@ -426,20 +432,23 @@ const HomePage = () => {
     // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
-  const handleGameModeClick = useCallback((modeId: string) => {
-    playSound("buttonClick");
-    if (
-      !isPremium &&
-      (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0 &&
-      !isUnlimitedLivesActive(profile)
-    ) {
-      toast.error("Oyun için yeterli sayfan yok!", { description: "Oyun oynamak için sayfa satın alın." });
-      navigate("/market");
-      return;
-    }
-    if (modeId === "tournament") navigate("/tournament");
-    else setSelectedMode(modeId);
-  }, [playSound, isPremium, profile?.game_credits, profile?.bonus_credits, profile?.unlimited_lives_until, navigate]);
+  const handleGameModeClick = useCallback(
+    (modeId: string) => {
+      playSound("buttonClick");
+      if (
+        !isPremium &&
+        (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0 &&
+        !isUnlimitedLivesActive(profile)
+      ) {
+        toast.error("Oyun için yeterli sayfan yok!", { description: "Oyun oynamak için sayfa satın alın." });
+        navigate("/market");
+        return;
+      }
+      if (modeId === "tournament") navigate("/tournament");
+      else setSelectedMode(modeId);
+    },
+    [playSound, isPremium, profile?.game_credits, profile?.bonus_credits, profile?.unlimited_lives_until, navigate],
+  );
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
@@ -448,44 +457,47 @@ const HomePage = () => {
   };
 
   // --- CONFIG ---
-  const gameModesConfig = useMemo(() => [
-    {
-      id: "random-match",
-      title: "Rastgele Rakip",
-      description: "Hızlı eşleşme",
-      icon: Zap,
-      gradient: "from-violet-500 via-purple-500 to-indigo-500",
-      glowColor: "violet",
-      isLive: true,
-    },
-    {
-      id: "tournament",
-      title: "Turnuva",
-      description: "Büyük ödüller",
-      icon: Trophy,
-      gradient: "from-amber-400 via-orange-500 to-red-500",
-      glowColor: "amber",
-      isLive: false,
-    },
-    {
-      id: "vs-computer",
-      title: "Yapay Zeka",
-      description: "Pratik yap",
-      icon: Bot,
-      gradient: "from-cyan-400 via-sky-500 to-blue-500",
-      glowColor: "cyan",
-      isLive: false,
-    },
-    {
-      id: "private-room",
-      title: "Özel Oda",
-      description: "Arkadaşınla oyna",
-      icon: Users,
-      gradient: "from-emerald-400 via-green-500 to-teal-500",
-      glowColor: "emerald",
-      isLive: false,
-    },
-  ], []);
+  const gameModesConfig = useMemo(
+    () => [
+      {
+        id: "random-match",
+        title: "Rastgele Rakip",
+        description: "Hızlı eşleşme",
+        icon: Zap,
+        gradient: "from-violet-500 via-purple-500 to-indigo-500",
+        glowColor: "violet",
+        isLive: true,
+      },
+      {
+        id: "tournament",
+        title: "Turnuva",
+        description: "Büyük ödüller",
+        icon: Trophy,
+        gradient: "from-amber-400 via-orange-500 to-red-500",
+        glowColor: "amber",
+        isLive: false,
+      },
+      {
+        id: "vs-computer",
+        title: "Yapay Zeka",
+        description: "Pratik yap",
+        icon: Bot,
+        gradient: "from-cyan-400 via-sky-500 to-blue-500",
+        glowColor: "cyan",
+        isLive: false,
+      },
+      {
+        id: "private-room",
+        title: "Özel Oda",
+        description: "Arkadaşınla oyna",
+        icon: Users,
+        gradient: "from-emerald-400 via-green-500 to-teal-500",
+        glowColor: "emerald",
+        isLive: false,
+      },
+    ],
+    [],
+  );
 
   // miniGamesConfig artık MiniGamesPage'e taşındı
 
@@ -843,9 +855,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
-        <div
-          className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28"
-        >
+        <div className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28">
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
@@ -872,7 +882,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
@@ -905,7 +915,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
@@ -938,7 +948,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
@@ -971,7 +981,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 opacity-70" : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
@@ -1012,14 +1022,14 @@ const HomePage = () => {
                 navigate("/wheel");
               }}
               className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
-                wheelSpinsLeft === 0
-                  ? "border-red-400/40 opacity-70"
-                  : "border-red-500/30"
+                wheelSpinsLeft === 0 ? "border-red-400/40 opacity-70" : "border-red-500/30"
               }`}
             >
-              <div className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
-                wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
-              } transition-opacity rounded-2xl`} />
+              <div
+                className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
+                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
+                } transition-opacity rounded-2xl`}
+              />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
                 {wheelSpinsLeft === 0 ? <Check className="w-6 h-6 text-red-300" /> : "🎡"}
