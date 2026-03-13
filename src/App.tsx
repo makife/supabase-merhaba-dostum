@@ -258,9 +258,7 @@ const AppRoutes = () => {
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-
     let urlListener: any;
-
     const setup = async () => {
       const { App: CapApp } = await import("@capacitor/app");
       urlListener = await CapApp.addListener("appUrlOpen", async ({ url }) => {
@@ -269,19 +267,21 @@ const AppRoutes = () => {
           const urlObj = new URL(url);
           const code = urlObj.searchParams.get("code");
           if (code) {
-            await supabase.auth.exchangeCodeForSession(code);
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (!error) {
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 500);
+            }
           }
         }
       });
     };
-
     setup();
-
     return () => {
       urlListener?.remove();
     };
   }, []);
-
   const handleLoadingComplete = () => {
     console.log("[App] Loading completed");
     setCustomLoading(false);
