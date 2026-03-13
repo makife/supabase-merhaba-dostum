@@ -1130,6 +1130,14 @@ const HomePage = () => {
           </div>
         )}
 
+        {vsIntro && (
+          <VsIntroScreen
+            roomId={vsIntro.roomId}
+            isAI={vsIntro.isAI}
+            onComplete={handleVsIntroComplete}
+          />
+        )}
+
         <div className="fixed bottom-0 left-0 right-0 z-50">
           <FloatingMenu />
         </div>
