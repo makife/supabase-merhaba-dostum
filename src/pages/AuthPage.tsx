@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import kelimeleLogo from "/kelimeleLogo.png";
-import { Browser } from "@capacitor/browser";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -148,6 +147,7 @@ const AuthPage = () => {
         return;
       }
       if (isNative && data?.url) {
+        const { Browser } = await import("@capacitor/browser");
         await Browser.open({ url: data.url });
       }
     } catch (err: any) {
@@ -156,6 +156,7 @@ const AuthPage = () => {
       setLoading(false);
     }
   };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
