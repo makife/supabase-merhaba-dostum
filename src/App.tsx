@@ -616,21 +616,16 @@ const GlobalRematchDialogWrapper = () => {
   );
 };
 
-// 🔥🔥🔥 İÇ PROVIDER AĞACI - key ile kontrol edilir
-// key değişince TÜM context'ler sıfırdan başlar = ilk açılış gibi!
-const AppProviders = () => {
-  return (
-    <BrowserRouter>
-      const OAuthCallback = () => {
+const OAuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       const url = window.location.href;
-      if (url.includes('code=')) {
+      if (url.includes("code=")) {
         const urlObj = new URL(url);
-        const code = urlObj.searchParams.get('code');
+        const code = urlObj.searchParams.get("code");
         if (code) {
           await supabase.auth.exchangeCodeForSession(code);
-          window.history.replaceState({}, '', '/');
+          window.history.replaceState({}, "", "/");
         }
       }
     };
@@ -638,6 +633,12 @@ const AppProviders = () => {
   }, []);
   return null;
 };
+
+// 🔥🔥🔥 İÇ PROVIDER AĞACI - key ile kontrol edilir
+// key değişince TÜM context'ler sıfırdan başlar = ilk açılış gibi!
+const AppProviders = () => {
+  return (
+    <BrowserRouter>
       <AuthProvider>
         <UserProvider>
           <ThemeProvider>
