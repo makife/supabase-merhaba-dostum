@@ -40,13 +40,32 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const [opponent, setOpponent] = useState<PlayerInfo | null>(null);
   const [phase, setPhase] = useState<AnimPhase>('enter');
 
-  // Current player info
-  const myInfo: PlayerInfo = {
+  const [myInfo, setMyInfo] = useState<PlayerInfo>({
     username: profile?.username || 'Sen',
     avatar_url: profile?.avatar_url || null,
-    rank_points: profile?.rank_points || 0,
+    rank_points: 0,
     total_score: profile?.total_score || 0,
-  };
+  });
+
+  // Fetch own rank_points from profiles table
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('profiles')
+      .select('rank_points, total_score, username, avatar_url')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setMyInfo({
+            username: data.username || 'Sen',
+            avatar_url: data.avatar_url,
+            rank_points: data.rank_points || 0,
+            total_score: data.total_score || 0,
+          });
+        }
+      });
+  }, [user?.id]);
 
   // Fetch opponent info
   useEffect(() => {
