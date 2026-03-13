@@ -2975,7 +2975,7 @@ const GamePage = ({
         }
 
         // Rank puanı güncelle - sadece rastgele eşleşme
-        if (gameMode === "random-match" || gameMode === "random-match-timed" || gameMode === "random-match-score") {
+        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
           const rpChange = isWinner ? 50 : isTie ? 0 : -30;
           if (rpChange !== 0) {
             const { data: currentProfile } = await supabase
