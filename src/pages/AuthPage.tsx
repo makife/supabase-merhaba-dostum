@@ -130,10 +130,16 @@ const AuthPage = () => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    
+    // Native platformda kelimele:// deeplink scheme kullan
+    const isNative = Capacitor.isNativePlatform();
+    const redirectUrl = isNative ? 'kelimele://auth/callback' : window.location.origin;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: isNative,
       },
     });
     if (error) {
