@@ -1000,6 +1000,7 @@ export type Database = {
           private_room_games: number | null
           push_token: string | null
           random_match_games: number | null
+          rank_points: number
           season_first_count: number
           senyaz_joker_used: number | null
           total_games: number | null
@@ -1053,6 +1054,7 @@ export type Database = {
           private_room_games?: number | null
           push_token?: string | null
           random_match_games?: number | null
+          rank_points?: number
           season_first_count?: number
           senyaz_joker_used?: number | null
           total_games?: number | null
@@ -1106,6 +1108,7 @@ export type Database = {
           private_room_games?: number | null
           push_token?: string | null
           random_match_games?: number | null
+          rank_points?: number
           season_first_count?: number
           senyaz_joker_used?: number | null
           total_games?: number | null

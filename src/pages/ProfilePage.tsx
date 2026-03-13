@@ -1,3 +1,4 @@
+import { getRankTier, getRankProgress } from "@/utils/rankSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { RankBadge } from "@/components/RankBadge";
 import { useUser } from "@/contexts/UserContext";
@@ -959,7 +960,13 @@ const ProfilePage = () => {
 
                 {/* Rank Badge (sağ taraf) */}
                 <div className="relative z-10">
-                  <RankBadge rankPoints={profileData.rankPoints} size="md" showLabel={true} showProgress={true} />
+                  <RankBadge 
+                    rankPoints={profileData.rankPoints} 
+                    size="md" 
+                    showLabel={false} 
+                    showProgress={false}
+                    rounded={true}
+                  />
                 </div>
               </div>
 
@@ -1020,6 +1027,22 @@ const ProfilePage = () => {
                     Premium
                   </Badge>
                 )}
+              </div>
+
+              {/* Rank Progress - XP barının üstünde */}
+              <div className="w-full space-y-2 mb-3">
+                <div className="flex justify-between text-xs text-yellow-400">
+                  <span className="font-bold">{getRankTier(profileData.rankPoints).name}</span>
+                  <span className="text-yellow-400/70">{profileData.rankPoints} RP</span>
+                </div>
+                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-lg"
+                    style={{ width: `${getRankProgress(profileData.rankPoints)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-pulse" />
+                  </div>
+                </div>
               </div>
 
               {/* Level Progress */}

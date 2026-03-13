@@ -5,6 +5,8 @@ interface RankBadgeProps {
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   showProgress?: boolean;
+  showRemainingText?: boolean;
+  rounded?: boolean;
 }
 
 const sizeMap = {
@@ -13,18 +15,27 @@ const sizeMap = {
   lg: 'w-32 h-32',
 };
 
-export const RankBadge = ({ rankPoints, size = 'md', showLabel = true, showProgress = false }: RankBadgeProps) => {
+export const RankBadge = ({ 
+  rankPoints, 
+  size = 'md', 
+  showLabel = true, 
+  showProgress = false,
+  showRemainingText = true,
+  rounded = false
+}: RankBadgeProps) => {
   const tier = getRankTier(rankPoints);
   const progress = getRankProgress(rankPoints);
   const nextTier = getNextRankTier(rankPoints);
 
+  const imageClass = rounded ? 'rounded-2xl' : '';
+
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1 w-full">
       <div className={`${sizeMap[size]} relative`}>
         <img
           src={tier.image}
           alt={tier.name}
-          className="w-full h-full object-contain drop-shadow-lg"
+          className={`w-full h-full object-contain drop-shadow-lg ${imageClass}`}
         />
       </div>
       {showLabel && (
@@ -45,9 +56,11 @@ export const RankBadge = ({ rankPoints, size = 'md', showLabel = true, showProgr
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[9px] text-white/40 text-center mt-0.5">
-            {nextTier.minPoints - rankPoints} RP kaldı
-          </p>
+          {showRemainingText && (
+            <p className="text-[9px] text-white/40 text-center mt-0.5">
+              {nextTier.minPoints - rankPoints} RP kaldı
+            </p>
+          )}
         </div>
       )}
     </div>
