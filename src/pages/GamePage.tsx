@@ -4550,7 +4550,7 @@ const GamePage = ({
         // vs-computer için mevcut mantık
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
-          scoreMultiplier = 10;
+          scoreMultiplier = 5;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
@@ -4567,7 +4567,7 @@ const GamePage = ({
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
           gameResult = "tie";
-          scoreMultiplier = 5;
+          scoreMultiplier = 2;
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
