@@ -54,6 +54,8 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import { LevelUpDialog } from "@/components/LevelUpDialog";
+import { RankUpDialog } from "@/components/RankUpDialog";
+import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
@@ -1282,6 +1284,9 @@ const GamePage = ({
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newLevel, setNewLevel] = useState(0);
   const preLevelRef = useRef<number>(0);
+  // Rank-up detection
+  const [showRankUp, setShowRankUp] = useState(false);
+  const [rankUpTier, setRankUpTier] = useState<RankTier | null>(null);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
@@ -2884,11 +2889,18 @@ const GamePage = ({
             .single();
           const currentRP = (currentProfile as any)?.rank_points || 0;
           const newRP = Math.max(0, currentRP + rpChange);
+          const oldTier = getRankTier(currentRP);
+          const newTier = getRankTier(newRP);
           await supabase
             .from("profiles")
             .update({ rank_points: newRP } as any)
             .eq("id", userId);
           console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+          // Rank tier değişimi kontrolü (yükselme)
+          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+            setRankUpTier(newTier);
+            setTimeout(() => setShowRankUp(true), 2000);
+          }
         }
       }
     } catch (error) {
@@ -3001,11 +3013,17 @@ const GamePage = ({
           .single();
         const currentRP = (currentProfile as any)?.rank_points || 0;
         const newRP = Math.max(0, currentRP + rpChange);
+        const oldTier = getRankTier(currentRP);
+        const newTier = getRankTier(newRP);
         await supabase
           .from("profiles")
           .update({ rank_points: newRP } as any)
           .eq("id", user.id);
         console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+        if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+          setRankUpTier(newTier);
+          setTimeout(() => setShowRankUp(true), 2000);
+        }
         }
       }
     }
@@ -7465,6 +7483,7 @@ const GamePage = ({
         </Card>
         {/* Level Up Dialog - gameEnded bloğu içinde */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
+        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </div>
     );
   }
@@ -8205,6 +8224,7 @@ const GamePage = ({
 
         {/* Level Up Dialog */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
+        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </>
     </LayoutGroup>
   );
