@@ -69,6 +69,7 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>kelimele</string>
+                <string>com.googleusercontent.apps.285249195022-gofb8lvh2h0cu6omd2bngmp5agqlfh8g</string>
             </array>
         </dict>
     </array>
