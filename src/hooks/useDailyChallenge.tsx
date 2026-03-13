@@ -17,6 +17,8 @@ interface ChallengeScore {
   avatar_url: string | null;
   score: number;
   words_found: number;
+  moves_count: number;
+  time_seconds: number;
   date: string;
 }
 
@@ -24,6 +26,9 @@ interface ChallengeScore {
 const getTurkeyDate = (): string => {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
 };
+
+// Challenge types where lower score = better
+const ASCENDING_CHALLENGES: ChallengeType[] = ["puzzle"];
 
 export function useDailyChallenge(challengeType: ChallengeType) {
   const { user } = useAuth();
@@ -34,18 +39,25 @@ export function useDailyChallenge(challengeType: ChallengeType) {
   const markedRef = useRef(false);
 
   const todayDate = getTurkeyDate();
+  const isAscending = ASCENDING_CHALLENGES.includes(challengeType);
 
   const refreshLeaderboard = useCallback(async () => {
     const { data } = await supabase
       .from("challenge_scores" as any)
-      .select("id, user_id, username, avatar_url, score, words_found, date")
+      .select("id, user_id, username, avatar_url, score, words_found, moves_count, time_seconds, date")
       .eq("challenge_type", challengeType)
       .eq("date", todayDate)
-      .order("score", { ascending: false })
+      .order("score", { ascending: isAscending })
       .order("created_at", { ascending: true })
       .limit(50);
-    if (data) setLeaderboard(data as any);
-  }, [challengeType, todayDate]);
+    if (data) {
+      // For ascending challenges, filter out score=0 entries (not completed)
+      const filtered = isAscending
+        ? (data as any[]).filter((e: any) => e.score > 0)
+        : (data as any[]);
+      setLeaderboard(filtered as any);
+    }
+  }, [challengeType, todayDate, isAscending]);
 
   // Check if already played today & fetch leaderboard
   useEffect(() => {
@@ -55,17 +67,17 @@ export function useDailyChallenge(challengeType: ChallengeType) {
       const [myScoreRes, leaderboardRes] = await Promise.all([
         supabase
           .from("challenge_scores" as any)
-          .select("score, words_found")
+          .select("score, words_found, moves_count, time_seconds")
           .eq("user_id", user.id)
           .eq("challenge_type", challengeType)
           .eq("date", todayDate)
           .maybeSingle(),
         supabase
           .from("challenge_scores" as any)
-          .select("id, user_id, username, avatar_url, score, words_found, date")
+          .select("id, user_id, username, avatar_url, score, words_found, moves_count, time_seconds, date")
           .eq("challenge_type", challengeType)
           .eq("date", todayDate)
-          .order("score", { ascending: false })
+          .order("score", { ascending: isAscending })
           .order("created_at", { ascending: true })
           .limit(50),
       ]);
@@ -77,14 +89,17 @@ export function useDailyChallenge(challengeType: ChallengeType) {
       }
 
       if (leaderboardRes.data) {
-        setLeaderboard(leaderboardRes.data as any);
+        const filtered = isAscending
+          ? (leaderboardRes.data as any[]).filter((e: any) => e.score > 0)
+          : (leaderboardRes.data as any[]);
+        setLeaderboard(filtered as any);
       }
 
       setLoading(false);
     };
 
     fetchData();
-  }, [user, challengeType, todayDate]);
+  }, [user, challengeType, todayDate, isAscending]);
 
   // Mark as played immediately (score 0) — called when game starts
   const markAsPlayed = useCallback(async () => {
@@ -104,6 +119,8 @@ export function useDailyChallenge(challengeType: ChallengeType) {
         challenge_type: challengeType,
         score: 0,
         words_found: 0,
+        moves_count: 0,
+        time_seconds: 0,
         date: todayDate,
         username: profile?.username || "Anonim",
         avatar_url: profile?.avatar_url || null,
@@ -115,16 +132,23 @@ export function useDailyChallenge(challengeType: ChallengeType) {
   }, [user, challengeType, todayDate, refreshLeaderboard]);
 
   // Save/update score after game ends
-  const saveScore = useCallback(async (score: number, wordsFound: number) => {
+  const saveScore = useCallback(async (
+    score: number,
+    wordsFound: number,
+    extra?: { moves_count?: number; time_seconds?: number }
+  ) => {
     if (!user) return false;
 
+    const updateData: any = { score, words_found: wordsFound };
+    if (extra?.moves_count !== undefined) updateData.moves_count = extra.moves_count;
+    if (extra?.time_seconds !== undefined) updateData.time_seconds = extra.time_seconds;
+
     if (markedRef.current) {
-      // Already marked — update existing row (only if score > 0)
       if (score <= 0) return false;
 
       const { error } = await supabase
         .from("challenge_scores" as any)
-        .update({ score, words_found: wordsFound })
+        .update(updateData)
         .eq("user_id", user.id)
         .eq("challenge_type", challengeType)
         .eq("date", todayDate);
@@ -152,6 +176,8 @@ export function useDailyChallenge(challengeType: ChallengeType) {
         challenge_type: challengeType,
         score,
         words_found: wordsFound,
+        moves_count: extra?.moves_count || 0,
+        time_seconds: extra?.time_seconds || 0,
         date: todayDate,
         username: profile?.username || "Anonim",
         avatar_url: profile?.avatar_url || null,

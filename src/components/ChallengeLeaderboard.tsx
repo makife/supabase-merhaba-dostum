@@ -1,4 +1,4 @@
-import { Trophy, Medal } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,6 +9,8 @@ interface LeaderboardEntry {
   avatar_url: string | null;
   score: number;
   words_found: number;
+  moves_count?: number;
+  time_seconds?: number;
 }
 
 interface Props {
@@ -18,15 +20,22 @@ interface Props {
   showLevel?: boolean;
   frameTheme?: "all-time" | "monthly" | "weekly";
   showCompletionOnly?: boolean;
+  showPuzzleColumns?: boolean;
+  ascendingSort?: boolean;
 }
 
 const rankColors = ["text-amber-400", "text-slate-300", "text-amber-600"];
-const rankBgs = ["bg-amber-500/20", "bg-slate-400/10", "bg-amber-700/10"];
 
 const frameColors = {
   "all-time": "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900",
   monthly: "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900",
   weekly: "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900",
+};
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
 export const ChallengeLeaderboard = ({
@@ -36,6 +45,8 @@ export const ChallengeLeaderboard = ({
   showLevel = false,
   frameTheme = "all-time",
   showCompletionOnly = false,
+  showPuzzleColumns = false,
+  ascendingSort = false,
 }: Props) => {
   const { user } = useAuth();
 
@@ -55,6 +66,19 @@ export const ChallengeLeaderboard = ({
         <Trophy className="w-4 h-4 text-amber-400" />
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</h3>
       </div>
+
+      {/* Column headers for puzzle mode */}
+      {showPuzzleColumns && (
+        <div className="flex items-center gap-3 px-3 py-1 mb-1 shrink-0">
+          <span className="w-6" />
+          <span className="w-7" />
+          <span className="flex-1 text-[9px] text-slate-500 font-bold uppercase">İsim</span>
+          <span className="text-[9px] text-slate-500 font-bold w-10 text-center">Hamle</span>
+          <span className="text-[9px] text-slate-500 font-bold w-12 text-center">Süre</span>
+          <span className="text-[9px] text-slate-500 font-bold w-12 text-right">Skor</span>
+        </div>
+      )}
+
       <div className={`space-y-1.5 ${scrollable ? "flex-1 min-h-0 overflow-y-auto" : "max-h-64 overflow-y-auto"}`}>
         {leaderboard.map((entry, i) => {
           const isMe = entry.user_id === user?.id;
@@ -78,28 +102,43 @@ export const ChallengeLeaderboard = ({
                 {entry.username}
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
               </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {showCompletionOnly ? (
-                  entry.score > 0 ? (
-                    <span className="text-base">✅</span>
-                  ) : (
-                    <span className="text-base">❌</span>
-                  )
-                ) : showLevel ? (
-                  <span className="text-xs font-bold text-cyan-400 w-10 text-right">
-                    Lvl {Math.floor(typeof entry.score === "number" ? entry.score : Number(entry.score))}
+
+              {showPuzzleColumns ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-xs font-bold text-cyan-400 w-10 text-center">
+                    {entry.moves_count || entry.words_found || 0}
                   </span>
-                ) : (
-                  <span className="text-xs font-bold text-amber-400 w-10 text-right">
+                  <span className="text-xs font-mono text-slate-400 w-12 text-center">
+                    {formatTime(entry.time_seconds || 0)}
+                  </span>
+                  <span className="text-xs font-bold text-amber-400 w-12 text-right">
                     {typeof entry.score === "number" ? entry.score.toFixed(2) : entry.score}
                   </span>
-                )}
-                {!showCompletionOnly && (
-                  <span className="text-[9px] text-slate-500 w-8">
-                    {entry.words_found > 0 ? `(${entry.words_found})` : ""}
-                  </span>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {showCompletionOnly ? (
+                    entry.score > 0 ? (
+                      <span className="text-base">✅</span>
+                    ) : (
+                      <span className="text-base">❌</span>
+                    )
+                  ) : showLevel ? (
+                    <span className="text-xs font-bold text-cyan-400 w-10 text-right">
+                      Lvl {Math.floor(typeof entry.score === "number" ? entry.score : Number(entry.score))}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-400 w-10 text-right">
+                      {typeof entry.score === "number" ? entry.score.toFixed(2) : entry.score}
+                    </span>
+                  )}
+                  {!showCompletionOnly && (
+                    <span className="text-[9px] text-slate-500 w-8">
+                      {entry.words_found > 0 ? `(${entry.words_found})` : ""}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
