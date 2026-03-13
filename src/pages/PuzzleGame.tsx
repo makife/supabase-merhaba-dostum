@@ -20,6 +20,18 @@ interface GameState {
 const DIFFICULTY = 3 as const;
 const WORD_LENGTH = 8;
 
+// Deterministic daily word: same word for all players on the same day
+const getDailyWord = (words: string[]): string => {
+  if (words.length === 0) return "PORTAKAL";
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+  // Simple hash from date string
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) {
+    hash = (hash * 31 + today.charCodeAt(i)) >>> 0;
+  }
+  return words[hash % words.length];
+};
+
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
@@ -49,6 +61,8 @@ const PuzzleGamePage: React.FC = () => {
         const allWords = text.split("\n").map((w) => w.trim().toLocaleUpperCase("tr-TR"));
         const words8 = allWords.filter((w) => w.length === WORD_LENGTH);
         if (words8.length === 0) words8.push("PORTAKAL", "BİLGİSAY", "ÇEKİRDEK");
+        // Sort for deterministic indexing
+        words8.sort();
         wordsRef.current = words8;
         setIsWordsLoaded(true);
       } catch {
@@ -63,7 +77,7 @@ const PuzzleGamePage: React.FC = () => {
     if (!wordsRef.current.length) return;
 
     const size = DIFFICULTY * DIFFICULTY;
-    const randomWord = wordsRef.current[Math.floor(Math.random() * wordsRef.current.length)];
+    const dailyWord = getDailyWord(wordsRef.current);
 
     let board = Array.from({ length: size - 1 }, (_, i) => i + 1);
     board.push(0);
@@ -96,13 +110,11 @@ const PuzzleGamePage: React.FC = () => {
       timeElapsed: 0,
       isRunning: false,
       isCompleted: false,
-      targetWord: randomWord,
+      targetWord: dailyWord,
       started: true,
     });
     scoreSavedRef.current = false;
   }, []);
-
-  // Don't auto-initialize — wait for user to click start
 
   // Timer counting UP
   useEffect(() => {
@@ -117,13 +129,15 @@ const PuzzleGamePage: React.FC = () => {
 
   const scoreSavedRef = useRef(false);
 
-  // Save score when completed
+  // Save score when completed: score = moves + time/5 (lower is better)
   useEffect(() => {
     if (gameState.isCompleted && gameState.moves > 0 && !scoreSavedRef.current) {
       scoreSavedRef.current = true;
-      const elapsed = gameState.timeElapsed > 0 ? gameState.timeElapsed : 1;
-      const rawScore = parseFloat((10000 / (elapsed * gameState.moves)).toFixed(2));
-      saveScore(rawScore, gameState.moves);
+      const finalScore = parseFloat((gameState.moves + gameState.timeElapsed / 5).toFixed(2));
+      saveScore(finalScore, gameState.moves, {
+        moves_count: gameState.moves,
+        time_seconds: gameState.timeElapsed,
+      });
       markAsPlayed();
     }
   }, [gameState.isCompleted, gameState.moves, gameState.timeElapsed]);
@@ -143,9 +157,7 @@ const PuzzleGamePage: React.FC = () => {
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
 
     const newMoves = gameState.moves + 1;
-    const wasRunning = gameState.isRunning;
 
-    // Check by letters, not tile numbers (handles duplicate letters)
     const currentLetters = newBoard.slice(0, -1).map((n) => gameState.targetWord[n - 1] || "");
     const targetLetters = gameState.targetWord.split("");
     const isSolved = newBoard[newBoard.length - 1] === 0 && currentLetters.every((letter, i) => letter === targetLetters[i]);
@@ -191,6 +203,10 @@ const PuzzleGamePage: React.FC = () => {
     );
   }
 
+  const calculateScore = () => {
+    return (gameState.moves + gameState.timeElapsed / 5).toFixed(2);
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1028 0%, #2d1b4e 50%, #1a1040 100%)" }}>
       {/* Header */}
@@ -212,7 +228,7 @@ const PuzzleGamePage: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {showLeaderboard ? (
           <div className="flex-1 flex flex-col min-h-0 mt-4">
-            <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Puzzle Sıralaması" scrollable />
+            <ChallengeLeaderboard leaderboard={leaderboard} title="Günlük Puzzle Sıralaması" scrollable showPuzzleColumns ascendingSort />
             <button onClick={() => setShowLeaderboard(false)} className="mt-3 shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm">
               Oyuna Dön
             </button>
@@ -226,6 +242,7 @@ const PuzzleGamePage: React.FC = () => {
                   <div className="text-4xl mb-3">🧩</div>
                   <h2 className="text-xl font-bold text-white mb-2">Kelime Puzzle</h2>
                   <p className="text-sm text-white/60 mb-1">3x3 ızgarada harfleri doğru sıraya diz</p>
+                  <p className="text-xs text-white/40 mt-1">Skor = Hamle + Süre÷5 (düşük = iyi)</p>
                   <div className="mt-3 bg-amber-500/10 border border-amber-400/20 rounded-lg p-3">
                     <p className="text-xs text-amber-300 font-bold">🏆 1. Lik Ödülü</p>
                     <p className="text-sm text-white mt-1">🖊️ 3 Damla Mürekkep</p>
@@ -255,7 +272,7 @@ const PuzzleGamePage: React.FC = () => {
               </div>
             )}
 
-            {/* Game Area - only show when started */}
+            {/* Game Area */}
             {gameState.started && (
               <>
                 {/* Stats */}
@@ -313,7 +330,7 @@ const PuzzleGamePage: React.FC = () => {
                       {gameState.moves} hamlede, {formatTime(gameState.timeElapsed)} sürede tamamladın!
                     </div>
                     <div className="text-amber-400 font-bold text-lg mt-2">
-                      Skor: {gameState.timeElapsed > 0 ? (10000 / (gameState.timeElapsed * gameState.moves)).toFixed(2) : 0}
+                      Skor: {calculateScore()} (düşük = iyi)
                     </div>
                   </div>
                 )}
