@@ -171,6 +171,7 @@ const HomePage = () => {
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
+  const [vsIntro, setVsIntro] = useState<{ roomId: string; isAI: boolean } | null>(null);
 
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
