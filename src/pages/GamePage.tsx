@@ -1284,6 +1284,9 @@ const GamePage = ({
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [newLevel, setNewLevel] = useState(0);
   const preLevelRef = useRef<number>(0);
+  // Rank-up detection
+  const [showRankUp, setShowRankUp] = useState(false);
+  const [rankUpTier, setRankUpTier] = useState<RankTier | null>(null);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
