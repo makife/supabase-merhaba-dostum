@@ -1,57 +1,58 @@
-import { CapacitorConfig } from '@capacitor/cli';
-
+import { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
-  appId: 'com.ergan.kelimele',
-  appName: 'Kelimele',
-  webDir: 'dist',
-
+  appId: "com.ergan.kelimele",
+  appName: "Kelimele",
+  webDir: "dist",
   android: {
     allowMixedContent: true,
     captureInput: false,
     webContentsDebuggingEnabled: true,
-    windowSoftInputMode: 'adjustResize',
-    // Immersive mode flags
-    overrideUserAgent: 'ImmersiveApp',
-    backgroundColor: '#000000',
-    // Background running ayarları
+    windowSoftInputMode: "adjustResize",
+    overrideUserAgent: "ImmersiveApp",
+    backgroundColor: "#000000",
     useLegacyBridge: false,
   },
   ios: {
-    contentInset: 'automatic',
+    contentInset: "automatic",
     scrollEnabled: true,
-    backgroundColor: '#000000'
+    backgroundColor: "#000000",
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER_CROP",
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
-      backgroundColor: '#000000'
+      backgroundColor: "#000000",
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#000000',
-      overlay: true
+      style: "DARK",
+      backgroundColor: "#000000",
+      overlay: true,
     },
     Keyboard: {
-      resize: 'ionic'
+      resize: "ionic",
     },
     AdMob: {
-      appId: 'ca-app-pub-4768026665961339~9319477813',
-      androidAppId: 'ca-app-pub-4768026665961339~9319477813',
-      iosAppId: 'ca-app-pub-4768026665961339~4109751189'
+      appId: "ca-app-pub-4768026665961339~9319477813",
+      androidAppId: "ca-app-pub-4768026665961339~9319477813",
+      iosAppId: "ca-app-pub-4768026665961339~4109751189",
     },
     ScreenOrientation: {
-      orientation: 'portrait'
+      orientation: "portrait",
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert']
-    }
-  }
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      iosClientId: "285249195022-gofb8lvh2h0cu6omd2bngmp5agqlfh8g.apps.googleusercontent.com",
+      serverClientId: "285249195022-lkl6tg29ac8ahqiibhjinlo4j55cpa2m.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true,
+    },
+  },
 };
-
 export default config;
