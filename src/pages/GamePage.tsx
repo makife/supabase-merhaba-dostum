@@ -4536,8 +4536,8 @@ const GamePage = ({
       if (winner !== null) return;
 
       let gameResult: "player" | "opponent" | "tie";
-      // Skor çarpanı: Kazanma=x10, Beraberlik=x5, Kaybetme=x1
-      let scoreMultiplier = 1;
+      // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=0
+      let scoreMultiplier = 0;
 
       // Tournament: rely on backend for winner, avoid client-side decision
       if (gameMode === "tournament") {
