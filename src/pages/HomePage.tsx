@@ -452,7 +452,15 @@ const HomePage = () => {
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
-    if (roomId === "ai-game") navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+    const isAI = roomId === "ai-game";
+    setVsIntro({ roomId, isAI });
+  };
+
+  const handleVsIntroComplete = () => {
+    if (!vsIntro) return;
+    const { roomId, isAI } = vsIntro;
+    setVsIntro(null);
+    if (isAI) navigate(`/game/vs-computer?type=${matchmakingGameType}`);
     else navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
