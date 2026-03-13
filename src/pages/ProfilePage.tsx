@@ -891,65 +891,75 @@ const ProfilePage = () => {
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl" />
             <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
 
-            {/* Avatar Section */}
+            {/* Avatar + Rank Section */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="relative mb-4">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse" />
-                <Avatar
-                  key={avatarKey}
-                  className="w-28 h-28 border-4 border-white/20 shadow-2xl relative z-10"
-                  onClick={isOwnProfile ? () => setShowAvatarOptions(true) : undefined}
-                >
-                  <AvatarImage
-                    src={effectiveAvatarUrl}
-                    alt={profileData.username}
-                    key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
-                    onLoadingStatusChange={(status) => {
-                      console.log(
-                        "[ProfilePage] 🖼️ Avatar loading status:",
-                        status,
-                        effectiveAvatarUrl?.substring(0, 60),
-                      );
-                    }}
-                  />
-                  <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-3xl font-bold">
-                    {profileData.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-                {isOwnProfile && (
-                  <Button
-                    size="icon"
-                    onClick={() => setShowAvatarOptions(true)}
-                    className="
-      absolute bottom-0 right-0
-      translate-x-1/3 translate-y-1/3
-      w-8 h-8
-      rounded-full
-      bg-gradient-to-r from-indigo-500 to-purple-600
-      hover:from-indigo-600 hover:to-purple-700
-      border-2 border-white
-      shadow-xl
-      z-30
-      transition-transform
-      hover:scale-110
-    "
-                    disabled={uploading}
+              <div className="flex items-center gap-4 mb-4">
+                {/* Avatar (sol taraf) */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse" />
+                  <Avatar
+                    key={avatarKey}
+                    className="w-28 h-28 border-4 border-white/20 shadow-2xl relative z-10 rounded-2xl"
+                    onClick={isOwnProfile ? () => setShowAvatarOptions(true) : undefined}
+                    showFrame={false}
                   >
-                    <Edit className="w-4 h-4 text-white" />
-                  </Button>
-                )}
-                {isPremium && (
-                  <div className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 z-20">
-                    <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg animate-pulse">
-                      <Crown className="w-5 h-5 text-white" />
+                    <AvatarImage
+                      src={effectiveAvatarUrl}
+                      alt={profileData.username}
+                      key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
+                      className="rounded-2xl"
+                      onLoadingStatusChange={(status) => {
+                        console.log(
+                          "[ProfilePage] 🖼️ Avatar loading status:",
+                          status,
+                          effectiveAvatarUrl?.substring(0, 60),
+                        );
+                      }}
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-3xl font-bold rounded-2xl">
+                      {profileData.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {isOwnProfile && (
+                    <Button
+                      size="icon"
+                      onClick={() => setShowAvatarOptions(true)}
+                      className="
+                        absolute bottom-0 left-0
+                        -translate-x-1/4 translate-y-1/4
+                        w-8 h-8
+                        rounded-full
+                        bg-gradient-to-r from-indigo-500 to-purple-600
+                        hover:from-indigo-600 hover:to-purple-700
+                        border-2 border-white
+                        shadow-xl
+                        z-30
+                        transition-transform
+                        hover:scale-110
+                      "
+                      disabled={uploading}
+                    >
+                      <Edit className="w-4 h-4 text-white" />
+                    </Button>
+                  )}
+                  {isPremium && (
+                    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 z-20">
+                      <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg animate-pulse">
+                        <Crown className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rank Badge (sağ taraf) */}
+                <div className="relative z-10">
+                  <RankBadge rankPoints={profileData.rankPoints} size="md" showLabel={true} showProgress={true} />
+                </div>
               </div>
 
               {/* Username */}
