@@ -616,24 +616,6 @@ const GlobalRematchDialogWrapper = () => {
   );
 };
 
-const OAuthCallback = () => {
-  useEffect(() => {
-    const handleCallback = async () => {
-      const url = window.location.href;
-      if (url.includes("code=")) {
-        const urlObj = new URL(url);
-        const code = urlObj.searchParams.get("code");
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-          window.history.replaceState({}, "", "/");
-        }
-      }
-    };
-    handleCallback();
-  }, []);
-  return null;
-};
-
 // 🔥🔥🔥 İÇ PROVIDER AĞACI - key ile kontrol edilir
 // key değişince TÜM context'ler sıfırdan başlar = ilk açılış gibi!
 const AppProviders = () => {
