@@ -109,7 +109,7 @@ export const useSounds = () => {
       id: "default",
       name: "Varsayılan",
       sounds: {
-        buttonClick: "sounds/default/button-click.mp3",
+        buttonClick: "sounds/default/butonKlik.mp3",
         correctWord: "sounds/default/correct-word.mp3",
         wrongWord: "sounds/default/wrong-word.mp3",
         gameWin: "generated", // Generated ses olarak işaretle
