@@ -105,6 +105,9 @@ const PuzzleGamePage: React.FC = () => {
     let board = Array.from({ length: size - 1 }, (_, i) => i + 1);
     board.push(0);
 
+    // ✅ Deterministik karıştırma: herkes aynı board'u görür
+    const seededRandom = createSeededRandom(getDailySeed() + 7919); // farklı seed offset
+
     let emptyIndex = size - 1;
     let previousIndex = -1;
     for (let i = 0; i < 100; i++) {
@@ -119,7 +122,7 @@ const PuzzleGamePage: React.FC = () => {
 
       const validMoves = possibleMoves.filter((idx) => idx !== previousIndex);
       if (validMoves.length > 0) {
-        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        const randomMove = validMoves[Math.floor(seededRandom() * validMoves.length)];
         [board[emptyIndex], board[randomMove]] = [board[randomMove], board[emptyIndex]];
         previousIndex = emptyIndex;
         emptyIndex = randomMove;
