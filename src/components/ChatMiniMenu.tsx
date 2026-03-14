@@ -81,7 +81,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => {
             setIsOpen(false);
             onOpenChange?.(false);
