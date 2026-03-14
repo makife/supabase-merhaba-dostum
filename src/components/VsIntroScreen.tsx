@@ -122,15 +122,15 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // Animation sequence: enter(0.3s) -> hold(1s) -> exit(0.3s) -> done
+  // Animation sequence: enter(0.5s) -> hold(2s) -> exit(0.5s) -> done
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
-    timers.push(setTimeout(() => setPhase('hold'), 300));
-    timers.push(setTimeout(() => setPhase('exit'), 1300));
+    timers.push(setTimeout(() => setPhase('hold'), 500));
+    timers.push(setTimeout(() => setPhase('exit'), 2500));
     timers.push(setTimeout(() => {
       setPhase('done');
       onCompleteRef.current();
-    }, 1600));
+    }, 3000));
     return () => timers.forEach(clearTimeout);
   }, []);
 
