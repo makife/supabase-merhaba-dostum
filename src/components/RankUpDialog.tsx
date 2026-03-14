@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { isSoundEffectsEnabled } from '@/utils/soundSettings';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RankTier } from '@/utils/rankSystem';
@@ -22,7 +23,7 @@ export const RankUpDialog: React.FC<RankUpDialogProps> = ({ open, onClose, tier 
   }), []);
 
   useEffect(() => {
-    if (open) {
+    if (open && isSoundEffectsEnabled()) {
       try {
         const audio = new Audio('/seviyeAtlama.mp3');
         audio.volume = 0.7;
