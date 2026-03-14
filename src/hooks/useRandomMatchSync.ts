@@ -352,11 +352,15 @@ export function useRandomMatchSync(options: UseRandomMatchSyncOptions = {}) {
     }
   }, [serverTimeReady, initializeMatch]);
 
-  // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
+  // ✅ Cleanup: Oda kanallarını temizle
   useEffect(() => {
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channelRef.current);
-      console.log("⚠️ [useRandomMatchSync] Cleanup ATLANYOR (bağlantı koruması)");
+      console.log("🔌 [useRandomMatchSync] Cleanup - kanal temizleniyor");
+      
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       
       if (state.roomId) {
         matchBanlist.add(state.roomId);
