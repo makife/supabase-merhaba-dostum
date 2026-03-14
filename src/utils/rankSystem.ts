@@ -13,7 +13,8 @@ export const RANK_TIERS: RankTier[] = [
   { id: 'yazar',  name: 'Yazar',   minPoints: 1000, maxPoints: 1800,     image: '/yazar.png' },
   { id: 'sair',   name: 'Şair',    minPoints: 1800, maxPoints: 2800,     image: '/sair.png' },
   { id: 'bilge',  name: 'Bilge',   minPoints: 2800, maxPoints: 4000,     image: '/bilge.png' },
-  { id: 'efsane', name: 'Efsane',  minPoints: 4000, maxPoints: Infinity, image: '/efsane.png' },
+  { id: 'efsane', name: 'Efsane',  minPoints: 4000, maxPoints: 5500,     image: '/efsane.png' },
+  { id: 'ustat',  name: 'Üstat',   minPoints: 5500, maxPoints: Infinity, image: '/ustat.png' },
 ];
 
 export const RANK_WIN_POINTS = 50;
