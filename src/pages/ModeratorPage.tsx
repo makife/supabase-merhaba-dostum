@@ -93,10 +93,8 @@ const ModeratorPage = () => {
       })
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("⚠️ [ModeratorPage] Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(reportChannel);
+      supabase.removeChannel(reportChannel);
     };
   }, []);
 
