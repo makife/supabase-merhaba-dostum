@@ -141,7 +141,7 @@ export const useSounds = () => {
       id: "nature",
       name: "Doğa",
       sounds: {
-        buttonClick: "sounds/nature/button-click.mp3",
+        buttonClick: "sounds/default/butonKlik.mp3",
         correctWord: "sounds/nature/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
