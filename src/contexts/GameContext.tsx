@@ -2097,12 +2097,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // 🔥 ŞİMDİLİK DEVRE DIŞI - beforeunload listener'ı kaldır
     // window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // ⚠️ KRİTİK: GameContext App-level'da sarılı, unmount OLMAMALI
-    // Bu cleanup'ı DEVRE DIŞI bırakıyoruz çünkü tüm bağlantıları öldürüyor
+    // ✅ Uygulama kapatılırken kanalları temizle
     return () => {
-      console.log("🧹 GameContext cleanup - KANALLARA DOKUNMUYORUZ (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: realtimeManager.unsubscribeAll(user.id);
-      // Bu satır tüm Supabase kanallarını kapatıyordu ve bağlantı kopuyordu
+      console.log("🧹 GameContext cleanup - kanallar temizleniyor");
+      if (user?.id) {
+        realtimeManager.forceCleanupAll();
+      }
     };
   }, [currentRoom?.id, user?.id]);
 
