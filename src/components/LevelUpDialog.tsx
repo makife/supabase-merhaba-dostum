@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Crown } from 'lucide-react';
+import { isSoundEffectsEnabled } from '@/utils/soundSettings';
 
 const THEMES = [
   { bg: '#1a0533', border: '#a855f7', icon: '#9333ea', text: '#d8b4fe', sub: '#c084fc', btn: '#9333ea' },
