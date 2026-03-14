@@ -155,6 +155,17 @@ const WheelPage = () => {
       }, { once: true });
       audio.load();
       preloadedAudioRef.current = audio;
+
+      // Preload tick sound pool (8 audio elements for rapid fire)
+      const pool: HTMLAudioElement[] = [];
+      for (let i = 0; i < 8; i++) {
+        const tick = new Audio("/sounds/default/butonKlik.mp3");
+        tick.preload = "auto";
+        tick.volume = 0.4;
+        tick.load();
+        pool.push(tick);
+      }
+      tickAudioPoolRef.current = pool;
     }
 
     const preloadNext = () => {
