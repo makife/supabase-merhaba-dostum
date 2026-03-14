@@ -573,8 +573,7 @@ export default function ChatPage() {
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
           {renderHeader(`KELİMELE - ${selectedUser.username}`, "Özel Sohbet", true)}
-          {/* Sadece içerik blur alır */}
-          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+          <div className="flex-1 min-h-0">
             <PrivateChat chatId={activeChatId} otherUser={selectedUser} onBack={() => handleViewChange("users")} />
           </div>
         </div>
