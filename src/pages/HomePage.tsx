@@ -1108,8 +1108,15 @@ const HomePage = () => {
                 setMatchmakingKey(Date.now());
                 setShowMatchmaking(true);
                 setTimeout(() => startSearch(type), 100);
-              } else navigate(`/game/${selectedMode}?type=${type}`);
-              setSelectedMode(null);
+                setSelectedMode(null);
+              } else if (selectedMode === "vs-computer") {
+                setMatchmakingGameType(type);
+                setSelectedMode(null);
+                setVsIntro({ roomId: "ai-game", isAI: true });
+              } else {
+                navigate(`/game/${selectedMode}?type=${type}`);
+                setSelectedMode(null);
+              }
             }}
             onClose={() => setSelectedMode(null)}
           />
