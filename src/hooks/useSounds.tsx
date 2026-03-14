@@ -444,9 +444,6 @@ export const useSounds = () => {
         switch (activePack.id) {
           case "space":
             switch (soundKey) {
-              case "buttonClick":
-                playSoftPopSound();
-                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(800, 0.1, "square"), 0);
                 setTimeout(() => playGeneratedSound(1200, 0.1, "square"), 100);
