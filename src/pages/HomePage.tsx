@@ -19,7 +19,6 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
-import VsIntroScreen from "@/components/VsIntroScreen";
 
 import {
   Bot,
@@ -172,7 +171,6 @@ const HomePage = () => {
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
-  const [vsIntro, setVsIntro] = useState<{ roomId: string; isAI: boolean } | null>(null);
 
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
@@ -452,15 +450,7 @@ const HomePage = () => {
 
   const handleMatchFound = (roomId: string) => {
     setShowMatchmaking(false);
-    const isAI = roomId === "ai-game";
-    setVsIntro({ roomId, isAI });
-  };
-
-  const handleVsIntroComplete = () => {
-    if (!vsIntro) return;
-    const { roomId, isAI } = vsIntro;
-    setVsIntro(null);
-    if (isAI) navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+    if (roomId === "ai-game") navigate(`/game/vs-computer?type=${matchmakingGameType}`);
     else navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
   };
 
@@ -1108,15 +1098,8 @@ const HomePage = () => {
                 setMatchmakingKey(Date.now());
                 setShowMatchmaking(true);
                 setTimeout(() => startSearch(type), 100);
-                setSelectedMode(null);
-              } else if (selectedMode === "vs-computer") {
-                setMatchmakingGameType(type);
-                setSelectedMode(null);
-                setVsIntro({ roomId: "ai-game", isAI: true });
-              } else {
-                navigate(`/game/${selectedMode}?type=${type}`);
-                setSelectedMode(null);
-              }
+              } else navigate(`/game/${selectedMode}?type=${type}`);
+              setSelectedMode(null);
             }}
             onClose={() => setSelectedMode(null)}
           />
@@ -1135,14 +1118,6 @@ const HomePage = () => {
               searchProgress={searchProgress}
             />
           </div>
-        )}
-
-        {vsIntro && (
-          <VsIntroScreen
-            roomId={vsIntro.roomId}
-            isAI={vsIntro.isAI}
-            onComplete={handleVsIntroComplete}
-          />
         )}
 
         <div className="fixed bottom-0 left-0 right-0 z-50">
