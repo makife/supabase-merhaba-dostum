@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { isSoundEffectsEnabled } from '@/utils/soundSettings';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RankTier } from '@/utils/rankSystem';
