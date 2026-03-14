@@ -80,6 +80,9 @@ const WheelPage = () => {
   const rafRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
+  const lastSegmentIndexRef = useRef<number>(-1);
+  const tickAudioPoolRef = useRef<HTMLAudioElement[]>([]);
+  const tickPoolIndexRef = useRef(0);
 
   const renderedSegments = useMemo(() => {
     const getCoordinatesForPercent = (percent: number) => {
@@ -152,6 +155,17 @@ const WheelPage = () => {
       }, { once: true });
       audio.load();
       preloadedAudioRef.current = audio;
+
+      // Preload tick sound pool (8 audio elements for rapid fire)
+      const pool: HTMLAudioElement[] = [];
+      for (let i = 0; i < 8; i++) {
+        const tick = new Audio("/sounds/default/butonKlik.mp3");
+        tick.preload = "auto";
+        tick.volume = 0.4;
+        tick.load();
+        pool.push(tick);
+      }
+      tickAudioPoolRef.current = pool;
     }
 
     const preloadNext = () => {
@@ -386,6 +400,26 @@ const WheelPage = () => {
       return 0.70 + 0.30 * easeOut;
     };
 
+    const segmentAngleSize = 360 / RAW_SEGMENTS.length;
+    lastSegmentIndexRef.current = -1;
+
+    const playTickSound = () => {
+      if (Capacitor.isNativePlatform()) {
+        import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
+          playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
+        });
+      } else {
+        const pool = tickAudioPoolRef.current;
+        if (pool.length > 0) {
+          const audio = pool[tickPoolIndexRef.current % pool.length];
+          audio.currentTime = 0;
+          audio.volume = Math.min(0.5, 0.2 + (1 - 0) * 0.3); // will be updated below
+          audio.play().catch(() => {});
+          tickPoolIndexRef.current++;
+        }
+      }
+    };
+
     const startTime = performance.now();
 
     const animate = (now: number) => {
@@ -393,6 +427,26 @@ const WheelPage = () => {
       const t = Math.min(elapsed / SPIN_DURATION, 1);
       const progress = easeTwoPhase(t);
       const currentDeg = startRotation + totalRotation * progress;
+
+      // Tick sound: detect segment boundary crossings
+      const normalizedDeg = ((currentDeg % 360) + 360) % 360;
+      const currentSegIdx = Math.floor(normalizedDeg / segmentAngleSize);
+      if (lastSegmentIndexRef.current !== -1 && currentSegIdx !== lastSegmentIndexRef.current) {
+        // Volume decreases as wheel slows down (louder when fast)
+        const pool = tickAudioPoolRef.current;
+        if (pool.length > 0 && !Capacitor.isNativePlatform()) {
+          const speed = 1 - t; // 1=fast, 0=stopped
+          const vol = 0.15 + speed * 0.45;
+          const audio = pool[tickPoolIndexRef.current % pool.length];
+          audio.currentTime = 0;
+          audio.volume = vol;
+          audio.play().catch(() => {});
+          tickPoolIndexRef.current++;
+        } else if (Capacitor.isNativePlatform()) {
+          playTickSound();
+        }
+      }
+      lastSegmentIndexRef.current = currentSegIdx;
 
       if (wheelRef.current) {
         wheelRef.current.style.transform = `rotate(${currentDeg}deg)`;
