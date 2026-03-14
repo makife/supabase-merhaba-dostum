@@ -256,24 +256,75 @@ const AppRoutes = () => {
     };
   }, []);
 
+  // 🔥 Deep link handler - Google OAuth callback (Native)
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let urlListener: any;
     const setup = async () => {
       const { App: CapApp } = await import("@capacitor/app");
       urlListener = await CapApp.addListener("appUrlOpen", async ({ url }) => {
-        console.log("[App] appUrlOpen:", url);
-        if (url.includes("kelimele://auth/callback")) {
-          const urlObj = new URL(url);
+        console.log("[App] 🔗 appUrlOpen:", url);
+        
+        if (!url.includes("kelimele://auth/callback")) return;
+
+        try {
+          // URL'i parse et - custom scheme sorunlarını aş
+          const urlStr = url.replace("kelimele://auth/callback", "https://placeholder.com/callback");
+          const urlObj = new URL(urlStr);
+          
+          // 1) PKCE flow: code parametresi
           const code = urlObj.searchParams.get("code");
           if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (!error) {
-              setTimeout(() => {
-                window.location.href = "/";
-              }, 500);
+            console.log("[App] 🔑 OAuth code bulundu, exchange yapılıyor...");
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) {
+              console.error("[App] ❌ Code exchange hatası:", error.message);
+              toast("Google giriş hatası: " + error.message);
+              return;
+            }
+            if (data?.session) {
+              console.log("[App] ✅ Session oluşturuldu:", data.session.user.email);
+              // AuthContext onAuthStateChange SIGNED_IN event'ini yakalayacak
+              // Ama güvenlik için manuel de set edelim
+              const { saveSessionToStorage, setGlobalAccessToken } = await import("@/integrations/supabase/client");
+              setGlobalAccessToken(data.session.access_token);
+              await saveSessionToStorage(data.session);
+              console.log("[App] ✅ Token & session kaydedildi, yönlendirme...");
+            }
+            return;
+          }
+
+          // 2) Implicit flow: hash fragment'tan token
+          const hashPart = url.split("#")[1];
+          if (hashPart) {
+            const params = new URLSearchParams(hashPart);
+            const accessToken = params.get("access_token");
+            const refreshToken = params.get("refresh_token");
+            
+            if (accessToken) {
+              console.log("[App] 🔑 Hash token bulundu, session set ediliyor...");
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || "",
+              });
+              if (error) {
+                console.error("[App] ❌ setSession hatası:", error.message);
+                toast("Google giriş hatası: " + error.message);
+                return;
+              }
+              if (data?.session) {
+                console.log("[App] ✅ Session set edildi:", data.session.user.email);
+                const { saveSessionToStorage, setGlobalAccessToken } = await import("@/integrations/supabase/client");
+                setGlobalAccessToken(data.session.access_token);
+                await saveSessionToStorage(data.session);
+              }
+              return;
             }
           }
+
+          console.warn("[App] ⚠️ Deep link'te ne code ne token bulundu:", url);
+        } catch (err) {
+          console.error("[App] ❌ Deep link işleme hatası:", err);
         }
       });
     };
