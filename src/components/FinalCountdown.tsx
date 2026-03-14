@@ -1,4 +1,5 @@
 import { useEffect, useRef, memo } from "react";
+import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 
 interface FinalCountdownProps {
   displayTime: number;
