@@ -215,9 +215,9 @@ interface PlayerCardProps {
 
 const PlayerCard = ({ username, avatarUrl, rankImage, rankName, level }: PlayerCardProps) => (
   <div className="flex flex-col items-center gap-2">
-    <Avatar className="w-20 h-20 border-3 border-primary/50 shadow-lg">
+    <Avatar className="w-20 h-20 border-3 border-white/50 shadow-lg">
       <AvatarImage src={avatarUrl || undefined} />
-      <AvatarFallback className="text-2xl font-bold bg-muted">
+      <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
         {username.charAt(0).toUpperCase()}
       </AvatarFallback>
     </Avatar>
@@ -225,8 +225,8 @@ const PlayerCard = ({ username, avatarUrl, rankImage, rankName, level }: PlayerC
     <img src={rankImage} alt={rankName} className="w-10 h-10 object-contain" />
 
     <div className="text-center">
-      <p className="text-lg font-bold text-foreground">{username}</p>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <p className="text-lg font-bold text-white">{username}</p>
+      <div className="flex items-center gap-2 text-sm text-white/70">
         <span>{rankName}</span>
         <span>•</span>
         <span>Seviye {level}</span>
