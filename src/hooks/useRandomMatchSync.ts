@@ -369,10 +369,12 @@ export function useRandomMatchSync(options: UseRandomMatchSyncOptions = {}) {
   }, [state.roomId]);
 
   // Oyundan çık
-  // ⚠️ removeChannel DEVRE DIŞI - Bağlantı koruması
+  // ✅ Oyundan çık - kanal temizle
   const exitMatch = useCallback(async () => {
-    // ❌ DEVRE DIŞI: supabase.removeChannel(channelRef.current);
-    console.log("⚠️ [useRandomMatchSync] exitMatch - removeChannel ATLANYOR (bağlantı koruması)");
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
     
     await leaveRoom();
     
