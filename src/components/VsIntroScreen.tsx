@@ -32,13 +32,13 @@ interface VsIntroScreenProps {
   onComplete: () => void;
 }
 
-type AnimPhase = 'enter' | 'hold' | 'exit' | 'done';
+type AnimPhase = 'initial' | 'enter' | 'hold' | 'exit' | 'done';
 
 const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const { user } = useAuth();
   const { profile } = useUser();
   const [opponent, setOpponent] = useState<PlayerInfo | null>(null);
-  const [phase, setPhase] = useState<AnimPhase>('enter');
+  const [phase, setPhase] = useState<AnimPhase>('initial');
   const onCompleteRef = useRef(onComplete);
 
   const [myInfo, setMyInfo] = useState<PlayerInfo>({
@@ -122,21 +122,24 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // Animation sequence: enter(0.5s) -> hold(2s) -> exit(0.5s) -> done
+  // Animation sequence: start off-screen -> enter(0.5s) -> hold(2s) -> exit(0.5s) -> done
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
-    timers.push(setTimeout(() => setPhase('hold'), 500));
-    timers.push(setTimeout(() => setPhase('exit'), 2500));
+    // Start animation immediately
+    timers.push(setTimeout(() => setPhase('enter'), 50));
+    timers.push(setTimeout(() => setPhase('hold'), 550));
+    timers.push(setTimeout(() => setPhase('exit'), 2550));
     timers.push(setTimeout(() => {
       setPhase('done');
       onCompleteRef.current();
-    }, 3000));
+    }, 3050));
     return () => timers.forEach(clearTimeout);
   }, []);
 
   const getTransformTop = () => {
     switch (phase) {
-      case 'enter': return 'translate-x-full';
+      case 'initial': return 'translate-x-full';
+      case 'enter': return 'translate-x-0';
       case 'hold': return 'translate-x-0';
       case 'exit': return '-translate-x-full';
       case 'done': return '-translate-x-full';
@@ -145,7 +148,8 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
   const getTransformBottom = () => {
     switch (phase) {
-      case 'enter': return '-translate-x-full';
+      case 'initial': return '-translate-x-full';
+      case 'enter': return 'translate-x-0';
       case 'hold': return 'translate-x-0';
       case 'exit': return 'translate-x-full';
       case 'done': return 'translate-x-full';
