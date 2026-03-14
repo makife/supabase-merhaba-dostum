@@ -421,7 +421,11 @@ export const useSounds = () => {
   // DÜZELTME: playSound fonksiyonunu stabilize et
   const playSound = useCallback(
     async (soundKey: keyof SoundConfig) => {
-      if (!soundsEnabled) return;
+      console.log(`🔊 playSound("${soundKey}") çağrıldı, soundsEnabled=${soundsEnabled}, isNative=${isNativePlatform()}`);
+      if (!soundsEnabled) {
+        console.log("🔇 Ses kapalı, atlanıyor");
+        return;
+      }
 
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
@@ -429,13 +433,30 @@ export const useSounds = () => {
       const activePack = getActiveSoundPack();
 
       try {
+        // Native platformda NativeAudio kullan
+        if (isNativePlatform() && soundKey === "buttonClick") {
+          console.log("🔊 Native: buttonClick için NativeAudio deneniyor...");
+          try {
+            await playNativeSound("butonKlik");
+            console.log("✅ Native: buttonClick çalındı");
+            return;
+          } catch (e) {
+            console.warn("⚠️ Native buttonClick başarısız, fallback:", e);
+          }
+        }
+
         // Önce MP3 dosyası var mı kontrol et
         const audioPool = audioCache.current.get(soundKey);
+        console.log(`🔊 audioPool for "${soundKey}":`, audioPool ? `${audioPool.length} items` : "null");
         if (audioPool && audioPool.length > 0) {
           const availableAudio = getAvailableAudio(audioPool);
           if (availableAudio && availableAudio.src && !availableAudio.src.includes("undefined")) {
             availableAudio.currentTime = 0;
-            await availableAudio.play().catch(() => unlockAudioForMobile());
+            console.log(`🔊 Playing from pool: ${availableAudio.src}`);
+            await availableAudio.play().catch((err) => {
+              console.warn("⚠️ Audio play failed:", err);
+              unlockAudioForMobile();
+            });
             return;
           }
         }
