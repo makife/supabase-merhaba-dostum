@@ -372,7 +372,7 @@ const PuzzleGamePage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => makeMove(index)}
-                      disabled={gameState.isCompleted || hasPlayedToday}
+                      disabled={gameState.isCompleted}
                       className={`aspect-square rounded-lg font-bold text-2xl transition-all duration-200 transform flex items-center justify-center ${
                         number === 0
                           ? "bg-transparent"
