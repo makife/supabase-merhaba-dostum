@@ -908,14 +908,16 @@ const GamePage = ({
     await initializeAdMob();
 
     let loaded: any = await loadRewardedAd();
-    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
+    if (!loaded || (typeof loaded === "object" && loaded !== null && !loaded.success)) {
       console.log("[GamePage] ⚠️ İlk reklam yükleme başarısız, retry...");
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2000));
       loaded = await loadRewardedAd();
     }
-    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
-      const errorDetail = (typeof loaded === 'object' && loaded !== null && loaded.error) 
-        ? String(loaded.error) : "Reklam sunucusuna ulaşılamadı";
+    if (!loaded || (typeof loaded === "object" && loaded !== null && !loaded.success)) {
+      const errorDetail =
+        typeof loaded === "object" && loaded !== null && loaded.error
+          ? String(loaded.error)
+          : "Reklam sunucusuna ulaşılamadı";
       toast({
         title: "Reklam Yüklenemedi",
         description: `Hata: ${errorDetail}`,
@@ -1223,7 +1225,14 @@ const GamePage = ({
       if (preScoreRef.current === null) {
         preScoreRef.current = profile.total_score;
         preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
-        console.log("🏆 Pre-level captured:", preLevelRef.current, "score:", profile.total_score, "gameStarted:", gameStarted);
+        console.log(
+          "🏆 Pre-level captured:",
+          preLevelRef.current,
+          "score:",
+          profile.total_score,
+          "gameStarted:",
+          gameStarted,
+        );
       }
     }
   }, [profile?.total_score, gameStarted, gameEnded]);
@@ -2878,7 +2887,11 @@ const GamePage = ({
         console.log("✅ Oyun istatistikleri güncellendi");
 
         // Rank puanı güncelle - sadece rastgele eşleşme
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
+        if (
+          gameMode === "random-match" ||
+          (gameMode as string) === "random-match-timed" ||
+          (gameMode as string) === "random-match-score"
+        ) {
           const rpChange = isWinner ? 50 : isTie ? 10 : -30;
           const { data: currentProfile } = await supabase
             .from("profiles")
@@ -2893,9 +2906,9 @@ const GamePage = ({
             .from("profiles")
             .update({ rank_points: newRP } as any)
             .eq("id", userId);
-          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? "+" : ""}${rpChange} RP)`);
           // Rank tier değişimi kontrolü (yükselme)
-          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== "cirak") {
             setRankUpTier(newTier);
             setTimeout(() => setShowRankUp(true), 2000);
           }
@@ -3002,26 +3015,30 @@ const GamePage = ({
         }
 
         // Rank puanı güncelle - sadece rastgele eşleşme
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
-        const rpChange = isWinner ? 50 : isTie ? 10 : -30;
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("rank_points")
-          .eq("id", user.id)
-          .single();
-        const currentRP = (currentProfile as any)?.rank_points || 0;
-        const newRP = Math.max(0, currentRP + rpChange);
-        const oldTier = getRankTier(currentRP);
-        const newTier = getRankTier(newRP);
-        await supabase
-          .from("profiles")
-          .update({ rank_points: newRP } as any)
-          .eq("id", user.id);
-        console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
-        if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
-          setRankUpTier(newTier);
-          setTimeout(() => setShowRankUp(true), 2000);
-        }
+        if (
+          gameMode === "random-match" ||
+          (gameMode as string) === "random-match-timed" ||
+          (gameMode as string) === "random-match-score"
+        ) {
+          const rpChange = isWinner ? 50 : isTie ? 10 : -30;
+          const { data: currentProfile } = await supabase
+            .from("profiles")
+            .select("rank_points")
+            .eq("id", user.id)
+            .single();
+          const currentRP = (currentProfile as any)?.rank_points || 0;
+          const newRP = Math.max(0, currentRP + rpChange);
+          const oldTier = getRankTier(currentRP);
+          const newTier = getRankTier(newRP);
+          await supabase
+            .from("profiles")
+            .update({ rank_points: newRP } as any)
+            .eq("id", user.id);
+          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? "+" : ""}${rpChange} RP)`);
+          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== "cirak") {
+            setRankUpTier(newTier);
+            setTimeout(() => setShowRankUp(true), 2000);
+          }
         }
       }
     }
@@ -7602,32 +7619,32 @@ const GamePage = ({
                         </div>
                       )}
                       <div className="relative">
-                      <div
-                        className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
-                          displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
-                        } ${
-                          displayTime <= 30
-                            ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                            : "bg-white/5 border border-white/15"
-                        }`}
-                        style={{ minWidth: "110px" }}
-                      >
-                        <span
-                          className={`font-mono text-lg font-black tracking-wider ${
-                            displayTime <= 30 ? "text-red-400" : "text-cyan-300"
+                        <div
+                          className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
+                            displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
+                          } ${
+                            displayTime <= 30
+                              ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                              : "bg-white/5 border border-white/15"
                           }`}
-                          style={{
-                            fontFamily: "'Orbitron', 'Courier New', monospace",
-                            textShadow:
-                              displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
-                            fontVariantNumeric: "tabular-nums",
-                            letterSpacing: "0.1em",
-                          }}
+                          style={{ minWidth: "110px" }}
                         >
-                        {formatTime(displayTime)}
-                        </span>
-                      </div>
-                      {/* Süre Azalıyor - moved to avatar cards overlay below */}
+                          <span
+                            className={`font-mono text-lg font-black tracking-wider ${
+                              displayTime <= 30 ? "text-red-400" : "text-cyan-300"
+                            }`}
+                            style={{
+                              fontFamily: "'Orbitron', 'Courier New', monospace",
+                              textShadow:
+                                displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "0.1em",
+                            }}
+                          >
+                            {formatTime(displayTime)}
+                          </span>
+                        </div>
+                        {/* Süre Azalıyor - moved to avatar cards overlay below */}
                       </div>
                     </div>
                   ) : (
@@ -8099,7 +8116,7 @@ const GamePage = ({
                       if (!gameStarted) return;
                       e.preventDefault();
                       if (Date.now() - submitTouchTsRef.current < 500) return;
-                      playSound("buttonClick");
+
                       submitWord();
                     }}
                     className="h-12 rounded-xl font-black text-base bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-0 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
