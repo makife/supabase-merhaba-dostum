@@ -271,7 +271,7 @@ export const useSounds = () => {
     audioCache.current.clear();
 
     // Sadece özel ses dosyalarını yükle (kutlama, kaybetme, arka plan müziği)
-    const specialSounds = ["celebration", "gameLoseSound", "tieSound"];
+    const specialSounds = ["celebration", "gameLoseSound", "tieSound", "buttonClick", "correctWord", "wrongWord"];
     specialSounds.forEach((key) => {
       const soundPath = activePack.sounds[key as keyof SoundConfig];
       if (typeof soundPath === "string" && !soundPath.startsWith("generated")) {
