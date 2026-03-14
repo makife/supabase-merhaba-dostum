@@ -89,11 +89,14 @@ const OnboardingWrapper = () => {
   const [showIntro, setShowIntro] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // Kullanıcı bazlı localStorage key'leri
+  const getPermissionsKey = (userId: string) => `kelimeci-permissions-completed-${userId}`;
+  const getIntroKey = (userId: string) => `kelimeci-intro-completed-${userId}`;
+
   // Kullanıcı giriş yaptığında ve henüz onboarding tamamlanmamışsa göster
   useEffect(() => {
-    if (loading) return; // Auth loading bitene kadar bekle
+    if (loading) return;
     if (!user) {
-      // User yoksa state'leri resetle
       setShowPermissions(false);
       setShowIntro(false);
       setIsReady(false);
@@ -102,8 +105,8 @@ const OnboardingWrapper = () => {
 
     // 🔥 User gelince 500ms bekle (auth context stabilize olsun)
     const timer = setTimeout(() => {
-      const permissionsCompleted = localStorage.getItem("kelimeci-permissions-completed");
-      const introCompleted = localStorage.getItem("kelimeci-intro-completed");
+      const permissionsCompleted = localStorage.getItem(getPermissionsKey(user.id));
+      const introCompleted = localStorage.getItem(getIntroKey(user.id));
 
       setIsReady(true);
 
@@ -118,16 +121,21 @@ const OnboardingWrapper = () => {
   }, [user, loading]);
 
   const handlePermissionsComplete = () => {
+    if (!user) return;
+    localStorage.setItem(getPermissionsKey(user.id), "true");
+    // Eski global key'i de set et (uyumluluk için)
     localStorage.setItem("kelimeci-permissions-completed", "true");
     setShowPermissions(false);
-    // İzinler tamamlandığında intro göster
-    const introCompleted = localStorage.getItem("kelimeci-intro-completed");
+    const introCompleted = localStorage.getItem(getIntroKey(user.id));
     if (!introCompleted) {
       setTimeout(() => setShowIntro(true), 300);
     }
   };
 
   const handleIntroClose = () => {
+    if (!user) return;
+    localStorage.setItem(getIntroKey(user.id), "true");
+    // Eski global key'i de set et (uyumluluk için)
     localStorage.setItem("kelimeci-intro-completed", "true");
     setShowIntro(false);
   };
