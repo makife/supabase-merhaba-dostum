@@ -1589,15 +1589,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     const presenceGraceUntil = Date.now() + 2000;
 
-    // ✅ PRESENCE CHANNEL (ayrı, tek instance - duplicate önleme)
-    const presenceChannel = supabase
-      .channel(`presence-${subscriptionRoomId}`, {
-        config: {
-          presence: {
-            key: user.id, // ✅ Sadece user.id (user-${user.id} değil)
-          },
-        },
-      })
+    // ✅ PRESENCE CHANNEL (RealtimeManager ile merkezi yönetim)
+    const presenceChannel = realtimeManager.createPresenceChannel(
+      subscriptionRoomId,
+      user.id,
+      user.id
+    )!;
+    
+    presenceChannel
       .on("presence", { event: "sync" }, () => {
         const state = presenceChannel.presenceState();
         console.log("🔄 Presence sync:", state);
