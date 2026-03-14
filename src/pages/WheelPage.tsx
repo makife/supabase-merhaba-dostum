@@ -356,7 +356,7 @@ const WheelPage = () => {
     let distanceToTarget = requiredRotation - currentMod;
     if (distanceToTarget < 0) distanceToTarget += 360;
 
-    const totalRotation = 360 * 8 + distanceToTarget;
+    const totalRotation = 360 * 40 + distanceToTarget;
     const startRotation = rotationRef.current;
     const finalRotation = startRotation + totalRotation;
 
