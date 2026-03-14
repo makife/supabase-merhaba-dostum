@@ -41,7 +41,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 }, // ✅ Gerçek dosya adı: carkSesi.mp3
   
   // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
-  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
+  { assetId: 'button_click', assetPath: 'public/sounds/default/butonKlik.mp3', volume: 0.5 },
   { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6 },
   { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5 },
   { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
