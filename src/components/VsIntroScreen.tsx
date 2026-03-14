@@ -158,14 +158,11 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const opLevel = opponent ? calcLevelFromScore(opponent.total_score) : null;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex flex-col bg-background overflow-hidden">
+    <div className="fixed inset-0 z-[99999] flex flex-col overflow-hidden" style={{ backgroundColor: '#264d59' }}>
       {/* Top half - current player (slides from right) */}
-      <div className="flex-1 flex items-center justify-center relative overflow-hidden border-b-2 border-primary/30">
-        {/* Diagonal decoration */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
-        
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden border-b-2 border-white/20">
         <div
-          className={`flex flex-col items-center gap-3 transition-transform duration-300 ease-out ${getTransformTop()}`}
+          className={`flex flex-col items-center gap-3 transition-transform duration-500 ease-out ${getTransformTop()}`}
         >
           <PlayerCard
             username={myInfo.username}
@@ -179,7 +176,7 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
       {/* VS text in the middle */}
       <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-        <div className={`text-5xl font-black text-primary drop-shadow-lg transition-all duration-300 ${
+        <div className={`text-5xl font-black text-white drop-shadow-lg transition-all duration-500 ${
           phase === 'hold' ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
         }`}>
           VS
@@ -188,10 +185,8 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
       {/* Bottom half - opponent (slides from left) */}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-tl from-destructive/10 to-transparent" />
-        
         <div
-          className={`flex flex-col items-center gap-3 transition-transform duration-300 ease-out ${getTransformBottom()}`}
+          className={`flex flex-col items-center gap-3 transition-transform duration-500 ease-out ${getTransformBottom()}`}
         >
           {opponent ? (
             <PlayerCard
