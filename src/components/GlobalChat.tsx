@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Send, Shield, MessageCircle, X, Trash2, Mail, Users, UserX, Flag, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -96,7 +94,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 🔄 Global Resync Hook - bağlantı kopup geldiğinde otomatik tazele
+  // 🔄 Global Resync Hook
   const handleGlobalChatResync = useCallback(async () => {
     if (isOpen && user?.id) {
       await fetchMessages();
@@ -106,7 +104,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   usePageResync(handleGlobalChatResync, "GlobalChat", true);
 
-  // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -115,12 +112,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     scrollToBottom();
   }, [messages]);
 
-  // GlobalChat.tsx - fetchReactions fonksiyonu
   const fetchReactions = async () => {
     try {
-      // Sadece gerçek UUID'leri filtrele (temp- ile başlamayanlar)
       const realMessageIds = messages.filter((m) => !m.id.startsWith("temp-")).map((m) => m.id);
-
       if (realMessageIds.length === 0) return;
 
       const { data, error } = await supabase
@@ -144,12 +138,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
-  // Fetch user avatars
   const fetchUserAvatars = async (userIds: string[]) => {
-    // Null, undefined ve geçersiz UUID'leri filtrele
     const validUserIds = userIds.filter((id) => {
       if (!id || id === "null" || id === "undefined") return false;
-      // UUID formatını kontrol et (36 karakter, tire'ler dahil)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       return uuidRegex.test(id);
     });
@@ -177,14 +168,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
-  // Fetch avatars when messages change - düzeltilmiş versiyon
   useEffect(() => {
     if (messages.length > 0) {
-      // User ID'leri toplarken null/undefined kontrolü yap
       const userIds = messages
         .map((m) => m.user_id)
         .filter((id) => id && id !== "null" && id !== "undefined")
-        .filter((id, index, arr) => arr.indexOf(id) === index); // Duplicate'leri kaldır
+        .filter((id, index, arr) => arr.indexOf(id) === index);
 
       if (userIds.length > 0) {
         fetchUserAvatars(userIds);
@@ -192,7 +181,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [messages]);
 
-  // Fetch all users for private chat
   const fetchAllUsers = async () => {
     try {
       const { data, error } = await supabase
@@ -209,7 +197,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
-  // Fetch users when private chat is enabled
   useEffect(() => {
     if (privateChatEnabled && isOpen) {
       fetchAllUsers();
@@ -222,170 +209,89 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [messages]);
 
-  // Bot hoşgeldin mesajı - sadece kullanıcıya özel toast olarak göster
+  // Bot hoşgeldin mesajı
   useEffect(() => {
     const showBotWelcome = () => {
       if (!user?.id || !isOpen) return;
 
       try {
-        // Son bot mesajı zamanını kontrol et
         const lastBotMessageKey = `lastBotWelcome_${user.id}`;
         const lastBotTime = localStorage.getItem(lastBotMessageKey);
         const now = Date.now();
-        const thirtyMinutes = 30 * 60 * 1000; // 30 dakika milisaniye cinsinden
+        const thirtyMinutes = 30 * 60 * 1000;
 
-        // Eğer 30 dakika geçmemişse bot mesajı gösterme
         if (lastBotTime) {
           const timeDiff = now - parseInt(lastBotTime);
-          if (timeDiff < thirtyMinutes) {
-            const remainingMinutes = Math.ceil((thirtyMinutes - timeDiff) / 60000);
-            console.log(`🤖 Bot hoşgeldin için ${remainingMinutes} dakika daha beklenmeli`);
-            return;
-          }
+          if (timeDiff < thirtyMinutes) return;
         }
 
-        console.log("🤖 Bot hoşgeldin mesajı gösteriliyor (sadece kullanıcıya özel)...");
-
-        // Global chat'e mesaj göndermek yerine toast ile göster
         toast.info(
           "🤖 Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
-          {
-            duration: 8000,
-            position: "top-center",
-          },
+          { duration: 8000, position: "top-center" },
         );
 
-        // Son bot mesajı zamanını kaydet
         localStorage.setItem(lastBotMessageKey, now.toString());
-        console.log("✅ Bot hoşgeldin mesajı gösterildi (toast)!");
       } catch (error) {
         console.error("❌ Bot hoşgeldin hatası:", error);
       }
     };
 
-    // Chat açıldığında bot mesajı kontrolü yap
     if (isOpen && user?.id) {
-      setTimeout(() => {
-        showBotWelcome();
-      }, 1000); // 1 saniye gecikme ile
+      setTimeout(() => { showBotWelcome(); }, 1000);
     }
   }, [isOpen, user?.id]);
 
-  // Real-time subscription için ayrı bir useEffect (auto-reconnect destekli)
+  // Real-time subscription
   useEffect(() => {
     if (!isOpen || !user?.id) return;
 
-    console.log("🔄 Setting up Global Chat real-time subscription (auto-reconnect)");
-
-    // İlk mesajları ve online kullanıcıları yükle
     fetchMessages();
     refreshOnlineUsers();
 
-    // Real-time subscription kur (auto-reconnect destekli)
     const channelName = `global-chat-realtime-${user.id}`;
     autoReconnect.registerChannel(channelName, () =>
       supabase
         .channel("global-chat-realtime", {
-          config: {
-            broadcast: { self: false }, // Kendi mesajlarını tekrar alma
-          },
+          config: { broadcast: { self: false } },
         })
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "global_chat",
-          },
-          (payload) => {
-            console.log("📨 New global message received:", payload.new);
-
-            const newMessage = payload.new as ChatMessage;
-
-            setMessages((prev) => {
-              // Duplicate kontrolü
-              const exists = prev.some((msg) => msg.id === newMessage.id);
-              if (exists) {
-                console.log("⚠️ Message already exists, skipping");
-                return prev;
-              }
-
-              console.log("✅ Adding new message to state");
-              return [...prev, newMessage].sort(
-                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-              );
-            });
-
-            // Sadece başkalarının mesajları için ses çal
-            if (newMessage.user_id !== user?.id) {
-              playSound("correctWord");
-            }
-          },
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "global_chat",
-          },
-          (payload) => {
-            console.log("🗑️ Message deleted:", payload.old);
-            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
-          },
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "message_reactions",
-          },
-          (payload) => {
-            console.log("😀 New reaction received:", payload.new);
-            const newReaction = payload.new as MessageReaction;
-            setMessageReactions((prev) => {
-              const existing = prev[newReaction.message_id] || [];
-              // Duplicate kontrolü
-              if (existing.some((r) => r.id === newReaction.id)) return prev;
-              // Optimistic temp tepkiyi kaldır, gerçek veriyle değiştir
-              const withoutTemp = existing.filter(
-                (r) =>
-                  !(r.id.startsWith("temp-") && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji),
-              );
-              // Tekrar duplicate kontrolü
-              if (withoutTemp.some((r) => r.id === newReaction.id))
-                return { ...prev, [newReaction.message_id]: withoutTemp };
-              return {
-                ...prev,
-                [newReaction.message_id]: [...withoutTemp, newReaction],
-              };
-            });
-          },
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "message_reactions",
-          },
-          (payload) => {
-            console.log("😀 Reaction removed:", payload.old);
-            const oldReaction = payload.old as any;
-            setMessageReactions((prev) => {
-              const messageId = oldReaction.message_id;
-              if (!messageId || !prev[messageId]) return prev;
-              return {
-                ...prev,
-                [messageId]: prev[messageId].filter((r) => r.id !== oldReaction.id),
-              };
-            });
-          },
-        )
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "global_chat" }, (payload) => {
+          const newMessage = payload.new as ChatMessage;
+          setMessages((prev) => {
+            const exists = prev.some((msg) => msg.id === newMessage.id);
+            if (exists) return prev;
+            return [...prev, newMessage].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+            );
+          });
+          if (newMessage.user_id !== user?.id) {
+            playSound("correctWord");
+          }
+        })
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "global_chat" }, (payload) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+        })
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "message_reactions" }, (payload) => {
+          const newReaction = payload.new as MessageReaction;
+          setMessageReactions((prev) => {
+            const existing = prev[newReaction.message_id] || [];
+            if (existing.some((r) => r.id === newReaction.id)) return prev;
+            const withoutTemp = existing.filter(
+              (r) => !(r.id.startsWith("temp-") && r.user_id === newReaction.user_id && r.emoji === newReaction.emoji),
+            );
+            if (withoutTemp.some((r) => r.id === newReaction.id))
+              return { ...prev, [newReaction.message_id]: withoutTemp };
+            return { ...prev, [newReaction.message_id]: [...withoutTemp, newReaction] };
+          });
+        })
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "message_reactions" }, (payload) => {
+          const oldReaction = payload.old as any;
+          setMessageReactions((prev) => {
+            const messageId = oldReaction.message_id;
+            if (!messageId || !prev[messageId]) return prev;
+            return { ...prev, [messageId]: prev[messageId].filter((r) => r.id !== oldReaction.id) };
+          });
+        })
         .subscribe((status) => {
-          console.log("📡 Global subscription status:", status);
-
           if (status === "CHANNEL_ERROR") {
             console.error("❌ Channel error detected - auto-reconnect will handle");
           }
@@ -393,15 +299,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     );
 
     return () => {
-      console.log("🧹 Cleaning up global real-time channel");
       autoReconnect.unregisterChannel(channelName);
     };
   }, [isOpen, user?.id]);
 
   const fetchMessages = async () => {
     try {
-      console.log("📥 Fetching global messages...");
-
       const { data, error } = await supabase
         .from("global_chat")
         .select("*")
@@ -412,8 +315,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
       const reversedData = data ? [...data].reverse() : [];
       setMessages(reversedData as ChatMessage[]);
-
-      console.log(`✅ Loaded ${reversedData.length} global messages`);
     } catch (error) {
       console.error("❌ Error fetching global messages:", error);
     }
@@ -422,7 +323,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
-    // Ban kontrolü
     const isBanned = await isUserBanned(user.id);
     if (isBanned) {
       const timeLeft = await getBanTimeLeft(user.id);
@@ -436,11 +336,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       return;
     }
 
-    // 🚫 ÖNCELİKLİ: Client-side küfür kontrolü (RPC'den önce!)
     const bannedCheck = containsBannedWords(trimmedMessage);
     if (bannedCheck.found) {
-      console.log(`🚫 KÜFÜR TESPİT EDİLDİ: "${bannedCheck.word}" - Severity: ${bannedCheck.severity}`);
-
       if (bannedCheck.severity === "high") {
         toast.error(`Ağır küfür tespit edildi! 2 gün sohbet yasağı aldınız.`);
         await banUser(user.id, `Ağır küfür: ${bannedCheck.word}`, 48);
@@ -452,7 +349,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       return;
     }
 
-    // İsteğe bağlı: Server-side ek kontrol (varsa)
     try {
       const { data: moderationResult, error: moderationError } = await supabase.rpc("moderate_message_advanced", {
         p_user_id: user.id,
@@ -474,12 +370,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       }
     } catch (error) {
       console.log("Server-side moderation skipped:", error);
-      // Client-side kontrol zaten yapıldı, devam et
     }
 
     const username = profile.username || user.email?.split("@")[0] || "Anonim";
 
-    // OPTIMISTIC UPDATE - Mesajı hemen göster
     const tempMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       user_id: user.id,
@@ -494,8 +388,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     setIsLoading(true);
 
     try {
-      console.log("📤 Sending global message...");
-
       const { data: insertData, error: insertError } = await supabase
         .from("global_chat")
         .insert({
@@ -509,55 +401,39 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
       if (insertError) throw insertError;
 
-      console.log("✅ Global message sent successfully");
-
-      // Temp mesajı gerçek mesajla değiştir
       setMessages((prev) =>
         prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
       );
 
-      // Mention kontrolü - Unicode + noktalama destekli (@çağrı, @cagri_1, @cagri.)
       const mentionRegex = /@([\p{L}\p{N}_.-]+)/gu;
       let match;
-      const processedUsers = new Set<string>(); // Aynı kullanıcıya birden fazla bildirim göndermeyi önle
+      const processedUsers = new Set<string>();
 
       while ((match = mentionRegex.exec(trimmedMessage)) !== null) {
         const rawMention = match[1] ?? "";
         const mentionedUsername = rawMention.replace(/[.,!?;:]+$/g, "").trim();
         if (!mentionedUsername) continue;
 
-        // Case-insensitive arama
         const { data: mentionedUser, error: mentionedUserError } = await supabase
           .from("profiles")
           .select("id, username")
           .ilike("username", mentionedUsername)
           .maybeSingle();
 
-        if (mentionedUserError) {
-          console.warn("Mention user lookup error:", mentionedUserError);
-          continue;
-        }
+        if (mentionedUserError) continue;
 
         if (mentionedUser && mentionedUser.id !== user.id && !processedUsers.has(mentionedUser.id)) {
           processedUsers.add(mentionedUser.id);
-          console.log("📢 Mention detected, sending notification to:", mentionedUser.username, mentionedUser.id);
-
-          // 1. Veritabanına bildirim kaydı oluştur (Realtime tetikleyecek - in-app toast için)
           const shortMessage = trimmedMessage.length > 50 ? trimmedMessage.substring(0, 47) + "..." : trimmedMessage;
-
-          // BU SATIRI YORUMA ALDIN:
-          // const notificationMessage = `${username} seni bir mesajda etiketledi: "${shortMessage}"`;
 
           await supabase.from("notifications").insert({
             user_id: mentionedUser.id,
             type: "mention",
-            // HATA ALMAMAK İÇİN BURAYA DOĞRUDAN METNİ YAZMALISIN:
             message: `${username} seni bir mesajda etiketledi: "${shortMessage}"`,
             related_id: insertData.id,
             is_read: false,
           });
 
-          // 2. Push bildirim gönder (background için)
           await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
       }
@@ -566,16 +442,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       startCooldown();
     } catch (error) {
       console.error("❌ Error sending global message:", error);
-
-      // Hata durumunda temp mesajı kaldır
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
-      setNewMessage(trimmedMessage); // Mesajı geri koy
-
+      setNewMessage(trimmedMessage);
       toast.error("Mesaj gönderilirken hata oluştu");
     } finally {
       setIsLoading(false);
     }
   };
+
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
 
@@ -583,25 +457,21 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       try {
         const displayName = profile?.username || user.email?.split("@")[0] || "Anonim";
 
-        // Typing durumunu güncelle
         await currentChannel.track({
           user_id: user.id,
           username: displayName,
-          typing: e.target.value.length > 0, // Yazı yazılıyorsa true
+          typing: e.target.value.length > 0,
           online_at: new Date().toISOString(),
         });
 
-        // Timeout'u temizle ve yeniden kur
-        if (typingTimeout) {
-          clearTimeout(typingTimeout);
-        }
+        if (typingTimeout) clearTimeout(typingTimeout);
 
         const timeout = setTimeout(async () => {
           if (currentChannel && currentChannel.state === "joined") {
             await currentChannel.track({
               user_id: user.id,
               username: displayName,
-              typing: false, // Yazma durduruldu
+              typing: false,
               online_at: new Date().toISOString(),
             });
           }
@@ -624,9 +494,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const addReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
-    // Check if user already has this reaction
     const existingReaction = messageReactions[messageId]?.find((r) => r.user_id === user.id && r.emoji === emoji);
-
     if (existingReaction) {
       toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
       setShowEmojiPicker(null);
@@ -634,7 +502,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
 
     try {
-      // Optimistic update - add reaction immediately
       const tempReaction: MessageReaction = {
         id: `temp-${Date.now()}`,
         message_id: messageId,
@@ -655,13 +522,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       });
 
       if (error) {
-        // Remove optimistic update on error
         setMessageReactions((prev) => ({
           ...prev,
           [messageId]: (prev[messageId] || []).filter((r) => r.id !== tempReaction.id),
         }));
-
-        // Handle duplicate key error
         if (error.code === "23505") {
           toast.info("Bu emoji reaksiyonunu zaten vermişsiniz");
         } else {
@@ -678,11 +542,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
-  // Remove emoji reaction
   const removeReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
 
-    // Optimistic removal - anında UI'dan kaldır
     const previousReactions = messageReactions[messageId] || [];
     setMessageReactions((prev) => ({
       ...prev,
@@ -701,21 +563,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       playSound("buttonClick");
     } catch (error) {
       console.error("Error removing reaction:", error);
-      // Hata durumunda geri al
-      setMessageReactions((prev) => ({
-        ...prev,
-        [messageId]: previousReactions,
-      }));
+      setMessageReactions((prev) => ({ ...prev, [messageId]: previousReactions }));
       toast.error("Reaksiyon kaldırılırken hata oluştu");
     }
   };
 
-  // Toggle emoji reaction
   const toggleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
-
     const userReaction = messageReactions[messageId]?.find((r) => r.user_id === user.id && r.emoji === emoji);
-
     if (userReaction) {
       await removeReaction(messageId, emoji);
     } else {
@@ -723,23 +578,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
-  // Report message
   const handleReportMessage = (messageId: string, userId: string, username: string) => {
-    if (!user) {
-      toast.error("Rapor göndermek için giriş yapmalısınız");
-      return;
-    }
-
-    if (userId === user.id) {
-      toast.info("Kendi mesajınızı raporlayamazsınız");
-      return;
-    }
-
+    if (!user) { toast.error("Rapor göndermek için giriş yapmalısınız"); return; }
+    if (userId === user.id) { toast.info("Kendi mesajınızı raporlayamazsınız"); return; }
     setReportingMessage({ id: messageId, userId, username });
     setReportDialogOpen(true);
   };
 
-  // Delete message
   const deleteMessage = (messageId: string) => {
     if (!user) return;
     setDeletingMessageId(messageId);
@@ -748,12 +593,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   const confirmDeleteMessage = async () => {
     if (!user || !deletingMessageId) return;
-
     try {
       const { error } = await supabase.from("global_chat").delete().eq("id", deletingMessageId).eq("user_id", user.id);
-
       if (error) throw error;
-
       playSound("buttonClick");
       toast.success("Mesaj silindi");
     } catch (error) {
@@ -766,19 +608,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   };
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString("tr-TR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(timestamp).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Group reactions by emoji
   const groupReactions = (reactions: MessageReaction[]) => {
     const grouped: { [emoji: string]: MessageReaction[] } = {};
     reactions.forEach((reaction) => {
-      if (!grouped[reaction.emoji]) {
-        grouped[reaction.emoji] = [];
-      }
+      if (!grouped[reaction.emoji]) grouped[reaction.emoji] = [];
       grouped[reaction.emoji].push(reaction);
     });
     return grouped;
@@ -786,26 +622,19 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   const startPrivateChat = async (targetUser: SelectedUser) => {
     if (!user) return;
-
     try {
       playSound("buttonClick");
-
-      // Chat ID oluştur
       const participants = [user.id, targetUser.id].sort();
       const chatId = `private_${participants.join("_")}`;
 
-      // Chat var mı kontrol et
       const { data: existingChat, error: chatError } = await supabase
         .from("private_chats")
         .select("id")
         .eq("id", chatId)
         .single();
 
-      if (chatError && chatError.code !== "PGRST116") {
-        throw chatError;
-      }
+      if (chatError && chatError.code !== "PGRST116") throw chatError;
 
-      // Yeni chat oluştur
       if (!existingChat) {
         const { error: createError } = await supabase.from("private_chats").insert({
           id: chatId,
@@ -813,7 +642,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           user2_id: participants[1],
           created_at: new Date().toISOString(),
         });
-
         if (createError) throw createError;
       }
 
@@ -821,17 +649,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       setActiveChatId(chatId);
       setViewMode("private-chat");
 
-      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`, {
-        icon: "💛",
-        duration: 2000,
-      });
+      toast.success(`${targetUser.username} ile özel sohbet başlatıldı`, { icon: "💛", duration: 2000 });
     } catch (error) {
       console.error("Error starting private chat:", error);
       toast.error("Özel sohbet başlatılırken hata oluştu");
     }
   };
 
-  // Render different views
   const renderContent = () => {
     if (viewMode === "private-chat" && selectedUser && activeChatId) {
       return (
@@ -846,39 +670,23 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         />
       );
     }
-
-    if (viewMode === "users") {
-      return renderUsersList();
-    }
-
-    if (viewMode === "blocked-users") {
-      return renderBlockedUsersList();
-    }
-
+    if (viewMode === "users") return renderUsersList();
+    if (viewMode === "blocked-users") return renderBlockedUsersList();
     return renderGlobalChat();
   };
 
   const renderUsersList = () => (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-4 flex items-center justify-between">
+      <div className="bg-[#2D3436] text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Users className="w-6 h-6" />
-          <div>
-            <h3 className="font-semibold text-lg">Kullanıcılar</h3>
-          </div>
+          <h3 className="font-semibold text-lg">Kullanıcılar</h3>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setViewMode("global")}
-          className="text-white hover:bg-white/10 p-2 rounded-full"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setViewMode("global")} className="text-white p-2 rounded-full">
           <X className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Online Users */}
       {onlineUsers.length > 0 && (
         <div className="p-4 bg-white/5 border-b border-white/10">
           <div className="flex items-center space-x-2 mb-3">
@@ -889,7 +697,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             {onlineUsers.map((targetUser) => (
               <Card
                 key={targetUser.id}
-                className="p-3 hover:shadow-md transition-all cursor-pointer border-white/10 bg-white/5 hover:bg-white/10"
+                className="p-3 cursor-pointer border-white/10 bg-white/5"
                 onClick={() => startPrivateChat(targetUser)}
               >
                 <div className="flex items-center space-x-3">
@@ -903,18 +711,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     />
                     <div
                       className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${isUserBlocked(targetUser.id) ? "bg-red-500" : "bg-green-500"}`}
-                    ></div>
+                    />
                   </div>
                   <div
                     className="flex-1 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/profile/${targetUser.id}`);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${targetUser.id}`); }}
                   >
-                    <div
-                      className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-400 line-through" : "text-white"} hover:text-blue-400 transition-colors`}
-                    >
+                    <div className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-400 line-through" : "text-white"}`}>
                       {targetUser.username}
                     </div>
                     <div className={`text-xs ${isUserBlocked(targetUser.id) ? "text-red-400" : "text-green-400"}`}>
@@ -925,11 +728,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id);
-                      }}
-                      className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? "text-green-600 border-green-600 hover:bg-green-50" : "text-red-600 border-red-600 hover:bg-red-50"}`}
+                      onClick={(e) => { e.stopPropagation(); isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id); }}
+                      className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}`}
                     >
                       {isUserBlocked(targetUser.id) ? "Engeli Kaldır" : "Engelle"}
                     </Button>
@@ -942,8 +742,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         </div>
       )}
 
-      {/* All Users */}
-      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <ScrollArea className="flex-1 bg-[#2D3436]">
         <div className="p-4 space-y-3">
           <div className="flex items-center space-x-2 mb-3">
             <Users className="w-4 h-4 text-gray-400" />
@@ -953,7 +752,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           {allUsers.map((targetUser) => (
             <Card
               key={targetUser.id}
-              className="p-4 hover:shadow-md transition-all cursor-pointer border-white/10 bg-white/5 hover:bg-white/10"
+              className="p-4 cursor-pointer border-white/10 bg-white/5"
               onClick={() => startPrivateChat(targetUser)}
             >
               <div className="flex items-center space-x-3">
@@ -966,29 +765,21 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 />
                 <div
                   className="flex-1 min-w-0 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/profile/${targetUser.id}`);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${targetUser.id}`); }}
                 >
-                  <p className="font-medium text-white truncate hover:text-blue-400 transition-colors">
-                    {targetUser.username}
-                  </p>
+                  <p className="font-medium text-white truncate">{targetUser.username}</p>
                   <p className="text-sm text-gray-400">Özel mesaj gönder</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {isUserOnline(targetUser.id) && (
-                    <div className="w-3 h-3 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full" />
                   )}
                   {isUserBlocked(targetUser.id) ? (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        unblockUser(targetUser.id);
-                      }}
-                      className="text-xs px-2 py-1 h-6 text-green-600 border-green-600 hover:bg-green-50"
+                      onClick={(e) => { e.stopPropagation(); unblockUser(targetUser.id); }}
+                      className="text-xs px-2 py-1 h-6 text-green-600 border-green-600"
                     >
                       Engeli Kaldır
                     </Button>
@@ -996,11 +787,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        blockUser(targetUser.id);
-                      }}
-                      className="text-xs px-2 py-1 h-6 text-red-600 border-red-600 hover:bg-red-50"
+                      onClick={(e) => { e.stopPropagation(); blockUser(targetUser.id); }}
+                      className="text-xs px-2 py-1 h-6 text-red-600 border-red-600"
                     >
                       Engelle
                     </Button>
@@ -1024,8 +812,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   const renderBlockedUsersList = () => (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-4 flex items-center justify-between">
+      <div className="bg-[#2D3436] text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <UserX className="w-6 h-6" />
           <div>
@@ -1033,18 +820,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             <p className="text-gray-300 text-sm">{blockedUsers.length} kişi engellendi</p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setViewMode("global")}
-          className="text-white hover:bg-white/10 p-2 rounded-full"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setViewMode("global")} className="text-white p-2 rounded-full">
           <X className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Blocked Users List */}
-      <ScrollArea className="flex-1 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <ScrollArea className="flex-1 bg-[#2D3436]">
         <div className="p-4 space-y-3">
           {blockedUsers.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
@@ -1074,16 +855,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       className="flex-1 min-w-0 cursor-pointer"
                       onClick={() => navigate(`/profile/${blockedUser.id}`, { state: { from: "/chat" } })}
                     >
-                      <p className="font-medium text-red-300 truncate hover:text-red-200 transition-colors">
-                        {blockedUser.username}
-                      </p>
+                      <p className="font-medium text-red-300 truncate">{blockedUser.username}</p>
                       <p className="text-sm text-red-400">Engellendi</p>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => unblockUser(blockedUser.id)}
-                      className="text-xs px-3 py-1 h-7 text-green-400 border-green-400/50 hover:bg-green-500/20"
+                      className="text-xs px-3 py-1 h-7 text-green-400 border-green-400/50"
                     >
                       Engeli Kaldır
                     </Button>
@@ -1095,29 +874,29 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </ScrollArea>
     </>
   );
-  // GlobalChat.tsx - Yeni tasarım
+
   const renderGlobalChat = () => (
     <>
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <ScrollArea className="flex-1 p-4 bg-[#2D3436]">
         <div className="space-y-3">
           {messages
             .filter((message) => !message.user_id || !isUserBlocked(message.user_id))
             .map((message) => (
               <div
                 key={message.id}
-                className="group flex flex-col space-y-1 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all"
+                className="flex flex-col space-y-1 p-3 rounded-lg bg-white/10 border border-white/10"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div
-                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                      className="cursor-pointer"
                       onClick={() =>
                         message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
                       }
                     >
                       <UserAvatar
-                        src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"} // Bot için özel avatar
+                        src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"}
                         alt={message.username}
                         fallback={message.username.charAt(0).toUpperCase()}
                         size="xs"
@@ -1125,7 +904,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       />
                     </div>
                     <span
-                      className={`text-sm font-medium cursor-pointer hover:text-blue-400 transition-colors ${
+                      className={`text-sm font-medium cursor-pointer ${
                         message.username === "kelimeciBot"
                           ? "text-blue-400 font-bold"
                           : message.user_id === user?.id
@@ -1140,14 +919,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       {message.username === "kelimeciBot" && " 🤖"}
                     </span>
 
-                    {/* Online indicator - sadece gerçek kullanıcılar için */}
                     {message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) && (
-                      <div className="w-3 h-3 bg-green-500 rounded-full" title="Çevrimiçi"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full" />
                     )}
 
                     <span className="text-xs text-gray-400">{formatTime(message.created_at)}</span>
 
-                    {/* Private message button - sadece gerçek kullanıcılar için */}
                     {message.user_id &&
                       message.user_id !== user?.id &&
                       message.username !== "kelimeciBot" &&
@@ -1162,7 +939,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                               avatar_url: userAvatars[message.user_id],
                             });
                           }}
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-chat-100"
+                          className="h-6 w-6 p-0"
                           title="Özel mesaj gönder"
                         >
                           <Mail className="w-3 h-3 text-chat-600" />
@@ -1170,24 +947,20 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       )}
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex items-center space-x-1">
-                    {/* Report button - başkalarının mesajları için */}
                     {message.user_id && message.user_id !== user?.id && message.username !== "kelimeciBot" && (
                       <button
                         onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
-                        className="opacity-70 group-hover:opacity-100 transition-opacity p-1 hover:bg-orange-100 rounded"
+                        className="p-1 rounded"
                         title="Mesajı bildir"
                       >
                         <Flag className="w-3 h-3 text-orange-500" />
                       </button>
                     )}
-
-                    {/* Delete button - sadece kendi mesajları için */}
                     {message.user_id === user?.id && (
                       <button
                         onClick={() => deleteMessage(message.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                        className="p-1 rounded"
                         title="Mesajı sil"
                       >
                         <Trash2 className="w-3 h-3 text-red-500" />
@@ -1204,19 +977,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   {message.message}
                 </div>
 
-                {/* Reactions - temp mesajlar ve bot mesajları için gösterme */}
                 {!message.id.startsWith("temp-") && message.username !== "kelimeciBot" && (
                   <div className="flex items-center flex-wrap gap-1.5 mt-2">
-                    {/* Mevcut tepkiler (sayaçlı) */}
                     {messageReactions[message.id] &&
                       Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
                         <button
                           key={emoji}
                           onClick={() => toggleReaction(message.id, emoji)}
-                          className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
+                          className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs ${
                             reactions.some((r) => r.user_id === user?.id)
                               ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                              : "bg-white/10 hover:bg-white/20 border border-transparent text-gray-300"
+                              : "bg-white/10 border border-transparent text-gray-300"
                           }`}
                         >
                           <span>{emoji}</span>
@@ -1224,32 +995,25 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         </button>
                       ))}
 
-                    {/* Sabit emoji seti */}
                     {showEmojiPicker === message.id ? (
-                      <div className="flex items-center gap-1 bg-[#2D3436] border border-white/20 rounded-full px-2 py-0.5 shadow-sm">
+                      <div className="flex items-center gap-1 bg-[#2D3436] border border-white/20 rounded-full px-2 py-0.5">
                         {["👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
                           <button
                             key={emoji}
-                            onClick={() => {
-                              toggleReaction(message.id, emoji);
-                              setShowEmojiPicker(null);
-                            }}
-                            className="text-base hover:scale-125 transition-transform p-0.5"
+                            onClick={() => { toggleReaction(message.id, emoji); setShowEmojiPicker(null); }}
+                            className="text-base p-0.5"
                           >
                             {emoji}
                           </button>
                         ))}
-                        <button
-                          onClick={() => setShowEmojiPicker(null)}
-                          className="text-gray-400 hover:text-gray-600 ml-0.5 text-xs"
-                        >
+                        <button onClick={() => setShowEmojiPicker(null)} className="text-gray-400 ml-0.5 text-xs">
                           ✕
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setShowEmojiPicker(message.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded-full hover:bg-gray-100 text-xs"
+                        className="text-gray-400 px-1.5 py-0.5 rounded-full text-xs"
                         title="Tepki ekle"
                       >
                         😀+
@@ -1260,20 +1024,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
               </div>
             ))}
 
-          {/* Typing indicator */}
+          {/* Typing indicator — animasyon kaldırıldı */}
           {typingUsers.size > 0 && (
             <div className="flex items-center space-x-2 text-green-400 text-sm italic p-2 bg-white/5 rounded-lg">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-chat-600 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-              </div>
+              <span>•••</span>
               <span>{Array.from(typingUsers).slice(0, 2).join(", ")} yazıyor...</span>
             </div>
           )}
@@ -1297,13 +1051,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             spellCheck={true}
             inputMode="text"
             enterKeyHint="send"
-            className={`flex-1 bg-white/10 border-white/20 text-white focus:border-green-400/50 focus:ring-green-400/30 ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
+            className={`flex-1 bg-white/10 border-white/20 text-white ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
           />
           <Button
             onClick={sendMessage}
             disabled={!newMessage.trim() || isLoading || isCoolingDown}
             size="sm"
-            className="px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+            className="px-4 bg-green-600 text-white"
           >
             <Send className="w-4 h-4" />
           </Button>
@@ -1316,38 +1070,25 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   // Delete Confirm Dialog
   const deleteDialog = (
     <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-      <AlertDialogContent
-        className="max-w-sm rounded-2xl 
-      bg-[#0f172a] border-[#1e293b] 
-      shadow-2xl backdrop-blur-md"
-      >
+      <AlertDialogContent className="max-w-sm rounded-2xl bg-[#0f172a] border-[#1e293b]">
         <AlertDialogHeader className="items-center text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
             <Trash2 className="h-6 w-6 text-red-400" />
           </div>
-
           <AlertDialogTitle className="text-lg font-bold text-white">Mesajı Sil</AlertDialogTitle>
-
           <AlertDialogDescription className="text-sm text-slate-300">
             Bu mesajı silmek istediğinize emin misiniz?
           </AlertDialogDescription>
         </AlertDialogHeader>
-
         <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
           <AlertDialogCancel
-            className="flex-1 rounded-xl 
-            bg-slate-800 text-slate-200 
-            border border-slate-700 
-            hover:bg-slate-700 mt-0"
+            className="flex-1 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 mt-0"
             onClick={() => setDeletingMessageId(null)}
           >
             Vazgeç
           </AlertDialogCancel>
-
           <AlertDialogAction
-            className="flex-1 rounded-xl 
-            bg-red-600 text-white 
-            hover:bg-red-500"
+            className="flex-1 rounded-xl bg-red-600 text-white"
             onClick={confirmDeleteMessage}
           >
             Evet, Sil
@@ -1357,14 +1098,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     </AlertDialog>
   );
 
-  // Report Dialog - her zaman render et
   const reportDialog = reportingMessage && (
     <ReportMessageDialog
       isOpen={reportDialogOpen}
-      onClose={() => {
-        setReportDialogOpen(false);
-        setReportingMessage(null);
-      }}
+      onClose={() => { setReportDialogOpen(false); setReportingMessage(null); }}
       messageId={reportingMessage.id}
       messageType="global"
       reportedUserId={reportingMessage.userId}
@@ -1380,7 +1117,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </>
     );
 
-  // If it's full page mode, don't wrap in modal
   if (isFullPage) {
     return (
       <>
@@ -1393,7 +1129,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md h-[600px] flex flex-col bg-background border-2 border-primary/20">
           {renderContent()}
         </Card>
