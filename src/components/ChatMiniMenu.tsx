@@ -59,6 +59,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     },
   ];
 
+  // FloatingMenu ile aynı row stili — opak bg-gray-800
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
@@ -67,12 +68,20 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     "active:bg-gray-700 " +
     "shadow-md";
 
+  const slideStyle: React.CSSProperties = {
+    transform: isOpen ? "translateX(0)" : "translateX(110%)",
+  };
+
+  const itemAnim = () =>
+    "transition-transform duration-200 ease-out " +
+    (!isOpen ? "pointer-events-none" : "");
+
   return (
-    <>
-      {/* Overlay — fixed, menü itemların ALTINDA (z-40), toggle butonunun da altında */}
+    <div className="relative">
+      {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => {
             setIsOpen(false);
             onOpenChange?.(false);
@@ -80,58 +89,56 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
         />
       )}
 
-      <div className="relative z-50">
-        {/* Menu items */}
-        {isOpen && (
-          <div className="absolute top-16 right-0 flex flex-col items-end gap-2">
-            {menuItems.map((item) => (
-              <div key={item.title}>
-                <div
-                  onClick={() => handleMenuClick(item.action)}
-                  className={rowBase}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor} ${
-                      item.isActive ? "opacity-100" : "opacity-60"
-                    }`}
-                  />
-                  <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">
-                    {item.title}
-                  </span>
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0
-                      ${item.iconBg} ${item.iconColor}
-                      ${item.isActive ? "ring-1 ring-white/30" : ""}`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Menu items — toggle butonunun altına açılıyor */}
+      <div className="absolute top-16 right-0 flex flex-col items-end gap-2 z-50 overflow-hidden">
+        {menuItems.map((item) => (
+          <div key={item.title} className={itemAnim()} style={slideStyle}>
+            <div
+              onClick={() => handleMenuClick(item.action)}
+              className={rowBase}
+            >
+              {/* Sol renkli dot — aktifse dolu, değilse soluk */}
+              <span
+                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor} ${
+                  item.isActive ? "opacity-100" : "opacity-60"
+                }`}
+              />
 
-        {/* Toggle butonu */}
-        <button
-          onClick={handleToggle}
-          className={`
-            relative w-12 h-12 rounded-full
-            flex items-center justify-center
-            active:scale-90
-            ${
-              isOpen
-                ? "bg-white ring-2 ring-white/40"
-                : "bg-gradient-to-br from-white to-gray-200 ring-2 ring-white/30"
-            }
-          `}
-        >
-          {isOpen ? (
-            <X className="w-5 h-5 text-gray-900" />
-          ) : (
-            <Menu className="w-5 h-5 text-gray-900" />
-          )}
-        </button>
+              <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">{item.title}</span>
+
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 brightness-125
+                  ${item.iconBg} ${item.iconColor}
+                  ${item.isActive ? "ring-1 ring-white/30" : ""}`}
+              >
+                <item.icon className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-    </>
+
+      {/* Toggle butonu — FloatingMenu ana butonu ile aynı stil */}
+      <button
+        onClick={handleToggle}
+        className={`
+          relative w-12 h-12 rounded-full
+          flex items-center justify-center
+          transition-all duration-200 ease-out
+          active:scale-90 hover:scale-105
+          ${
+            isOpen
+              ? "bg-white shadow-[0_6px_28px_rgba(0,0,0,0.5)] ring-2 ring-white/40"
+              : "bg-gradient-to-br from-white to-gray-200 shadow-[0_4px_20px_rgba(255,255,255,0.15)] ring-2 ring-white/30 hover:shadow-[0_6px_28px_rgba(255,255,255,0.25)]"
+          }
+        `}
+      >
+        {isOpen ? (
+          <X className="w-5 h-5 text-gray-900 transition-transform duration-200" />
+        ) : (
+          <Menu className="w-5 h-5 text-gray-900 transition-transform duration-200" />
+        )}
+      </button>
+    </div>
   );
 }

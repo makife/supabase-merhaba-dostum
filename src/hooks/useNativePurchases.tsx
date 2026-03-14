@@ -19,7 +19,7 @@ export const useNativePurchases = () => {
 
       try {
         // API Key ayarı
-        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_NdOevMcvFJVECmCqnnIFrZtWVNa" : "goog_ZHVTnZDoizRWRGlAYnXJzTxUxCl";
+        const apiKey = Capacitor.getPlatform() === "ios" ? "appl_SENIN_IOS_KEYIN" : "goog_ZHVTnZDoizRWRGlAYnXJzTxUxCl";
 
         // RevenueCat'i yapılandır
         await Purchases.configure({ apiKey });

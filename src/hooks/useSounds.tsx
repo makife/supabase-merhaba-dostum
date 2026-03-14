@@ -109,7 +109,7 @@ export const useSounds = () => {
       id: "default",
       name: "Varsayılan",
       sounds: {
-        buttonClick: "sounds/default/butonKlik.mp3",
+        buttonClick: "sounds/default/button-click.mp3",
         correctWord: "sounds/default/correct-word.mp3",
         wrongWord: "sounds/default/wrong-word.mp3",
         gameWin: "generated", // Generated ses olarak işaretle
@@ -125,7 +125,7 @@ export const useSounds = () => {
       id: "space",
       name: "Uzay",
       sounds: {
-        buttonClick: "sounds/default/butonKlik.mp3",
+        buttonClick: "sounds/space/button-click.mp3",
         correctWord: "sounds/space/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
@@ -141,7 +141,7 @@ export const useSounds = () => {
       id: "nature",
       name: "Doğa",
       sounds: {
-        buttonClick: "sounds/default/butonKlik.mp3",
+        buttonClick: "sounds/nature/button-click.mp3",
         correctWord: "sounds/nature/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
@@ -271,7 +271,7 @@ export const useSounds = () => {
     audioCache.current.clear();
 
     // Sadece özel ses dosyalarını yükle (kutlama, kaybetme, arka plan müziği)
-    const specialSounds = ["celebration", "gameLoseSound", "tieSound", "buttonClick", "correctWord", "wrongWord"];
+    const specialSounds = ["celebration", "gameLoseSound", "tieSound"];
     specialSounds.forEach((key) => {
       const soundPath = activePack.sounds[key as keyof SoundConfig];
       if (typeof soundPath === "string" && !soundPath.startsWith("generated")) {
@@ -347,85 +347,10 @@ export const useSounds = () => {
     [soundsEnabled, getAudioContext, unlockAudioForMobile],
   );
 
-  // 🎵 Yumuşak & Modern native tap/pop sesi - iOS/Android hissi
-  const playSoftPopSound = useCallback(() => {
-    if (!soundsEnabled) return;
-    unlockAudioForMobile();
-
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      if (ctx.state === "suspended") ctx.resume();
-
-      const t = ctx.currentTime;
-
-      // Layer 1: Soft pop body (sine, ~900Hz, hızlı decay)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = "sine";
-      osc1.frequency.setValueAtTime(900, t);
-      osc1.frequency.exponentialRampToValueAtTime(400, t + 0.06);
-      gain1.gain.setValueAtTime(0, t);
-      gain1.gain.linearRampToValueAtTime(0.12, t + 0.003);
-      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(t);
-      osc1.stop(t + 0.1);
-
-      // Layer 2: High-frequency click transient (kısa, keskin)
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = "triangle";
-      osc2.frequency.setValueAtTime(3500, t);
-      osc2.frequency.exponentialRampToValueAtTime(1200, t + 0.02);
-      gain2.gain.setValueAtTime(0, t);
-      gain2.gain.linearRampToValueAtTime(0.06, t + 0.001);
-      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(t);
-      osc2.stop(t + 0.05);
-
-      // Layer 3: Noise burst (dokunuş hissi)
-      const bufferSize = ctx.sampleRate * 0.02;
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const noiseData = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        noiseData[i] = (Math.random() * 2 - 1) * 0.3;
-      }
-      const noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = noiseBuffer;
-      const noiseGain = ctx.createGain();
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = "bandpass";
-      noiseFilter.frequency.setValueAtTime(4000, t);
-      noiseFilter.Q.setValueAtTime(2, t);
-      noiseGain.gain.setValueAtTime(0.04, t);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
-      noiseSource.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      noiseSource.start(t);
-      noiseSource.stop(t + 0.02);
-
-      // Cleanup
-      osc1.onended = () => { osc1.disconnect(); gain1.disconnect(); };
-      osc2.onended = () => { osc2.disconnect(); gain2.disconnect(); };
-      noiseSource.onended = () => { noiseSource.disconnect(); noiseFilter.disconnect(); noiseGain.disconnect(); };
-    } catch (error) {
-      console.warn("Could not play soft pop sound:", error);
-    }
-  }, [soundsEnabled, getAudioContext, unlockAudioForMobile]);
-
   // DÜZELTME: playSound fonksiyonunu stabilize et
   const playSound = useCallback(
     async (soundKey: keyof SoundConfig) => {
-      console.log(`🔊 playSound("${soundKey}") çağrıldı, soundsEnabled=${soundsEnabled}, isNative=${isNativePlatform()}`);
-      if (!soundsEnabled) {
-        console.log("🔇 Ses kapalı, atlanıyor");
-        return;
-      }
+      if (!soundsEnabled) return;
 
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
@@ -433,30 +358,13 @@ export const useSounds = () => {
       const activePack = getActiveSoundPack();
 
       try {
-        // Native platformda NativeAudio kullan
-        if (isNativePlatform() && soundKey === "buttonClick") {
-          console.log("🔊 Native: buttonClick için NativeAudio deneniyor...");
-          try {
-            await playNativeSound("butonKlik");
-            console.log("✅ Native: buttonClick çalındı");
-            return;
-          } catch (e) {
-            console.warn("⚠️ Native buttonClick başarısız, fallback:", e);
-          }
-        }
-
         // Önce MP3 dosyası var mı kontrol et
         const audioPool = audioCache.current.get(soundKey);
-        console.log(`🔊 audioPool for "${soundKey}":`, audioPool ? `${audioPool.length} items` : "null");
         if (audioPool && audioPool.length > 0) {
           const availableAudio = getAvailableAudio(audioPool);
           if (availableAudio && availableAudio.src && !availableAudio.src.includes("undefined")) {
             availableAudio.currentTime = 0;
-            console.log(`🔊 Playing from pool: ${availableAudio.src}`);
-            await availableAudio.play().catch((err) => {
-              console.warn("⚠️ Audio play failed:", err);
-              unlockAudioForMobile();
-            });
+            await availableAudio.play().catch(() => unlockAudioForMobile());
             return;
           }
         }
@@ -465,6 +373,9 @@ export const useSounds = () => {
         switch (activePack.id) {
           case "space":
             switch (soundKey) {
+              case "buttonClick":
+                playGeneratedSound(1200, 0.06, "square");
+                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(800, 0.1, "square"), 0);
                 setTimeout(() => playGeneratedSound(1200, 0.1, "square"), 100);
@@ -492,6 +403,9 @@ export const useSounds = () => {
             break;
           case "nature":
             switch (soundKey) {
+              case "buttonClick":
+                playGeneratedSound(400, 0.15, "triangle");
+                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(600, 0.08, "triangle"), 0);
                 setTimeout(() => playGeneratedSound(800, 0.08, "triangle"), 80);
@@ -520,6 +434,9 @@ export const useSounds = () => {
             break;
           default: // default paketi
             switch (soundKey) {
+              case "buttonClick":
+                playGeneratedSound(800, 0.1);
+                break;
               case "correctWord":
                 playGeneratedSound(1200, 0.3);
                 break;
