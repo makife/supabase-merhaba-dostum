@@ -177,7 +177,7 @@ const PuzzleGamePage: React.FC = () => {
   };
 
   const makeMove = (index: number) => {
-    if (gameState.isCompleted || hasPlayedToday || !isValidMove(index, gameState.emptyIndex)) return;
+    if (gameState.isCompleted || !gameState.started || !isValidMove(index, gameState.emptyIndex)) return;
 
     const newBoard = [...gameState.board];
     [newBoard[index], newBoard[gameState.emptyIndex]] = [newBoard[gameState.emptyIndex], newBoard[index]];
