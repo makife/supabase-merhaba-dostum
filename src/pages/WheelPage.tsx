@@ -49,8 +49,8 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 7000;
-// 4 fazlı: 0-1s hızlanma, 1-2s daha hızlı, 2-4s çok hızlı, 4-7s yavaşlama
+const SPIN_DURATION = 12200;
+// 2 fazlı: 0-5s çok hızlı dönüş, 5-12.2s yavaşlayarak durma
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
