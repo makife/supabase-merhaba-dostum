@@ -471,9 +471,6 @@ export const useSounds = () => {
             break;
           case "nature":
             switch (soundKey) {
-              case "buttonClick":
-                playSoftPopSound();
-                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(600, 0.08, "triangle"), 0);
                 setTimeout(() => playGeneratedSound(800, 0.08, "triangle"), 80);
