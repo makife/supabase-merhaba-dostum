@@ -347,6 +347,77 @@ export const useSounds = () => {
     [soundsEnabled, getAudioContext, unlockAudioForMobile],
   );
 
+  // 🎵 Yumuşak & Modern native tap/pop sesi - iOS/Android hissi
+  const playSoftPopSound = useCallback(() => {
+    if (!soundsEnabled) return;
+    unlockAudioForMobile();
+
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const t = ctx.currentTime;
+
+      // Layer 1: Soft pop body (sine, ~900Hz, hızlı decay)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(900, t);
+      osc1.frequency.exponentialRampToValueAtTime(400, t + 0.06);
+      gain1.gain.setValueAtTime(0, t);
+      gain1.gain.linearRampToValueAtTime(0.12, t + 0.003);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.1);
+
+      // Layer 2: High-frequency click transient (kısa, keskin)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(3500, t);
+      osc2.frequency.exponentialRampToValueAtTime(1200, t + 0.02);
+      gain2.gain.setValueAtTime(0, t);
+      gain2.gain.linearRampToValueAtTime(0.06, t + 0.001);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(t);
+      osc2.stop(t + 0.05);
+
+      // Layer 3: Noise burst (dokunuş hissi)
+      const bufferSize = ctx.sampleRate * 0.02;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        noiseData[i] = (Math.random() * 2 - 1) * 0.3;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      const noiseGain = ctx.createGain();
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = "bandpass";
+      noiseFilter.frequency.setValueAtTime(4000, t);
+      noiseFilter.Q.setValueAtTime(2, t);
+      noiseGain.gain.setValueAtTime(0.04, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      noiseSource.start(t);
+      noiseSource.stop(t + 0.02);
+
+      // Cleanup
+      osc1.onended = () => { osc1.disconnect(); gain1.disconnect(); };
+      osc2.onended = () => { osc2.disconnect(); gain2.disconnect(); };
+      noiseSource.onended = () => { noiseSource.disconnect(); noiseFilter.disconnect(); noiseGain.disconnect(); };
+    } catch (error) {
+      console.warn("Could not play soft pop sound:", error);
+    }
+  }, [soundsEnabled, getAudioContext, unlockAudioForMobile]);
+
   // DÜZELTME: playSound fonksiyonunu stabilize et
   const playSound = useCallback(
     async (soundKey: keyof SoundConfig) => {
