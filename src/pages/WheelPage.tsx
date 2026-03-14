@@ -80,6 +80,9 @@ const WheelPage = () => {
   const rafRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
+  const lastSegmentIndexRef = useRef<number>(-1);
+  const tickAudioPoolRef = useRef<HTMLAudioElement[]>([]);
+  const tickPoolIndexRef = useRef(0);
 
   const renderedSegments = useMemo(() => {
     const getCoordinatesForPercent = (percent: number) => {
