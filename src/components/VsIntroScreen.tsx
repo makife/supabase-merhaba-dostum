@@ -180,9 +180,14 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
       {/* VS text in the middle */}
       <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-        <div className={`text-5xl font-black text-white drop-shadow-lg transition-all duration-500 ${
-          phase === 'hold' ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-        }`}>
+        <div 
+          className="text-5xl font-black text-white drop-shadow-lg transition-all ease-out"
+          style={{
+            transitionDuration: phase === 'exit' || phase === 'done' ? '500ms' : '500ms',
+            transform: phase === 'hold' ? 'scale(1)' : phase === 'exit' || phase === 'done' ? 'scale(50)' : 'scale(0.5)',
+            opacity: phase === 'hold' ? 1 : 0,
+          }}
+        >
           VS
         </div>
       </div>
