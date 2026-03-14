@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getRankTier } from '@/utils/rankSystem';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +39,7 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const { profile } = useUser();
   const [opponent, setOpponent] = useState<PlayerInfo | null>(null);
   const [phase, setPhase] = useState<AnimPhase>('enter');
+  const onCompleteRef = useRef(onComplete);
 
   const [myInfo, setMyInfo] = useState<PlayerInfo>({
     username: profile?.username || 'Sen',
@@ -116,6 +117,11 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
     fetchOpponent();
   }, [roomId, isAI, user?.id]);
 
+  // Keep latest callback without restarting animation timers on parent re-renders
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   // Animation sequence: enter(0.3s) -> hold(1s) -> exit(0.3s) -> done
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
@@ -123,10 +129,10 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
     timers.push(setTimeout(() => setPhase('exit'), 1300));
     timers.push(setTimeout(() => {
       setPhase('done');
-      onComplete();
+      onCompleteRef.current();
     }, 1600));
     return () => timers.forEach(clearTimeout);
-  }, [onComplete]);
+  }, []);
 
   const getTransformTop = () => {
     switch (phase) {
