@@ -29,7 +29,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   }, [open, newLevel]);
 
   useEffect(() => {
-    if (open) {
+    if (open && isSoundEffectsEnabled()) {
       try {
         const audio = new Audio('/seviyeAtlama.mp3');
         audio.volume = 0.7;

@@ -12,8 +12,9 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
   const showCountdown = displayTime >= 1 && displayTime <= 9;
 
   const playPitchSound = (secondsLeft: number) => {
+    if (!isSoundEffectsEnabled()) return;
     try {
-      console.log(`Ses tetiklendi! Saniye: ${secondsLeft}`); // Konsolda bunu görmelisin
+      console.log(`Ses tetiklendi! Saniye: ${secondsLeft}`);
 
       const audio = new Audio("/beep.mp3");
 

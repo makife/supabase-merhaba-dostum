@@ -131,10 +131,13 @@ const ChallengePrizeDialog = () => {
         setOpen(true);
 
         try {
-          const audio = new Audio("/odulMuzik.mp3");
-          audio.volume = 0.7;
-          audioRef.current = audio;
-          await audio.play();
+          const { isSoundEffectsEnabled } = await import("@/utils/soundSettings");
+          if (isSoundEffectsEnabled()) {
+            const audio = new Audio("/odulMuzik.mp3");
+            audio.volume = 0.7;
+            audioRef.current = audio;
+            await audio.play();
+          }
         } catch (e) {
           console.warn("Müzik çalınamadı:", e);
         }

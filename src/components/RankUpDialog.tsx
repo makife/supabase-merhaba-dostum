@@ -23,7 +23,7 @@ export const RankUpDialog: React.FC<RankUpDialogProps> = ({ open, onClose, tier 
   }), []);
 
   useEffect(() => {
-    if (open) {
+    if (open && isSoundEffectsEnabled()) {
       try {
         const audio = new Audio('/seviyeAtlama.mp3');
         audio.volume = 0.7;

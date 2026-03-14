@@ -209,8 +209,14 @@ const GameCountdown = memo(
     const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
     const musicFadedRef = useRef(false);
 
-    const playCountdownSound = () => playFromPool(countdownSoundPool, "countdown");
-    const playStartSound = () => playFromPool(startSoundPool, "start");
+    const playCountdownSound = () => {
+      if (!isSoundEffectsEnabled()) return;
+      playFromPool(countdownSoundPool, "countdown");
+    };
+    const playStartSound = () => {
+      if (!isSoundEffectsEnabled()) return;
+      playFromPool(startSoundPool, "start");
+    };
 
     // Cleanup helper
     const cleanupAllTimers = () => {
