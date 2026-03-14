@@ -32,13 +32,13 @@ interface VsIntroScreenProps {
   onComplete: () => void;
 }
 
-type AnimPhase = 'enter' | 'hold' | 'exit' | 'done';
+type AnimPhase = 'initial' | 'enter' | 'hold' | 'exit' | 'done';
 
 const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const { user } = useAuth();
   const { profile } = useUser();
   const [opponent, setOpponent] = useState<PlayerInfo | null>(null);
-  const [phase, setPhase] = useState<AnimPhase>('enter');
+  const [phase, setPhase] = useState<AnimPhase>('initial');
   const onCompleteRef = useRef(onComplete);
 
   const [myInfo, setMyInfo] = useState<PlayerInfo>({
