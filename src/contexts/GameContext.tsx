@@ -2045,24 +2045,25 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     console.log("🔧 Real-time subscriptions active (RealtimeManager + Presence)");
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bu cleanup bağlantıyı öldürüyordu!
-    // Kanallar açık kalacak, bağlantı korunacak
+    // 🆕 TARGETED CLEANUP: Oda değiştiğinde ESKİ odanın kanallarını temizle
     return () => {
-      console.log("🔌 ⚠️ Real-time cleanup ATLANYOR (bağlantı koruması) - room:", subscriptionRoomId.slice(-8));
+      console.log("🔌 Real-time cleanup - ESKİ oda kanalları temizleniyor:", subscriptionRoomId.slice(-8));
       // Reset countdown guard for next room/game
       lastCountdownAtRef.current = null;
 
-      // ❌ DEVRE DIŞI: Presence untrack & cleanup - bağlantıyı öldürüyordu
-      // presenceChannel.untrack();
-      // supabase.removeChannel(presenceChannel);
+      // ✅ Presence kanalını kapat (eski oda için)
+      try {
+        presenceChannel.untrack();
+        supabase.removeChannel(presenceChannel);
+        console.log("✅ Presence channel temizlendi:", subscriptionRoomId.slice(-8));
+      } catch (err) {
+        console.warn("⚠️ Presence cleanup hatası:", err);
+      }
 
-      // ❌ DEVRE DIŞI: RealtimeManager cleanup - bağlantıyı öldürüyordu  
-      // if (participantsChannel) {
-      //   realtimeManager.unsubscribe(`game_participants-room_id=eq.${subscriptionRoomId}`, user.id);
-      // }
-      // if (roomChannel) {
-      //   realtimeManager.unsubscribe(`game_rooms-id=eq.${subscriptionRoomId}`, user.id);
-      // }
+      // ✅ RealtimeManager kanallarını eski room ID'ye göre temizle
+      if (user?.id) {
+        realtimeManager.cleanupChannelsForRoom(subscriptionRoomId, user.id);
+      }
 
       // Clear timers
       pendingTimers.forEach((t) => clearTimeout(t));
