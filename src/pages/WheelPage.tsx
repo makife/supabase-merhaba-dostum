@@ -366,7 +366,7 @@ const WheelPage = () => {
     setIsSpinning(true);
     setCanSpin(false);
 
-    soundsRef.current?.playSpecialSound("/carkSesi.mp3", 0.8);
+    // Sadece tick sesleri çalacak, carkSesi kaldırıldı
 
     const rewardIndex = Math.floor(Math.random() * RAW_SEGMENTS.length);
     const reward = RAW_SEGMENTS[rewardIndex];
