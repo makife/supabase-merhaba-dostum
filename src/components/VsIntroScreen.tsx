@@ -38,7 +38,7 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
   const { user } = useAuth();
   const { profile } = useUser();
   const [opponent, setOpponent] = useState<PlayerInfo | null>(null);
-  const [phase, setPhase] = useState<AnimPhase>('enter');
+  const onCompleteRef = useRef(onComplete);
 
   const [myInfo, setMyInfo] = useState<PlayerInfo>({
     username: profile?.username || 'Sen',
