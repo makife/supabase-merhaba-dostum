@@ -310,6 +310,7 @@ const PuzzleGamePage: React.FC = () => {
                   <button
                     onClick={() => {
                       initializeBoard();
+                      markAsPlayed();
                       playSound("buttonClick");
                     }}
                     disabled={!isWordsLoaded}
