@@ -506,7 +506,7 @@ export const useSounds = () => {
           default: // default paketi
             switch (soundKey) {
               case "buttonClick":
-                playGeneratedSound(800, 0.1);
+                playSoftPopSound();
                 break;
               case "correctWord":
                 playGeneratedSound(1200, 0.3);
