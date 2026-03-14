@@ -366,19 +366,16 @@ const WheelPage = () => {
 
     // 2 fazlı easing: 0-5s çok hızlı sabit, 5-12.2s yavaşlayarak durma
     const easeTwoPhase = (t: number): number => {
-      // p = 5s / 12.2s = hızlı fazın bittiği nokta (normalize)
       const p = 5000 / SPIN_DURATION; // ~0.4098
 
       if (t <= p) {
-        // Faz 1: Sabit yüksek hız (lineer ilerleme)
-        // Hızlı fazda toplam ilerlemenin ~%30'unu kapsasın
-        return 0.30 * (t / p);
+        // Faz 1: Çok hızlı sabit dönüş - toplam yolun %70'ini 5 saniyede kat et
+        return 0.70 * (t / p);
       }
-      // Faz 2: Yavaşlayarak durma (ease-out cubic)
-      const f = (t - p) / (1 - p); // 0→1 arası normalize
-      // Cubic ease-out: 1 - (1-f)^3
+      // Faz 2: Yavaşlayarak durma (cubic ease-out)
+      const f = (t - p) / (1 - p);
       const easeOut = 1 - Math.pow(1 - f, 3);
-      return 0.30 + 0.70 * easeOut;
+      return 0.70 + 0.30 * easeOut;
     };
 
     const startTime = performance.now();
