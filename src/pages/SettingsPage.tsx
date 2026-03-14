@@ -167,15 +167,11 @@ const SettingsPage = () => {
               description: "Bildirim izni kapalı. Uygulama ayarlarına yönlendiriliyorsunuz.",
             });
             try {
-              const { App } = await import("@capacitor/app");
-              // iOS: app-settings: açar, Android: uygulama detay ayarlarını açar
-              if (Capacitor.getPlatform() === "ios") {
-                await App.openUrl({ url: "app-settings:" });
-              } else {
-                // Android için uygulama bilgi sayfası
-                const appInfo = await App.getInfo();
-                await App.openUrl({ url: `package:${appInfo.id}` });
-              }
+              const { NativeSettings, AndroidSettings, IOSSettings } = await import("capacitor-native-settings");
+              await NativeSettings.open({
+                optionAndroid: AndroidSettings.ApplicationDetails,
+                optionIOS: IOSSettings.App,
+              });
             } catch (e) {
               console.error("Ayarlar açılamadı:", e);
             }
