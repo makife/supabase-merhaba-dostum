@@ -49,8 +49,8 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 7000;
-// 4 fazlı: 0-1s hızlanma, 1-2s daha hızlı, 2-4s çok hızlı, 4-7s yavaşlama
+const SPIN_DURATION = 12200;
+// 2 fazlı: 0-5s çok hızlı dönüş, 5-12.2s yavaşlayarak durma
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
@@ -80,6 +80,9 @@ const WheelPage = () => {
   const rafRef = useRef<number | null>(null);
 
   const soundsRef = useRef<{ playSpecialSound: (path: string, volume?: number) => void } | null>(null);
+  const lastSegmentIndexRef = useRef<number>(-1);
+  const tickAudioPoolRef = useRef<HTMLAudioElement[]>([]);
+  const tickPoolIndexRef = useRef(0);
 
   const renderedSegments = useMemo(() => {
     const getCoordinatesForPercent = (percent: number) => {
@@ -139,15 +142,17 @@ const WheelPage = () => {
 
   usePageResync(handleWheelResync, "WheelPage", false);
 
-  const preloadedAudioRef = useRef<HTMLAudioElement | null>(null);
-
   useEffect(() => {
-    // Preload wheel sound for instant playback
     if (!Capacitor.isNativePlatform()) {
-      const audio = new Audio("/carkSesi.mp3");
-      audio.preload = "auto";
-      audio.load();
-      preloadedAudioRef.current = audio;
+      const pool: HTMLAudioElement[] = [];
+      for (let i = 0; i < 8; i++) {
+        const tick = new Audio("/sounds/default/butonKlik.mp3");
+        tick.preload = "auto";
+        tick.volume = 0.4;
+        tick.load();
+        pool.push(tick);
+      }
+      tickAudioPoolRef.current = pool;
     }
 
     soundsRef.current = {
@@ -157,22 +162,9 @@ const WheelPage = () => {
             playSpecialNativeSound(path, volume);
           });
         } else {
-          // Use preloaded audio for wheel sound
-          if (path === "/carkSesi.mp3" && preloadedAudioRef.current) {
-            const audio = preloadedAudioRef.current;
-            audio.currentTime = 0;
-            audio.volume = volume;
-            audio.play().catch(() => {});
-            // Prepare next preload
-            const next = new Audio("/carkSesi.mp3");
-            next.preload = "auto";
-            next.load();
-            preloadedAudioRef.current = next;
-          } else {
-            const audio = new Audio(path);
-            audio.volume = volume;
-            audio.play().catch(() => {});
-          }
+          const audio = new Audio(path);
+          audio.volume = volume;
+          audio.play().catch(() => {});
         }
       },
     };
@@ -344,7 +336,7 @@ const WheelPage = () => {
     setIsSpinning(true);
     setCanSpin(false);
 
-    soundsRef.current?.playSpecialSound("/carkSesi.mp3", 0.8);
+    // Sadece tick sesleri çalacak, carkSesi kaldırıldı
 
     const rewardIndex = Math.floor(Math.random() * RAW_SEGMENTS.length);
     const reward = RAW_SEGMENTS[rewardIndex];
@@ -356,7 +348,7 @@ const WheelPage = () => {
     let distanceToTarget = requiredRotation - currentMod;
     if (distanceToTarget < 0) distanceToTarget += 360;
 
-    const totalRotation = 360 * 8 + distanceToTarget;
+    const totalRotation = 360 * 40 + distanceToTarget;
     const startRotation = rotationRef.current;
     const finalRotation = startRotation + totalRotation;
 
@@ -364,42 +356,38 @@ const WheelPage = () => {
       wheelRef.current.style.transition = "none";
     }
 
-    const easeFourPhase = (t: number): number => {
-      const p1 = 500 / SPIN_DURATION;   // 0-0.5s
-      const p2 = 2000 / SPIN_DURATION;  // 0.5-2s
-      const p3 = 3000 / SPIN_DURATION;  // 2-3s
+    // 2 fazlı easing: 0-5s çok hızlı sabit, 5-12.2s yavaşlayarak durma
+    const easeTwoPhase = (t: number): number => {
+      const p = 5000 / SPIN_DURATION; // ~0.4098
 
-      const v3 = 1;
-      const v2 = 0.6;
-      const v1 = 0.3;
+      if (t <= p) {
+        // Faz 1: Çok hızlı sabit dönüş - toplam yolun %70'ini 5 saniyede kat et
+        return 0.70 * (t / p);
+      }
+      // Faz 2: Yavaşlayarak durma (cubic ease-out)
+      const f = (t - p) / (1 - p);
+      const easeOut = 1 - Math.pow(1 - f, 3);
+      return 0.70 + 0.30 * easeOut;
+    };
 
-      const area = 0.5 * p1 * v1
-                 + 0.5 * (v1 + v2) * (p2 - p1)
-                 + 0.5 * (v2 + v3) * (p3 - p2)
-                 + 0.5 * v3 * (1 - p3);
-      const s = 1 / area;
-      const sv1 = v1 * s, sv2 = v2 * s, sv3 = v3 * s;
+    const segmentAngleSize = 360 / RAW_SEGMENTS.length;
+    lastSegmentIndexRef.current = -1;
 
-      if (t <= p1) {
-        const f = t / p1;
-        return 0.5 * sv1 * p1 * f * f;
+    const playTickSound = () => {
+      if (Capacitor.isNativePlatform()) {
+        import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
+          playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
+        });
+      } else {
+        const pool = tickAudioPoolRef.current;
+        if (pool.length > 0) {
+          const audio = pool[tickPoolIndexRef.current % pool.length];
+          audio.currentTime = 0;
+          audio.volume = Math.min(0.5, 0.2 + (1 - 0) * 0.3); // will be updated below
+          audio.play().catch(() => {});
+          tickPoolIndexRef.current++;
+        }
       }
-      const d1 = 0.5 * sv1 * p1;
-      if (t <= p2) {
-        const f = (t - p1) / (p2 - p1);
-        const dur = p2 - p1;
-        return d1 + sv1 * dur * f + 0.5 * (sv2 - sv1) * dur * f * f;
-      }
-      const d2 = d1 + 0.5 * (sv1 + sv2) * (p2 - p1);
-      if (t <= p3) {
-        const f = (t - p2) / (p3 - p2);
-        const dur = p3 - p2;
-        return d2 + sv2 * dur * f + 0.5 * (sv3 - sv2) * dur * f * f;
-      }
-      const d3 = d2 + 0.5 * (sv2 + sv3) * (p3 - p2);
-      const f = (t - p3) / (1 - p3);
-      const dur = 1 - p3;
-      return d3 + sv3 * dur * (f - 0.5 * f * f);
     };
 
     const startTime = performance.now();
@@ -407,8 +395,28 @@ const WheelPage = () => {
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / SPIN_DURATION, 1);
-      const progress = easeFourPhase(t);
+      const progress = easeTwoPhase(t);
       const currentDeg = startRotation + totalRotation * progress;
+
+      // Tick sound: detect segment boundary crossings
+      const normalizedDeg = ((currentDeg % 360) + 360) % 360;
+      const currentSegIdx = Math.floor(normalizedDeg / segmentAngleSize);
+      if (lastSegmentIndexRef.current !== -1 && currentSegIdx !== lastSegmentIndexRef.current) {
+        // Volume decreases as wheel slows down (louder when fast)
+        const pool = tickAudioPoolRef.current;
+        if (pool.length > 0 && !Capacitor.isNativePlatform()) {
+          const speed = 1 - t; // 1=fast, 0=stopped
+          const vol = 0.15 + speed * 0.45;
+          const audio = pool[tickPoolIndexRef.current % pool.length];
+          audio.currentTime = 0;
+          audio.volume = vol;
+          audio.play().catch(() => {});
+          tickPoolIndexRef.current++;
+        } else if (Capacitor.isNativePlatform()) {
+          playTickSound();
+        }
+      }
+      lastSegmentIndexRef.current = currentSegIdx;
 
       if (wheelRef.current) {
         wheelRef.current.style.transform = `rotate(${currentDeg}deg)`;

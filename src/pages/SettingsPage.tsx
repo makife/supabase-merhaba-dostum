@@ -3,12 +3,10 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { useSounds } from "@/hooks/useSounds";
@@ -19,26 +17,38 @@ import { ContactDialog } from "@/components/ContactDialog";
 import {
   ArrowLeft,
   Bell,
-  Palette,
-  Volume2,
   Info,
   Shield,
   HelpCircle,
   Mail,
   Smartphone,
   PlayCircle,
-  Sparkles,
-  Gift,
   ShieldCheck,
   Settings,
   Trash2,
-  Download,
   AlertTriangle,
   Music,
   Volume,
 } from "lucide-react";
-import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear"; // ✅ Doğru import
+import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+
+// ─── OS uygulama ayarlarını açar (capacitor-native-settings gerektirmez) ───
+const openAppSettings = async () => {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    const platform = Capacitor.getPlatform();
+    if (platform === "android") {
+      const { App } = await import("@capacitor/app");
+      const info = await App.getInfo();
+      window.open(`package:${info.id}`, "_system");
+    } else if (platform === "ios") {
+      window.open("app-settings:", "_system");
+    }
+  } catch (e) {
+    console.error("Ayarlar açılamadı:", e);
+  }
+};
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -48,8 +58,14 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } =
-    useMobileNotifications();
+  const {
+    isPermissionGranted,
+    isMobile,
+    requestPermissions,
+    disableNotifications,
+    showLocalNotification,
+    checkPermissionStatus,
+  } = useMobileNotifications();
 
   // Settings state
   const [notifications, setNotifications] = useState(false);
@@ -68,23 +84,22 @@ const SettingsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Load settings from native storage and set initial values
+  // Load settings from native storage
   useEffect(() => {
     const loadSettings = async () => {
       const savedSettings = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
       const permissionsCompleted = await nativeStorage.getItem(STORAGE_KEYS.PERMISSIONS_COMPLETED);
 
       if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setNotifications(settings.notifications ?? false);
-        setLanguage(settings.language ?? "tr");
-
+        const s = JSON.parse(savedSettings);
+        setNotifications(s.notifications ?? false);
+        setLanguage(s.language ?? "tr");
         initialSettingsRef.current = {
-          notifications: settings.notifications ?? false,
+          notifications: s.notifications ?? false,
           sounds: soundsEnabled,
           music: musicEnabled,
           theme,
-          language: settings.language ?? "tr",
+          language: s.language ?? "tr",
         };
       } else if (permissionsCompleted && isPermissionGranted) {
         setNotifications(true);
@@ -109,6 +124,36 @@ const SettingsPage = () => {
     loadSettings();
   }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
+  // Uygulama ön plana geldiğinde OS izin durumunu yeniden kontrol et
+  useEffect(() => {
+    if (!isMobile) return;
+    let cleanup: (() => void) | undefined;
+
+    const setupListener = async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const listener = await App.addListener("appStateChange", async ({ isActive }) => {
+          if (isActive) {
+            await checkPermissionStatus();
+            const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+            const status = await SafePushNotifications.checkPermissions();
+            if (status?.receive === "granted") {
+              setNotifications(true);
+            } else if (status?.receive === "denied") {
+              setNotifications(false);
+            }
+          }
+        });
+        cleanup = () => listener.remove();
+      } catch (e) {
+        console.log("App listener setup failed:", e);
+      }
+    };
+
+    setupListener();
+    return () => cleanup?.();
+  }, [isMobile, checkPermissionStatus]);
+
   // Auto-save when settings change
   useEffect(() => {
     if (!initialSettingsRef.current) return;
@@ -126,16 +171,14 @@ const SettingsPage = () => {
       language,
     };
 
-    const hasRealChange = JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
+    const hasRealChange =
+      JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
 
     if (hasRealChange) {
       hasChangedRef.current = true;
       nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(currentSettings));
-
       window.dispatchEvent(new Event("settingsChanged"));
-
       initialSettingsRef.current = currentSettings;
-
       playSound("buttonClick");
       toast({
         title: "✅ Ayarlar Kaydedildi",
@@ -144,55 +187,84 @@ const SettingsPage = () => {
     }
   }, [notifications, soundsEnabled, musicEnabled, theme, language, playSound, toast]);
 
+  // ─── Bildirim switch handler ────────────────────────────────────────────────
   const handleNotificationChange = async (checked: boolean) => {
     try {
-      console.log("🔔 Bildirim değişikliği:", checked);
-      console.log("🔔 isMobile:", isMobile);
-
       if (checked) {
-        // Önce switch'i aç (optimistic update)
-        setNotifications(true);
+        // Switch ON → izin iste
+        if (isMobile) {
+          const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+          const currentStatus = await SafePushNotifications.checkPermissions();
 
-        const permissionGranted = await requestPermissions();
-        console.log("🔔 İzin sonucu:", permissionGranted);
+          if (currentStatus?.receive === "denied") {
+            // Daha önce reddedilmiş → OS ayarlarına yönlendir
+            setNotifications(false);
+            toast({
+              title: "📱 Ayarlardan İzin Verin",
+              description: "Bildirim izni daha önce kapatılmış. Ayarlar'dan açabilirsiniz.",
+              action: (
+                <ToastAction altText="Ayarları Aç" onClick={openAppSettings}>
+                  Ayarları Aç
+                </ToastAction>
+              ),
+            });
+            return;
+          }
 
-        if (permissionGranted) {
-          toast({
-            title: "✅ Bildirimler Aktif",
-            description: "Oyun bildirimleri başarıyla aktif edildi",
-          });
-
-          setTimeout(() => {
-            showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
-          }, 1000);
+          // İzin prompt ya da granted → iste
+          const permissionGranted = await requestPermissions();
+          if (permissionGranted) {
+            setNotifications(true);
+            toast({
+              title: "✅ Bildirimler Aktif",
+              description: "Oyun bildirimleri başarıyla aktif edildi.",
+            });
+            setTimeout(() => {
+              showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
+            }, 1000);
+          } else {
+            setNotifications(false);
+            toast({
+              title: "⚠️ İzin Verilmedi",
+              description: "Ayarlar'dan bildirim iznini açabilirsiniz.",
+              action: (
+                <ToastAction altText="Ayarları Aç" onClick={openAppSettings}>
+                  Ayarları Aç
+                </ToastAction>
+              ),
+            });
+          }
         } else {
-          // İzin reddedildiyse geri al
-          setNotifications(false);
-          toast({
-            title: "⚠️ İzin Gerekli",
-            description: "Bildirim izni verilemedi. Lütfen uygulama ayarlarından izin verin.",
-            variant: "destructive",
-          });
+          // Web
+          setNotifications(true);
         }
       } else {
+        // Switch OFF → switch'i kapat, ayarlara yönlendir (toast ile)
         setNotifications(false);
-        await disableNotifications();
-        toast({
-          title: "🔕 Bildirimler Kapatıldı",
-          description: "Artık oyun bildirimi almayacaksınız",
-        });
+        if (isMobile) {
+          toast({
+            title: "🔕 Bildirimleri Kapatmak İçin",
+            description: "Ayarlar → Kelimele → Bildirimler yolunu izleyin.",
+            action: (
+              <ToastAction altText="Ayarları Aç" onClick={openAppSettings}>
+                Ayarları Aç
+              </ToastAction>
+            ),
+          });
+        }
       }
     } catch (error) {
       console.error("❌ Bildirim ayarı hatası:", error);
       toast({
         title: "Hata",
-        description: "Bildirim ayarları güncellenirken bir hata oluştu",
+        description: "Bildirim ayarları güncellenirken bir hata oluştu.",
         variant: "destructive",
       });
       setNotifications(false);
     }
   };
 
+  // ─── Modal helpers ───────────────────────────────────────────────────────────
   const openModal = (title: string, content: string) => {
     setModalContent({ title, content });
     setModalOpen(true);
@@ -292,7 +364,7 @@ const SettingsPage = () => {
       <div class="space-y-4">
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
-          <p class="text-lg font-medium">Versiyon 5.4.9</p>
+          <p class="text-lg font-medium">Versiyon 5.5.5</p>
         </div>
         
         <div class="space-y-3">
@@ -323,7 +395,10 @@ const SettingsPage = () => {
         <div className="px-5 py-4">
           <div className="flex items-center justify-between">
             <Button
-              onClick={() => { playSound("buttonClick"); navigate("/"); }}
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/");
+              }}
               className="bg-[#1e2d45] border border-indigo-500/20 text-white"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -459,7 +534,7 @@ const SettingsPage = () => {
             </button>
 
             <button
-              onClick={() => setContactOpen(true)} // <-- değişti
+              onClick={() => setContactOpen(true)}
               className="w-full flex items-center gap-3 p-3 bg-[#0f1829] rounded-xl transition-all active:scale-95"
             >
               <Mail className="w-5 h-5 text-cyan-400" />
@@ -541,7 +616,7 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialogs */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
           <DialogHeader>
@@ -586,6 +661,7 @@ const SettingsPage = () => {
 
       <ContactDialog open={contactOpen} onOpenChange={setContactOpen} />
 
+      {/* Final Delete Confirmation Dialog */}
       <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
         <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
           <DialogHeader>
