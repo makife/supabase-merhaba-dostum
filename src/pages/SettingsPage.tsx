@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Capacitor } from "@capacitor/core";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,7 +49,7 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } =
+  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification, checkPermissionStatus } =
     useMobileNotifications();
 
   // Settings state
@@ -109,6 +110,37 @@ const SettingsPage = () => {
     loadSettings();
   }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
+  // Re-check notification permission when app resumes (user may have changed it in OS settings)
+  useEffect(() => {
+    if (!isMobile) return;
+    let cleanup: (() => void) | undefined;
+
+    const setupListener = async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const listener = await App.addListener("appStateChange", async ({ isActive }) => {
+          if (isActive) {
+            await checkPermissionStatus();
+            // Sync switch state with OS permission
+            const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+            const status = await SafePushNotifications.checkPermissions();
+            if (status?.receive === "granted") {
+              setNotifications(true);
+            } else if (status?.receive === "denied") {
+              setNotifications(false);
+            }
+          }
+        });
+        cleanup = () => listener.remove();
+      } catch (e) {
+        console.log("App listener setup failed:", e);
+      }
+    };
+
+    setupListener();
+    return () => cleanup?.();
+  }, [isMobile, checkPermissionStatus]);
+
   // Auto-save when settings change
   useEffect(() => {
     if (!initialSettingsRef.current) return;
@@ -150,8 +182,33 @@ const SettingsPage = () => {
       console.log("🔔 isMobile:", isMobile);
 
       if (checked) {
-        // Önce switch'i aç (optimistic update)
+        // Optimistic update
         setNotifications(true);
+
+        if (isMobile) {
+          // Native: Önce mevcut izin durumunu kontrol et
+          const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+          const currentStatus = await SafePushNotifications.checkPermissions();
+          
+          if (currentStatus?.receive === "denied") {
+            // İzin daha önce reddedilmiş → OS ayarlarını aç
+            setNotifications(false);
+            toast({
+              title: "📱 Ayarlardan İzin Verin",
+              description: "Bildirim izni kapalı. Uygulama ayarlarına yönlendiriliyorsunuz.",
+            });
+            try {
+              const { NativeSettings, AndroidSettings, IOSSettings } = await import("capacitor-native-settings");
+              await NativeSettings.open({
+                optionAndroid: AndroidSettings.ApplicationDetails,
+                optionIOS: IOSSettings.App,
+              });
+            } catch (e) {
+              console.error("Ayarlar açılamadı:", e);
+            }
+            return;
+          }
+        }
 
         const permissionGranted = await requestPermissions();
         console.log("🔔 İzin sonucu:", permissionGranted);
@@ -166,7 +223,6 @@ const SettingsPage = () => {
             showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
           }, 1000);
         } else {
-          // İzin reddedildiyse geri al
           setNotifications(false);
           toast({
             title: "⚠️ İzin Gerekli",
@@ -175,6 +231,7 @@ const SettingsPage = () => {
           });
         }
       } else {
+        // Bildirimleri kapat
         setNotifications(false);
         await disableNotifications();
         toast({
