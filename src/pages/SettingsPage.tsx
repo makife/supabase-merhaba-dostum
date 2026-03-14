@@ -49,7 +49,7 @@ const SettingsPage = () => {
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { hasPurchased, settings, updateSettings } = useUserPurchases();
-  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification } =
+  const { isPermissionGranted, isMobile, requestPermissions, disableNotifications, showLocalNotification, checkPermissionStatus } =
     useMobileNotifications();
 
   // Settings state
