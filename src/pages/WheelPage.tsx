@@ -386,7 +386,7 @@ const WheelPage = () => {
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / SPIN_DURATION, 1);
-      const progress = easeFourPhase(t);
+      const progress = easeTwoPhase(t);
       const currentDeg = startRotation + totalRotation * progress;
 
       if (wheelRef.current) {
