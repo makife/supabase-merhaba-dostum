@@ -2050,18 +2050,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Reset countdown guard for next room/game
       lastCountdownAtRef.current = null;
 
-      // ✅ Presence kanalını kapat (eski oda için)
-      try {
-        presenceChannel.untrack();
-        supabase.removeChannel(presenceChannel);
-        console.log("✅ Presence channel temizlendi:", subscriptionRoomId.slice(-8));
-      } catch (err) {
-        console.warn("⚠️ Presence cleanup hatası:", err);
-      }
-
-      // ✅ RealtimeManager kanallarını eski room ID'ye göre temizle
+      // ✅ RealtimeManager tüm kanalları (presence dahil) temizler
       if (user?.id) {
-        realtimeManager.cleanupChannelsForRoom(subscriptionRoomId, user.id);
+        realtimeManager.cleanupRoom(subscriptionRoomId, user.id);
       }
 
       // Clear timers
