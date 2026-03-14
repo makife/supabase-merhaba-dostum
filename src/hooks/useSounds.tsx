@@ -109,7 +109,7 @@ export const useSounds = () => {
       id: "default",
       name: "Varsayılan",
       sounds: {
-        buttonClick: "sounds/default/button-click.mp3",
+        buttonClick: "sounds/default/butonKlik.mp3",
         correctWord: "sounds/default/correct-word.mp3",
         wrongWord: "sounds/default/wrong-word.mp3",
         gameWin: "generated", // Generated ses olarak işaretle
@@ -125,7 +125,7 @@ export const useSounds = () => {
       id: "space",
       name: "Uzay",
       sounds: {
-        buttonClick: "sounds/space/button-click.mp3",
+        buttonClick: "sounds/default/butonKlik.mp3",
         correctWord: "sounds/space/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
@@ -141,7 +141,7 @@ export const useSounds = () => {
       id: "nature",
       name: "Doğa",
       sounds: {
-        buttonClick: "sounds/nature/button-click.mp3",
+        buttonClick: "sounds/default/butonKlik.mp3",
         correctWord: "sounds/nature/correct-word.mp3",
         wrongWord: "generated",
         gameWin: "generated",
@@ -444,9 +444,6 @@ export const useSounds = () => {
         switch (activePack.id) {
           case "space":
             switch (soundKey) {
-              case "buttonClick":
-                playSoftPopSound();
-                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(800, 0.1, "square"), 0);
                 setTimeout(() => playGeneratedSound(1200, 0.1, "square"), 100);
@@ -474,9 +471,6 @@ export const useSounds = () => {
             break;
           case "nature":
             switch (soundKey) {
-              case "buttonClick":
-                playSoftPopSound();
-                break;
               case "correctWord":
                 setTimeout(() => playGeneratedSound(600, 0.08, "triangle"), 0);
                 setTimeout(() => playGeneratedSound(800, 0.08, "triangle"), 80);
@@ -505,9 +499,6 @@ export const useSounds = () => {
             break;
           default: // default paketi
             switch (soundKey) {
-              case "buttonClick":
-                playSoftPopSound();
-                break;
               case "correctWord":
                 playGeneratedSound(1200, 0.3);
                 break;
