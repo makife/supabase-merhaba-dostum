@@ -20,16 +20,32 @@ interface GameState {
 const DIFFICULTY = 3 as const;
 const WORD_LENGTH = 8;
 
-// Deterministic daily word: same word for all players on the same day
-const getDailyWord = (words: string[]): string => {
-  if (words.length === 0) return "PORTAKAL";
+// Deterministic seeded PRNG (mulberry32)
+const createSeededRandom = (seed: number) => {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+// Deterministic daily seed from date string
+const getDailySeed = (): number => {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
-  // Simple hash from date string
   let hash = 0;
   for (let i = 0; i < today.length; i++) {
     hash = (hash * 31 + today.charCodeAt(i)) >>> 0;
   }
-  return words[hash % words.length];
+  return hash;
+};
+
+// Deterministic daily word: same word for all players on the same day
+const getDailyWord = (words: string[]): string => {
+  if (words.length === 0) return "PORTAKAL";
+  const seed = getDailySeed();
+  return words[seed % words.length];
 };
 
 const PuzzleGamePage: React.FC = () => {
@@ -89,6 +105,9 @@ const PuzzleGamePage: React.FC = () => {
     let board = Array.from({ length: size - 1 }, (_, i) => i + 1);
     board.push(0);
 
+    // ✅ Deterministik karıştırma: herkes aynı board'u görür
+    const seededRandom = createSeededRandom(getDailySeed() + 7919); // farklı seed offset
+
     let emptyIndex = size - 1;
     let previousIndex = -1;
     for (let i = 0; i < 100; i++) {
@@ -103,7 +122,7 @@ const PuzzleGamePage: React.FC = () => {
 
       const validMoves = possibleMoves.filter((idx) => idx !== previousIndex);
       if (validMoves.length > 0) {
-        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+        const randomMove = validMoves[Math.floor(seededRandom() * validMoves.length)];
         [board[emptyIndex], board[randomMove]] = [board[randomMove], board[emptyIndex]];
         previousIndex = emptyIndex;
         emptyIndex = randomMove;
