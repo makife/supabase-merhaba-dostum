@@ -573,8 +573,7 @@ export default function ChatPage() {
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
           {renderHeader(`KELİMELE - ${selectedUser.username}`, "Özel Sohbet", true)}
-          {/* Sadece içerik blur alır */}
-          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+          <div className="flex-1 min-h-0">
             <PrivateChat chatId={activeChatId} otherUser={selectedUser} onBack={() => handleViewChange("users")} />
           </div>
         </div>
@@ -586,8 +585,7 @@ export default function ChatPage() {
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
           {renderHeader("Özel Mesajlar", `${onlineUsers.length} kişi çevrimiçi`, true)}
-          {/* Sadece içerik blur alır */}
-          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+          <div className="flex-1 min-h-0">
             {renderUsersList()}
           </div>
         </div>
@@ -599,8 +597,7 @@ export default function ChatPage() {
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
           {renderHeader("Engellediklerim", `${blockedUsers.length} kişi engellendi`, true)}
-          {/* Sadece içerik blur alır */}
-          <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+          <div className="flex-1 min-h-0">
             {renderBlockedUsersList()}
           </div>
         </div>
@@ -612,8 +609,7 @@ export default function ChatPage() {
       <div className="h-full flex flex-col">
         {/* Header — ChatMiniMenu burada, blur almaz */}
         {renderHeader("KELİMELE SOHBET", `${onlineUsers.length} kişi çevrimiçi`)}
-        {/* Sadece sohbet alanı blur alır */}
-        <div className={`flex-1 min-h-0 transition-all duration-300 ${isMiniMenuOpen ? "blur-md opacity-50" : ""}`}>
+        <div className="flex-1 min-h-0">
           <GlobalChat isOpen={true} onClose={() => {}} isFullPage={true} onStartPrivateChat={startPrivateChat} />
         </div>
       </div>
