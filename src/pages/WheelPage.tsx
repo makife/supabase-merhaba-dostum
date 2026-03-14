@@ -49,8 +49,8 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 7000;
-// 4 fazlı: 0-1s hızlanma, 1-2s daha hızlı, 2-4s çok hızlı, 4-7s yavaşlama
+const SPIN_DURATION = 12200;
+// 2 fazlı: 0-5s çok hızlı dönüş, 5-12.2s yavaşlayarak durma
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
@@ -364,42 +364,21 @@ const WheelPage = () => {
       wheelRef.current.style.transition = "none";
     }
 
-    const easeFourPhase = (t: number): number => {
-      const p1 = 500 / SPIN_DURATION;   // 0-0.5s
-      const p2 = 2000 / SPIN_DURATION;  // 0.5-2s
-      const p3 = 3000 / SPIN_DURATION;  // 2-3s
+    // 2 fazlı easing: 0-5s çok hızlı sabit, 5-12.2s yavaşlayarak durma
+    const easeTwoPhase = (t: number): number => {
+      // p = 5s / 12.2s = hızlı fazın bittiği nokta (normalize)
+      const p = 5000 / SPIN_DURATION; // ~0.4098
 
-      const v3 = 1;
-      const v2 = 0.6;
-      const v1 = 0.3;
-
-      const area = 0.5 * p1 * v1
-                 + 0.5 * (v1 + v2) * (p2 - p1)
-                 + 0.5 * (v2 + v3) * (p3 - p2)
-                 + 0.5 * v3 * (1 - p3);
-      const s = 1 / area;
-      const sv1 = v1 * s, sv2 = v2 * s, sv3 = v3 * s;
-
-      if (t <= p1) {
-        const f = t / p1;
-        return 0.5 * sv1 * p1 * f * f;
+      if (t <= p) {
+        // Faz 1: Sabit yüksek hız (lineer ilerleme)
+        // Hızlı fazda toplam ilerlemenin ~%30'unu kapsasın
+        return 0.30 * (t / p);
       }
-      const d1 = 0.5 * sv1 * p1;
-      if (t <= p2) {
-        const f = (t - p1) / (p2 - p1);
-        const dur = p2 - p1;
-        return d1 + sv1 * dur * f + 0.5 * (sv2 - sv1) * dur * f * f;
-      }
-      const d2 = d1 + 0.5 * (sv1 + sv2) * (p2 - p1);
-      if (t <= p3) {
-        const f = (t - p2) / (p3 - p2);
-        const dur = p3 - p2;
-        return d2 + sv2 * dur * f + 0.5 * (sv3 - sv2) * dur * f * f;
-      }
-      const d3 = d2 + 0.5 * (sv2 + sv3) * (p3 - p2);
-      const f = (t - p3) / (1 - p3);
-      const dur = 1 - p3;
-      return d3 + sv3 * dur * (f - 0.5 * f * f);
+      // Faz 2: Yavaşlayarak durma (ease-out cubic)
+      const f = (t - p) / (1 - p); // 0→1 arası normalize
+      // Cubic ease-out: 1 - (1-f)^3
+      const easeOut = 1 - Math.pow(1 - f, 3);
+      return 0.30 + 0.70 * easeOut;
     };
 
     const startTime = performance.now();
@@ -407,7 +386,7 @@ const WheelPage = () => {
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / SPIN_DURATION, 1);
-      const progress = easeFourPhase(t);
+      const progress = easeTwoPhase(t);
       const currentDeg = startRotation + totalRotation * progress;
 
       if (wheelRef.current) {
