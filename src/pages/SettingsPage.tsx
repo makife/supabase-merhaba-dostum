@@ -110,6 +110,37 @@ const SettingsPage = () => {
     loadSettings();
   }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
 
+  // Re-check notification permission when app resumes (user may have changed it in OS settings)
+  useEffect(() => {
+    if (!isMobile) return;
+    let cleanup: (() => void) | undefined;
+
+    const setupListener = async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const listener = await App.addListener("appStateChange", async ({ isActive }) => {
+          if (isActive) {
+            await checkPermissionStatus();
+            // Sync switch state with OS permission
+            const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+            const status = await SafePushNotifications.checkPermissions();
+            if (status?.receive === "granted") {
+              setNotifications(true);
+            } else if (status?.receive === "denied") {
+              setNotifications(false);
+            }
+          }
+        });
+        cleanup = () => listener.remove();
+      } catch (e) {
+        console.log("App listener setup failed:", e);
+      }
+    };
+
+    setupListener();
+    return () => cleanup?.();
+  }, [isMobile, checkPermissionStatus]);
+
   // Auto-save when settings change
   useEffect(() => {
     if (!initialSettingsRef.current) return;
