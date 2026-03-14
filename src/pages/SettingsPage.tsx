@@ -150,8 +150,37 @@ const SettingsPage = () => {
       console.log("🔔 isMobile:", isMobile);
 
       if (checked) {
-        // Önce switch'i aç (optimistic update)
+        // Optimistic update
         setNotifications(true);
+
+        if (isMobile) {
+          // Native: Önce mevcut izin durumunu kontrol et
+          const { SafePushNotifications } = await import("@/utils/safePluginWrapper");
+          const currentStatus = await SafePushNotifications.checkPermissions();
+          
+          if (currentStatus?.receive === "denied") {
+            // İzin daha önce reddedilmiş → OS ayarlarını aç
+            setNotifications(false);
+            toast({
+              title: "📱 Ayarlardan İzin Verin",
+              description: "Bildirim izni kapalı. Uygulama ayarlarına yönlendiriliyorsunuz.",
+            });
+            try {
+              const { App } = await import("@capacitor/app");
+              // iOS: app-settings: açar, Android: uygulama detay ayarlarını açar
+              if (Capacitor.getPlatform() === "ios") {
+                await App.openUrl({ url: "app-settings:" });
+              } else {
+                // Android için uygulama bilgi sayfası
+                const appInfo = await App.getInfo();
+                await App.openUrl({ url: `package:${appInfo.id}` });
+              }
+            } catch (e) {
+              console.error("Ayarlar açılamadı:", e);
+            }
+            return;
+          }
+        }
 
         const permissionGranted = await requestPermissions();
         console.log("🔔 İzin sonucu:", permissionGranted);
@@ -166,7 +195,6 @@ const SettingsPage = () => {
             showLocalNotification("Bildirimler Aktif", "Kelimele bildirimleriniz aktif edildi!");
           }, 1000);
         } else {
-          // İzin reddedildiyse geri al
           setNotifications(false);
           toast({
             title: "⚠️ İzin Gerekli",
@@ -175,6 +203,7 @@ const SettingsPage = () => {
           });
         }
       } else {
+        // Bildirimleri kapat
         setNotifications(false);
         await disableNotifications();
         toast({
