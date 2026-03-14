@@ -138,7 +138,8 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
   const getTransformTop = () => {
     switch (phase) {
-      case 'enter': return 'translate-x-full';
+      case 'initial': return 'translate-x-full';
+      case 'enter': return 'translate-x-0';
       case 'hold': return 'translate-x-0';
       case 'exit': return '-translate-x-full';
       case 'done': return '-translate-x-full';
@@ -147,7 +148,8 @@ const VsIntroScreen = ({ roomId, isAI, onComplete }: VsIntroScreenProps) => {
 
   const getTransformBottom = () => {
     switch (phase) {
-      case 'enter': return '-translate-x-full';
+      case 'initial': return '-translate-x-full';
+      case 'enter': return 'translate-x-0';
       case 'hold': return 'translate-x-0';
       case 'exit': return 'translate-x-full';
       case 'done': return 'translate-x-full';
