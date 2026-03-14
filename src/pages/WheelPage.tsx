@@ -364,12 +364,12 @@ const WheelPage = () => {
       wheelRef.current.style.transition = "none";
     }
 
-    // 2 fazlı easing: 0-5s çok hızlı sabit, 5-12.2s yavaşlayarak durma
+    // 2 fazlı easing: 0-250ms çok hızlı sabit, 250-610ms yavaşlayarak durma
     const easeTwoPhase = (t: number): number => {
-      const p = 5000 / SPIN_DURATION; // ~0.4098
+      const p = 250 / SPIN_DURATION; // ~0.4098
 
       if (t <= p) {
-        // Faz 1: Çok hızlı sabit dönüş - toplam yolun %70'ini 5 saniyede kat et
+        // Faz 1: Çok hızlı sabit dönüş - toplam yolun %70'ini 250ms'de kat et
         return 0.70 * (t / p);
       }
       // Faz 2: Yavaşlayarak durma (cubic ease-out)
