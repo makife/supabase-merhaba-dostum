@@ -377,7 +377,7 @@ const PuzzleGamePage: React.FC = () => {
                         number === 0
                           ? "bg-transparent"
                           : `bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg border-2 border-white/20 ${
-                              isValidMove(index, gameState.emptyIndex) && !gameState.isCompleted && !hasPlayedToday
+                              isValidMove(index, gameState.emptyIndex) && !gameState.isCompleted
                                 ? "hover:scale-105 active:scale-95 hover:shadow-cyan-400/50 cursor-pointer"
                                 : "cursor-not-allowed opacity-70"
                             }`
