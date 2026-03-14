@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getRankTier } from '@/utils/rankSystem';
 import { supabase } from '@/integrations/supabase/client';
