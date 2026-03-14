@@ -140,15 +140,30 @@ const WheelPage = () => {
   usePageResync(handleWheelResync, "WheelPage", false);
 
   const preloadedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioReadyRef = useRef(false);
 
   useEffect(() => {
     // Preload wheel sound for instant playback
     if (!Capacitor.isNativePlatform()) {
       const audio = new Audio("/carkSesi.mp3");
       audio.preload = "auto";
+      audio.addEventListener("canplaythrough", () => {
+        audioReadyRef.current = true;
+      }, { once: true });
       audio.load();
       preloadedAudioRef.current = audio;
     }
+
+    const preloadNext = () => {
+      audioReadyRef.current = false;
+      const next = new Audio("/carkSesi.mp3");
+      next.preload = "auto";
+      next.addEventListener("canplaythrough", () => {
+        audioReadyRef.current = true;
+      }, { once: true });
+      next.load();
+      preloadedAudioRef.current = next;
+    };
 
     soundsRef.current = {
       playSpecialSound: (path: string, volume = 0.7) => {
@@ -156,23 +171,16 @@ const WheelPage = () => {
           import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
             playSpecialNativeSound(path, volume);
           });
+        } else if (path === "/carkSesi.mp3" && preloadedAudioRef.current) {
+          const audio = preloadedAudioRef.current;
+          audio.currentTime = 0;
+          audio.volume = volume;
+          audio.play().catch(() => {});
+          preloadNext();
         } else {
-          // Use preloaded audio for wheel sound
-          if (path === "/carkSesi.mp3" && preloadedAudioRef.current) {
-            const audio = preloadedAudioRef.current;
-            audio.currentTime = 0;
-            audio.volume = volume;
-            audio.play().catch(() => {});
-            // Prepare next preload
-            const next = new Audio("/carkSesi.mp3");
-            next.preload = "auto";
-            next.load();
-            preloadedAudioRef.current = next;
-          } else {
-            const audio = new Audio(path);
-            audio.volume = volume;
-            audio.play().catch(() => {});
-          }
+          const audio = new Audio(path);
+          audio.volume = volume;
+          audio.play().catch(() => {});
         }
       },
     };
