@@ -24,27 +24,21 @@ export function useRealtimeReconnect(
   }, [channelSetup]);
 
   // Kanal oluştur/yeniden oluştur
-  // ⚠️ DEVRE DIŞI: removeChannel çağrısı kaldırıldı - bağlantı koruması
   const createChannel = useCallback(() => {
-    // ❌ DEVRE DIŞI: Eski kanalı temizleme - bağlantıyı öldürüyordu
-    // if (channelRef.current) {
-    //   try {
-    //     getSupabaseClient().removeChannel(channelRef.current);
-    //   } catch (e) {}
-    //   channelRef.current = null;
-    // }
-
-    // Sadece yeni kanal oluştur (mevcut yoksa)
-    if (!channelRef.current) {
+    // ✅ Eski kanalı temizle (stale channel birikimi önleme)
+    if (channelRef.current) {
       try {
-        const newChannel = setupFnRef.current();
-        channelRef.current = newChannel;
-        console.log("[useRealtimeReconnect] ✅ Kanal oluşturuldu");
-      } catch (e) {
-        console.error("[useRealtimeReconnect] ❌ Kanal oluşturma hatası:", e);
-      }
-    } else {
-      console.log("[useRealtimeReconnect] ⚠️ Kanal zaten mevcut, atlanıyor (bağlantı koruması)");
+        getSupabaseClient().removeChannel(channelRef.current);
+      } catch (e) { /* ignore */ }
+      channelRef.current = null;
+    }
+
+    try {
+      const newChannel = setupFnRef.current();
+      channelRef.current = newChannel;
+      console.log("[useRealtimeReconnect] ✅ Kanal oluşturuldu");
+    } catch (e) {
+      console.error("[useRealtimeReconnect] ❌ Kanal oluşturma hatası:", e);
     }
   }, []);
 
@@ -52,16 +46,13 @@ export function useRealtimeReconnect(
   useEffect(() => {
     createChannel();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      console.log("[useRealtimeReconnect] ⚠️ Cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: removeChannel - bağlantıyı öldürüyordu
-      // if (channelRef.current) {
-      //   try {
-      //     getSupabaseClient().removeChannel(channelRef.current);
-      //   } catch (e) {}
-      //   channelRef.current = null;
-      // }
+      if (channelRef.current) {
+        try {
+          getSupabaseClient().removeChannel(channelRef.current);
+        } catch (e) { /* ignore */ }
+        channelRef.current = null;
+      }
     };
   }, dependencies);
 

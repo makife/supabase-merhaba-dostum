@@ -1589,15 +1589,14 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     const presenceGraceUntil = Date.now() + 2000;
 
-    // ✅ PRESENCE CHANNEL (ayrı, tek instance - duplicate önleme)
-    const presenceChannel = supabase
-      .channel(`presence-${subscriptionRoomId}`, {
-        config: {
-          presence: {
-            key: user.id, // ✅ Sadece user.id (user-${user.id} değil)
-          },
-        },
-      })
+    // ✅ PRESENCE CHANNEL (RealtimeManager ile merkezi yönetim)
+    const presenceChannel = realtimeManager.createPresenceChannel(
+      subscriptionRoomId,
+      user.id,
+      user.id
+    )!;
+    
+    presenceChannel
       .on("presence", { event: "sync" }, () => {
         const state = presenceChannel.presenceState();
         console.log("🔄 Presence sync:", state);
@@ -2051,18 +2050,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Reset countdown guard for next room/game
       lastCountdownAtRef.current = null;
 
-      // ✅ Presence kanalını kapat (eski oda için)
-      try {
-        presenceChannel.untrack();
-        supabase.removeChannel(presenceChannel);
-        console.log("✅ Presence channel temizlendi:", subscriptionRoomId.slice(-8));
-      } catch (err) {
-        console.warn("⚠️ Presence cleanup hatası:", err);
-      }
-
-      // ✅ RealtimeManager kanallarını eski room ID'ye göre temizle
+      // ✅ RealtimeManager tüm kanalları (presence dahil) temizler
       if (user?.id) {
-        realtimeManager.cleanupChannelsForRoom(subscriptionRoomId, user.id);
+        realtimeManager.cleanupRoom(subscriptionRoomId, user.id);
       }
 
       // Clear timers

@@ -650,10 +650,8 @@ export default function ChatPage() {
       )
       .subscribe();
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
     return () => {
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
-      console.log("⚠️ [ChatPage] Cleanup ATLANYOR (bağlantı koruması)");
+      supabase.removeChannel(channel);
     };
   }, [user?.id]);
 
