@@ -429,9 +429,9 @@ export default function ChatPage() {
                         alt={targetUser.username}
                         fallback={targetUser.username.charAt(0).toUpperCase()}
                         size="sm"
-                        className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 transition-all duration-200 ${
+                      className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 ${
                           isUserOnline(targetUser.id)
-                            ? "border-green-400 shadow-green-200 shadow-md"
+                            ? "border-green-400"
                             : "border-gray-300"
                         }`}
                       />
