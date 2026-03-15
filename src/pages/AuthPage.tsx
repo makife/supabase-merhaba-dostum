@@ -156,6 +156,33 @@ const AuthPage = () => {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      const isNative = Capacitor.isNativePlatform();
+      const redirectUrl = isNative ? "kelimele://auth/callback" : window.location.origin;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: isNative,
+        },
+      });
+      if (error) {
+        toast({ title: "Apple Giriş Hatası", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (isNative && data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      toast({ title: "Apple Giriş Hatası", description: err?.message || "Bir hata oluştu", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetLoading(true);
