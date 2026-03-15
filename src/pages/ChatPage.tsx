@@ -332,7 +332,7 @@ export default function ChatPage() {
 
   // Ortak header bileşeni - Mini floating menü ile güncellenmiş versiyon
   const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
-    <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-6 border-b border-white/10 shadow-lg h-[120px]">
+    <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-6 border-b border-white/10 h-[120px]">
       <div className="flex flex-col h-full justify-end">
         {/* Alt kısım - Başlık ve Butonlar aynı hizada */}
         <div className="flex items-center justify-between">
