@@ -332,7 +332,7 @@ export default function ChatPage() {
 
   // Ortak header bileşeni - Mini floating menü ile güncellenmiş versiyon
   const renderHeader = (title: string, subtitle: string, showBackButton: boolean = false) => (
-    <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-6 border-b border-white/10 shadow-lg h-[120px]">
+    <div className="bg-gradient-to-r from-[#2D3436] via-[#3d4548] to-[#636E72] text-white p-6 border-b border-white/10 h-[120px]">
       <div className="flex flex-col h-full justify-end">
         {/* Alt kısım - Başlık ve Butonlar aynı hizada */}
         <div className="flex items-center justify-between">
@@ -349,7 +349,7 @@ export default function ChatPage() {
                     handleViewChange("global");
                   }
                 }}
-                className="px-2 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-300 hover:from-orange-600 hover:to-orange-700 hover:border-orange-200 transition-all duration-200 shadow-lg hover:shadow-orange-500/30 font-semibold hover:scale-105"
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-300 font-semibold"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
@@ -381,7 +381,7 @@ export default function ChatPage() {
                 playSound("buttonClick");
                 handleBackToMenu();
               }}
-              className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 hover:from-purple-600 hover:to-purple-700 hover:border-purple-200 transition-all duration-200 shadow-lg hover:shadow-purple-500/30 font-semibold hover:scale-105 sm:px-3"
+              className="px-2 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white border-2 border-purple-300 font-semibold sm:px-3"
             >
               <Home className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-1" />
               <span className="text-xs hidden sm:inline">Ana Sayfa</span>
@@ -394,7 +394,7 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -414,13 +414,13 @@ export default function ChatPage() {
                 return (
                   <Card
                     key={targetUser.id}
-                    className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-xl ${
+                    className={`p-4 cursor-pointer border rounded-xl ${
                       unreadCount > 0
-                        ? "border-green-400/50 bg-white/15 shadow-md shadow-green-500/10"
+                        ? "border-green-400/50 bg-white/15"
                         : hasHistory
-                          ? "border-white/20 bg-white/10 hover:bg-white/15"
-                          : "border-white/10 bg-white/5 hover:bg-white/10"
-                    } hover:border-white/30 hover:scale-[1.02]`}
+                          ? "border-white/20 bg-white/10"
+                          : "border-white/10 bg-white/5"
+                    }`}
                     onClick={() => startPrivateChat(targetUser)}
                   >
                     <div className="flex items-center space-x-3">
@@ -429,9 +429,9 @@ export default function ChatPage() {
                         alt={targetUser.username}
                         fallback={targetUser.username.charAt(0).toUpperCase()}
                         size="sm"
-                        className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 transition-all duration-200 ${
+                      className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 ${
                           isUserOnline(targetUser.id)
-                            ? "border-green-400 shadow-green-200 shadow-md"
+                            ? "border-green-400"
                             : "border-gray-300"
                         }`}
                       />
@@ -453,7 +453,7 @@ export default function ChatPage() {
                           />
                         )}
                         {unreadCount > 0 && (
-                          <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-lg animate-pulse">
+                          <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold">
                             {unreadCount > 9 ? "9+" : unreadCount}
                           </div>
                         )}
@@ -504,7 +504,7 @@ export default function ChatPage() {
   };
 
   const renderBlockedUsersList = () => (
-    <div className="h-full overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+    <div className="h-full overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -654,7 +654,7 @@ export default function ChatPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-[#2D3436] via-[#434d50] to-[#636E72]">
       {/* Ana wrapper — blur YOK burada, blur renderContent içinde içerik div'ine veriliyor */}
-      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 border-x border-white/10 overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
