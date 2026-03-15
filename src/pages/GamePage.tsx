@@ -7825,10 +7825,10 @@ const GamePage = ({
                   <div className="grid grid-cols-3 gap-1.5">
                     {/* Değiştir */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
                         jokers.degistir <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-emerald-500/30 bg-gradient-to-b from-emerald-900/50 to-emerald-800/30 hover:from-emerald-800/60 active:scale-95 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                          : "border-emerald-500/30 bg-emerald-900/30 active:scale-95"
                       }`}
                       onTouchStart={(e) => {
                         e.preventDefault();
@@ -7856,10 +7856,10 @@ const GamePage = ({
                     </button>
                     {/* Fısılda */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
                         jokers.fisilida <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-cyan-500/30 bg-gradient-to-b from-cyan-900/50 to-cyan-800/30 hover:from-cyan-800/60 active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                          : "border-cyan-500/30 bg-cyan-900/30 active:scale-95"
                       }`}
                       onTouchStart={(e) => {
                         e.preventDefault();
@@ -7887,10 +7887,10 @@ const GamePage = ({
                     </button>
                     {/* Sen Yaz */}
                     <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200 overflow-visible ${
+                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
                         jokers.senYaz <= 0 || isJokerActive || !gameStarted
                           ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-violet-500/30 bg-gradient-to-b from-violet-900/50 to-violet-800/30 hover:from-violet-800/60 active:scale-95 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
+                          : "border-violet-500/30 bg-violet-900/30 active:scale-95"
                       }`}
                       onTouchStart={(e) => {
                         e.preventDefault();
