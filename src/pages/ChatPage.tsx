@@ -654,7 +654,7 @@ export default function ChatPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-[#2D3436] via-[#434d50] to-[#636E72]">
       {/* Ana wrapper — blur YOK burada, blur renderContent içinde içerik div'ine veriliyor */}
-      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 shadow-2xl border-x border-white/10 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto bg-[#2D3436]/80 border-x border-white/10 overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{renderContent()}</div>
       </div>
