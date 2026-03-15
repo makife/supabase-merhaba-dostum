@@ -394,7 +394,7 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548]">
+      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
