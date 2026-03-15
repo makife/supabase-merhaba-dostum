@@ -414,13 +414,13 @@ export default function ChatPage() {
                 return (
                   <Card
                     key={targetUser.id}
-                    className={`p-4 hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-xl ${
+                    className={`p-4 cursor-pointer border rounded-xl ${
                       unreadCount > 0
-                        ? "border-green-400/50 bg-white/15 shadow-md shadow-green-500/10"
+                        ? "border-green-400/50 bg-white/15"
                         : hasHistory
-                          ? "border-white/20 bg-white/10 hover:bg-white/15"
-                          : "border-white/10 bg-white/5 hover:bg-white/10"
-                    } hover:border-white/30 hover:scale-[1.02]`}
+                          ? "border-white/20 bg-white/10"
+                          : "border-white/10 bg-white/5"
+                    }`}
                     onClick={() => startPrivateChat(targetUser)}
                   >
                     <div className="flex items-center space-x-3">
