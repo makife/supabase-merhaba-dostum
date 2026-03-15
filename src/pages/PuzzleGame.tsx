@@ -31,21 +31,33 @@ const createSeededRandom = (seed: number) => {
   };
 };
 
-// Deterministic daily seed from date string
-const getDailySeed = (): number => {
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+// Deterministic daily seed from date string (Europe/Istanbul)
+const getDailySeed = (dayOffset = 0): number => {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const targetDate = new Date(Date.now() + dayOffset * dayMs);
+  const dateKey = targetDate.toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+
   let hash = 0;
-  for (let i = 0; i < today.length; i++) {
-    hash = (hash * 31 + today.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < dateKey.length; i++) {
+    hash = (hash * 31 + dateKey.charCodeAt(i)) >>> 0;
   }
   return hash;
 };
 
 // Deterministic daily word: same word for all players on the same day
+// Also guarantees different word from previous day when possible
 const getDailyWord = (words: string[]): string => {
   if (words.length === 0) return "PORTAKAL";
-  const seed = getDailySeed();
-  return words[seed % words.length];
+  if (words.length === 1) return words[0];
+
+  const todayIndex = getDailySeed() % words.length;
+  const yesterdayIndex = getDailySeed(-1) % words.length;
+
+  if (todayIndex === yesterdayIndex) {
+    return words[(todayIndex + 1) % words.length];
+  }
+
+  return words[todayIndex];
 };
 
 const PuzzleGamePage: React.FC = () => {
