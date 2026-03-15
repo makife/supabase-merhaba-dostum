@@ -85,7 +85,7 @@ const PuzzleGamePage: React.FC = () => {
         const words8 = allWords.filter((w) => w.length === WORD_LENGTH);
         if (words8.length === 0) words8.push("PORTAKAL", "BİLGİSAY", "ÇEKİRDEK");
         // Sort for deterministic indexing
-        words8.sort();
+        words8.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
         wordsRef.current = words8;
         setIsWordsLoaded(true);
       } catch {
