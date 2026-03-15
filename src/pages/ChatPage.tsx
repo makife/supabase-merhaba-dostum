@@ -453,7 +453,7 @@ export default function ChatPage() {
                           />
                         )}
                         {unreadCount > 0 && (
-                          <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-lg animate-pulse">
+                          <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-xs text-white font-bold">
                             {unreadCount > 9 ? "9+" : unreadCount}
                           </div>
                         )}
