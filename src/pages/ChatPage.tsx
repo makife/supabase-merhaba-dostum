@@ -349,7 +349,7 @@ export default function ChatPage() {
                     handleViewChange("global");
                   }
                 }}
-                className="px-2 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-300 hover:from-orange-600 hover:to-orange-700 hover:border-orange-200 transition-all duration-200 shadow-lg hover:shadow-orange-500/30 font-semibold hover:scale-105"
+                className="px-2 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-orange-300 font-semibold"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
