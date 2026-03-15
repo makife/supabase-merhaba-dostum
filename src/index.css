@@ -1130,24 +1130,7 @@ All colors MUST be HSL.
 }
 
 /* Joker Badge Bounce */
-@keyframes badge-bounce {
-  0%,
-  20%,
-  50%,
-  80%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-3px);
-  }
-  60% {
-    transform: translateY(-1px);
-  }
-}
-
 .joker-badge {
-  animation: badge-bounce 2s infinite;
 }
 
 /* Floating Animation for Joker Panel */
