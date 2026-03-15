@@ -7845,7 +7845,7 @@ const GamePage = ({
                       disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <Shuffle className="w-4 h-4 text-emerald-400 mb-0.5" />
+                      <img src="/degistirIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <Badge
                         variant="secondary"
@@ -7876,7 +7876,7 @@ const GamePage = ({
                       disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <Lightbulb className="w-4 h-4 text-cyan-400 mb-0.5" />
+                      <img src="/fisildaIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <Badge
                         variant="secondary"
@@ -7907,7 +7907,7 @@ const GamePage = ({
                       disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <PenTool className="w-4 h-4 text-violet-400 mb-0.5" />
+                      <img src="/senyazIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <Badge
                         variant="secondary"
