@@ -19,6 +19,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
+import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
 
 import {
   Bot,
