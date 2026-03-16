@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
+import { playSpecialNativeSound } from "@/services/nativeAudioService";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
@@ -158,9 +159,7 @@ const WheelPage = () => {
     soundsRef.current = {
       playSpecialSound: (path: string, volume = 0.7) => {
         if (Capacitor.isNativePlatform()) {
-          import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-            playSpecialNativeSound(path, volume);
-          });
+          playSpecialNativeSound(path, volume);
         } else {
           const audio = new Audio(path);
           audio.volume = volume;
@@ -375,9 +374,7 @@ const WheelPage = () => {
 
     const playTickSound = () => {
       if (Capacitor.isNativePlatform()) {
-        import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-          playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
-        });
+        playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
       } else {
         const pool = tickAudioPoolRef.current;
         if (pool.length > 0) {
