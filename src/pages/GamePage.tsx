@@ -7992,7 +7992,11 @@ const GamePage = ({
                 {/* Game Grid */}
                 <div
                   className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
-                  style={{ background: "rgba(20,20,40,0.6)" }}
+                  style={{
+                    background: "rgba(20,20,40,0.6)",
+                    transform: "translateZ(0)",
+                    WebkitTransform: "translateZ(0)",
+                  }}
                 >
                   <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
                     {gameGrid.map((row, rowIndex) =>
