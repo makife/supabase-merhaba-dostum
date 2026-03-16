@@ -3,8 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Rastgele eşleşme arayan oyuncu sayısını 1 dakikada bir çeker.
- * matchmaking_rooms tablosundan status='waiting' ve süresi dolmamış odaların
- * current_players toplamını döner.
+ * game_rooms tablosundan status='waiting' ve game_mode='random' olan odaları sayar.
+ * Her bekleyen oda = 1 arayan oyuncu.
  */
 export const useSearchingPlayersCount = () => {
   const [count, setCount] = useState<number>(0);
@@ -13,15 +13,18 @@ export const useSearchingPlayersCount = () => {
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const { data, error } = await supabase
-          .from('matchmaking_rooms')
-          .select('current_players')
+        // 2 dakikadan eski odaları dahil etme
+        const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        
+        const { count: roomCount, error } = await supabase
+          .from('game_rooms')
+          .select('*', { count: 'exact', head: true })
           .eq('status', 'waiting')
-          .gt('expires_at', new Date().toISOString());
+          .eq('game_mode', 'random')
+          .gt('created_at', twoMinAgo);
 
-        if (!error && data) {
-          const total = data.reduce((sum, room) => sum + (room.current_players || 0), 0);
-          setCount(total);
+        if (!error && roomCount !== null) {
+          setCount(roomCount);
         }
       } catch {
         // Sessizce devam et
@@ -29,7 +32,7 @@ export const useSearchingPlayersCount = () => {
     };
 
     fetchCount();
-    intervalRef.current = setInterval(fetchCount, 60000); // 1 dakikada bir
+    intervalRef.current = setInterval(fetchCount, 60000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
