@@ -147,7 +147,7 @@ const WheelPage = () => {
     if (!Capacitor.isNativePlatform()) {
       const pool: HTMLAudioElement[] = [];
       for (let i = 0; i < 8; i++) {
-        const tick = new Audio("/sounds/default/butonKlik.mp3");
+        const tick = new Audio("/carkSesi.mp3");
         tick.preload = "auto";
         tick.volume = 0.4;
         tick.load();
