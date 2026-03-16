@@ -116,6 +116,7 @@ export function useActivityTracker() {
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("force-presence-update", handleForcePresence);
       appStateListenerPromise.then((l) => l.remove());
     };
   }, [user]);
