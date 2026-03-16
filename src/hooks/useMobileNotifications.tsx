@@ -457,34 +457,27 @@ export const useMobileNotifications = () => {
     if (!user?.id) return;
 
     try {
-      // 1. localStorage'daki bekleyen token'ı kontrol et
-      const pendingData = localStorage.getItem("push_token_pending");
-      if (pendingData) {
-        const { token } = JSON.parse(pendingData);
-        if (token) {
-          console.log("📱 Bekleyen token kaydediliyor...");
-          await savePushToken(user.id, token);
-          localStorage.removeItem("push_token_pending");
-          return; // Token kaydedildi, devam etmeye gerek yok
-        }
+      // 1. nativeStorage'daki bekleyen token'ı kontrol et
+      const pendingData = await nativeStorage.getJSON<{ token: string }>("push_token_pending");
+      if (pendingData?.token) {
+        console.log("📱 Bekleyen token kaydediliyor...");
+        await savePushToken(user.id, pendingData.token);
+        await nativeStorage.removeItem("push_token_pending");
+        return;
       }
 
       // 2. State'teki mevcut token'ı kontrol et (OAuth kullanıcıları için kritik)
-      // Registration eventi önceki oturumda tetiklenmiş olabilir,
-      // yeni user ile tekrar tetiklenmeyebilir
       if (pushToken) {
         console.log("📱 Mevcut token yeni kullanıcıya kaydediliyor (OAuth fix)...");
         await savePushToken(user.id, pushToken);
         return;
       }
 
-      // 3. localStorage'daki eski token'ları kontrol et
-      const savedTokens = localStorage.getItem("push_tokens") || "{}";
-      const tokens = JSON.parse(savedTokens);
-      // Herhangi bir kaydedilmiş token varsa yeni kullanıcıya ata
-      const anyToken = Object.values(tokens).find((t: any) => t?.token);
+      // 3. nativeStorage'daki eski token'ları kontrol et
+      const savedTokens = await nativeStorage.getJSON<Record<string, any>>("push_tokens") || {};
+      const anyToken = Object.values(savedTokens).find((t: any) => t?.token);
       if (anyToken && (anyToken as any).token) {
-        console.log("📱 localStorage'daki token yeni kullanıcıya kaydediliyor...");
+        console.log("📱 nativeStorage'daki token yeni kullanıcıya kaydediliyor...");
         await savePushToken(user.id, (anyToken as any).token);
       }
     } catch (error) {
