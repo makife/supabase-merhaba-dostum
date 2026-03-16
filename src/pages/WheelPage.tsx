@@ -159,9 +159,7 @@ const WheelPage = () => {
     soundsRef.current = {
       playSpecialSound: (path: string, volume = 0.7) => {
         if (Capacitor.isNativePlatform()) {
-          import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-            playSpecialNativeSound(path, volume);
-          });
+          playSpecialNativeSound(path, volume);
         } else {
           const audio = new Audio(path);
           audio.volume = volume;
