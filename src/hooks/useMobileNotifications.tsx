@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SafePushNotifications } from "@/utils/safePluginWrapper";
 import { suppressActivityForPush } from "@/hooks/useActivityTracker";
+import nativeStorage from "@/utils/nativeStorage";
 
 // Dinamik import için tipler
 type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
