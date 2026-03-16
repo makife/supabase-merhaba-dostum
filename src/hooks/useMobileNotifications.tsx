@@ -136,14 +136,13 @@ export const useMobileNotifications = () => {
 
       if (error) {
         console.error("Error saving push token to database:", error);
-        const savedTokens = localStorage.getItem("push_tokens") || "{}";
-        const tokens = JSON.parse(savedTokens);
-        tokens[userId] = {
+        const savedTokens = await nativeStorage.getJSON<Record<string, any>>("push_tokens") || {};
+        savedTokens[userId] = {
           token,
           platform: Capacitor.getPlatform(),
           updated_at: new Date().toISOString(),
         };
-        localStorage.setItem("push_tokens", JSON.stringify(tokens));
+        await nativeStorage.setJSON("push_tokens", savedTokens);
       } else {
         console.log("Push token saved to database:", token);
       }
