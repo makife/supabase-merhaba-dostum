@@ -1,43 +1,67 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+const RANDOM_MATCH_TTL_MS = 2 * 60 * 1000;
+
 /**
- * Rastgele eşleşme arayan oyuncu sayısını 1 dakikada bir çeker.
- * game_rooms tablosundan status='waiting' ve game_mode='random' olan odaları sayar.
- * Her bekleyen oda = 1 arayan oyuncu.
+ * Rastgele eşleşme arayan oyuncu sayısını çeker.
+ * - Doğru kaynak: public.game_rooms
+ * - Doğru mod: game_mode = 'random-match'
+ * - Eş zamanlı güncelleme: Realtime
+ * - Güvenlik ağı: 1 dakikalık polling
  */
 export const useSearchingPlayersCount = () => {
   const [count, setCount] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  const fetchCount = useCallback(async () => {
+    try {
+      const twoMinAgo = new Date(Date.now() - RANDOM_MATCH_TTL_MS).toISOString();
+
+      const { count: roomCount, error } = await supabase
+        .from('game_rooms')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'waiting')
+        .eq('game_mode', 'random-match')
+        .gt('created_at', twoMinAgo);
+
+      if (!error && roomCount !== null && isMountedRef.current) {
+        setCount(roomCount);
+      }
+    } catch {
+      // Sessizce devam et
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        // 2 dakikadan eski odaları dahil etme
-        const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-        
-        const { count: roomCount, error } = await supabase
-          .from('game_rooms')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'waiting')
-          .eq('game_mode', 'random')
-          .gt('created_at', twoMinAgo);
-
-        if (!error && roomCount !== null) {
-          setCount(roomCount);
-        }
-      } catch {
-        // Sessizce devam et
-      }
-    };
+    isMountedRef.current = true;
 
     fetchCount();
-    intervalRef.current = setInterval(fetchCount, 60000);
+
+    const refreshInterval = window.setInterval(fetchCount, 60000);
+
+    const channel = supabase
+      .channel('searching-players-count')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_rooms',
+          filter: 'game_mode=eq.random-match',
+        },
+        () => {
+          fetchCount();
+        },
+      )
+      .subscribe();
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      isMountedRef.current = false;
+      window.clearInterval(refreshInterval);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchCount]);
 
   return count;
 };
