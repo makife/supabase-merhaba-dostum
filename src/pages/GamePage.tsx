@@ -7533,6 +7533,7 @@ const GamePage = ({
   };
 
   return (
+    <LayoutGroup>
       <>
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
@@ -7962,12 +7963,13 @@ const GamePage = ({
                       )}
 
                       <div className="flex gap-1 items-center justify-center z-10">
-                        {selectedLetters.map((item, idx) => (
+                        {selectedLetters.map((item) => (
                           <motion.span
                             key={`input-${item.row}-${item.col}`}
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30, delay: idx * 0.03 }}
+                            layoutId={`letter-${item.row}-${item.col}`}
+                            layout
+                            transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
+                            style={{ willChange: "transform", transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
                             className="text-3xl font-mono font-extrabold text-white drop-shadow-sm select-none"
                           >
                             {item.letter}
@@ -7990,7 +7992,11 @@ const GamePage = ({
                 {/* Game Grid */}
                 <div
                   className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
-                  style={{ background: "rgba(20,20,40,0.6)" }}
+                  style={{
+                    background: "rgba(20,20,40,0.6)",
+                    transform: "translateZ(0)",
+                    WebkitTransform: "translateZ(0)",
+                  }}
                 >
                   <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
                     {gameGrid.map((row, rowIndex) =>
@@ -8039,9 +8045,14 @@ const GamePage = ({
                               {letter}
                             </span>
                             {!isSelected && (
-                              <span className="relative z-10">
+                              <motion.span
+                                layoutId={`letter-${rowIndex}-${colIndex}`}
+                                className="relative z-10"
+                                transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
+                                style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
+                              >
                                 {letter}
-                              </span>
+                              </motion.span>
                             )}
                             {isSelected && selectionOrder >= 0 && (
                               <motion.span
@@ -8218,6 +8229,7 @@ const GamePage = ({
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
         <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </>
+    </LayoutGroup>
   );
 };
 
