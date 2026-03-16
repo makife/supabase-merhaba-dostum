@@ -163,11 +163,10 @@ export const useMobileNotifications = () => {
         setPushToken("");
       }
 
-      // Also remove from localStorage
-      const savedTokens = localStorage.getItem("push_tokens") || "{}";
-      const tokens = JSON.parse(savedTokens);
-      delete tokens[userId];
-      localStorage.setItem("push_tokens", JSON.stringify(tokens));
+      // Also remove from nativeStorage
+      const savedTokens = await nativeStorage.getJSON<Record<string, any>>("push_tokens") || {};
+      delete savedTokens[userId];
+      await nativeStorage.setJSON("push_tokens", savedTokens);
     } catch (error) {
       console.error("Error removing push token:", error);
     }
