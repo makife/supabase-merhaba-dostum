@@ -374,9 +374,7 @@ const WheelPage = () => {
 
     const playTickSound = () => {
       if (Capacitor.isNativePlatform()) {
-        import("@/services/nativeAudioService").then(({ playSpecialNativeSound }) => {
-          playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
-        });
+        playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
       } else {
         const pool = tickAudioPoolRef.current;
         if (pool.length > 0) {
