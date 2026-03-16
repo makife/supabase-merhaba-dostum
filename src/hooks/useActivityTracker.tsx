@@ -72,6 +72,13 @@ export function useActivityTracker() {
       console.log("⏭️ ActivityTracker: İlk mount'ta push wake algılandı, online güncelleme atlanıyor");
     }
 
+    // 🔥 OAuth (Google/Apple) girişi sonrası presence'ı zorla güncelle
+    const handleForcePresence = (e: Event) => {
+      console.log("🟢 ActivityTracker: force-presence-update alındı, online yapılıyor");
+      updateLastSeen();
+    };
+    window.addEventListener("force-presence-update", handleForcePresence);
+
     // Her 45 saniyede bir heartbeat - sadece uygulama görünür VE odaklıysa (optimize edildi, eskisi 20s idi)
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
