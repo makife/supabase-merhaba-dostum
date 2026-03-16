@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 
+    // force_type: "weekly" | "monthly" | "season" — manuel tetikleme
+    const forceType = body.force_type as string | undefined;
+
     // Turkiye saati = UTC+3
     const now = new Date();
     const turkeyOffset = 3 * 60 * 60 * 1000;
@@ -46,7 +49,7 @@ Deno.serve(async (req) => {
 
     const results: string[] = [];
 
-    console.log(`🕐 Turkey time: day=${dayOfWeek} hour=${hour} date=${dateOfMonth} month=${month}`);
+    console.log(`🕐 Turkey time: day=${dayOfWeek} hour=${hour} date=${dateOfMonth} month=${month} forceType=${forceType || "none"}`);
 
     // Çift ödül koruması
     const alreadyAwarded = async (prizeType: string): Promise<boolean> => {
@@ -72,7 +75,9 @@ Deno.serve(async (req) => {
         sinceDate = seasonStart.toISOString();
       }
 
-      const { data } = await supabase
+      console.log(`🔍 Checking alreadyAwarded for ${prizeType} since ${sinceDate}`);
+
+      const { data, error } = await supabase
         .from("notifications")
         .select("id")
         .in("type", ["leaderboard_prize", "system"])
@@ -80,16 +85,24 @@ Deno.serve(async (req) => {
         .like("message", `%${label} liderlik%`)
         .limit(1);
       
+      if (error) {
+        console.error(`❌ alreadyAwarded query error for ${prizeType}:`, error);
+        return false; // hata durumunda ödül vermeye devam et
+      }
+
       const found = !!(data && data.length > 0);
       if (found) {
-        console.log(`⚠️ ${prizeType} prize already awarded since ${sinceDate}, skipping`);
+        console.log(`⚠️ ${prizeType} prize already awarded since ${sinceDate}, found: ${JSON.stringify(data)}`);
+      } else {
+        console.log(`✅ ${prizeType} prize NOT yet awarded, proceeding`);
       }
       return found;
     };
 
-    // ===== WEEKLY: Her Pazartesi 00:00-00:59 TRT =====
-    // KRİTİK: Önceki haftanın kazananını bul (mevcut hafta değil!)
-    if (dayOfWeek === 1 && hour < 1) {
+    // ===== WEEKLY =====
+    const shouldDoWeekly = forceType === "weekly" || (dayOfWeek === 1 && hour < 1);
+    if (shouldDoWeekly) {
+      console.log("📊 Processing WEEKLY prize...");
       if (await alreadyAwarded("weekly")) {
         results.push("Weekly prize already awarded, skipping");
       } else {
@@ -101,13 +114,12 @@ Deno.serve(async (req) => {
           results.push("No weekly winner found");
         }
       }
-      await cleanupOldStats(supabase, "weekly_stats", "week_start", 56);
-      results.push("Weekly stats cleanup done");
     }
 
-    // ===== MONTHLY: Her ayın 1'i 00:00-00:59 TRT =====
-    // KRİTİK: Önceki ayın kazananını bul
-    if (dateOfMonth === 1 && hour < 1) {
+    // ===== MONTHLY =====
+    const shouldDoMonthly = forceType === "monthly" || (dateOfMonth === 1 && hour < 1);
+    if (shouldDoMonthly) {
+      console.log("📊 Processing MONTHLY prize...");
       if (await alreadyAwarded("monthly")) {
         results.push("Monthly prize already awarded, skipping");
       } else {
@@ -119,13 +131,13 @@ Deno.serve(async (req) => {
           results.push("No monthly winner found");
         }
       }
-      await cleanupOldStats(supabase, "monthly_stats", "month_start", 180);
-      results.push("Monthly stats cleanup done");
     }
 
-    // ===== SEASON: Mayıs 1, Eylül 1, Ocak 1 TRT =====
+    // ===== SEASON =====
     const seasonResetMonths = [0, 4, 8];
-    if (seasonResetMonths.includes(month) && dateOfMonth === 1 && hour < 1) {
+    const shouldDoSeason = forceType === "season" || (seasonResetMonths.includes(month) && dateOfMonth === 1 && hour < 1);
+    if (shouldDoSeason) {
+      console.log("📊 Processing SEASON prize...");
       if (await alreadyAwarded("season")) {
         results.push("Season prize already awarded, skipping");
       } else {
@@ -139,6 +151,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Cleanup (sadece normal cron zamanında)
+    if (!forceType) {
+      if (dayOfWeek === 1 && hour < 1) {
+        await cleanupOldStats(supabase, "weekly_stats", "week_start", 56);
+        results.push("Weekly stats cleanup done");
+      }
+      if (dateOfMonth === 1 && hour < 1) {
+        await cleanupOldStats(supabase, "monthly_stats", "month_start", 180);
+        results.push("Monthly stats cleanup done");
+      }
+    }
+
     console.log(`✅ Results: ${JSON.stringify(results)}`);
 
     return new Response(
@@ -146,7 +170,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in award-leaderboard-prizes:", error);
+    console.error("❌ Error in award-leaderboard-prizes:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -156,7 +180,6 @@ Deno.serve(async (req) => {
 
 // ===== ÖNCEKİ HAFTA kazananını doğrudan weekly_stats tablosundan bul =====
 async function findPreviousWeekWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
-  // Önceki haftanın Pazartesi gününü hesapla
   const prevMonday = new Date(turkeyNow);
   prevMonday.setUTCDate(prevMonday.getUTCDate() - ((turkeyNow.getUTCDay() + 6) % 7) - 7);
   const prevWeekStart = prevMonday.toISOString().split('T')[0];
@@ -172,7 +195,7 @@ async function findPreviousWeekWinner(supabase: any, turkeyNow: Date): Promise<s
     .limit(1)
     .maybeSingle();
   
-  if (error) { console.error("Previous week winner error:", error); return null; }
+  if (error) { console.error("❌ Previous week winner error:", error); return null; }
   if (!data) {
     console.log(`📊 No data found for week_start: ${prevWeekStart}`);
     return null;
@@ -184,7 +207,6 @@ async function findPreviousWeekWinner(supabase: any, turkeyNow: Date): Promise<s
 
 // ===== ÖNCEKİ AY kazananını doğrudan monthly_stats tablosundan bul =====
 async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
-  // Önceki ayın 1'ini hesapla
   const prevMonth = new Date(turkeyNow);
   prevMonth.setUTCMonth(prevMonth.getUTCMonth() - 1);
   prevMonth.setUTCDate(1);
@@ -201,7 +223,7 @@ async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<
     .limit(1)
     .maybeSingle();
   
-  if (error) { console.error("Previous month winner error:", error); return null; }
+  if (error) { console.error("❌ Previous month winner error:", error); return null; }
   if (!data) {
     console.log(`📊 No data found for month_start: ${prevMonthStart}`);
     return null;
@@ -211,16 +233,18 @@ async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<
   return data.user_id;
 }
 
-// ===== SEZON kazananı (sezon bittiğinde çağrılır, mevcut veriler hala mevcut) =====
+// ===== SEZON kazananı =====
 async function findSeasonWinner(supabase: any): Promise<string | null> {
   const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 1 });
-  if (error) { console.error("Season leaderboard error:", error); return null; }
+  if (error) { console.error("❌ Season leaderboard error:", error); return null; }
   if (!data || data.length === 0) return null;
   console.log(`📊 Season winner found: ${data[0].user_id} with score ${data[0].season_score}`);
   return data[0].user_id;
 }
 
 async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
+  console.log(`🎁 Awarding ${prize.label} prize to ${userId}...`);
+  
   const jokerTypes = [
     { type: "joker_degistir", amount: prize.degistir },
     { type: "joker_fisilida", amount: prize.fisilida },
@@ -236,32 +260,45 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
       .maybeSingle();
 
     if (existing) {
-      await supabase
+      const { error } = await supabase
         .from("user_inventory")
         .update({ quantity: existing.quantity + joker.amount, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
+      if (error) console.error(`❌ Joker update error (${joker.type}):`, error);
+      else console.log(`✅ Joker ${joker.type}: ${existing.quantity} -> ${existing.quantity + joker.amount}`);
     } else {
-      await supabase
+      const { error } = await supabase
         .from("user_inventory")
         .insert({ user_id: userId, item_type: joker.type, quantity: joker.amount });
+      if (error) console.error(`❌ Joker insert error (${joker.type}):`, error);
+      else console.log(`✅ Joker ${joker.type}: 0 -> ${joker.amount}`);
     }
   }
 
   if (prize.oyunHakki) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("game_credits")
+      .select("game_credits, bonus_credits")
       .eq("id", userId)
       .single();
 
     if (profile) {
-      await supabase
+      const currentCredits = (profile.game_credits || 0);
+      const currentBonus = (profile.bonus_credits || 0);
+      // game_credits cap 5, fazlasını bonus'a ekle
+      const toGameCredits = Math.min(prize.oyunHakki, Math.max(0, 5 - currentCredits));
+      const toBonus = prize.oyunHakki - toGameCredits;
+      
+      const { error } = await supabase
         .from("profiles")
         .update({
-          game_credits: (profile.game_credits || 0) + prize.oyunHakki,
+          game_credits: currentCredits + toGameCredits,
+          bonus_credits: currentBonus + toBonus,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);
+      if (error) console.error(`❌ Game credits update error:`, error);
+      else console.log(`✅ Credits: game_credits +${toGameCredits}, bonus_credits +${toBonus}`);
     }
   }
 
@@ -274,13 +311,15 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
 
   if (currentProfile) {
     const currentCount = currentProfile[prize.countColumn] || 0;
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({
         [prize.countColumn]: currentCount + 1,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
+    if (error) console.error(`❌ Count update error:`, error);
+    else console.log(`✅ ${prize.countColumn}: ${currentCount} -> ${currentCount + 1}`);
   }
 
   // Rozet ver (sadece ilk kez)
@@ -292,25 +331,31 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     .maybeSingle();
 
   if (!existingBadge) {
-    await supabase.from("user_badges").insert({
+    const { error } = await supabase.from("user_badges").insert({
       user_id: userId,
       badge_id: prize.badgeId,
     });
-    console.log(`🏅 Badge ${prize.badgeId} awarded to ${userId}`);
+    if (error) console.error(`❌ Badge insert error:`, error);
+    else console.log(`🏅 Badge ${prize.badgeId} awarded to ${userId}`);
   }
 
-  // Bildirim gönder
+  // Bildirim gönder — type: "leaderboard_prize"
+  const notifMessage = `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`;
+  
   const { error: notifError } = await supabase.from("notifications").insert({
     user_id: userId,
     type: "leaderboard_prize",
-    message: `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`,
+    message: notifMessage,
+    is_read: false,
   });
 
   if (notifError) {
     console.error(`❌ Notification insert error for ${userId}:`, notifError);
+  } else {
+    console.log(`✅ Notification sent: ${notifMessage.substring(0, 50)}...`);
   }
 
-  console.log(`🎁 Prize awarded to ${userId}: ${prize.label}`);
+  console.log(`🎁 Prize awarded successfully to ${userId}: ${prize.label}`);
 }
 
 async function cleanupOldStats(supabase: any, table: string, dateColumn: string, daysOld: number) {
