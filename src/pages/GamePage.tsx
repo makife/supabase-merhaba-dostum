@@ -7533,6 +7533,7 @@ const GamePage = ({
   };
 
   return (
+    <LayoutGroup>
       <>
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
