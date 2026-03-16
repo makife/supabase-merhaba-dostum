@@ -368,19 +368,24 @@ const WheelPage = () => {
     const segmentAngleSize = 360 / RAW_SEGMENTS.length;
     lastSegmentIndexRef.current = -1;
 
-    const playTickSound = () => {
-      if (Capacitor.isNativePlatform()) {
-        playSpecialNativeSound("/carkSesi.mp3", 0.4);
-      } else {
-        const pool = tickAudioPoolRef.current;
-        if (pool.length > 0) {
-          const audio = pool[tickPoolIndexRef.current % pool.length];
-          audio.currentTime = 0;
-          audio.volume = Math.min(0.5, 0.2 + (1 - 0) * 0.3); // will be updated below
-          audio.play().catch(() => {});
-          tickPoolIndexRef.current++;
-        }
-      }
+    // Programatik tick sesi — AudioContext oscillator
+    const playGeneratedTick = (volume: number) => {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'square';
+      osc.frequency.value = 1800;
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.03);
     };
 
     const startTime = performance.now();
@@ -395,19 +400,9 @@ const WheelPage = () => {
       const normalizedDeg = ((currentDeg % 360) + 360) % 360;
       const currentSegIdx = Math.floor(normalizedDeg / segmentAngleSize);
       if (lastSegmentIndexRef.current !== -1 && currentSegIdx !== lastSegmentIndexRef.current) {
-        // Volume decreases as wheel slows down (louder when fast)
-        const pool = tickAudioPoolRef.current;
-        if (pool.length > 0 && !Capacitor.isNativePlatform()) {
-          const speed = 1 - t; // 1=fast, 0=stopped
-          const vol = 0.15 + speed * 0.45;
-          const audio = pool[tickPoolIndexRef.current % pool.length];
-          audio.currentTime = 0;
-          audio.volume = vol;
-          audio.play().catch(() => {});
-          tickPoolIndexRef.current++;
-        } else if (Capacitor.isNativePlatform()) {
-          playTickSound();
-        }
+        const speed = 1 - t;
+        const vol = 0.08 + speed * 0.25;
+        playGeneratedTick(vol);
       }
       lastSegmentIndexRef.current = currentSegIdx;
 
