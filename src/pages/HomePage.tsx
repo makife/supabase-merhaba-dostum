@@ -19,6 +19,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
+import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
 
 import {
   Bot,
@@ -126,7 +127,7 @@ const StatWidget = memo(({ icon: Icon, value, label, colorClass }: any) => (
 ));
 StatWidget.displayName = "StatWidget";
 
-const GameModeCard = memo(({ mode, onClick }: any) => (
+const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
@@ -149,6 +150,12 @@ const GameModeCard = memo(({ mode, onClick }: any) => (
     <div className="relative z-10">
       <h3 className="text-lg font-bold text-white leading-none mb-1 drop-shadow-md">{mode.title}</h3>
       <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
+      {mode.id === "random-match" && searchingCount > 0 && (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
+        </div>
+      )}
     </div>
   </div>
 ));
@@ -164,6 +171,7 @@ const HomePage = () => {
   // 🔥 DÜZELTME: startBackgroundMusic ARTIK YOK. Native otomatik hallediyor.
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
+  const searchingPlayersCount = useSearchingPlayersCount();
 
   usePremiumDailyRewards();
 
@@ -862,7 +870,7 @@ const HomePage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {gameModesConfig.map((mode) => (
-                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
+                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} searchingCount={searchingPlayersCount} />
               ))}
             </div>
           </div>
