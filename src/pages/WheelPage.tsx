@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
+import { playSpecialNativeSound } from "@/services/nativeAudioService";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
