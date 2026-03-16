@@ -143,17 +143,13 @@ const WheelPage = () => {
 
   usePageResync(handleWheelResync, "WheelPage", false);
 
+  // Web Audio API ile programatik tick sesi oluştur
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) {
-      const pool: HTMLAudioElement[] = [];
-      for (let i = 0; i < 8; i++) {
-        const tick = new Audio("/carkSesi.mp3");
-        tick.preload = "auto";
-        tick.volume = 0.4;
-        tick.load();
-        pool.push(tick);
-      }
-      tickAudioPoolRef.current = pool;
+    // AudioContext'i lazy olarak oluştur (kullanıcı etkileşimi sonrası)
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
 
     soundsRef.current = {
