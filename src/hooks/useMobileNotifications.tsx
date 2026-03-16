@@ -71,8 +71,8 @@ export const useMobileNotifications = () => {
           if (user?.id) {
             await savePushToken(user.id, token.value);
           } else {
-            console.log("⚠️ User henüz yok, token localStorage'a kaydediliyor");
-            localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
+            console.log("⚠️ User henüz yok, token nativeStorage'a kaydediliyor");
+            await nativeStorage.setJSON("push_token_pending", { token: token.value });
           }
         });
 
