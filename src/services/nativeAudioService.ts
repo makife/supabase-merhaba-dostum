@@ -259,7 +259,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('kutlama.mp3')) assetId = 'celebration';
   else if (soundFile.includes('kaybetme.mp3')) assetId = 'game_lose';
   else if (soundFile.includes('beraberlik.mp3')) assetId = 'tie';
-  else if (soundFile.includes('button-click.mp3')) assetId = 'button_click';
+  else if (soundFile.includes('button-click.mp3') || soundFile.includes('butonKlik.mp3')) assetId = 'button_click';
   else if (soundFile.includes('correct-word.mp3')) assetId = 'correct_word';
   else if (soundFile.includes('wrong-word.mp3')) assetId = 'wrong_word';
   
