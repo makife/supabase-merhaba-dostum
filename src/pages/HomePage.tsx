@@ -171,6 +171,7 @@ const HomePage = () => {
   // 🔥 DÜZELTME: startBackgroundMusic ARTIK YOK. Native otomatik hallediyor.
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
+  const searchingPlayersCount = useSearchingPlayersCount();
 
   usePremiumDailyRewards();
 
