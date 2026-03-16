@@ -8041,9 +8041,14 @@ const GamePage = ({
                               {letter}
                             </span>
                             {!isSelected && (
-                              <span className="relative z-10">
+                              <motion.span
+                                layoutId={`letter-${rowIndex}-${colIndex}`}
+                                className="relative z-10"
+                                transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
+                                style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
+                              >
                                 {letter}
-                              </span>
+                              </motion.span>
                             )}
                             {isSelected && selectionOrder >= 0 && (
                               <motion.span
