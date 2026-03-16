@@ -453,10 +453,12 @@ export const useMobileNotifications = () => {
   }, [isMobile]);
 
   // Bekleyen token'ı kaydet (user login olduktan sonra)
+  // OAuth (Google/Apple) ile giriş yapan kullanıcılar için de token'ı kaydet
   const savePendingToken = useCallback(async () => {
     if (!user?.id) return;
 
     try {
+      // 1. localStorage'daki bekleyen token'ı kontrol et
       const pendingData = localStorage.getItem("push_token_pending");
       if (pendingData) {
         const { token } = JSON.parse(pendingData);
@@ -464,12 +466,32 @@ export const useMobileNotifications = () => {
           console.log("📱 Bekleyen token kaydediliyor...");
           await savePushToken(user.id, token);
           localStorage.removeItem("push_token_pending");
+          return; // Token kaydedildi, devam etmeye gerek yok
         }
+      }
+
+      // 2. State'teki mevcut token'ı kontrol et (OAuth kullanıcıları için kritik)
+      // Registration eventi önceki oturumda tetiklenmiş olabilir,
+      // yeni user ile tekrar tetiklenmeyebilir
+      if (pushToken) {
+        console.log("📱 Mevcut token yeni kullanıcıya kaydediliyor (OAuth fix)...");
+        await savePushToken(user.id, pushToken);
+        return;
+      }
+
+      // 3. localStorage'daki eski token'ları kontrol et
+      const savedTokens = localStorage.getItem("push_tokens") || "{}";
+      const tokens = JSON.parse(savedTokens);
+      // Herhangi bir kaydedilmiş token varsa yeni kullanıcıya ata
+      const anyToken = Object.values(tokens).find((t: any) => t?.token);
+      if (anyToken && (anyToken as any).token) {
+        console.log("📱 localStorage'daki token yeni kullanıcıya kaydediliyor...");
+        await savePushToken(user.id, (anyToken as any).token);
       }
     } catch (error) {
       console.error("Bekleyen token kaydetme hatası:", error);
     }
-  }, [user?.id]);
+  }, [user?.id, pushToken]);
 
   // Initialize on mount
   useEffect(() => {
