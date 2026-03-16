@@ -870,7 +870,7 @@ const HomePage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {gameModesConfig.map((mode) => (
-                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} />
+                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} searchingCount={searchingPlayersCount} />
               ))}
             </div>
           </div>
