@@ -147,7 +147,7 @@ const WheelPage = () => {
     if (!Capacitor.isNativePlatform()) {
       const pool: HTMLAudioElement[] = [];
       for (let i = 0; i < 8; i++) {
-        const tick = new Audio("/sounds/default/butonKlik.mp3");
+        const tick = new Audio("/carkSesi.mp3");
         tick.preload = "auto";
         tick.volume = 0.4;
         tick.load();
@@ -374,7 +374,7 @@ const WheelPage = () => {
 
     const playTickSound = () => {
       if (Capacitor.isNativePlatform()) {
-        playSpecialNativeSound("/sounds/default/butonKlik.mp3", 0.4);
+        playSpecialNativeSound("/carkSesi.mp3", 0.4);
       } else {
         const pool = tickAudioPoolRef.current;
         if (pool.length > 0) {
