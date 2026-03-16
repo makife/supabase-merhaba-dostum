@@ -278,6 +278,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isNative) {
           await saveSessionToStorage(newSession);
         }
+        
+        // 🔥 OAuth girişlerinde presence güncellemesini tetikle
+        if (event === "SIGNED_IN") {
+          console.log("[Auth] 🟢 SIGNED_IN → force-presence-update dispatch");
+          window.dispatchEvent(new CustomEvent("force-presence-update", { detail: { userId: newSession.user.id } }));
+        }
       }
     });
     
