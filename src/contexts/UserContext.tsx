@@ -856,6 +856,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   const refreshOnlineUsers = async () => {
     try {
+      // 🔥 BASİT: last_seen 2 dakika içindeyse online
       const { data }: any = await supabase
         .from("user_presence" as any)
         .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
