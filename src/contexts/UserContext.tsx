@@ -789,13 +789,25 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     try {
       const { data: freshProfile, error: fetchError } = await supabase
         .from("profiles")
-        .select("game_credits, bonus_credits, last_credit_refresh")
+        .select("game_credits, bonus_credits, last_credit_refresh, premium_until, unlimited_lives_until")
         .eq("id", user.id)
         .single();
 
       if (fetchError || !freshProfile) {
         console.error("consumeCredit: Fresh profile fetch failed:", fetchError);
         return false;
+      }
+
+      // 🔥 KRİTİK: Veritabanından GÜNCEL premium/unlimited durumunu kontrol et
+      // Cache'deki isPremium stale olabilir (örn. marketten sınırsız paket alındıysa)
+      const now = new Date();
+      const freshIsPremium = 
+        (freshProfile.premium_until && new Date(freshProfile.premium_until) > now) ||
+        (freshProfile.unlimited_lives_until && new Date(freshProfile.unlimited_lives_until) > now);
+      
+      if (freshIsPremium) {
+        console.log("consumeCredit: User is premium (fresh DB check), returning true");
+        return true;
       }
 
       const freshTotalCredits = (freshProfile.game_credits || 0) + (freshProfile.bonus_credits || 0);
