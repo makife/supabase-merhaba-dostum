@@ -849,7 +849,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   };
 
   const isUserOnline = (userId: string) => {
-    return onlineUsers.some((user) => user.id === userId);
+    // Kendi kullanıcın her zaman online
+    if (userId === user?.id) return true;
+    return onlineUsers.some((u) => u.id === userId);
   };
 
   const refreshOnlineUsers = async () => {
