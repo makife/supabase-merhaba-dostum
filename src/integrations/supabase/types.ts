@@ -1777,10 +1777,10 @@ export type Database = {
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {
-          applied: boolean
-          disconnect_count: number
+          new_disconnect_count: number
           new_score: number
           penalty: number
+          success: boolean
         }[]
       }
       apply_moderator_ban: {
