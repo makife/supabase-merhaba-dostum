@@ -103,12 +103,13 @@ export const useFriendOnlineToast = () => {
       .on(
         "postgres_changes",
         {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "user_presence",
         },
         (payload) => {
           const newRecord = payload.new as any;
+          if (!newRecord?.user_id) return;
 
           // Bildirim kapalıysa atla
           if (!notifyEnabledRef.current) return;
@@ -119,13 +120,15 @@ export const useFriendOnlineToast = () => {
           // Arkadaş değilse atla
           if (!friendIdsRef.current.has(newRecord.user_id)) return;
 
+          // 🔥 BASİT: last_seen 2 dakika içindeyse online kabul et
+          const lastSeen = new Date(newRecord.last_seen).getTime();
+          const isNowOnline = (Date.now() - lastSeen) < 120 * 1000;
+
           const prevOnline = onlineStateRef.current.get(newRecord.user_id);
-          const isNowOnline = newRecord.is_online === true;
 
           // Sadece kesin false → true geçişinde toast göster
           if (isNowOnline && prevOnline === false) {
             // Cooldown: aynı arkadaş için 30 dakika içinde tekrar toast gösterme
-            // (arka plan/ön plan geçişlerinden kaynaklanan spam'i önler)
             const lastToast = lastToastTimeRef.current.get(newRecord.user_id) || 0;
             const now = Date.now();
             if (now - lastToast < 30 * 60 * 1000) {

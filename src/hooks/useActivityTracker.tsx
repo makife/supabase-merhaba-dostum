@@ -40,30 +40,21 @@ export function useActivityTracker() {
       try {
         const now = new Date().toISOString();
 
+        // 🔥 BASİT: Sadece last_seen güncelle, is_online flag'i artık kullanılmıyor
         await supabase.from("profiles").update({ last_seen: now }).eq("id", user.id);
 
         await supabase
           .from("user_presence")
-          .upsert({ user_id: user.id, is_online: true, last_seen: now }, { onConflict: "user_id" });
+          .upsert({ user_id: user.id, last_seen: now, is_online: true }, { onConflict: "user_id" });
 
-        console.log("💓 Heartbeat sent (last_seen + presence updated)");
+        console.log("💓 Heartbeat sent (last_seen updated)");
       } catch (error) {
         console.error("Error updating last_seen:", error);
       }
     };
 
-    // 🔥 Arka plana geçince offline yap (push spam önleme)
-    const setOffline = async () => {
-      try {
-        await supabase
-          .from("user_presence")
-          .update({ is_online: false })
-          .eq("user_id", user.id);
-        console.log("😴 ActivityTracker: Kullanıcı offline yapıldı (arka plan)");
-      } catch (error) {
-        console.error("Error setting offline:", error);
-      }
-    };
+    // 🔥 setOffline KALDIRILDI — artık is_online flag'ine bağımlı değiliz
+    // Kullanıcı arka plana geçince heartbeat duracak, last_seen eskiyecek = otomatik offline
 
     // İlk güncelleme - sadece gerçekten foreground'daysa
     if (document.visibilityState === "visible" && !isPushSuppressed()) {
@@ -86,31 +77,26 @@ export function useActivityTracker() {
       }
     }, 45000);
 
-    // 🔥 Visibility change: arka plana geçince offline, öne gelince online
+    // 🔥 Visibility change: öne gelince heartbeat, arka plana geçince bir şey yapma
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        setOffline();
-      } else if (document.visibilityState === "visible" && !isPushSuppressed()) {
+      if (document.visibilityState === "visible" && !isPushSuppressed()) {
         updateLastSeen();
       }
+      // arka plana geçince setOffline ÇAĞRILMIYOR — heartbeat duracak, last_seen eskiyecek
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Capacitor App state listener
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        // Push suppression kontrolü - ama gecikme olmadan hemen kontrol et
         if (isPushSuppressed()) {
           console.log(`⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor`);
           return;
         }
-        // 🔥 Anında online yap (eski 1500ms gecikme kaldırıldı)
-        console.log("🟢 ActivityTracker: App active → anında online yapılıyor");
+        console.log("🟢 ActivityTracker: App active → heartbeat gönderiliyor");
         updateLastSeen();
-      } else {
-        // Uygulama arka plana geçince offline yap
-        setOffline();
       }
+      // isActive === false → bir şey yapma, heartbeat duracak, last_seen eskiyecek
     });
 
     return () => {
