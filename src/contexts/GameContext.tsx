@@ -439,7 +439,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         const result = penaltyResult[0];
 
-        if (!result.applied) {
+        if (!result.success) {
           console.log("⚠️ Penalty not applied - user not authorized or not found");
           return;
         }
