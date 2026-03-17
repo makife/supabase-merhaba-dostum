@@ -701,7 +701,48 @@ const AppProviders = () => {
   );
 };
 
+// 📱 Web platformunu engelleyen ekran
+const WebBlockScreen = () => (
+  <div
+    className="fixed inset-0 flex flex-col items-center justify-center gap-6 p-8 text-center"
+    style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+  >
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
+    <div className="relative z-10 flex flex-col items-center gap-6">
+      <img src="/kelimeleLogo.png" alt="Kelimele" className="w-24 h-24 rounded-3xl shadow-2xl ring-2 ring-white/10" />
+      <h1 className="text-2xl font-bold text-white">Kelimele</h1>
+      <p className="text-white/70 text-base max-w-xs leading-relaxed">
+        Kelimele şu anda sadece mobil uygulama olarak kullanılabilir. 
+        Lütfen iOS veya Android uygulamamızı indirin.
+      </p>
+      <div className="flex flex-col gap-3 mt-4">
+        <a 
+          href="https://apps.apple.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/10"
+        >
+          📱 App Store'dan İndir
+        </a>
+        <a 
+          href="https://play.google.com" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/10"
+        >
+          🤖 Google Play'den İndir
+        </a>
+      </div>
+    </div>
+  </div>
+);
+
 const App = () => {
+  // 🚫 Web platformunu engelle - sadece native'de çalışsın
+  if (!Capacitor.isNativePlatform()) {
+    return <WebBlockScreen />;
+  }
+
   // Native resume event dinle - uygulamayı sıfırdan başlat
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
