@@ -77,13 +77,12 @@ export function useActivityTracker() {
       }
     }, 45000);
 
-    // 🔥 Visibility change: arka plana geçince offline, öne gelince online
+    // 🔥 Visibility change: öne gelince heartbeat, arka plana geçince bir şey yapma
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        setOffline();
-      } else if (document.visibilityState === "visible" && !isPushSuppressed()) {
+      if (document.visibilityState === "visible" && !isPushSuppressed()) {
         updateLastSeen();
       }
+      // arka plana geçince setOffline ÇAĞRILMIYOR — heartbeat duracak, last_seen eskiyecek
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
