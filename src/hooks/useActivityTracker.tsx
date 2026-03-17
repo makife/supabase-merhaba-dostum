@@ -40,13 +40,14 @@ export function useActivityTracker() {
       try {
         const now = new Date().toISOString();
 
+        // 🔥 BASİT: Sadece last_seen güncelle, is_online flag'i artık kullanılmıyor
         await supabase.from("profiles").update({ last_seen: now }).eq("id", user.id);
 
         await supabase
           .from("user_presence")
-          .upsert({ user_id: user.id, is_online: true, last_seen: now }, { onConflict: "user_id" });
+          .upsert({ user_id: user.id, last_seen: now, is_online: true }, { onConflict: "user_id" });
 
-        console.log("💓 Heartbeat sent (last_seen + presence updated)");
+        console.log("💓 Heartbeat sent (last_seen updated)");
       } catch (error) {
         console.error("Error updating last_seen:", error);
       }
