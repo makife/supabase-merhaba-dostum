@@ -7963,17 +7963,14 @@ const GamePage = ({
                       )}
 
                       <div className="flex gap-1 items-center justify-center z-10">
-                        {selectedLetters.map((item) => (
-                          <motion.span
+                        {selectedLetters.map((item, idx) => (
+                          <span
                             key={`input-${item.row}-${item.col}`}
-                            layoutId={`letter-${item.row}-${item.col}`}
-                            layout
-                            transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
-                            style={{ willChange: "transform", transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
+                            style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
                             className="text-3xl font-mono font-extrabold text-white drop-shadow-sm select-none"
                           >
                             {item.letter}
-                          </motion.span>
+                          </span>
                         ))}
                         {currentWord.length > selectedLetters.length && (
                           <span className="text-3xl font-mono font-extrabold text-white drop-shadow-sm">
