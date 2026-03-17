@@ -14,7 +14,8 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: "automatic",
-    scrollEnabled: true,
+    scrollEnabled: false,
+    allowsLinkPreview: false,
     backgroundColor: "#000000",
   },
   plugins: {
