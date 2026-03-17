@@ -1777,10 +1777,10 @@ export type Database = {
       apply_disconnect_penalty: {
         Args: { p_offender_id: string; p_room_id: string }
         Returns: {
-          applied: boolean
-          disconnect_count: number
+          new_disconnect_count: number
           new_score: number
           penalty: number
+          success: boolean
         }[]
       }
       apply_moderator_ban: {
@@ -2225,19 +2225,33 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_game_stats: {
-        Args: {
-          p_bonus_points?: number
-          p_first_word_time?: number
-          p_game_duration?: number
-          p_game_mode?: string
-          p_is_winner: boolean
-          p_score: number
-          p_user_id: string
-          p_words: Json
-        }
-        Returns: undefined
-      }
+      update_game_stats:
+        | {
+            Args: {
+              p_first_word_time?: number
+              p_game_duration?: number
+              p_game_mode?: string
+              p_is_winner: boolean
+              p_play_time?: number
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_bonus_points?: number
+              p_first_word_time?: number
+              p_game_duration?: number
+              p_game_mode?: string
+              p_is_winner: boolean
+              p_score: number
+              p_user_id: string
+              p_words: Json
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

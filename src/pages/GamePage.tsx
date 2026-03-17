@@ -1576,7 +1576,7 @@ const GamePage = ({
             console.log("✅ Disconnect penalty uygulandı:", {
               penalty: result.penalty,
               newScore: result.new_score,
-              disconnectCount: result.disconnect_count,
+              disconnectCount: result.new_disconnect_count,
             });
           }
         } catch (err) {
