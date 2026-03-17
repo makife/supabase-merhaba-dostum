@@ -737,12 +737,7 @@ const WebBlockScreen = () => (
   </div>
 );
 
-const App = () => {
-  // 🚫 Web platformunu engelle - sadece native'de çalışsın
-  if (!Capacitor.isNativePlatform()) {
-    return <WebBlockScreen />;
-  }
-
+const AppInner = () => {
   // Native resume event dinle - uygulamayı sıfırdan başlat
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -751,15 +746,11 @@ const App = () => {
       console.log("[App] 📱 native-resume-ready eventi alındı!");
       console.log("[App] 🔄🔄🔄 SESSION RECOVERY BAŞLIYOR (Sayfa korunuyor) 🔄🔄🔄");
 
-      // 🔥🔥🔥 KRİTİK: Loading ekranı ATLANACAK flag'i set et
-      // Yeni mount'ta bu flag kontrol edilecek
       sessionStorage.setItem(RESUME_FLAG_KEY, "true");
       sessionStorage.setItem(APP_LOADED_KEY, "true");
 
-      // Toast göster
       toast.loading("Bağlanıyor...", { id: "resume-loading", duration: 15000 });
 
-      // 🔥 Session recovery başlat (sayfa değişmeden kanalları canlandır)
       try {
         const { performResumeRecoveryDirect } = await import("@/hooks/useForceReloadOnResume");
         const success = await performResumeRecoveryDirect();
@@ -795,6 +786,15 @@ const App = () => {
       </QueryClientProvider>
     </ErrorBoundary>
   );
+};
+
+const App = () => {
+  // 🚫 Web platformunu engelle - sadece native'de çalışsın
+  if (!Capacitor.isNativePlatform()) {
+    return <WebBlockScreen />;
+  }
+
+  return <AppInner />;
 };
 
 export default App;
