@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
@@ -7533,7 +7533,7 @@ const GamePage = ({
   };
 
   return (
-    <LayoutGroup>
+    <>
       <>
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
@@ -8045,14 +8045,12 @@ const GamePage = ({
                               {letter}
                             </span>
                             {!isSelected && (
-                              <motion.span
-                                layoutId={`letter-${rowIndex}-${colIndex}`}
+                              <span
                                 className="relative z-10"
-                                transition={{ type: "spring", stiffness: 700, damping: 35, mass: 0.5 }}
                                 style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
                               >
                                 {letter}
-                              </motion.span>
+                              </span>
                             )}
                             {isSelected && selectionOrder >= 0 && (
                               <motion.span
@@ -8229,7 +8227,7 @@ const GamePage = ({
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
         <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </>
-    </LayoutGroup>
+    </>
   );
 };
 
