@@ -449,7 +449,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           userId: userId.slice(-8),
           penaltyAmount: result.penalty,
           newScore: result.new_score,
-          disconnectCount: result.disconnect_count,
+          disconnectCount: result.new_disconnect_count,
           username: profile?.username,
         });
 
