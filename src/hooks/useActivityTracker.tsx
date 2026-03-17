@@ -53,18 +53,8 @@ export function useActivityTracker() {
       }
     };
 
-    // 🔥 Arka plana geçince offline yap (push spam önleme)
-    const setOffline = async () => {
-      try {
-        await supabase
-          .from("user_presence")
-          .update({ is_online: false })
-          .eq("user_id", user.id);
-        console.log("😴 ActivityTracker: Kullanıcı offline yapıldı (arka plan)");
-      } catch (error) {
-        console.error("Error setting offline:", error);
-      }
-    };
+    // 🔥 setOffline KALDIRILDI — artık is_online flag'ine bağımlı değiliz
+    // Kullanıcı arka plana geçince heartbeat duracak, last_seen eskiyecek = otomatik offline
 
     // İlk güncelleme - sadece gerçekten foreground'daysa
     if (document.visibilityState === "visible" && !isPushSuppressed()) {
