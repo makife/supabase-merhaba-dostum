@@ -888,11 +888,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       if (matchmakingMode.isActive()) return;
 
       try {
+        // 🔥 BASİT MANTIK: last_seen 2 dakika içindeyse online, değilse offline
+        // is_online flag'i güvenilmez (mobilde visibility değişimleri bozuyor)
         const { data }: any = await supabase
           .from("user_presence" as any)
           .select(`user_id, last_seen, profiles!inner(username, avatar_url)`)
-          .eq("is_online", true)
-          .gte("last_seen", new Date(Date.now() - 90 * 1000).toISOString());
+          .gte("last_seen", new Date(Date.now() - 120 * 1000).toISOString());
 
         if (data) {
           const newUsers = data.map((item: any) => ({
