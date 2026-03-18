@@ -157,13 +157,19 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       if (error) throw error;
 
       const avatarMap: { [userId: string]: string } = {};
+      const premiumMap: { [userId: string]: boolean } = {};
+      const now = new Date();
       (data as any[])?.forEach((profile: any) => {
         if (profile.avatar_url) {
           avatarMap[profile.id] = profile.avatar_url;
         }
+        if (profile.premium_until && new Date(profile.premium_until) > now) {
+          premiumMap[profile.id] = true;
+        }
       });
 
       setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+      setUserPremiumMap((prev) => ({ ...prev, ...premiumMap }));
     } catch (error) {
       console.error("Error fetching user avatars:", error);
     }
