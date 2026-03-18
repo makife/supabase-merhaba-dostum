@@ -16,6 +16,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { toast } from "sonner";
+import { isUserPremium } from "@/components/VipBadge";
 import {
   AlertDialog,
   AlertDialogAction,
