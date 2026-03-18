@@ -1,5 +1,6 @@
 import { Trophy } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { VipBadge } from "@/components/VipBadge";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LeaderboardEntry {
