@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
+import { VipBadge, isUserPremium } from "@/components/VipBadge";
 
 interface FriendItem {
   friendship_id: string;
