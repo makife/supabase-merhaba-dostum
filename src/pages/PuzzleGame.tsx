@@ -267,7 +267,7 @@ const PuzzleGamePage: React.FC = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="text-lg font-black text-white">🧩 Kelime Puzzle</h1>
+            <h1 className="text-lg font-black text-white">Kelime Puzzle</h1>
             <p className="text-[10px] text-purple-400/80">Harfleri doğru sıraya diz</p>
           </div>
         </div>
