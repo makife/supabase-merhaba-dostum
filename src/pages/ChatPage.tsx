@@ -32,6 +32,7 @@ interface SelectedUser {
   id: string;
   username: string;
   avatar_url?: string;
+  premium_until?: string | null;
 }
 
 interface BanInfo {
