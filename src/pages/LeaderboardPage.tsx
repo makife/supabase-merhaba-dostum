@@ -64,7 +64,29 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
-  
+  const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
+
+  // Fetch premium status for a list of user IDs
+  const fetchPremiumStatus = async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+    try {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, premium_until")
+        .in("id", userIds)
+        .gt("premium_until", now);
+      if (data) {
+        setPremiumUsers(prev => {
+          const newSet = new Set(prev);
+          data.forEach((p: any) => newSet.add(p.id));
+          return newSet;
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching premium status:", e);
+    }
+  };
 
   // 4-aylık sezon başlangıç tarihi hesapla (Ocak-Nisan, Mayıs-Ağustos, Eylül-Aralık)
   const getSeasonStart = (): string => {
