@@ -2877,8 +2877,8 @@ const GamePage = ({
       } else {
         console.log("✅ Oyun istatistikleri güncellendi");
 
-        // Rank puanı güncelle - sadece rastgele eşleşme
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
+        // Rank puanı güncelle - rastgele eşleşme ve özel oda
+        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
           const rpChange = isWinner ? 50 : isTie ? 10 : -30;
           const { data: currentProfile } = await supabase
             .from("profiles")
@@ -3001,8 +3001,8 @@ const GamePage = ({
           await forceRefreshProfile?.();
         }
 
-        // Rank puanı güncelle - sadece rastgele eşleşme
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score") {
+        // Rank puanı güncelle - rastgele eşleşme ve özel oda
+        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
         const rpChange = isWinner ? 50 : isTie ? 10 : -30;
         const { data: currentProfile } = await supabase
           .from("profiles")
