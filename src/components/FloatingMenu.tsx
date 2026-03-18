@@ -47,7 +47,6 @@ const getBanTimeLeftFromProfile = (profile: any): string => {
 };
 
 const menuItems = [
-  { title: "Ana Sayfa", route: "/", icon: Home, iconColor: "text-blue-300", dotColor: "bg-blue-400" },
   
   { title: "Liderlik", route: "/leaderboard", icon: Trophy, iconColor: "text-amber-300", dotColor: "bg-amber-400" },
   { title: "Profil", route: "/profile", icon: User, iconColor: "text-emerald-300", dotColor: "bg-emerald-400" },
