@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import Firebase
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Push bildirimleri için UNUserNotificationCenter delegate ayarla
+        FirebaseApp.configure()
         UNUserNotificationCenter.current().delegate = self
         return true
     }
@@ -35,15 +36,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
-    // ✅ KRİTİK: APNs token başarıyla alındığında Capacitor'a ilet
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // FCM token mapping için APNs token'ı Firebase'e ilet
+        Messaging.messaging().apnsToken = deviceToken
         NotificationCenter.default.post(
             name: .capacitorDidRegisterForRemoteNotifications,
             object: deviceToken
         )
     }
 
-    // ✅ KRİTİK: APNs token alınamadığında Capacitor'a hata ilet
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(
             name: .capacitorDidFailToRegisterForRemoteNotifications,
@@ -52,16 +53,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
-// ✅ Foreground'da push bildirimlerini göstermek için
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    // Uygulama açıkken gelen bildirimleri göster
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .badge, .sound])
     }
 
-    // Bildirime tıklandığında
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
