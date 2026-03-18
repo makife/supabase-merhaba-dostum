@@ -20,6 +20,7 @@ interface ChallengeScore {
   moves_count: number;
   time_seconds: number;
   date: string;
+  isPremium?: boolean;
 }
 
 // Get today's date in Turkey timezone
