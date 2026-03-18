@@ -79,6 +79,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [messageReactions, setMessageReactions] = useState<{ [messageId: string]: MessageReaction[] }>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [userAvatars, setUserAvatars] = useState<{ [userId: string]: string }>({});
+  const [userPremiumMap, setUserPremiumMap] = useState<{ [userId: string]: boolean }>({});
   const [viewMode, setViewMode] = useState<ViewMode>("global");
   const [privateChatEnabled, setPrivateChatEnabled] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
