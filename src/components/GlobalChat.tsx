@@ -151,7 +151,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url")
+        .select("id, avatar_url, premium_until")
         .in("id", validUserIds as any);
 
       if (error) throw error;
