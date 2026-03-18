@@ -39,6 +39,7 @@ interface LeaderboardEntry {
   best_word_score: number;
   rank: number;
   change?: number;
+  isPremium?: boolean;
 }
 
 interface UserStats {
