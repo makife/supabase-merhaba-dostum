@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, Trash2 } from 'lucide-react';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { cn } from '@/lib/utils';
+import { VipBadge } from '@/components/VipBadge';
 
 interface UserAvatarProps {
   src?: string | null;
@@ -13,6 +14,7 @@ interface UserAvatarProps {
   editable?: boolean;
   onAvatarChange?: (newUrl: string | null) => void;
   className?: string;
+  isPremium?: boolean;
 }
 
 const sizeClasses = {
