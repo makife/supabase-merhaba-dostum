@@ -26,6 +26,7 @@ import {
   Flame,
 } from "lucide-react";
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
+import { VipBadge, isUserPremium } from "@/components/VipBadge";
 
 interface LeaderboardEntry {
   user_id: string;
