@@ -7763,8 +7763,8 @@ const GamePage = ({
                           </AvatarFallback>
                         </Avatar>
                         {opponent.isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-slate-800 shadow-md">
-                            <Crown className="w-3 h-3 text-white" />
+                          <div className="absolute -bottom-1 -right-1 z-20">
+                            <VipBadge size="sm" />
                           </div>
                         )}
                       </div>
