@@ -160,7 +160,7 @@ export default function ChatPage() {
 
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, avatar_url, premium_until")
         .in("id", validUserIDs);
 
       if (usersError) {
