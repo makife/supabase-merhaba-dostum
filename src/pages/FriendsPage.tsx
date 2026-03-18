@@ -120,6 +120,7 @@ const FriendsPage = () => {
           is_online: onlineSet.has(friendId),
           status: f.status,
           is_sender: f.user_id === user.id,
+          isPremium: isUserPremium((profile as any)?.premium_until),
         };
       });
 
