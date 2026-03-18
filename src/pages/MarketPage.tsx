@@ -241,9 +241,9 @@ const MarketPage = () => {
         .select("ink_count")
         .eq("id", user.id)
         .single();
-      
+
       if (freshError || !freshProfile) throw freshError || new Error("Profil bulunamadı");
-      
+
       const newBalance = (freshProfile.ink_count || 0) + pack.amount;
       const { error } = await supabase.from("profiles").update({ ink_count: newBalance }).eq("id", user.id);
 
@@ -433,17 +433,18 @@ const MarketPage = () => {
       let adLoaded: any = await loadRewardedAd();
 
       // Eğer hata objesi döndüyse veya false ise, 1 kez daha dene
-      if (!adLoaded || (typeof adLoaded === 'object' && adLoaded !== null && !adLoaded.success)) {
+      if (!adLoaded || (typeof adLoaded === "object" && adLoaded !== null && !adLoaded.success)) {
         console.log("[Market] ⚠️ İlk deneme başarısız, 2 saniye sonra tekrar deneniyor...");
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 2000));
         adLoaded = await loadRewardedAd();
       }
 
       // Hala başarısız
-      if (!adLoaded || (typeof adLoaded === 'object' && adLoaded !== null && !adLoaded.success)) {
-        const errorDetail = (typeof adLoaded === 'object' && adLoaded !== null && adLoaded.error) 
-          ? String(adLoaded.error) 
-          : "Reklam sunucusuna ulaşılamadı";
+      if (!adLoaded || (typeof adLoaded === "object" && adLoaded !== null && !adLoaded.success)) {
+        const errorDetail =
+          typeof adLoaded === "object" && adLoaded !== null && adLoaded.error
+            ? String(adLoaded.error)
+            : "Reklam sunucusuna ulaşılamadı";
         console.log("[Market] ❌ Reklam yüklenemedi:", errorDetail);
         toast({
           title: "Reklam Yüklenemedi",
@@ -499,7 +500,10 @@ const MarketPage = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => { playSound("buttonClick"); navigate("/"); }}
+            onClick={() => {
+              playSound("buttonClick");
+              navigate("/");
+            }}
             className="border-2 border-white/70 text-white bg-white/10 hover:bg-white/20 shrink-0 relative z-20 shadow-md h-9 w-9"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -604,7 +608,7 @@ const MarketPage = () => {
               <div>
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Jokerler</h3>
                 <div className="grid grid-cols-1 gap-3">
-                   {stationeryItems
+                  {stationeryItems
                     .filter((i) => i.type === "joker")
                     .map((item) => {
                       const selectedQty = jokerQuantities[item.id] || 1;
@@ -642,7 +646,9 @@ const MarketPage = () => {
                                 onClick={() => setOpenDropdown(isDropdownOpen ? null : item.id)}
                               >
                                 {selectedQty}x
-                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                                />
                               </button>
                               {isDropdownOpen && (
                                 <>
@@ -652,10 +658,10 @@ const MarketPage = () => {
                                       <button
                                         key={qty}
                                         className={`w-full px-3 py-2 text-sm font-medium text-left hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${
-                                          selectedQty === qty ? 'bg-indigo-100 text-indigo-700' : 'text-slate-700'
+                                          selectedQty === qty ? "bg-indigo-100 text-indigo-700" : "text-slate-700"
                                         }`}
                                         onClick={() => {
-                                          setJokerQuantities(prev => ({ ...prev, [item.id]: qty }));
+                                          setJokerQuantities((prev) => ({ ...prev, [item.id]: qty }));
                                           setOpenDropdown(null);
                                         }}
                                       >
@@ -770,7 +776,7 @@ const MarketPage = () => {
                   <div className="space-y-3 bg-black/10 p-4 rounded-xl backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Infinity className="w-5 h-5 text-amber-100" />
-                      <span className="font-medium text-sm">Sınırsız Sayfa (Hiç bitmeyen hak)</span>
+                      <span className="font-medium text-sm">Sınırsız Sayfa (Hiç bitmeyen sayfa)</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Zap className="w-5 h-5 text-amber-100" />
@@ -861,15 +867,18 @@ const MarketPage = () => {
               <span className="block mt-2">
                 {quantityToBuy > 1 && itemToBuy?.type === "joker" ? (
                   <>
-                    <span className="font-bold text-indigo-600">{quantityToBuy} adet {itemToBuy?.name}</span> için mürekkep haznenizden{" "}
-                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
-                    Onaylıyor musunuz?
+                    <span className="font-bold text-indigo-600">
+                      {quantityToBuy} adet {itemToBuy?.name}
+                    </span>{" "}
+                    için mürekkep haznenizden{" "}
+                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span>{" "}
+                    düşülecektir. Onaylıyor musunuz?
                   </>
                 ) : (
                   <>
                     Bu işlem için mürekkep haznenizden{" "}
-                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span> düşülecektir.
-                    Onaylıyor musunuz?
+                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span>{" "}
+                    düşülecektir. Onaylıyor musunuz?
                   </>
                 )}
               </span>
