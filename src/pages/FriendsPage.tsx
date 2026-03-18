@@ -94,7 +94,7 @@ const FriendsPage = () => {
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until").in("id", friendIds);
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
