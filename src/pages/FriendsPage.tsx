@@ -486,6 +486,11 @@ const FriendCard = ({
             friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
           }`}
         />
+        {friend.isPremium && (
+          <div className="absolute -top-1 -left-1 z-20">
+            <VipBadge size="xs" />
+          </div>
+        )}
       </button>
 
       <button onClick={onProfile} className="flex-1 min-w-0 text-left">
