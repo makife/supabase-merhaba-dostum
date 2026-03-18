@@ -356,6 +356,11 @@ const LeaderboardPage = () => {
                   {isUserOnline(leader.user_id) && (
                     <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-[#1a1a2e] rounded-full" />
                   )}
+                  {premiumUsers.has(leader.user_id) && (
+                    <div className="absolute -top-1 -right-1 z-20">
+                      <VipBadge size="xs" />
+                    </div>
+                  )}
                 </div>
 
                 {/* User Info */}

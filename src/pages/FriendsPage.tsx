@@ -17,8 +17,9 @@ interface FriendItem {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
-  status: string; // accepted, pending
-  is_sender: boolean; // true = ben gönderdim
+  status: string;
+  is_sender: boolean;
+  isPremium: boolean;
 }
 
 const FriendsPage = () => {
