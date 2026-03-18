@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   words_found: number;
   moves_count?: number;
   time_seconds?: number;
+  isPremium?: boolean;
 }
 
 interface Props {
