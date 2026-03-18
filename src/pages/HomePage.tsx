@@ -615,9 +615,13 @@ const HomePage = () => {
                     <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
                   </Avatar>
                 </div>
-                {isPremium && (
+                {(isPremium || isUnlimitedLivesActive(profile)) && (
                   <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
-                    <VipCrownIcon className="w-2.5 h-2.5" />
+                    {isUnlimitedLivesActive(profile) ? (
+                      <UnlimitedIcon className="w-2.5 h-2.5" />
+                    ) : (
+                      <VipCrownIcon className="w-2.5 h-2.5" />
+                    )}
                   </div>
                 )}
               </div>
@@ -638,7 +642,7 @@ const HomePage = () => {
               className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
             >
               <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
-                <img src="/murekkepikon.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
+                <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
               </div>
               <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
               <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
