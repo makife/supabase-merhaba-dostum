@@ -2057,7 +2057,6 @@ const GamePage = ({
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: "tournament",
-          p_bonus_points: 0,
         });
 
         if (statsError) {
@@ -2868,7 +2867,6 @@ const GamePage = ({
         p_game_duration: gameDuration,
         p_first_word_time: firstWordTime,
         p_game_mode: gameMode,
-        p_bonus_points: 0,
       });
 
       console.log("📊 RPC sonucu:", { data, error });
@@ -2992,7 +2990,6 @@ const GamePage = ({
           p_game_duration: gameDuration,
           p_first_word_time: firstWordTime,
           p_game_mode: gameMode,
-          p_bonus_points: 0,
         });
 
         if (error) {
@@ -4623,7 +4620,7 @@ const GamePage = ({
           try {
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
-            // 8 parametreli versiyon - bonus puanlar da dahil edildi (haftalık/aylık liderlik için kritik)
+            // Mevcut update_game_stats imzası ile istatistikleri tek kaynaktan yaz
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore * scoreMultiplier,
@@ -4632,7 +4629,6 @@ const GamePage = ({
               p_game_duration: gameDuration,
               p_first_word_time: firstWordTime,
               p_game_mode: gameMode,
-              p_bonus_points: 0,
             });
 
             if (error) {
