@@ -615,13 +615,9 @@ const HomePage = () => {
                     <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
                   </Avatar>
                 </div>
-                {(isPremium || isUnlimitedLivesActive(profile)) && (
+                {isPremium && (
                   <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
-                    {isUnlimitedLivesActive(profile) ? (
-                      <UnlimitedIcon className="w-2.5 h-2.5" />
-                    ) : (
-                      <VipCrownIcon className="w-2.5 h-2.5" />
-                    )}
+                    <VipCrownIcon className="w-2.5 h-2.5" />
                   </div>
                 )}
               </div>

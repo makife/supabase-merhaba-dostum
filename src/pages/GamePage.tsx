@@ -7713,7 +7713,7 @@ const GamePage = ({
                             <User className="w-7 h-7 text-slate-300" />
                           </AvatarFallback>
                         </Avatar>
-                        {isPremium && (
+                        {isPremium && !!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
                           <div className="absolute -bottom-1 -right-1 z-20">
                             <VipBadge size="sm" />
                           </div>
