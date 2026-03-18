@@ -198,7 +198,7 @@ const MarketPage = () => {
     {
       id: "t_24h",
       type: "time",
-      name: "24 Saat Maraton",
+      name: "24 Saat Sınırsız Akış",
       description: "24 Saat boyunca sınırsız sayfa",
       priceInInk: 100,
       value: 24,
