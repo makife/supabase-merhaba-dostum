@@ -196,7 +196,9 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
       <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
       {mode.id === "random-match" && typeof searchingCount === "number" && (
         <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`} />
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
+          />
           <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
         </div>
       )}
@@ -512,7 +514,6 @@ const HomePage = () => {
       {
         id: "random-match",
         title: "Rastgele Rakip",
-        description: "Hızlı eşleşme",
         icon: RastgeleIcon,
         gradient: "from-violet-500 via-purple-500 to-indigo-500",
         glowColor: "violet",
@@ -743,11 +744,7 @@ const HomePage = () => {
                       vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
                     }`}
                   >
-                    <VipCrownIcon
-                      className={`w-5 h-5 ${
-                        vipType === "yearly" || vipType === "monthly" ? "" : ""
-                      }`}
-                    />
+                    <VipCrownIcon className={`w-5 h-5 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
                   </div>
                   <div className="flex flex-col">
                     <span
@@ -917,7 +914,12 @@ const HomePage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {gameModesConfig.map((mode) => (
-                <GameModeCard key={mode.id} mode={mode} onClick={() => handleGameModeClick(mode.id)} searchingCount={searchingPlayersCount} />
+                <GameModeCard
+                  key={mode.id}
+                  mode={mode}
+                  onClick={() => handleGameModeClick(mode.id)}
+                  searchingCount={searchingPlayersCount}
+                />
               ))}
             </div>
           </div>
@@ -946,7 +948,11 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.puzzle ? <Check className="w-6 h-6 text-amber-300" /> : <KelimePuzzleIcon className="w-8 h-8" />}
+                    {challengeStatus.puzzle ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <KelimePuzzleIcon className="w-8 h-8" />
+                    )}
                   </div>
                   <Badge
                     className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
@@ -979,7 +985,11 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.reaktor ? <Check className="w-6 h-6 text-amber-300" /> : <ReaktorIcon className="w-8 h-8" />}
+                    {challengeStatus.reaktor ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <ReaktorIcon className="w-8 h-8" />
+                    )}
                   </div>
                   <Badge
                     className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
@@ -1012,7 +1022,11 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-amber-300" /> : <RefleksIcon className="w-8 h-8" />}
+                    {challengeStatus.neon_blitz ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <RefleksIcon className="w-8 h-8" />
+                    )}
                   </div>
                   <Badge
                     className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
@@ -1045,7 +1059,11 @@ const HomePage = () => {
                 </span>
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.memory ? <Check className="w-6 h-6 text-amber-300" /> : <KelimeHafizaIcon className="w-8 h-8" />}
+                    {challengeStatus.memory ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <KelimeHafizaIcon className="w-8 h-8" />
+                    )}
                   </div>
                   <Badge
                     className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
@@ -1085,7 +1103,11 @@ const HomePage = () => {
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                {wheelSpinsLeft === 0 ? <Check className="w-6 h-6 text-red-300" /> : <WheelIcon className="w-10 h-10" />}
+                {wheelSpinsLeft === 0 ? (
+                  <Check className="w-6 h-6 text-red-300" />
+                ) : (
+                  <WheelIcon className="w-10 h-10" />
+                )}
               </div>
               <div className="relative z-10 flex-1">
                 <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">
