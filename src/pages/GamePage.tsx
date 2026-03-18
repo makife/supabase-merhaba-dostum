@@ -57,6 +57,7 @@ import { LevelUpDialog } from "@/components/LevelUpDialog";
 import { RankUpDialog } from "@/components/RankUpDialog";
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
+import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";

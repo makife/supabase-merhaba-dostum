@@ -17,6 +17,7 @@ import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
+import { VipBadge } from "@/components/VipBadge";
 import { BadgesDialog } from "@/components/BadgesDialog";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Capacitor } from "@capacitor/core";
