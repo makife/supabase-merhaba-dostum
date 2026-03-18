@@ -83,6 +83,12 @@ export function UserAvatar({
         </AvatarFallback>
       </Avatar>
 
+      {isPremium && (
+        <div className="absolute -bottom-0.5 -right-0.5 z-20">
+          <VipBadge size={vipBadgeSizes[size] || 'sm'} />
+        </div>
+      )}
+
       {editable && (
         <>
           {/* Upload overlay */}
