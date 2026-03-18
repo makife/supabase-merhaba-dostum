@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
+import { VipBadge, isUserPremium } from "@/components/VipBadge";
 
 interface FriendItem {
   friendship_id: string;
@@ -16,8 +17,9 @@ interface FriendItem {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
-  status: string; // accepted, pending
-  is_sender: boolean; // true = ben gönderdim
+  status: string;
+  is_sender: boolean;
+  isPremium: boolean;
 }
 
 const FriendsPage = () => {
@@ -92,7 +94,7 @@ const FriendsPage = () => {
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until").in("id", friendIds);
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
@@ -118,6 +120,7 @@ const FriendsPage = () => {
           is_online: onlineSet.has(friendId),
           status: f.status,
           is_sender: f.user_id === user.id,
+          isPremium: isUserPremium((profile as any)?.premium_until),
         };
       });
 
@@ -483,6 +486,11 @@ const FriendCard = ({
             friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
           }`}
         />
+        {friend.isPremium && (
+          <div className="absolute -top-1 -left-1 z-20">
+            <VipBadge size="xs" />
+          </div>
+        )}
       </button>
 
       <button onClick={onProfile} className="flex-1 min-w-0 text-left">

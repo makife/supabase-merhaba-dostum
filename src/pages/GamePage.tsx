@@ -57,6 +57,7 @@ import { LevelUpDialog } from "@/components/LevelUpDialog";
 import { RankUpDialog } from "@/components/RankUpDialog";
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
+import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
@@ -7717,8 +7718,8 @@ const GamePage = ({
                           </AvatarFallback>
                         </Avatar>
                         {isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-slate-800 shadow-md">
-                            <Crown className="w-3 h-3 text-white" />
+                          <div className="absolute -bottom-1 -right-1 z-20">
+                            <VipBadge size="sm" />
                           </div>
                         )}
                       </div>
@@ -7763,8 +7764,8 @@ const GamePage = ({
                           </AvatarFallback>
                         </Avatar>
                         {opponent.isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-1 border-2 border-slate-800 shadow-md">
-                            <Crown className="w-3 h-3 text-white" />
+                          <div className="absolute -bottom-1 -right-1 z-20">
+                            <VipBadge size="sm" />
                           </div>
                         )}
                       </div>

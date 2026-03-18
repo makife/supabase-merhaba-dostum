@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, Trash2 } from 'lucide-react';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { cn } from '@/lib/utils';
+import { VipBadge } from '@/components/VipBadge';
 
 interface UserAvatarProps {
   src?: string | null;
@@ -13,6 +14,7 @@ interface UserAvatarProps {
   editable?: boolean;
   onAvatarChange?: (newUrl: string | null) => void;
   className?: string;
+  isPremium?: boolean;
 }
 
 const sizeClasses = {
@@ -24,6 +26,15 @@ const sizeClasses = {
   xl: 'w-24 h-24'   // 96px - çok büyük
 };
 
+const vipBadgeSizes: Record<string, 'xs' | 'sm' | 'md' | 'lg'> = {
+  xxs: 'xs',
+  xs: 'xs',
+  sm: 'xs',
+  md: 'sm',
+  lg: 'md',
+  xl: 'lg',
+};
+
 export function UserAvatar({ 
   src, 
   alt = 'Avatar', 
@@ -31,7 +42,8 @@ export function UserAvatar({
   size = 'md', 
   editable = false,
   onAvatarChange,
-  className 
+  className,
+  isPremium = false
 }: UserAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
@@ -70,6 +82,12 @@ export function UserAvatar({
           {fallback}
         </AvatarFallback>
       </Avatar>
+
+      {isPremium && (
+        <div className="absolute -bottom-0.5 -right-0.5 z-20">
+          <VipBadge size={vipBadgeSizes[size] || 'sm'} />
+        </div>
+      )}
 
       {editable && (
         <>

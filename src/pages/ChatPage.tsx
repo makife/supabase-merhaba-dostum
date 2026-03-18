@@ -16,6 +16,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { toast } from "sonner";
+import { isUserPremium } from "@/components/VipBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,7 @@ interface SelectedUser {
   id: string;
   username: string;
   avatar_url?: string;
+  premium_until?: string | null;
 }
 
 interface BanInfo {
@@ -159,7 +161,7 @@ export default function ChatPage() {
 
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, avatar_url, premium_until")
         .in("id", validUserIDs);
 
       if (usersError) {
@@ -429,6 +431,7 @@ export default function ChatPage() {
                         alt={targetUser.username}
                         fallback={targetUser.username.charAt(0).toUpperCase()}
                         size="sm"
+                        isPremium={isUserPremium(targetUser.premium_until)}
                       className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 ${
                           isUserOnline(targetUser.id)
                             ? "border-green-400"

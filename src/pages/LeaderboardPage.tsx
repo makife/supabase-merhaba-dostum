@@ -26,6 +26,7 @@ import {
   Flame,
 } from "lucide-react";
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
+import { VipBadge, isUserPremium } from "@/components/VipBadge";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -38,6 +39,7 @@ interface LeaderboardEntry {
   best_word_score: number;
   rank: number;
   change?: number;
+  isPremium?: boolean;
 }
 
 interface UserStats {
@@ -62,7 +64,29 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
-  
+  const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
+
+  // Fetch premium status for a list of user IDs
+  const fetchPremiumStatus = async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+    try {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, premium_until")
+        .in("id", userIds)
+        .gt("premium_until", now);
+      if (data) {
+        setPremiumUsers(prev => {
+          const newSet = new Set(prev);
+          data.forEach((p: any) => newSet.add(p.id));
+          return newSet;
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching premium status:", e);
+    }
+  };
 
   // 4-aylık sezon başlangıç tarihi hesapla (Ocak-Nisan, Mayıs-Ağustos, Eylül-Aralık)
   const getSeasonStart = (): string => {
@@ -188,6 +212,17 @@ const LeaderboardPage = () => {
   const handleLeaderboardResync = useCallback(async () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
+
+  // Fetch premium status whenever leaders change
+  useEffect(() => {
+    const allUserIds = [
+      ...allTimeLeaders.map(l => l.user_id),
+      ...weeklyLeaders.map(l => l.user_id),
+      ...monthlyLeaders.map(l => l.user_id),
+    ];
+    const uniqueIds = [...new Set(allUserIds)];
+    if (uniqueIds.length > 0) fetchPremiumStatus(uniqueIds);
+  }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
 
@@ -320,6 +355,11 @@ const LeaderboardPage = () => {
                   </div>
                   {isUserOnline(leader.user_id) && (
                     <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-[#1a1a2e] rounded-full" />
+                  )}
+                  {premiumUsers.has(leader.user_id) && (
+                    <div className="absolute -top-1 -right-1 z-20">
+                      <VipBadge size="xs" />
+                    </div>
                   )}
                 </div>
 

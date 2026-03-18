@@ -79,6 +79,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [messageReactions, setMessageReactions] = useState<{ [messageId: string]: MessageReaction[] }>({});
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [userAvatars, setUserAvatars] = useState<{ [userId: string]: string }>({});
+  const [userPremiumMap, setUserPremiumMap] = useState<{ [userId: string]: boolean }>({});
   const [viewMode, setViewMode] = useState<ViewMode>("global");
   const [privateChatEnabled, setPrivateChatEnabled] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
@@ -150,19 +151,25 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url")
+        .select("id, avatar_url, premium_until")
         .in("id", validUserIds as any);
 
       if (error) throw error;
 
       const avatarMap: { [userId: string]: string } = {};
+      const premiumMap: { [userId: string]: boolean } = {};
+      const now = new Date();
       (data as any[])?.forEach((profile: any) => {
         if (profile.avatar_url) {
           avatarMap[profile.id] = profile.avatar_url;
         }
+        if (profile.premium_until && new Date(profile.premium_until) > now) {
+          premiumMap[profile.id] = true;
+        }
       });
 
       setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
+      setUserPremiumMap((prev) => ({ ...prev, ...premiumMap }));
     } catch (error) {
       console.error("Error fetching user avatars:", error);
     }
@@ -900,6 +907,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         alt={message.username}
                         fallback={message.username.charAt(0).toUpperCase()}
                         size="xs"
+                        isPremium={message.user_id ? !!userPremiumMap[message.user_id] : false}
                         className={`border-2 ${message.username === "kelimeciBot" ? "border-blue-500" : "border-chat-300"}`}
                       />
                     </div>
