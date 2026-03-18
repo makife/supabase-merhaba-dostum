@@ -213,6 +213,17 @@ const LeaderboardPage = () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
 
+  // Fetch premium status whenever leaders change
+  useEffect(() => {
+    const allUserIds = [
+      ...allTimeLeaders.map(l => l.user_id),
+      ...weeklyLeaders.map(l => l.user_id),
+      ...monthlyLeaders.map(l => l.user_id),
+    ];
+    const uniqueIds = [...new Set(allUserIds)];
+    if (uniqueIds.length > 0) fetchPremiumStatus(uniqueIds);
+  }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
+
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
 
   useEffect(() => {
