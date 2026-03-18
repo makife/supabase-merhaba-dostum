@@ -42,6 +42,19 @@ export function useDailyChallenge(challengeType: ChallengeType) {
   const todayDate = getTurkeyDate();
   const isAscending = ASCENDING_CHALLENGES.includes(challengeType);
 
+  const enrichWithPremium = async (entries: any[]): Promise<any[]> => {
+    if (entries.length === 0) return entries;
+    const userIds = [...new Set(entries.map((e: any) => e.user_id))];
+    const now = new Date().toISOString();
+    const { data: premiumData } = await supabase
+      .from("profiles")
+      .select("id, premium_until")
+      .in("id", userIds)
+      .gt("premium_until", now);
+    const premiumSet = new Set(premiumData?.map((p: any) => p.id) || []);
+    return entries.map((e: any) => ({ ...e, isPremium: premiumSet.has(e.user_id) }));
+  };
+
   const refreshLeaderboard = useCallback(async () => {
     const { data } = await supabase
       .from("challenge_scores" as any)
@@ -52,11 +65,11 @@ export function useDailyChallenge(challengeType: ChallengeType) {
       .order("created_at", { ascending: true })
       .limit(50);
     if (data) {
-      // For ascending challenges, filter out score=0 entries (not completed)
       const filtered = isAscending
         ? (data as any[]).filter((e: any) => e.score > 0)
         : (data as any[]);
-      setLeaderboard(filtered as any);
+      const enriched = await enrichWithPremium(filtered);
+      setLeaderboard(enriched as any);
     }
   }, [challengeType, todayDate, isAscending]);
 
