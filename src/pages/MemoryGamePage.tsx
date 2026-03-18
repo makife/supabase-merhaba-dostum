@@ -269,7 +269,7 @@ const WordMemoryGame = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="text-lg font-black text-white">🧠 Kelime Hafıza</h1>
+            <h1 className="text-lg font-black text-white">Kelime Hafıza</h1>
             <p className="text-[10px] text-purple-400/80">Kelimeleri karışık halleriyle eşleştir</p>
           </div>
         </div>
