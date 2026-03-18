@@ -26,6 +26,15 @@ const sizeClasses = {
   xl: 'w-24 h-24'   // 96px - çok büyük
 };
 
+const vipBadgeSizes: Record<string, 'xs' | 'sm' | 'md' | 'lg'> = {
+  xxs: 'xs',
+  xs: 'xs',
+  sm: 'xs',
+  md: 'sm',
+  lg: 'md',
+  xl: 'lg',
+};
+
 export function UserAvatar({ 
   src, 
   alt = 'Avatar', 
@@ -33,7 +42,8 @@ export function UserAvatar({
   size = 'md', 
   editable = false,
   onAvatarChange,
-  className 
+  className,
+  isPremium = false
 }: UserAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
