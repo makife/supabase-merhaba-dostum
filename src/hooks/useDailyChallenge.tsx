@@ -106,7 +106,8 @@ export function useDailyChallenge(challengeType: ChallengeType) {
         const filtered = isAscending
           ? (leaderboardRes.data as any[]).filter((e: any) => e.score > 0)
           : (leaderboardRes.data as any[]);
-        setLeaderboard(filtered as any);
+        const enriched = await enrichWithPremium(filtered);
+        setLeaderboard(enriched as any);
       }
 
       setLoading(false);
