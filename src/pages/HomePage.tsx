@@ -794,7 +794,7 @@ const HomePage = () => {
                 >
                   {isUnlimitedLivesActive(profile) ? (
                     <span className="flex items-center gap-1.5">
-                      <UnlimitedIcon className="w-5 h-5 flex-shrink-0" />
+                      <UnlimitedIcon className="w-9 h-9 flex-shrink-0 -my-1" />
                       {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
                     </span>
                   ) : (
