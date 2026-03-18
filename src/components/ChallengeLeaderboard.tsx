@@ -94,12 +94,19 @@ export const ChallengeLeaderboard = ({
               <span className={`w-6 text-center font-black text-sm ${i < 3 ? rankColors[i] : "text-slate-600"}`}>
                 {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
               </span>
-              <Avatar className={`w-7 h-7 ${frameColors[frameTheme]}`}>
-                <AvatarImage src={entry.avatar_url || undefined} />
-                <AvatarFallback className="bg-white/10 text-[10px] text-white">
-                  {(entry.username || "?")[0]}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className={`w-7 h-7 ${frameColors[frameTheme]}`}>
+                  <AvatarImage src={entry.avatar_url || undefined} />
+                  <AvatarFallback className="bg-white/10 text-[10px] text-white">
+                    {(entry.username || "?")[0]}
+                  </AvatarFallback>
+                </Avatar>
+                {entry.isPremium && (
+                  <div className="absolute -top-1 -right-1 z-20">
+                    <VipBadge size="xs" />
+                  </div>
+                )}
+              </div>
               <span className={`flex-1 text-xs font-bold truncate ${isMe ? "text-white" : "text-slate-300"}`}>
                 {entry.username}
                 {isMe && <span className="text-[9px] text-slate-500 ml-1">(Sen)</span>}
