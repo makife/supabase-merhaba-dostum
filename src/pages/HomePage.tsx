@@ -641,7 +641,7 @@ const HomePage = () => {
                 <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
               </div>
               <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
+              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
                 <span className="text-xs leading-none text-white font-bold">+</span>
               </div>
             </div>
