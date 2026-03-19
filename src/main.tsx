@@ -7,6 +7,7 @@ import App from './App.tsx'
 import './index.css'
 import { Capacitor } from '@capacitor/core'
 import { checkResumeReload } from '@/hooks/useForceReloadOnResume';
+import { getValidFcmToken, isApnsTokenFormat } from '@/utils/pushToken';
 
 // Add a class on native (iOS/Android) to control platform-specific styles
 if (Capacitor.getPlatform() !== 'web') {
@@ -33,9 +34,20 @@ async function requestEarlyPushPermission() {
       
       if (result.receive === 'granted') {
         await PushNotifications.addListener('registration', (token) => {
-          console.log('✅ [EarlyPush] Token alındı:', token.value?.substring(0, 30) + '...');
+          const safeToken = getValidFcmToken(token.value);
+
+          if (!safeToken) {
+            console.warn(
+              isApnsTokenFormat(token.value)
+                ? '⚠️ [EarlyPush] APNs token geldi, FCM token bekleniyor. Erken kayıt yapılmadı.'
+                : '⚠️ [EarlyPush] Geçersiz push token geldi, erken kayıt yapılmadı.',
+            );
+            return;
+          }
+
+          console.log('✅ [EarlyPush] FCM token alındı:', safeToken.substring(0, 30) + '...');
           try {
-            localStorage.setItem('push_token_early', token.value);
+            localStorage.setItem('push_token_early', safeToken);
           } catch {}
         });
         await PushNotifications.addListener('registrationError', (err) => {

@@ -7,16 +7,9 @@ import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-const getPushNotifications = async () => {
-  try {
-    const module = await import("@capacitor/push-notifications");
-    return module.PushNotifications;
-  } catch (error) {
-    console.log("PushNotifications plugin yüklenemedi:", error);
-    return null;
-  }
-};
+import { SafePushNotifications } from "@/utils/safePluginWrapper";
+import nativeStorage from "@/utils/nativeStorage";
+import { getValidFcmToken, isApnsTokenFormat } from "@/utils/pushToken";
 
 const getCapacitorCamera = async () => {
   try {
