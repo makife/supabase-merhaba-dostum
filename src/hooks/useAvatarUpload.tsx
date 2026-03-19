@@ -122,7 +122,7 @@ export const useAvatarUpload = () => {
   const captureFromCamera = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       // 🔥 Native platformda kendi plugin'imizi kullan
-      if (isNativePlatform()) {
+      if (isAndroidNative()) {
         console.log("[Avatar] 📷 Native Camera Plugin kullanılıyor...");
         const result = await captureFromNativeCamera();
         if (result) {
