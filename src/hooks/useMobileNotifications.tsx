@@ -62,12 +62,12 @@ export const useMobileNotifications = () => {
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
 
-        // 🔥 KRİTİK: SafePushNotifications.addListener kullan - .then() YOK!
-        SafePushNotifications.addListener("registration", async (token: any) => {
+        // 🔥 KRİTİK FIX: Listener'ları ÖNCE ekle, SONRA register() çağır
+        // addListenerAsync kullanarak listener'ların tamamen eklenmesini bekle
+        await SafePushNotifications.addListenerAsync("registration", async (token: any) => {
           console.log("✅ Push registration success, token:", token.value?.substring(0, 30) + "...");
           setPushToken(token.value);
 
-          // Save token to database for the user
           if (user?.id) {
             await savePushToken(user.id, token.value);
           } else {
@@ -76,24 +76,23 @@ export const useMobileNotifications = () => {
           }
         });
 
-        SafePushNotifications.addListener("registrationError", (error: any) => {
+        await SafePushNotifications.addListenerAsync("registrationError", (error: any) => {
           console.error("❌ Push registration error:", error?.error);
         });
 
-        SafePushNotifications.addListener("pushNotificationReceived", (notification: any) => {
+        await SafePushNotifications.addListenerAsync("pushNotificationReceived", (notification: any) => {
           console.log("📬 Push notification received:", notification);
-          // Push alındığında activity tracker'ı 15sn bastır (yanlış "online" bildirimi önleme)
           suppressActivityForPush(15000);
           showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
         });
 
-        SafePushNotifications.addListener("pushNotificationActionPerformed", (notification: any) => {
+        await SafePushNotifications.addListenerAsync("pushNotificationActionPerformed", (notification: any) => {
           console.log("👆 Push notification action performed:", notification);
           handleNotificationAction(notification);
         });
 
-        // Register - SafePushNotifications ile
-        console.log("📱 Register çağrılıyor...");
+        // 🔥 Tüm listener'lar eklendi, ŞİMDİ register çağır
+        console.log("📱 Listener'lar eklendi, register çağrılıyor...");
         await SafePushNotifications.register();
         console.log("✅ Register başarılı");
       } else {
