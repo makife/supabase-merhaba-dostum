@@ -7,7 +7,6 @@ import App from './App.tsx'
 import './index.css'
 import { Capacitor } from '@capacitor/core'
 import { checkResumeReload } from '@/hooks/useForceReloadOnResume';
-import { getValidFcmToken, isApnsTokenFormat } from '@/utils/pushToken';
 
 // Add a class on native (iOS/Android) to control platform-specific styles
 if (Capacitor.getPlatform() !== 'web') {
@@ -17,8 +16,9 @@ if (Capacitor.getPlatform() !== 'web') {
 // 🔥 RESUME RELOAD KONTROLÜ
 checkResumeReload();
 
-// 🔥 iOS/Android: Uygulama ilk açılırken, React render'dan ÖNCE bildirim izni iste
-// Android'de zaten böyle çalışıyor — iOS'ta da aynı davranış
+// 🔥 iOS/Android: Uygulama ilk açılırken bildirim izni iste
+// Token yönetimi TAMAMEN useMobileNotifications'a bırakılıyor
+// Burada SADECE izin istenir, listener eklenmez (çift listener race condition önlenir)
 async function requestEarlyPushPermission() {
   if (!Capacitor.isNativePlatform()) return;
   
@@ -26,43 +26,21 @@ async function requestEarlyPushPermission() {
     const { PushNotifications } = await import('@capacitor/push-notifications');
     const status = await PushNotifications.checkPermissions();
     
-    // Sadece henüz sorulmamışsa (prompt) sor — zaten granted/denied ise tekrar sorma
     if (status.receive === 'prompt') {
       console.log('📱 [EarlyPush] İlk açılış — bildirim izni isteniyor...');
       const result = await PushNotifications.requestPermissions();
       console.log('📱 [EarlyPush] İzin sonucu:', result.receive);
-      
-      if (result.receive === 'granted') {
-        await PushNotifications.addListener('registration', (token) => {
-          const safeToken = getValidFcmToken(token.value);
-
-          if (!safeToken) {
-            console.warn(
-              isApnsTokenFormat(token.value)
-                ? '⚠️ [EarlyPush] APNs token geldi, FCM token bekleniyor. Erken kayıt yapılmadı.'
-                : '⚠️ [EarlyPush] Geçersiz push token geldi, erken kayıt yapılmadı.',
-            );
-            return;
-          }
-
-          console.log('✅ [EarlyPush] FCM token alındı:', safeToken.substring(0, 30) + '...');
-          try {
-            localStorage.setItem('push_token_early', safeToken);
-          } catch {}
-        });
-        await PushNotifications.addListener('registrationError', (err) => {
-          console.error('❌ [EarlyPush] Registration error:', err.error);
-        });
-        await PushNotifications.register();
-      }
+      // Token kaydı useMobileNotifications hook'unda yapılacak
     }
   } catch (error) {
     console.log('📱 [EarlyPush] Plugin kullanılamıyor:', error);
   }
 }
 
-// İzni iste (async, render'ı bloklamaz ama hemen çalışır)
 requestEarlyPushPermission();
 
-// App'i başlat
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
