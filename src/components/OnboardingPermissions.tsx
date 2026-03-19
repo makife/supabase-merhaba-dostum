@@ -199,7 +199,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
 
     if (isMobile) {
       try {
-        const PushNotifications = await getPushNotifications();
+        const PushNotifications = SafePushNotifications;
         if (PushNotifications) {
           const permission = await PushNotifications.requestPermissions();
           if (permission.receive === "granted") {
