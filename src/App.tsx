@@ -271,6 +271,28 @@ const AppRoutes = () => {
           // URL'i parse et - custom scheme sorunlarını aş
           const urlStr = url.replace("kelimele://auth/callback", "https://placeholder.com/callback");
           const urlObj = new URL(urlStr);
+
+          const syncOAuthSession = async (session: any) => {
+            const { saveSessionToStorage, setGlobalAccessToken } = await import("@/integrations/supabase/client");
+            const { ensureProfileExists } = await import("@/utils/ensureProfileExists");
+
+            setGlobalAccessToken(session.access_token);
+            await saveSessionToStorage(session);
+            await ensureProfileExists(session.user);
+
+            window.dispatchEvent(
+              new CustomEvent("auth-ready", {
+                detail: {
+                  userId: session.user.id,
+                  email: session.user.email,
+                  source: "oauth-callback",
+                },
+              }),
+            );
+
+            window.dispatchEvent(new CustomEvent("force-presence-update", { detail: { userId: session.user.id } }));
+            console.log("[App] ✅ OAuth session, profil ve auth-ready senkronlandı");
+          };
           
           // 1) PKCE flow: code parametresi
           const code = urlObj.searchParams.get("code");
@@ -284,12 +306,7 @@ const AppRoutes = () => {
             }
             if (data?.session) {
               console.log("[App] ✅ Session oluşturuldu:", data.session.user.email);
-              // AuthContext onAuthStateChange SIGNED_IN event'ini yakalayacak
-              // Ama güvenlik için manuel de set edelim
-              const { saveSessionToStorage, setGlobalAccessToken } = await import("@/integrations/supabase/client");
-              setGlobalAccessToken(data.session.access_token);
-              await saveSessionToStorage(data.session);
-              console.log("[App] ✅ Token & session kaydedildi, yönlendirme...");
+              await syncOAuthSession(data.session);
             }
             return;
           }
@@ -314,9 +331,7 @@ const AppRoutes = () => {
               }
               if (data?.session) {
                 console.log("[App] ✅ Session set edildi:", data.session.user.email);
-                const { saveSessionToStorage, setGlobalAccessToken } = await import("@/integrations/supabase/client");
-                setGlobalAccessToken(data.session.access_token);
-                await saveSessionToStorage(data.session);
+                await syncOAuthSession(data.session);
               }
               return;
             }

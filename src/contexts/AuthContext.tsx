@@ -263,27 +263,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // TOKEN_REFRESHED veya SIGNED_IN
       if ((event === "TOKEN_REFRESHED" || event === "SIGNED_IN") && newSession) {
         console.log(`🔐 Token güncellendi (${event})`);
-        
+
         // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I HER ZAMAN SET ET!
         setGlobalAccessToken(newSession.access_token);
         console.log("[Auth] 🔐 Global token SET EDİLDİ!");
-        
+
         if (mounted.current) {
           setSession(newSession);
           setUser(newSession.user);
           setLoading(false);
         }
-        
+
         // Native'de storage'a kaydet - bu da token'ı set eder
         if (isNative) {
           await saveSessionToStorage(newSession);
         }
-        
-        // 🔥 OAuth girişlerinde presence güncellemesini tetikle
+
         if (event === "SIGNED_IN") {
+          const { ensureProfileExists } = await import("@/utils/ensureProfileExists");
+          await ensureProfileExists(newSession.user);
+
           console.log("[Auth] 🟢 SIGNED_IN → force-presence-update dispatch");
           window.dispatchEvent(new CustomEvent("force-presence-update", { detail: { userId: newSession.user.id } }));
         }
+
+        window.dispatchEvent(
+          new CustomEvent("auth-ready", {
+            detail: {
+              userId: newSession.user.id,
+              email: newSession.user.email,
+              source: `auth-${event.toLowerCase()}`,
+            },
+          }),
+        );
       }
     });
     
