@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import imageCompression from "browser-image-compression";
-import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
+import { captureFromNativeCamera, pickFromNativeGallery, isAndroidNative } from "@/services/nativeCameraService";
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
