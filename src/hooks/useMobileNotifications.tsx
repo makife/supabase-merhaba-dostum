@@ -312,13 +312,60 @@ export const useMobileNotifications = () => {
     });
   };
 
+  // Send message notification
+  const sendMessageNotification = async (receiverId: string, senderUsername: string, chatId: string) => {
+    return sendPushNotification(receiverId, "💬 Yeni Mesaj", `${senderUsername} sana mesaj gönderdi`, {
+      type: "message",
+      chatId,
+    });
+  };
+
+  // Send mention notification
+  const sendMentionNotification = async (receiverId: string, senderUsername: string, message: string, messageId?: string) => {
+    return sendPushNotification(receiverId, "📢 Senden Bahsedildi", `${senderUsername}: ${message.substring(0, 50)}...`, {
+      type: "mention",
+      ...(messageId ? { messageId } : {}),
+    });
+  };
+
+  // Request permissions (for SettingsPage)
+  const requestPermissions = useCallback(async (): Promise<boolean> => {
+    if (!isMobile) return false;
+    try {
+      const PushNotifications = await getPushModule();
+      if (!PushNotifications) return false;
+      const result = await PushNotifications.requestPermissions();
+      const granted = result.receive === "granted";
+      setIsPermissionGranted(granted);
+      if (granted) {
+        // Re-init to set up listeners + register
+        listenersRegistered.current = false;
+        registerCalled.current = false;
+        await initializePushNotifications();
+      }
+      return granted;
+    } catch {
+      return false;
+    }
+  }, [isMobile, initializePushNotifications]);
+
+  // Check permission status (for SettingsPage foreground sync)
+  const checkPermissionStatus = useCallback(async () => {
+    if (!isMobile) return;
+    try {
+      const PushNotifications = await getPushModule();
+      if (!PushNotifications) return;
+      const status = await PushNotifications.checkPermissions();
+      setIsPermissionGranted(status.receive === "granted");
+    } catch {}
+  }, [isMobile]);
+
   // 🔥 User login sonrası pending token'ı DB'ye yaz
   useEffect(() => {
     if (!user?.id || !isMobile) return;
 
     const recoverPendingToken = async () => {
       try {
-        // 1. State'teki token
         if (pushToken) {
           const safe = getValidFcmToken(pushToken);
           if (safe) {
@@ -327,7 +374,6 @@ export const useMobileNotifications = () => {
           }
         }
 
-        // 2. nativeStorage pending token
         const pending = await nativeStorage.getJSON<{ token: string }>("push_token_pending");
         if (pending?.token) {
           const safe = getValidFcmToken(pending.token);
@@ -338,7 +384,6 @@ export const useMobileNotifications = () => {
           }
         }
 
-        // 3. localStorage fallback
         try {
           const stored = localStorage.getItem("push_token_pending");
           if (stored) {
@@ -366,12 +411,17 @@ export const useMobileNotifications = () => {
 
   return {
     isPermissionGranted,
+    isMobile,
     pushToken,
     initializePushNotifications,
+    requestPermissions,
+    checkPermissionStatus,
     disableNotifications,
     showLocalNotification,
     sendPushNotification,
     sendGameInviteNotification,
+    sendMessageNotification,
+    sendMentionNotification,
     savePushToken,
   };
 };
