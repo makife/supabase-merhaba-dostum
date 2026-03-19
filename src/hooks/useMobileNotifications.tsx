@@ -456,6 +456,16 @@ export const useMobileNotifications = () => {
     if (!user?.id) return;
 
     try {
+      // 0. main.tsx'teki early push token'ı kontrol et (ilk açılışta alınan)
+      const earlyToken = localStorage.getItem("push_token_early");
+      if (earlyToken) {
+        console.log("📱 Early push token kaydediliyor...");
+        await savePushToken(user.id, earlyToken);
+        localStorage.removeItem("push_token_early");
+        setPushToken(earlyToken);
+        return;
+      }
+
       // 1. nativeStorage'daki bekleyen token'ı kontrol et
       const pendingData = await nativeStorage.getJSON<{ token: string }>("push_token_pending");
       if (pendingData?.token) {
