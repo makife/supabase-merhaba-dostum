@@ -24,6 +24,13 @@ export const isNativePlatform = (): boolean => {
 };
 
 /**
+ * Android native platformda mıyız? (NativeCamera plugin sadece Android'de var)
+ */
+export const isAndroidNative = (): boolean => {
+  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+};
+
+/**
  * 📷 Native kameradan fotoğraf çek
  * @returns Base64 string veya null (iptal/hata durumunda)
  */

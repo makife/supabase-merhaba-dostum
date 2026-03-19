@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import imageCompression from "browser-image-compression";
-import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
+import { captureFromNativeCamera, pickFromNativeGallery, isAndroidNative } from "@/services/nativeCameraService";
 
 export const useAvatarUpload = () => {
   const { user } = useAuth();
@@ -122,7 +122,7 @@ export const useAvatarUpload = () => {
   const captureFromCamera = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       // 🔥 Native platformda kendi plugin'imizi kullan
-      if (isNativePlatform()) {
+      if (isAndroidNative()) {
         console.log("[Avatar] 📷 Native Camera Plugin kullanılıyor...");
         const result = await captureFromNativeCamera();
         if (result) {
@@ -182,7 +182,7 @@ export const useAvatarUpload = () => {
   const captureFromGallery = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       // 🔥 Native platformda kendi plugin'imizi kullan
-      if (isNativePlatform()) {
+      if (isAndroidNative()) {
         console.log("[Avatar] 🖼️ Native Gallery Plugin kullanılıyor...");
         const result = await pickFromNativeGallery();
         if (result) {
