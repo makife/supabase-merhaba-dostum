@@ -1,7 +1,7 @@
 import UIKit
 import Capacitor
-import FirebaseCore
-import FirebaseMessaging
+import CapApp_SPM
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,7 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        FirebaseApp.configure()
+        FirebaseBridge.configureIfNeeded()
         UNUserNotificationCenter.current().delegate = self
         return true
     }
@@ -38,8 +38,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // FCM token mapping için APNs token'ı Firebase'e ilet
-        Messaging.messaging().apnsToken = deviceToken
+        FirebaseBridge.setAPNSToken(deviceToken)
         NotificationCenter.default.post(
             name: .capacitorDidRegisterForRemoteNotifications,
             object: deviceToken
