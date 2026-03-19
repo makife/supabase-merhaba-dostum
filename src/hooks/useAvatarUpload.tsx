@@ -182,7 +182,7 @@ export const useAvatarUpload = () => {
   const captureFromGallery = async (): Promise<{ file: File; webPath: string } | null> => {
     try {
       // 🔥 Native platformda kendi plugin'imizi kullan
-      if (isNativePlatform()) {
+      if (isAndroidNative()) {
         console.log("[Avatar] 🖼️ Native Gallery Plugin kullanılıyor...");
         const result = await pickFromNativeGallery();
         if (result) {
