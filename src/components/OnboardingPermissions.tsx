@@ -278,7 +278,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         window.dispatchEvent(new Event("permissionsCompleted"));
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
       } catch (error) {
-        localStorage.setItem("kelimeci-onboarding-completed", "true");
+        localStorage.setItem("kelimeci-permissions-completed", "true");
         toast.info("Kurulum tamamlandı.");
       } finally {
         setIsLoading(false);
