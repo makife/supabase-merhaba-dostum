@@ -282,10 +282,7 @@ const GameCountdown = memo(
 
       console.log(`⏱️ [${instanceId}] Timing check: startTime=${startTime}, serverNow=${serverNow}, diff=${timeDiff}ms`);
 
-      // 🔒 Eğer zaman farkı -500ms ile +500ms arasındaysa "şu an" kabul et
-      // Bu, ağ gecikmelerini tolere eder
-      const isNow = Math.abs(timeDiff) < 500;
-      
+      // Tolerans kontrolü: 5 saniyeden fazla geçmişse hemen bitir
       // 🔒 Eğer çok geç kalmışsak (5 saniyeden fazla geçmiş), hemen bitir
       if (timeDiff < -5500) {
         console.log(`🏁 [${instanceId}] Countdown zaten bitmiş (${timeDiff}ms geçmiş), hemen tamamla`);
