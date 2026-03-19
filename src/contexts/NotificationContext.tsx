@@ -306,25 +306,13 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           return;
         }
 
+        // mention ve message bildirimleri useChatNotifications tarafından gösteriliyor
         if (notification.type === "mention") {
-          return; // useChatNotifications hallediyor
+          return;
         }
 
-        if ((notification.type === "message" || notification.type === "private_message") && notification.related_id) {
-          const chatId = notification.related_id;
-          const activeChats = getActivePrivateChats();
-          if (activeChats.includes(chatId)) return;
-
-          const userIds = chatId.replace("chat_", "").split("_");
-          const otherUserId = userIds.find((id: string) => id !== user?.id);
-
-          toast.info(`💬 ${notification.message}`, {
-            duration: 5000,
-            action: {
-              label: "Git",
-              onClick: () => navigate(`/chat?openPrivateChat=${otherUserId}`),
-            },
-          });
+        if (notification.type === "message" || notification.type === "private_message") {
+          return;
         }
       } catch (err) {
         console.error("Bildirim işlenirken hata:", err);
