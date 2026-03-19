@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import CapApp_SPM
 import UserNotifications
 
 @UIApplicationMain
@@ -9,7 +8,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        FirebaseBridge.configureIfNeeded()
         UNUserNotificationCenter.current().delegate = self
         return true
     }
@@ -38,7 +36,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        FirebaseBridge.setAPNSToken(deviceToken)
         NotificationCenter.default.post(
             name: .capacitorDidRegisterForRemoteNotifications,
             object: deviceToken
