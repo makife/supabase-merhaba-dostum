@@ -210,18 +210,22 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         if (PushNotifications) {
           const permission = await PushNotifications.requestPermissions();
           if (permission.receive === "granted") {
-            PushNotifications.addListener("registration", async (token) => {
+            // 🔥 iOS FIX: Listener'ları ÖNCE ekle, SONRA register() çağır
+            await PushNotifications.addListener("registration", async (token) => {
+              console.log("✅ [Onboarding] Push token alındı:", token.value?.substring(0, 30) + "...");
               if (user?.id) {
                 await savePushToken(user.id, token.value);
               } else {
                 localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
               }
             });
-            PushNotifications.addListener("registrationError", (error: any) => {
-              console.error("Push registration hatası:", error.error);
+            await PushNotifications.addListener("registrationError", (error: any) => {
+              console.error("❌ [Onboarding] Push registration hatası:", error.error);
             });
+            // Tüm listener'lar eklendi, şimdi register çağır
             await PushNotifications.register();
             granted.notifications = true;
+            console.log("✅ [Onboarding] Push notifications registered successfully");
           }
         }
       } catch (err) {
@@ -266,7 +270,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
         await Promise.race([permissionPromise, timeoutPromise]);
 
-        localStorage.setItem("kelimeci-onboarding-completed", "true");
+        localStorage.setItem("kelimeci-permissions-completed", "true");
         const settings = JSON.parse(localStorage.getItem("kelimeci-settings") || "{}");
         settings.notifications = true;
         localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
@@ -274,7 +278,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         window.dispatchEvent(new Event("permissionsCompleted"));
         toast.success("Kurulum tamamlandı! Hoş geldiniz 🎉");
       } catch (error) {
-        localStorage.setItem("kelimeci-onboarding-completed", "true");
+        localStorage.setItem("kelimeci-permissions-completed", "true");
         toast.info("Kurulum tamamlandı.");
       } finally {
         setIsLoading(false);
@@ -288,7 +292,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   };
 
   const handleSkip = () => {
-    localStorage.setItem("kelimeci-onboarding-completed", "true");
+    localStorage.setItem("kelimeci-permissions-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
     const introCompleted = localStorage.getItem("kelimeci-intro-completed");
