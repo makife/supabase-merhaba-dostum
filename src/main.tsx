@@ -32,10 +32,8 @@ async function requestEarlyPushPermission() {
       console.log('📱 [EarlyPush] İzin sonucu:', result.receive);
       
       if (result.receive === 'granted') {
-        // Listener'ları ekle, sonra register
         await PushNotifications.addListener('registration', (token) => {
           console.log('✅ [EarlyPush] Token alındı:', token.value?.substring(0, 30) + '...');
-          // Token'ı localStorage'a kaydet — user login olduğunda DB'ye yazılacak
           try {
             localStorage.setItem('push_token_early', token.value);
           } catch {}

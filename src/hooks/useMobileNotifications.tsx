@@ -65,7 +65,7 @@ export const useMobileNotifications = () => {
         // 🔥 KRİTİK FIX: Listener'ları ÖNCE ekle, SONRA register() çağır
         // addListenerAsync kullanarak listener'ların tamamen eklenmesini bekle
         await SafePushNotifications.addListenerAsync("registration", async (token: any) => {
-          console.log("✅ Push registration success, token:", token.value?.substring(0, 30) + "...");
+          console.log("✅ Push registration success, FCM token:", token.value?.substring(0, 30) + "...");
           setPushToken(token.value);
 
           if (user?.id) {
