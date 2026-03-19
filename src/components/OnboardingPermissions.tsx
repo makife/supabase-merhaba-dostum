@@ -292,7 +292,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   };
 
   const handleSkip = () => {
-    localStorage.setItem("kelimeci-onboarding-completed", "true");
+    localStorage.setItem("kelimeci-permissions-completed", "true");
     toast.info("Kurulumu atladınız. İzinleri ayarlardan verebilirsiniz.");
     onComplete();
     const introCompleted = localStorage.getItem("kelimeci-intro-completed");
