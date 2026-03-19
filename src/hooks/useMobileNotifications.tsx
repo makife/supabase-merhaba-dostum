@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SafePushNotifications } from "@/utils/safePluginWrapper";
 import { suppressActivityForPush } from "@/hooks/useActivityTracker";
 import nativeStorage from "@/utils/nativeStorage";
+import { getValidFcmToken, isApnsTokenFormat } from "@/utils/pushToken";
 
 // Dinamik import için tipler
 type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
@@ -65,14 +66,25 @@ export const useMobileNotifications = () => {
         // 🔥 KRİTİK FIX: Listener'ları ÖNCE ekle, SONRA register() çağır
         // addListenerAsync kullanarak listener'ların tamamen eklenmesini bekle
         await SafePushNotifications.addListenerAsync("registration", async (token: any) => {
-          console.log("✅ Push registration success, FCM token:", token.value?.substring(0, 30) + "...");
-          setPushToken(token.value);
+          const safeToken = getValidFcmToken(token?.value);
+
+          if (!safeToken) {
+            console.warn(
+              isApnsTokenFormat(token?.value)
+                ? "⚠️ Push registration APNs token döndürdü, FCM gelene kadar DB güncellenmeyecek"
+                : "⚠️ Push registration geçersiz token döndürdü, DB güncellenmeyecek",
+            );
+            return;
+          }
+
+          console.log("✅ Push registration success, FCM token:", safeToken.substring(0, 30) + "...");
+          setPushToken(safeToken);
 
           if (user?.id) {
-            await savePushToken(user.id, token.value);
+            await savePushToken(user.id, safeToken);
           } else {
             console.log("⚠️ User henüz yok, token nativeStorage'a kaydediliyor");
-            await nativeStorage.setJSON("push_token_pending", { token: token.value });
+            await nativeStorage.setJSON("push_token_pending", { token: safeToken });
           }
         });
 
@@ -130,23 +142,48 @@ export const useMobileNotifications = () => {
 
   // Save push token to database
   const savePushToken = async (userId: string, token: string) => {
+    const safeToken = getValidFcmToken(token);
+
+    if (!safeToken) {
+      console.warn("⚠️ Geçersiz push token DB'ye yazılmadı");
+      setPushToken("");
+      await nativeStorage.removeItem("push_token_pending");
+      try {
+        localStorage.removeItem("push_token_early");
+        localStorage.removeItem("push_token_pending");
+      } catch {
+        // no-op
+      }
+      return false;
+    }
+
     try {
-      const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
+      const { error } = await supabase.from("profiles").update({ push_token: safeToken }).eq("id", userId);
 
       if (error) {
         console.error("Error saving push token to database:", error);
         const savedTokens = await nativeStorage.getJSON<Record<string, any>>("push_tokens") || {};
         savedTokens[userId] = {
-          token,
+          token: safeToken,
           platform: Capacitor.getPlatform(),
           updated_at: new Date().toISOString(),
         };
         await nativeStorage.setJSON("push_tokens", savedTokens);
-      } else {
-        console.log("Push token saved to database:", token);
+        return false;
       }
+
+      console.log("Push token saved to database:", safeToken);
+      try {
+        localStorage.removeItem("push_token_early");
+        localStorage.removeItem("push_token_pending");
+      } catch {
+        // no-op
+      }
+      await nativeStorage.removeItem("push_token_pending");
+      return true;
     } catch (error) {
       console.error("Error saving push token:", error);
+      return false;
     }
   };
 

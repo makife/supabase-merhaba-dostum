@@ -268,6 +268,20 @@ serve(async (req) => {
       )
     }
 
+    const pushToken = normalizePushToken(profileData.push_token)
+
+    if (isApnsTokenFormat(pushToken)) {
+      console.warn(`User ${receiverId} has an APNs token in profiles.push_token - clearing invalid token`) 
+      await clearStoredPushToken(supabaseClient, receiverId, 'apns_token_detected')
+      return new Response(
+        JSON.stringify({ success: true, message: 'Invalid APNs token cleared from profile', skipped: true }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     // If skipIfOnline is true, check if user was active in last 30 seconds
     // This means their app is likely in foreground and they'll see in-app notifications
     if (skipIfOnline && profileData.last_seen) {
@@ -290,7 +304,7 @@ serve(async (req) => {
     // Prepare FCM message with HIGH PRIORITY for heads-up display
     const fcmMessage: FCMMessage = {
       message: {
-        token: profileData.push_token,
+        token: pushToken,
         notification: {
           title,
           body
@@ -327,7 +341,11 @@ serve(async (req) => {
 
     // Send notification in background
     const sendNotification = async () => {
-      const success = await sendFirebaseNotification(fcmMessage)
+      const result = await sendFirebaseNotification(fcmMessage)
+
+      if (!result.success && result.errorCode === 'UNREGISTERED') {
+        await clearStoredPushToken(supabaseClient, receiverId, 'fcm_unregistered')
+      }
       
       // Store notification in database (only fields that exist in the table)
       try {
@@ -344,7 +362,7 @@ serve(async (req) => {
         console.log('Could not save notification to DB:', dbError)
       }
 
-      console.log(`Notification ${success ? 'sent' : 'failed'} to user ${receiverId}`)
+      console.log(`Notification ${result.success ? 'sent' : `failed (${result.errorCode ?? 'unknown'})`} to user ${receiverId}`)
     }
 
     // Use background task for notification sending
