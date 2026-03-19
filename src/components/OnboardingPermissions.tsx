@@ -182,15 +182,34 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
   ];
 
   const savePushToken = async (userId: string, token: string) => {
+    const safeToken = getValidFcmToken(token);
+
+    if (!safeToken) {
+      console.warn(
+        isApnsTokenFormat(token)
+          ? "⚠️ [Onboarding] APNs token geldi, profile kaydedilmedi"
+          : "⚠️ [Onboarding] Geçersiz push token geldi, profile kaydedilmedi",
+      );
+      return false;
+    }
+
     try {
-      const { error } = await supabase.from("profiles").update({ push_token: token }).eq("id", userId);
+      const { error } = await supabase.from("profiles").update({ push_token: safeToken }).eq("id", userId);
+
       if (error) {
-        localStorage.setItem("push_token_pending", JSON.stringify({ userId, token }));
-      } else {
-        localStorage.removeItem("push_token_pending");
+        await nativeStorage.setJSON("push_token_pending", { token: safeToken });
+        localStorage.setItem("push_token_pending", JSON.stringify({ token: safeToken }));
+        return false;
       }
+
+      await nativeStorage.removeItem("push_token_pending");
+      localStorage.removeItem("push_token_pending");
+      return true;
     } catch (error) {
       console.error("Push token kaydetme hatası:", error);
+      await nativeStorage.setJSON("push_token_pending", { token: safeToken });
+      localStorage.setItem("push_token_pending", JSON.stringify({ token: safeToken }));
+      return false;
     }
   };
 
@@ -199,25 +218,38 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
 
     if (isMobile) {
       try {
-        const PushNotifications = SafePushNotifications;
-        if (PushNotifications) {
-          const permission = await PushNotifications.requestPermissions();
-          if (permission.receive === "granted") {
-            await PushNotifications.addListener("registration", async (token) => {
-              console.log("✅ [Onboarding] FCM token alındı:", token.value?.substring(0, 30) + "...");
-              if (user?.id) {
-                await savePushToken(user.id, token.value);
-              } else {
-                localStorage.setItem("push_token_pending", JSON.stringify({ token: token.value }));
-              }
-            });
-            await PushNotifications.addListener("registrationError", (error: any) => {
-              console.error("❌ [Onboarding] Push registration hatası:", error.error);
-            });
-            await PushNotifications.register();
-            granted.notifications = true;
-            console.log("✅ [Onboarding] Push notifications registered successfully");
-          }
+        const permission = await SafePushNotifications.requestPermissions();
+
+        if (permission?.receive === "granted") {
+          await SafePushNotifications.addListenerAsync("registration", async (token: { value?: string }) => {
+            const safeToken = getValidFcmToken(token?.value);
+
+            if (!safeToken) {
+              console.warn(
+                isApnsTokenFormat(token?.value)
+                  ? "⚠️ [Onboarding] Registration APNs token döndürdü, FCM bekleniyor"
+                  : "⚠️ [Onboarding] Registration geçersiz token döndürdü",
+              );
+              return;
+            }
+
+            console.log("✅ [Onboarding] FCM token alındı:", safeToken.substring(0, 30) + "...");
+
+            if (user?.id) {
+              await savePushToken(user.id, safeToken);
+            } else {
+              await nativeStorage.setJSON("push_token_pending", { token: safeToken });
+              localStorage.setItem("push_token_pending", JSON.stringify({ token: safeToken }));
+            }
+          });
+
+          await SafePushNotifications.addListenerAsync("registrationError", (error: any) => {
+            console.error("❌ [Onboarding] Push registration hatası:", error?.error ?? error);
+          });
+
+          await SafePushNotifications.register();
+          granted.notifications = true;
+          console.log("✅ [Onboarding] Push notifications registered successfully");
         }
       } catch (err) {
         console.error("Bildirim izni hatası:", err);
