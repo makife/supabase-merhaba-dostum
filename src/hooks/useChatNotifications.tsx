@@ -214,20 +214,10 @@ export function useChatNotifications() {
               });
             }
 
-            if (notif.type === "friend_request") {
-              showInAppNotification(
-                "🤝 Arkadaşlık Daveti",
-                notif.message,
-                notif.related_id ? `/profile/${notif.related_id}` : undefined,
-              );
-            }
-
-            if (notif.type === "friend_request_accepted") {
-              showInAppNotification(
-                "🎉 Arkadaşlık Kabul Edildi",
-                notif.message,
-                notif.related_id ? `/profile/${notif.related_id}` : undefined,
-              );
+            // friend_request ve friend_request_accepted NotificationContext tarafından gösteriliyor
+            // Burada tekrar gösterme - duplicate toast önlenir
+            if (notif.type === "friend_request" || notif.type === "friend_request_accepted") {
+              return;
             }
 
             if (notif.type === "tournament_end") {
