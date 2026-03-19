@@ -52,6 +52,51 @@ interface FCMMessage {
   }
 }
 
+interface FirebaseSendResult {
+  success: boolean
+  errorCode?: string
+  errorText?: string
+}
+
+function normalizePushToken(token?: string | null): string {
+  return token?.trim() ?? ''
+}
+
+function isApnsTokenFormat(token?: string | null): boolean {
+  return /^[A-F0-9]{64}$/.test(normalizePushToken(token))
+}
+
+function extractFcmErrorCode(errorText: string): string | undefined {
+  try {
+    const parsed = JSON.parse(errorText)
+    const fcmDetail = parsed?.error?.details?.find((detail: Record<string, unknown>) => {
+      return detail?.['@type'] === 'type.googleapis.com/google.firebase.fcm.v1.FcmError'
+    }) as { errorCode?: string } | undefined
+
+    return fcmDetail?.errorCode || parsed?.error?.status
+  } catch {
+    return undefined
+  }
+}
+
+async function clearStoredPushToken(supabaseClient: ReturnType<typeof createClient>, receiverId: string, reason: string) {
+  try {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ push_token: null })
+      .eq('id', receiverId)
+
+    if (error) {
+      console.error(`Failed to clear invalid push token for user ${receiverId}:`, error)
+      return
+    }
+
+    console.log(`Cleared invalid push token for user ${receiverId} (${reason})`)
+  } catch (error) {
+    console.error(`Unexpected error clearing push token for user ${receiverId}:`, error)
+  }
+}
+
 async function getAccessToken(): Promise<string> {
   const projectId = Deno.env.get('FIREBASE_PROJECT_ID')!
   const privateKey = Deno.env.get('FIREBASE_PRIVATE_KEY')!.replace(/\\n/g, '\n')
@@ -129,7 +174,7 @@ async function getAccessToken(): Promise<string> {
   return tokenData.access_token
 }
 
-async function sendFirebaseNotification(message: FCMMessage): Promise<boolean> {
+async function sendFirebaseNotification(message: FCMMessage): Promise<FirebaseSendResult> {
   try {
     const accessToken = await getAccessToken()
     const projectId = Deno.env.get('FIREBASE_PROJECT_ID')!
@@ -148,15 +193,16 @@ async function sendFirebaseNotification(message: FCMMessage): Promise<boolean> {
     
     if (response.ok) {
       console.log('Push notification sent successfully')
-      return true
-    } else {
-      const error = await response.text()
-      console.error('Failed to send push notification:', error)
-      return false
+      return { success: true }
     }
+
+    const error = await response.text()
+    const errorCode = extractFcmErrorCode(error)
+    console.error('Failed to send push notification:', error)
+    return { success: false, errorCode, errorText: error }
   } catch (error) {
     console.error('Error sending push notification:', error)
-    return false
+    return { success: false, errorText: String(error) }
   }
 }
 
