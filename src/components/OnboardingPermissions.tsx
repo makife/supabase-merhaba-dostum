@@ -210,9 +210,8 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
         if (PushNotifications) {
           const permission = await PushNotifications.requestPermissions();
           if (permission.receive === "granted") {
-            // 🔥 iOS FIX: Listener'ları ÖNCE ekle, SONRA register() çağır
             await PushNotifications.addListener("registration", async (token) => {
-              console.log("✅ [Onboarding] Push token alındı:", token.value?.substring(0, 30) + "...");
+              console.log("✅ [Onboarding] FCM token alındı:", token.value?.substring(0, 30) + "...");
               if (user?.id) {
                 await savePushToken(user.id, token.value);
               } else {
@@ -222,7 +221,6 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
             await PushNotifications.addListener("registrationError", (error: any) => {
               console.error("❌ [Onboarding] Push registration hatası:", error.error);
             });
-            // Tüm listener'lar eklendi, şimdi register çağır
             await PushNotifications.register();
             granted.notifications = true;
             console.log("✅ [Onboarding] Push notifications registered successfully");
