@@ -120,9 +120,20 @@ export const SafeNavigationBar = {
  * PushNotifications için güvenli wrapper - ANDROID .then() HATASI ÇÖZÜLMÜŞ HALİ
  */
 export const SafePushNotifications = {
+  // Cache the module so listeners and register use the same instance
+  _module: null as any,
+  
+  async _getModule() {
+    if (!this._module) {
+      const mod = await import("@capacitor/push-notifications");
+      this._module = mod.PushNotifications;
+    }
+    return this._module;
+  },
+
   async checkPermissions(): Promise<{ receive: string } | null> {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const PushNotifications = await this._getModule();
       return (
         (await safePluginCall("PushNotifications", "checkPermissions", () => PushNotifications.checkPermissions(), {
           receive: "denied",
@@ -135,7 +146,7 @@ export const SafePushNotifications = {
 
   async requestPermissions(): Promise<{ receive: string } | null> {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const PushNotifications = await this._getModule();
       return (
         (await safePluginCall("PushNotifications", "requestPermissions", () => PushNotifications.requestPermissions(), {
           receive: "denied",
@@ -148,8 +159,7 @@ export const SafePushNotifications = {
 
   async register(): Promise<void> {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
-      // Kayıt işlemi async bir komuttur, bu yüzden await kullanılabilir
+      const PushNotifications = await this._getModule();
       await safePluginCall("PushNotifications", "register", () => PushNotifications.register());
     } catch {
       console.log("[SafePushNotifications] Register call failed");
@@ -158,7 +168,7 @@ export const SafePushNotifications = {
 
   async createChannel(options: any): Promise<void> {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const PushNotifications = await this._getModule();
       await safePluginCall("PushNotifications", "createChannel", () => PushNotifications.createChannel(options));
     } catch {
       // Sessizce geç
@@ -166,44 +176,40 @@ export const SafePushNotifications = {
   },
 
   /**
-   * 🔥 KRİTİK DÜZELTME v2: Promise ve .then() TAMAMEN KALDIRILDI!
-   * Android bridge üzerinde hiçbir async operasyon yapmıyoruz.
-   * 
-   * Strateji: Plugin'i önceden yükle, sonra senkron çağır
+   * 🔥 v3: Listener'ları ASYNC olarak ekle ve Promise döndür
+   * register() çağrılmadan ÖNCE listener'ların eklenmesini garanti eder
    */
-  addListener(eventName: string, callback: (data: any) => void): { remove: () => void } | null {
+  async addListenerAsync(eventName: string, callback: (data: any) => void): Promise<{ remove: () => void } | null> {
     if (!Capacitor.isNativePlatform()) return null;
 
-    // 🆕 TAMAMEN SENKRON YAKLAŞIM:
-    // setTimeout ile gecikme, ardından IIFE ile async kodu izole et
+    try {
+      const PushNotifications = await this._getModule();
+      const handle = await (PushNotifications.addListener as any)(eventName, callback);
+      console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
+      return handle || { remove: () => {} };
+    } catch (error) {
+      console.log(`[SafePushNotifications] addListener error for ${eventName}:`, error);
+      return null;
+    }
+  },
+
+  // Legacy sync version kept for backward compat
+  addListener(eventName: string, callback: (data: any) => void): { remove: () => void } | null {
+    if (!Capacitor.isNativePlatform()) return null;
     const listenerHandle = { remove: () => {} };
     
     setTimeout(async () => {
       try {
-        // Async import
-        const module = await import("@capacitor/push-notifications");
-        const PushNotifications = module.PushNotifications;
-        
-        // Listener ekle - Cast ile tip uyumluluğu sağla
+        const PushNotifications = await this._getModule();
         const handle = await (PushNotifications.addListener as any)(eventName, callback);
-        
-        // Handle'ı güncelle
         if (handle?.remove) {
-          listenerHandle.remove = () => {
-            try {
-              handle.remove();
-            } catch {
-              // Sessizce geç
-            }
-          };
+          listenerHandle.remove = () => { try { handle.remove(); } catch {} };
         }
-        
         console.log(`[SafePushNotifications] Listener added for: ${eventName}`);
       } catch (error) {
-        // Tüm hatalar sessizce yutuluyor
         console.log(`[SafePushNotifications] addListener error for ${eventName}:`, error);
       }
-    }, 150); // 150ms gecikme - Android bridge stabilizasyonu için
+    }, 150);
     
     return listenerHandle;
   },
