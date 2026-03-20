@@ -321,7 +321,7 @@ const DinoRunner = () => {
 
     // Harfler (in-place update, düşük GC)
     for (let i = lettersRef.current.length - 1; i >= 0; i--) {
-      lettersRef.current[i].x -= speedRef.current;
+      lettersRef.current[i].x -= speedRef.current * dt;
       if (lettersRef.current[i].x <= -LETTER_SIZE) lettersRef.current.splice(i, 1);
     }
 
