@@ -86,6 +86,7 @@ const DinoRunner = () => {
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
   const audioContextRef = useRef<AudioContext | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
