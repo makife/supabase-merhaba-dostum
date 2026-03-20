@@ -218,9 +218,15 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
           if (!finalHeaders.has('apikey')) {
             finalHeaders.set('apikey', SUPABASE_PUBLISHABLE_KEY);
           }
-          
-          // 3. AUTHORIZATION - Token varsa ve yoksa ekle  
-          if (globalAccessToken && !finalHeaders.has('Authorization')) {
+
+          // 3. AUTHORIZATION - Native'de anon bearer header'ını user token ile override et
+          // Supabase SDK session'ı henüz hydrate etmeden önce Authorization: Bearer <anon-key>
+          // gönderebiliyor; bu da RLS'li sorguların anonim gitmesine ve 0 veri / erişim hatasına yol açıyor.
+          const currentAuthorization = finalHeaders.get('Authorization');
+          const anonAuthorization = `Bearer ${SUPABASE_PUBLISHABLE_KEY}`;
+          const shouldOverrideAuthorization = !currentAuthorization || currentAuthorization === anonAuthorization;
+
+          if (globalAccessToken && shouldOverrideAuthorization) {
             finalHeaders.set('Authorization', `Bearer ${globalAccessToken}`);
           }
           
@@ -237,7 +243,15 @@ const createSupabaseClient = (): SupabaseClient<Database> => {
           
           // Debug log
           const ct = finalHeaders.get('Content-Type');
-          console.log(`[Supabase] 🔐 ${method} | apikey=✓ | auth=${globalAccessToken ? '✓' : '✗'} | ct=${ct || 'none'}`);
+          const resolvedAuthorization = finalHeaders.get('Authorization');
+          const authMode = resolvedAuthorization === `Bearer ${globalAccessToken}` && globalAccessToken
+            ? 'user'
+            : resolvedAuthorization === anonAuthorization
+              ? 'anon'
+              : resolvedAuthorization
+                ? 'custom'
+                : 'none';
+          console.log(`[Supabase] 🔐 ${method} | apikey=✓ | auth=${authMode} | ct=${ct || 'none'}`);
         }
         
         const controller = new AbortController();
