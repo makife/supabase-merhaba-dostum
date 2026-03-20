@@ -240,12 +240,20 @@ const DinoRunner = () => {
   };
 
   // --- GAME LOOP ---
-  const gameLoop = () => {
+  const gameLoop = (timestamp?: number) => {
     if (gameStateRef.current !== "playing") return;
 
-    // Fizik
-    velocityRef.current -= GRAVITY;
-    dinoYRef.current += velocityRef.current;
+    // Delta-time hesaplama (iOS WebView ilk frame'lerde düşük FPS verir, bu normalize eder)
+    const now = timestamp || performance.now();
+    if (lastFrameTimeRef.current === 0) lastFrameTimeRef.current = now;
+    const rawDelta = now - lastFrameTimeRef.current;
+    lastFrameTimeRef.current = now;
+    // 60fps = 16.67ms referans, max 3 frame atlama (50ms) ile sınırla
+    const dt = Math.min(rawDelta, 50) / 16.667;
+
+    // Fizik (delta-time normalized)
+    velocityRef.current -= GRAVITY * dt;
+    dinoYRef.current += velocityRef.current * dt;
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
@@ -255,11 +263,11 @@ const DinoRunner = () => {
       velocityRef.current = -2;
     }
 
-    dinoRotationRef.current += speedRef.current * 4;
-    speedRef.current += 0.0003;
-    scoreRef.current += 1;
+    dinoRotationRef.current += speedRef.current * 4 * dt;
+    speedRef.current += 0.0003 * dt;
+    scoreRef.current += 1 * dt;
 
-    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current) % 40;
+    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current * dt) % 40;
 
     const dinoRect = {
       x: DINO_LEFT + 5,
