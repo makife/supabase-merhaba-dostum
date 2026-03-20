@@ -377,6 +377,7 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/index" element={<Navigate to="/" replace />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
