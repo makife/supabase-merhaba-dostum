@@ -195,6 +195,7 @@ const DinoRunner = () => {
     velocityRef.current = 0;
     speedRef.current = 2;
     scoreRef.current = 0;
+    lastFrameTimeRef.current = 0;
     setScore(0);
     
     // Level Sıfırlama
