@@ -276,9 +276,9 @@ const DinoRunner = () => {
       height: DINO_HEIGHT - 10,
     };
 
-    // Engeller (in-place update, düşük GC)
+    // Engeller (in-place update, düşük GC, delta-time normalized)
     for (let i = obstaclesRef.current.length - 1; i >= 0; i--) {
-      obstaclesRef.current[i].x -= speedRef.current;
+      obstaclesRef.current[i].x -= speedRef.current * dt;
       if (obstaclesRef.current[i].x <= -OBSTACLE_WIDTH) obstaclesRef.current.splice(i, 1);
     }
 
