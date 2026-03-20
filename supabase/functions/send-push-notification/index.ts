@@ -79,7 +79,7 @@ function extractFcmErrorCode(errorText: string): string | undefined {
   }
 }
 
-async function clearStoredPushToken(supabaseClient: ReturnType<typeof createClient>, receiverId: string, reason: string) {
+async function clearStoredPushToken(supabaseClient: any, receiverId: string, reason: string) {
   try {
     const { error } = await supabaseClient
       .from('profiles')
