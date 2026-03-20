@@ -311,6 +311,22 @@ const GameCountdown = memo(
           musicFadedRef.current = true;
           fadeOutBackgroundMusic(4500);
         }
+
+        // 🔧 FIX: İlk değeri HEMEN göster - React render gecikmesini telafi et
+        // İlk tick'i beklemeden "5"i anında ekrana bas
+        const nowImmediate = Date.now() + serverTimeOffset;
+        const elapsedImmediate = (nowImmediate - startTime) / 1000;
+        const initialValue = Math.ceil(5 - elapsedImmediate);
+        
+        if (initialValue >= 1 && initialValue <= 5) {
+          currentValueRef.current = initialValue;
+          setDisplayValue(initialValue);
+          if (!soundPlayedRef.current.has(initialValue)) {
+            soundPlayedRef.current.add(initialValue);
+            playCountdownSound();
+          }
+          console.log(`🔢 [${instanceId}] İlk değer hemen gösterildi: ${initialValue} (elapsed=${elapsedImmediate.toFixed(2)}s)`);
+        }
         
         // Tick fonksiyonu: sunucu zamanına göre hangi sayıda olmalıyız?
         const tick = () => {
@@ -323,7 +339,6 @@ const GameCountdown = memo(
           // startTime'dan bu yana kaç saniye geçti?
           const elapsed = (now - startTime) / 1000;
           // Countdown 5'ten başlıyor, her saniye 1 azalıyor
-          // elapsed=0 → 5, elapsed=1 → 4, ... elapsed=4 → 1, elapsed=5 → 0 (BAŞLA)
           const countdownValue = Math.ceil(5 - elapsed);
           
           if (countdownValue > 5) {
@@ -369,10 +384,7 @@ const GameCountdown = memo(
           }
         };
         
-        // İlk tick hemen çalışsın
-        tick();
-        
-        // Sonra her 200ms'de kontrol et (1000ms yerine — daha hassas senkronizasyon)
+        // Sonra her 200ms'de kontrol et
         intervalRef.current = setInterval(tick, 200);
       };
 
