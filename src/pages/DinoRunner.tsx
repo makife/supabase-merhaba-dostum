@@ -86,6 +86,7 @@ const DinoRunner = () => {
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
   const audioContextRef = useRef<AudioContext | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -194,6 +195,7 @@ const DinoRunner = () => {
     velocityRef.current = 0;
     speedRef.current = 2;
     scoreRef.current = 0;
+    lastFrameTimeRef.current = 0;
     setScore(0);
     
     // Level Sıfırlama
@@ -238,12 +240,20 @@ const DinoRunner = () => {
   };
 
   // --- GAME LOOP ---
-  const gameLoop = () => {
+  const gameLoop = (timestamp?: number) => {
     if (gameStateRef.current !== "playing") return;
 
-    // Fizik
-    velocityRef.current -= GRAVITY;
-    dinoYRef.current += velocityRef.current;
+    // Delta-time hesaplama (iOS WebView ilk frame'lerde düşük FPS verir, bu normalize eder)
+    const now = timestamp || performance.now();
+    if (lastFrameTimeRef.current === 0) lastFrameTimeRef.current = now;
+    const rawDelta = now - lastFrameTimeRef.current;
+    lastFrameTimeRef.current = now;
+    // 60fps = 16.67ms referans, max 3 frame atlama (50ms) ile sınırla
+    const dt = Math.min(rawDelta, 50) / 16.667;
+
+    // Fizik (delta-time normalized)
+    velocityRef.current -= GRAVITY * dt;
+    dinoYRef.current += velocityRef.current * dt;
     if (dinoYRef.current <= 0) {
       dinoYRef.current = 0;
       velocityRef.current = 0;
@@ -253,11 +263,11 @@ const DinoRunner = () => {
       velocityRef.current = -2;
     }
 
-    dinoRotationRef.current += speedRef.current * 4;
-    speedRef.current += 0.0003;
-    scoreRef.current += 1;
+    dinoRotationRef.current += speedRef.current * 4 * dt;
+    speedRef.current += 0.0003 * dt;
+    scoreRef.current += 1 * dt;
 
-    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current) % 40;
+    groundOffsetRef.current = (groundOffsetRef.current + speedRef.current * dt) % 40;
 
     const dinoRect = {
       x: DINO_LEFT + 5,
@@ -266,9 +276,9 @@ const DinoRunner = () => {
       height: DINO_HEIGHT - 10,
     };
 
-    // Engeller (in-place update, düşük GC)
+    // Engeller (in-place update, düşük GC, delta-time normalized)
     for (let i = obstaclesRef.current.length - 1; i >= 0; i--) {
-      obstaclesRef.current[i].x -= speedRef.current;
+      obstaclesRef.current[i].x -= speedRef.current * dt;
       if (obstaclesRef.current[i].x <= -OBSTACLE_WIDTH) obstaclesRef.current.splice(i, 1);
     }
 
@@ -311,7 +321,7 @@ const DinoRunner = () => {
 
     // Harfler (in-place update, düşük GC)
     for (let i = lettersRef.current.length - 1; i >= 0; i--) {
-      lettersRef.current[i].x -= speedRef.current;
+      lettersRef.current[i].x -= speedRef.current * dt;
       if (lettersRef.current[i].x <= -LETTER_SIZE) lettersRef.current.splice(i, 1);
     }
 
