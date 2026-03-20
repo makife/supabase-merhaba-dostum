@@ -146,18 +146,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isNative) return;
 
-    const handleSessionRecovered = async (event: any) => {
+    const handleSessionRecovered = async () => {
       console.log("[Auth] 🔄 Session recovered eventi alındı");
-      
-      // Session recovery hook başarılı oldu, session'ı Supabase'den al
+
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (currentSession && mounted.current) {
-          console.log("[Auth] ✅ Session güncellendi:", currentSession.user.email);
-          setSession(currentSession);
-          setUser(currentSession.user);
-          setLoading(false);
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
+        if (currentSession) {
+          setGlobalAccessToken(currentSession.access_token);
+          if (mounted.current) {
+            console.log("[Auth] ✅ Session güncellendi:", currentSession.user.email);
+            setSession(currentSession);
+            setUser(currentSession.user);
+            setLoading(false);
+          }
         }
       } catch (e) {
         console.error("[Auth] ❌ Session recovered handler hatası:", e);
@@ -165,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     window.addEventListener("session-recovered", handleSessionRecovered);
-    
+
     return () => {
       window.removeEventListener("session-recovered", handleSessionRecovered);
     };
@@ -174,35 +178,105 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useAppState({
     onForeground: () => {
       console.log("[Auth] ☀️ Ön plana geldi - useSessionRecovery devralacak");
-      // 🔥 ARTIK BURADA HİÇBİR ŞEY YAPMA!
-      // useSessionRecovery hook'u tüm session recovery işlemlerini yapıyor
     },
     onBackground: () => {
       console.log("[Auth] 🌑 Arka plana geçti");
     },
   });
 
+  const applySessionState = useCallback((nextSession: Session | null) => {
+    if (!mounted.current) return;
+
+    if (nextSession?.access_token) {
+      setGlobalAccessToken(nextSession.access_token);
+      console.log("[Auth] 🔐 Global token SET EDİLDİ!");
+    }
+
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setLoading(false);
+  }, []);
+
+  const queuePostAuthWork = useCallback(
+    (event: string, nextSession: Session) => {
+      window.dispatchEvent(
+        new CustomEvent("auth-ready", {
+          detail: {
+            userId: nextSession.user.id,
+            email: nextSession.user.email,
+            source: `auth-${event.toLowerCase()}`,
+          },
+        }),
+      );
+
+      window.dispatchEvent(new CustomEvent("force-presence-update", { detail: { userId: nextSession.user.id } }));
+
+      setTimeout(async () => {
+        try {
+          if (isNative) {
+            await saveSessionToStorage(nextSession);
+          }
+
+          if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+            const { ensureProfileExists } = await import("@/utils/ensureProfileExists");
+            await ensureProfileExists(nextSession.user);
+          }
+        } catch (error) {
+          console.error(`[Auth] ❌ ${event} sonrası async iş hatası:`, error);
+        }
+      }, 0);
+    },
+    [isNative],
+  );
+
   // 🔥 INIT
   useEffect(() => {
     mounted.current = true;
-    
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log(`[Auth] 🔔 Event: ${event}`);
+
+      if (event === "SIGNED_OUT") {
+        if (intentionalLogoutRef.current) {
+          console.log("[Auth] ✅ Bilerek çıkış yapıldı");
+          intentionalLogoutRef.current = false;
+          applySessionState(null);
+        } else if (isNative) {
+          console.log("[Auth] 🛡️ Native SIGNED_OUT IGNORE - storage kontrol...");
+          setTimeout(() => {
+            void restoreFromStorage();
+          }, 500);
+        }
+        return;
+      }
+
+      if (!newSession) return;
+
+      if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        console.log(`🔐 Token güncellendi (${event})`);
+        applySessionState(newSession);
+        queuePostAuthWork(event, newSession);
+      }
+    });
+
     const initAuth = async () => {
       if (initCompletedRef.current) {
         console.log("[Auth] ⏭️ Init zaten tamamlandı, skip");
         return;
       }
       initCompletedRef.current = true;
-      
+
       console.log("🔒 Auth Başlatılıyor... isNative:", isNative);
-      
+
       if (isNative) {
-        // NATIVE: Storage'dan restore
         console.log("[Auth] 📱 Native mod - storage'dan restore başlıyor...");
-        
+
         try {
           const restored = await restoreFromStorage();
           console.log("[Auth] 📱 Restore sonucu:", restored);
-          
+
           if (!restored && mounted.current) {
             console.log("[Auth] 📱 Session bulunamadı, loading kapatılıyor");
             setLoading(false);
@@ -211,100 +285,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error("[Auth] ❌ Native init hatası:", e);
           if (mounted.current) setLoading(false);
         }
-      } else {
-        // WEB: Normal Supabase getSession
-        console.log("[Auth] 🌐 Web mod - getSession...");
-        try {
-          const { data } = await supabase.auth.getSession();
-          
-          if (data?.session && mounted.current) {
-            setSession(data.session);
-            setUser(data.session.user);
-          }
-        } catch {}
-        
+        return;
+      }
+
+      console.log("[Auth] 🌐 Web mod - getSession...");
+      try {
+        const {
+          data: { session: initialSession },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error("[Auth] ❌ Web getSession hatası:", error.message);
+        }
+
+        if (initialSession) {
+          console.log("[Auth] 🌐 Session bulundu:", initialSession.user.email);
+          applySessionState(initialSession);
+        } else if (mounted.current) {
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error("[Auth] ❌ Web init exception:", e);
         if (mounted.current) setLoading(false);
       }
     };
-    
-    // FAILSAFE: 8 saniye sonra loading kapat
+
     const failsafe = setTimeout(() => {
-      if (loading && mounted.current) {
+      if (mounted.current && !sessionRef.current && !userRef.current) {
         console.warn("[Auth] ⚠️ FAILSAFE: 8s timeout - loading zorla kapatılıyor");
         setLoading(false);
       }
     }, 8000);
-    
-    // 🔥 HEMEN ÇALIŞTIR
-    initAuth();
-    
-    // 🔔 Auth State Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log(`[Auth] 🔔 Event: ${event}`);
-      
-      // 🔥 NATIVE'DE SIGNED_OUT'U TAMAMEN IGNORE ET
-      // Sadece intentional logout'u işle
-      if (event === "SIGNED_OUT") {
-        if (intentionalLogoutRef.current) {
-          console.log("[Auth] ✅ Bilerek çıkış yapıldı");
-          intentionalLogoutRef.current = false;
-          if (mounted.current) {
-            setSession(null);
-            setUser(null);
-          }
-        } else if (isNative) {
-          // 🛡️ Native'de SIGNED_OUT IGNORE - storage'dan restore dene
-          console.log("[Auth] 🛡️ Native SIGNED_OUT IGNORE - storage kontrol...");
-          setTimeout(() => restoreFromStorage(), 500);
-        }
-        return;
-      }
-      
-      // TOKEN_REFRESHED veya SIGNED_IN
-      if ((event === "TOKEN_REFRESHED" || event === "SIGNED_IN") && newSession) {
-        console.log(`🔐 Token güncellendi (${event})`);
 
-        // 🔥🔥🔥 KRİTİK: GLOBAL TOKEN'I HER ZAMAN SET ET!
-        setGlobalAccessToken(newSession.access_token);
-        console.log("[Auth] 🔐 Global token SET EDİLDİ!");
+    void initAuth();
 
-        if (mounted.current) {
-          setSession(newSession);
-          setUser(newSession.user);
-          setLoading(false);
-        }
-
-        // Native'de storage'a kaydet - bu da token'ı set eder
-        if (isNative) {
-          await saveSessionToStorage(newSession);
-        }
-
-        if (event === "SIGNED_IN") {
-          const { ensureProfileExists } = await import("@/utils/ensureProfileExists");
-          await ensureProfileExists(newSession.user);
-
-          console.log("[Auth] 🟢 SIGNED_IN → force-presence-update dispatch");
-          window.dispatchEvent(new CustomEvent("force-presence-update", { detail: { userId: newSession.user.id } }));
-        }
-
-        window.dispatchEvent(
-          new CustomEvent("auth-ready", {
-            detail: {
-              userId: newSession.user.id,
-              email: newSession.user.email,
-              source: `auth-${event.toLowerCase()}`,
-            },
-          }),
-        );
-      }
-    });
-    
     return () => {
       mounted.current = false;
       clearTimeout(failsafe);
       subscription.unsubscribe();
     };
-  }, [isNative, restoreFromStorage]);
+  }, [applySessionState, isNative, queuePostAuthWork, restoreFromStorage]);
 
   // 🔐 Sign In
   const signIn = async (email: string, password: string) => {
