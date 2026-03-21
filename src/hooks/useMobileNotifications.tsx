@@ -10,6 +10,9 @@ import { getValidFcmToken, isApnsTokenFormat } from "@/utils/pushToken";
 type LocalNotificationsType = typeof import("@capacitor/local-notifications").LocalNotifications;
 type PushNotificationsType = typeof import("@capacitor/push-notifications").PushNotifications;
 
+// iOS cold-start retry intervals (ms) — progressive backoff
+const IOS_RETRY_DELAYS = [2500, 5000, 10000];
+
 export const useMobileNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [pushToken, setPushToken] = useState<string>("");
@@ -18,20 +21,23 @@ export const useMobileNotifications = () => {
   const listenersRegistered = useRef(false);
   const registerCalled = useRef(false);
   const latestPushTokenRef = useRef("");
-  const registrationRetryTimeoutRef = useRef<number | null>(null);
+  const retryTimeoutsRef = useRef<number[]>([]);
+  const pushModuleRef = useRef<PushNotificationsType | null>(null);
 
   const isMobile = Capacitor.isNativePlatform();
+  const isIos = isMobile && Capacitor.getPlatform() === "ios";
 
   useEffect(() => {
     latestPushTokenRef.current = pushToken;
   }, [pushToken]);
 
-  // Direct import - no SafePluginWrapper overhead for critical path
   const getPushModule = async (): Promise<PushNotificationsType | null> => {
+    if (pushModuleRef.current) return pushModuleRef.current;
     try {
       if (!isMobile) return null;
       const module = await import("@capacitor/push-notifications");
-      return module.PushNotifications;
+      pushModuleRef.current = module.PushNotifications;
+      return pushModuleRef.current;
     } catch (error) {
       console.log("PushNotifications plugin yüklenemedi:", error);
       return null;
@@ -49,34 +55,41 @@ export const useMobileNotifications = () => {
     }
   };
 
-  const clearRegistrationRetry = useCallback(() => {
-    if (registrationRetryTimeoutRef.current !== null) {
-      window.clearTimeout(registrationRetryTimeoutRef.current);
-      registrationRetryTimeoutRef.current = null;
-    }
+  const clearAllRetries = useCallback(() => {
+    retryTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+    retryTimeoutsRef.current = [];
   }, []);
 
-  const scheduleIosRegistrationRetry = useCallback(
+  // Schedule progressive iOS retries for FCM token
+  const scheduleIosRetries = useCallback(
     async (PushNotifications: PushNotificationsType) => {
-      if (!isMobile || Capacitor.getPlatform() !== "ios") return;
+      if (!isIos) return;
+      clearAllRetries();
 
-      clearRegistrationRetry();
+      for (const delay of IOS_RETRY_DELAYS) {
+        const id = window.setTimeout(async () => {
+          try {
+            // Token already obtained — skip
+            if (latestPushTokenRef.current) return;
 
-      registrationRetryTimeoutRef.current = window.setTimeout(async () => {
-        try {
-          if (latestPushTokenRef.current) return;
+            // Check pending storage
+            const pending = await nativeStorage.getJSON<{ token: string }>("push_token_pending");
+            if (getValidFcmToken(pending?.token)) {
+              console.log(`📱 [Push] iOS retry@${delay}ms: pending token zaten mevcut`);
+              return;
+            }
 
-          const pending = await nativeStorage.getJSON<{ token: string }>("push_token_pending");
-          if (getValidFcmToken(pending?.token)) return;
+            console.log(`📱 [Push] iOS retry@${delay}ms: FCM token henüz gelmedi, register() tekrar çağrılıyor...`);
+            await PushNotifications.register();
+          } catch (error) {
+            console.error(`iOS push register retry@${delay}ms hatası:`, error);
+          }
+        }, delay);
 
-          console.log("📱 [Push] iOS cold-start retry: FCM token henüz gelmedi, register() tekrar çağrılıyor...");
-          await PushNotifications.register();
-        } catch (error) {
-          console.error("iOS push register retry hatası:", error);
-        }
-      }, 2500);
+        retryTimeoutsRef.current.push(id);
+      }
     },
-    [clearRegistrationRetry, isMobile],
+    [clearAllRetries, isIos],
   );
 
   // Save push token to database - FCM only
@@ -112,7 +125,7 @@ export const useMobileNotifications = () => {
     }
   }, []);
 
-  // Initialize push notifications - TEK NOKTADAN listener + register yönetimi
+  // Initialize push notifications
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
       try {
@@ -140,32 +153,30 @@ export const useMobileNotifications = () => {
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
 
-        // Listener'ları SADECE BİR KEZ ekle (çift listener race condition önlenir)
+        // Listener'ları SADECE BİR KEZ ekle
         if (!listenersRegistered.current) {
           listenersRegistered.current = true;
 
           await PushNotifications.addListener("registration", async (token) => {
             console.log("📱 Registration event geldi, raw token:", token.value?.substring(0, 40) + "...");
-            
+
             const safeToken = getValidFcmToken(token.value);
 
             if (!safeToken) {
               console.warn(
                 isApnsTokenFormat(token.value)
                   ? "⚠️ APNs token geldi (64-char hex), FCM token bekleniyor..."
-                  : "⚠️ Geçersiz push token geldi"
+                  : "⚠️ Geçersiz push token geldi, length=" + (token.value?.length ?? 0)
               );
-              // APNs token geldi — FCM henüz hazır değil, pending olarak kaydet
-              // Firebase SDK birkaç ms sonra FCM token'ını verecek
               return;
             }
 
             console.log("✅ FCM token alındı:", safeToken.substring(0, 30) + "...");
-            clearRegistrationRetry();
+            clearAllRetries();
             latestPushTokenRef.current = safeToken;
             setPushToken(safeToken);
 
-            // Token'ı nativeStorage'a da yedekle (OAuth recovery için)
+            // Token'ı nativeStorage'a yedekle (OAuth recovery için)
             await nativeStorage.setJSON("push_token_pending", { token: safeToken });
 
             // User hazırsa hemen kaydet
@@ -199,15 +210,13 @@ export const useMobileNotifications = () => {
           registerCalled.current = true;
           console.log("📱 register() çağrılıyor...");
           await PushNotifications.register();
-          await scheduleIosRegistrationRetry(PushNotifications);
+          await scheduleIosRetries(PushNotifications);
           console.log("✅ register() başarılı");
         }
       } else if (permissionStatus.receive === "prompt") {
-        // İzin henüz istenmemişse iste
         const result = await PushNotifications.requestPermissions();
         if (result.receive === "granted") {
           setIsPermissionGranted(true);
-          // Recursive call to set up listeners + register
           listenersRegistered.current = false;
           registerCalled.current = false;
           await initializePushNotifications();
@@ -222,7 +231,45 @@ export const useMobileNotifications = () => {
     } catch (error) {
       console.error("Push notification başlatma hatası:", error);
     }
-  }, [clearRegistrationRetry, isMobile, savePushToken, scheduleIosRegistrationRetry, user?.id]);
+  }, [clearAllRetries, isMobile, savePushToken, scheduleIosRetries, user?.id]);
+
+  // iOS foreground resume: re-register to refresh token
+  useEffect(() => {
+    if (!isIos) return;
+
+    let appModule: typeof import("@capacitor/app").App | null = null;
+    let listenerId: { remove: () => Promise<void> } | null = null;
+
+    const setup = async () => {
+      try {
+        const mod = await import("@capacitor/app");
+        appModule = mod.App;
+
+        listenerId = await appModule.addListener("appStateChange", async ({ isActive }) => {
+          if (!isActive) return;
+          if (!user?.id) return;
+
+          // App foreground'a döndü — FCM token'ı yenile
+          const PushNotifications = await getPushModule();
+          if (!PushNotifications) return;
+
+          const permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive !== "granted") return;
+
+          console.log("📱 [Push] iOS foreground resume: token yenileme kontrolü...");
+          await PushNotifications.register();
+        });
+      } catch (e) {
+        console.log("App plugin yüklenemedi:", e);
+      }
+    };
+
+    setup();
+
+    return () => {
+      listenerId?.remove();
+    };
+  }, [isIos, user?.id]);
 
   // Initialize local notifications
   const initializeLocalNotifications = useCallback(async () => {
@@ -378,7 +425,6 @@ export const useMobileNotifications = () => {
       const granted = result.receive === "granted";
       setIsPermissionGranted(granted);
       if (granted) {
-        // Re-init to set up listeners + register
         listenersRegistered.current = false;
         registerCalled.current = false;
         await initializePushNotifications();
@@ -451,9 +497,9 @@ export const useMobileNotifications = () => {
 
   useEffect(() => {
     return () => {
-      clearRegistrationRetry();
+      clearAllRetries();
     };
-  }, [clearRegistrationRetry]);
+  }, [clearAllRetries]);
 
   return {
     isPermissionGranted,
