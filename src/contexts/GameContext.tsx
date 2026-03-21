@@ -96,6 +96,22 @@ interface RealtimePayload {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
+// SVG rozet ikonu - toast başlığında kupa emojisi yerine kullanılır
+const BadgeIcon = () => (
+  <img
+    src="/icons/badge.svg"
+    alt="rozet"
+    style={{ width: 20, height: 20, display: "inline-block", verticalAlign: "middle", marginRight: 6 }}
+  />
+);
+
+const BadgeToastTitle = () => (
+  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <BadgeIcon />
+    Yeni Rozet!
+  </span>
+);
+
 const isValidParticipantPayload = (payload: any): payload is GameParticipantPayload => {
   return payload && typeof payload === "object";
 };
@@ -1322,7 +1338,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           // Type assertion: generalBadges as any[]
           (generalBadges as any[]).forEach((badge: any) => {
             toast({
-              title: "🏆 Yeni Rozet!",
+              title: <BadgeToastTitle />,
               description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
               duration: 4000,
             });
@@ -1342,7 +1358,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             // Type assertion: wordsBadges as any[]
             (wordsBadges as any[]).forEach((badge: any) => {
               toast({
-                title: "🏆 Yeni Rozet!",
+                title: <BadgeToastTitle />,
                 description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
                 duration: 4000,
               });
