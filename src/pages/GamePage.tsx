@@ -2338,8 +2338,8 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // 🔧 FIX: ŞU ANI geç - GameCountdown şu andan itibaren 5 saniye sayacak
-            const countdownStartNow = Date.now() + serverTimeOffset;
+            // 🔧 FIX: 500ms buffer ekle - React render + useEffect gecikmesini telafi et
+            const countdownStartNow = Date.now() + serverTimeOffset + 500;
             setCountdownServerTime(new Date(countdownStartNow).toISOString());
             setShowCountdown(true);
           }
