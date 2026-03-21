@@ -63,7 +63,7 @@ BEGIN
       VALUES (
         p_user_id,
         'badge_earned',
-        '🏆 Yeni rozet kazandınız: ' || badge_record.name,
+        'Yeni rozet kazandınız: ' || badge_record.name,
         badge_record.id::text
       );
       
