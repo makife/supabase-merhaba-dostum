@@ -190,6 +190,26 @@ const preloadPromise =
 
 export const ensureImagesLoaded = () => preloadPromise;
 
+const getCountdownPhase = (now: number, startTime: number): number | "start" | null => {
+  const msUntilStart = startTime - now;
+
+  if (msUntilStart > 1000) {
+    return null;
+  }
+
+  if (msUntilStart > 0) {
+    return 5;
+  }
+
+  const elapsedSeconds = (now - startTime) / 1000;
+
+  if (elapsedSeconds >= 5) {
+    return "start";
+  }
+
+  return Math.min(5, Math.max(1, Math.ceil(5 - elapsedSeconds)));
+};
+
 // --- ANA COMPONENT ---
 // 🔧 BASİT VE STABIL INTERVAL-BASED COUNTDOWN
 const GameCountdown = memo(
@@ -243,7 +263,7 @@ const GameCountdown = memo(
       completedRef.current = false;
       hasInitializedRef.current = false;
       soundPlayedRef.current.clear();
-      currentValueRef.current = 5;
+      currentValueRef.current = 0;
       setDisplayValue(null);
 
       return () => {
@@ -270,7 +290,7 @@ const GameCountdown = memo(
       cleanupAllTimers();
       completedRef.current = false;
       soundPlayedRef.current.clear();
-      currentValueRef.current = 5;
+      currentValueRef.current = 0;
       hasInitializedRef.current = true;
 
       // 🔧 BÜYÜK FIX: Basit ve stabil countdown mantığı
@@ -302,64 +322,44 @@ const GameCountdown = memo(
 
       // 🎯 SERVER-ANCHORED COUNTDOWN: Her tick'te sunucu zamanına göre hesapla
       // Bu sayede iOS ve Android aynı anda aynı sayıyı gösterir
-      
+
       const startCountdownAnchored = () => {
         console.log(`🔢 [${instanceId}] Server-anchored countdown başlıyor! startTime=${startTime}`);
-        
+
         // 🎵 Arka plan müziğini fade out yap
         if (!musicFadedRef.current) {
           musicFadedRef.current = true;
           fadeOutBackgroundMusic(4500);
         }
 
-        // 🔧 FIX: İlk değeri HEMEN göster - React render gecikmesini telafi et
-        // İlk tick'i beklemeden "5"i anında ekrana bas
-        const nowImmediate = Date.now() + serverTimeOffset;
-        const elapsedImmediate = (nowImmediate - startTime) / 1000;
-        const initialValue = Math.ceil(5 - elapsedImmediate);
-        
-        if (initialValue >= 1 && initialValue <= 5) {
-          currentValueRef.current = initialValue;
-          setDisplayValue(initialValue);
-          if (!soundPlayedRef.current.has(initialValue)) {
-            soundPlayedRef.current.add(initialValue);
-            playCountdownSound();
-          }
-          console.log(`🔢 [${instanceId}] İlk değer hemen gösterildi: ${initialValue} (elapsed=${elapsedImmediate.toFixed(2)}s)`);
-        }
-        
         // Tick fonksiyonu: sunucu zamanına göre hangi sayıda olmalıyız?
         const tick = () => {
           if (!mountedRef.current || completedRef.current) {
             cleanupAllTimers();
             return;
           }
-          
+
           const now = Date.now() + serverTimeOffset;
-          // startTime'dan bu yana kaç saniye geçti?
-          const elapsed = (now - startTime) / 1000;
-          // Countdown 5'ten başlıyor, her saniye 1 azalıyor
-          const countdownValue = Math.ceil(5 - elapsed);
-          
-          if (countdownValue > 5) {
-            // Henüz başlamamış, bekle
+          const phase = getCountdownPhase(now, startTime);
+
+          if (phase === null) {
             return;
           }
-          
-          if (countdownValue >= 1 && countdownValue <= 5) {
-            if (currentValueRef.current !== countdownValue) {
-              currentValueRef.current = countdownValue;
-              console.log(`🔢 [${instanceIdRef.current}] ${countdownValue} (elapsed=${elapsed.toFixed(2)}s)`);
-              setDisplayValue(countdownValue);
-              if (!soundPlayedRef.current.has(countdownValue)) {
-                soundPlayedRef.current.add(countdownValue);
+
+          if (typeof phase === "number") {
+            if (currentValueRef.current !== phase) {
+              currentValueRef.current = phase;
+              console.log(`🔢 [${instanceIdRef.current}] ${phase} (startDiff=${startTime - now}ms)`);
+              setDisplayValue(phase);
+              if (!soundPlayedRef.current.has(phase)) {
+                soundPlayedRef.current.add(phase);
                 playCountdownSound();
               }
             }
-          } else if (countdownValue <= 0) {
+          } else {
             // BAŞLA!
             if (!soundPlayedRef.current.has("start")) {
-              console.log(`🏁 [${instanceIdRef.current}] BAŞLA! (elapsed=${elapsed.toFixed(2)}s)`);
+              console.log(`🏁 [${instanceIdRef.current}] BAŞLA!`);
               setDisplayValue("start");
               soundPlayedRef.current.add("start");
               playStartSound();
@@ -383,23 +383,26 @@ const GameCountdown = memo(
             }
           }
         };
-        
-        // Sonra her 200ms'de kontrol et
-        intervalRef.current = setInterval(tick, 200);
+
+        // İlk değeri beklemeden hemen hesapla
+        tick();
+
+        // Sonra sık aralıkla senkron kal
+        intervalRef.current = setInterval(tick, 100);
       };
 
-      // Eğer start time geçmişte veya şu anda ise, hemen başla
-      if (timeDiff <= 500) {
+      // Son 1 saniyeye girdiysek hemen 5'i göster, daha erkense son saniyede başlat
+      if (timeDiff <= 1000) {
         console.log(`⚡ [${instanceId}] Hemen başlıyor (timeDiff=${timeDiff}ms)`);
         startCountdownAnchored();
       } else {
-        // Gelecekte başlayacaksa bekle
-        console.log(`⏳ [${instanceId}] ${timeDiff - 500}ms bekleyip başlayacak`);
+        // Gereksiz boş ekran oluşturmadan son 1 saniyede countdown'ı mount et
+        console.log(`⏳ [${instanceId}] ${timeDiff - 1000}ms bekleyip son saniyede başlayacak`);
         startTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current && !completedRef.current) {
             startCountdownAnchored();
           }
-        }, timeDiff - 500); // 500ms önce başlat, tick zaten doğru zamanı hesaplayacak
+        }, timeDiff - 1000);
       }
 
     }, [serverStartTime, serverTimeOffset, onComplete]);
