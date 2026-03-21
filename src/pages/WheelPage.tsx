@@ -50,8 +50,8 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
 ];
 
-const SPIN_DURATION = 12200;
-// 2 fazlı: 0-5s çok hızlı dönüş, 5-12.2s yavaşlayarak durma
+const SPIN_DURATION = 8000;
+// 2 fazlı: 0-3s çok hızlı dönüş, 3-8s yavaşlayarak durma
 
 const getTodayLocalDate = () => {
   const dateObj = new Date();
@@ -351,9 +351,9 @@ const WheelPage = () => {
       wheelRef.current.style.transition = "none";
     }
 
-    // 2 fazlı easing: 0-5s çok hızlı sabit, 5-12.2s yavaşlayarak durma
+    // 2 fazlı easing: 0-3s çok hızlı sabit, 3-8s yavaşlayarak durma
     const easeTwoPhase = (t: number): number => {
-      const p = 5000 / SPIN_DURATION; // ~0.4098
+      const p = 3000 / SPIN_DURATION; // 0.375
 
       if (t <= p) {
         // Faz 1: Çok hızlı sabit dönüş - toplam yolun %70'ini 5 saniyede kat et
