@@ -303,15 +303,15 @@ const WheelPage = () => {
         await consumeSpinAndSave(reward);
         await giveReward(reward);
 
+        let remainingSpins = 0;
         setTotalSpins((prev) => {
-          const remaining = Math.max(prev - 1, 0);
-          setCanSpin(remaining > 0);
-          return remaining;
+          remainingSpins = Math.max(prev - 1, 0);
+          setCanSpin(remainingSpins > 0);
+          return remainingSpins;
         });
 
         // Toast'u state updater dışında göster (StrictMode'da çift çağrı önlenir)
-        const currentSpins = totalSpins - 1;
-        showRewardToast(reward, currentSpins <= 0);
+        showRewardToast(reward, remainingSpins <= 0);
 
         soundsRef.current?.playSpecialSound("/win.mp3", 0.6);
         await refreshProfile();
