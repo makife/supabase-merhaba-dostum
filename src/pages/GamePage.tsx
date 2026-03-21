@@ -2338,8 +2338,8 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // 🔧 FIX: 500ms buffer ekle - React render + useEffect gecikmesini telafi et
-            const countdownStartNow = Date.now() + serverTimeOffset + 500;
+            // 🔧 FIX: 1500ms buffer ekle - React render + useEffect + portal mount gecikmesini telafi et
+            const countdownStartNow = Date.now() + serverTimeOffset + 1500;
             setCountdownServerTime(new Date(countdownStartNow).toISOString());
             setShowCountdown(true);
           }
@@ -2395,8 +2395,8 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Minimum buffer tamamlandı - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // 🔧 FIX: 500ms buffer ekle - React render + useEffect gecikmesini telafi et
-            const countdownStartNow = Date.now() + serverTimeOffset + 500;
+            // 🔧 FIX: 1500ms buffer ekle - React render + useEffect + portal mount gecikmesini telafi et
+            const countdownStartNow = Date.now() + serverTimeOffset + 1500;
             setCountdownServerTime(new Date(countdownStartNow).toISOString());
             setShowCountdown(true);
           }
@@ -2448,8 +2448,8 @@ const GamePage = ({
           console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
           // Önce buffer animasyonunu kapat
           setPreparingOpponent(null);
-          // 🔧 FIX: 500ms buffer ekle - React render + useEffect gecikmesini telafi et
-          const countdownStartNow = Date.now() + serverTimeOffset + 500;
+          // 🔧 FIX: 1500ms buffer ekle - React render + useEffect + portal mount gecikmesini telafi et
+          const countdownStartNow = Date.now() + serverTimeOffset + 1500;
           setCountdownServerTime(new Date(countdownStartNow).toISOString());
           setShowCountdown(true);
         }
@@ -6344,7 +6344,7 @@ const GamePage = ({
       // React render gecikmesi için 100ms buffer ekliyoruz
       setTimeout(() => {
         // 500ms buffer ekle - React render gecikmesini telafi et
-        const countdownStart = new Date(Date.now() + 500).toISOString();
+        const countdownStart = new Date(Date.now() + 1500).toISOString();
         console.log("🤖 vs-computer countdown başlıyor:", countdownStart);
         setCountdownServerTime(countdownStart);
         setShowCountdown(true);
