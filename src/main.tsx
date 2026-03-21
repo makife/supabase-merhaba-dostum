@@ -16,29 +16,6 @@ if (Capacitor.getPlatform() !== 'web') {
 // 🔥 RESUME RELOAD KONTROLÜ
 checkResumeReload();
 
-// 🔥 iOS/Android: Uygulama ilk açılırken bildirim izni iste
-// Token yönetimi TAMAMEN useMobileNotifications'a bırakılıyor
-// Burada SADECE izin istenir, listener eklenmez (çift listener race condition önlenir)
-async function requestEarlyPushPermission() {
-  if (!Capacitor.isNativePlatform()) return;
-  
-  try {
-    const { PushNotifications } = await import('@capacitor/push-notifications');
-    const status = await PushNotifications.checkPermissions();
-    
-    if (status.receive === 'prompt') {
-      console.log('📱 [EarlyPush] İlk açılış — bildirim izni isteniyor...');
-      const result = await PushNotifications.requestPermissions();
-      console.log('📱 [EarlyPush] İzin sonucu:', result.receive);
-      // Token kaydı useMobileNotifications hook'unda yapılacak
-    }
-  } catch (error) {
-    console.log('📱 [EarlyPush] Plugin kullanılamıyor:', error);
-  }
-}
-
-requestEarlyPushPermission();
-
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
