@@ -286,6 +286,61 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     initMusic();
 
+    // 🔥 iOS/Web: musicEnabled ise otomatik başlatmayı dene
+    // Autoplay policy nedeniyle başarısız olabilir - bu durumda ilk dokunuşta başlat
+    if (musicEnabled && !isNative) {
+      const tryAutoplay = () => {
+        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
+          isStartingRef.current = true;
+          backgroundMusicRef.current.play()
+            .then(() => {
+              isStartingRef.current = false;
+              console.log("🎵 [MusicContext] iOS/Web otomatik başlatma başarılı");
+              // Listener'ları temizle
+              document.removeEventListener("touchstart", onFirstInteraction);
+              document.removeEventListener("click", onFirstInteraction);
+            })
+            .catch(() => {
+              isStartingRef.current = false;
+              console.log("🎵 [MusicContext] Autoplay engellendi, kullanıcı etkileşimi bekleniyor");
+            });
+        }
+      };
+
+      // İlk kullanıcı etkileşiminde müziği başlat
+      const onFirstInteraction = () => {
+        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && musicEnabled) {
+          console.log("🎵 [MusicContext] İlk dokunuş algılandı, müzik başlatılıyor");
+          backgroundMusicRef.current.play()
+            .then(() => {
+              isStartingRef.current = false;
+              console.log("🎵 [MusicContext] Müzik ilk dokunuşla başlatıldı ✅");
+            })
+            .catch((e) => {
+              console.warn("🎵 [MusicContext] İlk dokunuşta da başlatılamadı:", e);
+            });
+        }
+        document.removeEventListener("touchstart", onFirstInteraction);
+        document.removeEventListener("click", onFirstInteraction);
+      };
+
+      document.addEventListener("touchstart", onFirstInteraction, { once: true });
+      document.addEventListener("click", onFirstInteraction, { once: true });
+
+      // Ayrıca direkt deneme yap (bazen izin zaten verilmiş olabilir)
+      setTimeout(tryAutoplay, 300);
+
+      // Cleanup
+      return () => {
+        document.removeEventListener("touchstart", onFirstInteraction);
+        document.removeEventListener("click", onFirstInteraction);
+        if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+          backgroundMusicRef.current.pause();
+          backgroundMusicRef.current.currentTime = 0;
+        }
+      };
+    }
+
     // Cleanup on unmount
     return () => {
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
