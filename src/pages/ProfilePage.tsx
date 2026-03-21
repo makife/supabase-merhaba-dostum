@@ -744,8 +744,9 @@ const ProfilePage = () => {
   const handleCameraSelect = async () => {
     setShowAvatarOptions(false);
 
-    if (Capacitor.isNativePlatform()) {
-      console.log("[ProfilePage] 📷 Native kamera recovery modu aktif");
+    // Recovery modu sadece Android'de - iOS'ta NativeCamera plugin yok
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      console.log("[ProfilePage] 📷 Android native kamera recovery modu aktif");
       await captureFromCameraWithRecovery();
       return;
     }
