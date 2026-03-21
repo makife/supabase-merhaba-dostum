@@ -264,7 +264,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         console.log("✅ Bildirim işleniyor:", notification.type);
 
         if (notification.type === "badge_earned") {
-          toast.success(notification.message, { duration: 5000, icon: "🏆" });
+          toast.success(notification.message, {
+            duration: 5000,
+            icon: <img src="/icons/badge.svg" alt="rozet" style={{ width: 20, height: 20 }} />,
+          });
         }
 
         if (notification.type === "friend_request") {
