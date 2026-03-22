@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, UserX, Home, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 
 type ViewMode = "global" | "users" | "private-chat" | "blocked-users";
@@ -31,45 +31,45 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
   const menuItems = [
     {
-      title: "Özel Sohbetlerim",
-      icon: Users,
+      textIcon: "/icons/ozelsohbet-text.svg",
+      gorselIcon: "/icons/ozelsohbet-gorsel.svg",
       action: () => onViewChange("users"),
-      iconColor: "text-emerald-300",
       dotColor: "bg-emerald-400",
-      iconBg: "bg-emerald-500/20",
+      bgColor: "bg-emerald-500/20",
       isActive: currentView === "users",
+      alt: "Özel Sohbetlerim",
     },
     {
-      title: "Engellediklerim",
-      icon: UserX,
+      textIcon: "/icons/engellediklerim-text.svg",
+      gorselIcon: "/icons/engellediklerim-gorsel.svg",
       action: () => onViewChange("blocked-users"),
-      iconColor: "text-red-300",
       dotColor: "bg-red-400",
-      iconBg: "bg-red-500/20",
+      bgColor: "bg-red-500/20",
       isActive: currentView === "blocked-users",
+      alt: "Engellediklerim",
     },
     {
-      title: "Ana Sayfa",
-      icon: Home,
+      textIcon: "/icons/anasayfa-text.svg",
+      gorselIcon: "/icons/anasayfa-gorsel.svg",
       action: onGoHome,
-      iconColor: "text-purple-300",
       dotColor: "bg-purple-400",
-      iconBg: "bg-purple-500/20",
+      bgColor: "bg-purple-500/20",
       isActive: false,
+      alt: "Ana Sayfa",
     },
   ];
 
   const rowBase =
-    "flex items-center gap-3 cursor-pointer select-none " +
+    "inline-flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
     "bg-gray-800 " +
     "border-2 border-gray-600 " +
     "active:bg-gray-700 " +
-    "shadow-md";
+    "shadow-md whitespace-nowrap";
 
   return (
     <>
-      {/* Overlay — fixed, menü itemların ALTINDA (z-40), toggle butonunun da altında */}
+      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40"
@@ -85,25 +85,31 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
         {isOpen && (
           <div className="absolute top-16 right-0 flex flex-col items-end gap-2">
             {menuItems.map((item) => (
-              <div key={item.title}>
-                <div
-                  onClick={() => handleMenuClick(item.action)}
-                  className={rowBase}
-                >
+              <div key={item.alt} onClick={() => handleMenuClick(item.action)}>
+                <div className={rowBase}>
+                  {/* Dot */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor} ${
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${item.dotColor} ${
                       item.isActive ? "opacity-100" : "opacity-60"
                     }`}
                   />
-                  <span className="text-xs font-semibold text-white/95 whitespace-nowrap tracking-wide">
-                    {item.title}
-                  </span>
+                  {/* Yazı SVG */}
+                  <img
+                    src={item.textIcon}
+                    alt={item.alt}
+                    style={{ height: 18, width: "auto", display: "block", flexShrink: 0 }}
+                  />
+                  {/* Görsel ikon */}
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0
-                      ${item.iconBg} ${item.iconColor}
-                      ${item.isActive ? "ring-1 ring-white/30" : ""}`}
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${item.bgColor} ${
+                      item.isActive ? "ring-1 ring-white/30" : ""
+                    }`}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <img
+                      src={item.gorselIcon}
+                      alt=""
+                      style={{ width: 20, height: 20, objectFit: "contain", display: "block" }}
+                    />
                   </div>
                 </div>
               </div>
