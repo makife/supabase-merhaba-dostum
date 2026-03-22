@@ -125,6 +125,70 @@ export const useMobileNotifications = () => {
     }
   }, []);
 
+  // Core registration logic — assumes permission is already granted
+  const registerAndListen = useCallback(async (PushNotifications: PushNotificationsType) => {
+    // Listener'ları SADECE BİR KEZ ekle
+    if (!listenersRegistered.current) {
+      listenersRegistered.current = true;
+
+      await PushNotifications.addListener("registration", async (token) => {
+        console.log("📱 Registration event geldi, raw token:", token.value?.substring(0, 40) + "...");
+
+        const safeToken = getValidFcmToken(token.value);
+
+        if (!safeToken) {
+          console.warn(
+            isApnsTokenFormat(token.value)
+              ? "⚠️ APNs token geldi (64-char hex), FCM token bekleniyor..."
+              : "⚠️ Geçersiz push token geldi, length=" + (token.value?.length ?? 0)
+          );
+          return;
+        }
+
+        console.log("✅ FCM token alındı:", safeToken.substring(0, 30) + "...");
+        clearAllRetries();
+        latestPushTokenRef.current = safeToken;
+        setPushToken(safeToken);
+
+        // Token'ı nativeStorage'a yedekle (OAuth recovery için)
+        await nativeStorage.setJSON("push_token_pending", { token: safeToken });
+
+        // User hazırsa hemen kaydet
+        if (user?.id) {
+          await savePushToken(user.id, safeToken);
+        } else {
+          console.log("⚠️ User henüz yok, token pending olarak saklanıyor");
+        }
+      });
+
+      await PushNotifications.addListener("registrationError", (error) => {
+        console.error("❌ Push registration error:", error?.error);
+      });
+
+      await PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        console.log("📬 Push alındı:", notification.title);
+        suppressActivityForPush(15000);
+        showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
+      });
+
+      await PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
+        console.log("👆 Push action:", notification);
+        handleNotificationAction(notification);
+      });
+
+      console.log("📱 Tüm listener'lar eklendi");
+    }
+
+    // Register'ı SADECE BİR KEZ çağır
+    if (!registerCalled.current) {
+      registerCalled.current = true;
+      console.log("📱 register() çağrılıyor...");
+      await PushNotifications.register();
+      await scheduleIosRetries(PushNotifications);
+      console.log("✅ register() başarılı");
+    }
+  }, [clearAllRetries, savePushToken, scheduleIosRetries, user?.id]);
+
   // Initialize push notifications
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
@@ -152,74 +216,14 @@ export const useMobileNotifications = () => {
 
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
-
-        // Listener'ları SADECE BİR KEZ ekle
-        if (!listenersRegistered.current) {
-          listenersRegistered.current = true;
-
-          await PushNotifications.addListener("registration", async (token) => {
-            console.log("📱 Registration event geldi, raw token:", token.value?.substring(0, 40) + "...");
-
-            const safeToken = getValidFcmToken(token.value);
-
-            if (!safeToken) {
-              console.warn(
-                isApnsTokenFormat(token.value)
-                  ? "⚠️ APNs token geldi (64-char hex), FCM token bekleniyor..."
-                  : "⚠️ Geçersiz push token geldi, length=" + (token.value?.length ?? 0)
-              );
-              return;
-            }
-
-            console.log("✅ FCM token alındı:", safeToken.substring(0, 30) + "...");
-            clearAllRetries();
-            latestPushTokenRef.current = safeToken;
-            setPushToken(safeToken);
-
-            // Token'ı nativeStorage'a yedekle (OAuth recovery için)
-            await nativeStorage.setJSON("push_token_pending", { token: safeToken });
-
-            // User hazırsa hemen kaydet
-            if (user?.id) {
-              await savePushToken(user.id, safeToken);
-            } else {
-              console.log("⚠️ User henüz yok, token pending olarak saklanıyor");
-            }
-          });
-
-          await PushNotifications.addListener("registrationError", (error) => {
-            console.error("❌ Push registration error:", error?.error);
-          });
-
-          await PushNotifications.addListener("pushNotificationReceived", (notification) => {
-            console.log("📬 Push alındı:", notification.title);
-            suppressActivityForPush(15000);
-            showLocalNotification(notification.title || "Kelimele", notification.body || "Yeni bildiriminiz var");
-          });
-
-          await PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-            console.log("👆 Push action:", notification);
-            handleNotificationAction(notification);
-          });
-
-          console.log("📱 Tüm listener'lar eklendi");
-        }
-
-        // Register'ı SADECE BİR KEZ çağır
-        if (!registerCalled.current) {
-          registerCalled.current = true;
-          console.log("📱 register() çağrılıyor...");
-          await PushNotifications.register();
-          await scheduleIosRetries(PushNotifications);
-          console.log("✅ register() başarılı");
-        }
-      } else if (permissionStatus.receive === "prompt") {
+        await registerAndListen(PushNotifications);
+      } else if (permissionStatus.receive === "prompt" || permissionStatus.receive === "prompt-with-rationale") {
+        console.log("📱 iOS bildirim izni isteniyor...");
         const result = await PushNotifications.requestPermissions();
+        console.log("📱 İzin sonucu:", result.receive);
         if (result.receive === "granted") {
           setIsPermissionGranted(true);
-          listenersRegistered.current = false;
-          registerCalled.current = false;
-          await initializePushNotifications();
+          await registerAndListen(PushNotifications);
         } else {
           setIsPermissionGranted(false);
           console.log("❌ Push notification izni reddedildi");
@@ -231,7 +235,7 @@ export const useMobileNotifications = () => {
     } catch (error) {
       console.error("Push notification başlatma hatası:", error);
     }
-  }, [clearAllRetries, isMobile, savePushToken, scheduleIosRetries, user?.id]);
+  }, [isMobile, registerAndListen]);
 
   // iOS foreground resume: re-register to refresh token
   useEffect(() => {
