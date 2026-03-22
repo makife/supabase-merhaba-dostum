@@ -148,12 +148,12 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
   // ─── Ortak satır stili ──────────────
   const rowBase =
-    "inline-flex items-center gap-2.5 cursor-pointer select-none " +
-    "rounded-2xl px-3 py-1.5 " +
+    "inline-flex w-fit min-h-[56px] items-center gap-3 cursor-pointer select-none " +
+    "rounded-2xl px-4 py-2 " +
     "bg-[#1a2744] " +
     "border border-white/80 " +
     "active:bg-gray-600 " +
-    "shadow-md whitespace-nowrap overflow-hidden";
+    "shadow-md whitespace-nowrap";
 
   const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(120%)",
@@ -182,16 +182,15 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <img
         src={textSrc}
         alt={textAlt}
-        className="flex-shrink-0"
-        style={{ height: 16, width: "auto", maxWidth: 120 }}
+        className="block h-4 w-auto max-w-none flex-shrink-0"
       />
 
       {/* Görsel ikon */}
-      <div className="relative flex-shrink-0">
+      <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
         <img
           src={gorselSrc}
           alt=""
-          className="w-10 h-10 object-contain"
+          className="block h-10 w-10 object-contain"
         />
         {badge}
       </div>
