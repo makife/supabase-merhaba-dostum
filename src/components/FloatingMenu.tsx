@@ -146,14 +146,14 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     setIsOpen(false);
   };
 
-  // ─── Ortak satır stili ────────────────────────────────────────────────────
+  // ─── Ortak satır stili — genişlik içeriğe göre, kırpma yok ──────────────
   const rowBase =
-    "flex items-center gap-3 cursor-pointer select-none " +
+    "inline-flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
     "bg-[#1a2744] " +
     "border border-white/80 " +
     "active:bg-gray-600 " +
-    "shadow-md";
+    "shadow-md whitespace-nowrap";
 
   const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(110%)",
@@ -162,6 +162,40 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const itemAnim = () =>
     "transition-transform duration-200 ease-out " +
     (!isOpen ? "pointer-events-none" : "");
+
+  // ─── Tek satır: dot + yazı SVG + görsel ikon ─────────────────────────────
+  const renderRow = (
+    dot: string,
+    textSrc: string,
+    textAlt: string,
+    gorselSrc: string,
+    bgColor: string,
+    badge?: React.ReactNode
+  ) => (
+    <div className={rowBase}>
+      {/* Dot */}
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+
+      {/* Yazı SVG — sabit yükseklik, genişlik otomatik */}
+      <img
+        src={textSrc}
+        alt={textAlt}
+        style={{ height: 18, width: "auto", display: "block", flexShrink: 0 }}
+      />
+
+      {/* Görsel ikon */}
+      <div className={`relative flex-shrink-0`}>
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bgColor}`}>
+          <img
+            src={gorselSrc}
+            alt=""
+            style={{ width: 20, height: 20, objectFit: "contain", display: "block" }}
+          />
+        </div>
+        {badge}
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -176,10 +210,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         />
       )}
 
-      {/* Menu items listesi */}
-      <div
-        className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 overflow-hidden ${!isOpen ? "pointer-events-none" : ""}`}
-      >
+      {/* Menu items — items end, hiç overflow-hidden yok */}
+      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}>
+
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim()} style={slideStyle}>
           <div
@@ -187,48 +220,33 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
               setMusicEnabled(!musicEnabled);
               playSound("buttonClick");
             }}
-            className={rowBase}
           >
-            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`} />
-            <img
-              src={musicEnabled ? "/icons/sesacik-text.svg" : "/icons/seskapali-text.svg"}
-              alt={musicEnabled ? "Ses Açık" : "Ses Kapalı"}
-              className="h-4 w-auto flex-shrink-0"
-            />
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${musicEnabled ? "bg-emerald-500/20" : "bg-gray-500/20"}`}>
-              <img
-                src={musicEnabled ? "/icons/sesacik-gorsel.svg" : "/icons/seskapali-gorsel.svg"}
-                alt=""
-                className="w-5 h-5 object-contain"
-              />
-            </div>
+            {renderRow(
+              musicEnabled ? "bg-emerald-400" : "bg-gray-500",
+              musicEnabled ? "/icons/sesacik-text.svg" : "/icons/seskapali-text.svg",
+              musicEnabled ? "Ses Açık" : "Ses Kapalı",
+              musicEnabled ? "/icons/sesacik-gorsel.svg" : "/icons/seskapali-gorsel.svg",
+              musicEnabled ? "bg-emerald-500/20" : "bg-gray-500/20"
+            )}
           </div>
         </div>
 
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item) => (
           <div key={item.route} className={itemAnim()} style={slideStyle}>
-            <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
-              <img
-                src={item.textIcon}
-                alt={item.route}
-                className="h-4 w-auto flex-shrink-0"
-              />
-              <div className="relative flex-shrink-0">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.bgColor}`}>
-                  <img
-                    src={item.gorselIcon}
-                    alt=""
-                    className="w-5 h-5 object-contain"
-                  />
-                </div>
-                {item.route === "/friends" && pendingFriendRequests > 0 && (
+            <div onClick={() => handleMenuClick(item.route)}>
+              {renderRow(
+                item.dotColor,
+                item.textIcon,
+                item.route,
+                item.gorselIcon,
+                item.bgColor,
+                item.route === "/friends" && pendingFriendRequests > 0 ? (
                   <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
                     {pendingFriendRequests > 9 ? "9+" : pendingFriendRequests}
                   </div>
-                )}
-              </div>
+                ) : undefined
+              )}
             </div>
           </div>
         ))}
@@ -236,66 +254,46 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         {/* ── 3. MODERATÖR ── */}
         {!roleLoading && isModerator && (
           <div className={itemAnim()} style={slideStyle}>
-            <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
-              <img
-                src="/icons/moderator-text.svg"
-                alt="Moderatör"
-                className="h-4 w-auto flex-shrink-0"
-              />
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 flex-shrink-0">
-                <img
-                  src="/icons/moderator-gorsel.svg"
-                  alt=""
-                  className="w-5 h-5 object-contain"
-                />
-              </div>
+            <div onClick={() => handleMenuClick("/moderator")}>
+              {renderRow(
+                "bg-indigo-400",
+                "/icons/moderator-text.svg",
+                "Moderatör",
+                "/icons/moderator-gorsel.svg",
+                "bg-indigo-500/20"
+              )}
             </div>
           </div>
         )}
 
         {/* ── 4. SOHBET ── */}
         <div className={itemAnim()} style={slideStyle}>
-          <div onClick={handleChatOpen} className={rowBase}>
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
-            <img
-              src="/icons/sohbet-text.svg"
-              alt="Sohbet"
-              className="h-4 w-auto flex-shrink-0"
-            />
-            <div className="relative flex-shrink-0">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20">
-                <img
-                  src="/icons/sohbet-gorsel.svg"
-                  alt=""
-                  className="w-5 h-5 object-contain"
-                />
-              </div>
-              {totalNotifications > 0 && (
+          <div onClick={handleChatOpen}>
+            {renderRow(
+              "bg-teal-400",
+              "/icons/sohbet-text.svg",
+              "Sohbet",
+              "/icons/sohbet-gorsel.svg",
+              "bg-teal-500/20",
+              totalNotifications > 0 ? (
                 <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
                   {totalNotifications > 9 ? "9+" : totalNotifications}
                 </div>
-              )}
-            </div>
+              ) : undefined
+            )}
           </div>
         </div>
 
         {/* ── 5. ÇIKIŞ ── */}
         <div className={itemAnim()} style={slideStyle}>
-          <div onClick={handleLogout} className={rowBase}>
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
-            <img
-              src="/icons/cikis-text.svg"
-              alt="Çıkış"
-              className="h-4 w-auto flex-shrink-0"
-            />
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 flex-shrink-0">
-              <img
-                src="/icons/cikis-gorsel.svg"
-                alt=""
-                className="w-5 h-5 object-contain"
-              />
-            </div>
+          <div onClick={handleLogout}>
+            {renderRow(
+              "bg-red-400",
+              "/icons/cikis-text.svg",
+              "Çıkış",
+              "/icons/cikis-gorsel.svg",
+              "bg-red-500/20"
+            )}
           </div>
         </div>
       </div>
