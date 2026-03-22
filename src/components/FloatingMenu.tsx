@@ -146,9 +146,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     setIsOpen(false);
   };
 
-  // ─── Ortak satır stili — genişlik içeriğe göre, kırpma yok ──────────────
+  // ─── Ortak satır stili ──────────────
   const rowBase =
-    "inline-flex items-center gap-3 cursor-pointer select-none " +
+    "inline-flex items-center gap-2.5 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
     "bg-[#1a2744] " +
     "border border-white/80 " +
@@ -176,22 +176,23 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   ) => (
     <div className={rowBase}>
       {/* Dot */}
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
 
-      {/* Yazı SVG — sabit yükseklik, genişlik otomatik */}
+      {/* Yazı SVG */}
       <img
         src={textSrc}
         alt={textAlt}
-        style={{ height: 18, width: "auto", display: "block", flexShrink: 0 }}
+        className="h-4 w-auto flex-shrink-0"
+        style={{ maxWidth: 120 }}
       />
 
       {/* Görsel ikon */}
-      <div className={`relative flex-shrink-0`}>
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bgColor}`}>
+      <div className="relative flex-shrink-0">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${bgColor}`}>
           <img
             src={gorselSrc}
             alt=""
-            style={{ width: 20, height: 20, objectFit: "contain", display: "block" }}
+            className="w-4 h-4 object-contain"
           />
         </div>
         {badge}
