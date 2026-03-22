@@ -6,30 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { useMusic } from "@/contexts/MusicContext";
-import { Button } from "@/components/ui/button";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Menu as MenuIcon, X } from "lucide-react";
 
-import {
-  User,
-  Settings,
-  Menu as MenuIcon,
-  X,
-  Home,
-  MessageCircle,
-  Trophy,
-  Shield,
-  Backpack,
-  Volume2,
-  VolumeX,
-  LogOut,
-  Users,
-  
-} from "lucide-react";
-
-// --- Yardımcı Fonksiyonlar --- (OPTIMIZE: Ban kontrolü artık UserContext profile'dan yapılıyor)
+// --- Yardımcı Fonksiyonlar ---
 const isUserBannedFromProfile = (profile: any): boolean => {
   if (!profile?.banned_until) return false;
   return new Date(profile.banned_until) > new Date();
@@ -46,13 +29,43 @@ const getBanTimeLeftFromProfile = (profile: any): string => {
   return `${hours} saat ${minutes} dakika`;
 };
 
+// ─── Menu item tanımları ───────────────────────────────────────────────────
 const menuItems = [
-  
-  { title: "Liderlik", route: "/leaderboard", icon: Trophy, iconColor: "text-amber-300", dotColor: "bg-amber-400" },
-  { title: "Profil", route: "/profile", icon: User, iconColor: "text-emerald-300", dotColor: "bg-emerald-400" },
-  { title: "Kırtasiye", route: "/market", icon: Backpack, iconColor: "text-purple-300", dotColor: "bg-purple-400" },
-  { title: "Arkadaşlar", route: "/friends", icon: Users, iconColor: "text-cyan-300", dotColor: "bg-cyan-400" },
-  { title: "Ayarlar", route: "/settings", icon: Settings, iconColor: "text-orange-300", dotColor: "bg-orange-400" },
+  {
+    route: "/leaderboard",
+    textIcon: "/icons/liderlik-text.svg",
+    gorselIcon: "/icons/liderlik-gorsel.svg",
+    dotColor: "bg-amber-400",
+    bgColor: "bg-amber-500/20",
+  },
+  {
+    route: "/profile",
+    textIcon: "/icons/profil-text.svg",
+    gorselIcon: "/icons/profil-gorsel.svg",
+    dotColor: "bg-emerald-400",
+    bgColor: "bg-emerald-500/20",
+  },
+  {
+    route: "/market",
+    textIcon: "/icons/kirtasiye-text.svg",
+    gorselIcon: "/icons/kirtasiye-gorsel.svg",
+    dotColor: "bg-purple-400",
+    bgColor: "bg-purple-500/20",
+  },
+  {
+    route: "/friends",
+    textIcon: "/icons/arkadaslar-text.svg",
+    gorselIcon: "/icons/arkadaslar-gorsel.svg",
+    dotColor: "bg-cyan-400",
+    bgColor: "bg-cyan-500/20",
+  },
+  {
+    route: "/settings",
+    textIcon: "/icons/ayarlar-text.svg",
+    gorselIcon: "/icons/ayarlar-gorsel.svg",
+    dotColor: "bg-orange-400",
+    bgColor: "bg-orange-500/20",
+  },
 ];
 
 interface FloatingMenuProps {
@@ -104,7 +117,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
   const handleChatOpen = async () => {
     playSound("buttonClick");
-    // 🔥 OPTIMIZE: Artık DB sorgusu yok, cache'den kontrol
     const isBanned = isUserBannedFromProfile(profile);
     if (isBanned) {
       const timeLeft = getBanTimeLeftFromProfile(profile);
@@ -134,7 +146,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     setIsOpen(false);
   };
 
-  // ─── Ortak item satır stili ───────────────────────────────────────────────
+  // ─── Ortak satır stili ────────────────────────────────────────────────────
   const rowBase =
     "flex items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-3 py-2.5 " +
@@ -143,8 +155,6 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "active:bg-gray-600 " +
     "shadow-md";
 
-  // ─── Stagger animasyonu ───────────────────────────────────────────────────
-  // PERFORMANS: Stagger kaldırıldı — tüm kartlar aynı anda açılır, tek composite işlemi
   const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(110%)",
   };
@@ -155,7 +165,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      {/* Overlay — transition yok, anında göster/gizle = sıfır GPU yükü */}
+      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 -z-10"
@@ -166,7 +176,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         />
       )}
 
-      {/* Menu items listesi — contain ile layout izole, GPU layer tek */}
+      {/* Menu items listesi */}
       <div
         className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 overflow-hidden ${!isOpen ? "pointer-events-none" : ""}`}
       >
@@ -179,33 +189,39 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
             }}
             className={rowBase}
           >
-            <span
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`}
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${musicEnabled ? "bg-emerald-400" : "bg-gray-500"}`} />
+            <img
+              src={musicEnabled ? "/icons/sesacik-text.svg" : "/icons/seskapali-text.svg"}
+              alt={musicEnabled ? "Ses Açık" : "Ses Kapalı"}
+              className="h-4 w-auto flex-shrink-0"
             />
-            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">
-              {musicEnabled ? "Ses Açık" : "Ses Kapalı"}
-            </span>
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                musicEnabled ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-500/20 text-gray-400"
-              }`}
-            >
-              {musicEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${musicEnabled ? "bg-emerald-500/20" : "bg-gray-500/20"}`}>
+              <img
+                src={musicEnabled ? "/icons/sesacik-gorsel.svg" : "/icons/seskapali-gorsel.svg"}
+                alt=""
+                className="w-5 h-5 object-contain"
+              />
             </div>
           </div>
         </div>
 
         {/* ── 2. MENU ITEMS ── */}
-        {menuItems.map((item, index) => (
+        {menuItems.map((item) => (
           <div key={item.route} className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick(item.route)} className={rowBase}>
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dotColor}`} />
-              <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">{item.title}</span>
+              <img
+                src={item.textIcon}
+                alt={item.route}
+                className="h-4 w-auto flex-shrink-0"
+              />
               <div className="relative flex-shrink-0">
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center bg-white/10 ${item.iconColor} brightness-125`}
-                >
-                  <item.icon className="w-4 h-4" />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.bgColor}`}>
+                  <img
+                    src={item.gorselIcon}
+                    alt=""
+                    className="w-5 h-5 object-contain"
+                  />
                 </div>
                 {item.route === "/friends" && pendingFriendRequests > 0 && (
                   <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
@@ -222,9 +238,17 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           <div className={itemAnim()} style={slideStyle}>
             <div onClick={() => handleMenuClick("/moderator")} className={rowBase}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-400" />
-              <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Moderatör</span>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-300 flex-shrink-0">
-                <Shield className="w-4 h-4" />
+              <img
+                src="/icons/moderator-text.svg"
+                alt="Moderatör"
+                className="h-4 w-auto flex-shrink-0"
+              />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/20 flex-shrink-0">
+                <img
+                  src="/icons/moderator-gorsel.svg"
+                  alt=""
+                  className="w-5 h-5 object-contain"
+                />
               </div>
             </div>
           </div>
@@ -234,10 +258,18 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleChatOpen} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400" />
-            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Sohbet</span>
+            <img
+              src="/icons/sohbet-text.svg"
+              alt="Sohbet"
+              className="h-4 w-auto flex-shrink-0"
+            />
             <div className="relative flex-shrink-0">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20 text-teal-300">
-                <MessageCircle className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-teal-500/20">
+                <img
+                  src="/icons/sohbet-gorsel.svg"
+                  alt=""
+                  className="w-5 h-5 object-contain"
+                />
               </div>
               {totalNotifications > 0 && (
                 <div className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
@@ -252,9 +284,17 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim()} style={slideStyle}>
           <div onClick={handleLogout} className={rowBase}>
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400" />
-            <span className="text-xs font-semibold text-white whitespace-nowrap tracking-wide">Çıkış</span>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 text-red-300 flex-shrink-0">
-              <LogOut className="w-4 h-4" />
+            <img
+              src="/icons/cikis-text.svg"
+              alt="Çıkış"
+              className="h-4 w-auto flex-shrink-0"
+            />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-500/20 flex-shrink-0">
+              <img
+                src="/icons/cikis-gorsel.svg"
+                alt=""
+                className="w-5 h-5 object-contain"
+              />
             </div>
           </div>
         </div>
