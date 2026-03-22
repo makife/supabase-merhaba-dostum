@@ -156,11 +156,13 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     "shadow-md whitespace-nowrap";
 
   const slideStyle: React.CSSProperties = {
-    transform: isOpen ? "translateX(0)" : "translateX(110%)",
+    transform: isOpen ? "translateX(0)" : "translateX(120%)",
+    opacity: isOpen ? 1 : 0,
+    visibility: isOpen ? "visible" : "hidden",
+    transition: "transform 200ms ease-out, opacity 200ms ease-out, visibility 200ms ease-out",
   };
 
   const itemAnim = () =>
-    "transition-transform duration-200 ease-out " +
     (!isOpen ? "pointer-events-none" : "");
 
   // ─── Tek satır: dot + yazı SVG + görsel ikon ─────────────────────────────
@@ -211,7 +213,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       )}
 
       {/* Menu items — items end, hiç overflow-hidden yok */}
-      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}>
+      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`} style={{ clipPath: isOpen ? 'none' : 'inset(0 0 0 100%)' }}>
 
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim()} style={slideStyle}>
