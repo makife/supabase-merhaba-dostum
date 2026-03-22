@@ -1548,6 +1548,68 @@ const GamePage = ({
       setGameEnded(true);
       setShowResults(true);
 
+      // 🎯 Disconnect kazanımında istatistikleri güncelle (haftalık/aylık/sezon)
+      if (user && !statsUpdatedRef.current) {
+        statsUpdatedRef.current = true;
+        const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
+        const disconnectScore = playerScoreRef.current;
+        const disconnectMultiplier = 10; // Galibiyet çarpanı (disconnect win)
+
+        console.log("📊 Disconnect win - istatistikler güncelleniyor:", {
+          score: disconnectScore,
+          multiplied: disconnectScore * disconnectMultiplier,
+          words: playerWordsWithScores.length,
+        });
+
+        try {
+          const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
+            p_user_id: user.id,
+            p_score: disconnectScore * disconnectMultiplier,
+            p_words: playerWordsWithScores,
+            p_is_winner: true,
+            p_game_duration: gameDuration,
+            p_first_word_time: firstWordTime,
+            p_game_mode: gameMode,
+          });
+
+          if (statsError) {
+            console.error("❌ Disconnect win stats hatası:", statsError);
+          } else {
+            console.log("✅ Disconnect win istatistikleri güncellendi");
+            await forceRefreshProfile?.();
+          }
+        } catch (err) {
+          console.error("❌ Disconnect win stats exception:", err);
+        }
+
+        // Rank puanı güncelle - rastgele eşleşme ve özel oda
+        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
+          try {
+            const rpChange = 50; // Disconnect win = galibiyet
+            const { data: currentProfile } = await supabase
+              .from("profiles")
+              .select("rank_points")
+              .eq("id", user.id)
+              .single();
+            const currentRP = (currentProfile as any)?.rank_points || 0;
+            const newRP = Math.max(0, currentRP + rpChange);
+            const oldTier = getRankTier(currentRP);
+            const newTier = getRankTier(newRP);
+            await supabase
+              .from("profiles")
+              .update({ rank_points: newRP } as any)
+              .eq("id", user.id);
+            console.log(`🏅 Disconnect win - Rank: ${currentRP} → ${newRP} (+${rpChange} RP)`);
+            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+              setRankUpTier(newTier);
+              setTimeout(() => setShowRankUp(true), 2000);
+            }
+          } catch (err) {
+            console.error("❌ Disconnect win rank hatası:", err);
+          }
+        }
+      }
+
       // Oyunu durduran işlemleri
       if (timerRef.current) {
         clearInterval(timerRef.current);
