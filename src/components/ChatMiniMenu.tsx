@@ -35,7 +35,6 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       gorselIcon: "/icons/ozelsohbet-gorsel.svg",
       action: () => onViewChange("users"),
       dotColor: "bg-emerald-400",
-      bgColor: "bg-emerald-500/20",
       isActive: currentView === "users",
       alt: "Özel Sohbetlerim",
     },
@@ -44,7 +43,6 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       gorselIcon: "/icons/engellediklerim-gorsel.svg",
       action: () => onViewChange("blocked-users"),
       dotColor: "bg-red-400",
-      bgColor: "bg-red-500/20",
       isActive: currentView === "blocked-users",
       alt: "Engellediklerim",
     },
@@ -53,19 +51,58 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       gorselIcon: "/icons/anasayfa-gorsel.svg",
       action: onGoHome,
       dotColor: "bg-purple-400",
-      bgColor: "bg-purple-500/20",
       isActive: false,
       alt: "Ana Sayfa",
     },
   ];
 
+  // ─── FloatingMenu ile birebir aynı satır stili ────────────────────────────
   const rowBase =
-    "inline-flex items-center gap-3 cursor-pointer select-none " +
-    "rounded-2xl px-3 py-2.5 " +
-    "bg-gray-800 " +
-    "border-2 border-gray-600 " +
-    "active:bg-gray-700 " +
+    "inline-flex w-fit min-h-[56px] items-center gap-3 cursor-pointer select-none " +
+    "rounded-2xl px-4 py-2 " +
+    "bg-[#1a2744] " +
+    "border border-white/80 " +
+    "active:bg-gray-600 " +
     "shadow-md whitespace-nowrap";
+
+  const slideStyle: React.CSSProperties = {
+    transform: isOpen ? "translateX(0)" : "translateX(120%)",
+    opacity: isOpen ? 1 : 0,
+    visibility: isOpen ? "visible" : "hidden",
+    transition: "transform 200ms ease-out, opacity 200ms ease-out, visibility 200ms ease-out",
+  };
+
+  const itemAnim = () => (!isOpen ? "pointer-events-none" : "");
+
+  // ─── FloatingMenu ile birebir aynı renderRow ──────────────────────────────
+  const renderRow = (
+    dot: string,
+    textSrc: string,
+    textAlt: string,
+    gorselSrc: string,
+    isActive?: boolean
+  ) => (
+    <div className={rowBase}>
+      {/* Dot */}
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
+
+      {/* Yazı SVG */}
+      <img
+        src={textSrc}
+        alt={textAlt}
+        className="block h-4 w-auto max-w-none flex-shrink-0"
+      />
+
+      {/* Görsel ikon */}
+      <div className={`relative flex h-10 w-10 flex-shrink-0 items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}>
+        <img
+          src={gorselSrc}
+          alt=""
+          className="block h-10 w-10 object-contain"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -82,40 +119,18 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
       <div className="relative z-50">
         {/* Menu items */}
-        {isOpen && (
-          <div className="absolute top-16 right-0 flex flex-col items-end gap-2">
-            {menuItems.map((item) => (
-              <div key={item.alt} onClick={() => handleMenuClick(item.action)}>
-                <div className={rowBase}>
-                  {/* Dot */}
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${item.dotColor} ${
-                      item.isActive ? "opacity-100" : "opacity-60"
-                    }`}
-                  />
-                  {/* Yazı SVG */}
-                  <img
-                    src={item.textIcon}
-                    alt={item.alt}
-                    style={{ height: 18, width: "auto", display: "block", flexShrink: 0 }}
-                  />
-                  {/* Görsel ikon */}
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${item.bgColor} ${
-                      item.isActive ? "ring-1 ring-white/30" : ""
-                    }`}
-                  >
-                    <img
-                      src={item.gorselIcon}
-                      alt=""
-                      style={{ width: 20, height: 20, objectFit: "contain", display: "block" }}
-                    />
-                  </div>
-                </div>
+        <div
+          className={`absolute top-16 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
+          style={{ clipPath: isOpen ? "none" : "inset(0 0 0 100%)" }}
+        >
+          {menuItems.map((item) => (
+            <div key={item.alt} className={itemAnim()} style={slideStyle}>
+              <div onClick={() => handleMenuClick(item.action)}>
+                {renderRow(item.dotColor, item.textIcon, item.alt, item.gorselIcon, item.isActive)}
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
         {/* Toggle butonu */}
         <button
