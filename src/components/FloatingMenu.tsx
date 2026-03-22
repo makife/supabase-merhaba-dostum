@@ -149,11 +149,11 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   // ─── Ortak satır stili ──────────────
   const rowBase =
     "inline-flex items-center gap-2.5 cursor-pointer select-none " +
-    "rounded-2xl px-3 py-2.5 " +
+    "rounded-2xl px-3 py-1.5 " +
     "bg-[#1a2744] " +
     "border border-white/80 " +
     "active:bg-gray-600 " +
-    "shadow-md whitespace-nowrap";
+    "shadow-md whitespace-nowrap overflow-hidden";
 
   const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(120%)",
