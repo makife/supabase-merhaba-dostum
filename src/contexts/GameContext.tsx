@@ -1358,7 +1358,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             // Type assertion: wordsBadges as any[]
             (wordsBadges as any[]).forEach((badge: any) => {
               toast({
-                title: "🏅 Yeni Rozet!",
+                title: (<BadgeToastTitle />) as any,
                 description: `"${badge.new_badge_name}" rozetini kazandınız! ${badge.new_badge_icon}`,
                 duration: 4000,
               });
