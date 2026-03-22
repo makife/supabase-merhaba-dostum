@@ -56,13 +56,13 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     },
   ];
 
-  // ─── FloatingMenu ile birebir aynı satır stili ────────────────────────────
+  // ─── FloatingMenu ile birebir aynı stil ───────────────────────────────────
   const rowBase =
     "inline-flex w-fit min-h-[56px] items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-4 py-2 " +
-    "bg-[#1a2744] " +
+    "bg-[#2a2a2a] " +
     "border border-white/80 " +
-    "active:bg-gray-600 " +
+    "active:bg-[#3a3a3a] " +
     "shadow-md whitespace-nowrap";
 
   const slideStyle: React.CSSProperties = {
@@ -74,7 +74,6 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
   const itemAnim = () => (!isOpen ? "pointer-events-none" : "");
 
-  // ─── FloatingMenu ile birebir aynı renderRow ──────────────────────────────
   const renderRow = (
     dot: string,
     textSrc: string,
@@ -83,22 +82,17 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     isActive?: boolean
   ) => (
     <div className={rowBase}>
-      {/* Dot */}
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
-
-      {/* Yazı SVG */}
       <img
         src={textSrc}
         alt={textAlt}
         className="block h-4 w-auto max-w-none flex-shrink-0"
       />
-
-      {/* Görsel ikon */}
-      <div className={`relative flex h-10 w-10 flex-shrink-0 items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}>
+      <div className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}>
         <img
           src={gorselSrc}
           alt=""
-          className="block h-10 w-10 object-contain"
+          className="w-10 h-10 object-contain"
         />
       </div>
     </div>
@@ -106,7 +100,6 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
   return (
     <>
-      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40"
@@ -118,7 +111,6 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       )}
 
       <div className="relative z-50">
-        {/* Menu items */}
         <div
           className={`absolute top-16 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
           style={{ clipPath: isOpen ? "none" : "inset(0 0 0 100%)" }}
@@ -139,18 +131,13 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
             relative w-12 h-12 rounded-full
             flex items-center justify-center
             active:scale-90
-            ${
-              isOpen
-                ? "bg-white ring-2 ring-white/40"
-                : "bg-gradient-to-br from-white to-gray-200 ring-2 ring-white/30"
+            ${isOpen
+              ? "bg-white ring-2 ring-white/40"
+              : "bg-gradient-to-br from-white to-gray-200 ring-2 ring-white/30"
             }
           `}
         >
-          {isOpen ? (
-            <X className="w-5 h-5 text-gray-900" />
-          ) : (
-            <Menu className="w-5 h-5 text-gray-900" />
-          )}
+          {isOpen ? <X className="w-5 h-5 text-gray-900" /> : <Menu className="w-5 h-5 text-gray-900" />}
         </button>
       </div>
     </>
