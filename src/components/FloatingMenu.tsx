@@ -182,8 +182,8 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <img
         src={textSrc}
         alt={textAlt}
-        className="h-4 w-auto flex-shrink-0"
-        style={{ maxWidth: 120 }}
+        className="flex-shrink-0"
+        style={{ height: 16, width: "auto", maxWidth: 120 }}
       />
 
       {/* Görsel ikon */}
@@ -191,7 +191,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <img
           src={gorselSrc}
           alt=""
-          className="w-5 h-5 object-contain"
+          className="w-10 h-10 object-contain"
         />
         {badge}
       </div>
