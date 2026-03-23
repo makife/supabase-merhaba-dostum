@@ -735,8 +735,8 @@ const HomePage = () => {
           </div>
 
           {/* --- JOKERLER --- */}
-          <div className="px-5 mt-3">
-            <div className="relative overflow-hidden">
+          <div className="mt-3">
+            <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
               <img
                 src="/alttaban/jokeralttaban.svg"
                 alt=""
@@ -744,7 +744,7 @@ const HomePage = () => {
                 className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                 style={{ objectFit: "fill" }}
               />
-              <div className="relative z-10 flex justify-around py-4 px-3">
+              <div className="relative z-10 flex justify-around py-4 px-8">
                 {[
                   { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
                   { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
@@ -768,8 +768,9 @@ const HomePage = () => {
           </div>
 
           {/* INFO PANELS (SÜRE & HAK) */}
-          <div className="px-5 mt-2 space-y-2">
+          <div className="mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
+              <div className="px-5">
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
@@ -822,10 +823,11 @@ const HomePage = () => {
                   </span>
                 </div>
               </div>
+              </div>
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div className="relative overflow-hidden">
+              <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
                 <img
                   src="/alttaban/kredialttaban.svg"
                   alt=""
@@ -833,7 +835,7 @@ const HomePage = () => {
                   className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                   style={{ objectFit: "fill" }}
                 />
-                <div className="relative z-10 flex items-center gap-3 py-3 px-3">
+                <div className="relative z-10 flex items-center gap-3 py-3 px-8">
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
