@@ -406,9 +406,7 @@ const SettingsPage = () => {
             </Button>
 
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Settings className="w-6 h-6 text-white" />
-              </div>
+              <img src="/icons/ayarlar-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
               <h1 className="text-2xl font-bold text-white">Ayarlar</h1>
             </div>
 
