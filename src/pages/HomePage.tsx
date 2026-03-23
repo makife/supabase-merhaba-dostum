@@ -876,7 +876,7 @@ const HomePage = () => {
                             key={i}
                             src="/icons/pil.svg"
                             alt=""
-                            className={`w-7 h-7 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
+                            className={`w-6 h-6 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-10"}`}
                           />
                         ))}
                       </div>
