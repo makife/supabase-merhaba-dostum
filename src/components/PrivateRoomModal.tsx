@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
+import { Clock, Play, LogIn, X, Hash, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -228,9 +228,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20">
-              <Users className="w-8 h-8 text-white" />
-            </div>
+            <img src="/icons/ozeloda.svg" alt="" className="w-16 h-16 object-contain mx-auto mb-4 drop-shadow-lg" />
 
             <DialogTitle className="text-xl font-black uppercase tracking-tighter text-white">ÖZEL ODA</DialogTitle>
 
