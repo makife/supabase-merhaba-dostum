@@ -860,9 +860,9 @@ const HomePage = () => {
                   <div className="flex items-center gap-2">
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-1 opacity-50">
+                        <div className="flex gap-2 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <img key={i} src="/icons/pil.svg" alt="" className="w-5 h-5 object-contain" />
+                            <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
                         <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
@@ -870,13 +870,13 @@ const HomePage = () => {
                         </Badge>
                       </div>
                     ) : (
-                      <div className="flex gap-1">
+                      <div className="flex gap-2">
                         {Array.from({ length: 5 }, (_, i) => (
                           <img
                             key={i}
                             src="/icons/pil.svg"
                             alt=""
-                            className={`w-5 h-5 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
+                            className={`w-7 h-7 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
                           />
                         ))}
                       </div>
