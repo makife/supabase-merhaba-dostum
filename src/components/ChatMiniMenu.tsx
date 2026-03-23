@@ -40,7 +40,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     },
     {
       textIcon: "/icons/engellediklerim-text.svg",
-      gorselIcon: "/icons/engellediklerim-gorsel.svg",
+      gorselIcon: "/icons/yasakli-gorsel.svg",
       action: () => onViewChange("blocked-users"),
       dotColor: "bg-red-400",
       isActive: currentView === "blocked-users",
@@ -74,26 +74,14 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
   const itemAnim = () => (!isOpen ? "pointer-events-none" : "");
 
-  const renderRow = (
-    dot: string,
-    textSrc: string,
-    textAlt: string,
-    gorselSrc: string,
-    isActive?: boolean
-  ) => (
+  const renderRow = (dot: string, textSrc: string, textAlt: string, gorselSrc: string, isActive?: boolean) => (
     <div className={rowBase}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
-      <img
-        src={textSrc}
-        alt={textAlt}
-        className="block h-4 w-auto max-w-none flex-shrink-0"
-      />
-      <div className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}>
-        <img
-          src={gorselSrc}
-          alt=""
-          className="w-10 h-10 object-contain"
-        />
+      <img src={textSrc} alt={textAlt} className="block h-4 w-auto max-w-none flex-shrink-0" />
+      <div
+        className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}
+      >
+        <img src={gorselSrc} alt="" className="w-10 h-10 object-contain" />
       </div>
     </div>
   );
@@ -131,9 +119,8 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
             relative w-12 h-12 rounded-full
             flex items-center justify-center
             active:scale-90
-            ${isOpen
-              ? "bg-white ring-2 ring-white/40"
-              : "bg-gradient-to-br from-white to-gray-200 ring-2 ring-white/30"
+            ${
+              isOpen ? "bg-white ring-2 ring-white/40" : "bg-gradient-to-br from-white to-gray-200 ring-2 ring-white/30"
             }
           `}
         >
