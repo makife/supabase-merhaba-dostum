@@ -683,11 +683,7 @@ const HomePage = () => {
               return (
                 <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center`}
-                    >
-                      <img src={getLevelFruitIcon(level)} alt="level" className="w-7 h-7 object-contain drop-shadow-md" />
-                    </div>
+                    <img src={getLevelFruitIcon(level)} alt="level" className="w-11 h-11 object-contain drop-shadow-md" />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-white">Seviye {level}</span>
