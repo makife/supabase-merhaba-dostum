@@ -455,9 +455,7 @@ const LeaderboardPage = () => {
             </Button>
 
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
+              <img src="/icons/liderlik-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
               <h1 className="text-2xl font-bold text-white">Liderlik</h1>
             </div>
 
