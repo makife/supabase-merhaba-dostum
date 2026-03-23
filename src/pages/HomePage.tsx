@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="mt-2">
+          <div className="px-5 mt-2">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
