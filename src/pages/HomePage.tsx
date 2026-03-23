@@ -643,8 +643,8 @@ const HomePage = () => {
                 src="/alttaban/profilresimalttaban.svg"
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill" }}
+                className="absolute top-0 left-0 h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill", width: "50vw" }}
               />
               <div className="relative z-10">
                 <div
