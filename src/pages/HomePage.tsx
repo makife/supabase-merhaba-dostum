@@ -694,9 +694,6 @@ const HomePage = () => {
                 <div
                   className="relative flex items-center justify-between px-8 py-4"
                   style={{
-                    backgroundImage: "url('/alttaban/seviyealttaban.svg')",
-                    backgroundSize: "100% 100%",
-                    backgroundRepeat: "no-repeat",
                     minHeight: "90px",
                     marginLeft: "-4px",
                     marginRight: "-4px",
