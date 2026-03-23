@@ -181,6 +181,32 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return grid;
   };
 
+  const getFreshPlayAccess = useCallback(async (targetUserId: string) => {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+      .eq("id", targetUserId)
+      .single();
+
+    if (error || !profile) {
+      console.error("❌ Profil erişim kontrolü başarısız:", error);
+      throw new Error("Profil bilgileri alınamadı");
+    }
+
+    const now = new Date();
+    const hasUnlimitedAccess =
+      (profile.premium_until && new Date(profile.premium_until) > now) ||
+      (profile.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
+    const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
+
+    return {
+      hasAccess: Boolean(hasUnlimitedAccess || totalCredits >= 1),
+      hasUnlimitedAccess: Boolean(hasUnlimitedAccess),
+      totalCredits,
+    };
+  }, []);
+
   // Send rematch request
   const sendRematchRequest = useCallback(
     async (opponentId: string, gameType: "timed" | "score", currentGameMode: string): Promise<boolean> => {
@@ -212,18 +238,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         console.log("🔄 Rematch gönderiliyor:", { from: userId.slice(-8), to: opponentId.slice(-8) });
 
-        // 🔒 HAK KONTROLÜ: Göndermeden önce yeterli hak var mı kontrol et
-        const { data: senderProfile } = await supabase
-          .from("profiles")
-          .select("game_credits, bonus_credits")
-          .eq("id", userId)
-          .single();
+        // 🔒 HAK KONTROLÜ: Her zaman taze profilden kontrol et
+        const senderAccess = await getFreshPlayAccess(userId);
 
-        const senderCredits = (senderProfile?.game_credits || 0) + (senderProfile?.bonus_credits || 0);
-        if (senderCredits < 1) {
+        if (!senderAccess.hasAccess) {
           toast({
             title: "Yetersiz Hak",
-            description: "Oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
+            description: "Aktif sınırsız hakkınız veya oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
             variant: "destructive",
             duration: 3000,
           });
@@ -414,7 +435,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }, 2000);
       }
     },
-    [userId, toast, navigate],
+    [userId, toast, navigate, getFreshPlayAccess],
   );
 
   // Accept rematch - HAK KONTROLÜ EKLENDİ
@@ -424,35 +445,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       console.log("✅ Rematch kabul ediliyor:", incomingRequest.id);
 
-      // 🔒 HAK KONTROLÜ: Kabul etmeden önce yeterli hak var mı kontrol et
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("game_credits, bonus_credits")
-        .eq("id", userId)
-        .single();
+      // 🔒 HAK KONTROLÜ: Kabul etmeden önce taze profil ve aktif hakları kontrol et
+      const receiverAccess = await getFreshPlayAccess(userId);
 
-      if (profileError || !profile) {
-        toast({
-          title: "Hata",
-          description: "Profil bilgileri alınamadı",
-          variant: "destructive",
-          duration: 1000,
-        });
-        setIncomingRequest(null);
-        return;
-      }
-
-      const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
-      
-      if (totalCredits < 1) {
+      if (!receiverAccess.hasAccess) {
         console.log("❌ Yetersiz hak, rematch kabul edilemiyor");
         toast({
           title: "Yetersiz Hak",
-          description: "Oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
+          description: "Aktif sınırsız hakkınız veya oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
           variant: "destructive",
           duration: 3000,
         });
-        
+
         // Rematch'i reddet
         await supabase
           .from("rematch_requests")
@@ -461,7 +465,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             responded_at: new Date().toISOString(),
           })
           .eq("id", incomingRequest.id);
-        
+
         setIncomingRequest(null);
         navigate("/market");
         return;
@@ -526,7 +530,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         duration: 1000,
       });
     }
-  }, [userId, incomingRequest, toast, navigate]);
+  }, [userId, incomingRequest, toast, navigate, getFreshPlayAccess]);
 
   // Reject rematch
   const rejectRematch = useCallback(async () => {
