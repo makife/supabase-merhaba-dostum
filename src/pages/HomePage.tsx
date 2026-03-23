@@ -757,7 +757,7 @@ const HomePage = () => {
                   >
                     <img
                       src={j.img}
-                      className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                      className="w-9 h-9 object-contain drop-shadow-lg"
                       alt={j.name}
                     />
                     <span className="text-[10px] font-bold text-white">x{j.count}</span>
@@ -890,7 +890,7 @@ const HomePage = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" style={{isolation:"isolate"}}>
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
                         <div className="flex gap-2 opacity-50">
@@ -899,7 +899,8 @@ const HomePage = () => {
                           ))}
                         </div>
                         <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-[10px] px-1.5 py-0 shadow-sm">
-                          +{totalCredits - 5}</Badge>
+                          +{totalCredits - 5}
+                        </Badge>
                       </div>
                     ) : (
                       <div className="flex gap-2">
@@ -915,7 +916,7 @@ const HomePage = () => {
                     )}
 
                     {timeUntilNextCredit && totalCredits < 5 && (
-                      <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-800/80 px-1 rounded">
                         {timeUntilNextCredit}
                       </span>
                     )}
@@ -983,7 +984,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimePuzzleIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1018,7 +1019,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <ReaktorIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1053,7 +1054,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <RefleksIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1088,7 +1089,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimeHafizaIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1133,7 +1134,7 @@ const HomePage = () => {
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
-                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
+                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
                 } transition-opacity rounded-2xl`}
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
