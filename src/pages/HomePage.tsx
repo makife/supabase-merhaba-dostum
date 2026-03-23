@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="mt-2">
+          <div className="mt-2 overflow-hidden">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
@@ -704,10 +704,10 @@ const HomePage = () => {
                     src="/alttaban/seviyealttaban.svg"
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                    className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                     style={{ objectFit: "fill" }}
                   />
-                  <div className="flex items-center gap-4">
+                  <div className="relative z-10 flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
                       alt="level"
@@ -728,7 +728,7 @@ const HomePage = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="relative z-10 text-right">
                     <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
                     <span className="text-sm font-mono font-bold text-red-500">
                       {(profile?.total_score || 0).toLocaleString()}
