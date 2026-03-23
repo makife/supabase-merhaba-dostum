@@ -1036,7 +1036,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <RefleksIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
