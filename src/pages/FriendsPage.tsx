@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell, Users } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
