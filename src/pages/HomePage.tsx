@@ -131,6 +131,18 @@ const VipCrownIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/vipkraliyet.svg" className={className} alt="" />
 );
 
+const getLevelFruitIcon = (level: number): string => {
+  if (level < 5) return "/icons/yaprak.svg";
+  if (level < 10) return "/icons/muz.svg";
+  if (level < 15) return "/icons/turkumeyve.svg";
+  if (level < 20) return "/icons/limon.svg";
+  if (level < 25) return "/icons/uzum.svg";
+  if (level < 30) return "/icons/cilek.svg";
+  if (level < 35) return "/icons/karpuz.svg";
+  if (level < 40) return "/icons/elma.svg";
+  return "/icons/portakal.svg";
+};
+
 const KelimePuzzleIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/kelimepuzzle.svg" className={className} alt="" />
 );
@@ -674,7 +686,7 @@ const HomePage = () => {
                     <div
                       className={`w-11 h-11 rounded-xl bg-gradient-to-br ${starGradient} flex items-center justify-center`}
                     >
-                      <Star className="w-6 h-6 text-white fill-white" />
+                      <img src={getLevelFruitIcon(level)} alt="level" className="w-7 h-7 object-contain drop-shadow-md" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
