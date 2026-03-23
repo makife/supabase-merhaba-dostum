@@ -362,10 +362,10 @@ export default function ChatPage() {
                 {title === "KELİMELE SOHBET" && (
                   <img src="/icons/sohbet-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
                 )}
-                {title === "Özel Mesajlar" && (
+                {title === "Özel Sohbet" && (
                   <img src="/icons/ozelsohbet-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
                 )}
-                {title === "Engellediklerim" && (
+                {title === "Yasaklı" && (
                   <img src="/icons/engellediklerim-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
                 )}
                 <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
@@ -598,7 +598,7 @@ export default function ChatPage() {
       return (
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
-          {renderHeader("Özel Mesajlar", `${onlineUsers.length} kişi çevrimiçi`, true)}
+          {renderHeader("Özel Sohbet", `${onlineUsers.length} kişi çevrimiçi`, true)}
           <div className="flex-1 min-h-0">
             {renderUsersList()}
           </div>
@@ -610,7 +610,7 @@ export default function ChatPage() {
       return (
         <div className="h-full flex flex-col">
           {/* Header — blur almaz */}
-          {renderHeader("Engellediklerim", `${blockedUsers.length} kişi engellendi`, true)}
+          {renderHeader("Yasaklı", `${blockedUsers.length} kişi engellendi`, true)}
           <div className="flex-1 min-h-0">
             {renderBlockedUsersList()}
           </div>
