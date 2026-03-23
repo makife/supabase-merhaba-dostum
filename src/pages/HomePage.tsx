@@ -620,7 +620,6 @@ const HomePage = () => {
       -------------------------------------------------------- */}
         <div
           className="flex-none z-30 pb-4 relative border-b border-white/5"
-          style={{ backgroundColor: levelBgColors.headerBg || "transparent" }}
         >
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
