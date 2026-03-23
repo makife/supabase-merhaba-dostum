@@ -1102,6 +1102,7 @@ const HomePage = () => {
                 } transition-opacity rounded-2xl`}
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <WheelIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
               <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                 {wheelSpinsLeft === 0 ? (
                   <Check className="w-6 h-6 text-red-300" />
