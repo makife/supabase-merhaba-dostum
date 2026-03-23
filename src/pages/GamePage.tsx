@@ -2400,9 +2400,8 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // Countdown mantığı artık mount gecikmesini kendi içinde telafi ediyor
-            const countdownStartNow = Date.now() + serverTimeOffset;
-            setCountdownServerTime(new Date(countdownStartNow).toISOString());
+            // 🔧 FIX: Her cihazda aynı mutlak sunucu zamanını kullan - senkronizasyon kaymasını önle
+            setCountdownServerTime(new Date(actualCountdownStart).toISOString());
             setShowCountdown(true);
           }
         }, msUntilCountdown);
