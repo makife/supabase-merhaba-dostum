@@ -833,15 +833,7 @@ const HomePage = () => {
                   className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                   style={{ objectFit: "fill" }}
                 />
-                <div
-                  className={`relative z-10 flex items-center gap-3 p-2 px-3 ${
-                    isUnlimitedLivesActive(profile)
-                      ? getUnlimitedType(profile) === "maraton"
-                        ? "bg-amber-500/10"
-                        : "bg-blue-500/10"
-                      : ""
-                  }`}
-                >
+                <div className="relative z-10 flex items-center gap-3 p-2 px-3">
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
@@ -930,7 +922,7 @@ const HomePage = () => {
                     )}
                   </div>
                 )}
-                </div>
+              </div>
               </div>
             )}
           </div>
