@@ -733,7 +733,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="relative rounded-2xl p-3 flex justify-around overflow-hidden" style={{ backgroundImage: "url('/alttaban/jokeralttaban.svg')", backgroundSize: "100% 100%", backgroundRepeat: "no-repeat", minHeight: "70px" }}>
+            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
               {[
                 { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
                 { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
