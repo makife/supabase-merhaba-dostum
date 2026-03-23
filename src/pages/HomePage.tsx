@@ -643,8 +643,8 @@ const HomePage = () => {
                 src="/alttaban/profilresimalttaban.svg"
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill" }}
+                className="absolute top-0 left-0 h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill", width: "50vw" }}
               />
               <div className="relative z-10">
                 <div
@@ -684,8 +684,8 @@ const HomePage = () => {
                 src="/alttaban/murekkepalttaban.svg"
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill" }}
+                className="absolute top-0 right-0 h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill", width: "50vw" }}
               />
               <div className="relative z-10 w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
                 <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
