@@ -192,20 +192,12 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
 const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
   <div
     onClick={onClick}
-    className="relative group cursor-pointer rounded-3xl p-4 h-40 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] overflow-hidden"
+    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
     style={{ transform: "translateZ(0)" }}
   >
-    {mode.svgBg ? (
-      <img
-        src={mode.svgBg}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-        style={{ objectFit: "fill" }}
-      />
-    ) : (
-      <div className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 rounded-3xl`} />
-    )}
+    <div
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
+    />
     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
     <div className="relative z-10 flex justify-between items-start">
@@ -213,7 +205,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
         <mode.icon className="w-6 h-6 text-white" />
       </div>
       {mode.isLive && (
-        <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">CANLI</span>
+        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       )}
     </div>
 
@@ -222,7 +214,9 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
       <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
       {mode.id === "random-match" && typeof searchingCount === "number" && (
         <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`} />
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
+          />
           <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
         </div>
       )}
@@ -538,9 +532,7 @@ const HomePage = () => {
       {
         id: "random-match",
         title: "Rastgele Rakip",
-        description: "Rakip bul",
         icon: RastgeleIcon,
-        svgBg: "/alttaban/rastgelealttaban.svg",
         gradient: "from-violet-500 via-purple-500 to-indigo-500",
         glowColor: "violet",
         isLive: true,
@@ -550,7 +542,6 @@ const HomePage = () => {
         title: "Turnuva",
         description: "Büyük ödüller",
         icon: TurnuvaIcon,
-        svgBg: "/alttaban/turnuvaalttaban.svg",
         gradient: "from-amber-400 via-orange-500 to-red-500",
         glowColor: "amber",
         isLive: false,
@@ -560,7 +551,6 @@ const HomePage = () => {
         title: "Yapay Zeka",
         description: "Pratik yap",
         icon: AiModIcon,
-        svgBg: "/alttaban/yapayzekaalttaban.svg",
         gradient: "from-cyan-400 via-sky-500 to-blue-500",
         glowColor: "cyan",
         isLive: false,
@@ -570,7 +560,6 @@ const HomePage = () => {
         title: "Özel Oda",
         description: "Arkadaşınla oyna",
         icon: OzelOdaIcon,
-        svgBg: "/alttaban/ozelodaalttaban.svg",
         gradient: "from-emerald-400 via-green-500 to-teal-500",
         glowColor: "emerald",
         isLive: false,
@@ -635,18 +624,8 @@ const HomePage = () => {
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
             {/* Profil */}
-            <div
-              className="relative flex items-center gap-3 cursor-pointer rounded-2xl overflow-hidden px-3 py-2"
-              onClick={() => setShowAvatarView(true)}
-            >
-              <img
-                src="/alttaban/profilresimalttaban.svg"
-                alt=""
-                aria-hidden="true"
-                className="absolute top-0 left-0 h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill", width: "50vw" }}
-              />
-              <div className="relative z-10">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
+              <div className="relative">
                 <div
                   className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
@@ -664,7 +643,7 @@ const HomePage = () => {
                   </div>
                 )}
               </div>
-              <div className="relative z-10">
+              <div>
                 <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
                   {profile?.username || "Misafir"}
                 </h2>
@@ -678,20 +657,13 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/market");
               }}
-              className="relative flex items-center gap-2 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer overflow-hidden"
+              className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
             >
-              <img
-                src="/alttaban/murekkepalttaban.svg"
-                alt=""
-                aria-hidden="true"
-                className="absolute top-0 right-0 h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill", width: "50vw" }}
-              />
-              <div className="relative z-10 w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
                 <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
               </div>
-              <span className="relative z-10 text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              <div className="relative z-10 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
+              <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
+              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
                 <span className="text-xs leading-none text-white font-bold">+</span>
               </div>
             </div>
@@ -752,8 +724,8 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] text-white/70 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-white">
+                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                    <span className="text-sm font-mono font-bold text-red-500">
                       {(profile?.total_score || 0).toLocaleString()}
                     </span>
                   </div>
@@ -763,42 +735,32 @@ const HomePage = () => {
           </div>
 
           {/* --- JOKERLER --- */}
-          <div className="mt-3" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
-            <div className="relative overflow-hidden">
-              <img
-                src="/alttaban/jokeralttaban.svg"
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                style={{ objectFit: "fill" }}
-              />
-              <div className="relative z-10 flex justify-around py-4 px-8">
-                {[
-                  { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
-                  { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
-                  { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz" },
-                ].map((j, i) => (
-                  <div
-                    key={i}
-                    className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
-                    onClick={() => navigate("/market")}
-                  >
-                    <img
-                      src={j.img}
-                      className="w-9 h-9 object-contain drop-shadow-lg"
-                      alt={j.name}
-                    />
-                    <span className="text-[10px] font-bold text-white">x{j.count}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="px-5 mt-3">
+            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
+              {[
+                { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
+                { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
+                { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+              ].map((j, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
+                  onClick={() => navigate("/market")}
+                >
+                  <img
+                    src={j.img}
+                    className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                    alt={j.name}
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* INFO PANELS (SÜRE & HAK) */}
-          <div className="mt-2 space-y-2">
+          <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
-              <div className="px-5">
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
@@ -851,26 +813,25 @@ const HomePage = () => {
                   </span>
                 </div>
               </div>
-              </div>
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
-                <img
-                  src="/alttaban/kredialttaban.svg"
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                  style={{ objectFit: "fill" }}
-                />
-                <div className="relative z-10 flex items-center gap-3 py-3 px-8">
+              <div
+                className={`flex items-center gap-3 backdrop-blur-md border rounded-xl p-2 px-3 ${
+                  isUnlimitedLivesActive(profile)
+                    ? getUnlimitedType(profile) === "maraton"
+                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
+                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
+                    : "bg-[#1e2d45] border-indigo-500/20"
+                }`}
+              >
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
                       ? getUnlimitedType(profile) === "maraton"
                         ? "text-amber-400"
                         : "text-blue-400"
-                      : "text-white"
+                      : "text-slate-500"
                   }`}
                 >
                   {isUnlimitedLivesActive(profile) ? (
@@ -920,17 +881,17 @@ const HomePage = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2" style={{isolation:"isolate"}}>
+                  <div className="flex items-center gap-2">
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
                             <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
-                        <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-semibold shadow-sm">
-                          +{totalCredits - 5}
-                        </span>
+                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
+                          + {totalCredits - 5} Sayfa
+                        </Badge>
                       </div>
                     ) : (
                       <div className="flex gap-2">
@@ -946,13 +907,12 @@ const HomePage = () => {
                     )}
 
                     {timeUntilNextCredit && totalCredits < 5 && (
-                      <span className="text-[10px] text-slate-400 font-mono bg-slate-800/80 px-1 rounded">
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
                         {timeUntilNextCredit}
                       </span>
                     )}
                   </div>
                 )}
-                </div>
               </div>
             )}
           </div>
@@ -981,12 +941,12 @@ const HomePage = () => {
       -------------------------------------------------------- */}
         <div className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28">
           {/* OYUN MODLARI */}
-          <div className="px-3 mt-6">
+          <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-4 bg-indigo-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-4">
               {gameModesConfig.map((mode) => (
                 <GameModeCard
                   key={mode.id}
@@ -1014,7 +974,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimePuzzleIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1049,7 +1009,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <ReaktorIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1084,7 +1044,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <RefleksIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1119,7 +1079,7 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600/70 via-amber-500/60 to-yellow-700/70 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimeHafizaIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1164,7 +1124,7 @@ const HomePage = () => {
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
-                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
+                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
                 } transition-opacity rounded-2xl`}
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
