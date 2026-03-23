@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Clock, Bot, Users, Zap, Trophy, X, Play } from "lucide-react";
+import { Clock, X, Play } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +25,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           gradient: "from-blue-600 via-cyan-500 to-blue-600",
           bgGlow: "bg-blue-500/10",
           border: "border-blue-500/50",
-          icon: Bot,
+          iconSrc: "/icons/aimod.svg",
           shadow: "shadow-blue-500/20",
         };
       case "private-room":
@@ -34,7 +34,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           gradient: "from-green-600 via-emerald-500 to-green-600",
           bgGlow: "bg-green-500/10",
           border: "border-green-500/50",
-          icon: Users,
+          iconSrc: "/icons/ozeloda.svg",
           shadow: "shadow-green-500/20",
         };
       case "random-match":
@@ -43,7 +43,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           gradient: "from-purple-600 via-pink-500 to-purple-600",
           bgGlow: "bg-purple-500/10",
           border: "border-purple-500/50",
-          icon: Zap,
+          iconSrc: "/icons/rastgele.svg",
           shadow: "shadow-purple-500/20",
         };
       default:
@@ -52,7 +52,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
           gradient: "from-yellow-600 via-orange-500 to-yellow-600",
           bgGlow: "bg-yellow-500/10",
           border: "border-yellow-500/50",
-          icon: Trophy,
+          iconSrc: "/icons/turnuva.svg",
           shadow: "shadow-yellow-500/20",
         };
     }
@@ -96,11 +96,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
             <X className="w-5 h-5" />
           </button>
 
-          <div
-            className={`w-16 h-16 mx-auto bg-gradient-to-br ${theme.gradient} rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-4 border border-white/20`}
-          >
-            <theme.icon className="w-8 h-8 text-white" />
-          </div>
+          <img src={theme.iconSrc} alt="" className="w-16 h-16 object-contain mx-auto mb-4 drop-shadow-lg" />
 
           <h2 className="text-xl font-black uppercase tracking-tighter text-white">{theme.title}</h2>
         </div>
