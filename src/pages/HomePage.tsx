@@ -119,7 +119,7 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = memo(({ svgIcon, value, label }: any) => (
-  <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+  <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group opacity-100">
     <img
       src={svgIcon}
       alt=""
