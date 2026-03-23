@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="px-5 mt-2">
+          <div className="mt-2">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
@@ -691,42 +691,43 @@ const HomePage = () => {
               }
 
               return (
-                <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: "90px" }}>
-                  <img
-                    src="/alttaban/seviyealttaban.svg"
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-                    style={{ objectFit: "fill" }}
-                  />
-                  <div className="relative z-10 flex items-center justify-between px-6 py-4" style={{ minHeight: "90px" }}>
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={getLevelFruitIcon(level)}
-                        alt="level"
-                        className="w-11 h-11 object-contain drop-shadow-md"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-white">Seviye {level}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            {levelData.experience}/{levelData.nextLevelExp} XP
-                          </span>
-                        </div>
-                        <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
-                          <div
-                            className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
+                <div
+                  className="relative flex items-center justify-between px-8 py-4"
+                  style={{
+                    backgroundImage: "url('/alttaban/seviyealttaban.svg')",
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                    minHeight: "90px",
+                    marginLeft: "-4px",
+                    marginRight: "-4px",
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={getLevelFruitIcon(level)}
+                      alt="level"
+                      className="w-11 h-11 object-contain drop-shadow-md"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">Seviye {level}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {levelData.experience}/{levelData.nextLevelExp} XP
+                        </span>
+                      </div>
+                      <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
+                        <div
+                          className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                      <span className="text-sm font-mono font-bold text-red-500">
-                        {(profile?.total_score || 0).toLocaleString()}
-                      </span>
-                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                    <span className="text-sm font-mono font-bold text-red-500">
+                      {(profile?.total_score || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
               );
@@ -735,25 +736,34 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
-              {[
-                { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
-                { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
-                { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
-              ].map((j, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
-                  onClick={() => navigate("/market")}
-                >
-                  <img
-                    src={j.img}
-                    className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
-                    alt={j.name}
-                  />
-                  <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
-                </div>
-              ))}
+            <div className="relative overflow-hidden" style={{ minHeight: "72px" }}>
+              <img
+                src="/alttaban/jokeralttaban.svg"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill" }}
+              />
+              <div className="relative z-10 flex justify-around p-3">
+                {[
+                  { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
+                  { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
+                  { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+                ].map((j, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
+                    onClick={() => navigate("/market")}
+                  >
+                    <img
+                      src={j.img}
+                      className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                      alt={j.name}
+                    />
+                    <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -815,15 +825,23 @@ const HomePage = () => {
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div
-                className={`flex items-center gap-3 backdrop-blur-md border rounded-xl p-2 px-3 ${
-                  isUnlimitedLivesActive(profile)
-                    ? getUnlimitedType(profile) === "maraton"
-                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
-                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
-                    : "bg-[#1e2d45] border-indigo-500/20"
-                }`}
-              >
+              <div className="relative overflow-hidden" style={{ minHeight: "56px" }}>
+                <img
+                  src="/alttaban/kredialttaban.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
+                  style={{ objectFit: "fill" }}
+                />
+                <div
+                  className={`relative z-10 flex items-center gap-3 p-2 px-3 ${
+                    isUnlimitedLivesActive(profile)
+                      ? getUnlimitedType(profile) === "maraton"
+                        ? "bg-amber-500/10"
+                        : "bg-blue-500/10"
+                      : ""
+                  }`}
+                >
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
@@ -912,6 +930,7 @@ const HomePage = () => {
                     )}
                   </div>
                 )}
+                </div>
               </div>
             )}
           </div>
