@@ -724,8 +724,8 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-red-500">
+                    <span className="text-[9px] text-white/70 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                    <span className="text-sm font-mono font-bold text-white">
                       {(profile?.total_score || 0).toLocaleString()}
                     </span>
                   </div>
@@ -735,8 +735,8 @@ const HomePage = () => {
           </div>
 
           {/* --- JOKERLER --- */}
-          <div className="mt-3">
-            <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
+          <div className="px-5 mt-3">
+            <div className="relative overflow-hidden">
               <img
                 src="/alttaban/jokeralttaban.svg"
                 alt=""
@@ -744,11 +744,11 @@ const HomePage = () => {
                 className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                 style={{ objectFit: "fill" }}
               />
-              <div className="relative z-10 flex justify-around py-4 px-8">
+              <div className="relative z-10 flex justify-around py-4 px-3">
                 {[
-                  { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
-                  { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
-                  { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+                  { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
+                  { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
+                  { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz" },
                 ].map((j, i) => (
                   <div
                     key={i}
@@ -760,7 +760,7 @@ const HomePage = () => {
                       className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
                       alt={j.name}
                     />
-                    <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                    <span className="text-[10px] font-bold text-white">x{j.count}</span>
                   </div>
                 ))}
               </div>
@@ -768,9 +768,8 @@ const HomePage = () => {
           </div>
 
           {/* INFO PANELS (SÜRE & HAK) */}
-          <div className="mt-2 space-y-2">
+          <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
-              <div className="px-5">
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
@@ -823,11 +822,10 @@ const HomePage = () => {
                   </span>
                 </div>
               </div>
-              </div>
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
+              <div className="relative overflow-hidden">
                 <img
                   src="/alttaban/kredialttaban.svg"
                   alt=""
@@ -835,14 +833,14 @@ const HomePage = () => {
                   className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                   style={{ objectFit: "fill" }}
                 />
-                <div className="relative z-10 flex items-center gap-3 py-3 px-8">
+                <div className="relative z-10 flex items-center gap-3 py-3 px-3">
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
                       ? getUnlimitedType(profile) === "maraton"
                         ? "text-amber-400"
                         : "text-blue-400"
-                      : "text-slate-500"
+                      : "text-white"
                   }`}
                 >
                   {isUnlimitedLivesActive(profile) ? (
@@ -900,9 +898,8 @@ const HomePage = () => {
                             <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
-                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                          + {totalCredits - 5} Sayfa
-                        </Badge>
+                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-[10px] px-1.5 py-0 shadow-sm">
+                          +{totalCredits - 5}</Badge>
                       </div>
                     ) : (
                       <div className="flex gap-2">
