@@ -862,7 +862,7 @@ const HomePage = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <div key={i} className="w-6 h-2 rounded-sm bg-green-500 skew-x-[-10deg]" />
+                            <img key={i} src="/icons/pil.svg" alt="" className="w-5 h-5 object-contain" />
                           ))}
                         </div>
                         <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
@@ -872,9 +872,11 @@ const HomePage = () => {
                     ) : (
                       <div className="flex gap-1">
                         {Array.from({ length: 5 }, (_, i) => (
-                          <div
+                          <img
                             key={i}
-                            className={`w-6 h-2 rounded-sm skew-x-[-10deg] transition-all duration-300 ${i < totalCredits ? "bg-green-500" : "bg-slate-200"}`}
+                            src="/icons/pil.svg"
+                            alt=""
+                            className={`w-5 h-5 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
                           />
                         ))}
                       </div>
