@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowLeft, MessageCircle, UserMinus, Users, Circle, UserPlus, Check, X, Bell } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
@@ -273,7 +273,7 @@ const FriendsPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
+            <img src="/icons/arkadaslar-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
             <h1 className="text-lg font-bold">Arkadaşlarım</h1>
           </div>
           {pendingRequests.length > 0 && (
