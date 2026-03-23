@@ -244,7 +244,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     };
 
     if (isOpen && user?.id) {
-      setTimeout(() => { showBotWelcome(); }, 1000);
+      setTimeout(() => {
+        showBotWelcome();
+      }, 1000);
     }
   }, [isOpen, user?.id]);
 
@@ -586,8 +588,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   };
 
   const handleReportMessage = (messageId: string, userId: string, username: string) => {
-    if (!user) { toast.error("Rapor göndermek için giriş yapmalısınız"); return; }
-    if (userId === user.id) { toast.info("Kendi mesajınızı raporlayamazsınız"); return; }
+    if (!user) {
+      toast.error("Rapor göndermek için giriş yapmalısınız");
+      return;
+    }
+    if (userId === user.id) {
+      toast.info("Kendi mesajınızı raporlayamazsınız");
+      return;
+    }
     setReportingMessage({ id: messageId, userId, username });
     setReportDialogOpen(true);
   };
@@ -722,9 +730,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   </div>
                   <div
                     className="flex-1 cursor-pointer"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${targetUser.id}`); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/profile/${targetUser.id}`);
+                    }}
                   >
-                    <div className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-400 line-through" : "text-white"}`}>
+                    <div
+                      className={`font-medium ${isUserBlocked(targetUser.id) ? "text-red-400 line-through" : "text-white"}`}
+                    >
                       {targetUser.username}
                     </div>
                     <div className={`text-xs ${isUserBlocked(targetUser.id) ? "text-red-400" : "text-green-400"}`}>
@@ -735,7 +748,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        isUserBlocked(targetUser.id) ? unblockUser(targetUser.id) : blockUser(targetUser.id);
+                      }}
                       className={`text-xs px-2 py-1 h-6 ${isUserBlocked(targetUser.id) ? "text-green-600 border-green-600" : "text-red-600 border-red-600"}`}
                     >
                       {isUserBlocked(targetUser.id) ? "Engeli Kaldır" : "Engelle"}
@@ -772,20 +788,24 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 />
                 <div
                   className="flex-1 min-w-0 cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${targetUser.id}`); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/profile/${targetUser.id}`);
+                  }}
                 >
                   <p className="font-medium text-white truncate">{targetUser.username}</p>
                   <p className="text-sm text-gray-400">Özel mesaj gönder</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {isUserOnline(targetUser.id) && (
-                    <div className="w-3 h-3 bg-green-500 rounded-full" />
-                  )}
+                  {isUserOnline(targetUser.id) && <div className="w-3 h-3 bg-green-500 rounded-full" />}
                   {isUserBlocked(targetUser.id) ? (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); unblockUser(targetUser.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unblockUser(targetUser.id);
+                      }}
                       className="text-xs px-2 py-1 h-6 text-green-600 border-green-600"
                     >
                       Engeli Kaldır
@@ -794,7 +814,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); blockUser(targetUser.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        blockUser(targetUser.id);
+                      }}
                       className="text-xs px-2 py-1 h-6 text-red-600 border-red-600"
                     >
                       Engelle
@@ -823,7 +846,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         <div className="flex items-center space-x-2">
           <UserX className="w-6 h-6" />
           <div>
-            <h3 className="font-semibold text-lg">Engellediklerim</h3>
+            <h3 className="font-semibold text-lg">Yasaklı</h3>
             <p className="text-gray-300 text-sm">{blockedUsers.length} kişi engellendi</p>
           </div>
         </div>
@@ -966,11 +989,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       </button>
                     )}
                     {message.user_id === user?.id && (
-                      <button
-                        onClick={() => deleteMessage(message.id)}
-                        className="p-1 rounded"
-                        title="Mesajı sil"
-                      >
+                      <button onClick={() => deleteMessage(message.id)} className="p-1 rounded" title="Mesajı sil">
                         <Trash2 className="w-3 h-3 text-red-500" />
                       </button>
                     )}
@@ -1008,7 +1027,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         {["👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
                           <button
                             key={emoji}
-                            onClick={() => { toggleReaction(message.id, emoji); setShowEmojiPicker(null); }}
+                            onClick={() => {
+                              toggleReaction(message.id, emoji);
+                              setShowEmojiPicker(null);
+                            }}
                             className="text-base p-0.5"
                           >
                             {emoji}
@@ -1095,10 +1117,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           >
             Vazgeç
           </AlertDialogCancel>
-          <AlertDialogAction
-            className="flex-1 rounded-xl bg-red-600 text-white"
-            onClick={confirmDeleteMessage}
-          >
+          <AlertDialogAction className="flex-1 rounded-xl bg-red-600 text-white" onClick={confirmDeleteMessage}>
             Evet, Sil
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -1109,7 +1128,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const reportDialog = reportingMessage && (
     <ReportMessageDialog
       isOpen={reportDialogOpen}
-      onClose={() => { setReportDialogOpen(false); setReportingMessage(null); }}
+      onClose={() => {
+        setReportDialogOpen(false);
+        setReportingMessage(null);
+      }}
       messageId={reportingMessage.id}
       messageType="global"
       reportedUserId={reportingMessage.userId}
