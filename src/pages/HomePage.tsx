@@ -694,15 +694,19 @@ const HomePage = () => {
                 <div
                   className="relative flex items-center justify-between px-8 py-4"
                   style={{
-                    backgroundImage: "url('/alttaban/seviyealttaban.svg')",
-                    backgroundSize: "100% 100%",
-                    backgroundRepeat: "no-repeat",
                     minHeight: "90px",
                     marginLeft: "-20px",
                     marginRight: "-20px",
                     width: "calc(100% + 40px)",
                   }}
                 >
+                  <img
+                    src="/alttaban/seviyealttaban.svg"
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full pointer-events-none select-none"
+                    style={{ objectFit: "fill" }}
+                  />
                   <div className="flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
