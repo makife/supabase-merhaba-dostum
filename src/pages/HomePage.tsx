@@ -192,22 +192,12 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
 const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
   <div
     onClick={onClick}
-    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] overflow-hidden`}
+    className={`relative group cursor-pointer rounded-3xl p-4 h-40 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
     style={{ transform: "translateZ(0)" }}
   >
-    {mode.svgBg ? (
-      <img
-        src={mode.svgBg}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
-        style={{ objectFit: "fill" }}
-      />
-    ) : (
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
-      />
-    )}
+    <div
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
+    />
     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
     <div className="relative z-10 flex justify-between items-start">
@@ -542,9 +532,7 @@ const HomePage = () => {
       {
         id: "random-match",
         title: "Rastgele Rakip",
-        description: "Rakip bul",
         icon: RastgeleIcon,
-        svgBg: "/alttaban/rastgelealttaban.svg",
         gradient: "from-violet-500 via-purple-500 to-indigo-500",
         glowColor: "violet",
         isLive: true,
@@ -554,7 +542,6 @@ const HomePage = () => {
         title: "Turnuva",
         description: "Büyük ödüller",
         icon: TurnuvaIcon,
-        svgBg: "/alttaban/turnuvaalttaban.svg",
         gradient: "from-amber-400 via-orange-500 to-red-500",
         glowColor: "amber",
         isLive: false,
@@ -564,7 +551,6 @@ const HomePage = () => {
         title: "Yapay Zeka",
         description: "Pratik yap",
         icon: AiModIcon,
-        svgBg: "/alttaban/yapayzekaalttaban.svg",
         gradient: "from-cyan-400 via-sky-500 to-blue-500",
         glowColor: "cyan",
         isLive: false,
@@ -574,7 +560,6 @@ const HomePage = () => {
         title: "Özel Oda",
         description: "Arkadaşınla oyna",
         icon: OzelOdaIcon,
-        svgBg: "/alttaban/ozelodaalttaban.svg",
         gradient: "from-emerald-400 via-green-500 to-teal-500",
         glowColor: "emerald",
         isLive: false,
@@ -968,12 +953,12 @@ const HomePage = () => {
       -------------------------------------------------------- */}
         <div className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28">
           {/* OYUN MODLARI */}
-          <div className="px-5 mt-6">
+          <div className="px-3 mt-6">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-4 bg-indigo-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               {gameModesConfig.map((mode) => (
                 <GameModeCard
                   key={mode.id}
