@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="mt-2 overflow-hidden">
+          <div className="px-5 mt-2">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
@@ -691,15 +691,7 @@ const HomePage = () => {
               }
 
               return (
-                <div
-                  className="relative flex items-center justify-between px-8 py-4"
-                  style={{
-                    minHeight: "90px",
-                    marginLeft: "-20px",
-                    marginRight: "-20px",
-                    width: "calc(100% + 40px)",
-                  }}
-                >
+                <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: "90px" }}>
                   <img
                     src="/alttaban/seviyealttaban.svg"
                     alt=""
@@ -707,32 +699,34 @@ const HomePage = () => {
                     className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                     style={{ objectFit: "fill" }}
                   />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <img
-                      src={getLevelFruitIcon(level)}
-                      alt="level"
-                      className="w-11 h-11 object-contain drop-shadow-md"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">Seviye {level}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">
-                          {levelData.experience}/{levelData.nextLevelExp} XP
-                        </span>
-                      </div>
-                      <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
-                        <div
-                          className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
-                          style={{ width: `${progressPercent}%` }}
-                        />
+                  <div className="relative z-10 flex items-center justify-between px-6 py-4" style={{ minHeight: "90px" }}>
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={getLevelFruitIcon(level)}
+                        alt="level"
+                        className="w-11 h-11 object-contain drop-shadow-md"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">Seviye {level}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {levelData.experience}/{levelData.nextLevelExp} XP
+                          </span>
+                        </div>
+                        <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
+                          <div
+                            className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="relative z-10 text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-red-500">
-                      {(profile?.total_score || 0).toLocaleString()}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
+                      <span className="text-sm font-mono font-bold text-red-500">
+                        {(profile?.total_score || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
