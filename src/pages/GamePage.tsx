@@ -2400,9 +2400,8 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // Countdown mantığı artık mount gecikmesini kendi içinde telafi ediyor
-            const countdownStartNow = Date.now() + serverTimeOffset;
-            setCountdownServerTime(new Date(countdownStartNow).toISOString());
+            // 🔧 FIX: Her cihazda aynı mutlak sunucu zamanını kullan - senkronizasyon kaymasını önle
+            setCountdownServerTime(new Date(actualCountdownStart).toISOString());
             setShowCountdown(true);
           }
         }, msUntilCountdown);
@@ -2457,9 +2456,9 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Minimum buffer tamamlandı - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // Countdown mantığı artık mount gecikmesini kendi içinde telafi ediyor
-            const countdownStartNow = Date.now() + serverTimeOffset;
-            setCountdownServerTime(new Date(countdownStartNow).toISOString());
+            // 🔧 FIX: Mutlak sunucu zamanı kullan - minimum buffer gösterilse bile
+            // countdown aynı anda biter (actualCountdownStart + 5s)
+            setCountdownServerTime(new Date(actualCountdownStart).toISOString());
             setShowCountdown(true);
           }
         }, MIN_BUFFER_TOTAL_MS);
@@ -2510,9 +2509,8 @@ const GamePage = ({
           console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
           // Önce buffer animasyonunu kapat
           setPreparingOpponent(null);
-          // Countdown mantığı artık mount gecikmesini kendi içinde telafi ediyor
-          const countdownStartNow = Date.now() + serverTimeOffset;
-          setCountdownServerTime(new Date(countdownStartNow).toISOString());
+          // 🔧 FIX: Mutlak sunucu zamanı kullan - cihazlar arası senkronizasyon
+          setCountdownServerTime(new Date(actualCountdownStart).toISOString());
           setShowCountdown(true);
         }
       }, msUntilCountdown);
