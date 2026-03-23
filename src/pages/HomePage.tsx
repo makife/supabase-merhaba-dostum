@@ -698,8 +698,9 @@ const HomePage = () => {
                     backgroundSize: "100% 100%",
                     backgroundRepeat: "no-repeat",
                     minHeight: "90px",
-                    marginLeft: "-4px",
-                    marginRight: "-4px",
+                    marginLeft: "-20px",
+                    marginRight: "-20px",
+                    width: "calc(100% + 40px)",
                   }}
                 >
                   <div className="flex items-center gap-4">
