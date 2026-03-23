@@ -693,11 +693,6 @@ const HomePage = () => {
               return (
                 <div
                   className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-indigo-500/20"
-                  style={{
-                    minHeight: "90px",
-                    marginLeft: "-4px",
-                    marginRight: "-4px",
-                  }}
                 >
                   <div className="flex items-center gap-4">
                     <img
