@@ -793,7 +793,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center justify-between backdrop-blur-md border rounded-xl p-2 px-3 ${
+                className={`flex items-center gap-3 backdrop-blur-md border rounded-xl p-2 px-3 ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
@@ -876,7 +876,7 @@ const HomePage = () => {
                             key={i}
                             src="/icons/pil.svg"
                             alt=""
-                            className={`w-6 h-6 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-10"}`}
+                            className={`w-7 h-7 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
                           />
                         ))}
                       </div>
