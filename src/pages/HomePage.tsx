@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="mt-2">
+          <div className="px-5 mt-2">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
@@ -693,11 +693,6 @@ const HomePage = () => {
               return (
                 <div
                   className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-indigo-500/20"
-                  style={{
-                    minHeight: "90px",
-                    marginLeft: "-4px",
-                    marginRight: "-4px",
-                  }}
                 >
                   <div className="flex items-center gap-4">
                     <img
@@ -735,9 +730,9 @@ const HomePage = () => {
           <div className="px-5 mt-3">
             <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
               {[
-                { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
-                { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
-                { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
+                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
+                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz" },
               ].map((j, i) => (
                 <div
                   key={i}
