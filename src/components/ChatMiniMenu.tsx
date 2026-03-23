@@ -39,8 +39,8 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       alt: "Özel Sohbetlerim",
     },
     {
-      textIcon: "/icons/engellediklerim-text.svg",
-      gorselIcon: "/icons/yasakli-gorsel.svg",
+      textIcon: "/icons/yasakli-text.svg",
+      gorselIcon: "/icons/engellediklerim-gorsel.svg",
       action: () => onViewChange("blocked-users"),
       dotColor: "bg-red-400",
       isActive: currentView === "blocked-users",
