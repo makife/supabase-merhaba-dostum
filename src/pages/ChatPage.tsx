@@ -359,8 +359,14 @@ export default function ChatPage() {
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                {!showBackButton && (
+                {title === "KELİMELE SOHBET" && (
                   <img src="/icons/sohbet-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
+                )}
+                {title === "Özel Mesajlar" && (
+                  <img src="/icons/ozelsohbet-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
+                )}
+                {title === "Engellediklerim" && (
+                  <img src="/icons/engellediklerim-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
                 )}
                 <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
                   {title}
