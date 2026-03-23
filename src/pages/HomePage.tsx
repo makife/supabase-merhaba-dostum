@@ -118,11 +118,11 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 // --- BİLEŞENLER ---
 
-const StatWidget = memo(({ icon: Icon, value, label, colorClass }: any) => (
+const StatWidget = memo(({ svgIcon, value, label }: any) => (
   <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-    <Icon className={`w-5 h-5 mb-1 text-${colorClass}-400`} />
-    <span className="text-lg font-bold text-white tracking-tight">{value}</span>
-    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
+    <img src={svgIcon} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 select-none pointer-events-none" />
+    <span className="relative z-10 text-lg font-bold text-white tracking-tight">{value}</span>
+    <span className="relative z-10 text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
   </div>
 ));
 StatWidget.displayName = "StatWidget";
@@ -1132,26 +1132,19 @@ const HomePage = () => {
             {/* Alt boşluğu biraz artırdım, menüye girmesin */}
             <div className="grid grid-cols-3 gap-3">
               <StatWidget
-                icon={Target}
+                svgIcon="/icons/oyun.svg"
                 value={profile?.daily_games || 0}
                 label="Oyun"
-                colorClass="rose"
-                // !bg-[#16213e] kullanarak içindeki beyazı zorla eziyoruz
-                className="!bg-[#16213e] !border-white/10 !text-white"
               />
               <StatWidget
-                icon={Flame}
+                svgIcon="/icons/seri.svg"
                 value={profile?.win_streak || 0}
                 label="Seri"
-                colorClass="orange"
-                className="!bg-[#16213e] !border-white/10 !text-white"
               />
               <StatWidget
-                icon={Trophy}
+                svgIcon="/icons/zafer.svg"
                 value={profile?.wins || 0}
                 label="Zafer"
-                colorClass="amber"
-                className="!bg-[#16213e] !border-white/10 !text-white"
               />
             </div>
           </div>
