@@ -687,7 +687,15 @@ const HomePage = () => {
               }
 
               return (
-                <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
+                <div
+                  className="relative flex items-center justify-between px-5 py-4"
+                  style={{
+                    backgroundImage: "url('/alttaban/seviyealttaban.svg')",
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
+                    minHeight: "80px",
+                  }}
+                >
                   <div className="flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
