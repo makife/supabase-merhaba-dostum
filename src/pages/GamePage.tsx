@@ -2509,9 +2509,8 @@ const GamePage = ({
           console.log("🏆 Buffer bitti - 5-4-3-2-1 Countdown başlıyor");
           // Önce buffer animasyonunu kapat
           setPreparingOpponent(null);
-          // Countdown mantığı artık mount gecikmesini kendi içinde telafi ediyor
-          const countdownStartNow = Date.now() + serverTimeOffset;
-          setCountdownServerTime(new Date(countdownStartNow).toISOString());
+          // 🔧 FIX: Mutlak sunucu zamanı kullan - cihazlar arası senkronizasyon
+          setCountdownServerTime(new Date(actualCountdownStart).toISOString());
           setShowCountdown(true);
         }
       }, msUntilCountdown);
