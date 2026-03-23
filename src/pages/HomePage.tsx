@@ -635,8 +635,18 @@ const HomePage = () => {
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
             {/* Profil */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
-              <div className="relative">
+            <div
+              className="relative flex items-center gap-3 cursor-pointer rounded-2xl overflow-hidden px-3 py-2"
+              onClick={() => setShowAvatarView(true)}
+            >
+              <img
+                src="/alttaban/profilresimalttaban.svg"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill" }}
+              />
+              <div className="relative z-10">
                 <div
                   className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
@@ -654,7 +664,7 @@ const HomePage = () => {
                   </div>
                 )}
               </div>
-              <div>
+              <div className="relative z-10">
                 <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
                   {profile?.username || "Misafir"}
                 </h2>
