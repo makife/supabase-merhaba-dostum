@@ -736,7 +736,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="relative overflow-hidden" style={{ minHeight: "72px" }}>
+            <div className="relative overflow-hidden">
               <img
                 src="/alttaban/jokeralttaban.svg"
                 alt=""
@@ -744,7 +744,7 @@ const HomePage = () => {
                 className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                 style={{ objectFit: "fill" }}
               />
-              <div className="relative z-10 flex justify-around p-3">
+              <div className="relative z-10 flex justify-around py-4 px-3">
                 {[
                   { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
                   { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
@@ -825,7 +825,7 @@ const HomePage = () => {
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div className="relative overflow-hidden" style={{ minHeight: "56px" }}>
+              <div className="relative overflow-hidden">
                 <img
                   src="/alttaban/kredialttaban.svg"
                   alt=""
@@ -833,7 +833,7 @@ const HomePage = () => {
                   className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                   style={{ objectFit: "fill" }}
                 />
-                <div className="relative z-10 flex items-center gap-3 p-2 px-3">
+                <div className="relative z-10 flex items-center gap-3 py-3 px-3">
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
@@ -922,7 +922,7 @@ const HomePage = () => {
                     )}
                   </div>
                 )}
-              </div>
+                </div>
               </div>
             )}
           </div>
