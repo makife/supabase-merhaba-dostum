@@ -120,9 +120,15 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
 
 const StatWidget = memo(({ svgIcon, value, label }: any) => (
   <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-    <img src={svgIcon} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 select-none pointer-events-none" />
+    <img
+      src={svgIcon}
+      alt=""
+      className="absolute inset-0 w-full h-full object-cover opacity-10 select-none pointer-events-none"
+    />
     <span className="relative z-10 text-lg font-bold text-white tracking-tight">{value}</span>
-    <span className="relative z-10 text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">{label}</span>
+    <span className="relative z-10 text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">
+      {label}
+    </span>
   </div>
 ));
 StatWidget.displayName = "StatWidget";
@@ -683,7 +689,11 @@ const HomePage = () => {
               return (
                 <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <img src={getLevelFruitIcon(level)} alt="level" className="w-11 h-11 object-contain drop-shadow-md" />
+                    <img
+                      src={getLevelFruitIcon(level)}
+                      alt="level"
+                      className="w-11 h-11 object-contain drop-shadow-md"
+                    />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-white">Seviye {level}</span>
@@ -876,7 +886,7 @@ const HomePage = () => {
                             key={i}
                             src="/icons/pil.svg"
                             alt=""
-                            className={`w-7 h-7 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-20"}`}
+                            className={`w-6 h-6 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-10"}`}
                           />
                         ))}
                       </div>
@@ -1133,21 +1143,9 @@ const HomePage = () => {
             {" "}
             {/* Alt boşluğu biraz artırdım, menüye girmesin */}
             <div className="grid grid-cols-3 gap-3">
-              <StatWidget
-                svgIcon="/icons/oyun.svg"
-                value={profile?.daily_games || 0}
-                label="Oyun"
-              />
-              <StatWidget
-                svgIcon="/icons/seri.svg"
-                value={profile?.win_streak || 0}
-                label="Seri"
-              />
-              <StatWidget
-                svgIcon="/icons/zafer.svg"
-                value={profile?.wins || 0}
-                label="Zafer"
-              />
+              <StatWidget svgIcon="/icons/oyun.svg" value={profile?.daily_games || 0} label="Oyun" />
+              <StatWidget svgIcon="/icons/seri.svg" value={profile?.win_streak || 0} label="Seri" />
+              <StatWidget svgIcon="/icons/zafer.svg" value={profile?.wins || 0} label="Zafer" />
             </div>
           </div>
         </div>
