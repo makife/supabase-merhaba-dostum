@@ -735,7 +735,7 @@ const HomePage = () => {
           </div>
 
           {/* --- JOKERLER --- */}
-          <div className="mt-3" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
+          <div className="px-5 mt-3">
             <div className="relative overflow-hidden">
               <img
                 src="/alttaban/jokeralttaban.svg"
@@ -744,7 +744,7 @@ const HomePage = () => {
                 className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                 style={{ objectFit: "fill" }}
               />
-              <div className="relative z-10 flex justify-around py-4 px-8">
+              <div className="relative z-10 flex justify-around py-4 px-3">
                 {[
                   { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
                   { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
@@ -768,9 +768,8 @@ const HomePage = () => {
           </div>
 
           {/* INFO PANELS (SÜRE & HAK) */}
-          <div className="mt-2 space-y-2">
+          <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
-              <div className="px-5">
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
                   vipType === "yearly"
@@ -823,11 +822,10 @@ const HomePage = () => {
                   </span>
                 </div>
               </div>
-              </div>
             )}
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div className="relative overflow-hidden" style={{ marginLeft: "-4px", marginRight: "-4px" }}>
+              <div className="relative overflow-hidden">
                 <img
                   src="/alttaban/kredialttaban.svg"
                   alt=""
@@ -835,7 +833,7 @@ const HomePage = () => {
                   className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
                   style={{ objectFit: "fill" }}
                 />
-                <div className="relative z-10 flex items-center gap-3 py-3 px-8">
+                <div className="relative z-10 flex items-center gap-3 py-3 px-3">
                 <span
                   className={`text-xs font-medium ${
                     isUnlimitedLivesActive(profile)
@@ -895,14 +893,14 @@ const HomePage = () => {
                   <div className="flex items-center gap-2" style={{isolation:"isolate"}}>
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-2 opacity-50">
+                        <div className="flex gap-2">
                           {Array.from({ length: 5 }, (_, i) => (
                             <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
-                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-[10px] px-1.5 py-0 shadow-sm">
+                        <span className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-semibold shadow-sm">
                           +{totalCredits - 5}
-                        </Badge>
+                        </span>
                       </div>
                     ) : (
                       <div className="flex gap-2">
@@ -998,7 +996,11 @@ const HomePage = () => {
                       <KelimePuzzleIcon className="w-8 h-8" />
                     )}
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${challengeStatus.puzzle ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>{challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}</span>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                  >
+                    {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
                 <div className="relative z-10">
                   <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Puzzle</h3>
@@ -1029,7 +1031,11 @@ const HomePage = () => {
                       <ReaktorIcon className="w-8 h-8" />
                     )}
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${challengeStatus.reaktor ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>{challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}</span>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                  >
+                    {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
                 <div className="relative z-10">
                   <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Reaktör Koşusu</h3>
@@ -1060,7 +1066,11 @@ const HomePage = () => {
                       <RefleksIcon className="w-8 h-8" />
                     )}
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>{challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}</span>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                  >
+                    {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
                 <div className="relative z-10">
                   <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Refleks</h3>
@@ -1091,7 +1101,11 @@ const HomePage = () => {
                       <KelimeHafizaIcon className="w-8 h-8" />
                     )}
                   </div>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${challengeStatus.memory ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}>{challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}</span>
+                  <Badge
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                  >
+                    {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
+                  </Badge>
                 </div>
                 <div className="relative z-10">
                   <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Hafıza</h3>
