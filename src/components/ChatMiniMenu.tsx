@@ -44,7 +44,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       action: () => onViewChange("blocked-users"),
       dotColor: "bg-red-400",
       isActive: currentView === "blocked-users",
-      alt: "Engellediklerim",
+      alt: "Yasaklı",
     },
     {
       textIcon: "/icons/anasayfa-text.svg",
