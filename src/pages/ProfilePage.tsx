@@ -872,14 +872,17 @@ const ProfilePage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">{isOwnProfile ? "Profil" : `${profileData.username}`}</h1>
-            {isUserOnline && !isOwnProfile && (
-              <div className="flex items-center gap-1 mt-0.5">
-                <div className="w-3 h-3 bg-green-500 rounded-full" />
-                <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
-              </div>
-            )}
+          <div className="flex-1 flex items-center gap-2">
+            <img src="/icons/profil-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
+            <div>
+              <h1 className="text-lg font-bold text-white">{isOwnProfile ? "Profil" : `${profileData.username}`}</h1>
+              {isUserOnline && !isOwnProfile && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div className="w-3 h-3 bg-green-500 rounded-full" />
+                  <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
