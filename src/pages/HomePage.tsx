@@ -670,7 +670,7 @@ const HomePage = () => {
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
-          <div className="mt-2 px-5">
+          <div className="mt-2">
             {(() => {
               const level = levelData.level;
               let starGradient = "from-amber-400 to-orange-500";
@@ -692,7 +692,7 @@ const HomePage = () => {
 
               return (
                 <div
-                  className="relative flex items-center justify-between px-5 py-4 w-full"
+                  className="relative flex items-center justify-between px-8 py-4 w-full"
                   style={{
                     backgroundImage: "url('/alttaban/seviyealttaban.svg')",
                     backgroundSize: "100% 100%",
