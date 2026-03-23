@@ -730,9 +730,9 @@ const HomePage = () => {
           <div className="px-5 mt-3">
             <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
               {[
-                { img: "/degistirIkon.png", count: jokers.degistir, name: "Değiştir" },
-                { img: "/fisildaIkon.png", count: jokers.fisilida, name: "Fısılda" },
-                { img: "/senyazIkon.png", count: jokers.senYaz, name: "Sen Yaz" },
+                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
+                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
+                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz" },
               ].map((j, i) => (
                 <div
                   key={i}
