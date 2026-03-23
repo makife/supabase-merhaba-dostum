@@ -635,8 +635,18 @@ const HomePage = () => {
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
             {/* Profil */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
-              <div className="relative">
+            <div
+              className="relative flex items-center gap-3 cursor-pointer rounded-2xl overflow-hidden px-3 py-2"
+              onClick={() => setShowAvatarView(true)}
+            >
+              <img
+                src="/alttaban/profilresimalttaban.svg"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill" }}
+              />
+              <div className="relative z-10">
                 <div
                   className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
@@ -654,7 +664,7 @@ const HomePage = () => {
                   </div>
                 )}
               </div>
-              <div>
+              <div className="relative z-10">
                 <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
                   {profile?.username || "Misafir"}
                 </h2>
@@ -668,13 +678,20 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/market");
               }}
-              className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
+              className="relative flex items-center gap-2 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer overflow-hidden"
             >
-              <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+              <img
+                src="/alttaban/murekkepalttaban.svg"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full pointer-events-none select-none z-0"
+                style={{ objectFit: "fill" }}
+              />
+              <div className="relative z-10 w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
                 <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
               </div>
-              <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
+              <span className="relative z-10 text-base font-bold text-white">{profile?.ink_count || 0}</span>
+              <div className="relative z-10 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
                 <span className="text-xs leading-none text-white font-bold">+</span>
               </div>
             </div>
