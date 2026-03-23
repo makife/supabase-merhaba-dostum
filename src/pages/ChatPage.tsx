@@ -358,9 +358,14 @@ export default function ChatPage() {
             )}
 
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
-                {title}
-              </h1>
+              <div className="flex items-center gap-2">
+                {!showBackButton && (
+                  <img src="/icons/sohbet-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
+                )}
+                <h1 className="text-xl font-bold font-bungee tracking-wider uppercase bg-gradient-to-r from-yellow-300 via-white to-yellow-300 bg-clip-text text-transparent drop-shadow-lg">
+                  {title}
+                </h1>
+              </div>
             </div>
           </div>
 
