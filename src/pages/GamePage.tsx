@@ -7902,7 +7902,7 @@ const GamePage = ({
                       disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/degistirIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
+                      <img src="/icons/degistir.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <Badge
                         variant="secondary"
