@@ -1,4 +1,4 @@
-import { Delete } from "lucide-react";
+
 
 const ROWS = [
   ["E", "R", "T", "Y", "U", "I", "O", "P", "Ğ", "Ü"],
