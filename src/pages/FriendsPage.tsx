@@ -273,9 +273,9 @@ const FriendsPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <img src="/icons/arkadaslar-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
-            <h1 className="text-lg font-bold">Arkadaşlarım</h1>
-          </div>
+  <img src="/icons/arkadaslar-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
+  <img src="/icons/arkadaslar-text.svg" alt="Arkadaşlarım" className="h-7 object-contain" />
+</div>
           {pendingRequests.length > 0 && (
             <div className="ml-auto bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
               {pendingRequests.length}
