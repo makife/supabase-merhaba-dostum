@@ -23,9 +23,9 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
             <button
               onClick={onSubmit}
               disabled={disabled}
-              className="h-10 px-3 rounded-lg bg-emerald-600 text-white text-[11px] font-bold active:scale-90 transition-transform disabled:opacity-30 shrink-0"
+              className="h-10 px-3 rounded-lg bg-emerald-600 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
-              Gönder
+              <img src="/icons/gonder-gorsel.svg" alt="Gönder" className="w-5 h-5" />
             </button>
           )}
           {row.map((letter) => {
