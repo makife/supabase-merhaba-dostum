@@ -456,7 +456,7 @@ const LeaderboardPage = () => {
 
             <div className="flex items-center gap-2">
   <img src="/icons/liderlik-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
-  <img src="/icons/liderlik-text.svg" alt="Liderlik" className="h-9 object-contain" />
+  <img src="/icons/liderlik-text.svg" alt="Liderlik" className="h-7 object-contain" />
 </div>
 
             <div className="w-20" />
