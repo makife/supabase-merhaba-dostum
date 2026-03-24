@@ -7962,12 +7962,10 @@ const GamePage = ({
                     >
                       <img src="/icons/senyaz.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
-                      <Badge
-                        variant="secondary"
-                        className="joker-badge absolute -top-1 -right-1 text-xs min-w-5 h-5 flex items-center justify-center"
-                      >
-                        {jokers.senYaz}
-                      </Badge>
+                      <div className="absolute -top-2 -right-2 flex items-center justify-center">
+                        <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
+                        <span className="absolute text-[9px] font-bold text-white">{jokers.senYaz}</span>
+                      </div>
                     </button>
                   </div>
                 </div>
