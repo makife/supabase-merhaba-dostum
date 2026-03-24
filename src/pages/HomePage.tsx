@@ -881,9 +881,10 @@ const HomePage = () => {
                             <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
-                        <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-xs px-2 py-0.5 shadow-sm">
-                          + {totalCredits - 5} Sayfa
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-6 h-6 object-contain" />
+                          <span className="text-white text-xs font-semibold">+{totalCredits - 5}</span>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex gap-2">
