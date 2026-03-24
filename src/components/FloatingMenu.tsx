@@ -150,10 +150,15 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const rowBase =
     "inline-flex w-fit min-h-[56px] items-center gap-3 cursor-pointer select-none " +
     "rounded-2xl px-4 py-2 " +
-    "bg-[#1a2744] " +
     "border border-white/80 " +
-    "active:bg-gray-600 " +
+    "active:opacity-80 " +
     "shadow-md whitespace-nowrap";
+
+  const rowBgStyle: React.CSSProperties = {
+    backgroundImage: "url('/alttaban/menubutonalttaban.svg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
 
   const slideStyle: React.CSSProperties = {
     transform: isOpen ? "translateX(0)" : "translateX(120%)",
@@ -174,7 +179,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     bgColor: string,
     badge?: React.ReactNode
   ) => (
-    <div className={rowBase}>
+    <div className={rowBase} style={rowBgStyle}>
       {/* Dot */}
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
 
