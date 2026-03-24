@@ -407,7 +407,7 @@ export default function ChatPage() {
 
   const renderUsersList = () => {
     return (
-      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="h-full overflow-y-auto bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0">
         <div className="p-4 space-y-3">
           {allUsers.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -518,7 +518,7 @@ export default function ChatPage() {
   };
 
   const renderBlockedUsersList = () => (
-    <div className="h-full overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="h-full overflow-y-auto p-4 bg-gradient-to-b from-[#2D3436] to-[#3d4548] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0">
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
