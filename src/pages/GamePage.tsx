@@ -7875,8 +7875,9 @@ const GamePage = ({
                   className="rounded-2xl border border-white/10 p-2 mb-1"
                   style={{ background: "rgba(30,30,50,0.7)" }}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">🎭 Jokerler</span>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <img src="/icons/jokerler-gorsel.svg" className="w-5 h-5 object-contain" alt="Jokerler" />
+                    <img src="/icons/jokerler-text.svg" className="h-3.5 object-contain" alt="Jokerler" />
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {/* Değiştir */}
@@ -7901,7 +7902,7 @@ const GamePage = ({
                       disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/degistirIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
+                      <img src="/icons/degistir.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <Badge
                         variant="secondary"
@@ -7932,7 +7933,7 @@ const GamePage = ({
                       disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/fisildaIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
+                      <img src="/icons/fisilda.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <Badge
                         variant="secondary"
@@ -7963,7 +7964,7 @@ const GamePage = ({
                       disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/senyazIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
+                      <img src="/icons/senyaz.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <Badge
                         variant="secondary"
