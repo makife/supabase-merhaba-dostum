@@ -873,7 +873,7 @@ const ProfilePage = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1 flex items-center gap-2">
-  <img src="/icons/profil-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
+  <img src="/icons/profil-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
   <div>
     {isOwnProfile ? (
       <img src="/icons/profil-text.svg" alt="Profil" className="h-7 object-contain" />
