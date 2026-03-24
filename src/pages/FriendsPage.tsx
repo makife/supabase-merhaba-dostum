@@ -273,7 +273,7 @@ const FriendsPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-  <img src="/icons/arkadaslar-gorsel.svg" alt="" className="w-7 h-7 object-contain drop-shadow-md" />
+  <img src="/icons/arkadaslar-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
   <img src="/icons/arkadaslar-text.svg" alt="Arkadaşlarım" className="h-7 object-contain" />
 </div>
           {pendingRequests.length > 0 && (
