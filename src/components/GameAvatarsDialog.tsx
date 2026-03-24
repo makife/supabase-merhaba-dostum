@@ -22,11 +22,7 @@ export const GameAvatarsDialog = ({
 }: GameAvatarsDialogProps) => {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
 
-  // E serisi ve K serisi avatar dosyalarını oluştur
-  const eAvatars = Array.from({ length: 18 }, (_, i) => `/${i + 1}e.jpg`);
-  const kAvatars = Array.from({ length: 18 }, (_, i) => `/${i + 1}k.jpg`);
-  
-  const allAvatars = [...eAvatars, ...kAvatars];
+  const allAvatars = Array.from({ length: 49 }, (_, i) => `/avatarlar/${i + 1}.svg`);
 
   const handleAvatarSelect = (avatarPath: string) => {
     setSelectedAvatar(avatarPath);
