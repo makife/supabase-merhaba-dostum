@@ -51,7 +51,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
               disabled={disabled}
               className="h-10 px-3 rounded-lg bg-white/10 border border-white/10 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
-              <Delete className="w-5 h-5" />
+              <img src="/icons/silgi-gorsel.svg" alt="Sil" className="w-5 h-5" />
             </button>
           )}
         </div>
