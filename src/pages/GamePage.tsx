@@ -7933,7 +7933,7 @@ const GamePage = ({
                       disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/fisildaIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
+                      <img src="/icons/fisilda.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <Badge
                         variant="secondary"
