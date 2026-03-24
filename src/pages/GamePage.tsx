@@ -8134,7 +8134,7 @@ const GamePage = ({
                     disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
                     style={{ touchAction: "manipulation" }}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <img src="/icons/silgi-gorsel.svg" alt="Sil" className="w-5 h-5 mr-2" />
                     Sil
                   </Button>
 
