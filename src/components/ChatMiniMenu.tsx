@@ -77,7 +77,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
   const renderRow = (dot: string, textSrc: string, textAlt: string, gorselSrc: string, isActive?: boolean) => (
     <div className={rowBase}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
-      <img src={textSrc} alt={textAlt} className="block h-4 w-auto max-w-none flex-shrink-0" />
+      <img src={textSrc} alt={textAlt} className="block h-5 w-28 object-contain object-left flex-shrink-0" />
       <div
         className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}
       >
