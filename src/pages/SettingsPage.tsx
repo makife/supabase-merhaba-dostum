@@ -407,7 +407,7 @@ const SettingsPage = () => {
 
             <div className="flex items-center gap-2">
   <img src="/icons/ayarlar-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
-  <img src="/icons/ayarlar-text.svg" alt="Ayarlar" className="h-9 object-contain" />
+  <img src="/icons/ayarlar-text.svg" alt="Ayarlar" className="h-7 object-contain" />
 </div>
 
             <div className="w-20" />
