@@ -182,7 +182,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <img
         src={textSrc}
         alt={textAlt}
-        className="block h-4 w-auto max-w-none flex-shrink-0"
+        className="block h-5 w-28 object-contain object-left flex-shrink-0"
       />
 
       {/* Görsel ikon */}
