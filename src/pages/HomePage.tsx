@@ -883,7 +883,7 @@ const HomePage = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-6 h-6 object-contain" />
-                          <span className="text-white text-xs font-semibold">+{totalCredits - 5}</span>
+                          <span className="text-white text-xs font-semibold">{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
