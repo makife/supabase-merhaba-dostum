@@ -881,9 +881,9 @@ const HomePage = () => {
                             <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-6 h-6">
+                        <div className="relative inline-flex items-center justify-center w-7 h-7">
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-7 h-7 object-contain" />
-                          <span className="absolute text-white text-[9px] font-bold">+{totalCredits - 5}</span>
+                          <span className="absolute text-green text-[9px] font-bold">+{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
