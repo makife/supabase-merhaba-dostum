@@ -7964,7 +7964,7 @@ const GamePage = ({
                       disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
                       style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                     >
-                      <img src="/senyazIkon.png" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
+                      <img src="/icons/senyaz.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <Badge
                         variant="secondary"
