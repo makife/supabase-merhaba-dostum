@@ -7,7 +7,7 @@ import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { SafePushNotifications } from "@/utils/safePluginWrapper";
+// SafePushNotifications artık kullanılmıyor — doğrudan Capacitor plugin kullanılıyor
 import nativeStorage from "@/utils/nativeStorage";
 import { getValidFcmToken, isApnsTokenFormat } from "@/utils/pushToken";
 
