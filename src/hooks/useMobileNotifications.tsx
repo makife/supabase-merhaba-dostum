@@ -139,9 +139,9 @@ export const useMobileNotifications = () => {
   // Core registration logic — assumes permission is already granted
   // 🔥 FIX: user?.id'yi dependency'den kaldırdık — listener closure'da ref kullanıyoruz
   const registerAndListen = useCallback(async (PushNotifications: PushNotificationsType) => {
-    // Listener'ları SADECE BİR KEZ ekle
-    if (!listenersRegistered.current) {
-      listenersRegistered.current = true;
+    // Listener'ları SADECE BİR KEZ ekle (GLOBAL flag)
+    if (!_globalListenersRegistered) {
+      _globalListenersRegistered = true;
 
       await PushNotifications.addListener("registration", async (token) => {
         console.log("📱 Registration event geldi, raw token:", token.value?.substring(0, 40) + "...");
@@ -190,12 +190,12 @@ export const useMobileNotifications = () => {
         handleNotificationAction(notification);
       });
 
-      console.log("📱 Tüm listener'lar eklendi");
+      console.log("📱 Tüm listener'lar eklendi (global)");
     }
 
-    // Register'ı SADECE BİR KEZ çağır
-    if (!registerCalled.current) {
-      registerCalled.current = true;
+    // Register'ı SADECE BİR KEZ çağır (GLOBAL flag)
+    if (!_globalRegisterCalled) {
+      _globalRegisterCalled = true;
       console.log("📱 register() çağrılıyor...");
       await PushNotifications.register();
       await scheduleIosRetries(PushNotifications);
