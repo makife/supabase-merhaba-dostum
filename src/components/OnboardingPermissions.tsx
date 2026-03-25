@@ -7,7 +7,7 @@ import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { SafePushNotifications } from "@/utils/safePluginWrapper";
+// SafePushNotifications artık kullanılmıyor — doğrudan Capacitor plugin kullanılıyor
 import nativeStorage from "@/utils/nativeStorage";
 import { getValidFcmToken, isApnsTokenFormat } from "@/utils/pushToken";
 
@@ -218,12 +218,32 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
 
     if (isMobile) {
       try {
-        const permission = await SafePushNotifications.requestPermissions();
+        // 🔥 FIX: SafePushNotifications yerine doğrudan Capacitor plugin kullan
+        // SafePushNotifications ayrı module cache'i ile çakışma yaratıyordu
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+        
+        // Önce izin durumunu kontrol et — iOS'ta sadece "prompt" ise dialog açılır
+        const currentStatus = await PushNotifications.checkPermissions();
+        console.log("📱 [Onboarding] Mevcut izin durumu:", currentStatus.receive);
+        
+        if (currentStatus.receive === "granted") {
+          // Zaten izin var, sadece register yap
+          granted.notifications = true;
+          console.log("✅ [Onboarding] Push izni zaten granted");
+        } else if (currentStatus.receive === "prompt" || currentStatus.receive === "prompt-with-rationale") {
+          // İzin iste — iOS native dialog burada açılacak
+          console.log("📱 [Onboarding] iOS bildirim izni isteniyor...");
+          const result = await PushNotifications.requestPermissions();
+          console.log("📱 [Onboarding] İzin sonucu:", result.receive);
+          granted.notifications = result.receive === "granted";
+        } else {
+          console.log("❌ [Onboarding] Push izni denied durumunda");
+        }
 
-        if (permission?.receive === "granted") {
-          await SafePushNotifications.addListenerAsync("registration", async (token: { value?: string }) => {
+        if (granted.notifications) {
+          // Listener'ları ekle
+          await PushNotifications.addListener("registration", async (token: { value?: string }) => {
             const safeToken = getValidFcmToken(token?.value);
-
             if (!safeToken) {
               console.warn(
                 isApnsTokenFormat(token?.value)
@@ -232,23 +252,19 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
               );
               return;
             }
-
             console.log("✅ [Onboarding] FCM token alındı:", safeToken.substring(0, 30) + "...");
-
             if (user?.id) {
               await savePushToken(user.id, safeToken);
             } else {
               await nativeStorage.setJSON("push_token_pending", { token: safeToken });
-              localStorage.setItem("push_token_pending", JSON.stringify({ token: safeToken }));
             }
           });
 
-          await SafePushNotifications.addListenerAsync("registrationError", (error: any) => {
+          await PushNotifications.addListener("registrationError", (error: any) => {
             console.error("❌ [Onboarding] Push registration hatası:", error?.error ?? error);
           });
 
-          await SafePushNotifications.register();
-          granted.notifications = true;
+          await PushNotifications.register();
           console.log("✅ [Onboarding] Push notifications registered successfully");
         }
       } catch (err) {
@@ -290,7 +306,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       setIsLoading(true);
       try {
         const permissionPromise = requestPermissions();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
         await Promise.race([permissionPromise, timeoutPromise]);
 
         localStorage.setItem("kelimeci-permissions-completed", "true");

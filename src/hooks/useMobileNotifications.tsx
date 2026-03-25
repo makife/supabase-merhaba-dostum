@@ -13,13 +13,17 @@ type PushNotificationsType = typeof import("@capacitor/push-notifications").Push
 // iOS cold-start retry intervals (ms) — progressive backoff
 const IOS_RETRY_DELAYS = [2500, 5000, 10000];
 
+// 🔥 Global singleton flags — tüm hook instance'ları arasında paylaşılır
+// Böylece birden fazla hook instance'ı aynı anda register/listener eklemez
+let _globalListenersRegistered = false;
+let _globalRegisterCalled = false;
+let _globalPermissionRequesting = false;
+
 export const useMobileNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [pushToken, setPushToken] = useState<string>("");
   const { user } = useAuth();
   const { toast } = useToast();
-  const listenersRegistered = useRef(false);
-  const registerCalled = useRef(false);
   const latestPushTokenRef = useRef("");
   const retryTimeoutsRef = useRef<number[]>([]);
   const pushModuleRef = useRef<PushNotificationsType | null>(null);
@@ -135,9 +139,9 @@ export const useMobileNotifications = () => {
   // Core registration logic — assumes permission is already granted
   // 🔥 FIX: user?.id'yi dependency'den kaldırdık — listener closure'da ref kullanıyoruz
   const registerAndListen = useCallback(async (PushNotifications: PushNotificationsType) => {
-    // Listener'ları SADECE BİR KEZ ekle
-    if (!listenersRegistered.current) {
-      listenersRegistered.current = true;
+    // Listener'ları SADECE BİR KEZ ekle (GLOBAL flag)
+    if (!_globalListenersRegistered) {
+      _globalListenersRegistered = true;
 
       await PushNotifications.addListener("registration", async (token) => {
         console.log("📱 Registration event geldi, raw token:", token.value?.substring(0, 40) + "...");
@@ -186,12 +190,12 @@ export const useMobileNotifications = () => {
         handleNotificationAction(notification);
       });
 
-      console.log("📱 Tüm listener'lar eklendi");
+      console.log("📱 Tüm listener'lar eklendi (global)");
     }
 
-    // Register'ı SADECE BİR KEZ çağır
-    if (!registerCalled.current) {
-      registerCalled.current = true;
+    // Register'ı SADECE BİR KEZ çağır (GLOBAL flag)
+    if (!_globalRegisterCalled) {
+      _globalRegisterCalled = true;
       console.log("📱 register() çağrılıyor...");
       await PushNotifications.register();
       await scheduleIosRetries(PushNotifications);
@@ -200,12 +204,14 @@ export const useMobileNotifications = () => {
   }, [clearAllRetries, savePushToken, scheduleIosRetries]);
 
   // Initialize push notifications
+  // 🔥 FIX: "prompt" durumunda izin İSTEMEZ — sadece zaten granted ise register yapar
+  // İzin isteme işi OnboardingPermissions veya SettingsPage'den yapılır
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
+      // Web'de sadece mevcut izni kontrol et, isteme
       try {
         if ("Notification" in window) {
-          const permission = await Notification.requestPermission();
-          setIsPermissionGranted(permission === "granted");
+          setIsPermissionGranted(Notification.permission === "granted");
         }
       } catch (error) {
         console.log("Web notification error:", error);
@@ -220,27 +226,17 @@ export const useMobileNotifications = () => {
         return;
       }
 
-      console.log("📱 Push bildirimleri başlatılıyor...");
+      console.log("📱 Push bildirimleri kontrol ediliyor...");
       const permissionStatus = await PushNotifications.checkPermissions();
       console.log("📱 İzin durumu:", permissionStatus.receive);
 
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
         await registerAndListen(PushNotifications);
-      } else if (permissionStatus.receive === "prompt" || permissionStatus.receive === "prompt-with-rationale") {
-        console.log("📱 iOS bildirim izni isteniyor...");
-        const result = await PushNotifications.requestPermissions();
-        console.log("📱 İzin sonucu:", result.receive);
-        if (result.receive === "granted") {
-          setIsPermissionGranted(true);
-          await registerAndListen(PushNotifications);
-        } else {
-          setIsPermissionGranted(false);
-          console.log("❌ Push notification izni reddedildi");
-        }
       } else {
+        // 🔥 "prompt" veya "denied" → izin İSTEME, sadece state güncelle
         setIsPermissionGranted(false);
-        console.log("❌ Push notification izni:", permissionStatus.receive);
+        console.log("📱 Push izni henüz verilmemiş:", permissionStatus.receive, "— onboarding/ayarlar'dan istenecek");
       }
     } catch (error) {
       console.error("Push notification başlatma hatası:", error);
@@ -440,8 +436,8 @@ export const useMobileNotifications = () => {
       const granted = result.receive === "granted";
       setIsPermissionGranted(granted);
       if (granted) {
-        listenersRegistered.current = false;
-        registerCalled.current = false;
+        _globalListenersRegistered = false;
+        _globalRegisterCalled = false;
         await initializePushNotifications();
       }
       return granted;
