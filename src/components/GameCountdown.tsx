@@ -228,6 +228,11 @@ const GameCountdown = memo(
     const currentValueRef = useRef<number>(5);
     const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2, 8));
     const musicFadedRef = useRef(false);
+    
+    // 🔒 GEÇ MOUNT GARANTİSİ: 5'in mutlaka gösterilmesini sağla
+    const hasShown5Ref = useRef(false);
+    const forced5StartTimeRef = useRef<number>(0);
+    const MIN_DISPLAY_5_MS = 500; // 5 en az 500ms gösterilmeli
 
     const playCountdownSound = () => {
       if (!isSoundEffectsEnabled()) return;
@@ -264,6 +269,8 @@ const GameCountdown = memo(
       hasInitializedRef.current = false;
       soundPlayedRef.current.clear();
       currentValueRef.current = 0;
+      hasShown5Ref.current = false;
+      forced5StartTimeRef.current = 0;
       setDisplayValue(null);
 
       return () => {
@@ -291,11 +298,10 @@ const GameCountdown = memo(
       completedRef.current = false;
       soundPlayedRef.current.clear();
       currentValueRef.current = 0;
+      hasShown5Ref.current = false;
+      forced5StartTimeRef.current = 0;
       hasInitializedRef.current = true;
 
-      // 🔧 BÜYÜK FIX: Basit ve stabil countdown mantığı
-      // serverStartTime = countdown'ın BAŞLAMASI gereken an
-      // Eğer şu an veya çok yakınsa, doğrudan 5'ten başla
       const startTime = new Date(serverStartTime).getTime();
       const serverNow = Date.now() + serverTimeOffset;
       const timeDiff = startTime - serverNow;
@@ -303,7 +309,6 @@ const GameCountdown = memo(
       console.log(`⏱️ [${instanceId}] Timing check: startTime=${startTime}, serverNow=${serverNow}, diff=${timeDiff}ms`);
 
       // Tolerans kontrolü: 5 saniyeden fazla geçmişse hemen bitir
-      // 🔒 Eğer çok geç kalmışsak (5 saniyeden fazla geçmiş), hemen bitir
       if (timeDiff < -5500) {
         console.log(`🏁 [${instanceId}] Countdown zaten bitmiş (${timeDiff}ms geçmiş), hemen tamamla`);
         setDisplayValue("start");
@@ -320,9 +325,7 @@ const GameCountdown = memo(
         return;
       }
 
-      // 🎯 SERVER-ANCHORED COUNTDOWN: Her tick'te sunucu zamanına göre hesapla
-      // Bu sayede iOS ve Android aynı anda aynı sayıyı gösterir
-
+      // 🎯 SERVER-ANCHORED COUNTDOWN with GUARANTEED 5 START
       const startCountdownAnchored = () => {
         console.log(`🔢 [${instanceId}] Server-anchored countdown başlıyor! startTime=${startTime}`);
 
@@ -332,7 +335,21 @@ const GameCountdown = memo(
           fadeOutBackgroundMusic(4500);
         }
 
+        // 🔒 MUTLAKA 5'İ GÖSTER - geç mount olsa bile
+        if (!hasShown5Ref.current) {
+          hasShown5Ref.current = true;
+          forced5StartTimeRef.current = Date.now();
+          currentValueRef.current = 5;
+          setDisplayValue(5);
+          console.log(`🔒 [${instanceId}] 5 ZORLA gösterildi (geç mount garantisi)`);
+          if (!soundPlayedRef.current.has(5)) {
+            soundPlayedRef.current.add(5);
+            playCountdownSound();
+          }
+        }
+
         // Tick fonksiyonu: sunucu zamanına göre hangi sayıda olmalıyız?
+        // AMA 5'in minimum süre gösterilmesi garanti
         const tick = () => {
           if (!mountedRef.current || completedRef.current) {
             cleanupAllTimers();
@@ -343,11 +360,26 @@ const GameCountdown = memo(
           const phase = getCountdownPhase(now, startTime);
 
           if (phase === null) {
+            // Henüz başlamadı, 5'i göstermeye devam et
+            return;
+          }
+
+          // 🔒 5'in minimum gösterim süresi kontrolü
+          const timeSince5 = Date.now() - forced5StartTimeRef.current;
+          if (forced5StartTimeRef.current > 0 && timeSince5 < MIN_DISPLAY_5_MS) {
+            // 5 hala minimum süresini doldurmadı, bekle
             return;
           }
 
           if (typeof phase === "number") {
-            if (currentValueRef.current !== phase) {
+            // 🔒 Asla 5'ten büyük olmaz, asla geriye gitmez (5→4→3→2→1)
+            if (phase < currentValueRef.current || currentValueRef.current === 0) {
+              // Sadece ileri yönde değişime izin ver (sayı küçülmeli)
+              if (currentValueRef.current === 0) {
+                // İlk değer - zaten 5 gösteriliyor, sunucu 5 diyorsa atla
+                if (phase === 5) return;
+              }
+              
               currentValueRef.current = phase;
               console.log(`🔢 [${instanceIdRef.current}] ${phase} (startDiff=${startTime - now}ms)`);
               setDisplayValue(phase);
@@ -384,11 +416,23 @@ const GameCountdown = memo(
           }
         };
 
-        // İlk değeri beklemeden hemen hesapla
-        tick();
+        // İlk tick'i minimum 5 gösterim süresinden sonra başlat
+        const now = Date.now() + serverTimeOffset;
+        const elapsed = now - startTime;
+        
+        // Eğer zaten geçmiş zaman varsa (geç mount), 5'i gösterdikten sonra hızlıca yakala
+        if (elapsed > 0) {
+          console.log(`⚡ [${instanceId}] Geç mount: ${elapsed}ms geçmiş, 5 gösterildikten sonra yakalanacak`);
+        }
 
-        // Sonra sık aralıkla senkron kal
-        intervalRef.current = setInterval(tick, 100);
+        // MIN_DISPLAY_5_MS sonra tick'leri başlat (5'in gösterilmesini garanti et)
+        const delayBeforeTicks = Math.max(0, MIN_DISPLAY_5_MS - (Date.now() - forced5StartTimeRef.current));
+        
+        setTimeout(() => {
+          if (!mountedRef.current || completedRef.current) return;
+          tick(); // İlk tick
+          intervalRef.current = setInterval(tick, 100);
+        }, delayBeforeTicks);
       };
 
       // Son 1 saniyeye girdiysek hemen 5'i göster, daha erkense son saniyede başlat
@@ -396,7 +440,7 @@ const GameCountdown = memo(
         console.log(`⚡ [${instanceId}] Hemen başlıyor (timeDiff=${timeDiff}ms)`);
         startCountdownAnchored();
       } else {
-        // Gereksiz boş ekran oluşturmadan son 1 saniyede countdown'ı mount et
+        // Lead-up: Erken mount durumunda bekleme
         console.log(`⏳ [${instanceId}] ${timeDiff - 1000}ms bekleyip son saniyede başlayacak`);
         startTimeoutRef.current = setTimeout(() => {
           if (mountedRef.current && !completedRef.current) {
