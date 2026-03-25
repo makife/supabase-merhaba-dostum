@@ -364,7 +364,7 @@ const SettingsPage = () => {
       <div class="space-y-4">
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
-          <p class="text-lg font-medium">Versiyon 5.6.9</p>
+          <p class="text-lg font-medium">Versiyon 5.7.1</p>
         </div>
         
         <div class="space-y-3">
