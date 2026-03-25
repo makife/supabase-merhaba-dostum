@@ -196,7 +196,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className="absolute inset-0 z-10 flex items-center justify-center bg-white rounded-lg"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-white rounded-lg"
           >
             <img src={playerEmoji.emojiSrc} alt="emoji" className="w-40 h-40 object-contain" />
           </motion.div>
@@ -213,7 +213,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className="absolute inset-0 z-10 flex items-center justify-center bg-white rounded-lg"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-white rounded-lg"
           >
             <img src={opponentEmoji.emojiSrc} alt="emoji" className="w-40 h-40 object-contain" />
           </motion.div>
