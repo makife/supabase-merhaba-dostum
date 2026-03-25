@@ -341,6 +341,7 @@ const GameCountdown = memo(
         if (!hasShown5Ref.current) {
           hasShown5Ref.current = true;
           forced5StartTimeRef.current = Date.now();
+          lastValueChangeTimeRef.current = Date.now();
           currentValueRef.current = 5;
           setDisplayValue(5);
           console.log(`🔒 [${instanceId}] 5 ZORLA gösterildi (geç mount garantisi)`);
@@ -351,7 +352,7 @@ const GameCountdown = memo(
         }
 
         // Tick fonksiyonu: sunucu zamanına göre hangi sayıda olmalıyız?
-        // AMA 5'in minimum süre gösterilmesi garanti
+        // 🔒 SIRALIK GARANTİ: Asla sayı atlamaz, her sayı MIN_DISPLAY_MS gösterilir
         const tick = () => {
           if (!mountedRef.current || completedRef.current) {
             cleanupAllTimers();
@@ -366,31 +367,45 @@ const GameCountdown = memo(
             return;
           }
 
-          // 🔒 5'in minimum gösterim süresi kontrolü
-          const timeSince5 = Date.now() - forced5StartTimeRef.current;
-          if (forced5StartTimeRef.current > 0 && timeSince5 < MIN_DISPLAY_5_MS) {
-            // 5 hala minimum süresini doldurmadı, bekle
+          // 🔒 Mevcut sayının minimum gösterim süresi kontrolü
+          const timeSinceLastChange = Date.now() - lastValueChangeTimeRef.current;
+          if (timeSinceLastChange < MIN_DISPLAY_MS) {
+            // Mevcut sayı hala minimum süresini doldurmadı, bekle
             return;
           }
 
           if (typeof phase === "number") {
-            // 🔒 Asla 5'ten büyük olmaz, asla geriye gitmez (5→4→3→2→1)
-            if (phase < currentValueRef.current || currentValueRef.current === 0) {
-              // Sadece ileri yönde değişime izin ver (sayı küçülmeli)
-              if (currentValueRef.current === 0) {
-                // İlk değer - zaten 5 gösteriliyor, sunucu 5 diyorsa atla
-                if (phase === 5) return;
-              }
-              
-              currentValueRef.current = phase;
-              console.log(`🔢 [${instanceIdRef.current}] ${phase} (startDiff=${startTime - now}ms)`);
-              setDisplayValue(phase);
-              if (!soundPlayedRef.current.has(phase)) {
-                soundPlayedRef.current.add(phase);
-                playCountdownSound();
+            // 🔒 SIRALIK SAYIM: Sadece 1 azalt (5→4→3→2→1), asla atlama
+            const nextValue = currentValueRef.current - 1;
+            
+            if (nextValue >= 1 && nextValue < currentValueRef.current) {
+              // Sunucu zamanı bu sayıya ulaştı mı veya geçti mi kontrol et
+              if (phase <= nextValue) {
+                currentValueRef.current = nextValue;
+                lastValueChangeTimeRef.current = Date.now();
+                console.log(`🔢 [${instanceIdRef.current}] ${nextValue} (serverPhase=${phase}, startDiff=${startTime - now}ms)`);
+                setDisplayValue(nextValue);
+                if (!soundPlayedRef.current.has(nextValue)) {
+                  soundPlayedRef.current.add(nextValue);
+                  playCountdownSound();
+                }
               }
             }
           } else {
+            // Sunucu "start" diyor - ama önce kalan sayıları göster
+            const nextValue = currentValueRef.current - 1;
+            if (nextValue >= 1) {
+              // Hala gösterilmemiş sayılar var, hızlıca göster
+              currentValueRef.current = nextValue;
+              lastValueChangeTimeRef.current = Date.now();
+              setDisplayValue(nextValue);
+              if (!soundPlayedRef.current.has(nextValue)) {
+                soundPlayedRef.current.add(nextValue);
+                playCountdownSound();
+              }
+              return; // Henüz start'a geçme
+            }
+            
             // BAŞLA!
             if (!soundPlayedRef.current.has("start")) {
               console.log(`🏁 [${instanceIdRef.current}] BAŞLA!`);
@@ -418,7 +433,7 @@ const GameCountdown = memo(
           }
         };
 
-        // İlk tick'i minimum 5 gösterim süresinden sonra başlat
+        // İlk tick'i minimum gösterim süresinden sonra başlat
         const now = Date.now() + serverTimeOffset;
         const elapsed = now - startTime;
         
@@ -427,8 +442,8 @@ const GameCountdown = memo(
           console.log(`⚡ [${instanceId}] Geç mount: ${elapsed}ms geçmiş, 5 gösterildikten sonra yakalanacak`);
         }
 
-        // MIN_DISPLAY_5_MS sonra tick'leri başlat (5'in gösterilmesini garanti et)
-        const delayBeforeTicks = Math.max(0, MIN_DISPLAY_5_MS - (Date.now() - forced5StartTimeRef.current));
+        // MIN_DISPLAY_MS sonra tick'leri başlat (5'in gösterilmesini garanti et)
+        const delayBeforeTicks = Math.max(0, MIN_DISPLAY_MS - (Date.now() - forced5StartTimeRef.current));
         
         setTimeout(() => {
           if (!mountedRef.current || completedRef.current) return;
