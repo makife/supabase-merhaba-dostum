@@ -301,6 +301,7 @@ const GameCountdown = memo(
       currentValueRef.current = 0;
       hasShown5Ref.current = false;
       forced5StartTimeRef.current = 0;
+      lastValueChangeTimeRef.current = 0;
       hasInitializedRef.current = true;
 
       const startTime = new Date(serverStartTime).getTime();
