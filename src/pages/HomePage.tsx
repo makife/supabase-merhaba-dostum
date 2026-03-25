@@ -112,7 +112,7 @@ const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
   // 🔧 FIX: Math.floor kullanarak tutarlı hesaplama
   const daysRemaining = Math.floor((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   if (daysRemaining >= 300) return "yearly";
-  if (daysRemaining >= 25) return "monthly";
+  if (daysRemaining >= 1) return "monthly";
   return "short";
 };
 
