@@ -204,12 +204,14 @@ export const useMobileNotifications = () => {
   }, [clearAllRetries, savePushToken, scheduleIosRetries]);
 
   // Initialize push notifications
+  // 🔥 FIX: "prompt" durumunda izin İSTEMEZ — sadece zaten granted ise register yapar
+  // İzin isteme işi OnboardingPermissions veya SettingsPage'den yapılır
   const initializePushNotifications = useCallback(async () => {
     if (!isMobile) {
+      // Web'de sadece mevcut izni kontrol et, isteme
       try {
         if ("Notification" in window) {
-          const permission = await Notification.requestPermission();
-          setIsPermissionGranted(permission === "granted");
+          setIsPermissionGranted(Notification.permission === "granted");
         }
       } catch (error) {
         console.log("Web notification error:", error);
@@ -224,27 +226,17 @@ export const useMobileNotifications = () => {
         return;
       }
 
-      console.log("📱 Push bildirimleri başlatılıyor...");
+      console.log("📱 Push bildirimleri kontrol ediliyor...");
       const permissionStatus = await PushNotifications.checkPermissions();
       console.log("📱 İzin durumu:", permissionStatus.receive);
 
       if (permissionStatus.receive === "granted") {
         setIsPermissionGranted(true);
         await registerAndListen(PushNotifications);
-      } else if (permissionStatus.receive === "prompt" || permissionStatus.receive === "prompt-with-rationale") {
-        console.log("📱 iOS bildirim izni isteniyor...");
-        const result = await PushNotifications.requestPermissions();
-        console.log("📱 İzin sonucu:", result.receive);
-        if (result.receive === "granted") {
-          setIsPermissionGranted(true);
-          await registerAndListen(PushNotifications);
-        } else {
-          setIsPermissionGranted(false);
-          console.log("❌ Push notification izni reddedildi");
-        }
       } else {
+        // 🔥 "prompt" veya "denied" → izin İSTEME, sadece state güncelle
         setIsPermissionGranted(false);
-        console.log("❌ Push notification izni:", permissionStatus.receive);
+        console.log("📱 Push izni henüz verilmemiş:", permissionStatus.receive, "— onboarding/ayarlar'dan istenecek");
       }
     } catch (error) {
       console.error("Push notification başlatma hatası:", error);
