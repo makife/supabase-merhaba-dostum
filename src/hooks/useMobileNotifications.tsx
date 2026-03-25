@@ -23,9 +23,16 @@ export const useMobileNotifications = () => {
   const latestPushTokenRef = useRef("");
   const retryTimeoutsRef = useRef<number[]>([]);
   const pushModuleRef = useRef<PushNotificationsType | null>(null);
+  // 🔥 FIX: user.id'yi ref'te tut — listener closure'ı her zaman güncel değere erişsin
+  const userIdRef = useRef<string | null>(null);
 
   const isMobile = Capacitor.isNativePlatform();
   const isIos = isMobile && Capacitor.getPlatform() === "ios";
+
+  // 🔥 FIX: user.id değiştiğinde ref'i güncelle
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user?.id]);
 
   useEffect(() => {
     latestPushTokenRef.current = pushToken;
@@ -126,6 +133,7 @@ export const useMobileNotifications = () => {
   }, []);
 
   // Core registration logic — assumes permission is already granted
+  // 🔥 FIX: user?.id'yi dependency'den kaldırdık — listener closure'da ref kullanıyoruz
   const registerAndListen = useCallback(async (PushNotifications: PushNotificationsType) => {
     // Listener'ları SADECE BİR KEZ ekle
     if (!listenersRegistered.current) {
@@ -153,16 +161,18 @@ export const useMobileNotifications = () => {
         // Token'ı nativeStorage'a yedekle (OAuth recovery için)
         await nativeStorage.setJSON("push_token_pending", { token: safeToken });
 
-        // User hazırsa hemen kaydet
-        if (user?.id) {
-          await savePushToken(user.id, safeToken);
+        // 🔥 FIX: closure'daki user?.id yerine REF kullan — her zaman güncel
+        const currentUserId = userIdRef.current;
+        if (currentUserId) {
+          console.log("📱 [Push] Token alındı, hemen DB'ye kaydediliyor (userId:", currentUserId.substring(0, 8) + "...)");
+          await savePushToken(currentUserId, safeToken);
         } else {
           console.log("⚠️ User henüz yok, token pending olarak saklanıyor");
         }
       });
 
       await PushNotifications.addListener("registrationError", (error) => {
-        console.error("❌ Push registration error:", error?.error);
+        console.error("❌ Push registration error:", JSON.stringify(error));
       });
 
       await PushNotifications.addListener("pushNotificationReceived", (notification) => {
@@ -187,7 +197,7 @@ export const useMobileNotifications = () => {
       await scheduleIosRetries(PushNotifications);
       console.log("✅ register() başarılı");
     }
-  }, [clearAllRetries, savePushToken, scheduleIosRetries, user?.id]);
+  }, [clearAllRetries, savePushToken, scheduleIosRetries]);
 
   // Initialize push notifications
   const initializePushNotifications = useCallback(async () => {
@@ -251,7 +261,8 @@ export const useMobileNotifications = () => {
 
         listenerId = await appModule.addListener("appStateChange", async ({ isActive }) => {
           if (!isActive) return;
-          if (!user?.id) return;
+          // 🔥 FIX: ref kullan — closure'daki eski user?.id yerine
+          if (!userIdRef.current) return;
 
           // App foreground'a döndü — FCM token'ı yenile
           const PushNotifications = await getPushModule();
@@ -273,7 +284,7 @@ export const useMobileNotifications = () => {
     return () => {
       listenerId?.remove();
     };
-  }, [isIos, user?.id]);
+  }, [isIos]); // 🔥 FIX: user?.id dependency kaldırıldı, ref kullanılıyor
 
   // Initialize local notifications
   const initializeLocalNotifications = useCallback(async () => {
@@ -492,6 +503,37 @@ export const useMobileNotifications = () => {
 
     recoverPendingToken();
   }, [user?.id, isMobile, pushToken, savePushToken]);
+
+  // 🔥 NEW: User login olduğunda ve token yoksa re-register yap
+  useEffect(() => {
+    if (!user?.id || !isMobile) return;
+    if (latestPushTokenRef.current) return; // zaten token var
+
+    const reRegister = async () => {
+      try {
+        const PushNotifications = await getPushModule();
+        if (!PushNotifications) return;
+
+        const permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive !== "granted") return;
+
+        console.log("📱 [Push] User login sonrası token yok, re-register yapılıyor...");
+        // Listener'lar zaten ekli, sadece register çağır
+        await PushNotifications.register();
+
+        // iOS için ek retry
+        if (isIos) {
+          await scheduleIosRetries(PushNotifications);
+        }
+      } catch (error) {
+        console.error("Re-register hatası:", error);
+      }
+    };
+
+    // Biraz bekle ki auth tam yerleşsin
+    const timer = window.setTimeout(reRegister, 1500);
+    return () => window.clearTimeout(timer);
+  }, [user?.id, isMobile, isIos, scheduleIosRetries]);
 
   // Initialize on mount
   useEffect(() => {
