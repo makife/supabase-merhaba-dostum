@@ -129,7 +129,7 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
       gameStarted && !gameEnded ? (
         <Button
           variant="outline"
-          className="h-12 w-full bg-blue-500/20 text-blue-300 border-blue-400/50 hover:bg-blue-500/30 hover:border-blue-400 hover:text-blue-200 transition-all"
+          className="h-12 w-full bg-blue-500 text-white border-blue-600 hover:bg-blue-500 hover:border-blue-600 hover:text-white transition-none"
           onClick={() => setShowPicker(!showPicker)}
           disabled={cooldown}
         >
