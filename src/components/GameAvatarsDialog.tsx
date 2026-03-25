@@ -12,7 +12,7 @@ interface GameAvatarsDialogProps {
 export const GameAvatarsDialog = ({ open, onOpenChange, onSelect }: GameAvatarsDialogProps) => {
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
 
-  const allAvatars = Array.from({ length: 69 }, (_, i) => `/avatarlar/${i + 1}.svg`);
+  const allAvatars = Array.from({ length: 90 }, (_, i) => `/avatarlar/${i + 1}.svg`);
 
   const handleAvatarSelect = (avatarPath: string) => {
     setSelectedAvatar(avatarPath);
