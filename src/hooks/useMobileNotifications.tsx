@@ -13,13 +13,17 @@ type PushNotificationsType = typeof import("@capacitor/push-notifications").Push
 // iOS cold-start retry intervals (ms) — progressive backoff
 const IOS_RETRY_DELAYS = [2500, 5000, 10000];
 
+// 🔥 Global singleton flags — tüm hook instance'ları arasında paylaşılır
+// Böylece birden fazla hook instance'ı aynı anda register/listener eklemez
+let _globalListenersRegistered = false;
+let _globalRegisterCalled = false;
+let _globalPermissionRequesting = false;
+
 export const useMobileNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [pushToken, setPushToken] = useState<string>("");
   const { user } = useAuth();
   const { toast } = useToast();
-  const listenersRegistered = useRef(false);
-  const registerCalled = useRef(false);
   const latestPushTokenRef = useRef("");
   const retryTimeoutsRef = useRef<number[]>([]);
   const pushModuleRef = useRef<PushNotificationsType | null>(null);
