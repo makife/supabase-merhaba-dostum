@@ -146,7 +146,13 @@ const getLevelFruitIcon = (level: number): string => {
   if (level < 30) return "/icons/cilek.svg";
   if (level < 35) return "/icons/karpuz.svg";
   if (level < 40) return "/icons/elma.svg";
-  return "/icons/portakal.svg";
+  if (level < 45) return "/icons/dut.svg";
+  if (level < 50) return "/icons/ananas.svg";
+  if (level < 55) return "/icons/kiraz.svg";
+  if (level < 60) return "/icons/kivi.svg";
+  if (level < 65) return "/icons/ejder.svg";
+  if (level < 70) return "/icons/portakal.svg";
+  return "/icons/meyvetabagi.svg";
 };
 
 const KelimePuzzleIcon = ({ className = "" }: { className?: string }) => (
@@ -618,9 +624,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
-        <div
-          className="flex-none z-30 pb-4 relative border-b border-white/5"
-        >
+        <div className="flex-none z-30 pb-4 relative border-b border-white/5">
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
             {/* Profil */}
@@ -691,9 +695,7 @@ const HomePage = () => {
               }
 
               return (
-                <div
-                  className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-indigo-500/20"
-                >
+                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-indigo-500/20">
                   <div className="flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
