@@ -436,8 +436,8 @@ export const useMobileNotifications = () => {
       const granted = result.receive === "granted";
       setIsPermissionGranted(granted);
       if (granted) {
-        listenersRegistered.current = false;
-        registerCalled.current = false;
+        _globalListenersRegistered = false;
+        _globalRegisterCalled = false;
         await initializePushNotifications();
       }
       return granted;
