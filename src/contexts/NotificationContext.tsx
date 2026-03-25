@@ -29,16 +29,21 @@ const showInviteToast = (notification: any, user: any, navigate: any) => {
       onClick: async () => {
         toast.dismiss(toastId);
 
-        // 🔒 Kredi kontrolü
+        // 🔒 Kredi kontrolü (premium/sınırsız akış dahil)
         if (user?.id) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("game_credits, bonus_credits")
+            .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
             .eq("id", user.id)
             .single();
 
+          const now = new Date();
+          const hasUnlimitedAccess =
+            (profile?.premium_until && new Date(profile.premium_until) > now) ||
+            (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
           const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
-          if (totalCredits < 1) {
+          if (!hasUnlimitedAccess && totalCredits < 1) {
             toast.error("Yetersiz Hak! Oyun hakkınız bulunmamaktadır.", { duration: 3000 });
             navigate("/market");
             return;
