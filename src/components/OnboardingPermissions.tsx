@@ -306,7 +306,7 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
       setIsLoading(true);
       try {
         const permissionPromise = requestPermissions();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
         await Promise.race([permissionPromise, timeoutPromise]);
 
         localStorage.setItem("kelimeci-permissions-completed", "true");
