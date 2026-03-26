@@ -608,7 +608,7 @@ const HomePage = () => {
       <LeaderboardPrizeDialog />
       <ChallengePrizeDialog />
       <div
-        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden transition-colors duration-500"
+        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
         style={{
           backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
           backgroundSize: "cover",
