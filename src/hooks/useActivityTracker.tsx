@@ -87,14 +87,26 @@ export function useActivityTracker() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Capacitor App state listener
+    // 🔧 FIX: iOS'ta push bildirim uygulamayı kısa süreliğine uyandırıyor
+    // appStateChange(isActive:true) push listener'dan ÖNCE tetikleniyor
+    // Bu yüzden 500ms bekleyip suppression kontrolü yapıyoruz
     const appStateListenerPromise = App.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
-        if (isPushSuppressed()) {
-          console.log(`⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor`);
-          return;
-        }
-        console.log("🟢 ActivityTracker: App active → heartbeat gönderiliyor");
-        updateLastSeen();
+        // 🔧 iOS push wake koruması: Kısa gecikme ile suppression kontrolü yap
+        // Push listener 500ms içinde suppressActivityForPush() çağıracak
+        setTimeout(() => {
+          if (isPushSuppressed()) {
+            console.log(`⏭️ ActivityTracker: Push wake algılandı, online güncelleme atlanıyor`);
+            return;
+          }
+          // Ek kontrol: Uygulama gerçekten ön planda mı?
+          if (document.visibilityState !== "visible") {
+            console.log("⏭️ ActivityTracker: App ön planda değil (push wake), heartbeat atlanıyor");
+            return;
+          }
+          console.log("🟢 ActivityTracker: App active → heartbeat gönderiliyor");
+          updateLastSeen();
+        }, 500);
       }
       // isActive === false → bir şey yapma, heartbeat duracak, last_seen eskiyecek
     });
