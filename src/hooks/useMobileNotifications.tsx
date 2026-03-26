@@ -283,6 +283,8 @@ export const useMobileNotifications = () => {
   }, [isIos]); // 🔥 FIX: user?.id dependency kaldırıldı, ref kullanılıyor
 
   // Initialize local notifications
+  // 🔧 FIX: Android'de requestPermissions() çağırmıyoruz — bu bildirim izni penceresini açıyor
+  // İzin zaten OnboardingPermissions'ta push için isteniyor, local notifications da aynı izni kullanıyor
   const initializeLocalNotifications = useCallback(async () => {
     if (!isMobile) return;
 
@@ -290,13 +292,17 @@ export const useMobileNotifications = () => {
       const LocalNotifications = await getLocalNotifications();
       if (!LocalNotifications) return;
 
-      const permissionStatus = await LocalNotifications.requestPermissions();
+      // 🔧 FIX: requestPermissions yerine checkPermissions kullan
+      // Android 13+'da requestPermissions() native dialog açıyordu (KVKK'dan önce)
+      const permissionStatus = await LocalNotifications.checkPermissions();
 
       if (permissionStatus.display === "granted") {
         LocalNotifications.addListener("localNotificationActionPerformed", (notification) => {
           console.log("Local notification action:", notification);
           handleNotificationAction(notification);
         });
+      } else {
+        console.log("📱 Local notification izni henüz verilmemiş:", permissionStatus.display);
       }
     } catch (error) {
       console.error("Error initializing local notifications:", error);
