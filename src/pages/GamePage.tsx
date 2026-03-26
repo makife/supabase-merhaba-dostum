@@ -2433,9 +2433,13 @@ const GamePage = ({
       const MIN_BUFFER_TOTAL_MS = MIN_PREPARING_SHOW_MS + MIN_READY_SHOW_MS; // 2.5s
 
       if (msUntilCountdown <= 0) {
+        // 🔧 FIX: Buffer geçmiş - minimum buffer göster ve countdown'ı GELECEKTE başlat
+        // Eski hata: actualCountdownStart (geçmişte) veriliyordu → GameCountdown hızlı sayıyordu
+        const countdownWillStartAt = now + MIN_BUFFER_TOTAL_MS; // Şu andan itibaren 2.5s sonra
+        
         console.log("🎯 Buffer süresi geçmiş ama MİNİMUM buffer gösteriliyor:", {
           msUntilCountdown,
-          actualCountdownStart: new Date(actualCountdownStart).toISOString(),
+          countdownWillStartAt: new Date(countdownWillStartAt).toISOString(),
           now: new Date(now).toISOString(),
         });
 
@@ -2456,9 +2460,10 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Minimum buffer tamamlandı - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // 🔧 FIX: Mutlak sunucu zamanı kullan - minimum buffer gösterilse bile
-            // countdown aynı anda biter (actualCountdownStart + 5s)
-            setCountdownServerTime(new Date(actualCountdownStart).toISOString());
+            // 🔧 FIX: Countdown'ın ŞİMDİ başlaması için şu anki server zamanını ver
+            // Bu sayede GameCountdown 5'ten normal hızda (1s aralıkla) sayar
+            const countdownStartNow = new Date(Date.now() + serverTimeOffset).toISOString();
+            setCountdownServerTime(countdownStartNow);
             setShowCountdown(true);
           }
         }, MIN_BUFFER_TOTAL_MS);
