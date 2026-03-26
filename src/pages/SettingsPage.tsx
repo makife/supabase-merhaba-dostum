@@ -723,6 +723,58 @@ const SettingsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bildirim Kapatma Uyarı Dialogu */}
+      <AlertDialog open={notificationWarningOpen} onOpenChange={setNotificationWarningOpen}>
+        <AlertDialogContent
+          className="max-w-sm rounded-2xl border-0"
+          style={{
+            background: "linear-gradient(145deg, #0f1729 0%, #1a1a2e 50%, #16213e 100%)",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07)",
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <Bell className="w-5 h-5 text-indigo-400" />
+              Bildirimleri Kapatma
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60 leading-relaxed space-y-3">
+              <p>
+                Bildirimleri uygulama içinden kapatmak mümkün değildir. Telefonunuzun ayarlarından kapatabilirsiniz:
+              </p>
+              {Capacitor.getPlatform() === "ios" ? (
+                <div className="p-3 rounded-xl text-sm text-white/70" style={{ background: "rgba(255,255,255,0.05)" }}>
+                  <p className="font-semibold text-white/80 mb-1">iPhone için:</p>
+                  <p>Ayarlar → Kelimele → Bildirimler → Bildirimlere İzin Ver</p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl text-sm text-white/70" style={{ background: "rgba(255,255,255,0.05)" }}>
+                  <p className="font-semibold text-white/80 mb-1">Android için:</p>
+                  <p>Ayarlar → Uygulamalar → Kelimele → Bildirimler</p>
+                </div>
+              )}
+              <p className="text-xs text-white/40">
+                Bildirimleri tekrar açmak için de aynı yolu izleyebilirsiniz.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel
+              className="flex-1 border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              Tamam
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={openAppSettings}
+              className="flex-1 text-white font-semibold"
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
+            >
+              Ayarları Aç
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
