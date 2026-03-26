@@ -1,6 +1,17 @@
 import { MusicPackSelector } from "@/components/MusicPackSelector";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -83,36 +94,43 @@ const SettingsPage = () => {
   const [deleteFinalConfirmOpen, setDeleteFinalConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [notificationWarningOpen, setNotificationWarningOpen] = useState(false);
 
-  // Load settings from native storage
+  // Load settings and check real OS permission status
   useEffect(() => {
     const loadSettings = async () => {
       const savedSettings = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
-      const permissionsCompleted = await nativeStorage.getItem(STORAGE_KEYS.PERMISSIONS_COMPLETED);
+
+      // 🔧 FIX: Gerçek OS izin durumunu kontrol et (localStorage'a güvenme)
+      let realPermissionGranted = false;
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { PushNotifications } = await import("@capacitor/push-notifications");
+          const status = await PushNotifications.checkPermissions();
+          realPermissionGranted = status.receive === "granted";
+          console.log("📱 [Settings] Gerçek OS bildirim izni:", status.receive);
+        } catch (e) {
+          console.log("Push permission check failed:", e);
+        }
+      } else if ("Notification" in window) {
+        realPermissionGranted = Notification.permission === "granted";
+      }
+
+      setNotifications(realPermissionGranted);
 
       if (savedSettings) {
         const s = JSON.parse(savedSettings);
-        setNotifications(s.notifications ?? false);
         setLanguage(s.language ?? "tr");
         initialSettingsRef.current = {
-          notifications: s.notifications ?? false,
+          notifications: realPermissionGranted,
           sounds: soundsEnabled,
           music: musicEnabled,
           theme,
           language: s.language ?? "tr",
         };
-      } else if (permissionsCompleted && isPermissionGranted) {
-        setNotifications(true);
-        initialSettingsRef.current = {
-          notifications: true,
-          sounds: soundsEnabled,
-          music: musicEnabled,
-          theme,
-          language: "tr",
-        };
       } else {
         initialSettingsRef.current = {
-          notifications: false,
+          notifications: realPermissionGranted,
           sounds: soundsEnabled,
           music: musicEnabled,
           theme,
@@ -122,7 +140,7 @@ const SettingsPage = () => {
     };
 
     loadSettings();
-  }, [soundsEnabled, musicEnabled, theme, isPermissionGranted]);
+  }, [soundsEnabled, musicEnabled, theme]);
 
   // Uygulama ön plana geldiğinde OS izin durumunu yeniden kontrol et
   useEffect(() => {
@@ -239,19 +257,10 @@ const SettingsPage = () => {
           setNotifications(true);
         }
       } else {
-        // Switch OFF → switch'i kapat, ayarlara yönlendir (toast ile)
-        setNotifications(false);
-        if (isMobile) {
-          toast({
-            title: "🔕 Bildirimleri Kapatmak İçin",
-            description: "Ayarlar → Kelimele → Bildirimler yolunu izleyin.",
-            action: (
-              <ToastAction altText="Ayarları Aç" onClick={openAppSettings}>
-                Ayarları Aç
-              </ToastAction>
-            ),
-          });
-        }
+        // Switch OFF → uyarı dialogu göster, switch'i geri aç
+        // Çünkü uygulama içinden bildirim kapatılamaz, OS ayarlarından kapatılmalı
+        setNotificationWarningOpen(true);
+        // Switch'i tekrar açık konuma getir (gerçek kapatma OS'tan yapılır)
       }
     } catch (error) {
       console.error("❌ Bildirim ayarı hatası:", error);
