@@ -100,7 +100,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
       <div className="relative z-50">
         <div
-          className={`absolute top-16 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
+          className={`absolute top-16 right-0 flex flex-col items-end gap-2 overflow-y-auto overflow-x-visible ${!isOpen ? "pointer-events-none" : ""} [&::-webkit-scrollbar]:!hidden`}
           style={{ clipPath: isOpen ? "none" : "inset(0 0 0 100%)" }}
         >
           {menuItems.map((item) => (
