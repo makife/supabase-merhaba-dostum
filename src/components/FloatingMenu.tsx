@@ -216,7 +216,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       )}
 
       {/* Menu items — items end, hiç overflow-hidden yok */}
-      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 overflow-y-auto overflow-x-visible ${!isOpen ? "pointer-events-none" : ""} [&::-webkit-scrollbar]:!hidden`} style={{ clipPath: isOpen ? 'none' : 'inset(0 0 0 100%)', maxHeight: 'calc(100vh - 160px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))' }}>
+      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`} style={{ clipPath: isOpen ? 'none' : 'inset(0 0 0 100%)', right: '-16px' }}>
 
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim()} style={slideStyle}>
