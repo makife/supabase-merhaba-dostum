@@ -40,18 +40,18 @@ const GameGrid = memo<GameGridProps>(({
     
     return cn(
       // NATIVE MOBILE: Daha büyük dokunma alanları ve touch-friendly tasarım
-      "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl font-bold rounded-xl transition-all duration-200 border-2",
+      "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl font-bold rounded-xl transition-colors duration-150 border-2",
       // Native mobile touch optimizations
       "touch-manipulation select-none",
-      "active:scale-95 hover:scale-105",
+      "active:scale-95",
       // Mobile-first shadow and effects
-      "shadow-lg hover:shadow-xl",
+      "shadow-md",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       selected
-        ? "bg-primary text-primary-foreground border-primary shadow-xl scale-105 shadow-primary/30"
+        ? "bg-primary text-primary-foreground border-primary scale-105"
         : highlighted && isJokerActive
         ? "bg-yellow-200 border-yellow-400 text-yellow-800 animate-pulse shadow-yellow-400/50"
-        : "bg-card border-border hover:border-primary/50 hover:bg-accent shadow-md hover:shadow-lg"
+        : "bg-card border-border hover:border-primary/50 hover:bg-accent"
     );
   }, [isLetterSelected, isLetterHighlighted, isJokerActive, disabled]);
 
