@@ -8063,7 +8063,7 @@ const GamePage = ({
                           <button
                             key={`${rowIndex}-${colIndex}`}
                             type="button"
-                            className={`letter-button h-14 text-xl font-black relative transition-colors duration-150 overflow-visible rounded-xl border focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                            className={`letter-button h-[59px] text-xl font-black relative transition-colors duration-150 overflow-visible rounded-xl border focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${
                               isSelected
                                 ? "selected border-emerald-400/70 bg-emerald-900/50 text-emerald-100"
                                 : "border-white/10 bg-white/5 text-white"
