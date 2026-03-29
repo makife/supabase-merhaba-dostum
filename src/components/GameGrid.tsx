@@ -45,7 +45,7 @@ const GameGrid = memo<GameGridProps>(({
       "touch-manipulation select-none",
       "active:scale-95",
       // Mobile-first shadow and effects
-      "shadow-md",
+      "shadow-md focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       selected
         ? "bg-primary text-primary-foreground border-primary scale-105"
