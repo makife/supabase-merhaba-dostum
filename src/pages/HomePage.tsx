@@ -618,7 +618,7 @@ const HomePage = () => {
       >
         {/* Light Effects */}
         <div
-          className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none transition-all duration-500 opacity-30`}
+          className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none opacity-30`}
         />
 
         {/* --------------------------------------------------------
