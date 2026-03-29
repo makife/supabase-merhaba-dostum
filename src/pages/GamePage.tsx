@@ -8097,9 +8097,7 @@ const GamePage = ({
                             }}
                           >
                             <span
-                              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
-                                isSelected ? "opacity-100 text-white font-black" : "opacity-0"
-                              }`}
+                              className={`absolute inset-0 flex items-center justify-center ${isSelected ? "opacity-100 text-white font-black" : "opacity-0"}`}
                             >
                               {letter}
                             </span>
@@ -8112,13 +8110,9 @@ const GamePage = ({
                               </span>
                             )}
                             {isSelected && selectionOrder >= 0 && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black border-2 border-slate-900 z-20 shadow-sm"
-                              >
+                              <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black border-2 border-slate-900 z-20 shadow-sm">
                                 {selectionOrder + 1}
-                              </motion.span>
+                              </span>
                             )}
                           </button>
                         );
