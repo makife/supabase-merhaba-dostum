@@ -823,7 +823,7 @@ All colors MUST be HSL.
   background: hsl(var(--game-letter));
   border: 2px solid hsl(var(--border));
   border-radius: var(--radius);
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   box-shadow: var(--shadow-card);
   color: hsl(var(--foreground));
   cursor: pointer;
@@ -853,7 +853,6 @@ All colors MUST be HSL.
   background: hsl(var(--game-primary));
   border-color: hsl(var(--game-primary));
   color: hsl(var(--primary-foreground));
-  transform: scale(0.95);
 }
 @media (max-width: 768px) {
   .letter-button {
