@@ -610,6 +610,7 @@ const HomePage = () => {
       <div
         className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
         style={{
+          backgroundColor: "hsl(var(--app-shell))",
           backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
           backgroundSize: "cover",
           backgroundPosition: "center",

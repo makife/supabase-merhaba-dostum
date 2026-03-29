@@ -10,6 +10,7 @@ All colors MUST be HSL.
   :root {
     --background: 270 20% 98%;
     --foreground: 270 15% 9%;
+    --app-shell: 220 62% 8%;
 
     --card: 0 0% 100%;
     --card-foreground: 270 15% 9%;
@@ -68,6 +69,7 @@ All colors MUST be HSL.
   .dark {
     --background: 270 15% 9%;
     --foreground: 270 20% 95%;
+    --app-shell: 220 62% 8%;
 
     --card: 270 15% 12%;
     --card-foreground: 270 20% 95%;
@@ -144,8 +146,20 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    background-color: hsl(var(--app-shell));
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply text-foreground font-sans;
+    background-color: hsl(var(--app-shell));
     font-family:
       "Inter",
       -apple-system,
