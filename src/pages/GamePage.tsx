@@ -8051,7 +8051,7 @@ const GamePage = ({
                     WebkitTransform: "translateZ(0)",
                   }}
                 >
-                  <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                  <div className="grid grid-cols-4 gap-2 w-full">
                     {gameGrid.map((row, rowIndex) =>
                       row.map((letter, colIndex) => {
                         const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
