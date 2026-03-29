@@ -828,6 +828,7 @@ All colors MUST be HSL.
   color: hsl(var(--foreground));
   cursor: pointer;
   touch-action: manipulation;
+  outline: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
@@ -836,17 +837,6 @@ All colors MUST be HSL.
   -ms-user-select: none;
   min-height: 48px;
   min-width: 48px;
-  @media (hover: none) and (pointer: coarse) {
-    &:hover {
-      transform: none;
-      box-shadow: var(--shadow-card);
-    }
-  }
-}
-
-.letter-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px hsl(var(--game-primary) / 0.3);
 }
 
 .letter-button.selected {
@@ -854,6 +844,14 @@ All colors MUST be HSL.
   border-color: hsl(var(--game-primary));
   color: hsl(var(--primary-foreground));
 }
+
+.letter-button:focus,
+.letter-button:focus-visible,
+.letter-button:hover {
+  outline: none;
+  box-shadow: var(--shadow-card);
+}
+
 @media (max-width: 768px) {
   .letter-button {
     min-height: 56px;
@@ -869,6 +867,7 @@ All colors MUST be HSL.
   background: hsl(var(--game-primary) / 0.8);
   border-color: hsl(var(--game-primary));
 }
+
 @media (hover: hover) and (pointer: fine) {
   .letter-button:hover {
     transform: translateY(-2px);
