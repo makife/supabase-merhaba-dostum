@@ -8060,19 +8060,24 @@ const GamePage = ({
                           (s) => s.row === rowIndex && s.col === colIndex,
                         );
                         return (
-                          <Button
+                          <button
                             key={`${rowIndex}-${colIndex}`}
+                            type="button"
                             className={`letter-button h-14 text-xl font-black relative transition-colors duration-150 overflow-visible rounded-xl border focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${
                               isSelected
                                 ? "selected border-emerald-400/70 bg-emerald-900/50 text-emerald-100"
                                 : "border-white/10 bg-white/5 text-white"
                             } ${isHighlighted ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                            }}
                             onTouchStart={(e) => {
                               if (!gameStarted) return;
                               e.preventDefault();
                               e.stopPropagation();
                               handleLetterClick(letter, rowIndex, colIndex);
+                              e.currentTarget.blur();
                             }}
                             onClick={(e) => {
                               if (!gameStarted) return;
@@ -8080,6 +8085,7 @@ const GamePage = ({
                               e.preventDefault();
                               e.stopPropagation();
                               handleLetterClick(letter, rowIndex, colIndex);
+                              e.currentTarget.blur();
                             }}
                             style={{
                               touchAction: "manipulation",
@@ -8114,7 +8120,7 @@ const GamePage = ({
                                 {selectionOrder + 1}
                               </motion.span>
                             )}
-                          </Button>
+                          </button>
                         );
                       }),
                     )}
