@@ -70,7 +70,7 @@ export const usePremiumDailyRewards = () => {
         if (isPermissionGranted) {
           showLocalNotification(
             '🎁 VIP Günlük Hediye!',
-            'Günlük 3x Değiştir, 3x Fısılda, 3x Sen Yaz jokerleriniz eklendi!',
+            'Günlük 5x Değiştir, 5x Fısılda, 5x Sen Yaz jokerleriniz eklendi!',
             { type: 'premium_daily_jokers' }
           );
         }
