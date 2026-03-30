@@ -40,7 +40,7 @@ export const GameAvatarsDialog = ({ open, onOpenChange, onSelect }: GameAvatarsD
                     : "border-border hover:border-primary/50",
                 )}
               >
-                <img src={avatarPath} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                <img src={avatarPath} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" width={128} height={128} loading="lazy" />
               </button>
             ))}
           </div>
