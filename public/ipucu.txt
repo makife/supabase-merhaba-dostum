@@ -22,3 +22,4 @@ Düello & Görevler kısmından günlük oyunları tamamlayarak ödüller kazana
 Online bildirimi almak istemezsen arkadaşlar sayfasından bu özelliği kapatabilirsin.
 İzin verilen push bildirimleri cihazın ayarlarından kapatabilirsin.
 Daha iyi bir senkronizasyon için internet bağlantını güçlü tutmayı unutma!
+VIP yazar abonelikleri ile sınırsız sayfaların olacak ve günlük 5'er adet joker eklenecek. 
