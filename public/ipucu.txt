@@ -1,20 +1,24 @@
-Maçtan ayrılana 100 EXP ceza uygulanır.
+Maçtan ayrılırsan 200 EXP ceza uygulanır.
 Mürekkep doldurmak, oyun hakları ve jokerler satın almak için kırtasiye sayfasından alışveriş yapabilirsin.
 Sohbet sayfasında arkadaşlarınla ve diğer kişilerle sohbet edebilirsin.
 Sohbet esnasında argo ve küfür içerikli konuşmalar sohbet botu tarafından tespit edilmekte ve giriş yasağı uygulanmaktadır.
-Sohbet sayfasında seni rahatsız eden içeriği flag butonuna tıklayarak şikayet edebilirsin.
+Sohbet sayfasında seni rahatsız eden içeriği bayrak butonuna tıklayarak şikayet edebilirsin.
 AI rakibine karşı zihin antrenmanı yapabilirsin.
-Özel oda oluşturarak istediğin kişiyle istediğin kadar oynayabilirsin.
+Özel oda oluşturarak arkadaşlarını davet edebilir istediğin kadar oynayabilirsin.
 Rastgele eşleşme modunda herhangi bir rakiple eşleşeceksin.
 Turnuvalarda çeyrek, yarı ve final aşamalarından geçerek turnuva şampiyonu ol.
-Profilin sayfandan istatistik bilgilerine göz atabilirsin.
+Turnuvalar en az iki gerçek oyuncu ile başlatılır. Boş kalan slotlar botlar ile doldurulur.
+Turnuva birincisi olursan ödüllendirilirsin.
+Profil sayfandan istatistik bilgilerine göz atabilirsin.
 Ayarlar sayfasından oyun hakkında bilgi alabilir ve bazı ayarlara ulaşabilirsin.
 Liderler sayfasından haftalık, aylık ve genel sıralama bilgilerini görebilirsin.
 Market sayfasından reklam izle butonuyla her gün reklam izleyerek 5 mürekkep damlası kazanabilirsin. 
 Genel sohbet sayfasında rumuzların önüne "@" sembolü ekleyerek ilgili kişilere mention gönderebilirsin.
-Özel sohbet pencerelerini sola kaydırarak silebilir ve engelle butonuyla kişileri engelleyebilirsin.
+Konuşmak istemediğin kişileri engelle butonuyla engelleyebilirsin.
 Sohbet sayfasından veya liderlik sayfasından kişilerin avatarlarına tıklayarak profil bilgilerine ulaşabilirsin.
 Lider sıralamalarında büyük ödüller seni bekliyor.
 Genel sohbet sayfasında gönderilen mesajlara emojili tepki ekleyebilirsin.
 Düello & Görevler kısmından günlük oyunları tamamlayarak ödüller kazanabilirsin.
 Online bildirimi almak istemezsen arkadaşlar sayfasından bu özelliği kapatabilirsin.
+İzin verilen push bildirimleri cihazın ayarlarından kapatabilirsin.
+Daha iyi bir senkronizasyon için internet bağlantını güçlü tutmayı unutma!
