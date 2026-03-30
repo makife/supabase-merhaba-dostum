@@ -232,7 +232,7 @@ const GameCountdown = memo(
     // 🔒 GEÇ MOUNT GARANTİSİ: 5'in mutlaka gösterilmesini sağla
     const hasShown5Ref = useRef(false);
     const forced5StartTimeRef = useRef<number>(0);
-    const MIN_DISPLAY_MS = 650; // Her sayı en az 650ms gösterilmeli
+    const MIN_DISPLAY_MS = 950; // Her sayı en az 950ms gösterilmeli (doğal hız)
     const lastValueChangeTimeRef = useRef<number>(0);
 
     const playCountdownSound = () => {
