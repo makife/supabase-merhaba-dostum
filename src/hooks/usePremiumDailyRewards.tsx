@@ -63,7 +63,7 @@ export const usePremiumDailyRewards = () => {
         
         // Toast bildirimi
         toast.success('🎁 Günlük VIP Jokerleri Alındı!', {
-          description: 'Değiştir, Fısılda ve Sen Yaz jokerleriniz eklendi (+3)'
+          description: 'Değiştir, Fısılda ve Sen Yaz jokerleriniz eklendi (+5)'
         });
         
         // Push notification gönder
