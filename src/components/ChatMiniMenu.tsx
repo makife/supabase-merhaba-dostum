@@ -101,7 +101,7 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       <div className="relative z-50">
         <div
           className={`absolute top-16 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`}
-          style={{ clipPath: isOpen ? "none" : "inset(0 0 0 100%)", right: '-4px' }}
+          style={{ clipPath: isOpen ? "none" : "inset(0 0 0 100%)" }}
         >
           {menuItems.map((item) => (
             <div key={item.alt} className={itemAnim()} style={slideStyle}>
