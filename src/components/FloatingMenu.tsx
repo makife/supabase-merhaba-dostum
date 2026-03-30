@@ -216,7 +216,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       )}
 
       {/* Menu items — items end, hiç overflow-hidden yok */}
-      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`} style={{ clipPath: isOpen ? 'none' : 'inset(0 0 0 100%)', right: '-16px' }}>
+      <div className={`absolute bottom-24 right-0 flex flex-col items-end gap-2 ${!isOpen ? "pointer-events-none" : ""}`} style={{ clipPath: isOpen ? 'none' : 'inset(0 0 0 100%)' }}>
 
         {/* ── 1. MÜZİK ── */}
         <div className={itemAnim()} style={slideStyle}>
