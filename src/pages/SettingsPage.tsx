@@ -43,21 +43,16 @@ import {
 } from "lucide-react";
 import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
+import { NativeSettings, AndroidSettings, IOSSettings } from "capacitor-native-settings";
 
-// ─── OS uygulama ayarlarını açar (capacitor-native-settings gerektirmez) ───
+// ─── OS uygulama ayarlarını açar ───────────────────────────────────────────
 const openAppSettings = async () => {
   try {
     const platform = Capacitor.getPlatform();
-    if (platform === "android") {
-      const { App } = await import("@capacitor/app");
-      const info = await App.getInfo();
-      // Doğru Android intent formatı
-      window.open(
-        `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;data=package:${info.id};end`,
-        "_system",
-      );
-    } else if (platform === "ios") {
-      window.open("app-settings:", "_system");
+    if (platform === "ios") {
+      await NativeSettings.openIOS({ option: IOSSettings.App });
+    } else if (platform === "android") {
+      await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
     }
   } catch (e) {
     console.error("Ayarlar açılamadı:", e);
@@ -375,7 +370,7 @@ const SettingsPage = () => {
       <div class="space-y-4">
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
-          <p class="text-lg font-medium">Versiyon 5.7.6/p>
+          <p class="text-lg font-medium">Versiyon 5.7.6</p>
         </div>
         
         <div class="space-y-3">
