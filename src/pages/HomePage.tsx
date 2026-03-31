@@ -1053,7 +1053,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
