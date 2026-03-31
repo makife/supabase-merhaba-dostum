@@ -65,7 +65,7 @@ export const RematchDialog = ({
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="font-semibold text-green-400 text-base">{senderName}</p>
+                <p className="font-semibold text-green-400 text-2xl">">{senderName}</p>
                 <p className="text-sm text-white">yeniden maç istiyor!</p>
               </div>
             </div>
