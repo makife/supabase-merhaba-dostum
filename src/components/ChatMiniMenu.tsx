@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { SvgAsset } from "@/components/ui/svg-asset";
 
 type ViewMode = "global" | "users" | "private-chat" | "blocked-users";
 
@@ -66,9 +67,13 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
     "shadow-md whitespace-nowrap";
 
   const slideStyle: React.CSSProperties = {
-    transform: isOpen ? "translateX(0)" : "translateX(120%)",
+    transform: isOpen ? "translate3d(0, 0, 0)" : "translate3d(120%, 0, 0)",
+    WebkitTransform: isOpen ? "translate3d(0, 0, 0)" : "translate3d(120%, 0, 0)",
     opacity: isOpen ? 1 : 0,
     visibility: isOpen ? "visible" : "hidden",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+    willChange: "transform, opacity",
     transition: "transform 200ms ease-out, opacity 200ms ease-out, visibility 200ms ease-out",
   };
 
@@ -77,11 +82,11 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
   const renderRow = (dot: string, textSrc: string, textAlt: string, gorselSrc: string, isActive?: boolean) => (
     <div className={rowBase}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
-      <img src={textSrc} alt={textAlt} className="block h-5 w-28 object-contain object-left flex-shrink-0" />
+      <SvgAsset src={textSrc} alt={textAlt} className="h-5 w-28 flex-shrink-0 bg-left" />
       <div
         className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}
       >
-        <img src={gorselSrc} alt="" className="w-10 h-10 object-contain" />
+        <SvgAsset src={gorselSrc} className="h-10 w-10" />
       </div>
     </div>
   );
