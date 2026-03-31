@@ -211,7 +211,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
         <mode.icon className="w-6 h-6 text-white" />
       </div>
       {mode.isLive && (
-        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
+        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       )}
     </div>
 
