@@ -744,7 +744,7 @@ const HomePage = () => {
                 >
                   <img
                     src={j.img}
-                    className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                    className="w-9 h-9 object-contain drop-shadow-lg"
                     alt={j.name}
                   />
                   <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
