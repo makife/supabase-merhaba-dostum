@@ -1141,7 +1141,7 @@ const HomePage = () => {
                 </p>
               </div>
               {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
-                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 text-white border-white/30">
+                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 hover:bg-white/20 text-white border-white/30">
                   x{wheelSpinsLeft} hak
                 </Badge>
               )}
