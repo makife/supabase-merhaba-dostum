@@ -202,7 +202,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
     style={{ transform: "translateZ(0)" }}
   >
     <div
-      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 rounded-3xl`}
     />
     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
