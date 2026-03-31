@@ -93,7 +93,7 @@ export const RematchDialog = ({
             variant="outline"
             onClick={handleReject}
             disabled={isProcessing}
-            className="flex-1"
+            className="flex-1 border-slate-500/30 text-slate-300 hover:bg-slate-700/50"
           >
             Reddet
           </Button>
