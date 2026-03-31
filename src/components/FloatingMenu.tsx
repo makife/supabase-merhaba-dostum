@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Menu as MenuIcon, X } from "lucide-react";
+import { SvgAsset } from "@/components/ui/svg-asset";
 
 // --- Yardımcı Fonksiyonlar ---
 const isUserBannedFromProfile = (profile: any): boolean => {
@@ -161,9 +162,13 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   };
 
   const slideStyle: React.CSSProperties = {
-    transform: isOpen ? "translateX(0)" : "translateX(120%)",
+    transform: isOpen ? "translate3d(0, 0, 0)" : "translate3d(120%, 0, 0)",
+    WebkitTransform: isOpen ? "translate3d(0, 0, 0)" : "translate3d(120%, 0, 0)",
     opacity: isOpen ? 1 : 0,
     visibility: isOpen ? "visible" : "hidden",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+    willChange: "transform, opacity",
     transition: "transform 200ms ease-out, opacity 200ms ease-out, visibility 200ms ease-out",
   };
 
@@ -184,18 +189,17 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
 
       {/* Yazı SVG */}
-      <img
+      <SvgAsset
         src={textSrc}
         alt={textAlt}
-        className="block h-5 w-28 object-contain object-left flex-shrink-0"
+        className="h-5 w-28 flex-shrink-0 bg-left"
       />
 
       {/* Görsel ikon */}
       <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
-        <img
+        <SvgAsset
           src={gorselSrc}
-          alt=""
-          className="block h-10 w-10 object-contain"
+          className="h-10 w-10"
         />
         {badge}
       </div>

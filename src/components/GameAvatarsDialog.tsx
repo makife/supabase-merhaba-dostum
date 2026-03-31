@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { SvgAsset } from "@/components/ui/svg-asset";
 
 interface GameAvatarsDialogProps {
   open: boolean;
@@ -40,7 +41,12 @@ export const GameAvatarsDialog = ({ open, onOpenChange, onSelect }: GameAvatarsD
                     : "border-border hover:border-primary/50",
                 )}
               >
-                <img src={avatarPath} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" width={128} height={128} loading="lazy" />
+                <SvgAsset
+                  src={avatarPath}
+                  alt={`Avatar ${index + 1}`}
+                  className="h-full w-full rounded-lg bg-card"
+                  backgroundSize="90%"
+                />
               </button>
             ))}
           </div>
