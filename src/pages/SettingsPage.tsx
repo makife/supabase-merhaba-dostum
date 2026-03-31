@@ -755,17 +755,17 @@ const SettingsPage = () => {
               <p className="text-xs text-white/40">Bildirimleri tekrar açmak için de aynı yolu izleyebilirsiniz.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-2">
+          <AlertDialogFooter className="flex-row gap-2 mt-4">
             <AlertDialogCancel
               className="flex-1 h-10 border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
-              style={{ background: "rgba(255,255,255,0.06)" }}
+              style={{ background: "rgba(255,255,255,0.06)", marginTop: 0 }}
             >
               Tamam
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={openAppSettings}
               className="flex-1 h-10 text-white font-semibold"
-              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", marginTop: 0 }}
             >
               Ayarları Aç
             </AlertDialogAction>
