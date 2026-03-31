@@ -47,12 +47,15 @@ import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 // ─── OS uygulama ayarlarını açar (capacitor-native-settings gerektirmez) ───
 const openAppSettings = async () => {
   try {
-    const { Capacitor } = await import("@capacitor/core");
     const platform = Capacitor.getPlatform();
     if (platform === "android") {
       const { App } = await import("@capacitor/app");
       const info = await App.getInfo();
-      window.open(`package:${info.id}`, "_system");
+      // Doğru Android intent formatı
+      window.open(
+        `intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;data=package:${info.id};end`,
+        "_system",
+      );
     } else if (platform === "ios") {
       window.open("app-settings:", "_system");
     }
