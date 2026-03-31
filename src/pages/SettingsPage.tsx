@@ -189,8 +189,7 @@ const SettingsPage = () => {
       language,
     };
 
-    const hasRealChange =
-      JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
+    const hasRealChange = JSON.stringify(currentSettings) !== JSON.stringify(initialSettingsRef.current);
 
     if (hasRealChange) {
       hasChangedRef.current = true;
@@ -415,9 +414,9 @@ const SettingsPage = () => {
             </Button>
 
             <div className="flex items-center gap-2">
-  <img src="/icons/ayarlar-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
-  <img src="/icons/ayarlar-text.svg" alt="Ayarlar" className="h-7 object-contain" />
-</div>
+              <img src="/icons/ayarlar-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
+              <img src="/icons/ayarlar-text.svg" alt="Ayarlar" className="h-7 object-contain" />
+            </div>
 
             <div className="w-20" />
           </div>
@@ -753,12 +752,10 @@ const SettingsPage = () => {
                   <p>Ayarlar → Uygulamalar → Kelimele → Bildirimler</p>
                 </div>
               )}
-              <p className="text-xs text-white/40">
-                Bildirimleri tekrar açmak için de aynı yolu izleyebilirsiniz.
-              </p>
+              <p className="text-xs text-white/40">Bildirimleri tekrar açmak için de aynı yolu izleyebilirsiniz.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-2">
+          <AlertDialogFooter className="flex-row gap-2 items-stretch">
             <AlertDialogCancel
               className="flex-1 border-white/10 text-white/70 hover:bg-white/5 hover:text-white"
               style={{ background: "rgba(255,255,255,0.06)" }}
