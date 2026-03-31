@@ -202,7 +202,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
     style={{ transform: "translateZ(0)" }}
   >
     <div
-      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 group-hover:opacity-100 transition-opacity rounded-3xl`}
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 rounded-3xl`}
     />
     <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -211,7 +211,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
         <mode.icon className="w-6 h-6 text-white" />
       </div>
       {mode.isLive && (
-        <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
+        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       )}
     </div>
 
@@ -744,7 +744,7 @@ const HomePage = () => {
                 >
                   <img
                     src={j.img}
-                    className="w-9 h-9 object-contain drop-shadow-lg group-hover:brightness-125 transition-all"
+                    className="w-9 h-9 object-contain drop-shadow-lg"
                     alt={j.name}
                   />
                   <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
@@ -983,7 +983,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -1018,7 +1018,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -1053,7 +1053,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -1088,7 +1088,7 @@ const HomePage = () => {
                     )}
                   </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
@@ -1120,8 +1120,8 @@ const HomePage = () => {
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
-                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90 group-hover:opacity-100"
-                } transition-opacity rounded-2xl`}
+                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
+                } rounded-2xl`}
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
               <WheelIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
@@ -1141,7 +1141,7 @@ const HomePage = () => {
                 </p>
               </div>
               {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
-                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 text-white border-white/30">
+                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 hover:bg-white/20 text-white border-white/30">
                   x{wheelSpinsLeft} hak
                 </Badge>
               )}
