@@ -50,10 +50,10 @@ export const RematchDialog = ({
 
   return (
     <Dialog open={open}>
-      <DialogContent className="sm:max-w-sm w-[90%] rounded-2xl bg-[#1e2d45] border-indigo-500/20 text-white">
+      <DialogContent className="sm:max-w-sm w-[90%] rounded-2xl bg-[#1e2d45] border-2 border-white text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <Trophy className="h-6 w-6 text-cyan-400 animate-pulse" />
+            <img src="/yenidenmac-gorsel.svg" className="h-6 w-6" />
             Yeniden Maç İsteği
           </DialogTitle>
           <DialogDescription className="pt-4">
@@ -65,22 +65,14 @@ export const RematchDialog = ({
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <p className="font-semibold text-foreground text-base">
-                  {senderName}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  yeniden maç istiyor!
-                </p>
+                <p className="font-semibold text-green-400 text-base">{senderName}</p>
+                <p className="text-sm text-white">yeniden maç istiyor!</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Aynı rakibinle yeniden karşılaşmak ister misiniz?
-            </p>
+            <p className="text-sm text-white">Aynı rakibinle yeniden karşılaşmak ister misiniz?</p>
             {!hasEnoughCredits && (
               <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive font-medium">
-                  ⚠️ Yetersiz Hak
-                </p>
+                <p className="text-sm text-destructive font-medium">⚠️ Yetersiz Hak</p>
                 <p className="text-xs text-destructive/80 mt-1">
                   Oyunu kabul etmek için yeterli hakkınız bulunmamaktadır.
                 </p>
