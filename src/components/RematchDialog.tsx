@@ -53,7 +53,7 @@ export const RematchDialog = ({
       <DialogContent className="sm:max-w-sm w-[90%] rounded-2xl bg-[#1e2d45] border-2 border-white text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <img src="/yenidenmac-gorsel.svg" className="h-6 w-6" />
+            <img src="/yenidenmac-gorsel.svg" className="h-12 w-12" />
             Yeniden Maç İsteği
           </DialogTitle>
           <DialogDescription className="pt-4">
@@ -61,7 +61,7 @@ export const RematchDialog = ({
               <Avatar className="h-12 w-12 border-2 border-primary">
                 <AvatarImage src={senderAvatar || undefined} />
                 <AvatarFallback>
-                  <User className="h-12 w-12" />
+                  <User className="h-6 w-6" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
