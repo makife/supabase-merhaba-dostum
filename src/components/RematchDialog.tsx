@@ -61,7 +61,7 @@ export const RematchDialog = ({
               <Avatar className="h-12 w-12 border-2 border-primary">
                 <AvatarImage src={senderAvatar || undefined} />
                 <AvatarFallback>
-                  <User className="h-6 w-6" />
+                  <User className="h-12 w-12" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
