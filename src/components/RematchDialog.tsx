@@ -53,7 +53,7 @@ export const RematchDialog = ({
       <DialogContent className="sm:max-w-sm w-[90%] rounded-2xl bg-[#1e2d45] border-indigo-500/20 text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <Trophy className="h-6 w-6 text-primary animate-pulse" />
+            <Trophy className="h-6 w-6 text-cyan-400 animate-pulse" />
             Yeniden Maç İsteği
           </DialogTitle>
           <DialogDescription className="pt-4">
