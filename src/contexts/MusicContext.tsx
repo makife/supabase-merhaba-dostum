@@ -28,6 +28,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffledPlaylistRef = useRef<number[]>([]);
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
+  const musicEnabledRef = useRef(true);
 
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
