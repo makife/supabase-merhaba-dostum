@@ -953,6 +953,8 @@ const GamePage = ({
       setAdWatched(true);
       setUserCredits((prev) => prev + 1);
     }
+    // Reklam süreci bitti, rematch kilidini aç
+    window.dispatchEvent(new CustomEvent("adBusyChange", { detail: { busy: false } }));
   };
 
   // 🎵 Oyun bitince müziği geri başlat
