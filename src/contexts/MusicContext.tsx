@@ -267,7 +267,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onended = () => {
         setIsPlaying(false);
         // For default pack, move to next track in shuffled playlist and autoplay the next one
-        if (musicPack === "default" && musicEnabled) {
+        // 🔥 FIX: musicEnabledRef kullan, stale closure'dan kaçın
+        if (musicPack === "default" && musicEnabledRef.current) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
 
           // If we've played all tracks in the shuffled playlist, create a new shuffle
@@ -279,7 +280,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
-            startBackgroundMusic();
+            // 🔥 FIX: Tekrar kontrol et - bu süre içinde kullanıcı müziği kapatmış olabilir
+            if (musicEnabledRef.current) {
+              startBackgroundMusic();
+            }
           }, 120);
         }
       };
