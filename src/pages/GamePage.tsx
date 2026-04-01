@@ -893,6 +893,8 @@ const GamePage = ({
 
   const handleWatchAd = async () => {
     if (!user?.id) return;
+    // Reklam sürecinde rematch kabul butonunu kilitle
+    window.dispatchEvent(new CustomEvent("adBusyChange", { detail: { busy: true } }));
 
     // Güncel kredi sayısını kontrol et
     const { data: profileData } = await supabase
