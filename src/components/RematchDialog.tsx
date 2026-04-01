@@ -93,10 +93,10 @@ export const RematchDialog = ({
           </Button>
           <Button
             onClick={handleAccept}
-            disabled={isProcessing || !hasEnoughCredits}
+            disabled={isProcessing || !hasEnoughCredits || isAdBusy}
             className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50"
           >
-            {isProcessing ? "Yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
+            {isProcessing ? "Yükleniyor..." : isAdBusy ? "Reklam yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
           </Button>
         </DialogFooter>
       </DialogContent>
