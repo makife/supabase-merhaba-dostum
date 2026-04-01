@@ -79,11 +79,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundFadeRef.current = null;
       }
 
-      if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+      // 🔥 FIX: musicEnabledRef kullan - foreground handler closure'da eski değeri görebilir
+      if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
         console.log("🎵 Müzik ön plan için devam ettiriliyor");
         wasPlayingBeforeBackgroundRef.current = false;
         backgroundMusicRef.current.volume = originalVolumeRef.current;
         backgroundMusicRef.current.play().catch(console.warn);
+      } else {
+        wasPlayingBeforeBackgroundRef.current = false;
       }
     };
 
