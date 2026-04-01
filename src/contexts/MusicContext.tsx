@@ -188,6 +188,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const enabled = settings.music ?? true;
         setMusicEnabledState(enabled);
         musicEnabledRef.current = enabled;
+        setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
         console.warn("Failed to load music settings:", error);
       }
