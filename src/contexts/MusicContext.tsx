@@ -28,6 +28,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffledPlaylistRef = useRef<number[]>([]);
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
+  const musicEnabledRef = useRef(true);
 
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,11 +79,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundFadeRef.current = null;
       }
 
-      if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+      // 🔥 FIX: musicEnabledRef kullan - foreground handler closure'da eski değeri görebilir
+      if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
         console.log("🎵 Müzik ön plan için devam ettiriliyor");
         wasPlayingBeforeBackgroundRef.current = false;
         backgroundMusicRef.current.volume = originalVolumeRef.current;
         backgroundMusicRef.current.play().catch(console.warn);
+      } else {
+        wasPlayingBeforeBackgroundRef.current = false;
       }
     };
 
@@ -116,12 +120,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               backgroundMusicRef.current.pause();
             }
           } else {
-            // Ön plana geldi
-            if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+            // Ön plana geldi - 🔥 FIX: musicEnabledRef kullan
+            if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
               console.log("🎵 Ön plan - müzik devam ettiriliyor");
               wasPlayingBeforeBackgroundRef.current = false;
               backgroundMusicRef.current.volume = originalVolumeRef.current;
               backgroundMusicRef.current.play().catch(console.warn);
+            } else {
+              wasPlayingBeforeBackgroundRef.current = false;
             }
           }
         });
@@ -179,7 +185,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
         const settings = settingsStr ? JSON.parse(settingsStr) : {};
-        setMusicEnabledState(settings.music ?? true);
+        const enabled = settings.music ?? true;
+        setMusicEnabledState(enabled);
+        musicEnabledRef.current = enabled;
         setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
         console.warn("Failed to load music settings:", error);
@@ -266,7 +274,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onended = () => {
         setIsPlaying(false);
         // For default pack, move to next track in shuffled playlist and autoplay the next one
-        if (musicPack === "default" && musicEnabled) {
+        // 🔥 FIX: musicEnabledRef kullan, stale closure'dan kaçın
+        if (musicPack === "default" && musicEnabledRef.current) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
 
           // If we've played all tracks in the shuffled playlist, create a new shuffle
@@ -278,7 +287,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
-            startBackgroundMusic();
+            // 🔥 FIX: Tekrar kontrol et - bu süre içinde kullanıcı müziği kapatmış olabilir
+            if (musicEnabledRef.current) {
+              startBackgroundMusic();
+            }
           }, 120);
         }
       };
@@ -309,7 +321,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // İlk kullanıcı etkileşiminde müziği başlat
       const onFirstInteraction = () => {
-        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && musicEnabled) {
+        // 🔥 FIX: musicEnabledRef kullan - kullanıcı bu arada müziği kapatmış olabilir
+        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && musicEnabledRef.current) {
           console.log("🎵 [MusicContext] İlk dokunuş algılandı, müzik başlatılıyor");
           backgroundMusicRef.current.play()
             .then(() => {
@@ -575,7 +588,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setMusicEnabled = async (enabled: boolean) => {
     setMusicEnabledState(enabled);
-
+    musicEnabledRef.current = enabled; // 🔥 FIX: ref'i de güncelle
     // Save to native storage
     try {
       const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
