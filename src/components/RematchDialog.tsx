@@ -28,6 +28,7 @@ export const RematchDialog = ({
   senderName,
   senderAvatar,
   hasEnoughCredits = true,
+  isAdBusy = false,
 }: RematchDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
