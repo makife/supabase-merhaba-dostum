@@ -185,8 +185,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
         const settings = settingsStr ? JSON.parse(settingsStr) : {};
-        setMusicEnabledState(settings.music ?? true);
-        setMusicPackState(settings.musicPack ?? "default");
+        const enabled = settings.music ?? true;
+        setMusicEnabledState(enabled);
+        musicEnabledRef.current = enabled;
       } catch (error) {
         console.warn("Failed to load music settings:", error);
       }
