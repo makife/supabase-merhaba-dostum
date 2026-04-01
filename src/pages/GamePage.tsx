@@ -924,6 +924,7 @@ const GamePage = ({
         description: `Hata: ${errorDetail}`,
         variant: "destructive",
       });
+      window.dispatchEvent(new CustomEvent("adBusyChange", { detail: { busy: false } }));
       return;
     }
 
