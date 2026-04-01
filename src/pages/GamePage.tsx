@@ -2438,13 +2438,13 @@ const GamePage = ({
       const MIN_BUFFER_TOTAL_MS = MIN_PREPARING_SHOW_MS + MIN_READY_SHOW_MS; // 2.5s
 
       if (msUntilCountdown <= 0) {
-        // 🔧 FIX: Buffer geçmiş - minimum buffer göster ve countdown'ı GELECEKTE başlat
-        // Eski hata: actualCountdownStart (geçmişte) veriliyordu → GameCountdown hızlı sayıyordu
-        const countdownWillStartAt = now + MIN_BUFFER_TOTAL_MS; // Şu andan itibaren 2.5s sonra
+        // 🔧 FIX: Buffer geçmiş - minimum buffer göster ama countdown'da SUNUCU ZAMANI kullan
+        // Her cihaz aynı actualCountdownStart'ı kullanarak senkronize kalır
+        // GameCountdown'ın MIN_DISPLAY_MS mekanizması geç mount'ları ele alır
         
         console.log("🎯 Buffer süresi geçmiş ama MİNİMUM buffer gösteriliyor:", {
           msUntilCountdown,
-          countdownWillStartAt: new Date(countdownWillStartAt).toISOString(),
+          actualCountdownStart: new Date(actualCountdownStart).toISOString(),
           now: new Date(now).toISOString(),
         });
 
@@ -2465,10 +2465,9 @@ const GamePage = ({
           if (isMountedRef.current) {
             console.log("🏆 Minimum buffer tamamlandı - 5-4-3-2-1 Countdown başlıyor");
             setPreparingOpponent(null);
-            // 🔧 FIX: Countdown'ın ŞİMDİ başlaması için şu anki server zamanını ver
-            // Bu sayede GameCountdown 5'ten normal hızda (1s aralıkla) sayar
-            const countdownStartNow = new Date(Date.now() + serverTimeOffset).toISOString();
-            setCountdownServerTime(countdownStartNow);
+            // 🔧 SYNC FIX: Sunucunun mutlak zamanını kullan - tüm cihazlar aynı anchor
+            // GameCountdown MIN_DISPLAY_MS ile geç mount'larda bile sayıları atlamaz
+            setCountdownServerTime(new Date(actualCountdownStart).toISOString());
             setShowCountdown(true);
           }
         }, MIN_BUFFER_TOTAL_MS);
