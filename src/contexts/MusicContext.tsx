@@ -314,7 +314,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // İlk kullanıcı etkileşiminde müziği başlat
       const onFirstInteraction = () => {
-        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && musicEnabled) {
+        // 🔥 FIX: musicEnabledRef kullan - kullanıcı bu arada müziği kapatmış olabilir
+        if (backgroundMusicRef.current && backgroundMusicRef.current.paused && musicEnabledRef.current) {
           console.log("🎵 [MusicContext] İlk dokunuş algılandı, müzik başlatılıyor");
           backgroundMusicRef.current.play()
             .then(() => {
