@@ -120,12 +120,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               backgroundMusicRef.current.pause();
             }
           } else {
-            // Ön plana geldi
-            if (wasPlayingBeforeBackgroundRef.current && musicEnabled && backgroundMusicRef.current) {
+            // Ön plana geldi - 🔥 FIX: musicEnabledRef kullan
+            if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
               console.log("🎵 Ön plan - müzik devam ettiriliyor");
               wasPlayingBeforeBackgroundRef.current = false;
               backgroundMusicRef.current.volume = originalVolumeRef.current;
               backgroundMusicRef.current.play().catch(console.warn);
+            } else {
+              wasPlayingBeforeBackgroundRef.current = false;
             }
           }
         });
