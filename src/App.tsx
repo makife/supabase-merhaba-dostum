@@ -650,6 +650,17 @@ const AppRoutes = () => {
 const GlobalRematchDialogWrapper = () => {
   const { incomingRequest, acceptRematch, rejectRematch } = useRematchContext();
   const { profile } = useUser();
+  const [isAdBusy, setIsAdBusy] = React.useState(false);
+
+  // Reklam yüklenirken/gösterilirken rematch kabul butonunu kilitle
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const busy = (e as CustomEvent).detail?.busy ?? false;
+      setIsAdBusy(busy);
+    };
+    window.addEventListener("adBusyChange", handler);
+    return () => window.removeEventListener("adBusyChange", handler);
+  }, []);
 
   // Kullanıcının yeterli hakkı var mı kontrol et
   const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
@@ -679,6 +690,7 @@ const GlobalRematchDialogWrapper = () => {
       senderName={incomingRequest?.senderName || "Rakip"}
       senderAvatar={incomingRequest?.senderAvatar}
       hasEnoughCredits={hasEnoughCredits}
+      isAdBusy={isAdBusy}
     />
   );
 };

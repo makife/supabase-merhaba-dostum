@@ -18,6 +18,7 @@ interface RematchDialogProps {
   senderName: string;
   senderAvatar?: string | null;
   hasEnoughCredits?: boolean;
+  isAdBusy?: boolean;
 }
 
 export const RematchDialog = ({
@@ -27,6 +28,7 @@ export const RematchDialog = ({
   senderName,
   senderAvatar,
   hasEnoughCredits = true,
+  isAdBusy = false,
 }: RematchDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -91,10 +93,10 @@ export const RematchDialog = ({
           </Button>
           <Button
             onClick={handleAccept}
-            disabled={isProcessing || !hasEnoughCredits}
+            disabled={isProcessing || !hasEnoughCredits || isAdBusy}
             className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50"
           >
-            {isProcessing ? "Yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
+            {isProcessing ? "Yükleniyor..." : isAdBusy ? "Reklam yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
           </Button>
         </DialogFooter>
       </DialogContent>
