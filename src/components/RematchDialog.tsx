@@ -18,6 +18,7 @@ interface RematchDialogProps {
   senderName: string;
   senderAvatar?: string | null;
   hasEnoughCredits?: boolean;
+  isAdBusy?: boolean;
 }
 
 export const RematchDialog = ({
