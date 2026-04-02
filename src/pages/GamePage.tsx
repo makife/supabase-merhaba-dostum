@@ -2429,6 +2429,23 @@ const GamePage = ({
         return true;
       }
 
+      // 🎯 SENARYO 1.5: Geç katılım / geç room sync
+      // Buffer geçmişse hazırlık animasyonlarını TEKRAR oynatmak yerine
+      // doğrudan aktif countdown fazına sunucu zamanıyla senkron gir.
+      if (skipBuffer && msUntilCountdown <= 0) {
+        console.log("⚡ Buffer replay atlandı - aktif countdown fazına senkron giriş:", {
+          now: new Date(now).toISOString(),
+          actualCountdownStart: new Date(actualCountdownStart).toISOString(),
+          msUntilCountdown,
+          msUntilGameStart,
+        });
+
+        setPreparingOpponent(null);
+        setCountdownServerTime(new Date(actualCountdownStart).toISOString());
+        setShowCountdown(true);
+        return true;
+      }
+
       // 🔧 KRİTİK: Buffer animasyonları her zaman gösterilmeli
       // skipBuffer parametresini YOKSAY - oyuncular neyi beklediklerini bilmeli
 
@@ -6504,9 +6521,6 @@ const GamePage = ({
       }
       console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
 
-      // 🔒 İşlenmiş olarak işaretle
-      processedCountdownRef.current = currentRoom.countdown_started_at;
-
       // 🎯 Merkezi initiateCountdown fonksiyonunu kullan
       initiateCountdown(currentRoom.countdown_started_at, false);
     }
@@ -6580,9 +6594,6 @@ const GamePage = ({
         }
 
         console.log("🎯 Countdown başlatılıyor (RPC/DB sonrası):", countdownStartedAt);
-
-        // 🔒 İşlenmiş olarak işaretle
-        processedCountdownRef.current = countdownStartedAt;
 
         // 🎯 Merkezi initiateCountdown fonksiyonunu kullan - duplicate mantık yok!
         initiateCountdown(countdownStartedAt, false);
