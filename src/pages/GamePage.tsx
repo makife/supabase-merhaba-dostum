@@ -5210,14 +5210,18 @@ const GamePage = ({
       }
 
       // 🎯 SENARYO 2: Buffer veya countdown devam ediyor
-      // 🔧 FIX: skipBuffer her zaman false - minimum buffer animasyonları gösterilmeli
+      // Buffer geçmişse geç katılan cihazı aktif countdown fazına doğrudan kilitle
       if (msElapsed >= 0) {
+        const shouldSkipBuffer = msElapsed >= BUFFER_MS;
         console.log(
-          "🎮 Countdown başlatılıyor, initiateCountdown kendi zamanlamasını yapacak (msElapsed:",
-          msElapsed,
-          ")",
+          "🎮 Countdown başlatılıyor, initiateCountdown kendi zamanlamasını yapacak:",
+          {
+            msElapsed,
+            shouldSkipBuffer,
+            countdownStartedAt: currentRoom.countdown_started_at,
+          },
         );
-        initiateCountdown(currentRoom.countdown_started_at, false); // skipBuffer = false
+        initiateCountdown(currentRoom.countdown_started_at, shouldSkipBuffer);
         return;
       }
     }
@@ -6519,10 +6523,16 @@ const GamePage = ({
       if (processedCountdownRef.current === currentRoom.countdown_started_at) {
         return;
       }
-      console.log("⏰ Initial countdown sync from room state:", currentRoom.countdown_started_at);
+      const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
+      const shouldSkipBuffer = Date.now() + serverTimeOffset - countdownStartTime >= 5000;
+
+      console.log("⏰ Initial countdown sync from room state:", {
+        countdownStartedAt: currentRoom.countdown_started_at,
+        shouldSkipBuffer,
+      });
 
       // 🎯 Merkezi initiateCountdown fonksiyonunu kullan
-      initiateCountdown(currentRoom.countdown_started_at, false);
+      initiateCountdown(currentRoom.countdown_started_at, shouldSkipBuffer);
     }
   }, [
     gameMode,
@@ -6593,10 +6603,16 @@ const GamePage = ({
           countdownStartedAt = data.countdown_started_at;
         }
 
-        console.log("🎯 Countdown başlatılıyor (RPC/DB sonrası):", countdownStartedAt);
+        const countdownStartTime = new Date(countdownStartedAt).getTime();
+        const shouldSkipBuffer = Date.now() + serverTimeOffset - countdownStartTime >= 5000;
+
+        console.log("🎯 Countdown başlatılıyor (RPC/DB sonrası):", {
+          countdownStartedAt,
+          shouldSkipBuffer,
+        });
 
         // 🎯 Merkezi initiateCountdown fonksiyonunu kullan - duplicate mantık yok!
-        initiateCountdown(countdownStartedAt, false);
+        initiateCountdown(countdownStartedAt, shouldSkipBuffer);
       } catch (error) {
         console.error("❌ Countdown hatası:", error);
       }
