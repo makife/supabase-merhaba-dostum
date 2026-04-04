@@ -868,32 +868,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         // Immediate fetch before countdown
         await fetchParticipants(room.id);
 
-        // 🎯 PRIVATE ROOM İÇİN COUNTDOWN BAŞLATMA
-        // Eğer ikinci oyuncu join olduysa countdown başlat
+        // Private room'da countdown burada BAŞLATILMAZ.
+        // Hazır sistemi PrivateRoomWaitingPage üzerinden iki oyuncu da hazır olduktan sonra tetiklenir.
         if (room.game_mode.includes("private-room")) {
-          const { data: participantCount } = await supabase
-            .from("game_participants")
-            .select("id", { count: "exact" })
-            .eq("room_id", room.id)
-            .eq("is_bot", false);
-
-          const playerCount = participantCount?.length || 0;
-          console.log("👥 Private room oyuncu sayısı:", playerCount);
-
-          if (playerCount >= 2) {
-            // İkinci oyuncu join oldu, countdown'ı güvenli şekilde başlat
-            // closeFullRoom countdown başlatacak, real-time subscription yakalayacak
-            try {
-              await closeFullRoom(room.id);
-            } catch (countdownError) {
-              console.error("❌ Countdown başlatma hatası:", countdownError);
-            }
-          } else {
-            toast({
-              title: "Odaya Katıldınız",
-              description: "Diğer oyuncu bekleniyor...",
-            });
-          }
+          toast({
+            title: "Odaya Katıldınız",
+            description: "Diğer oyuncu bekleniyor...",
+          });
         }
 
         return true;
