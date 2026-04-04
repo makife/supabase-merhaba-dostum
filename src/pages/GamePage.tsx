@@ -2115,7 +2115,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = userIsWinner ? 5 : 0; // Turnuvada beraberlik yok, kaybetme=0
+        const tournamentScoreMultiplier = userIsWinner ? 5 : 1; // Turnuvada beraberlik yok, kaybetme=x1
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
@@ -3067,7 +3067,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 0;
+        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
@@ -4618,8 +4618,8 @@ const GamePage = ({
       if (winner !== null) return;
 
       let gameResult: "player" | "opponent" | "tie";
-      // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=0
-      let scoreMultiplier = 0;
+      // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=x1
+      let scoreMultiplier = 1;
 
       // Tournament: rely on backend for winner, avoid client-side decision
       if (gameMode === "tournament") {
@@ -4774,8 +4774,8 @@ const GamePage = ({
       }
 
       // Skor çarpanı bilgisi toast
-      if (user && gameResult !== "opponent") {
-        const multiplierLabel = gameResult === "player" ? "Kazanma (x5)" : "Beraberlik (x2)";
+      if (user) {
+        const multiplierLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
         const finalScore = currentPlayerScore * scoreMultiplier;
         setTimeout(() => {
           toast({
