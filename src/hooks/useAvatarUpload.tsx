@@ -134,14 +134,16 @@ export const useAvatarUpload = () => {
       // Web platformda Capacitor Camera kullan (fallback)
       console.log("[Avatar] 📷 Web kamera açılıyor...");
 
+      const isIOS = Capacitor.getPlatform() === 'ios';
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.Base64,
         source: CameraSource.Camera,
         quality: 80,
         allowEditing: false,
-        saveToGallery: true,
+        saveToGallery: false,
         width: 800,
         height: 800,
+        ...(isIOS ? { presentationStyle: 'fullscreen' } : {}),
       });
 
       if (!photo.base64String) {
