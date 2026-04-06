@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { Capacitor } from "@capacitor/core";
 import imageCompression from "browser-image-compression";
 import { captureFromNativeCamera, pickFromNativeGallery, isAndroidNative } from "@/services/nativeCameraService";
 
@@ -134,14 +135,16 @@ export const useAvatarUpload = () => {
       // Web platformda Capacitor Camera kullan (fallback)
       console.log("[Avatar] 📷 Web kamera açılıyor...");
 
+      const isIOS = Capacitor.getPlatform() === 'ios';
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.Base64,
         source: CameraSource.Camera,
         quality: 80,
         allowEditing: false,
-        saveToGallery: true,
+        saveToGallery: false,
         width: 800,
         height: 800,
+        ...(isIOS ? { presentationStyle: 'fullscreen' } : {}),
       });
 
       if (!photo.base64String) {
@@ -164,14 +167,20 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
+      const msg = error?.message || error?.errorMessage || String(error);
       const isCancelled =
-        error.message?.includes("cancelled") ||
-        error.message?.includes("User cancelled") ||
-        error.message?.includes("iptal");
+        msg.includes("cancelled") ||
+        msg.includes("User cancelled") ||
+        msg.includes("cancel") ||
+        msg.includes("iptal") ||
+        msg.includes("denied") ||
+        msg.includes("dismissed");
 
       if (!isCancelled) {
-        console.error("[Avatar] Camera error:", error);
-        toast.error("Fotoğraf çekilirken hata oluştu");
+        console.error("[Avatar] Camera error:", JSON.stringify(error));
+        toast.error("Fotoğraf çekilirken hata oluştu: " + msg);
+      } else {
+        console.log("[Avatar] 📷 Kamera iptal edildi");
       }
       return null;
     }
@@ -224,14 +233,20 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
+      const msg = error?.message || error?.errorMessage || String(error);
       const isCancelled =
-        error.message?.includes("cancelled") ||
-        error.message?.includes("User cancelled") ||
-        error.message?.includes("iptal");
+        msg.includes("cancelled") ||
+        msg.includes("User cancelled") ||
+        msg.includes("cancel") ||
+        msg.includes("iptal") ||
+        msg.includes("denied") ||
+        msg.includes("dismissed");
 
       if (!isCancelled) {
-        console.error("[Avatar] Gallery error:", error);
-        toast.error("Fotoğraf seçilirken hata oluştu");
+        console.error("[Avatar] Gallery error:", JSON.stringify(error));
+        toast.error("Fotoğraf seçilirken hata oluştu: " + msg);
+      } else {
+        console.log("[Avatar] 🖼️ Galeri iptal edildi");
       }
       return null;
     }
