@@ -167,14 +167,20 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
+      const msg = error?.message || error?.errorMessage || String(error);
       const isCancelled =
-        error.message?.includes("cancelled") ||
-        error.message?.includes("User cancelled") ||
-        error.message?.includes("iptal");
+        msg.includes("cancelled") ||
+        msg.includes("User cancelled") ||
+        msg.includes("cancel") ||
+        msg.includes("iptal") ||
+        msg.includes("denied") ||
+        msg.includes("dismissed");
 
       if (!isCancelled) {
-        console.error("[Avatar] Camera error:", error);
-        toast.error("Fotoğraf çekilirken hata oluştu");
+        console.error("[Avatar] Camera error:", JSON.stringify(error));
+        toast.error("Fotoğraf çekilirken hata oluştu: " + msg);
+      } else {
+        console.log("[Avatar] 📷 Kamera iptal edildi");
       }
       return null;
     }
