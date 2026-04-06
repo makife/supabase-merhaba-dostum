@@ -233,14 +233,20 @@ export const useAvatarUpload = () => {
 
       return { file, webPath };
     } catch (error: any) {
+      const msg = error?.message || error?.errorMessage || String(error);
       const isCancelled =
-        error.message?.includes("cancelled") ||
-        error.message?.includes("User cancelled") ||
-        error.message?.includes("iptal");
+        msg.includes("cancelled") ||
+        msg.includes("User cancelled") ||
+        msg.includes("cancel") ||
+        msg.includes("iptal") ||
+        msg.includes("denied") ||
+        msg.includes("dismissed");
 
       if (!isCancelled) {
-        console.error("[Avatar] Gallery error:", error);
-        toast.error("Fotoğraf seçilirken hata oluştu");
+        console.error("[Avatar] Gallery error:", JSON.stringify(error));
+        toast.error("Fotoğraf seçilirken hata oluştu: " + msg);
+      } else {
+        console.log("[Avatar] 🖼️ Galeri iptal edildi");
       }
       return null;
     }
