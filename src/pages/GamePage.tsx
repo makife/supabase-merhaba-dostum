@@ -4033,11 +4033,22 @@ const GamePage = ({
       return; // Fonksiyondan çık, joker azaltma
     }
 
-    // Artık selectedLetters set etmiyoruz - sadece input feedback ile kelimeyi gösteriyoruz
+    // Harfleri sırayla ızgarada yak (highlight)
+    for (let i = 0; i < wordPositions.length; i++) {
+      setTimeout(() => {
+        setHighlightedLetters([{ row: wordPositions[i].row, col: wordPositions[i].col }]);
+        playSound("letterSelect");
+
+        setTimeout(() => {
+          setHighlightedLetters([]);
+        }, 400);
+      }, i * 500);
+    }
 
     // Input feedback göster - Sen Yaz kelimeyi yeşil olarak göster
     showCustomToast(normalizedSelectedWord, "", "green");
 
+    const animationDelay = wordPositions.length * 500 + 300;
     setTimeout(async () => {
       let jokerSuccess = false;
 
@@ -4104,7 +4115,7 @@ const GamePage = ({
       } else {
         console.log("💾 Sen Yaz Jokeri korundu (işlem başarısız)!");
       }
-    }, 1500);
+    }, animationDelay);
   };
   // Sync grid with room data and fetch avatars
   useEffect(() => {
