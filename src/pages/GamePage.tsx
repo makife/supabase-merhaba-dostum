@@ -4115,7 +4115,7 @@ const GamePage = ({
       } else {
         console.log("💾 Sen Yaz Jokeri korundu (işlem başarısız)!");
       }
-    }, 1500);
+    }, animationDelay);
   };
   // Sync grid with room data and fetch avatars
   useEffect(() => {
