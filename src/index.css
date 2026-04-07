@@ -1234,7 +1234,9 @@ All colors MUST be HSL.
 }
 
 .letter-glow-highlight {
-  animation: none;
+  animation: letter-glow-highlight 0.8s ease-in-out infinite;
+  border-color: #ffd700 !important;
+  color: #fff !important;
 }
 
 /* Alternatif - Daha dramatik efekt */
