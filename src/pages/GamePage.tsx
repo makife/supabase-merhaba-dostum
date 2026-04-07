@@ -3678,8 +3678,7 @@ const GamePage = ({
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
-      // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
-    }, 1000);
+    }, 500);
 
     setSelectedLetters([]);
     // currentWord artık derived value, manuel set'e gerek yok
@@ -4034,21 +4033,19 @@ const GamePage = ({
     }
 
     // Harfleri sırayla ızgarada yak (highlight)
-    for (let i = 0; i < wordPositions.length; i++) {
-      setTimeout(() => {
-        setHighlightedLetters([{ row: wordPositions[i].row, col: wordPositions[i].col }]);
-        playSound("letterSelect");
+    // Tüm harfleri aynı anda yak
+    const allPositions = wordPositions.map(p => ({ row: p.row, col: p.col }));
+    setHighlightedLetters(allPositions);
+    playSound("letterSelect");
 
-        setTimeout(() => {
-          setHighlightedLetters([]);
-        }, 400);
-      }, i * 500);
-    }
+    setTimeout(() => {
+      setHighlightedLetters([]);
+    }, 600);
 
     // Input feedback göster - Sen Yaz kelimeyi yeşil olarak göster
     showCustomToast(normalizedSelectedWord, "", "green");
 
-    const animationDelay = wordPositions.length * 500 + 300;
+    const animationDelay = 800;
     setTimeout(async () => {
       let jokerSuccess = false;
 

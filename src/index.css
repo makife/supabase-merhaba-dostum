@@ -1216,26 +1216,24 @@ All colors MUST be HSL.
   0% {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     transform: scale(1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
   }
   50% {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
     transform: scale(1.05);
-    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6);
-    color: #000;
-    border-color: #ffd700;
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6);
+    border-color: #a855f7;
   }
   100% {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     transform: scale(1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
   }
 }
 
 .letter-glow-highlight {
   animation: letter-glow-highlight 0.8s ease-in-out infinite;
-  border-color: #ffd700 !important;
+  border-color: #a855f7 !important;
   color: #fff !important;
 }
 
