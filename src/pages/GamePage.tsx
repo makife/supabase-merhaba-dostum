@@ -3678,8 +3678,7 @@ const GamePage = ({
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
-      // Grid sync'i sürekli kapalı tut - değiştir jokeri lokal kalmalı
-    }, 1000);
+    }, 500);
 
     setSelectedLetters([]);
     // currentWord artık derived value, manuel set'e gerek yok
