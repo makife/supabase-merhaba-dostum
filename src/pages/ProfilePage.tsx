@@ -742,42 +742,77 @@ const ProfilePage = () => {
   };
 
   const handleCameraSelect = async () => {
-    setShowAvatarOptions(false);
-
     // Recovery modu sadece Android'de - iOS'ta NativeCamera plugin yok
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      setShowAvatarOptions(false);
       console.log("[ProfilePage] 📷 Android native kamera recovery modu aktif");
       await captureFromCameraWithRecovery();
       return;
     }
 
-    const result = await captureFromCamera();
-    if (result) {
-      const publicUrl = await uploadAvatar(result.file);
-      if (publicUrl) {
-        setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
-        setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+    try {
+      // iOS'ta önce kamerayı aç, SONRA dialogu kapat
+      // Gesture context'i korumak için Camera.getPhoto ÖNCE çağrılmalı
+      console.log("[ProfilePage] 📷 iOS kamera açılıyor...");
+      const result = await captureFromCamera();
+      setShowAvatarOptions(false);
+      
+      if (result) {
+        console.log("[ProfilePage] ✅ Fotoğraf alındı, yükleniyor...", (result.file.size / 1024).toFixed(0), "KB");
+        const publicUrl = await uploadAvatar(result.file);
+        if (publicUrl) {
+          console.log("[ProfilePage] ✅ Avatar güncellendi:", publicUrl);
+          setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
+          setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+          toast.success("Avatar güncellendi");
+        } else {
+          console.error("[ProfilePage] ❌ uploadAvatar null döndü");
+          toast.error("Avatar yüklenemedi");
+        }
+      } else {
+        console.log("[ProfilePage] 📷 Kamera iptal edildi veya sonuç alınamadı");
       }
+    } catch (error: any) {
+      setShowAvatarOptions(false);
+      console.error("[ProfilePage] ❌ Kamera hatası:", error);
+      toast.error("Fotoğraf çekilirken hata: " + (error?.message || String(error)));
     }
   };
 
   const handleGallerySelect = async () => {
-    setShowAvatarOptions(false);
-
-    // Recovery modu sadece Android'de - iOS'ta NativeCamera plugin yok
+    // Recovery modu sadece Android'de
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      setShowAvatarOptions(false);
       console.log("[ProfilePage] 🖼️ Android native galeri recovery modu aktif");
       await captureFromGalleryWithRecovery();
       return;
     }
 
-    const result = await captureFromGallery();
-    if (result) {
-      const publicUrl = await uploadAvatar(result.file);
-      if (publicUrl) {
-        setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
-        setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+    try {
+      // iOS'ta önce galeriyi aç, SONRA dialogu kapat
+      console.log("[ProfilePage] 🖼️ iOS galeri açılıyor...");
+      const result = await captureFromGallery();
+      setShowAvatarOptions(false);
+      
+      if (result) {
+        console.log("[ProfilePage] ✅ Fotoğraf seçildi, yükleniyor...", (result.file.size / 1024).toFixed(0), "KB");
+        const publicUrl = await uploadAvatar(result.file);
+        if (publicUrl) {
+          console.log("[ProfilePage] ✅ Avatar güncellendi:", publicUrl);
+          setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
+          setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+          toast.success("Avatar güncellendi");
+        } else {
+          console.error("[ProfilePage] ❌ uploadAvatar null döndü");
+          toast.error("Avatar yüklenemedi");
+        }
+      } else {
+        console.log("[ProfilePage] 🖼️ Galeri iptal edildi veya sonuç alınamadı");
       }
+    } catch (error: any) {
+      setShowAvatarOptions(false);
+      console.error("[ProfilePage] ❌ Galeri hatası:", error);
+      toast.error("Fotoğraf seçilirken hata: " + (error?.message || String(error)));
     }
   };
 
