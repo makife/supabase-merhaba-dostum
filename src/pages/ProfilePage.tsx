@@ -798,8 +798,7 @@ const ProfilePage = () => {
         const publicUrl = await uploadAvatar(result.file);
         if (publicUrl) {
           console.log("[ProfilePage] ✅ Avatar güncellendi:", publicUrl);
-          setProfileData((prev: any) => ({ ...prev, avatar_url: publicUrl }));
-          setViewedProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+          handleAvatarUploaded(publicUrl);
           toast.success("Avatar güncellendi");
         } else {
           console.error("[ProfilePage] ❌ uploadAvatar null döndü");
