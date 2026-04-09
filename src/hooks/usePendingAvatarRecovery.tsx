@@ -14,13 +14,14 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { nativeStorage } from "@/utils/nativeStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import imageCompression from "browser-image-compression";
-import { captureFromNativeCamera, pickFromNativeGallery, isNativePlatform } from "@/services/nativeCameraService";
+import { captureFromNativeCamera, pickFromNativeGallery, isAndroidNative } from "@/services/nativeCameraService";
 
 // Storage keys
 const PENDING_AVATAR_KEY = "pending_avatar_base64";
@@ -81,6 +82,52 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
       };
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  const captureWithCapacitorCamera = async (
+    source: CameraSource,
+  ): Promise<{ file: File; webPath: string } | null> => {
+    const isIOS = Capacitor.getPlatform() === "ios";
+
+    const photo = await Camera.getPhoto({
+      resultType: CameraResultType.Base64,
+      source,
+      quality: 80,
+      width: 800,
+      height: 800,
+      ...(source === CameraSource.Camera
+        ? {
+            allowEditing: false,
+            saveToGallery: false,
+          }
+        : {
+            correctOrientation: true,
+            promptLabelHeader: "Fotoğraf Seç",
+          }),
+      ...(isIOS ? { presentationStyle: "fullscreen" as const } : {}),
+    });
+
+    if (!photo.base64String) {
+      throw new Error("Fotoğraf verisi alınamadı");
+    }
+
+    const byteCharacters = atob(photo.base64String);
+    const byteNumbers = new Array(byteCharacters.length);
+
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "image/jpeg" });
+    const file = new File([blob], source === CameraSource.Camera ? "camera-photo.jpg" : "gallery-photo.jpg", {
+      type: "image/jpeg",
+    });
+
+    return {
+      file,
+      webPath: `data:image/jpeg;base64,${photo.base64String}`,
+    };
   };
 
   // Resmi sıkıştır - JPEG formatı daha güvenilir (webp native android'de sorun çıkarabiliyor)
@@ -239,6 +286,23 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     }
   };
 
+  const persistAndUploadSelectedFile = async (file: File): Promise<boolean> => {
+    const base64 = await fileToBase64(file);
+
+    if (!base64 || base64.length < 1000) {
+      throw new Error("Fotoğraf verisi çok küçük veya bozuk");
+    }
+
+    console.log(`[PendingAvatar] ✅ Fotoğraf hazır! Base64 length: ${base64.length}`);
+
+    await savePendingAvatar(base64, "image/jpeg");
+
+    console.log("[PendingAvatar] 🚀 Hemen yükleme başlıyor...");
+    await checkAndProcessPendingAvatar();
+
+    return true;
+  };
+
   // Bekleyen avatar'ı kontrol et ve yükle
   const checkAndProcessPendingAvatar = useCallback(async (): Promise<void> => {
     // Çift işlemi önle
@@ -316,10 +380,13 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     try {
       console.log("[PendingAvatar] 📷 Native kamera açılıyor (recovery modunda)...");
 
-      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "camera");
-      await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
-
-      const result = await captureFromNativeCamera();
+      const result = isAndroidNative()
+        ? await (async () => {
+            await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "camera");
+            await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
+            return captureFromNativeCamera();
+          })()
+        : await captureWithCapacitorCamera(CameraSource.Camera);
 
       if (!result || !result.file) {
         console.log("[PendingAvatar] ❌ Kamera iptal edildi");
@@ -328,21 +395,7 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
         return false;
       }
 
-      const base64 = await fileToBase64(result.file);
-
-      if (!base64 || base64.length < 1000) {
-        throw new Error("Fotoğraf verisi çok küçük veya bozuk");
-      }
-
-      console.log(`[PendingAvatar] ✅ Fotoğraf çekildi! Base64 length: ${base64.length}`);
-
-      await savePendingAvatar(base64, "image/jpeg");
-
-      // 🔥 FIX: setTimeout KALDIRILDI - HEMEN YÜKLE
-      console.log("[PendingAvatar] 🚀 Hemen yükleme başlıyor...");
-      await checkAndProcessPendingAvatar(); // ✅ AWAIT İLE BEKLİYOR!
-
-      return true;
+      return await persistAndUploadSelectedFile(result.file);
     } catch (error: any) {
       const isCancelled =
         error.message?.includes("cancelled") ||
@@ -366,39 +419,22 @@ export const usePendingAvatarRecovery = (onAvatarUploaded?: (url: string) => voi
     try {
       console.log("[PendingAvatar] 🖼️ Native galeri açılıyor (recovery modunda)...");
 
-      // Action flag'ini kaydet
-      await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "gallery");
-      await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
-
-      // 🔥 Native Gallery Plugin kullan
-      const result = await pickFromNativeGallery();
+      const result = isAndroidNative()
+        ? await (async () => {
+            await nativeStorage.setItem(PENDING_AVATAR_ACTION_KEY, "gallery");
+            await nativeStorage.setItem(PENDING_AVATAR_TIMESTAMP_KEY, Date.now().toString());
+            return pickFromNativeGallery();
+          })()
+        : await captureWithCapacitorCamera(CameraSource.Photos);
 
       if (!result || !result.file) {
         console.log("[PendingAvatar] ❌ Galeri seçimi iptal edildi veya başarısız");
-        // Temizlik
         await nativeStorage.removeItem(PENDING_AVATAR_ACTION_KEY);
         await nativeStorage.removeItem(PENDING_AVATAR_TIMESTAMP_KEY);
         return false;
       }
 
-      // File'dan base64 oluştur
-      const base64 = await fileToBase64(result.file);
-
-      if (!base64 || base64.length < 1000) {
-        console.error("[PendingAvatar] ❌ Base64 verisi çok küçük:", base64?.length || 0);
-        throw new Error("Fotoğraf verisi çok küçük veya bozuk");
-      }
-
-      console.log(`[PendingAvatar] ✅ Fotoğraf seçildi! Base64 length: ${base64.length}`);
-
-      // Base64'ü native storage'a kaydet
-      await savePendingAvatar(base64, "image/jpeg");
-
-      // 🔥 FIX: setTimeout KALDIRILDI - HEMEN YÜKLE
-      console.log("[PendingAvatar] 🚀 Hemen yükleme başlıyor...");
-      await checkAndProcessPendingAvatar(); // ✅ AWAIT İLE BEKLİYOR!
-
-      return true;
+      return await persistAndUploadSelectedFile(result.file);
     } catch (error: any) {
       const isCancelled =
         error.message?.includes("cancelled") ||
