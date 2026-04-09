@@ -742,10 +742,9 @@ const ProfilePage = () => {
   };
 
   const handleCameraSelect = async () => {
-    // Recovery modu sadece Android'de - iOS'ta NativeCamera plugin yok
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+    if (Capacitor.isNativePlatform()) {
       setShowAvatarOptions(false);
-      console.log("[ProfilePage] 📷 Android native kamera recovery modu aktif");
+      console.log("[ProfilePage] 📷 Native kamera recovery modu aktif");
       await captureFromCameraWithRecovery();
       return;
     }
@@ -779,10 +778,9 @@ const ProfilePage = () => {
   };
 
   const handleGallerySelect = async () => {
-    // Recovery modu sadece Android'de
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+    if (Capacitor.isNativePlatform()) {
       setShowAvatarOptions(false);
-      console.log("[ProfilePage] 🖼️ Android native galeri recovery modu aktif");
+      console.log("[ProfilePage] 🖼️ Native galeri recovery modu aktif");
       await captureFromGalleryWithRecovery();
       return;
     }
