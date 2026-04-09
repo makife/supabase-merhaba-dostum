@@ -303,13 +303,15 @@ const LeaderboardPage = () => {
       : rank === 2
         ? "bg-gradient-to-b from-slate-400/15 to-slate-500/5 border-slate-400/25"
         : "bg-gradient-to-b from-orange-500/15 to-orange-600/5 border-orange-500/25";
-    const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+    const rankBadge = rank === 1 
+      ? <img src="/liderlik1numara.svg" alt="1." className={size === "lg" ? "w-8 h-8" : "w-6 h-6"} />
+      : <span className="text-lg">{rank === 2 ? "🥈" : "🥉"}</span>;
 
     return (
       <div
         className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 border transition-all ${bgColor} ${size === "lg" ? "pt-4 pb-3" : "pt-3 pb-2"}`}
       >
-        <span className="text-lg">{rankEmoji}</span>
+        {rankBadge}
         <div className="relative">
           <div className={`${avatarSize} rounded-full p-[2px] bg-gradient-to-tr ${borderColor}`}>
             <Avatar
