@@ -289,9 +289,76 @@ const LeaderboardPage = () => {
     return null;
   };
 
-  const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => (
-    <div className="space-y-3">
-      {leaders.length === 0 ? (
+  const renderPodiumCard = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
+    const isCurrentUser = leader.user_id === user?.id;
+    const avatarSize = size === "lg" ? "w-16 h-16" : "w-12 h-12";
+    const wrapperSize = size === "lg" ? "w-[18px] h-[18px]" : "w-[16px] h-[16px]";
+    const borderColor = rank === 1
+      ? "from-amber-300 to-yellow-500"
+      : rank === 2
+        ? "from-slate-300 to-slate-400"
+        : "from-orange-400 to-orange-600";
+    const bgColor = rank === 1
+      ? "bg-gradient-to-b from-amber-500/20 to-yellow-600/10 border-amber-400/30"
+      : rank === 2
+        ? "bg-gradient-to-b from-slate-400/15 to-slate-500/5 border-slate-400/25"
+        : "bg-gradient-to-b from-orange-500/15 to-orange-600/5 border-orange-500/25";
+    const rankEmoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+
+    return (
+      <div
+        className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 border transition-all ${bgColor} ${size === "lg" ? "pt-4 pb-3" : "pt-3 pb-2"}`}
+      >
+        <span className="text-lg">{rankEmoji}</span>
+        <div className="relative">
+          <div className={`${avatarSize} rounded-full p-[2px] bg-gradient-to-tr ${borderColor}`}>
+            <Avatar
+              className={`w-full h-full cursor-pointer hover:scale-110 transition-transform ${
+                activeTab === "all-time"
+                  ? "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900"
+                  : activeTab === "monthly"
+                    ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
+                    : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
+              }`}
+              onClick={() => navigate(`/profile/${leader.user_id}`)}
+            >
+              <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+              <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
+                {leader.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          {isUserOnline(leader.user_id) && (
+            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1a2e] rounded-full" />
+          )}
+          {premiumUsers.has(leader.user_id) && (
+            <div className="absolute -top-1 -right-1 z-20">
+              <VipBadge size="xs" />
+            </div>
+          )}
+        </div>
+        <div className="text-center min-w-0 w-full">
+          <h3
+            className="font-bold text-white text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors"
+            onClick={() => navigate(`/profile/${leader.user_id}`)}
+          >
+            {leader.username}
+          </h3>
+          {isCurrentUser && (
+            <span className="text-[9px] text-indigo-400 font-bold">(Sen)</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+          <Target className="w-3 h-3" />
+          <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => {
+    if (leaders.length === 0) {
+      return (
         <div className="text-center py-12">
           <div className="w-20 h-20 bg-[#1e2d45] rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-10 h-10 text-slate-500" />
@@ -299,51 +366,67 @@ const LeaderboardPage = () => {
           <p className="text-slate-400 font-medium">Henüz oyun oynayan yok</p>
           <p className="text-sm text-slate-500 mt-1">İlk sen ol!</p>
         </div>
-      ) : (
-        leaders.map((leader, index) => {
-          const isTopThree = leader.rank <= 3;
+      );
+    }
+
+    const top3 = leaders.slice(0, 3);
+    const rest = leaders.slice(3);
+    const first = top3[0];
+    const second = top3[1];
+    const third = top3[2];
+
+    return (
+      <div className="space-y-3">
+        {/* Podium - Top 3 */}
+        {top3.length > 0 && (
+          <div className="flex flex-col items-center gap-2 mb-4">
+            {/* 1st place */}
+            {first && (
+              <div className="w-[55%]">
+                {renderPodiumCard(first, 1, "lg")}
+              </div>
+            )}
+            {/* 2nd & 3rd */}
+            {(second || third) && (
+              <div className="flex gap-3 w-full">
+                <div className="flex-1">
+                  {second ? renderPodiumCard(second, 2, "sm") : <div />}
+                </div>
+                <div className="flex-1">
+                  {third ? renderPodiumCard(third, 3, "sm") : <div />}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rest of leaderboard */}
+        {rest.map((leader) => {
           const isCurrentUser = leader.user_id === user?.id;
 
           return (
             <div
               key={leader.user_id}
               className={`relative group rounded-2xl p-4 transition-all duration-300 border ${
-                isTopThree
-                  ? leader.rank === 1
-                    ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border-amber-400/30 shadow-lg shadow-amber-500/10"
-                    : leader.rank === 2
-                      ? "bg-gradient-to-r from-slate-400/20 via-slate-300/20 to-slate-400/20 border-slate-300/30 shadow-lg shadow-slate-400/10"
-                      : "bg-gradient-to-r from-orange-600/20 via-orange-500/20 to-orange-600/20 border-orange-500/30 shadow-lg shadow-orange-600/10"
-                  : isCurrentUser
-                    ? "bg-[#1e2d45] border-indigo-400/30 shadow-lg shadow-indigo-500/10"
-                    : "bg-[#1e2d45] border-indigo-500/20"
+                isCurrentUser
+                  ? "bg-[#1e2d45] border-indigo-400/30 shadow-lg shadow-indigo-500/10"
+                  : "bg-[#1e2d45] border-indigo-500/20"
               }`}
             >
-              {/* Hover Effect */}
               <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
 
               <div className="flex items-center gap-4 relative z-10">
-                {/* Rank Icon */}
                 <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
 
-              {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div
-                    className={`w-12 h-12 rounded-full p-[2px] ${
-                      isTopThree
-                        ? "bg-gradient-to-tr from-amber-300 to-orange-500"
-                        : "bg-gradient-to-tr from-indigo-400 to-purple-500"
-                    }`}
-                  >
+                  <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-indigo-400 to-purple-500">
                     <Avatar
                       className={`w-full h-full cursor-pointer hover:scale-110 transition-transform ${
                         activeTab === "all-time"
                           ? "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900"
                           : activeTab === "monthly"
-                          ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
-                          : activeTab === "weekly"
-                          ? "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
-                          : ""
+                            ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
+                            : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
                       }`}
                       onClick={() => navigate(`/profile/${leader.user_id}`)}
                     >
@@ -363,7 +446,6 @@ const LeaderboardPage = () => {
                   )}
                 </div>
 
-                {/* User Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3
@@ -397,15 +479,14 @@ const LeaderboardPage = () => {
                   </div>
                 </div>
 
-                {/* Rank Change */}
                 {showChange && <div className="flex-shrink-0">{getRankChangeIcon(leader.change)}</div>}
               </div>
             </div>
           );
-        })
-      )}
-    </div>
-  );
+        })}
+      </div>
+    );
+  };
 
   const getCurrentUserStats = () => {
     switch (activeTab) {
