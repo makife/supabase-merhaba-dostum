@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -289,55 +290,61 @@ const LeaderboardPage = () => {
     return null;
   };
 
-  const renderPodiumCard = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
+  const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any }>({ first: null, second: null, third: null });
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/birincijson.json").then(r => r.json()),
+      fetch("/ikincijson.json").then(r => r.json()),
+      fetch("/ucuncujson.json").then(r => r.json()),
+    ]).then(([first, second, third]) => setLottieData({ first, second, third }));
+  }, []);
+
+  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
-    const avatarSize = size === "lg" ? "w-16 h-16" : "w-12 h-12";
-    const wrapperSize = size === "lg" ? "w-[18px] h-[18px]" : "w-[16px] h-[16px]";
-    const borderColor = rank === 1
-      ? "from-amber-300 to-yellow-500"
-      : rank === 2
-        ? "from-slate-300 to-slate-400"
-        : "from-orange-400 to-orange-600";
-    const bgColor = rank === 1
-      ? "bg-gradient-to-b from-amber-500/20 to-yellow-600/10 border-amber-400/30"
-      : rank === 2
-        ? "bg-gradient-to-b from-slate-400/15 to-slate-500/5 border-slate-400/25"
-        : "bg-gradient-to-b from-orange-500/15 to-orange-600/5 border-orange-500/25";
+    const avatarPx = size === "lg" ? 72 : 52;
+    const lottiePx = size === "lg" ? 120 : 90;
+    const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
     const rankBadge = rank === 1 
       ? <img src="/liderlik1numara.svg" alt="1." className={size === "lg" ? "w-8 h-8" : "w-6 h-6"} />
       : <span className="text-lg">{rank === 2 ? "🥈" : "🥉"}</span>;
 
     return (
-      <div
-        className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 border transition-all ${bgColor} ${size === "lg" ? "pt-4 pb-3" : "pt-3 pb-2"}`}
-      >
+      <div className="flex flex-col items-center gap-1">
         {rankBadge}
-        <div className="relative">
-          <div className={`${avatarSize} rounded-full p-[2px] bg-gradient-to-tr ${borderColor}`}>
-            <Avatar
-              className={`w-full h-full cursor-pointer hover:scale-110 transition-transform ${
-                activeTab === "all-time"
-                  ? "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900"
-                  : activeTab === "monthly"
-                    ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
-                    : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
-              }`}
-              onClick={() => navigate(`/profile/${leader.user_id}`)}
-            >
-              <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
-              <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
-                {leader.username.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-          {isUserOnline(leader.user_id) && (
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1a2e] rounded-full" />
+        <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
+          {/* Lottie animation frame */}
+          {animData && (
+            <Lottie
+              animationData={animData}
+              loop
+              autoplay
+              style={{ position: 'absolute', inset: 0, width: lottiePx, height: lottiePx, pointerEvents: 'none' }}
+            />
           )}
-          {premiumUsers.has(leader.user_id) && (
-            <div className="absolute -top-1 -right-1 z-20">
-              <VipBadge size="xs" />
+          {/* Avatar centered inside lottie */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              <Avatar
+                className={`cursor-pointer hover:scale-110 transition-transform`}
+                style={{ width: avatarPx, height: avatarPx }}
+                onClick={() => navigate(`/profile/${leader.user_id}`)}
+              >
+                <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
+                  {leader.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {isUserOnline(leader.user_id) && (
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1a2e] rounded-full z-10" />
+              )}
+              {premiumUsers.has(leader.user_id) && (
+                <div className="absolute -top-1 -right-1 z-20">
+                  <VipBadge size="xs" />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         <div className="text-center min-w-0 w-full h-[28px] flex flex-col items-center justify-center">
           <h3
@@ -379,22 +386,18 @@ const LeaderboardPage = () => {
       <div className="space-y-3">
         {/* Podium - Top 3 */}
         {top3.length > 0 && (
-          <div className="flex flex-col items-center gap-2 mb-4">
-            {/* 1st place */}
+          <div className="mb-4">
+            {/* 1st place centered */}
             {first && (
-              <div className="w-[55%]">
-                {renderPodiumCard(first, 1, "lg")}
+              <div className="flex justify-center mb-1">
+                {renderPodiumItem(first, 1, "lg")}
               </div>
             )}
-            {/* 2nd & 3rd */}
+            {/* 2nd & 3rd side by side */}
             {(second || third) && (
-              <div className="flex gap-3 w-full">
-                <div className="flex-1">
-                  {second ? renderPodiumCard(second, 2, "sm") : <div />}
-                </div>
-                <div className="flex-1">
-                  {third ? renderPodiumCard(third, 3, "sm") : <div />}
-                </div>
+              <div className="flex justify-center gap-4">
+                {second && renderPodiumItem(second, 2, "sm")}
+                {third && renderPodiumItem(third, 3, "sm")}
               </div>
             )}
           </div>
