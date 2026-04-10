@@ -290,17 +290,21 @@ const LeaderboardPage = () => {
     return null;
   };
 
-  const lottieData = useMemo(() => ({
-    first: "/birincijson.json",
-    second: "/ikincijson.json",
-    third: "/ucuncujson.json",
-  }), []);
+  const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any }>({ first: null, second: null, third: null });
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/birincijson.json").then(r => r.json()),
+      fetch("/ikincijson.json").then(r => r.json()),
+      fetch("/ucuncujson.json").then(r => r.json()),
+    ]).then(([first, second, third]) => setLottieData({ first, second, third }));
+  }, []);
 
   const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
     const avatarPx = size === "lg" ? 72 : 52;
     const lottiePx = size === "lg" ? 120 : 90;
-    const lottieFile = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
+    const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
     const rankBadge = rank === 1 
       ? <img src="/liderlik1numara.svg" alt="1." className={size === "lg" ? "w-8 h-8" : "w-6 h-6"} />
       : <span className="text-lg">{rank === 2 ? "🥈" : "🥉"}</span>;
