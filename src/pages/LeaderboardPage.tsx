@@ -305,13 +305,8 @@ const LeaderboardPage = () => {
     const avatarPx = size === "lg" ? 72 : 52;
     const lottiePx = size === "lg" ? 120 : 90;
     const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
-    const rankBadge = rank === 1 
-      ? <img src="/liderlik1numara.svg" alt="1." className={size === "lg" ? "w-8 h-8" : "w-6 h-6"} />
-      : <span className="text-lg">{rank === 2 ? "🥈" : "🥉"}</span>;
-
     return (
       <div className="flex flex-col items-center gap-1">
-        {rankBadge}
         <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
           {/* Lottie animation frame */}
           {animData && (
@@ -395,7 +390,7 @@ const LeaderboardPage = () => {
             )}
             {/* 2nd & 3rd side by side */}
             {(second || third) && (
-              <div className="flex justify-center gap-4">
+              <div className="flex justify-center gap-8">
                 {second && renderPodiumItem(second, 2, "sm")}
                 {third && renderPodiumItem(third, 3, "sm")}
               </div>
