@@ -1,4 +1,5 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
+import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,10 @@ const TournamentPage = () => {
     useTournamentContext();
   const { profile, isPremium } = useUser();
 
+  const [kupaAnim, setKupaAnim] = useState<any>(null);
+  useEffect(() => {
+    fetch("/kupajson.json").then(r => r.json()).then(setKupaAnim).catch(console.error);
+  }, []);
   useEffect(() => {
     fetchTournaments();
   }, []);
@@ -112,9 +117,14 @@ const TournamentPage = () => {
         {/* Turnuva Oluştur Kartı */}
         <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl overflow-hidden shadow-xl">
           <div className="px-5 pt-5 pb-4 border-b border-white/5">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 bg-amber-400 rounded-full" />
-              <h2 className="text-sm font-black text-white uppercase tracking-widest">Yeni Turnuva</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-amber-400 rounded-full" />
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Yeni Turnuva</h2>
+              </div>
+              {kupaAnim && (
+                <Lottie animationData={kupaAnim} loop autoplay style={{ width: 40, height: 40 }} />
+              )}
             </div>
           </div>
           <div className="px-4 py-4">
