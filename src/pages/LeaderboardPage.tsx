@@ -314,12 +314,14 @@ const LeaderboardPage = () => {
         {rankBadge}
         <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
           {/* Lottie animation frame */}
-          <Lottie
-            path={lottieFile}
-            loop
-            autoplay
-            style={{ position: 'absolute', inset: 0, width: lottiePx, height: lottiePx, pointerEvents: 'none' }}
-          />
+          {animData && (
+            <Lottie
+              animationData={animData}
+              loop
+              autoplay
+              style={{ position: 'absolute', inset: 0, width: lottiePx, height: lottiePx, pointerEvents: 'none' }}
+            />
+          )}
           {/* Avatar centered inside lottie */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
