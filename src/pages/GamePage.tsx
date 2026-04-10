@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import Lottie from "lottie-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useAppState } from "@/hooks/useAppState";
@@ -134,6 +135,26 @@ const GamePage = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Lottie animation data for game end
+  const [winAnim, setWinAnim] = useState<any>(null);
+  const [loseAnim, setLoseAnim] = useState<any>(null);
+  const [tieAnim, setTieAnim] = useState<any>(null);
+  const [confettiAnim, setConfettiAnim] = useState<any>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/oyunkazanmajson.json").then(r => r.json()),
+      fetch("/oyunkatbetmejson.json").then(r => r.json()),
+      fetch("/beraberlikjson.json").then(r => r.json()),
+      fetch("/kazanmajson.json").then(r => r.json()),
+    ]).then(([win, lose, tie, confetti]) => {
+      setWinAnim(win);
+      setLoseAnim(lose);
+      setTieAnim(tie);
+      setConfettiAnim(confetti);
+    }).catch(console.error);
+  }, []);
   const {
     currentRoom,
     updateScore,
@@ -7271,42 +7292,19 @@ const GamePage = ({
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
         {/* Victory animations */}
-        {winner === "player" && (
-          <div className="absolute inset-0 pointer-events-none">
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                className={`absolute w-3 h-3 rounded-full animate-[confetti_3s_ease-out_infinite] ${
-                  i % 4 === 0
-                    ? "bg-yellow-400"
-                    : i % 4 === 1
-                      ? "bg-red-400"
-                      : i % 4 === 2
-                        ? "bg-blue-400"
-                        : "bg-green-400"
-                }`}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  transform: `rotate(${Math.random() * 360}deg)`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-        {winner === "opponent" && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="animate-[sadFace_2s_ease-in-out_infinite] text-9xl opacity-20">😢</div>
+        {winner === "player" && confettiAnim && (
+          <div className="absolute inset-0 pointer-events-none z-20">
+            <Lottie animationData={confettiAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
           </div>
         )}
 
         <Card className="w-full max-w-md text-center relative z-10 bg-[#16213e]/80 backdrop-blur-md border border-white/10 shadow-2xl">
           <CardContent className="p-6">
-            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              {winner === "player" && <img src="/sevinc.gif" alt="Sevinç" className="w-16 h-16 object-contain" />}
-              {winner === "opponent" && <img src="/uzgun.gif" alt="Üzgün" className="w-16 h-16 object-contain" />}
-              {winner === "tie" && gameMode !== "tournament" && (
-                <img src="/sabit.gif" alt="Beraberlik" className="w-16 h-16 object-contain" />
+            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              {winner === "player" && winAnim && <Lottie animationData={winAnim} loop autoplay style={{ width: 80, height: 80 }} />}
+              {winner === "opponent" && loseAnim && <Lottie animationData={loseAnim} loop autoplay style={{ width: 80, height: 80 }} />}
+              {winner === "tie" && gameMode !== "tournament" && tieAnim && (
+                <Lottie animationData={tieAnim} loop autoplay style={{ width: 80, height: 80 }} />
               )}
               {gameMode === "tournament" && !winner && (
                 <Loader2 className="w-8 h-8 animate-spin text-gray-500" aria-label="Sonuç belirleniyor" />
