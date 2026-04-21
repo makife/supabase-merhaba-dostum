@@ -7527,14 +7527,25 @@ const GamePage = ({
                     <Button
                       variant="outline"
                       disabled={!buttonsEnabled}
-                      onClick={() => {
-                        playSound("buttonClick");
-                        resetGameForRematch();
-                        // resetGameForRematch zaten gerekli tüm state'leri sıfırlıyor
-                        // Multiplayer modlarda countdown server'dan gelecek (countdown_started_at)
-                        // vs-computer modunda ise otomatik başlatılacak
-                        setButtonsEnabled(false);
-                      }}
+                      onClick={async () => {
+  playSound("buttonClick");
+  setButtonsEnabled(false);
+
+  if (!isPremium && gameMode !== "tournament") {
+    const creditConsumed = await consumeCredit();
+    if (!creditConsumed) {
+      toast({
+        title: "Sayfaların tükendi",
+        description: "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
+        variant: "destructive",
+      });
+      navigate("/market");
+      return;
+    }
+  }
+
+  resetGameForRematch();
+}}
                       className="w-full"
                     >
                       Tekrar Oyna
