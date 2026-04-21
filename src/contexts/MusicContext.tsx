@@ -21,6 +21,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [musicEnabled, setMusicEnabledState] = useState(true);
   const [musicPack, setMusicPackState] = useState("default");
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  // 🔥 FIX: Storage yüklenene kadar müzik init'i engelle
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const isStartingRef = useRef(false);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -157,9 +159,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     "./sounds/default/backround-music4.mp3",
     "./sounds/default/backround-music5.mp3",
     "./sounds/default/backround-music6.mp3",
-    "./sounds/default/backround-music7.mp3", // Yeni
-    "./sounds/default/backround-music8.mp3", // Yeni
-    "./sounds/default/backround-music9.mp3", // Yeni
+    "./sounds/default/backround-music7.mp3",
+    "./sounds/default/backround-music8.mp3",
+    "./sounds/default/backround-music9.mp3",
   ];
 
   // Shuffle function
@@ -191,6 +193,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
         console.warn("Failed to load music settings:", error);
+      } finally {
+        // 🔥 FIX: Her durumda (hata olsa bile) loaded olarak işaretle
+        setSettingsLoaded(true);
       }
     };
 
@@ -210,13 +215,21 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initialize and manage background music
   // 🔥 Native platformda NativeMusicPlugin kullanılır, HTML5 Audio kullanılmaz
   useEffect(() => {
+    // 🔥 FIX: Storage yüklenene kadar hiçbir şey yapma
+    // Bu olmadan uygulama kill sonrası açılışta musicEnabled=true (default)
+    // ile müzik başlıyor, storage'daki false değeri daha okunmamış oluyor
+    if (!settingsLoaded) return;
+
     // Native platformda HTML5 Audio oluşturma - NativeMusicPlugin zaten yönetiyor
     if (isNative) {
       console.log("🎵 [MusicContext] Native platform - HTML5 Audio atlanıyor, NativeMusicPlugin kullanılacak");
 
-      // 🔥 Native'de müziği otomatik başlat
+      // 🔥 Native'de müziği otomatik başlat (musicEnabled kontrolü artık güvenilir)
       const initNativeMusic = async () => {
-        if (!musicEnabled) return;
+        if (!musicEnabled) {
+          console.log("🎵 [MusicContext] Native müzik devre dışı, başlatılmıyor");
+          return;
+        }
 
         try {
           const { registerPlugin } = await import("@capacitor/core");
@@ -361,7 +374,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, [musicPack, currentTrackIndex, isNative, musicEnabled]);
+  }, [musicPack, currentTrackIndex, isNative, musicEnabled, settingsLoaded]); // 🔥 FIX: settingsLoaded eklendi
 
   const startBackgroundMusic = async () => {
     if (!musicEnabled) return;
