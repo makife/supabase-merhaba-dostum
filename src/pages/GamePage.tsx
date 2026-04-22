@@ -7432,7 +7432,7 @@ const GamePage = ({
                       }}
                       className="w-full bg-green-500 hover:bg-green-600"
                     >
-                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-4 h-4 mr-2" />
+                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-5 h-5 shrink-0 mr-2" />
                       Tekrar Oyna
                     </Button>
                   )}
@@ -7493,7 +7493,7 @@ const GamePage = ({
                       ) : (
                         <>
                           <img src="/klaketsvg.svg" alt="Reklam" className="w-5 h-5" />
-                          <span>Reklam İzle → +1 Sayfa Kazan</span>
+                          <span>Reklam İzle → +1 Hak Kazan</span>
                           <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
                         </>
                       )}
@@ -7551,7 +7551,7 @@ const GamePage = ({
 }}
                       className="w-full"
                     >
-                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-4 h-4 mr-2" />
+                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-5 h-5 shrink-0 mr-2" />
                       Tekrar Oyna
                     </Button>
                   )}
