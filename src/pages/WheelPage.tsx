@@ -13,6 +13,7 @@ import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { playSpecialNativeSound } from "@/services/nativeAudioService";
+import Lottie from "lottie-react";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
@@ -73,6 +74,15 @@ const WheelPage = () => {
   const [canSpin, setCanSpin] = useState(false);
   const [totalSpins, setTotalSpins] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
+  const [showKonfeti, setShowKonfeti] = useState(false);
+  const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/carkKonfeti.json")
+      .then((r) => r.json())
+      .then(setCarkKonfettiAnim)
+      .catch(console.error);
+  }, []);
 
   const spinLockRef = useRef(false);
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -316,7 +326,14 @@ const WheelPage = () => {
           showRewardToast(reward, remainingSpins <= 0);
         }, 0);
 
-        soundsRef.current?.playSpecialSound("/win.mp3", 0.6);
+        soundsRef.current?.playSpecialSound(
+          reward.type === "empty" ? "/carkBosGeldi.mp3" : "/carkDoluGeldi.mp3",
+          0.7
+        );
+        if (reward.type !== "empty") {
+          setShowKonfeti(true);
+          setTimeout(() => setShowKonfeti(false), 4000);
+        }
         await refreshProfile();
       } catch (error) {
         console.error("[Wheel] Spin finalize error:", error);
@@ -435,6 +452,17 @@ const WheelPage = () => {
     >
       {isSpinning && <div className="fixed inset-0 z-50" aria-hidden="true" />}
 
+      {/* Çark konfeti — ödül gelince bir kere oynar */}
+      {showKonfeti && karKonfettiAnim && (
+        <div className="fixed inset-0 z-40 pointer-events-none overflow-hidden">
+          <Lottie
+            animationData={karKonfettiAnim}
+            loop={false}
+            style={{ width: "100%", height: "100%" }}
+          />
+        </div>
+      )}
+
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-30">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/40 to-blue-900/40" />
       </div>
@@ -500,7 +528,7 @@ const WheelPage = () => {
             </div>
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full shadow-lg border-4 border-slate-900 flex items-center justify-center z-20">
-              <Sparkles className="w-8 h-8 text-white drop-shadow-md" />
+              <img src="/carkMerak.svg" alt="Çark" className="w-14 h-14 object-contain drop-shadow-md" />
             </div>
           </div>
 
