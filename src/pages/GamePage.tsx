@@ -7322,10 +7322,10 @@ const GamePage = ({
                     ? "Elendiniz!"
                     : "Sonuç belirleniyor..."
                 : winner === "player"
-                  ? "Kazandınız!"
+                  ? "Kazandın!"
                   : winner === "opponent"
-                    ? "Kaybettiniz!"
-                    : "Beraberlik!"}
+                    ? "Kaybettin!"
+                    : "Berabere!"}
             </h2>
 
             {/* Skorlar */}
@@ -7415,7 +7415,7 @@ const GamePage = ({
                       ) : (
                         <>
                           <span className="text-lg">🎬</span>
-                          <span>Reklam İzle → +1 Hak Kazan</span>
+                          <span>Reklam İzle → +1 Sayfa Kazan</span>
                           <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
                         </>
                       )}
