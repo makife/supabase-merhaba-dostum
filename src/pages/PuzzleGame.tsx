@@ -96,8 +96,16 @@ const PuzzleGamePage: React.FC = () => {
         const allWords = text.split("\n").map((w) => w.trim().toLocaleUpperCase("tr-TR"));
         const words8 = allWords.filter((w) => w.length === WORD_LENGTH);
         if (words8.length === 0) words8.push("PORTAKAL", "BİLGİSAY", "ÇEKİRDEK");
-        // Sort for deterministic indexing
+        // Shuffle with a fixed seed for deterministic but non-alphabetical indexing
         words8.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+        let shuffleSeed = 0x9e3779b9;
+        for (let i = words8.length - 1; i > 0; i--) {
+          shuffleSeed = (shuffleSeed ^ (shuffleSeed << 13)) >>> 0;
+          shuffleSeed = (shuffleSeed ^ (shuffleSeed >> 17)) >>> 0;
+          shuffleSeed = (shuffleSeed ^ (shuffleSeed << 5)) >>> 0;
+          const j = shuffleSeed % (i + 1);
+          [words8[i], words8[j]] = [words8[j], words8[i]];
+        }
         wordsRef.current = words8;
         setIsWordsLoaded(true);
       } catch {

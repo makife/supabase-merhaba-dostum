@@ -7414,7 +7414,7 @@ const GamePage = ({
                         </>
                       ) : (
                         <>
-                          <span className="text-lg">🎬</span>
+                          <img src="/klaketsvg.svg" alt="Reklam" className="w-5 h-5" />
                           <span>Reklam İzle → +1 Sayfa Kazan</span>
                           <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
                         </>
@@ -7432,7 +7432,8 @@ const GamePage = ({
                       }}
                       className="w-full bg-green-500 hover:bg-green-600"
                     >
-                      🔄 Tekrar Oyna
+                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-4 h-4 mr-2" />
+                      Tekrar Oyna
                     </Button>
                   )}
 
@@ -7469,6 +7470,7 @@ const GamePage = ({
                     variant="outline"
                     className="w-full"
                   >
+                    <img src="/gerisvg.svg" alt="Geri" className="w-4 h-4 mr-2" />
                     Ana Menüye Dön
                   </Button>
                 </div>
@@ -7490,8 +7492,8 @@ const GamePage = ({
                         </>
                       ) : (
                         <>
-                          <span className="text-lg">🎬</span>
-                          <span>Reklam İzle → +1 Hak Kazan</span>
+                          <img src="/klaketsvg.svg" alt="Reklam" className="w-5 h-5" />
+                          <span>Reklam İzle → +1 Sayfa Kazan</span>
                           <span className="text-xs opacity-70 ml-1">({userCredits}/5)</span>
                         </>
                       )}
@@ -7521,6 +7523,7 @@ const GamePage = ({
                     }}
                     className="w-full"
                   >
+                    <img src="/gerisvg.svg" alt="Geri" className="w-4 h-4 mr-2" />
                     Ana Menüye Dön
                   </Button>
                   {!disconnectWin && (
@@ -7548,6 +7551,7 @@ const GamePage = ({
 }}
                       className="w-full"
                     >
+                      <img src="/tekrarsvg.svg" alt="Tekrar" className="w-4 h-4 mr-2" />
                       Tekrar Oyna
                     </Button>
                   )}
