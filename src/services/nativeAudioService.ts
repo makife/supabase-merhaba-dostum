@@ -39,6 +39,8 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'sampiyon', assetPath: 'public/sampiyon.mp3', volume: 0.8 },
   
   { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 }, // ✅ Gerçek dosya adı: carkSesi.mp3
+  { assetId: 'cark_dolu', assetPath: 'public/carkDoluGeldi.mp3', volume: 0.7 },
+  { assetId: 'cark_bos', assetPath: 'public/carkBosGeldi.mp3', volume: 0.7 },
   
   // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
   { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
@@ -256,6 +258,8 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('sampiyon.mp3')) assetId = 'sampiyon';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
+  else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
+  else if (soundFile.includes('carkBosGeldi.mp3')) assetId = 'cark_bos';
   else if (soundFile.includes('kutlama.mp3')) assetId = 'celebration';
   else if (soundFile.includes('kaybetme.mp3')) assetId = 'game_lose';
   else if (soundFile.includes('beraberlik.mp3')) assetId = 'tie';
