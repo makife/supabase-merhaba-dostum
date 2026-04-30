@@ -248,6 +248,7 @@ const GamePage = ({
   const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
   const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
+  const [isFisildaAnimating, setIsFisildaAnimating] = useState(false);
 
   // Wordlist for local validation
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
