@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Gift, Clock } from "lucide-react";
+import { Gift, Clock, Zap } from "lucide-react";
 
 interface PrizeInfo {
   degistir: number;
   fisilida: number;
   senyaz: number;
   oyunHakki?: number;
+  boostLabel: string;
 }
 
 interface LeaderboardPrizeBannerProps {
@@ -15,15 +16,15 @@ interface LeaderboardPrizeBannerProps {
 const PRIZE_CONFIG: Record<string, { image: string; prizes: PrizeInfo }> = {
   "all-time": {
     image: "/kirmiziHediye.png",
-    prizes: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25 },
+    prizes: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, boostLabel: "1 ay boyunca maç sonu puanı x2" },
   },
   weekly: {
     image: "/maviHediye.png",
-    prizes: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3 },
+    prizes: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostLabel: "1 gün boyunca maç sonu puanı x2" },
   },
   monthly: {
     image: "/yesilHediye.png",
-    prizes: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10 },
+    prizes: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, boostLabel: "1 hafta boyunca maç sonu puanı x2" },
   },
 };
 
@@ -136,6 +137,12 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
                 <Gift className="w-3.5 h-3.5 text-amber-400" />+{prizes.oyunHakki} Oyun Sayfası
               </span>
             )}
+          </div>
+
+          {/* Boost rozeti */}
+          <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 w-fit">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] font-semibold text-amber-300">{prizes.boostLabel}</span>
           </div>
 
           <p className="text-[10px] text-slate-500 mt-1">🏆 1. sıradaki oyuncuya verilecek</p>

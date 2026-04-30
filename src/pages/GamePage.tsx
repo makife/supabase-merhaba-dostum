@@ -136,6 +136,13 @@ const GamePage = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // 🚀 Liderlik birinciliği boost'u: maç sonu puanlarına +1 katsayı (premium ile toplanır)
+  const hasScoreBoost = (() => {
+    const until = (profile as any)?.score_boost_until;
+    if (!until) return false;
+    return new Date(until) > new Date();
+  })();
+
   // Lottie animation data for game end
   const [winAnim, setWinAnim] = useState<any>(null);
   const [loseAnim, setLoseAnim] = useState<any>(null);
@@ -1581,7 +1588,7 @@ const GamePage = ({
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
         const disconnectScore = playerScoreRef.current;
-        const premiumMultiplier = isPremium ? 2 : 1;
+        const premiumMultiplier = 1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0);
         const disconnectMultiplier = 10 * premiumMultiplier; // Galibiyet çarpanı (disconnect win) + premium x2
 
         console.log("📊 Disconnect win - istatistikler güncelleniyor:", {
@@ -2140,7 +2147,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = (userIsWinner ? 5 : 1) * (isPremium ? 2 : 1); // Turnuvada beraberlik yok, kaybetme=x1, premium x2
+        const tournamentScoreMultiplier = (userIsWinner ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0)); // Turnuvada beraberlik yok, kaybetme=x1, premium +1, boost +1
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
@@ -2969,7 +2976,7 @@ const GamePage = ({
       });
 
       const isTie = gameScore === opponentScoreRef.current;
-      const multiplier = (isWinner ? 10 : isTie ? 5 : 1) * (isPremium ? 2 : 1);
+      const multiplier = (isWinner ? 10 : isTie ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore * multiplier,
@@ -3092,7 +3099,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = (isWinner ? 5 : isTie ? 2 : 1) * (isPremium ? 2 : 1);
+        const scoreMultiplier = (isWinner ? 5 : isTie ? 2 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
@@ -4742,7 +4749,7 @@ const GamePage = ({
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
             // Mevcut update_game_stats imzası ile istatistikleri tek kaynaktan yaz
-            const finalScoreMultiplier = scoreMultiplier * (isPremium ? 2 : 1);
+            const finalScoreMultiplier = scoreMultiplier * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore * finalScoreMultiplier,
@@ -4812,8 +4819,12 @@ const GamePage = ({
       // Skor çarpanı bilgisi toast
       if (user) {
         const baseLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
-        const multiplierLabel = isPremium ? `${baseLabel} + VIP x2` : baseLabel;
-        const finalScore = currentPlayerScore * scoreMultiplier * (isPremium ? 2 : 1);
+        const extras: string[] = [];
+        if (isPremium) extras.push("VIP x2");
+        if (hasScoreBoost) extras.push("Liderlik x2");
+        const multiplierLabel = extras.length > 0 ? `${baseLabel} + ${extras.join(" + ")}` : baseLabel;
+        const totalMult = 1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0);
+        const finalScore = currentPlayerScore * scoreMultiplier * totalMult;
         setTimeout(() => {
           toast({
             title: `${multiplierLabel}`,
@@ -4893,6 +4904,7 @@ const GamePage = ({
       gameStartTime,
       gameType,
       isPremium,
+      hasScoreBoost,
     ],
   );
 

@@ -10,15 +10,16 @@ interface PrizeConfig {
   fisilida: number;
   senyaz: number;
   oyunHakki?: number;
+  boostDays: number; // Maç sonu puan x2 boost süresi (gün)
   label: string;
   badgeId: string;
   countColumn: string;
 }
 
 const PRIZES: Record<string, PrizeConfig> = {
-  weekly: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
-  monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, label: "Aylık", badgeId: "b1000001-0000-0000-0000-000000000003", countColumn: "monthly_first_count" },
-  season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, label: "Sezon", badgeId: "b1000001-0000-0000-0000-000000000001", countColumn: "season_first_count" },
+  weekly: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostDays: 1, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
+  monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, boostDays: 7, label: "Aylık", badgeId: "b1000001-0000-0000-0000-000000000003", countColumn: "monthly_first_count" },
+  season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, boostDays: 30, label: "Sezon", badgeId: "b1000001-0000-0000-0000-000000000001", countColumn: "season_first_count" },
 };
 
 Deno.serve(async (req) => {
@@ -322,6 +323,28 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     else console.log(`✅ ${prize.countColumn}: ${currentCount} -> ${currentCount + 1}`);
   }
 
+  // 🚀 Maç sonu puan x2 boost süresini uzat (en uzun olan etkili — mevcutla karşılaştır)
+  if (prize.boostDays > 0) {
+    const { data: boostProfile } = await supabase
+      .from("profiles")
+      .select("score_boost_until")
+      .eq("id", userId)
+      .single();
+
+    const newBoostEnd = new Date();
+    newBoostEnd.setDate(newBoostEnd.getDate() + prize.boostDays);
+
+    const currentBoost = boostProfile?.score_boost_until ? new Date(boostProfile.score_boost_until) : null;
+    const finalBoostEnd = currentBoost && currentBoost > newBoostEnd ? currentBoost : newBoostEnd;
+
+    const { error: boostErr } = await supabase
+      .from("profiles")
+      .update({ score_boost_until: finalBoostEnd.toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (boostErr) console.error(`❌ Boost update error:`, boostErr);
+    else console.log(`🚀 score_boost_until -> ${finalBoostEnd.toISOString()} (+${prize.boostDays}g)`);
+  }
+
   // Rozet ver (sadece ilk kez)
   const { data: existingBadge } = await supabase
     .from("user_badges")
@@ -340,7 +363,8 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
   }
 
   // Bildirim gönder — type: "leaderboard_prize"
-  const notifMessage = `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} hesabına eklendi!`;
+  const boostText = prize.boostDays === 1 ? "1 gün" : prize.boostDays === 7 ? "1 hafta" : "1 ay";
+  const notifMessage = `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} ve ${boostText} boyunca maç sonu puanlarınız x2! 🚀`;
   
   const { error: notifError } = await supabase.from("notifications").insert({
     user_id: userId,
