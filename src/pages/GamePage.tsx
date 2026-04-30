@@ -6816,7 +6816,10 @@ const GamePage = ({
       const isKelimeleWord = normalizedWord === "KELİMELE";
 
       if (isKelimeleWord) {
-        // 🎯 BONUS: Mor animasyon göster
+        // 🎯 BONUS: Normal puanı 10 ile çarp
+        result.points = result.points * 10;
+
+        // Mor animasyon göster
         setInputFlash("success");
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast("✨ BONUS ✨", "", "bonus");
