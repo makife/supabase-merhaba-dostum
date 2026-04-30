@@ -6733,7 +6733,7 @@ const GamePage = ({
         // currentWord artık derived value, otomatik güncellenecek
       }
     },
-    [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound],
+    [gameEnded, waitingForPlayer, isJokerActive, isFisildaAnimating, lastClickTime, selectedLetters, playSound],
   );
 
   // Clear current word
