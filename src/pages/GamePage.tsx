@@ -4892,6 +4892,7 @@ const GamePage = ({
       opponentWordsWithScores,
       gameStartTime,
       gameType,
+      isPremium,
     ],
   );
 
