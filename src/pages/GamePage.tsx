@@ -6820,6 +6820,10 @@ const GamePage = ({
         // 🎯 BONUS: Normal puanı 10 ile çarp
         result.points = result.points * 10;
 
+        // Kazanma animasyonunu 1 kere oynat (~3sn)
+        setShowKelimeleAnim(true);
+        setTimeout(() => setShowKelimeleAnim(false), 3000);
+
         // Mor animasyon göster
         setInputFlash("success");
         setTimeout(() => setInputFlash(null), 600);
