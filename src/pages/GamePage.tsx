@@ -838,7 +838,7 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "success-long" | "error" | "bonus" } | null>(
     null,
   );
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
