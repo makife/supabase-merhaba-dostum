@@ -7614,7 +7614,19 @@ const GamePage = ({
 
   return (
     <>
+      {/* 🎉 KELİMELE bonus animasyonu (1 kerelik, 3sn) */}
+      {showKelimeleAnim && confettiAnim && (
+        <div className="fixed inset-0 pointer-events-none z-[9999]">
+          <Lottie
+            animationData={confettiAnim}
+            loop={false}
+            autoplay
+            style={{ width: "100%", height: "100%" }}
+          />
+        </div>
+      )}
       <>
+
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
           <div className="min-h-screen flex items-center justify-center" style={{ background: "#1a1a2e" }}>
