@@ -1581,12 +1581,14 @@ const GamePage = ({
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
         const disconnectScore = playerScoreRef.current;
-        const disconnectMultiplier = 10; // Galibiyet çarpanı (disconnect win)
+        const premiumMultiplier = isPremium ? 2 : 1;
+        const disconnectMultiplier = 10 * premiumMultiplier; // Galibiyet çarpanı (disconnect win) + premium x2
 
         console.log("📊 Disconnect win - istatistikler güncelleniyor:", {
           score: disconnectScore,
           multiplied: disconnectScore * disconnectMultiplier,
           words: playerWordsWithScores.length,
+          isPremium,
         });
 
         try {
@@ -2138,7 +2140,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = userIsWinner ? 5 : 1; // Turnuvada beraberlik yok, kaybetme=x1
+        const tournamentScoreMultiplier = (userIsWinner ? 5 : 1) * (isPremium ? 2 : 1); // Turnuvada beraberlik yok, kaybetme=x1, premium x2
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
@@ -2967,7 +2969,7 @@ const GamePage = ({
       });
 
       const isTie = gameScore === opponentScoreRef.current;
-      const multiplier = isWinner ? 10 : isTie ? 5 : 1;
+      const multiplier = (isWinner ? 10 : isTie ? 5 : 1) * (isPremium ? 2 : 1);
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore * multiplier,
@@ -3090,7 +3092,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
+        const scoreMultiplier = (isWinner ? 5 : isTie ? 2 : 1) * (isPremium ? 2 : 1);
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
