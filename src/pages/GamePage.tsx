@@ -6876,8 +6876,9 @@ const GamePage = ({
           })();
         }
       } else {
-        // Normal kelime: yeşil feedback
-        setInputFlash("success");
+        // Normal kelime: 6+ harf beyaz, kısa kelime yeşil feedback
+        const flashType = normalizedWord.length >= 6 ? "success-long" : "success";
+        setInputFlash(flashType);
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast(normalizedWord, "", "green");
       }
