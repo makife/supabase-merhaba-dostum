@@ -136,6 +136,13 @@ const GamePage = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // 🚀 Liderlik birinciliği boost'u: maç sonu puanlarına +1 katsayı (premium ile toplanır)
+  const hasScoreBoost = (() => {
+    const until = (profile as any)?.score_boost_until;
+    if (!until) return false;
+    return new Date(until) > new Date();
+  })();
+
   // Lottie animation data for game end
   const [winAnim, setWinAnim] = useState<any>(null);
   const [loseAnim, setLoseAnim] = useState<any>(null);
