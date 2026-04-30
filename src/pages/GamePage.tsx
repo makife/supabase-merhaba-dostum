@@ -248,6 +248,7 @@ const GamePage = ({
   const [selectedJoker, setSelectedJoker] = useState<string | null>(null);
   const [highlightedLetters, setHighlightedLetters] = useState<{ row: number; col: number }[]>([]);
   const [isJokerActive, setIsJokerActive] = useState(false);
+  const [isFisildaAnimating, setIsFisildaAnimating] = useState(false);
 
   // Wordlist for local validation
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
@@ -3851,7 +3852,8 @@ const GamePage = ({
 
       console.log(`💡 Fısılda: "${selectedWord}" kelimesi (sözlük hali) için ${wordPositions.length} pozisyon bulundu`);
 
-      // Kelime sırasına göre harfleri sırayla yak
+      // Kelime sırasına göre harfleri sırayla yak (oyuncu animasyon sırasında tıklayabilir)
+      setIsFisildaAnimating(true);
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
@@ -3866,6 +3868,7 @@ const GamePage = ({
       setTimeout(
         () => {
           setIsJokerActive(false);
+          setIsFisildaAnimating(false);
           setSelectedJoker(null); // ✅ Buton animasyonunu kapat
         },
         wordPositions.length * 500 + 800,
@@ -6706,7 +6709,7 @@ const GamePage = ({
   // Handle letter click
   const handleLetterClick = useCallback(
     (letter: string, row: number, col: number) => {
-      if (gameEnded || (waitingForPlayer && !gameStarted) || isJokerActive) return;
+      if (gameEnded || (waitingForPlayer && !gameStarted) || (isJokerActive && !isFisildaAnimating)) return;
 
       const now = Date.now();
       // 150ms debounce (mobil için daha uzun)
@@ -6732,7 +6735,7 @@ const GamePage = ({
         // currentWord artık derived value, otomatik güncellenecek
       }
     },
-    [gameEnded, waitingForPlayer, isJokerActive, lastClickTime, selectedLetters, playSound],
+    [gameEnded, waitingForPlayer, isJokerActive, isFisildaAnimating, lastClickTime, selectedLetters, playSound],
   );
 
   // Clear current word
