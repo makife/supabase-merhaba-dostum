@@ -141,6 +141,7 @@ const GamePage = ({
   const [loseAnim, setLoseAnim] = useState<any>(null);
   const [tieAnim, setTieAnim] = useState<any>(null);
   const [confettiAnim, setConfettiAnim] = useState<any>(null);
+  const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -6819,6 +6820,10 @@ const GamePage = ({
         // 🎯 BONUS: Normal puanı 10 ile çarp
         result.points = result.points * 10;
 
+        // Kazanma animasyonunu 1 kere oynat (~3sn)
+        setShowKelimeleAnim(true);
+        setTimeout(() => setShowKelimeleAnim(false), 3000);
+
         // Mor animasyon göster
         setInputFlash("success");
         setTimeout(() => setInputFlash(null), 600);
@@ -7609,7 +7614,19 @@ const GamePage = ({
 
   return (
     <>
+      {/* 🎉 KELİMELE bonus animasyonu (1 kerelik, 3sn) */}
+      {showKelimeleAnim && confettiAnim && (
+        <div className="fixed inset-0 pointer-events-none z-[9999]">
+          <Lottie
+            animationData={confettiAnim}
+            loop={false}
+            autoplay
+            style={{ width: "100%", height: "100%" }}
+          />
+        </div>
+      )}
       <>
+
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
           <div className="min-h-screen flex items-center justify-center" style={{ background: "#1a1a2e" }}>
