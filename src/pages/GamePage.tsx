@@ -837,7 +837,7 @@ const GamePage = ({
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
-  const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
+  const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "error" | null>(null);
   const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(
     null,
   );
