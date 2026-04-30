@@ -141,6 +141,7 @@ const GamePage = ({
   const [loseAnim, setLoseAnim] = useState<any>(null);
   const [tieAnim, setTieAnim] = useState<any>(null);
   const [confettiAnim, setConfettiAnim] = useState<any>(null);
+  const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
 
   useEffect(() => {
     Promise.all([
