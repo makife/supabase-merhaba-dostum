@@ -837,7 +837,7 @@ const GamePage = ({
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
-  const [inputFlash, setInputFlash] = useState<"success" | "error" | null>(null);
+  const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "error" | null>(null);
   const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(
     null,
   );
@@ -6876,8 +6876,9 @@ const GamePage = ({
           })();
         }
       } else {
-        // Normal kelime: yeşil feedback
-        setInputFlash("success");
+        // Normal kelime: 6+ harf beyaz, kısa kelime yeşil feedback
+        const flashType = normalizedWord.length >= 6 ? "success-long" : "success";
+        setInputFlash(flashType);
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast(normalizedWord, "", "green");
       }
@@ -8011,11 +8012,13 @@ const GamePage = ({
                   <div className="flex items-center space-x-2 w-full">
                     <div
                       className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
-                        inputFlash === "success"
-                          ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
-                          : inputFlash === "error"
-                            ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
-                            : "border border-white/15 bg-white/5"
+                        inputFlash === "success-long"
+                          ? "border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-white/15"
+                          : inputFlash === "success"
+                            ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
+                            : inputFlash === "error"
+                              ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
+                              : "border border-white/15 bg-white/5"
                       }`}
                     >
                       <AnimatePresence mode="popLayout">
