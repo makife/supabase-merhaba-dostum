@@ -5778,6 +5778,7 @@ const GamePage = ({
     serverTimeOffset,
     currentRoom?.countdown_started_at,
     tournamentMatch?.countdown_started_at,
+    timerWatchdogTick, // 🩺 WATCHDOG: Donmuş timer'ı yeniden başlatmak için
   ]);
 
   // ❌ KALDIRILDI: currentRoom'dan skor güncellemesi artık gereksiz
