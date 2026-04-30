@@ -79,20 +79,17 @@ export const useWordValidation = () => {
 }, []);
 
   const calculatePoints = useCallback((word: string): number => {
-    const length = word.length;
-    let points = length * 5;
-    
-    if (length >= 6) points += 10;
-    if (length >= 8) points += 20;
-    if (length >= 10) points += 30;
-    if (length >= 12) points += 50;
-    
-    const rareLetters = ['Ç', 'Ğ', 'Ş', 'J', 'X', 'Z'];
-    const rareBonus = word.toLocaleUpperCase('tr-TR').split('').reduce((bonus, letter) => {
-      return rareLetters.includes(letter) ? bonus + 5 : bonus;
-    }, 0);
-    
-    return points + rareBonus;
+    // Not: Gerçek oyun puanlaması GamePage.tsx → validateWordLocal içinde yapılır.
+    // Bu fonksiyon yalnızca yedek/uyumluluk amaçlıdır. Aynı formülü kullanır:
+    // harf × 2 + nadir harf bonusu (her biri +3), minimum 5.
+    const basePoints = word.length * 2;
+    const rareLetters = ["J", "Z", "Ğ", "Ü", "Ö", "Ç", "Ş"];
+    const upper = word.toLocaleUpperCase("tr-TR");
+    let rareBonus = 0;
+    for (const letter of upper) {
+      if (rareLetters.includes(letter)) rareBonus += 3;
+    }
+    return Math.max(basePoints + rareBonus, 5);
   }, []); // Boş dependency array
 
   const validateWord = useCallback(async (word: string): Promise<WordValidationResult> => {
