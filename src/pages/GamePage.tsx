@@ -875,6 +875,8 @@ const GamePage = ({
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
   const isMountedRef = useRef<boolean>(true); // ⚠️ Track if component is mounted
   const endsAtTimestampRef = useRef<number | null>(null); // 🔒 REMATCH FIX: Timestamp ref for timer
+  const [timerWatchdogTick, setTimerWatchdogTick] = useState(0); // 🩺 WATCHDOG: Donmuş timer'ı yeniden tetikler
+  const watchdogRecoveringRef = useRef(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdownServerTime, setCountdownServerTime] = useState<string | null>(null);
   const [preparingOpponent, setPreparingOpponent] = useState<"preparing" | "ready" | null>(null);
@@ -5776,9 +5778,117 @@ const GamePage = ({
     serverTimeOffset,
     currentRoom?.countdown_started_at,
     tournamentMatch?.countdown_started_at,
+    timerWatchdogTick, // 🩺 WATCHDOG: Donmuş timer'ı yeniden başlatmak için
   ]);
 
-  // ❌ KALDIRILDI: currentRoom'dan skor güncellemesi artık gereksiz
+  // 🩺 ============ TIMER WATCHDOG ============
+  // Sorun: Bazen multiplayer maçlarında countdown_started_at realtime ile gelmiyor
+  // veya timer effect koşulları sağlanamıyor → timer 2:00'da donuk kalıyor, grid tıklanmıyor.
+  // Çözüm: Oyun başladıktan sonra displayTime'ı izle. 5sn boyunca değişmediyse
+  // DB'den room/match'i FRESH çek, ends_at'ı yeniden hesapla, timer effect'i re-trigger et.
+  useEffect(() => {
+    if (!gameStarted || gameEnded || gameType !== "timed") return;
+    if (gameMode !== "random-match" && gameMode !== "private-room") return;
+    if (!currentRoom?.id) return;
+
+    let lastSeenTime = displayTime;
+    let stuckSince = Date.now();
+
+    const watchdog = setInterval(async () => {
+      if (gameEndedRef.current || !isMountedRef.current) return;
+
+      // Timer hareket ediyorsa watchdog'u resetle
+      if (timeLeftRef.current !== lastSeenTime) {
+        lastSeenTime = timeLeftRef.current;
+        stuckSince = Date.now();
+        return;
+      }
+
+      // 120 saniye durağan ve 5sn'den uzun sürüyorsa = donmuş
+      const stuckMs = Date.now() - stuckSince;
+      if (timeLeftRef.current !== 120 || stuckMs < 5000) return;
+      if (watchdogRecoveringRef.current) return;
+
+      console.warn("🩺 [Watchdog] Timer 2:00'da donmuş tespit edildi, kurtarma başlıyor...", {
+        roomId: currentRoom.id,
+        hasEndsAt: !!endsAtTimestampRef.current,
+        hasTimer: !!timerRef.current,
+        countdownStartedAt: currentRoom.countdown_started_at,
+      });
+
+      watchdogRecoveringRef.current = true;
+      try {
+        // 1. DB'den fresh room verisi çek
+        const { data: freshRoom, error } = await supabase
+          .from("game_rooms")
+          .select("countdown_started_at, started_at, status, ends_at")
+          .eq("id", currentRoom.id)
+          .maybeSingle();
+
+        if (error || !freshRoom) {
+          console.warn("🩺 [Watchdog] Fresh room çekilemedi:", error);
+          return;
+        }
+
+        // 2. ends_at hesapla
+        let recoveredEndsAt: number | null = null;
+        if ((freshRoom as any).ends_at) {
+          recoveredEndsAt = new Date((freshRoom as any).ends_at).getTime();
+        } else if (freshRoom.countdown_started_at) {
+          const cdStart = new Date(freshRoom.countdown_started_at).getTime();
+          recoveredEndsAt = cdStart + 10000 + 120 * 1000; // 5s buffer + 5s countdown + 120s game
+        } else if ((freshRoom as any).started_at) {
+          recoveredEndsAt = new Date((freshRoom as any).started_at).getTime() + 120 * 1000;
+        }
+
+        if (!recoveredEndsAt) {
+          console.warn("🩺 [Watchdog] ends_at hesaplanamadı, fresh room timing verisi eksik");
+          return;
+        }
+
+        // 3. Mevcut interval'i temizle (varsa) ve ref'i resetle ki effect yeniden init etsin
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        endsAtTimestampRef.current = recoveredEndsAt;
+
+        // 4. Effect'i tetikleyerek timer interval'ini yeniden başlat
+        setTimerWatchdogTick((t) => t + 1);
+
+        // 5. İlk değeri hemen göster
+        const nowSrv = Date.now() + serverTimeOffset;
+        const remaining = Math.max(0, Math.min(120, Math.floor((recoveredEndsAt - nowSrv) / 1000)));
+        timeLeftRef.current = remaining;
+        setDisplayTime(remaining);
+        lastSeenTime = remaining;
+        stuckSince = Date.now();
+
+        console.log("🩺 [Watchdog] ✅ Kurtarma tamamlandı, timer yeniden başlatıldı", {
+          recoveredEndsAt: new Date(recoveredEndsAt).toISOString(),
+          remaining,
+        });
+      } catch (err) {
+        console.error("🩺 [Watchdog] Kurtarma hatası:", err);
+      } finally {
+        // Aynı anda tekrar tetiklenmesini önle, ama 3sn sonra yeni denemeye izin ver
+        setTimeout(() => {
+          watchdogRecoveringRef.current = false;
+        }, 3000);
+      }
+    }, 1000);
+
+    return () => clearInterval(watchdog);
+  }, [
+    gameStarted,
+    gameEnded,
+    gameType,
+    gameMode,
+    currentRoom?.id,
+    currentRoom?.countdown_started_at,
+    serverTimeOffset,
+  ]);
+
   // GameContext'teki participants zaten real-time güncel tutuluyor
   // Bu ekstra güncelleme titreme yapıyordu
 
