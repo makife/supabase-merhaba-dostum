@@ -4742,9 +4742,10 @@ const GamePage = ({
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
             // Mevcut update_game_stats imzası ile istatistikleri tek kaynaktan yaz
+            const finalScoreMultiplier = scoreMultiplier * (isPremium ? 2 : 1);
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
-              p_score: currentPlayerScore * scoreMultiplier,
+              p_score: currentPlayerScore * finalScoreMultiplier,
               p_words: playerWordsWithScores,
               p_is_winner: gameResult === "player",
               p_game_duration: gameDuration,
@@ -4810,8 +4811,9 @@ const GamePage = ({
 
       // Skor çarpanı bilgisi toast
       if (user) {
-        const multiplierLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
-        const finalScore = currentPlayerScore * scoreMultiplier;
+        const baseLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
+        const multiplierLabel = isPremium ? `${baseLabel} + VIP x2` : baseLabel;
+        const finalScore = currentPlayerScore * scoreMultiplier * (isPremium ? 2 : 1);
         setTimeout(() => {
           toast({
             title: `${multiplierLabel}`,
