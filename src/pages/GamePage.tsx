@@ -838,7 +838,7 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "error" | "bonus" } | null>(
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "success-long" | "error" | "bonus" } | null>(
     null,
   );
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -6742,13 +6742,14 @@ const GamePage = ({
   };
 
   // Input field içinde feedback gösterme fonksiyonu
-  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "bonus" = "red") => {
+  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "white" | "bonus" = "red") => {
     // Önceki timer'ı temizle
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
 
-    const feedbackType = color === "green" ? "success" : color === "bonus" ? "bonus" : "error";
+    const feedbackType =
+      color === "green" ? "success" : color === "white" ? "success-long" : color === "bonus" ? "bonus" : "error";
     setInputFeedback({ text: title, type: feedbackType });
 
     // bonus için daha uzun süre göster
@@ -6877,10 +6878,10 @@ const GamePage = ({
         }
       } else {
         // Normal kelime: 6+ harf beyaz, kısa kelime yeşil feedback
-        const flashType = normalizedWord.length >= 6 ? "success-long" : "success";
-        setInputFlash(flashType);
+        const isLong = normalizedWord.length >= 6;
+        setInputFlash(isLong ? "success-long" : "success");
         setTimeout(() => setInputFlash(null), 600);
-        showCustomToast(normalizedWord, "", "green");
+        showCustomToast(normalizedWord, "", isLong ? "white" : "green");
       }
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
@@ -8032,13 +8033,15 @@ const GamePage = ({
                             className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
                               inputFeedback.type === "bonus"
                                 ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
-                                : inputFeedback.type === "success"
-                                  ? "bg-emerald-500/90"
-                                  : "bg-red-500/90"
+                                : inputFeedback.type === "success-long"
+                                  ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                                  : inputFeedback.type === "success"
+                                    ? "bg-emerald-500/90"
+                                    : "bg-red-500/90"
                             }`}
                           >
                             <span
-                              className={`font-black font-mono tracking-wider text-white drop-shadow-md ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
+                              className={`font-black font-mono tracking-wider drop-shadow-md ${inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"} ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
                             >
                               {inputFeedback.text}
                             </span>
