@@ -8033,13 +8033,15 @@ const GamePage = ({
                             className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
                               inputFeedback.type === "bonus"
                                 ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
-                                : inputFeedback.type === "success"
-                                  ? "bg-emerald-500/90"
-                                  : "bg-red-500/90"
+                                : inputFeedback.type === "success-long"
+                                  ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                                  : inputFeedback.type === "success"
+                                    ? "bg-emerald-500/90"
+                                    : "bg-red-500/90"
                             }`}
                           >
                             <span
-                              className={`font-black font-mono tracking-wider text-white drop-shadow-md ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
+                              className={`font-black font-mono tracking-wider drop-shadow-md ${inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"} ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
                             >
                               {inputFeedback.text}
                             </span>
