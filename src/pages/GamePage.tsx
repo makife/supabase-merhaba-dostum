@@ -6846,27 +6846,18 @@ const GamePage = ({
             }
           });
 
-          // Rozet ver
+          // Rozet ver (SECURITY DEFINER RPC ile RLS bypass)
           (async () => {
             try {
-              const { data: badge } = await supabase
-                .from("badges")
-                .select("id")
-                .eq("condition_type", "kelimele_word")
-                .maybeSingle();
-
-              if (badge) {
-                const { data: existing } = await supabase
-                  .from("user_badges")
-                  .select("id")
-                  .eq("user_id", user.id)
-                  .eq("badge_id", badge.id)
-                  .maybeSingle();
-
-                if (!existing) {
-                  await supabase.from("user_badges").insert({ user_id: user.id, badge_id: badge.id });
-                  console.log("🏅 Kelimele rozeti kazanıldı!");
-                }
+              const { data: awarded, error: rpcErr } = await supabase.rpc("award_kelimele_badge", {
+                p_user_id: user.id,
+              });
+              if (rpcErr) {
+                console.error("❌ award_kelimele_badge RPC hatası:", rpcErr);
+              } else if (awarded) {
+                console.log("🏅 Kelimele rozeti kazanıldı!");
+              } else {
+                console.log("ℹ️ Kelimele rozeti zaten mevcut veya bulunamadı");
               }
             } catch (err) {
               console.error("❌ Kelimele rozet hatası:", err);
