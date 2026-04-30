@@ -6742,13 +6742,14 @@ const GamePage = ({
   };
 
   // Input field içinde feedback gösterme fonksiyonu
-  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "bonus" = "red") => {
+  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "white" | "bonus" = "red") => {
     // Önceki timer'ı temizle
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
 
-    const feedbackType = color === "green" ? "success" : color === "bonus" ? "bonus" : "error";
+    const feedbackType =
+      color === "green" ? "success" : color === "white" ? "success-long" : color === "bonus" ? "bonus" : "error";
     setInputFeedback({ text: title, type: feedbackType });
 
     // bonus için daha uzun süre göster
