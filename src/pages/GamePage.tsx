@@ -4904,6 +4904,7 @@ const GamePage = ({
       gameStartTime,
       gameType,
       isPremium,
+      hasScoreBoost,
     ],
   );
 
