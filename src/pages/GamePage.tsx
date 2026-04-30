@@ -6707,7 +6707,7 @@ const GamePage = ({
   // Handle letter click
   const handleLetterClick = useCallback(
     (letter: string, row: number, col: number) => {
-      if (gameEnded || (waitingForPlayer && !gameStarted) || isJokerActive) return;
+      if (gameEnded || (waitingForPlayer && !gameStarted) || (isJokerActive && !isFisildaAnimating)) return;
 
       const now = Date.now();
       // 150ms debounce (mobil için daha uzun)
