@@ -4819,8 +4819,12 @@ const GamePage = ({
       // Skor çarpanı bilgisi toast
       if (user) {
         const baseLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
-        const multiplierLabel = isPremium ? `${baseLabel} + VIP x2` : baseLabel;
-        const finalScore = currentPlayerScore * scoreMultiplier * (isPremium ? 2 : 1);
+        const extras: string[] = [];
+        if (isPremium) extras.push("VIP x2");
+        if (hasScoreBoost) extras.push("Liderlik x2");
+        const multiplierLabel = extras.length > 0 ? `${baseLabel} + ${extras.join(" + ")}` : baseLabel;
+        const totalMult = 1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0);
+        const finalScore = currentPlayerScore * scoreMultiplier * totalMult;
         setTimeout(() => {
           toast({
             title: `${multiplierLabel}`,
