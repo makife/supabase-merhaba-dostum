@@ -5788,7 +5788,7 @@ const GamePage = ({
   // DB'den room/match'i FRESH çek, ends_at'ı yeniden hesapla, timer effect'i re-trigger et.
   useEffect(() => {
     if (!gameStarted || gameEnded || gameType !== "timed") return;
-    if (gameMode !== "multiplayer" && gameMode !== "private") return;
+    if (gameMode !== "random-match" && gameMode !== "private-room") return;
     if (!currentRoom?.id) return;
 
     let lastSeenTime = displayTime;
