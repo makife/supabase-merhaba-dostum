@@ -7525,7 +7525,7 @@ const GamePage = ({
   playSound("buttonClick");
   setButtonsEnabled(false);
 
-  if (!isPremium && gameMode !== "tournament") {
+  if (!isPremium && (gameMode as string) !== "tournament") {
     const creditConsumed = await consumeCredit();
     if (!creditConsumed) {
       toast({
