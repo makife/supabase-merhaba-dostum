@@ -6878,10 +6878,10 @@ const GamePage = ({
         }
       } else {
         // Normal kelime: 6+ harf beyaz, kısa kelime yeşil feedback
-        const flashType = normalizedWord.length >= 6 ? "success-long" : "success";
-        setInputFlash(flashType);
+        const isLong = normalizedWord.length >= 6;
+        setInputFlash(isLong ? "success-long" : "success");
         setTimeout(() => setInputFlash(null), 600);
-        showCustomToast(normalizedWord, "", "green");
+        showCustomToast(normalizedWord, "", isLong ? "white" : "green");
       }
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
