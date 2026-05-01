@@ -7772,7 +7772,7 @@ const GamePage = ({
       {/* ✨ 6+ harfli kelime animasyonu (ızgaranın ortasında, 1 kerelik) */}
       {showAltiHarfAnim && altiHarfAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center overflow-visible">
-          <div style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)", transform: "scale(2.5)", transformOrigin: "center center" }}>
+          <div style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)", transform: "scale(1.6)", transformOrigin: "center center" }}>
             <Lottie
               animationData={altiHarfAnim}
               loop={false}
