@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Gift, Trophy, PartyPopper, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Lottie from "lottie-react";
 
 interface PrizeNotification {
   id: string;
@@ -71,6 +72,8 @@ const LeaderboardPrizeDialog = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [notification, setNotification] = useState<PrizeNotification | null>(null);
+  const [confettiAnim, setConfettiAnim] = useState<any>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -91,6 +94,16 @@ const LeaderboardPrizeDialog = () => {
       if (!error && data) {
         setNotification(data);
         setOpen(true);
+
+        // Konfeti animasyonunu yükle ve bir kerelik oynat
+        try {
+          const anim = await fetch("/kazanmajson.json").then((r) => r.json());
+          setConfettiAnim(anim);
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 4000);
+        } catch (e) {
+          console.warn("Konfeti yuklenemedi:", e);
+        }
 
         try {
           const { isSoundEffectsEnabled } = await import("@/utils/soundSettings");
@@ -164,6 +177,18 @@ const LeaderboardPrizeDialog = () => {
         className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
         style={{ backgroundColor: theme.bg }}
       >
+        {/* One-shot konfeti */}
+        {showConfetti && confettiAnim && (
+          <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+            <Lottie
+              animationData={confettiAnim}
+              loop={false}
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        )}
+
         {/* Top glow */}
         <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${theme.glow} to-transparent pointer-events-none`} />
 
