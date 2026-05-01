@@ -72,6 +72,8 @@ const LeaderboardPrizeDialog = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [notification, setNotification] = useState<PrizeNotification | null>(null);
+  const [confettiAnim, setConfettiAnim] = useState<any>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
