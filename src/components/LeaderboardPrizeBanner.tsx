@@ -121,15 +121,15 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
           {/* Prize items */}
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-300">
             <span className="flex items-center gap-1">
-              <img src="/degistirIkon.png" alt="" className="w-4 h-4" />
+              <img src="/icons/degistir.svg" alt="" className="w-4 h-4" />
               {prizes.degistir} Değiştir
             </span>
             <span className="flex items-center gap-1">
-              <img src="/fisildaIkon.png" alt="" className="w-4 h-4" />
+              <img src="/icons/fisilda.svg" alt="" className="w-4 h-4" />
               {prizes.fisilida} Fısılda
             </span>
             <span className="flex items-center gap-1">
-              <img src="/senyazIkon.png" alt="" className="w-4 h-4" />
+              <img src="/icons/senyaz.svg" alt="" className="w-4 h-4" />
               {prizes.senyaz} Senyaz
             </span>
             {prizes.oyunHakki && (
