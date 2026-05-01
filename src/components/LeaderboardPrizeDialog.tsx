@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Gift, Trophy, PartyPopper, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Lottie from "lottie-react";
 
 interface PrizeNotification {
   id: string;
