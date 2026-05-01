@@ -149,6 +149,8 @@ const GamePage = ({
   const [tieAnim, setTieAnim] = useState<any>(null);
   const [confettiAnim, setConfettiAnim] = useState<any>(null);
   const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
+  const [altiHarfAnim, setAltiHarfAnim] = useState<any>(null);
+  const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -156,11 +158,13 @@ const GamePage = ({
       fetch("/oyunkatbetmejson.json").then(r => r.json()),
       fetch("/beraberlikjson.json").then(r => r.json()),
       fetch("/kazanmajson.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti]) => {
+      fetch("/altiharf.json").then(r => r.json()),
+    ]).then(([win, lose, tie, confetti, altiHarf]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
+      setAltiHarfAnim(altiHarf);
     }).catch(console.error);
   }, []);
   const {
@@ -7012,6 +7016,12 @@ const GamePage = ({
         setInputFlash(isLong ? "success-long" : "success");
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast(normalizedWord, "", isLong ? "white" : "green");
+
+        // 🎉 6+ harfli kelimede ızgaranın ortasında altiharf animasyonu (1 kerelik)
+        if (isLong) {
+          setShowAltiHarfAnim(true);
+          setTimeout(() => setShowAltiHarfAnim(false), 2500);
+        }
       }
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
@@ -7754,6 +7764,17 @@ const GamePage = ({
             loop={false}
             autoplay
             style={{ width: "100%", height: "100%" }}
+          />
+        </div>
+      )}
+      {/* ✨ 6+ harfli kelime animasyonu (ızgaranın ortasında, 1 kerelik) */}
+      {showAltiHarfAnim && altiHarfAnim && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center">
+          <Lottie
+            animationData={altiHarfAnim}
+            loop={false}
+            autoplay
+            style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)" }}
           />
         </div>
       )}
