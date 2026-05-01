@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       if (await alreadyAwarded("season")) {
         results.push("Season prize already awarded, skipping");
       } else {
-        const winner = await findSeasonWinner(supabase);
+        const winner = await findSeasonWinner(supabase, turkeyNow);
         if (winner) {
           await awardPrize(supabase, winner, PRIZES.season);
           results.push(`Season winner: ${winner}`);
