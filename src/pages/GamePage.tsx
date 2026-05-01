@@ -7016,6 +7016,12 @@ const GamePage = ({
         setInputFlash(isLong ? "success-long" : "success");
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast(normalizedWord, "", isLong ? "white" : "green");
+
+        // 🎉 6+ harfli kelimede ızgaranın ortasında altiharf animasyonu (1 kerelik)
+        if (isLong) {
+          setShowAltiHarfAnim(true);
+          setTimeout(() => setShowAltiHarfAnim(false), 2500);
+        }
       }
 
       // ✅ HEMEN GRİD'İ TEMİZLE VE UI'I GÜNCELLE (KULLANICI BEKLEMESİN)
