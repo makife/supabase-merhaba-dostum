@@ -234,12 +234,29 @@ async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<
   return data.user_id;
 }
 
-// ===== SEZON kazananı =====
-async function findSeasonWinner(supabase: any): Promise<string | null> {
-  const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 1 });
+// ===== ÖNCEKİ SEZON kazananı =====
+// Cron 1 Ocak/Mayıs/Eylül 00:00 TR'de çalıştığı için yeni sezona geçilmiş olur.
+// Önceki sezonun başlangıç tarihini hesaplayıp RPC'ye parametre olarak veriyoruz.
+async function findSeasonWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
+  // Mevcut sezon başlangıcı: Ocak/Mayıs/Eylül ayının 1'i (Türkiye saatine göre)
+  const curMonth = turkeyNow.getUTCMonth();
+  const curYear = turkeyNow.getUTCFullYear();
+  // Önceki sezon başlangıcı = mevcut başlangıçtan 4 ay öncesi
+  const prevSeasonDate = new Date(Date.UTC(curYear, curMonth - 4, 1));
+  const prevSeasonStart = prevSeasonDate.toISOString().split("T")[0];
+
+  console.log(`📊 Looking for previous season winner (season_start: ${prevSeasonStart})`);
+
+  const { data, error } = await supabase.rpc("get_season_leaderboard", {
+    limit_count: 1,
+    season_start_date: prevSeasonStart,
+  });
   if (error) { console.error("❌ Season leaderboard error:", error); return null; }
-  if (!data || data.length === 0) return null;
-  console.log(`📊 Season winner found: ${data[0].user_id} with score ${data[0].season_score}`);
+  if (!data || data.length === 0) {
+    console.log(`📊 No data found for season starting ${prevSeasonStart}`);
+    return null;
+  }
+  console.log(`📊 Previous season winner: ${data[0].user_id} with score ${data[0].season_score}`);
   return data[0].user_id;
 }
 
