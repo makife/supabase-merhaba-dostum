@@ -112,9 +112,20 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
 
       <div className="flex items-center gap-3 relative z-10">
         {/* Gift Animation */}
-        <div className="flex-shrink-0 w-14 h-14 drop-shadow-lg">
+        <div className="flex-shrink-0 w-14 h-14 drop-shadow-lg relative overflow-visible">
           {giftAnim ? (
-            <Lottie animationData={giftAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                width: "200%",
+                height: "200%",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <Lottie animationData={giftAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+            </div>
           ) : null}
         </div>
 
