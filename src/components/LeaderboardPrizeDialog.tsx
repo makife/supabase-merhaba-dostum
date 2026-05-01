@@ -95,6 +95,16 @@ const LeaderboardPrizeDialog = () => {
         setNotification(data);
         setOpen(true);
 
+        // Konfeti animasyonunu yükle ve bir kerelik oynat
+        try {
+          const anim = await fetch("/kazanmajson.json").then((r) => r.json());
+          setConfettiAnim(anim);
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 4000);
+        } catch (e) {
+          console.warn("Konfeti yuklenemedi:", e);
+        }
+
         try {
           const { isSoundEffectsEnabled } = await import("@/utils/soundSettings");
           if (isSoundEffectsEnabled()) {
