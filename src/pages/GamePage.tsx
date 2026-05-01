@@ -7776,7 +7776,7 @@ const GamePage = ({
             animationData={altiHarfAnim}
             loop={false}
             autoplay
-            style={{ width: "min(160vw, 720px)", height: "min(160vw, 720px)" }}
+            style={{ width: "min(320vw, 1440px)", height: "min(320vw, 1440px)" }}
           />
         </div>
       )}
