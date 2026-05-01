@@ -177,6 +177,18 @@ const LeaderboardPrizeDialog = () => {
         className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
         style={{ backgroundColor: theme.bg }}
       >
+        {/* One-shot konfeti */}
+        {showConfetti && confettiAnim && (
+          <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+            <Lottie
+              animationData={confettiAnim}
+              loop={false}
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        )}
+
         {/* Top glow */}
         <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${theme.glow} to-transparent pointer-events-none`} />
 
