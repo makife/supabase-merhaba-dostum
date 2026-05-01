@@ -7018,7 +7018,9 @@ const GamePage = ({
         showCustomToast(normalizedWord, "", isLong ? "white" : "green");
 
         // 🎉 6+ harfli kelimede ızgaranın ortasında altiharf animasyonu (1 kerelik)
+        // ve puan 2 katına çıkarılır
         if (isLong) {
+          result.points = result.points * 2;
           setShowAltiHarfAnim(true);
           setTimeout(() => setShowAltiHarfAnim(false), 2500);
         }
