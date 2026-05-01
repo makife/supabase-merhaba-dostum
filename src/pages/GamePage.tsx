@@ -7767,6 +7767,17 @@ const GamePage = ({
           />
         </div>
       )}
+      {/* ✨ 6+ harfli kelime animasyonu (ızgaranın ortasında, 1 kerelik) */}
+      {showAltiHarfAnim && altiHarfAnim && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center">
+          <Lottie
+            animationData={altiHarfAnim}
+            loop={false}
+            autoplay
+            style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)" }}
+          />
+        </div>
+      )}
       <>
 
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
