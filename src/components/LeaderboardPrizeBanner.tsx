@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Gift, Clock, Zap } from "lucide-react";
+import Lottie from "lottie-react";
 
 interface PrizeInfo {
   degistir: number;
@@ -13,17 +14,14 @@ interface LeaderboardPrizeBannerProps {
   tab: "all-time" | "weekly" | "monthly";
 }
 
-const PRIZE_CONFIG: Record<string, { image: string; prizes: PrizeInfo }> = {
+const PRIZE_CONFIG: Record<string, { prizes: PrizeInfo }> = {
   "all-time": {
-    image: "/kirmiziHediye.png",
     prizes: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, boostLabel: "1 ay boyunca maç sonu puanı x2" },
   },
   weekly: {
-    image: "/maviHediye.png",
     prizes: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostLabel: "1 gün boyunca maç sonu puanı x2" },
   },
   monthly: {
-    image: "/yesilHediye.png",
     prizes: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, boostLabel: "1 hafta boyunca maç sonu puanı x2" },
   },
 };
@@ -70,6 +68,14 @@ function formatCountdown(ms: number): string {
 
 const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
   const [remaining, setRemaining] = useState("");
+  const [giftAnim, setGiftAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/liderlikhediye.json")
+      .then((r) => r.json())
+      .then(setGiftAnim)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const tick = () => {
@@ -105,9 +111,11 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse pointer-events-none" />
 
       <div className="flex items-center gap-3 relative z-10">
-        {/* Gift Image */}
-        <div className="flex-shrink-0">
-          <img src={config.image} alt="Hediye" className="w-14 h-14 object-contain drop-shadow-lg" />
+        {/* Gift Animation */}
+        <div className="flex-shrink-0 w-14 h-14 drop-shadow-lg">
+          {giftAnim ? (
+            <Lottie animationData={giftAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+          ) : null}
         </div>
 
         {/* Prize Info */}
