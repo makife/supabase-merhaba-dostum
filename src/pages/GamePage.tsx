@@ -149,6 +149,8 @@ const GamePage = ({
   const [tieAnim, setTieAnim] = useState<any>(null);
   const [confettiAnim, setConfettiAnim] = useState<any>(null);
   const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
+  const [altiHarfAnim, setAltiHarfAnim] = useState<any>(null);
+  const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -156,11 +158,13 @@ const GamePage = ({
       fetch("/oyunkatbetmejson.json").then(r => r.json()),
       fetch("/beraberlikjson.json").then(r => r.json()),
       fetch("/kazanmajson.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti]) => {
+      fetch("/altiharf.json").then(r => r.json()),
+    ]).then(([win, lose, tie, confetti, altiHarf]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
+      setAltiHarfAnim(altiHarf);
     }).catch(console.error);
   }, []);
   const {
