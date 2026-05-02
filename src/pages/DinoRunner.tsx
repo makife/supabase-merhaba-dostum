@@ -219,6 +219,8 @@ const DinoRunner = () => {
     setCompletedWords([]);
     wordBonusRef.current = 0;
     obstaclesRef.current = [];
+    lastObstacleKindRef.current = null;
+    sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
     setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0 });
