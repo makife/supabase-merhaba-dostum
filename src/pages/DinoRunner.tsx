@@ -298,8 +298,24 @@ const DinoRunner = () => {
     }
 
     if (Date.now() > nextObstacleTimeRef.current) {
-      // %35 ihtimalle tavan engeli, gerisi zemin
-      const isCeiling = Math.random() < 0.35;
+      // Karışık dağılım: temel oran %45 tavan / %55 zemin,
+      // aynı tip 2 kez üst üste geldiyse 3.'sünde tipi zorla değiştir,
+      // 1 kez üst üste geldiyse karşı tipe doğru ağırlık ver.
+      const last = lastObstacleKindRef.current;
+      const streak = sameKindStreakRef.current;
+      let isCeiling: boolean;
+      if (last && streak >= 2) {
+        // 2 aynı tip arka arkaya geldi → kesin değiştir
+        isCeiling = last !== "ceiling";
+      } else if (last && streak === 1) {
+        // 1 aynı tip → karşıya %75 ağırlık
+        isCeiling = last === "ceiling" ? Math.random() < 0.25 : Math.random() < 0.75;
+      } else {
+        isCeiling = Math.random() < 0.45;
+      }
+      const kind: "ceiling" | "ground" = isCeiling ? "ceiling" : "ground";
+      sameKindStreakRef.current = last === kind ? streak + 1 : 1;
+      lastObstacleKindRef.current = kind;
       if (isCeiling) {
         const ceilingHeights = [30, 45, 60];
         const height = ceilingHeights[Math.floor(Math.random() * ceilingHeights.length)];
