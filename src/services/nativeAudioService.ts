@@ -196,11 +196,17 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   try {
-    // Önce durdur (önceki çalma varsa)
-    try {
-      await NativeAudio.stop({ assetId });
-    } catch (e) {
-      // Ignore stop errors
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const isMultiChannel = (soundDef?.channels ?? 1) > 1;
+
+    // 🔧 iOS-fix: Çok kanallı sesler için stop ÇAĞIRMA — kanallar overlap edebilsin.
+    // Sadece tek kanallı uzun sesler (yes/wow/celebration vs.) için önceki çalmayı kes.
+    if (!isMultiChannel) {
+      try {
+        await NativeAudio.stop({ assetId });
+      } catch (e) {
+        // Ignore stop errors
+      }
     }
 
     // Volume ayarla
