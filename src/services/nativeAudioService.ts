@@ -18,6 +18,7 @@ interface SoundDefinition {
   assetPath: string;
   volume?: number;
   isUrl?: boolean;
+  channels?: number; // iOS overlap için kanal sayısı (kısa/sık sesler için >1)
 }
 
 // Tüm sesler - 🔧 DOSYA YOLLARI DOĞRULANDI (public/ klasöründeki gerçek isimlerle eşleşiyor)
