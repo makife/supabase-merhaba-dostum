@@ -53,6 +53,8 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5, channels: 4 },
   // 🔧 iOS-fix: harf seçimi için çok kanallı, kısa ses (oscillator yerine)
   { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4, channels: 6 },
+  // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
+  { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
 ];
 
 // Initialization flag
