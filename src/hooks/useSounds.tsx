@@ -493,6 +493,13 @@ export const useSounds = () => {
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
+    // 🔧 iOS-fix: Native platformda NativeAudio kullan, HTML5 Audio AVAudioSession
+    // çakışması yaparak diğer kısa sesleri (harf tıklama) susturuyor.
+    if (isNativePlatform()) {
+      playNativeSound('time_warning', 0.7);
+      return;
+    }
+
     // Önceki varsa temizle
     if (timeWarningFadeRef.current) {
       clearInterval(timeWarningFadeRef.current);
