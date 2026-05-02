@@ -7142,7 +7142,6 @@ const GamePage = ({
     } else if (currentWord.length === 6) {
       playSpecialSound("/yahoo.mp3");
     } else if (currentWord.length >= 7) {
-      playSpecialSound("/yahoo.mp3");
       playSpecialSound("/didyouseethat.mp3");
     }
 
