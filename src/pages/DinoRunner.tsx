@@ -503,7 +503,7 @@ const DinoRunner = () => {
               style={{
                 width: o.width,
                 height: o.height,
-                transform: `translate3d(${o.x}px, ${-GROUND_HEIGHT}px, 0)`,
+                transform: `translate3d(${o.x}px, ${-(o.y + GROUND_HEIGHT)}px, 0)`,
               }}
             />
           ))}
