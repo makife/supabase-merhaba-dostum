@@ -151,6 +151,8 @@ const GamePage = ({
   const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
   const [altiHarfAnim, setAltiHarfAnim] = useState<any>(null);
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
+  const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
+  const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -159,12 +161,14 @@ const GamePage = ({
       fetch("/beraberlikjson.json").then(r => r.json()),
       fetch("/kazanmajson.json").then(r => r.json()),
       fetch("/altiharf.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf]) => {
+      fetch("/gunlukKonfeti.json").then(r => r.json()),
+    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
       setAltiHarfAnim(altiHarf);
+      setGunlukKonfetiAnim(gunlukKonfeti);
     }).catch(console.error);
   }, []);
   const {
@@ -7021,8 +7025,13 @@ const GamePage = ({
         // ve puan 2 katına çıkarılır
         if (isLong) {
           result.points = result.points * 2;
-          setShowAltiHarfAnim(true);
-          setTimeout(() => setShowAltiHarfAnim(false), 2500);
+          if (normalizedWord.length >= 7) {
+            setShowGunlukKonfetiAnim(true);
+            setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
+          } else {
+            setShowAltiHarfAnim(true);
+            setTimeout(() => setShowAltiHarfAnim(false), 2500);
+          }
         }
       }
 
@@ -7784,6 +7793,19 @@ const GamePage = ({
           </div>
         </div>
       )}
+      {/* 🎉 7+ harfli kelime animasyonu (gunlukKonfeti) */}
+      {showGunlukKonfetiAnim && gunlukKonfetiAnim && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center overflow-visible">
+          <div style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)", transform: "scale(2)", transformOrigin: "center center" }}>
+            <Lottie
+              animationData={gunlukKonfetiAnim}
+              loop={false}
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        </div>
+      )}
       <>
 
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
@@ -8171,7 +8193,7 @@ const GamePage = ({
                     <div
                       className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
                         inputFlash === "success-long"
-                          ? "border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-white/15"
+                          ? "border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-blue-950/40"
                           : inputFlash === "success"
                             ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
                             : inputFlash === "error"
@@ -8191,14 +8213,14 @@ const GamePage = ({
                               inputFeedback.type === "bonus"
                                 ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
                                 : inputFeedback.type === "success-long"
-                                  ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                                  ? "bg-blue-500/90 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
                                   : inputFeedback.type === "success"
                                     ? "bg-emerald-500/90"
                                     : "bg-red-500/90"
                             }`}
                           >
                             <span
-                              className={`font-black font-mono tracking-wider drop-shadow-md ${inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"} ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
+                              className={`font-black font-mono tracking-wider drop-shadow-md text-white ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
                             >
                               {inputFeedback.text}
                             </span>
