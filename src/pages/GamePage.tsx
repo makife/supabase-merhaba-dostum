@@ -853,8 +853,8 @@ const GamePage = ({
   const [selectedLetters, setSelectedLetters] = useState<{ letter: string; row: number; col: number }[]>([]);
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
-  const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "success-long" | "error" | "bonus" } | null>(
+  const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "success-xlong" | "error" | null>(null);
+  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "success-long" | "success-xlong" | "error" | "bonus" } | null>(
     null,
   );
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -6880,14 +6880,14 @@ const GamePage = ({
   };
 
   // Input field içinde feedback gösterme fonksiyonu
-  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "white" | "bonus" = "red") => {
+  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "white" | "blue" | "bonus" = "red") => {
     // Önceki timer'ı temizle
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
 
     const feedbackType =
-      color === "green" ? "success" : color === "white" ? "success-long" : color === "bonus" ? "bonus" : "error";
+      color === "green" ? "success" : color === "white" ? "success-long" : color === "blue" ? "success-xlong" : color === "bonus" ? "bonus" : "error";
     setInputFeedback({ text: title, type: feedbackType });
 
     // bonus için daha uzun süre göster
@@ -7017,9 +7017,10 @@ const GamePage = ({
       } else {
         // Normal kelime: 6+ harf beyaz, kısa kelime yeşil feedback
         const isLong = normalizedWord.length >= 6;
-        setInputFlash(isLong ? "success-long" : "success");
+        const isXLong = normalizedWord.length >= 7;
+        setInputFlash(isXLong ? "success-xlong" : isLong ? "success-long" : "success");
         setTimeout(() => setInputFlash(null), 600);
-        showCustomToast(normalizedWord, "", isLong ? "white" : "green");
+        showCustomToast(normalizedWord, "", isXLong ? "blue" : isLong ? "white" : "green");
 
         // 🎉 6+ harfli kelimede ızgaranın ortasında altiharf animasyonu (1 kerelik)
         // ve puan 2 katına çıkarılır
@@ -8192,13 +8193,15 @@ const GamePage = ({
                   <div className="flex items-center space-x-2 w-full">
                     <div
                       className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
-                        inputFlash === "success-long"
+                        inputFlash === "success-xlong"
                           ? "border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-blue-950/40"
-                          : inputFlash === "success"
-                            ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
-                            : inputFlash === "error"
-                              ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
-                              : "border border-white/15 bg-white/5"
+                          : inputFlash === "success-long"
+                            ? "border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-white/15"
+                            : inputFlash === "success"
+                              ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
+                              : inputFlash === "error"
+                                ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
+                                : "border border-white/15 bg-white/5"
                       }`}
                     >
                       <AnimatePresence mode="popLayout">
@@ -8212,11 +8215,13 @@ const GamePage = ({
                             className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
                               inputFeedback.type === "bonus"
                                 ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
-                                : inputFeedback.type === "success-long"
+                                : inputFeedback.type === "success-xlong"
                                   ? "bg-blue-500/90 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
-                                  : inputFeedback.type === "success"
-                                    ? "bg-emerald-500/90"
-                                    : "bg-red-500/90"
+                                  : inputFeedback.type === "success-long"
+                                    ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)] text-slate-900"
+                                    : inputFeedback.type === "success"
+                                      ? "bg-emerald-500/90"
+                                      : "bg-red-500/90"
                             }`}
                           >
                             <span
