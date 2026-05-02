@@ -283,16 +283,31 @@ const DinoRunner = () => {
     }
 
     if (Date.now() > nextObstacleTimeRef.current) {
-      const types = ["short", "tall", "box"];
-      const type = types[Math.floor(Math.random() * types.length)];
-      obstaclesRef.current.push({
-        id: Math.random(),
-        x: GAME_WIDTH,
-        y: 0,
-        width: OBSTACLE_WIDTH,
-        height: type === "short" ? 30 : type === "tall" ? 60 : 40,
-        type: type,
-      });
+      // %35 ihtimalle tavan engeli, gerisi zemin
+      const isCeiling = Math.random() < 0.35;
+      if (isCeiling) {
+        const ceilingHeights = [30, 45, 60];
+        const height = ceilingHeights[Math.floor(Math.random() * ceilingHeights.length)];
+        obstaclesRef.current.push({
+          id: Math.random(),
+          x: GAME_WIDTH,
+          y: GAME_HEIGHT - GROUND_HEIGHT - height, // tavandan sarkar
+          width: OBSTACLE_WIDTH,
+          height,
+          type: "ceiling",
+        });
+      } else {
+        const types = ["short", "tall", "box"];
+        const type = types[Math.floor(Math.random() * types.length)];
+        obstaclesRef.current.push({
+          id: Math.random(),
+          x: GAME_WIDTH,
+          y: 0,
+          width: OBSTACLE_WIDTH,
+          height: type === "short" ? 30 : type === "tall" ? 60 : 40,
+          type: type,
+        });
+      }
       nextObstacleTimeRef.current = Date.now() + 1000 + Math.random() * 1500;
     }
 
