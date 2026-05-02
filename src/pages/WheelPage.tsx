@@ -312,19 +312,37 @@ const WheelPage = () => {
         setLastReward(reward);
         await consumeSpinAndSave(reward);
         await giveReward(reward);
+        await refreshProfile();
 
+        // 🔧 iOS-fix: setState updater + setTimeout race condition vardı
+        // (pas geldikten sonra hâlâ hak varken "Yarın gel" çıkıyordu).
+        // Artık DB'den fresh fetch yaparak gerçek kalan hakkı hesaplıyoruz.
         let remainingSpins = 0;
-        setTotalSpins((prev) => {
-          remainingSpins = Math.max(prev - 1, 0);
-          return remainingSpins;
-        });
+        if (user) {
+          const today = getTodayLocalDate();
+          const [{ data: spinData }, { data: freshProfile }] = await Promise.all([
+            supabase
+              .from("wheel_spins")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("date", today)
+              .maybeSingle(),
+            supabase
+              .from("profiles")
+              .select("bonus_spins")
+              .eq("id", user.id)
+              .maybeSingle(),
+          ]);
+          const dailyAvailable = !spinData ? 1 : 0;
+          const bonus = freshProfile?.bonus_spins || 0;
+          remainingSpins = dailyAvailable + bonus;
+          // Ref'i de senkronize et
+          bonusSpinsRef.current = bonus;
+        }
 
-        // State updater'dan sonra kalan hakkı kontrol et
-        // (React batching nedeniyle remainingSpins closure'dan okunur)
-        setTimeout(() => {
-          setCanSpin(remainingSpins > 0);
-          showRewardToast(reward, remainingSpins <= 0);
-        }, 0);
+        setTotalSpins(remainingSpins);
+        setCanSpin(remainingSpins > 0);
+        showRewardToast(reward, remainingSpins <= 0);
 
         soundsRef.current?.playSpecialSound(
           reward.type === "empty" ? "/carkBosGeldi.mp3" : "/carkDoluGeldi.mp3",
@@ -334,7 +352,6 @@ const WheelPage = () => {
           setShowKonfeti(true);
           setTimeout(() => setShowKonfeti(false), 4000);
         }
-        await refreshProfile();
       } catch (error) {
         console.error("[Wheel] Spin finalize error:", error);
         toast.error("Bir hata oluştu, lütfen tekrar dene.");
@@ -344,7 +361,7 @@ const WheelPage = () => {
         spinLockRef.current = false;
       }
     },
-    [checkDailySpinAvailability, refreshProfile]
+    [checkDailySpinAvailability, refreshProfile, user]
   );
 
   const spinWheel = () => {
