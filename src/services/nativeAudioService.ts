@@ -50,6 +50,8 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
   { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5 }, // 🆕 Eklendi
+  // 🔧 iOS-fix: harf seçimi için çok kanallı, kısa ses (oscillator yerine)
+  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4 },
 ];
 
 // Initialization flag
