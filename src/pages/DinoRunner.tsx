@@ -183,8 +183,18 @@ const DinoRunner = () => {
     setTimeout(() => setFeedback(null), 1500);
   };
 
+  // Refs to read latest values inside callbacks/event listeners
+  const hasPlayedTodayRef = useRef(false);
+  const challengeLoadingRef = useRef(true);
+  useEffect(() => { hasPlayedTodayRef.current = hasPlayedToday; }, [hasPlayedToday]);
+  useEffect(() => { challengeLoadingRef.current = challengeLoading; }, [challengeLoading]);
+
   const startGame = () => {
-    if (hasPlayedToday) return;
+    // Block if challenge data is still loading or already played today
+    if (challengeLoadingRef.current) return;
+    if (hasPlayedTodayRef.current) return;
+    // Mark immediately (also flips local state synchronously)
+    hasPlayedTodayRef.current = true;
     markAsPlayed();
 
     setGameState("playing");
@@ -224,6 +234,9 @@ const DinoRunner = () => {
       e.stopPropagation();
     }
     if (gameStateRef.current !== "playing") {
+      // Do NOT auto-start if user already played today or data is still loading.
+      // Otherwise pressing JUMP after game-over would re-launch the game.
+      if (challengeLoadingRef.current || hasPlayedTodayRef.current) return;
       startGame();
       return;
     }

@@ -118,7 +118,11 @@ export function useDailyChallenge(challengeType: ChallengeType) {
 
   // Mark as played immediately (score 0) — called when game starts
   const markAsPlayed = useCallback(async () => {
-    if (!user || markedRef.current) return;
+    if (!user) return;
+    // Always reflect "played" in UI state, even if already marked, to prevent
+    // any race where consumer reads stale hasPlayedToday=false.
+    setHasPlayedToday(true);
+    if (markedRef.current) return;
     markedRef.current = true;
 
     const { data: profile } = await supabase
