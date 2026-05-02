@@ -1771,6 +1771,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_joker: {
+        Args: { p_joker_type: string; p_quantity?: number; p_username: string }
+        Returns: Json
+      }
       advance_tournament_round:
         | { Args: { p_tournament_id: string }; Returns: Json }
         | {
