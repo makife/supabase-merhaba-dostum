@@ -83,6 +83,8 @@ const DinoRunner = () => {
   const spawnIndexRef = useRef(0);
 
   const nextObstacleTimeRef = useRef(0);
+  const lastObstacleKindRef = useRef<"ceiling" | "ground" | null>(null);
+  const sameKindStreakRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
   const audioContextRef = useRef<AudioContext | null>(null);
