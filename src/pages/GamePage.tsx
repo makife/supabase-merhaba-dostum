@@ -7139,8 +7139,11 @@ const GamePage = ({
       playSpecialSound("/yes.mp3");
     } else if (currentWord.length === 5) {
       playSpecialSound("/wow2.mp3");
-    } else if (currentWord.length >= 6) {
+    } else if (currentWord.length === 6) {
       playSpecialSound("/yahoo.mp3");
+    } else if (currentWord.length >= 7) {
+      playSpecialSound("/yahoo.mp3");
+      playSpecialSound("/didyouseethat.mp3");
     }
 
     if (hasConfetti && hasFireworks) {
