@@ -44,15 +44,15 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'cark_bos', assetPath: 'public/carkBosGeldi.mp3', volume: 0.7 },
   
   // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
-  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
-  { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6 },
-  { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5 },
+  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5, channels: 4 },
+  { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6, channels: 3 },
+  { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5, channels: 3 },
   { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
-  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5 }, // 🆕 Eklendi
+  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5, channels: 4 },
   // 🔧 iOS-fix: harf seçimi için çok kanallı, kısa ses (oscillator yerine)
-  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4 },
+  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4, channels: 6 },
 ];
 
 // Initialization flag
