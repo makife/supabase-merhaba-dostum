@@ -112,7 +112,7 @@ export const initNativeAudio = async (): Promise<void> => {
           await NativeAudio.preload({
             assetId: sound.assetId,
             assetPath: sound.assetPath,
-            audioChannelNum: 1,
+            audioChannelNum: sound.channels ?? 1,
             isUrl: false,
           });
           preloadedSounds.add(sound.assetId);
