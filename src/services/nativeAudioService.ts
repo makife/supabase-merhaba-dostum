@@ -18,6 +18,7 @@ interface SoundDefinition {
   assetPath: string;
   volume?: number;
   isUrl?: boolean;
+  channels?: number; // iOS overlap için kanal sayısı (kısa/sık sesler için >1)
 }
 
 // Tüm sesler - 🔧 DOSYA YOLLARI DOĞRULANDI (public/ klasöründeki gerçek isimlerle eşleşiyor)
@@ -43,13 +44,17 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'cark_bos', assetPath: 'public/carkBosGeldi.mp3', volume: 0.7 },
   
   // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
-  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5 },
-  { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6 },
-  { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5 },
+  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5, channels: 4 },
+  { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6, channels: 3 },
+  { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5, channels: 3 },
   { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
-  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5 }, // 🆕 Eklendi
+  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5, channels: 4 },
+  // 🔧 iOS-fix: harf seçimi için çok kanallı, kısa ses (oscillator yerine)
+  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4, channels: 6 },
+  // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
+  { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
 ];
 
 // Initialization flag
@@ -109,7 +114,7 @@ export const initNativeAudio = async (): Promise<void> => {
           await NativeAudio.preload({
             assetId: sound.assetId,
             assetPath: sound.assetPath,
-            audioChannelNum: 1,
+            audioChannelNum: sound.channels ?? 1,
             isUrl: false,
           });
           preloadedSounds.add(sound.assetId);
@@ -193,11 +198,17 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   try {
-    // Önce durdur (önceki çalma varsa)
-    try {
-      await NativeAudio.stop({ assetId });
-    } catch (e) {
-      // Ignore stop errors
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const isMultiChannel = (soundDef?.channels ?? 1) > 1;
+
+    // 🔧 iOS-fix: Çok kanallı sesler için stop ÇAĞIRMA — kanallar overlap edebilsin.
+    // Sadece tek kanallı uzun sesler (yes/wow/celebration vs.) için önceki çalmayı kes.
+    if (!isMultiChannel) {
+      try {
+        await NativeAudio.stop({ assetId });
+      } catch (e) {
+        // Ignore stop errors
+      }
     }
 
     // Volume ayarla

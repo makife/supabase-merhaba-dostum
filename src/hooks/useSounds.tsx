@@ -355,6 +355,25 @@ export const useSounds = () => {
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
 
+      // 🔧 iOS-fix: Native platformda sık çalan kısa sesleri (letterSelect, buttonClick,
+      // correctWord, wrongWord) NativeAudio multi-channel ile çal. Oscillator/Web Audio
+      // kullanmak yes/wow/yahoo/sureAzaliyor sesleri çalarken AVAudioSession çakışması
+      // sebebiyle iOS'ta sustu yapıyor.
+      if (isNativePlatform()) {
+        const nativeMap: Partial<Record<keyof SoundConfig, string>> = {
+          letterSelect: 'letter_select',
+          buttonClick: 'button_click',
+          correctWord: 'correct_word',
+          wrongWord: 'wrong_word',
+          timeWarning: 'beep',
+        };
+        const assetId = nativeMap[soundKey];
+        if (assetId) {
+          await playNativeSound(assetId);
+          return;
+        }
+      }
+
       const activePack = getActiveSoundPack();
 
       try {
@@ -473,6 +492,13 @@ export const useSounds = () => {
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+
+    // 🔧 iOS-fix: Native platformda NativeAudio kullan, HTML5 Audio AVAudioSession
+    // çakışması yaparak diğer kısa sesleri (harf tıklama) susturuyor.
+    if (isNativePlatform()) {
+      playNativeSound('time_warning', 0.7);
+      return;
+    }
 
     // Önceki varsa temizle
     if (timeWarningFadeRef.current) {
