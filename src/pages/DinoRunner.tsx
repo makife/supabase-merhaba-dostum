@@ -751,6 +751,11 @@ const DinoRunner = () => {
             background: #666;
             border-radius: 6px;
         }
+        .obs-ceiling {
+            background: linear-gradient(180deg, #ff4444 0%, #8b0000 100%);
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 2px 8px rgba(255, 68, 68, 0.5);
+        }
 
         .letter-box {
             position: absolute;
