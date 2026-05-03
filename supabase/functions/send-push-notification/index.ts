@@ -250,12 +250,21 @@ serve(async (req) => {
 
     const { title, body, data, skipIfOnline } = requestBody
 
-    // Get receiver's push token and last_seen from database
+    // Get receiver's push token, last_seen and active_chat_id from database
     const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('push_token, last_seen')
+      .select('push_token, last_seen, active_chat_id')
       .eq('id', receiverId)
       .single()
+
+    // 🔕 Eğer mesaj bildirimi ise ve kullanıcı zaten o özel sohbeti açık tutuyorsa push'u atla
+    if (data?.type === 'message' && data?.chatId && profileData?.active_chat_id === data.chatId) {
+      console.log(`User ${receiverId} is already in chat ${data.chatId} - skipping push`)
+      return new Response(
+        JSON.stringify({ success: true, message: 'User already in this chat, skipping push', skipped: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (profileError || !profileData?.push_token) {
       console.log('Push token not found for user', receiverId, '- silently succeeding')
