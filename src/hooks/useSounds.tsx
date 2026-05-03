@@ -109,13 +109,13 @@ export const useSounds = () => {
       id: "default",
       name: "Varsayılan",
       sounds: {
-        buttonClick: "sounds/default/button-click.mp3",
+        buttonClick: "oyunicibutonsesi.mp3",
         correctWord: "sounds/default/correct-word.mp3",
         wrongWord: "sounds/default/wrong-word.mp3",
         gameWin: "generated", // Generated ses olarak işaretle
         gameLose: "generated",
         timeWarning: "generated",
-        letterSelect: "generated",
+        letterSelect: "butonsesi.mp3",
         celebration: "sounds/default/kutlama.mp3",
         gameLoseSound: "sounds/default/kaybetme.mp3",
         tieSound: "sounds/default/beraberlik.mp3",

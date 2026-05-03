@@ -45,15 +45,17 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'cark_bos', assetPath: 'public/carkBosGeldi.mp3', volume: 0.7 },
   
   // Oyun sesleri - ✅ DOĞRULANMIŞ YOLLAR (public/sounds/default/ içinde)
-  { assetId: 'button_click', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.5, channels: 4 },
+  // 🔧 Menü/geri butonları → oyunicibutonsesi.mp3
+  { assetId: 'button_click', assetPath: 'public/oyunicibutonsesi.mp3', volume: 0.5, channels: 4 },
   { assetId: 'correct_word', assetPath: 'public/sounds/default/correct-word.mp3', volume: 0.6, channels: 3 },
   { assetId: 'wrong_word', assetPath: 'public/sounds/default/wrong-word.mp3', volume: 0.5, channels: 3 },
   { assetId: 'celebration', assetPath: 'public/sounds/default/kutlama.mp3', volume: 0.6 },
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
-  { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5, channels: 4 },
-  // 🔧 iOS-fix: harf seçimi tek kanal — overlap'i kes, temiz tıklama
-  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.35, channels: 1 },
+  // 🔧 10 saniye geri sayım → onsaniyegerisayim.mp3
+  { assetId: 'beep', assetPath: 'public/onsaniyegerisayim.mp3', volume: 0.7, channels: 4 },
+  // 🔧 Izgara harf butonları → butonsesi.mp3
+  { assetId: 'letter_select', assetPath: 'public/butonsesi.mp3', volume: 0.5, channels: 4 },
   // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
 ];
