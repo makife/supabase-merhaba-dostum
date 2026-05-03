@@ -8225,7 +8225,7 @@ const GamePage = ({
                             }`}
                           >
                             <span
-                              className={`font-black font-mono tracking-wider drop-shadow-md text-white ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
+                              className={`font-black font-mono tracking-wider drop-shadow-md ${inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"} ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
                             >
                               {inputFeedback.text}
                             </span>
