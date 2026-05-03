@@ -4759,7 +4759,7 @@ const GamePage = ({
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
             // Mevcut update_game_stats imzası ile istatistikleri tek kaynaktan yaz
-            const finalScoreMultiplier = scoreMultiplier * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+            const finalScoreMultiplier = scoreMultiplier; // Premium/boost sunucuda uygulanıyor
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore * finalScoreMultiplier,
