@@ -115,7 +115,7 @@ export const useSounds = () => {
         gameWin: "generated", // Generated ses olarak işaretle
         gameLose: "generated",
         timeWarning: "generated",
-        letterSelect: "generated",
+        letterSelect: "butonsesi.mp3",
         celebration: "sounds/default/kutlama.mp3",
         gameLoseSound: "sounds/default/kaybetme.mp3",
         tieSound: "sounds/default/beraberlik.mp3",
