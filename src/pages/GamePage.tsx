@@ -1598,8 +1598,8 @@ const GamePage = ({
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
         const disconnectScore = playerScoreRef.current;
-        const premiumMultiplier = 1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0);
-        const disconnectMultiplier = 10 * premiumMultiplier; // Galibiyet çarpanı (disconnect win) + premium x2
+        // 🔧 Premium x2 + Liderlik boost x2 artık SUNUCU TARAFINDA (update_game_stats RPC) uygulanıyor.
+        const disconnectMultiplier = 10; // Sadece kazan/kaybet çarpanı (disconnect win)
 
         console.log("📊 Disconnect win - istatistikler güncelleniyor:", {
           score: disconnectScore,
