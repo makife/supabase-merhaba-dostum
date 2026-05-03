@@ -965,6 +965,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_chat_id: string | null
           avatar_url: string | null
           average_score: number | null
           average_word_length: number | null
@@ -1020,6 +1021,7 @@ export type Database = {
           wins: number | null
         }
         Insert: {
+          active_chat_id?: string | null
           avatar_url?: string | null
           average_score?: number | null
           average_word_length?: number | null
@@ -1075,6 +1077,7 @@ export type Database = {
           wins?: number | null
         }
         Update: {
+          active_chat_id?: string | null
           avatar_url?: string | null
           average_score?: number | null
           average_word_length?: number | null

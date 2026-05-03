@@ -99,31 +99,38 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
 
     console.log("🟢 PrivateChat mounted - Aktif sohbet eklendi:", chatId);
     setActivePrivateChat(chatId);
-
-    // 🆕 Native Storage'a kaydet
     setLastChatId(chatId);
 
-    // Component unmount olduğunda temizlik
+    // 🆕 DB'ye yaz (push notification edge function bunu kontrol eder)
+    if (user?.id) {
+      supabase.from("profiles").update({ active_chat_id: chatId }).eq("id", user.id).then(() => {});
+    }
+
     return () => {
       console.log("🔴 PrivateChat unmounted - Aktif sohbet kaldırıldı:", chatId);
       removeActivePrivateChat(chatId);
       setLastChatId(null);
+      if (user?.id) {
+        supabase.from("profiles").update({ active_chat_id: null }).eq("id", user.id).then(() => {});
+      }
     };
-  }, [chatId]);
-
-  // Native message listener kaldırıldı - Supabase JS SDK yeterli
+  }, [chatId, user?.id]);
 
   // 🎯 SAYFA DEĞİŞİKLİĞİ TAKİBİ - URL değiştiğinde de çalışsın
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        // Sayfa tekrar görünür olduğunda sohbeti aktif yap
         console.log("🟢 Sayfa görünür - Aktif sohbet:", chatId);
         setActivePrivateChat(chatId);
+        if (user?.id) {
+          supabase.from("profiles").update({ active_chat_id: chatId }).eq("id", user.id).then(() => {});
+        }
       } else {
-        // Sayfa gizlendiğinde sohbeti pasif yap
         console.log("🔴 Sayfa gizlendi - Aktif sohbet kaldırıldı:", chatId);
         removeActivePrivateChat(chatId);
+        if (user?.id) {
+          supabase.from("profiles").update({ active_chat_id: null }).eq("id", user.id).then(() => {});
+        }
       }
     };
 
@@ -132,7 +139,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [chatId]);
+  }, [chatId, user?.id]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
