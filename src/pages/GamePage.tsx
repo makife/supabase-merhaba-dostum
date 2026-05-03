@@ -1598,8 +1598,8 @@ const GamePage = ({
         statsUpdatedRef.current = true;
         const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
         const disconnectScore = playerScoreRef.current;
-        const premiumMultiplier = 1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0);
-        const disconnectMultiplier = 10 * premiumMultiplier; // Galibiyet çarpanı (disconnect win) + premium x2
+        // 🔧 Premium x2 + Liderlik boost x2 artık SUNUCU TARAFINDA (update_game_stats RPC) uygulanıyor.
+        const disconnectMultiplier = 10; // Sadece kazan/kaybet çarpanı (disconnect win)
 
         console.log("📊 Disconnect win - istatistikler güncelleniyor:", {
           score: disconnectScore,
@@ -2157,7 +2157,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = (userIsWinner ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0)); // Turnuvada beraberlik yok, kaybetme=x1, premium +1, boost +1
+        const tournamentScoreMultiplier = userIsWinner ? 5 : 1; // Premium/boost sunucuda uygulanıyor
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
@@ -2986,7 +2986,7 @@ const GamePage = ({
       });
 
       const isTie = gameScore === opponentScoreRef.current;
-      const multiplier = (isWinner ? 10 : isTie ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+      const multiplier = isWinner ? 10 : isTie ? 5 : 1; // Premium/boost sunucuda uygulanıyor
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore * multiplier,
@@ -3109,7 +3109,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = (isWinner ? 5 : isTie ? 2 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1; // Premium/boost sunucuda uygulanıyor
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
@@ -4759,7 +4759,7 @@ const GamePage = ({
             const gameDuration = gameType === "timed" ? 120 : Math.floor((Date.now() - gameStartTime) / 1000);
 
             // Mevcut update_game_stats imzası ile istatistikleri tek kaynaktan yaz
-            const finalScoreMultiplier = scoreMultiplier * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+            const finalScoreMultiplier = scoreMultiplier; // Premium/boost sunucuda uygulanıyor
             const { data, error } = await (supabase.rpc as any)("update_game_stats", {
               p_user_id: user.id,
               p_score: currentPlayerScore * finalScoreMultiplier,
