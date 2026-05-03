@@ -2157,7 +2157,7 @@ const GamePage = ({
           gameMode: "tournament",
         });
 
-        const tournamentScoreMultiplier = (userIsWinner ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0)); // Turnuvada beraberlik yok, kaybetme=x1, premium +1, boost +1
+        const tournamentScoreMultiplier = userIsWinner ? 5 : 1; // Premium/boost sunucuda uygulanıyor
         const { error: statsError } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * tournamentScoreMultiplier,
