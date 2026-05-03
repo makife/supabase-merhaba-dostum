@@ -2986,7 +2986,7 @@ const GamePage = ({
       });
 
       const isTie = gameScore === opponentScoreRef.current;
-      const multiplier = (isWinner ? 10 : isTie ? 5 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+      const multiplier = isWinner ? 10 : isTie ? 5 : 1; // Premium/boost sunucuda uygulanıyor
       const { data, error } = await (supabase.rpc as any)("update_game_stats", {
         p_user_id: userId,
         p_score: gameScore * multiplier,
