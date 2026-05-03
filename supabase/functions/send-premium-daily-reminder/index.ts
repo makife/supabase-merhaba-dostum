@@ -194,7 +194,7 @@ serve(async (req) => {
           token: user.push_token,
           notification: {
             title: '🎁 VIP Günlük Jokerler Hazır!',
-            body: 'Günlük 3x Değiştir, 3x Fısılda, 3x Sen Yaz jokerleriniz sizi bekliyor!'
+            body: 'Günlük 5x Değiştir, 5x Fısılda, 5x Sen Yaz jokerleriniz sizi bekliyor!'
           },
           data: {
             type: 'premium_daily_reminder',
