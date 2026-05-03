@@ -51,8 +51,8 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
   { assetId: 'beep', assetPath: 'public/sounds/default/beep.mp3', volume: 0.5, channels: 4 },
-  // 🔧 iOS-fix: harf seçimi için çok kanallı, kısa ses (oscillator yerine)
-  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.4, channels: 6 },
+  // 🔧 iOS-fix: harf seçimi tek kanal — overlap'i kes, temiz tıklama
+  { assetId: 'letter_select', assetPath: 'public/sounds/default/button-click.mp3', volume: 0.35, channels: 1 },
   // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
 ];
