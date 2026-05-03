@@ -282,6 +282,20 @@ export const useSounds = () => {
         }
       }
     });
+
+    // 🔧 Web: buton sesleri için pool oluştur
+    try {
+      const btnPath = activePack.sounds.buttonClick;
+      if (typeof btnPath === "string" && !btnPath.startsWith("generated")) {
+        audioCache.current.set("buttonClick", createAudioPool(btnPath, 4));
+      }
+      const letterPath = activePack.sounds.letterSelect;
+      if (typeof letterPath === "string" && !letterPath.startsWith("generated")) {
+        audioCache.current.set("letterSelect", createAudioPool(letterPath, 4));
+      }
+    } catch (error) {
+      console.warn("Failed to load button sound pools:", error);
+    }
     
     // ✅ Özel sesler için audio pool oluştur (yes, wow, yahoo, joker sesleri) - WEB ONLY
     try {
