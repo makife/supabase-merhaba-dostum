@@ -16,7 +16,7 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
     try {
       console.log(`Ses tetiklendi! Saniye: ${secondsLeft}`);
 
-      const audio = new Audio("/beep.mp3");
+      const audio = new Audio("/onsaniyegerisayim.mp3");
 
       const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
 
