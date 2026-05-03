@@ -98,11 +98,12 @@ const FriendsPage = () => {
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
+      // 🔥 is_online flag'i artık güvenilmez (useActivityTracker güncellemiyor)
+      // Sadece last_seen 2dk içindeyse online kabul et
       const { data: presenceData } = await supabase
         .from("user_presence")
-        .select("user_id, is_online, last_seen")
+        .select("user_id, last_seen")
         .in("user_id", friendIds)
-        .eq("is_online", true)
         .gte("last_seen", oneMinuteAgo);
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
