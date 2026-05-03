@@ -3109,7 +3109,7 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = (isWinner ? 5 : isTie ? 2 : 1) * (1 + (isPremium ? 1 : 0) + (hasScoreBoost ? 1 : 0));
+        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1; // Premium/boost sunucuda uygulanıyor
         const { data, error } = await (supabase.rpc as any)("update_game_stats", {
           p_user_id: user.id,
           p_score: finalUserScore * scoreMultiplier,
