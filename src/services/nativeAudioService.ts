@@ -38,6 +38,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'wow2', assetPath: 'public/wow2.mp3', volume: 0.7 },
   { assetId: 'yahoo', assetPath: 'public/yahoo.mp3', volume: 0.7 },
   { assetId: 'sampiyon', assetPath: 'public/sampiyon.mp3', volume: 0.8 },
+  { assetId: 'didyouseethat', assetPath: 'public/didyouseethat.mp3', volume: 0.7 },
   
   { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 }, // ✅ Gerçek dosya adı: carkSesi.mp3
   { assetId: 'cark_dolu', assetPath: 'public/carkDoluGeldi.mp3', volume: 0.7 },
@@ -267,6 +268,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('fisilda.mp3')) assetId = 'joker_fisilda';
   else if (soundFile.includes('senyaz.mp3')) assetId = 'joker_senyaz';
   else if (soundFile.includes('sampiyon.mp3')) assetId = 'sampiyon';
+  else if (soundFile.includes('didyouseethat.mp3')) assetId = 'didyouseethat';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
