@@ -199,20 +199,10 @@ export function useChatNotifications() {
             }
 
             if (notif.type === "message" && notif.related_id) {
+              // 🔥 DUPLICATE FIX: Toast'ı private_messages listener'ı zaten gösteriyor.
+              // Burada sadece unread count'u güncelle, ikinci toast atma.
               refreshUnreadCounts();
-              // related_id = chat_id formatı: chat_userId1_userId2
-              const chatId = notif.related_id;
-
-              // 👇 KULLANICI ZATEN BU ÖZEL SOHBETİ AÇMIŞ MI?
-              const activeChats = getActivePrivateChats();
-              if (activeChats.includes(chatId)) {
-                console.log("💬 [ChatNotif] Kullanıcı zaten bu özel sohbette, message toast gösterilmiyor");
-                return;
-              }
-
-              const userIds = chatId.replace("chat_", "").split("_");
-              const otherUserId = userIds.find((id: string) => id !== user.id);
-              showInAppNotification("💬 Yeni Özel Mesaj", notif.message, `/chat?openPrivateChat=${otherUserId}`);
+              return;
             }
 
             if (notif.type === "tournament_opponent_left") {
