@@ -4717,8 +4717,8 @@ const GamePage = ({
         }
       }
 
-      // İstatistik güncelleme (turnuva hariç tüm modlar için; duplicate guard var)
-      if (user && gameMode !== "tournament") {
+      // İstatistik güncelleme (turnuva buraya gelmeden erken çıkar; duplicate guard var)
+      if (user) {
         if (statsUpdatedRef.current) {
           console.log("⏭️ Skipping duplicate stats update (effect)");
         } else {
