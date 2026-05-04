@@ -933,8 +933,8 @@ const ProfilePage = () => {
 
             {/* Avatar + Rank Section */}
             <div className="relative z-10 flex flex-col items-center">
-              {/* Avatar (ortalanmış) */}
-              <div className="flex justify-center mb-4">
+              <div className="flex items-center gap-4 mb-4">
+                {/* Avatar (sol taraf) */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse" />
                   <Avatar
@@ -992,6 +992,17 @@ const ProfilePage = () => {
                       <VipBadge size="lg" />
                     </div>
                   )}
+                </div>
+
+                {/* Rank Badge (sağ taraf, çerçevesiz) */}
+                <div className="relative z-10">
+                  <RankBadge 
+                    rankPoints={profileData.rankPoints} 
+                    size="md" 
+                    showLabel={false} 
+                    showProgress={false}
+                    rounded={false}
+                  />
                 </div>
               </div>
 
