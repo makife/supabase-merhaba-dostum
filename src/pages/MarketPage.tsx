@@ -843,51 +843,68 @@ const MarketPage = () => {
 
       {/* --- ONAY PENCERESİ (YENİ EKLENEN KISIM) --- */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent className="w-[90%] rounded-xl bg-white border-slate-100">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold text-slate-800">
-              {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile)
-                ? "Sürenizi Uzatmak İster misiniz?"
-                : "Satın Almak İstiyor musunuz?"}
-            </AlertDialogTitle>
-
-            <AlertDialogDescription className="text-slate-600 text-left pt-2">
-              {/* 1. Eğer SÜRE SATIN ALINIYORSA ve ZATEN SÜRE VARSA Özel Mesaj Göster */}
-              {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? (
-                <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-2">
-                  <p className="text-orange-800 font-medium text-xs mb-1">⚠️ Mevcut Sınırsız Hakkınız Var</p>
-                  <p className="text-slate-700 text-sm">
-                    Şu anda aktif bir sınırsız süreniz bulunmaktadır. Satın alıma devam ederseniz, yeni süre{" "}
-                    <span className="font-bold text-indigo-600">mevcut sürenizin üzerine eklenecektir.</span>
-                  </p>
+        <AlertDialogContent className="w-[90%] rounded-2xl bg-[#1e2d45] border border-indigo-500/20 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] p-0 overflow-hidden">
+          {/* Üst banner: ürün görseli */}
+          <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-indigo-600/20 via-[#1e2d45] to-[#1e2d45] border-b border-white/5">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative flex items-center gap-3">
+              {itemToBuy?.image && (
+                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                  <img src={itemToBuy.image} className="w-10 h-10 object-contain drop-shadow-lg" alt={itemToBuy?.name} />
                 </div>
-              ) : null}
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-indigo-300/70 font-bold mb-0.5">
+                  {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? "Süre Uzat" : "Satın Alma Onayı"}
+                </p>
+                <AlertDialogTitle className="text-base font-black text-white leading-tight truncate">
+                  {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile)
+                    ? "Sürenizi Uzatmak İster misiniz?"
+                    : "Satın Almak İstiyor musunuz?"}
+                </AlertDialogTitle>
+              </div>
+            </div>
+          </div>
 
-              {/* Standart Bilgilendirme */}
-              <span className="block mt-2">
-                {quantityToBuy > 1 && itemToBuy?.type === "joker" ? (
-                  <>
-                    <span className="font-bold text-indigo-600">
-                      {quantityToBuy} adet {itemToBuy?.name}
-                    </span>{" "}
-                    için mürekkep haznenizden{" "}
-                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span>{" "}
-                    düşülecektir. Onaylıyor musunuz?
-                  </>
-                ) : (
-                  <>
-                    Bu işlem için mürekkep haznenizden{" "}
-                    <span className="font-bold text-indigo-600 text-lg">{itemToBuy?.priceInInk} Damla</span>{" "}
-                    düşülecektir. Onaylıyor musunuz?
-                  </>
+          {/* İçerik */}
+          <div className="px-5 py-4">
+            <AlertDialogDescription asChild>
+              <div className="text-slate-300 text-left space-y-3">
+                {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) && (
+                  <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                    <p className="text-amber-300 font-semibold text-xs mb-1">⚠️ Mevcut Sınırsız Hakkınız Var</p>
+                    <p className="text-slate-300 text-xs leading-relaxed">
+                      Şu anda aktif bir sınırsız süreniz bulunmaktadır. Yeni süre{" "}
+                      <span className="font-bold text-amber-300">mevcut sürenizin üzerine eklenecektir.</span>
+                    </p>
+                  </div>
                 )}
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
 
-          <AlertDialogFooter className="flex-row gap-2 justify-end mt-4">
+                {quantityToBuy > 1 && itemToBuy?.type === "joker" && (
+                  <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-white/5">
+                    <span className="text-xs text-slate-400">Adet</span>
+                    <span className="text-sm font-bold text-white">{quantityToBuy} × {itemToBuy?.name}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600/15 to-indigo-500/5 rounded-xl px-3 py-3 border border-indigo-500/20">
+                  <span className="text-xs text-slate-300 font-medium">Toplam Tutar</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-lg font-black text-white">{itemToBuy?.priceInInk}</span>
+                    <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">Damla</span>
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-400 text-center pt-1">
+                  Tutar mürekkep haznenizden düşülecektir.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </div>
+
+          <AlertDialogFooter className="flex-row gap-2 px-5 pb-5 pt-0">
             <AlertDialogCancel
-              className="flex-1 mt-0 bg-slate-100 text-slate-700 border-0 hover:bg-slate-200"
+              className="flex-1 mt-0 bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:text-white rounded-xl h-11 font-semibold"
               onClick={() => {
                 setItemToBuy(null);
                 setShowConfirmation(false);
@@ -896,7 +913,7 @@ const MarketPage = () => {
               Vazgeç
             </AlertDialogCancel>
             <AlertDialogAction
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="flex-1 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white border-0 rounded-xl h-11 font-bold shadow-lg shadow-indigo-900/40"
               onClick={confirmPurchase}
             >
               {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? "Süreyi Uzat" : "Satın Al"}
