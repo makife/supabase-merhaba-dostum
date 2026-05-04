@@ -553,17 +553,23 @@ const MarketPage = () => {
       {/* Ana İçerik */}
       <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
         <Tabs defaultValue="ink-store" value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm">
-            <TabsTrigger value="ink-store" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+          <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
+            <TabsTrigger
+              value="ink-store"
+              className="bg-indigo-100 text-indigo-400 transition-all data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/30"
+            >
               <Droplet className="w-4 h-4 mr-1" /> Mürekkep
             </TabsTrigger>
             <TabsTrigger
               value="stationery"
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              className="bg-purple-100 text-purple-400 transition-all data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-purple-500/30"
             >
               <PenTool className="w-4 h-4 mr-1" /> Kırtasiye
             </TabsTrigger>
-            <TabsTrigger value="vip" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+            <TabsTrigger
+              value="vip"
+              className="bg-amber-100 text-amber-500 transition-all data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/30"
+            >
               <Crown className="w-4 h-4 mr-1" /> VIP Yazar
             </TabsTrigger>
           </TabsList>
