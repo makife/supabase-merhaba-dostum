@@ -1045,7 +1045,7 @@ const ProfilePage = () => {
               )}
 
               {/* Level Badge */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 px-3 py-1 text-sm font-bold shadow-lg">
                   <Zap className="w-4 h-4 mr-1" />
                   Seviye {profileData.level}
@@ -1056,6 +1056,19 @@ const ProfilePage = () => {
                     Premium
                   </Badge>
                 )}
+                </div>
+                </div>
+
+                {/* Rank Badge (sağ taraf, çerçevesiz) */}
+                <div className="shrink-0">
+                  <RankBadge 
+                    rankPoints={profileData.rankPoints} 
+                    size="md" 
+                    showLabel={false} 
+                    showProgress={false}
+                    rounded={false}
+                  />
+                </div>
               </div>
 
               {/* Rank Progress - XP barının üstünde */}
