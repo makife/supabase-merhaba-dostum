@@ -15589,6 +15589,7 @@ fiyonk
 fiyonklu
 fiyonksuz
 fiyort
+fizan
 fizibilite
 fizik
 fizikçe
@@ -23710,6 +23711,7 @@ Karataş
 karatavuk
 karatavukgiller
 Karatay
+karat
 karate
 karateci
 karatecilik
@@ -40003,6 +40005,7 @@ si
 sibakusiyak
 sibernasyon
 sibernetik
+sibop
 siborgiyum
 sicil
 sicilli
@@ -41162,6 +41165,7 @@ sualsiz
 suare
 suaygırı
 suaygırıgiller
+subap
 subaşı
 subay
 subaylık
@@ -42900,6 +42904,7 @@ tahsisatımesture
 tahsisli
 tahşiye
 taht
+taife
 tahta
 tahtaboş
 tahtacı
