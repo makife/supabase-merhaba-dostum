@@ -933,8 +933,8 @@ const ProfilePage = () => {
 
             {/* Avatar + Rank Section */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Avatar (sol taraf) */}
+              {/* Avatar (ortalanmış) */}
+              <div className="flex justify-center mb-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse" />
                   <Avatar
@@ -993,18 +993,11 @@ const ProfilePage = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Rank Badge (sağ taraf) */}
-                <div className="relative z-10">
-                  <RankBadge 
-                    rankPoints={profileData.rankPoints} 
-                    size="md" 
-                    showLabel={false} 
-                    showProgress={false}
-                    rounded={true}
-                  />
-                </div>
               </div>
+
+              {/* Username + Level (sol) | Rank Badge (sağ) */}
+              <div className="w-full flex items-center justify-between gap-3 mb-4">
+                <div className="flex flex-col items-start gap-2 min-w-0 flex-1">
 
               {/* Username */}
               {isEditing ? (
@@ -1052,7 +1045,7 @@ const ProfilePage = () => {
               )}
 
               {/* Level Badge */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 px-3 py-1 text-sm font-bold shadow-lg">
                   <Zap className="w-4 h-4 mr-1" />
                   Seviye {profileData.level}
@@ -1063,6 +1056,19 @@ const ProfilePage = () => {
                     Premium
                   </Badge>
                 )}
+                </div>
+                </div>
+
+                {/* Rank Badge (sağ taraf, çerçevesiz) */}
+                <div className="shrink-0">
+                  <RankBadge 
+                    rankPoints={profileData.rankPoints} 
+                    size="md" 
+                    showLabel={false} 
+                    showProgress={false}
+                    rounded={false}
+                  />
+                </div>
               </div>
 
               {/* Rank Progress - XP barının üstünde */}
