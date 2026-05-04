@@ -126,7 +126,7 @@ const MarketPage = () => {
       description: "Harfleri karıştırır",
       priceInInk: 15,
       value: 1,
-      image: "/degistirIkon.png",
+      image: "/icons/degistir.svg",
     },
     {
       id: "j_whisper",
@@ -136,7 +136,7 @@ const MarketPage = () => {
       description: "Bir kelime ipucu verir",
       priceInInk: 10,
       value: 1,
-      image: "/fisildaIkon.png",
+      image: "/icons/fisilda.svg",
     },
     {
       id: "j_custom",
@@ -146,7 +146,7 @@ const MarketPage = () => {
       description: "Senin yerine kelime yazar",
       priceInInk: 20,
       value: 1,
-      image: "/senyazIkon.png",
+      image: "/icons/senyaz.svg",
     },
     // Canlar (Sayfa Paketleri)
     {
@@ -784,13 +784,13 @@ const MarketPage = () => {
                     </div>
                     <div className="flex items-center gap-3 border-t border-white/10 pt-2">
                       <div className="bg-amber-400 p-1 rounded-full">
-                        <img src="/degistirIkon.png" className="w-4 h-4" alt="joker" />
+                        <img src="/icons/degistir.svg" className="w-4 h-4" alt="joker" />
                       </div>
                       <div className="bg-amber-400 p-1 rounded-full -ml-2">
-                        <img src="/fisildaIkon.png" className="w-4 h-4" alt="joker" />
+                        <img src="/icons/fisilda.svg" className="w-4 h-4" alt="joker" />
                       </div>
                       <div className="bg-amber-400 p-1 rounded-full -ml-2">
-                        <img src="/senyazIkon.png" className="w-4 h-4" alt="joker" />
+                        <img src="/icons/senyaz.svg" className="w-4 h-4" alt="joker" />
                       </div>
                       <span className="font-bold text-sm ml-1 text-white">Her Gün 3'er Bedava Joker!</span>
                     </div>
