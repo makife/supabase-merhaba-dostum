@@ -3037,36 +3037,6 @@ const GamePage = ({
     try {
       console.log("🏆 Rozet kontrolü yapılıyor:", userId);
 
-      // Önce oyun modu sayacını güncelle
-      if (gameMode && user?.id === userId) {
-        const modeColumnMap: Record<string, string> = {
-          "vs-computer": "vs_bot_games",
-          "private-room": "private_room_games",
-          "random-match": "random_match_games",
-          "random-match-timed": "random_match_games",
-          "random-match-score": "random_match_games",
-        };
-
-        const column = modeColumnMap[gameMode];
-        if (column) {
-          // Önce mevcut değeri al
-          const { data: profile } = await supabase.from("profiles").select(column).eq("id", userId).single();
-
-          const currentValue = (profile as any)?.[column] || 0;
-
-          const { error: modeError } = await supabase
-            .from("profiles")
-            .update({
-              [column]: currentValue + 1,
-            })
-            .eq("id", userId);
-
-          if (modeError) {
-            console.error("Oyun modu sayacı güncellenemedi:", modeError);
-          }
-        }
-      }
-
       // YENİ fonksiyon adını kullan - void döndürüyor artık
       const { error } = await supabase.rpc("check_and_award_badges_simple", {
         p_user_id: userId,
@@ -4747,8 +4717,8 @@ const GamePage = ({
         }
       }
 
-      // İstatistik güncelleme (vs-computer için)
-      if (user && gameMode === "vs-computer") {
+      // İstatistik güncelleme (turnuva buraya gelmeden erken çıkar; duplicate guard var)
+      if (user) {
         if (statsUpdatedRef.current) {
           console.log("⏭️ Skipping duplicate stats update (effect)");
         } else {
