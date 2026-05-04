@@ -993,18 +993,11 @@ const ProfilePage = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Rank Badge (sağ taraf) */}
-                <div className="relative z-10">
-                  <RankBadge 
-                    rankPoints={profileData.rankPoints} 
-                    size="md" 
-                    showLabel={false} 
-                    showProgress={false}
-                    rounded={true}
-                  />
-                </div>
               </div>
+
+              {/* Username + Level (sol) | Rank Badge (sağ) */}
+              <div className="w-full flex items-center justify-between gap-3 mb-4">
+                <div className="flex flex-col items-start gap-2 min-w-0 flex-1">
 
               {/* Username */}
               {isEditing ? (
