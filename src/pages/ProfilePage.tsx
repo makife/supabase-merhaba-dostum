@@ -933,8 +933,8 @@ const ProfilePage = () => {
 
             {/* Avatar + Rank Section */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Avatar (sol taraf) */}
+              {/* Avatar (ortalanmış) */}
+              <div className="flex justify-center mb-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse" />
                   <Avatar
