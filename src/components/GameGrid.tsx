@@ -79,13 +79,10 @@ const GameGrid = memo<GameGridProps>(({
             <Button
               key={`${rowIndex}-${colIndex}`}
               variant="outline"
-              onPointerUp={(e) => {
-                // Asıl tetikleyici: 300ms tap delay yok, hem mouse hem touch
-                e.stopPropagation();
-                handlePress(rowIndex, colIndex, letter);
-              }}
               onClick={(e) => {
-                // Yedek: pointer events desteklenmeyen durumlar için
+                // touch-action: manipulation sayesinde iOS/Android'de 300ms gecikme yok.
+                // pointerup + click ikisini birden dinlemek iOS'ta grid yeniden render
+                // olduğunda yanlış hücreye geç-click düşmesine sebep oluyordu.
                 e.stopPropagation();
                 handlePress(rowIndex, colIndex, letter);
               }}
