@@ -36,7 +36,6 @@ import { calculateServerOffset } from "@/utils/serverTimeSync";
 import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
-import Lottie from "lottie-react";
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 import {
   ArrowLeft,
