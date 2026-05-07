@@ -229,6 +229,13 @@ const LeaderboardPage = () => {
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
 
   useEffect(() => {
+    fetch("/liderArmaLoading.json")
+      .then((r) => r.json())
+      .then(setLiderLoadingAnim)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       await handleLeaderboardResync();
