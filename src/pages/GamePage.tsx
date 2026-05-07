@@ -7930,10 +7930,10 @@ const GamePage = ({
                         transition={{ duration: 0.3 }}
                       >
                         <motion.div
-                          className="flex items-center gap-2 leading-none font-black text-red-400 whitespace-nowrap"
+                          className="flex items-center gap-2 leading-none font-black text-emerald-400 whitespace-nowrap"
                           style={{
                             fontSize: "2.25rem",
-                            textShadow: "0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4)",
+                            textShadow: "0 0 20px rgba(52,211,153,0.7), 0 0 40px rgba(16,185,129,0.4)",
                           }}
                           initial={{ x: -200, opacity: 0 }}
                           animate={{ x: [-200, 0, 0, 300], opacity: [0, 1, 1, 0] }}
