@@ -14,6 +14,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { playSpecialNativeSound } from "@/services/nativeAudioService";
 import Lottie from "lottie-react";
+import cicekCarkLoadingAnim from "@/assets/cicekCarkLoading.json";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
