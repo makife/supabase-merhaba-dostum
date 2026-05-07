@@ -465,6 +465,20 @@ const WheelPage = () => {
     rafRef.current = requestAnimationFrame(animate);
   };
 
+  if (isInitializing) {
+    return (
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Lottie animationData={cicekCarkLoadingAnim} loop autoplay style={{ width: 160, height: 160 }} />
+          <p className="text-slate-400 font-medium">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden"
