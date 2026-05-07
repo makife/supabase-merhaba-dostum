@@ -84,10 +84,6 @@ const WheelPage = () => {
       .then((r) => r.json())
       .then(setCarkKonfettiAnim)
       .catch(console.error);
-    fetch("/cicekCarkLoading.json")
-      .then((r) => r.json())
-      .then(setCarkLoadingAnim)
-      .catch(console.error);
   }, []);
 
   const spinLockRef = useRef(false);
