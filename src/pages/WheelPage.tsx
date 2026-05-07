@@ -147,6 +147,7 @@ const WheelPage = () => {
 
     setTotalSpins(total);
     setCanSpin(total > 0 && !spinLockRef.current);
+    setIsInitializing(false);
   }, [user]);
 
   const handleWheelResync = useCallback(async () => {
