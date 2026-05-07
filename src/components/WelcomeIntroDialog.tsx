@@ -1,19 +1,8 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Bot,
-  Users,
-  Trophy,
-  Zap,
-  MessageSquare,
-  Gamepad2,
-  Sparkles,
-  Gift,
-  Target,
-  Brain,
-  Puzzle,
-  Dices,
-} from "lucide-react";
+import { MessageSquare, Sparkles, Gift } from "lucide-react";
+import Lottie from "lottie-react";
+import { useEffect, useState } from "react";
 
 interface WelcomeIntroDialogProps {
   open: boolean;
@@ -21,6 +10,15 @@ interface WelcomeIntroDialogProps {
 }
 
 export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) => {
+  const [ziplaAnim, setZiplaAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/ziplaKarakter.json")
+      .then((r) => r.json())
+      .then(setZiplaAnim)
+      .catch(() => {});
+  }, []);
+
   const handleComplete = () => {
     localStorage.setItem("kelimeci-intro-completed", "true");
     onClose();
@@ -54,26 +52,17 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
 
         {/* Header */}
         <div
-          className="relative z-10 px-6 pt-7 pb-5 text-center"
+          className="relative z-10 px-6 pt-5 pb-5 text-center"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <div className="flex items-center justify-center mb-3">
-            <div className="relative">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(234,179,8,0.15)", border: "1px solid rgba(234,179,8,0.25)" }}
-              >
-                <Sparkles className="w-7 h-7 text-yellow-400 animate-pulse" />
-              </div>
-              <div
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg flex items-center justify-center"
-                style={{ background: "rgba(99,102,241,0.3)", border: "1px solid rgba(99,102,241,0.4)" }}
-              >
-                <Gift className="w-3.5 h-3.5 text-indigo-300" />
-              </div>
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-32 h-32 -mb-2">
+              {ziplaAnim && (
+                <Lottie animationData={ziplaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+              )}
             </div>
           </div>
-          <h2 className="text-lg font-bold text-white mb-1">Kelimele'ye Hoş Geldin! 🎉</h2>
+          <h2 className="text-lg font-bold text-white mb-1">Kelimele'ye Hoş Geldin</h2>
           <p className="text-sm text-white/45">Seni aramızda görmekten mutluluk duyuyoruz</p>
         </div>
 
@@ -89,13 +78,13 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                 <Gift className="w-4 h-4" /> Hoş Geldin Hediyesi!
               </h3>
               <p className="text-white/55 text-xs mb-3">
-                Sana özel <span className="font-bold text-yellow-300">3'er adet joker</span> hediye ettik:
+                Sana özel <span className="font-bold text-yellow-300">5'er adet joker</span> hediye ettik:
               </p>
               <div className="space-y-2">
                 {[
-                  { icon: "/degistirIkon.png", label: "3x Değiştir Jokeri", desc: "Harfleri yenile" },
-                  { icon: "/fisildaIkon.png", label: "3x Fısılda Jokeri", desc: "Kelime önerisi al" },
-                  { icon: "/senyazIkon.png", label: "3x Sen Yaz Jokeri", desc: "AI sana kelime yazsın" },
+                  { icon: "/icons/degistir.svg", label: "5x Değiştir Jokeri", desc: "Harfleri yenile" },
+                  { icon: "/icons/fisilda.svg", label: "5x Fısılda Jokeri", desc: "Kelime önerisi al" },
+                  { icon: "/icons/senyaz.svg", label: "5x Sen Yaz Jokeri", desc: "AI sana kelime yazsın" },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -118,33 +107,33 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <h3 className="font-bold text-white/80 flex items-center gap-2 mb-3">
-                <Gamepad2 className="w-4 h-4 text-indigo-400" /> Oyun Modları
+                <img src="/icons/oyun.svg" alt="" className="w-4 h-4" /> Oyun Modları
               </h3>
               <div className="space-y-2">
                 {[
                   {
-                    icon: Bot,
+                    icon: "/icons/aimod.svg",
                     color: "#60a5fa",
                     bg: "rgba(96,165,250,0.1)",
                     label: "Yapay Zekaya Karşı",
                     desc: "AI rakibine karşı antrenman yap!",
                   },
                   {
-                    icon: Zap,
+                    icon: "/icons/rastgele.svg",
                     color: "#c084fc",
                     bg: "rgba(192,132,252,0.1)",
                     label: "Rastgele Eşleşme",
                     desc: "Gerçek oyuncularla eşleş ve rekabet et!",
                   },
                   {
-                    icon: Users,
+                    icon: "/icons/ozeloda.svg",
                     color: "#4ade80",
                     bg: "rgba(74,222,128,0.1)",
                     label: "Özel Oda",
                     desc: "Arkadaşlarınla özel oda oluştur!",
                   },
                   {
-                    icon: Trophy,
+                    icon: "/icons/turnuva.svg",
                     color: "#fbbf24",
                     bg: "rgba(251,191,36,0.1)",
                     label: "Turnuva",
@@ -156,7 +145,7 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                     className="flex items-start gap-3 p-3 rounded-xl"
                     style={{ background: item.bg }}
                   >
-                    <item.icon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: item.color }} />
+                    <img src={item.icon} alt="" className="w-5 h-5 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-semibold text-xs" style={{ color: item.color }}>
                         {item.label}
@@ -181,28 +170,28 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
               </p>
             </div>
 
-            {/* Mini Oyunlar */}
+            {/* Düello & Görev */}
             <div
               className="p-4 rounded-2xl"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <h3 className="font-bold text-white/80 flex items-center gap-2 mb-3">
-                <Dices className="w-4 h-4 text-orange-400" /> Mini Oyunlar
+                <img src="/gorevIkon.svg" alt="" className="w-4 h-4" /> Düello & Görev
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { icon: Brain, color: "#f472b6", label: "Hafıza Oyunu" },
-                  { icon: Puzzle, color: "#fb923c", label: "Puzzle" },
-                  { icon: Target, color: "#22d3ee", label: "Yılan Oyunu" },
-                  { icon: Sparkles, color: "#818cf8", label: "Ve daha fazlası..." },
+                  { icon: "/icons/kelimepuzzle.svg", color: "#fbbf24", label: "Kelime Puzzle" },
+                  { icon: "/icons/reaktor.svg", color: "#fb923c", label: "Reaktör Koşusu" },
+                  { icon: "/icons/refleks.svg", color: "#22d3ee", label: "Refleks" },
+                  { icon: "/icons/kelimehafiza.svg", color: "#f472b6", label: "Hafıza Eşleştir" },
                 ].map((item) => (
                   <div
                     key={item.label}
                     className="flex items-center gap-2 p-2.5 rounded-xl text-xs"
                     style={{ background: "rgba(255,255,255,0.04)" }}
                   >
-                    <item.icon className="w-4 h-4 flex-shrink-0" style={{ color: item.color }} />
-                    <span className="text-white/60">{item.label}</span>
+                    <img src={item.icon} alt="" className="w-5 h-5 flex-shrink-0" />
+                    <span className="text-white/70">{item.label}</span>
                   </div>
                 ))}
               </div>
