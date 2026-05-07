@@ -1,70 +1,72 @@
 import { useEffect, useRef, memo } from "react";
+import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
 interface FinalCountdownProps {
   displayTime: number;
   onCountdownTick?: (second: number) => void;
 }
 
+// Lottie file: 30fps, 306 frames (~10s). Each second = 30 frames.
+// displayTime range we display: 9 → 1
+const FPS = 30;
+const TOTAL_FRAMES = 306;
+
 const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownProps) => {
   const lastTickRef = useRef<number | null>(null);
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
 
   const showCountdown = displayTime >= 1 && displayTime <= 9;
 
   const playPitchSound = (secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
     try {
-      console.log(`Ses tetiklendi! Saniye: ${secondsLeft}`);
-
       const audio = new Audio("/onsaniyegerisayim.mp3");
-
       const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
-
       // @ts-ignore
       audio.preservesPitch = false;
       // @ts-ignore
       audio.webkitPreservesPitch = false;
       audio.playbackRate = pitchRate;
-
-      // Sesi çalmayı dene ve hatayı yakala
-      audio
-        .play()
-        .then(() => console.log("Ses başarıyla çalındı"))
-        .catch((err) => {
-          console.error("SES ÇALMA BLOKLANDI! Muhtemelen sayfaya tıklamadın:", err);
-        });
+      audio.play().catch((err) => console.error("Ses çalma bloklandı:", err));
     } catch (error) {
-      console.error("Audio objesi oluşturulurken hata:", error);
+      console.error("Audio hatası:", error);
     }
   };
 
   useEffect(() => {
     if (showCountdown && displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
-
-      // 1. Kendi beep sesimizi çal
       playPitchSound(displayTime);
 
-      // 2. Click sesini kesmek için burayı kapalı tutmaya devam et
-      // onCountdownTick?.(displayTime);
+      // Lottie'yi her saniye senkronize et: displayTime=9 → frame 0, =8 → 30, ...
+      const targetFrame = Math.min(TOTAL_FRAMES - 1, (9 - displayTime) * FPS);
+      try {
+        lottieRef.current?.goToAndPlay(targetFrame, true);
+      } catch {}
     }
   }, [displayTime, showCountdown]);
 
   if (!showCountdown) return null;
 
   return (
-    <span
-      className="font-mono font-black leading-none text-red-500"
+    <div
       style={{
         display: "inline-block",
-        fontFamily: "'Orbitron', sans-serif",
-        fontSize: "7rem",
-        textAlign: "center",
-        textShadow: "0 0 30px rgba(239,68,68,0.8), 0 0 60px rgba(239,68,68,0.5)",
+        width: "16rem",
+        height: "16rem",
+        pointerEvents: "none",
       }}
     >
-      {displayTime}
-    </span>
+      <Lottie
+        lottieRef={lottieRef}
+        animationData={sonOnSaniyeAnim}
+        loop={false}
+        autoplay={false}
+        style={{ width: "100%", height: "100%" }}
+      />
+    </div>
   );
 });
 
