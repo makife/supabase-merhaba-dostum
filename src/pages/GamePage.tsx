@@ -36,6 +36,8 @@ import { calculateServerOffset } from "@/utils/serverTimeSync";
 import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
+import Lottie from "lottie-react";
+import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 import {
   ArrowLeft,
   Clock,
@@ -7929,17 +7931,27 @@ const GamePage = ({
                         transition={{ duration: 0.3 }}
                       >
                         <motion.div
-                          className="flex flex-col items-center leading-none font-black text-red-400 whitespace-nowrap"
+                          className="flex items-center gap-2 leading-none font-black text-red-400 whitespace-nowrap"
                           style={{
                             fontSize: "2.25rem",
                             textShadow: "0 0 20px rgba(239,68,68,0.7), 0 0 40px rgba(239,68,68,0.4)",
                           }}
-                          initial={{ x: 200, opacity: 0 }}
-                          animate={{ x: [200, 0, 0, -300], opacity: [0, 1, 1, 0] }}
+                          initial={{ x: -200, opacity: 0 }}
+                          animate={{ x: [-200, 0, 0, 300], opacity: [0, 1, 1, 0] }}
                           transition={{ duration: 1.6, times: [0, 0.1875, 0.8125, 1], ease: "easeInOut" }}
                         >
-                          <span>Süre</span>
-                          <span>Azalıyor!</span>
+                          <div style={{ width: "4.5rem", height: "4.5rem" }} className="shrink-0">
+                            <Lottie
+                              animationData={sureAzaliyorAnim}
+                              loop
+                              autoplay
+                              style={{ width: "100%", height: "100%" }}
+                            />
+                          </div>
+                          <div className="flex flex-col items-start">
+                            <span>Süre</span>
+                            <span>Azalıyor!</span>
+                          </div>
                         </motion.div>
                       </motion.div>
                     )}
