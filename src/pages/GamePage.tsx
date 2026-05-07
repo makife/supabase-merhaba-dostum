@@ -7939,7 +7939,7 @@ const GamePage = ({
                           animate={{ x: [-200, 0, 0, 300], opacity: [0, 1, 1, 0] }}
                           transition={{ duration: 1.6, times: [0, 0.1875, 0.8125, 1], ease: "easeInOut" }}
                         >
-                          <div style={{ width: "4.5rem", height: "4.5rem" }} className="shrink-0">
+                          <div style={{ width: "7rem", height: "7rem" }} className="shrink-0">
                             <Lottie
                               animationData={sureAzaliyorAnim}
                               loop
