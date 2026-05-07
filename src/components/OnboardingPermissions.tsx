@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Lottie from "lottie-react";
+import aiRobotAnim from "@/assets/aiRobot.json";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -372,9 +374,12 @@ export const OnboardingPermissions = ({ open, onComplete, onShowIntro }: Onboard
             >
               <CurrentIcon className="w-4 h-4 text-indigo-400" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h2 className="text-base font-bold text-white leading-tight">{steps[currentStep].title}</h2>
               <p className="text-xs text-white/40">{steps[currentStep].description}</p>
+            </div>
+            <div className="shrink-0 -mr-2 -mt-2 pointer-events-none">
+              <Lottie animationData={aiRobotAnim} loop autoplay style={{ width: 64, height: 64 }} />
             </div>
           </div>
         </div>
