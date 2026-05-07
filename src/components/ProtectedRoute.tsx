@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { ReactNode, useEffect, useState, useRef } from "react";
 import { loadSessionFromStorage } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
+import Lottie from "lottie-react";
+import parmakLoadingAnim from "@/assets/parmakLoading.json";
 
 interface ProtectedRouteProps {
   children: ReactNode;
