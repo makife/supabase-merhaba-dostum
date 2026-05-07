@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
+import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
 
 interface LeaderboardEntry {
   user_id: string;
