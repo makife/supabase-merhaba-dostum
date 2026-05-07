@@ -77,7 +77,7 @@ const WheelPage = () => {
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [showKonfeti, setShowKonfeti] = useState(false);
   const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
-  const [carkLoadingAnim, setCarkLoadingAnim] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     fetch("/carkKonfeti.json")
