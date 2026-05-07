@@ -14,6 +14,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { playSpecialNativeSound } from "@/services/nativeAudioService";
 import Lottie from "lottie-react";
+import cicekCarkLoadingAnim from "@/assets/cicekCarkLoading.json";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
@@ -76,16 +77,12 @@ const WheelPage = () => {
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [showKonfeti, setShowKonfeti] = useState(false);
   const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
-  const [carkLoadingAnim, setCarkLoadingAnim] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     fetch("/carkKonfeti.json")
       .then((r) => r.json())
       .then(setCarkKonfettiAnim)
-      .catch(console.error);
-    fetch("/cicekCarkLoading.json")
-      .then((r) => r.json())
-      .then(setCarkLoadingAnim)
       .catch(console.error);
   }, []);
 
@@ -150,6 +147,7 @@ const WheelPage = () => {
 
     setTotalSpins(total);
     setCanSpin(total > 0 && !spinLockRef.current);
+    setIsInitializing(false);
   }, [user]);
 
   const handleWheelResync = useCallback(async () => {
@@ -467,6 +465,20 @@ const WheelPage = () => {
     rafRef.current = requestAnimationFrame(animate);
   };
 
+  if (isInitializing) {
+    return (
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Lottie animationData={cicekCarkLoadingAnim} loop autoplay style={{ width: 160, height: 160 }} />
+          <p className="text-slate-400 font-medium">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-slate-950 text-white flex flex-col items-center py-6 px-4 relative overflow-hidden"
@@ -583,11 +595,7 @@ const WheelPage = () => {
           >
             {isSpinning ? (
               <span className="flex items-center gap-2">
-                {carkLoadingAnim ? (
-                  <Lottie animationData={carkLoadingAnim} loop autoplay style={{ width: 32, height: 32 }} />
-                ) : (
-                  <span className="animate-spin text-2xl">⚙️</span>
-                )}
+                <Lottie animationData={cicekCarkLoadingAnim} loop autoplay style={{ width: 32, height: 32 }} />
                 Dönüyor...
               </span>
             ) : canSpin ? (
