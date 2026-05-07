@@ -583,7 +583,12 @@ const WheelPage = () => {
           >
             {isSpinning ? (
               <span className="flex items-center gap-2">
-                <span className="animate-spin text-2xl">⚙️</span> Dönüyor...
+                {carkLoadingAnim ? (
+                  <Lottie animationData={carkLoadingAnim} loop autoplay style={{ width: 32, height: 32 }} />
+                ) : (
+                  <span className="animate-spin text-2xl">⚙️</span>
+                )}
+                Dönüyor...
               </span>
             ) : canSpin ? (
               <span className="flex items-center gap-2">
