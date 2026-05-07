@@ -76,11 +76,16 @@ const WheelPage = () => {
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [showKonfeti, setShowKonfeti] = useState(false);
   const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
+  const [carkLoadingAnim, setCarkLoadingAnim] = useState<any>(null);
 
   useEffect(() => {
     fetch("/carkKonfeti.json")
       .then((r) => r.json())
       .then(setCarkKonfettiAnim)
+      .catch(console.error);
+    fetch("/cicekCarkLoading.json")
+      .then((r) => r.json())
+      .then(setCarkLoadingAnim)
       .catch(console.error);
   }, []);
 
@@ -578,7 +583,12 @@ const WheelPage = () => {
           >
             {isSpinning ? (
               <span className="flex items-center gap-2">
-                <span className="animate-spin text-2xl">⚙️</span> Dönüyor...
+                {carkLoadingAnim ? (
+                  <Lottie animationData={carkLoadingAnim} loop autoplay style={{ width: 32, height: 32 }} />
+                ) : (
+                  <span className="animate-spin text-2xl">⚙️</span>
+                )}
+                Dönüyor...
               </span>
             ) : canSpin ? (
               <span className="flex items-center gap-2">

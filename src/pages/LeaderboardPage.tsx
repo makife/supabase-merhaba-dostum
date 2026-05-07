@@ -66,6 +66,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
+  const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
 
   // Fetch premium status for a list of user IDs
   const fetchPremiumStatus = async (userIds: string[]) => {
@@ -226,6 +227,13 @@ const LeaderboardPage = () => {
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
+
+  useEffect(() => {
+    fetch("/liderArmaLoading.json")
+      .then((r) => r.json())
+      .then(setLiderLoadingAnim)
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -504,7 +512,11 @@ const LeaderboardPage = () => {
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          {liderLoadingAnim ? (
+            <Lottie animationData={liderLoadingAnim} loop autoplay style={{ width: 120, height: 120 }} />
+          ) : (
+            <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          )}
           <p className="text-slate-400 font-medium">Yükleniyor...</p>
         </div>
       </div>
