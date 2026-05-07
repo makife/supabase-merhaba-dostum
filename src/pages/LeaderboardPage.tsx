@@ -66,6 +66,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
+  const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
 
   // Fetch premium status for a list of user IDs
   const fetchPremiumStatus = async (userIds: string[]) => {
