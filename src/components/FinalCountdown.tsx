@@ -17,13 +17,13 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
   const lastTickRef = useRef<number | null>(null);
   const lottieRef = useRef<LottieRefCurrentProps>(null);
 
-  const showCountdown = displayTime >= 1 && displayTime <= 9;
+  const showCountdown = displayTime >= 1 && displayTime <= 10;
 
   const playPitchSound = (secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
     try {
       const audio = new Audio("/onsaniyegerisayim.mp3");
-      const pitchRate = 1.0 + (9 - secondsLeft) * 0.25;
+      const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
       // @ts-ignore
       audio.preservesPitch = false;
       // @ts-ignore
@@ -40,8 +40,8 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
       lastTickRef.current = displayTime;
       playPitchSound(displayTime);
 
-      // Lottie'yi her saniye senkronize et: displayTime=9 → frame 0, =8 → 30, ...
-      const targetFrame = Math.min(TOTAL_FRAMES - 1, (9 - displayTime) * FPS);
+      // Lottie'yi her saniye senkronize et: displayTime=10 → frame 0, =9 → 30, ...
+      const targetFrame = Math.min(TOTAL_FRAMES - 1, (10 - displayTime) * FPS);
       try {
         lottieRef.current?.goToAndPlay(targetFrame, true);
       } catch {}
