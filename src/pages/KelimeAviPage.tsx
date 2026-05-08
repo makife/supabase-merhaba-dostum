@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const GAME_DURATION = 90;
 const GRID = 5;
@@ -62,7 +62,7 @@ const KelimeAviPage = () => {
   const [foundWords, setFoundWords] = useState<{ w: string; p: number }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  const [boostAwarded, setBoostAwarded] = useState(false);
+  // boost ödülü gece 12'de award-challenge-prizes edge function tarafından veriliyor
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -101,23 +101,12 @@ const KelimeAviPage = () => {
     }, 1000);
   }, [hasPlayedToday, markAsPlayed, playSound]);
 
-  // Save score & try to award boost on finish
+  // Save score on finish (boost ödülü gece 12'de award-challenge-prizes tarafından veriliyor)
   useEffect(() => {
     if (gameState !== "finished") return;
-    (async () => {
-      if (score > 0) {
-        await saveScore(score, foundWords.length);
-        try {
-          const { data } = await supabase.rpc("award_kelime_avi_boost" as any);
-          if ((data as any)?.is_first) {
-            setBoostAwarded(true);
-            toast.success("🏆 Birinci oldun! 1 saatlik x2 boost kazandın!", { duration: 6000 });
-          }
-        } catch (e) {
-          console.error("boost rpc err", e);
-        }
-      }
-    })();
+    if (score > 0) {
+      saveScore(score, foundWords.length);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
@@ -328,16 +317,14 @@ const KelimeAviPage = () => {
 
         {gameState === "finished" && (
           <div className="flex flex-col items-center gap-4 pt-4 flex-1 min-h-0">
-            <div className="text-6xl shrink-0">{boostAwarded ? "🏆" : "🎯"}</div>
+            <div className="text-6xl shrink-0">🎯</div>
             <div className="text-center shrink-0">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
               <p className="text-4xl font-black text-fuchsia-400">{score} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{foundWords.length} kelime buldun</p>
-              {boostAwarded && (
-                <div className="mt-3 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-sm font-bold flex items-center gap-2 mx-auto w-fit">
-                  <Zap className="w-4 h-4" /> 1 saatlik x2 boost aktif!
-                </div>
-              )}
+              <p className="text-[11px] text-amber-300/80 mt-2 max-w-xs">
+                Gece 00:00'da 1. olan oyuncu 1 saatlik x2 puan boost'u kazanır ⚡
+              </p>
             </div>
 
             <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
