@@ -900,24 +900,24 @@ const HomePage = () => {
                   <div className="flex items-center gap-2">
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-2 opacity-50">
+                        <div className="flex gap-3 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={28} />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={36} />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-7 h-7">
-                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-7 h-7 object-contain" />
+                        <div className="relative inline-flex items-center justify-center w-8 h-8">
+                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-8 h-8 object-contain" />
                           <span className="absolute text-black text-[12px] font-bold">+{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         {Array.from({ length: 5 }, (_, i) => (
                           <HakIcon
                             key={i}
                             animData={sayfaHakAnim}
                             filled={i < totalCredits}
-                            size={24}
+                            size={32}
                           />
                         ))}
                       </div>
