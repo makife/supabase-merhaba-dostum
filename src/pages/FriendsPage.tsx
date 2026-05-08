@@ -10,6 +10,8 @@ import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell, 
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
+import Lottie from "lottie-react";
+import friendsSayfaAnim from "@/assets/friendsSayfa.json";
 
 interface FriendItem {
   friendship_id: string;
@@ -321,6 +323,15 @@ const FriendsPage = () => {
 
       {/* Content */}
       <div className="px-4 py-4 pb-28 space-y-2">
+        {/* Friends page Lottie */}
+        <div className="w-screen -ml-4 -mr-4 -mt-4 mb-2">
+          <Lottie
+            animationData={friendsSayfaAnim}
+            loop={true}
+            autoplay={true}
+            style={{ width: '100%', height: 140 }}
+          />
+        </div>
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
