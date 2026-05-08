@@ -12,7 +12,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
-// useMemoryGame artık MiniGamesPage'de kullanılıyor
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
@@ -20,6 +19,7 @@ import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
+import Lottie from "lottie-react";
 
 import {
   Bot,
@@ -132,6 +132,20 @@ const StatWidget = memo(({ svgIcon, value, label }: any) => (
   </div>
 ));
 StatWidget.displayName = "StatWidget";
+
+const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: boolean; size?: number }) => (
+  <div
+    className={`transition-all duration-300 ${filled ? "opacity-100" : "opacity-10"}`}
+    style={{ width: size, height: size }}
+  >
+    {animData ? (
+      <Lottie animationData={animData} loop={false} autoplay={false} style={{ width: "100%", height: "100%" }} />
+    ) : (
+      <div className="w-full h-full bg-slate-700 rounded-sm" />
+    )}
+  </div>
+));
+HakIcon.displayName = "HakIcon";
 
 const VipCrownIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/vipkraliyet.svg" className={className} alt="" />
@@ -253,6 +267,7 @@ const HomePage = () => {
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
+  const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
 
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
@@ -324,6 +339,12 @@ const HomePage = () => {
         setWheelSpinsLeft(total);
         sessionStorage.setItem("wheelSpinsLeft", JSON.stringify({ spins: total, _date: today }));
       });
+
+    // Load sayfa hak animation
+    fetch("/sayfaHak.json")
+      .then((r) => r.json())
+      .then(setSayfaHakAnim)
+      .catch(() => {});
 
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [user?.id, profile?.bonus_spins]);
@@ -881,7 +902,7 @@ const HomePage = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex gap-2 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={28} />
                           ))}
                         </div>
                         <div className="relative inline-flex items-center justify-center w-7 h-7">
@@ -892,11 +913,11 @@ const HomePage = () => {
                     ) : (
                       <div className="flex gap-2">
                         {Array.from({ length: 5 }, (_, i) => (
-                          <img
+                          <HakIcon
                             key={i}
-                            src="/icons/pil.svg"
-                            alt=""
-                            className={`w-6 h-6 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-10"}`}
+                            animData={sayfaHakAnim}
+                            filled={i < totalCredits}
+                            size={24}
                           />
                         ))}
                       </div>
