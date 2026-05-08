@@ -1120,6 +1120,7 @@ const HomePage = () => {
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
                   </p>
+                </div>
               </div>
 
               {/* Kelime Avı (Boggle) */}
@@ -1131,16 +1132,16 @@ const HomePage = () => {
                 className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.kelime_avi ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-fuchsia-600 via-purple-500 to-fuchsia-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-6xl opacity-10 select-none pointer-events-none z-[1]">🕸️</div>
+                <img src="/surukle.svg" alt="" className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
                 <div className="relative z-10 flex justify-between items-start">
                   <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.kelime_avi ? (
                       <Check className="w-6 h-6 text-amber-300" />
                     ) : (
-                      <span className="text-2xl">🕸️</span>
+                      <img src="/surukle.svg" alt="" className="w-8 h-8" />
                     )}
                   </div>
                   <Badge
@@ -1156,7 +1157,6 @@ const HomePage = () => {
                   </p>
                 </div>
               </div>
-            </div>
             </div>
           </div>
 
