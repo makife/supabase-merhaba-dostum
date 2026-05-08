@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CHALLENGE_TYPES = ["puzzle", "reaktor", "neon_blitz", "memory"];
+const CHALLENGE_TYPES = ["puzzle", "reaktor", "neon_blitz", "memory", "kelime_avi"];
 
 // Her challenge türü için ödül tanımları
 const CHALLENGE_REWARDS: Record<string, { type: string; field: string; amount: number; label: string }> = {
