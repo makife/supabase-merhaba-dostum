@@ -902,7 +902,7 @@ const HomePage = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex gap-2 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <img key={i} src="/icons/pil.svg" alt="" className="w-7 h-7 object-contain" />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={28} />
                           ))}
                         </div>
                         <div className="relative inline-flex items-center justify-center w-7 h-7">
