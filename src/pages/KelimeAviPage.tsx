@@ -230,11 +230,19 @@ const KelimeAviPage = () => {
             <p className="text-[10px] text-fuchsia-400/80">Komşu harfleri birleştir</p>
           </div>
         </div>
-        {gameState === "playing" && (
+        {gameState === "playing" ? (
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
             <Clock className="w-4 h-4" />
             <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
           </div>
+        ) : (
+          <button
+            onClick={() => { playSound("buttonClick"); setShowLeaderboard(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 border border-white/10 active:scale-95 transition-transform"
+          >
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold text-white">Sıralama</span>
+          </button>
         )}
       </div>
 
