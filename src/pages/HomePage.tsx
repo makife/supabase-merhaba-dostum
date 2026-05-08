@@ -271,7 +271,9 @@ const HomePage = () => {
   const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
 
   const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
-  const boostActiveHome = !!boostUntilHome && boostUntilHome.getTime() > Date.now();
+  const boostSourceHome = (profile as any)?.score_boost_source;
+  const boostRemainingMsHome = boostUntilHome ? boostUntilHome.getTime() - Date.now() : 0;
+  const boostActiveHome = boostRemainingMsHome > 0 && (boostSourceHome === "kelime_avi" || boostSourceHome === "leaderboard" || boostRemainingMsHome > 2 * 60 * 60 * 1000);
 
   useEffect(() => {
     if (boostActiveHome && !boostProfilAnim) {
