@@ -253,6 +253,7 @@ const HomePage = () => {
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
+  const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
 
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
