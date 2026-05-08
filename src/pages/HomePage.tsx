@@ -326,6 +326,12 @@ const HomePage = () => {
         sessionStorage.setItem("wheelSpinsLeft", JSON.stringify({ spins: total, _date: today }));
       });
 
+    // Load sayfa hak animation
+    fetch("/sayfaHak.json")
+      .then((r) => r.json())
+      .then(setSayfaHakAnim)
+      .catch(() => {});
+
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [user?.id, profile?.bonus_spins]);
 
