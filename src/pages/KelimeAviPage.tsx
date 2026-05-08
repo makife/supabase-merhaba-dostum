@@ -101,23 +101,12 @@ const KelimeAviPage = () => {
     }, 1000);
   }, [hasPlayedToday, markAsPlayed, playSound]);
 
-  // Save score & try to award boost on finish
+  // Save score on finish (boost ödülü gece 12'de award-challenge-prizes tarafından veriliyor)
   useEffect(() => {
     if (gameState !== "finished") return;
-    (async () => {
-      if (score > 0) {
-        await saveScore(score, foundWords.length);
-        try {
-          const { data } = await supabase.rpc("award_kelime_avi_boost" as any);
-          if ((data as any)?.is_first) {
-            setBoostAwarded(true);
-            toast.success("🏆 Birinci oldun! 1 saatlik x2 boost kazandın!", { duration: 6000 });
-          }
-        } catch (e) {
-          console.error("boost rpc err", e);
-        }
-      }
-    })();
+    if (score > 0) {
+      saveScore(score, foundWords.length);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
