@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
 
         results.push(`memory: ${awarded} players awarded`);
       } else if (challengeType === "kelime_avi") {
-        // Kelime Avı: top-1 winner gets 1 hour x2 score boost
+        // Kelime Avı: top-1 winner gets a CLAIMABLE 1-hour x2 boost (activated by user)
         const { data: topScorer } = await supabase
           .from("challenge_scores")
           .select("user_id, username, score")
@@ -216,29 +216,27 @@ Deno.serve(async (req) => {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("score_boost_until")
+          .select("pending_boost_minutes")
           .eq("id", topScorer.user_id)
           .single();
 
-        const nowMs = Date.now();
-        const oneHourLater = new Date(nowMs + 60 * 60 * 1000);
-        const currentBoost = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
-        const newBoost = currentBoost && currentBoost.getTime() > oneHourLater.getTime() ? currentBoost : oneHourLater;
+        const currentPending = Number((profile as any)?.pending_boost_minutes || 0);
+        const newPending = currentPending + 60; // +1 hour worth of minutes
 
         await supabase
           .from("profiles")
-          .update({ score_boost_until: newBoost.toISOString(), updated_at: new Date().toISOString() })
+          .update({ pending_boost_minutes: newPending, updated_at: new Date().toISOString() })
           .eq("id", topScorer.user_id);
 
         const { error: notifError } = await supabase.from("notifications").insert({
           user_id: topScorer.user_id,
           type: "challenge_prize",
-          message: `🕸️ Tebrikler! Dünkü Kelime Avı'nda 1. oldun! 1 saatlik x2 puan boost kazandın! ⚡`,
+          message: `🕸️ Tebrikler! Dünkü Kelime Avı'nda 1. oldun! 1 saatlik x2 puan boost kazandın! Kelime Avı sayfasından istediğin zaman aktif edebilirsin ⚡`,
         });
         if (notifError) console.error(`❌ Notification insert error (kelime_avi): ${notifError.message}`);
 
-        results.push(`kelime_avi: Winner ${topScorer.username} (${topScorer.score}) → 1h boost`);
-        console.log(`🎁 Kelime Avı boost awarded to ${topScorer.username}`);
+        results.push(`kelime_avi: Winner ${topScorer.username} (${topScorer.score}) → +60 pending min`);
+        console.log(`🎁 Kelime Avı pending boost awarded to ${topScorer.username} (now ${newPending} min)`);
       } else {
         // Standard challenge: top 1 winner
         const { data: topScorer } = await supabase

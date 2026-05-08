@@ -268,6 +268,16 @@ const HomePage = () => {
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
   const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
+  const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
+
+  const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+  const boostActiveHome = !!boostUntilHome && boostUntilHome.getTime() > Date.now();
+
+  useEffect(() => {
+    if (boostActiveHome && !boostProfilAnim) {
+      fetch("/boostProfil.json").then(r => r.json()).then(setBoostProfilAnim).catch(() => {});
+    }
+  }, [boostActiveHome, boostProfilAnim]);
 
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
@@ -653,8 +663,18 @@ const HomePage = () => {
             {/* Profil */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
               <div className="relative">
+                {boostActiveHome && boostProfilAnim && (
+                  <div className="absolute inset-0 -m-4 pointer-events-none z-0">
+                    <Lottie
+                      animationData={boostProfilAnim}
+                      loop
+                      autoplay
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
+                )}
                 <div
-                  className={`w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                  className={`relative z-10 w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
                   <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
                     <AvatarImage
@@ -665,7 +685,7 @@ const HomePage = () => {
                   </Avatar>
                 </div>
                 {!!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
-                  <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
+                  <div className="absolute -bottom-1 -right-1 z-20 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
                     <VipCrownIcon className="w-2.5 h-2.5" />
                   </div>
                 )}

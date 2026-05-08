@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import Lottie from "lottie-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
 
 const GAME_DURATION = 90;
@@ -52,6 +55,7 @@ const isAdjacent = (a: number, b: number) => {
 const KelimeAviPage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
+  const { profile, refreshProfile } = useUser();
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } =
     useDailyChallenge("kelime_avi" as any);
 
@@ -62,7 +66,12 @@ const KelimeAviPage = () => {
   const [foundWords, setFoundWords] = useState<{ w: string; p: number }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  // boost ödülü gece 12'de award-challenge-prizes edge function tarafından veriliyor
+  const [rocketAnim, setRocketAnim] = useState<any>(null);
+  const [claiming, setClaiming] = useState(false);
+
+  const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
+  const boostUntil = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+  const boostActive = !!boostUntil && boostUntil.getTime() > Date.now();
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -70,8 +79,23 @@ const KelimeAviPage = () => {
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
+    fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
+
+  const handleClaimBoost = async () => {
+    if (claiming || pendingMin <= 0) return;
+    setClaiming(true);
+    playSound("buttonClick");
+    const { data, error } = await supabase.rpc("claim_score_boost" as any);
+    if (error || !(data as any)?.success) {
+      toast.error("Boost aktif edilemedi");
+    } else {
+      toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
+      await refreshProfile(true);
+    }
+    setClaiming(false);
+  };
 
   const currentWord = useMemo(() => path.map(i => letters[i] || "").join(""), [path, letters]);
 
@@ -245,6 +269,39 @@ const KelimeAviPage = () => {
               >
                 Başla! 🚀
               </button>
+            )}
+
+            {/* Boost activation: button + rocket lottie (animates only when boost active) */}
+            {(pendingMin > 0 || boostActive) && (
+              <div className="shrink-0 w-full max-w-sm flex items-center justify-center gap-3 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                <button
+                  onClick={handleClaimBoost}
+                  disabled={pendingMin <= 0 || claiming}
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
+                    boostActive && pendingMin <= 0
+                      ? "bg-emerald-500/30 border border-emerald-400/40"
+                      : pendingMin > 0
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 active:scale-95 shadow-lg shadow-amber-500/30"
+                      : "bg-white/10 opacity-50"
+                  }`}
+                >
+                  {boostActive && pendingMin <= 0
+                    ? "⚡ Boost Aktif"
+                    : pendingMin > 0
+                    ? `Boostu Aktif Et (${pendingMin} dk)`
+                    : "Boost yok"}
+                </button>
+                <div className="w-14 h-14 shrink-0">
+                  {rocketAnim && (
+                    <Lottie
+                      animationData={rocketAnim}
+                      loop={boostActive}
+                      autoplay={boostActive}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  )}
+                </div>
+              </div>
             )}
 
             <div className="w-full max-w-sm mt-2 flex-1 min-h-0 flex flex-col">
