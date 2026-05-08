@@ -63,6 +63,7 @@ import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import { Capacitor } from "@capacitor/core";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
@@ -6822,8 +6823,8 @@ const GamePage = ({
       if (now - lastClickTime < 150) return;
       setLastClickTime(now);
 
-      // Haptic feedback (mobil cihazlarda titreşim)
-      if ("vibrate" in navigator) {
+      // Haptic feedback (mobil cihazlarda titreşim) - iOS WKWebView'da hızlı grid input sırasında crash/glitch yapabiliyor
+      if (Capacitor.getPlatform() !== "ios" && "vibrate" in navigator) {
         navigator.vibrate(50);
       }
 
