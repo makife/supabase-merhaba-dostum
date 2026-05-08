@@ -664,7 +664,7 @@ const HomePage = () => {
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
               <div className="relative">
                 {boostActiveHome && boostProfilAnim && (
-                  <div className="absolute inset-0 -m-4 pointer-events-none z-0">
+                  <div className="absolute inset-0 -m-10 pointer-events-none z-0">
                     <Lottie
                       animationData={boostProfilAnim}
                       loop
