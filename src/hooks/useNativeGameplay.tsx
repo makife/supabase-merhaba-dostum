@@ -7,7 +7,7 @@ export const useNativeGameplay = () => {
 
   // Native haptic feedback
   const triggerHapticFeedback = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() !== 'ios') {
+    if (Capacitor.isNativePlatform()) {
       try {
         // For Capacitor apps, use vibration pattern
         const patterns = {

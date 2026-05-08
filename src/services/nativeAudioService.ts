@@ -8,11 +8,9 @@ import { NativeAudio } from '@capacitor-community/native-audio';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
-const isIOS = isNative && Capacitor.getPlatform() === 'ios';
 
 // Preload edilmiş ses listesi
 const preloadedSounds = new Set<string>();
-let iosAudioQueue: Promise<void> = Promise.resolve();
 
 // Ses dosyası tanımları
 interface SoundDefinition {
@@ -195,7 +193,6 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   // 🔧 AUDIO FAILSAFE: Ses preload edilmemişse HTML5 fallback
   if (!preloadedSounds.has(assetId)) {
     console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş - HTML5 fallback`);
-    if (isIOS) return false;
     const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
@@ -203,14 +200,13 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     return false;
   }
 
-  const play = async (): Promise<boolean> => {
   try {
     const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
     const isMultiChannel = (soundDef?.channels ?? 1) > 1;
 
     // 🔧 iOS-fix: Çok kanallı sesler için stop ÇAĞIRMA — kanallar overlap edebilsin.
     // Sadece tek kanallı uzun sesler (yes/wow/celebration vs.) için önceki çalmayı kes.
-    if (!isMultiChannel && !isIOS) {
+    if (!isMultiChannel) {
       try {
         await NativeAudio.stop({ assetId });
       } catch (e) {
@@ -230,22 +226,12 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   } catch (error: any) {
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
     console.error(`❌ NativeAudio: ${assetId} çalınamadı, HTML5 fallback:`, error);
-    if (isIOS) return false;
     const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
     return false;
   }
-  };
-
-  if (isIOS) {
-    const queuedPlay = iosAudioQueue.then(play, play);
-    iosAudioQueue = queuedPlay.then(() => undefined, () => undefined);
-    return queuedPlay;
-  }
-
-  return play();
 };
 
 /**

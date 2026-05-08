@@ -63,7 +63,6 @@ import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
-import { Capacitor } from "@capacitor/core";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
@@ -238,6 +237,9 @@ const GamePage = ({
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
   const processedCountdownRef = useRef<string | null>(null); // 🔒 İşlenmiş countdown timestamp'ini sakla - çift tetiklemeyi önler
+  // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
+  const submitTouchTsRef = useRef(0);
+
   // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
   const participantsRef = useRef(participants);
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
@@ -6820,8 +6822,8 @@ const GamePage = ({
       if (now - lastClickTime < 150) return;
       setLastClickTime(now);
 
-      // Haptic feedback (mobil cihazlarda titreşim) - iOS WKWebView'da hızlı grid input sırasında crash/glitch yapabiliyor
-      if (Capacitor.getPlatform() !== "ios" && "vibrate" in navigator) {
+      // Haptic feedback (mobil cihazlarda titreşim)
+      if ("vibrate" in navigator) {
         navigator.vibrate(50);
       }
 
@@ -8325,10 +8327,14 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-2 shrink-0">
                   <Button
                     variant="ghost"
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      clearWord();
+                    }}
                     onClick={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
-                      e.stopPropagation();
                       clearWord();
                     }}
                     className="h-12 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 rounded-xl font-bold"
@@ -8340,10 +8346,17 @@ const GamePage = ({
                   </Button>
 
                   <Button
+                    onTouchStart={(e) => {
+                      if (!gameStarted) return;
+                      e.preventDefault();
+                      submitTouchTsRef.current = Date.now();
+                      playSound("buttonClick");
+                      submitWord();
+                    }}
                     onClick={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
-                      e.stopPropagation();
+                      if (Date.now() - submitTouchTsRef.current < 500) return;
                       playSound("buttonClick");
                       submitWord();
                     }}
