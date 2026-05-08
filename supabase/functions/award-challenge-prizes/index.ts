@@ -216,12 +216,23 @@ Deno.serve(async (req) => {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("pending_boost_minutes")
+          .select("pending_boost_minutes, score_boost_until, score_boost_source")
           .eq("id", topScorer.user_id)
           .single();
 
         const currentPending = Number((profile as any)?.pending_boost_minutes || 0);
-        const newPending = currentPending + 60; // +1 hour worth of minutes
+        const boostUntil = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+        const boostSource = (profile as any)?.score_boost_source;
+        const hasActiveKelimeBoost = boostUntil && boostUntil.getTime() > Date.now() && boostSource === "kelime_avi";
+
+        // Skip if user already has an unclaimed pending boost OR an active kelime_avi boost
+        if (currentPending > 0 || hasActiveKelimeBoost) {
+          results.push(`kelime_avi: Winner ${topScorer.username} already has boost (pending=${currentPending}, active=${hasActiveKelimeBoost}) → skipped`);
+          console.log(`⏭️ Kelime Avı boost skipped for ${topScorer.username} (already has one)`);
+          continue;
+        }
+
+        const newPending = 60; // +1 hour worth of minutes
 
         await supabase
           .from("profiles")
