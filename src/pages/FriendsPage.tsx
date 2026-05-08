@@ -10,6 +10,8 @@ import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell, 
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
+import Lottie from "lottie-react";
+import friendsSayfaAnim from "@/assets/friendsSayfa.json";
 
 interface FriendItem {
   friendship_id: string;
