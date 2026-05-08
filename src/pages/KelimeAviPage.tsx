@@ -69,9 +69,28 @@ const KelimeAviPage = () => {
   const [rocketAnim, setRocketAnim] = useState<any>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [claiming, setClaiming] = useState(false);
-  const [kelimeAviBoostActivated, setKelimeAviBoostActivated] = useState(false);
+  const [nowTs, setNowTs] = useState(Date.now());
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
+  const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+  const boostSource = (profile as any)?.score_boost_source;
+  const kelimeAviBoostActivated =
+    !!boostUntilDate && boostUntilDate.getTime() > nowTs && boostSource === "kelime_avi";
+
+  useEffect(() => {
+    if (!boostUntilDate || boostUntilDate.getTime() <= Date.now()) return;
+    const t = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [boostUntilDate?.getTime()]);
+
+  // Auto-refresh profile shortly after expiry to clear stale fields
+  useEffect(() => {
+    if (!boostUntilDate) return;
+    const ms = boostUntilDate.getTime() - Date.now();
+    if (ms <= 0 || ms > 60 * 60 * 1000 + 5000) return;
+    const t = setTimeout(() => { refreshProfile(true); }, ms + 500);
+    return () => clearTimeout(t);
+  }, [boostUntilDate?.getTime(), refreshProfile]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
