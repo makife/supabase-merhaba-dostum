@@ -913,11 +913,11 @@ const HomePage = () => {
                     ) : (
                       <div className="flex gap-2">
                         {Array.from({ length: 5 }, (_, i) => (
-                          <img
+                          <HakIcon
                             key={i}
-                            src="/icons/pil.svg"
-                            alt=""
-                            className={`w-6 h-6 object-contain transition-all duration-300 ${i < totalCredits ? "opacity-100" : "opacity-10"}`}
+                            animData={sayfaHakAnim}
+                            filled={i < totalCredits}
+                            size={24}
                           />
                         ))}
                       </div>
