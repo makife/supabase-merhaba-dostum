@@ -403,12 +403,12 @@ const KelimeAviPage = () => {
       {/* Leaderboard Modal */}
       {showLeaderboard && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
           onClick={() => setShowLeaderboard(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-[#1a0a2e] border border-fuchsia-500/30 rounded-t-3xl sm:rounded-3xl p-5 max-h-[80vh] flex flex-col animate-scale-in"
+            className="w-full max-w-md bg-[#1a0a2e] border border-fuchsia-500/30 rounded-3xl p-5 max-h-[80vh] flex flex-col animate-scale-in"
           >
             <div className="flex items-center justify-between mb-3 shrink-0">
               <div className="flex items-center gap-2">
