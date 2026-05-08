@@ -62,7 +62,7 @@ const KelimeAviPage = () => {
   const [foundWords, setFoundWords] = useState<{ w: string; p: number }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  const [boostAwarded, setBoostAwarded] = useState(false);
+  // boost ödülü gece 12'de award-challenge-prizes edge function tarafından veriliyor
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
