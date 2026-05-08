@@ -317,16 +317,14 @@ const KelimeAviPage = () => {
 
         {gameState === "finished" && (
           <div className="flex flex-col items-center gap-4 pt-4 flex-1 min-h-0">
-            <div className="text-6xl shrink-0">{boostAwarded ? "🏆" : "🎯"}</div>
+            <div className="text-6xl shrink-0">🎯</div>
             <div className="text-center shrink-0">
               <h2 className="text-2xl font-black text-white mb-1">Süre Doldu!</h2>
               <p className="text-4xl font-black text-fuchsia-400">{score} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{foundWords.length} kelime buldun</p>
-              {boostAwarded && (
-                <div className="mt-3 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-sm font-bold flex items-center gap-2 mx-auto w-fit">
-                  <Zap className="w-4 h-4" /> 1 saatlik x2 boost aktif!
-                </div>
-              )}
+              <p className="text-[11px] text-amber-300/80 mt-2 max-w-xs">
+                Gece 00:00'da 1. olan oyuncu 1 saatlik x2 puan boost'u kazanır ⚡
+              </p>
             </div>
 
             <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
