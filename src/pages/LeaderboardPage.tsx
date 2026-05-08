@@ -591,7 +591,7 @@ const LeaderboardPage = () => {
 
           {/* Tabs */}
           <div className="mt-3">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
                 <TabsTrigger
                   value="all-time"

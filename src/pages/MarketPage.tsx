@@ -552,7 +552,7 @@ const MarketPage = () => {
 
       {/* Ana İçerik */}
       <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
-        <Tabs defaultValue="ink-store" value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <Tabs defaultValue="ink-store" value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="h-full flex flex-col">
           <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
             <TabsTrigger
               value="ink-store"
