@@ -233,6 +233,7 @@ export async function getDailyChallengeStatus(userId: string): Promise<Record<Ch
     reaktor: false,
     neon_blitz: false,
     memory: false,
+    kelime_avi: false,
   };
 
   if (data) {
