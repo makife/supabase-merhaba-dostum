@@ -356,7 +356,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
 
     const { error: boostErr } = await supabase
       .from("profiles")
-      .update({ score_boost_until: finalBoostEnd.toISOString(), updated_at: new Date().toISOString() })
+      .update({ score_boost_until: finalBoostEnd.toISOString(), score_boost_source: "leaderboard", updated_at: new Date().toISOString() })
       .eq("id", userId);
     if (boostErr) console.error(`❌ Boost update error:`, boostErr);
     else console.log(`🚀 score_boost_until -> ${finalBoostEnd.toISOString()} (+${prize.boostDays}g)`);
