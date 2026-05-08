@@ -40,33 +40,19 @@ const GameGrid = memo<GameGridProps>(({
     
     return cn(
       // NATIVE MOBILE: Daha büyük dokunma alanları ve touch-friendly tasarım
-      "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl font-bold rounded-xl transition-colors duration-100 border-2",
-      // Native mobile touch optimizations - layout shift YOK (yanlış harf basmayı önler)
-      "touch-manipulation select-none",
+      "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl font-bold rounded-xl transition-colors duration-150 border-2",
+      // Native mobile touch optimizations
+      "active:scale-95",
       // Mobile-first shadow and effects
       "shadow-md focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       selected
-        ? "bg-primary text-primary-foreground border-primary"
+        ? "bg-primary text-primary-foreground border-primary scale-105"
         : highlighted && isJokerActive
         ? "bg-yellow-200 border-yellow-400 text-yellow-800 animate-pulse shadow-yellow-400/50"
-        : "bg-card border-border active:bg-accent"
+        : "bg-card border-border hover:border-primary/50 hover:bg-accent"
     );
   }, [isLetterSelected, isLetterHighlighted, isJokerActive, disabled]);
-
-  // Aynı dokunuştan tetiklenen pointerup + click çift seçimini engellemek için kısa kilit
-  const lastFireRef = React.useRef<number>(0);
-
-  const handlePress = useCallback((row: number, col: number, letter: string) => {
-    if (disabled || !letter) return;
-    const now = performance.now();
-    if (now - lastFireRef.current < 250) return; // 250ms kilit
-    lastFireRef.current = now;
-    if (letter && 'vibrate' in navigator) {
-      navigator.vibrate(15);
-    }
-    onLetterClick(row, col, letter);
-  }, [disabled, onLetterClick]);
 
   // Native mobile optimized grid rendering
   const renderedGrid = useMemo(() => {
@@ -79,17 +65,7 @@ const GameGrid = memo<GameGridProps>(({
             <Button
               key={`${rowIndex}-${colIndex}`}
               variant="outline"
-              onClick={(e) => {
-                // touch-action: manipulation sayesinde iOS/Android'de 300ms gecikme yok.
-                // pointerup + click ikisini birden dinlemek iOS'ta grid yeniden render
-                // olduğunda yanlış hücreye geç-click düşmesine sebep oluyordu.
-                e.stopPropagation();
-                handlePress(rowIndex, colIndex, letter);
-              }}
-              onTouchMove={(e) => {
-                // Swipe gesture'ı engelle (status bar açılmasını önler)
-                e.stopPropagation();
-              }}
+              onClick={() => !disabled && onLetterClick(rowIndex, colIndex, letter)}
               className={buttonClass}
               disabled={!letter || disabled} // Empty letters or grid disabled
               style={{
@@ -97,8 +73,7 @@ const GameGrid = memo<GameGridProps>(({
                 WebkitUserSelect: 'none',
                 userSelect: 'none',
                 WebkitTouchCallout: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent'
               }}
             >
               {letter}
@@ -107,7 +82,7 @@ const GameGrid = memo<GameGridProps>(({
         })}
       </div>
     ));
-  }, [gameGrid, getLetterButtonClass, handlePress, disabled]);
+  }, [gameGrid, getLetterButtonClass, onLetterClick]);
 
   // Show current word preview
   const wordPreview = useMemo(() => {
