@@ -390,10 +390,6 @@ const KelimeAviPage = () => {
               </p>
             </div>
 
-            <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
-              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
-            </div>
-
             <button
               onClick={() => { playSound("buttonClick"); navigate("/"); }}
               className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform"
@@ -403,6 +399,35 @@ const KelimeAviPage = () => {
           </div>
         )}
       </div>
+
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowLeaderboard(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-[#1a0a2e] border border-fuchsia-500/30 rounded-t-3xl sm:rounded-3xl p-5 max-h-[80vh] flex flex-col animate-scale-in"
+          >
+            <div className="flex items-center justify-between mb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-black text-white">Günlük Sıralama</h3>
+              </div>
+              <button
+                onClick={() => { playSound("buttonClick"); setShowLeaderboard(false); }}
+                className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white text-lg active:scale-90"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
