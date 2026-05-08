@@ -23,7 +23,7 @@ import { PrivateChat } from "@/components/PrivateChat";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import Lottie from "lottie-react";
-import aiRobotAnim from "/aiRobot.json?url";
+import aiRobotAnim from "@/assets/aiRobot.json";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
 import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from "@/utils/chatBot";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
