@@ -55,6 +55,7 @@ const isAdjacent = (a: number, b: number) => {
 const KelimeAviPage = () => {
   const navigate = useNavigate();
   const { playSound } = useSounds();
+  const { profile, refreshProfile } = useUser();
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } =
     useDailyChallenge("kelime_avi" as any);
 
@@ -65,7 +66,12 @@ const KelimeAviPage = () => {
   const [foundWords, setFoundWords] = useState<{ w: string; p: number }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  // boost ödülü gece 12'de award-challenge-prizes edge function tarafından veriliyor
+  const [rocketAnim, setRocketAnim] = useState<any>(null);
+  const [claiming, setClaiming] = useState(false);
+
+  const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
+  const boostUntil = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+  const boostActive = !!boostUntil && boostUntil.getTime() > Date.now();
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -73,8 +79,23 @@ const KelimeAviPage = () => {
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
+    fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
+
+  const handleClaimBoost = async () => {
+    if (claiming || pendingMin <= 0) return;
+    setClaiming(true);
+    playSound("buttonClick");
+    const { data, error } = await supabase.rpc("claim_score_boost" as any);
+    if (error || !(data as any)?.success) {
+      toast.error("Boost aktif edilemedi");
+    } else {
+      toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
+      await refreshProfile(true);
+    }
+    setClaiming(false);
+  };
 
   const currentWord = useMemo(() => path.map(i => letters[i] || "").join(""), [path, letters]);
 
