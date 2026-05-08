@@ -268,6 +268,16 @@ const HomePage = () => {
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
   const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
+  const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
+
+  const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+  const boostActiveHome = !!boostUntilHome && boostUntilHome.getTime() > Date.now();
+
+  useEffect(() => {
+    if (boostActiveHome && !boostProfilAnim) {
+      fetch("/boostProfil.json").then(r => r.json()).then(setBoostProfilAnim).catch(() => {});
+    }
+  }, [boostActiveHome, boostProfilAnim]);
 
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
