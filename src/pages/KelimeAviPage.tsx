@@ -110,7 +110,7 @@ const KelimeAviPage = () => {
     if (error || !(data as any)?.success) {
       toast.error("Boost aktif edilemedi");
     } else {
-      setKelimeAviBoostActivated(true);
+      setNowTs(Date.now());
       toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
       await refreshProfile(true);
     }
