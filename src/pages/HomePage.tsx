@@ -133,6 +133,20 @@ const StatWidget = memo(({ svgIcon, value, label }: any) => (
 ));
 StatWidget.displayName = "StatWidget";
 
+const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: boolean; size?: number }) => (
+  <div
+    className={`transition-all duration-300 ${filled ? "opacity-100" : "opacity-10"}`}
+    style={{ width: size, height: size }}
+  >
+    {animData ? (
+      <Lottie animationData={animData} loop={false} autoplay={false} style={{ width: "100%", height: "100%" }} />
+    ) : (
+      <div className="w-full h-full bg-slate-700 rounded-sm" />
+    )}
+  </div>
+));
+HakIcon.displayName = "HakIcon";
+
 const VipCrownIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/vipkraliyet.svg" className={className} alt="" />
 );
