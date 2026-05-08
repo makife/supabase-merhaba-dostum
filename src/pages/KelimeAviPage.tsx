@@ -69,10 +69,9 @@ const KelimeAviPage = () => {
   const [rocketAnim, setRocketAnim] = useState<any>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [kelimeAviBoostActivated, setKelimeAviBoostActivated] = useState(false);
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
-  const boostUntil = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
-  const boostActive = !!boostUntil && boostUntil.getTime() > Date.now();
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +91,7 @@ const KelimeAviPage = () => {
     if (error || !(data as any)?.success) {
       toast.error("Boost aktif edilemedi");
     } else {
+      setKelimeAviBoostActivated(true);
       toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
       await refreshProfile(true);
     }
@@ -281,20 +281,20 @@ const KelimeAviPage = () => {
             )}
 
             {/* Boost activation: button + rocket lottie (animates only when boost active) */}
-            {(pendingMin > 0 || boostActive) && (
+            {(pendingMin > 0 || kelimeAviBoostActivated) && (
               <div className="shrink-0 w-full max-w-sm flex items-center justify-center gap-3 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
                 <button
                   onClick={handleClaimBoost}
                   disabled={pendingMin <= 0 || claiming}
                   className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
-                    boostActive && pendingMin <= 0
+                    kelimeAviBoostActivated && pendingMin <= 0
                       ? "bg-emerald-500/30 border border-emerald-400/40"
                       : pendingMin > 0
                       ? "bg-gradient-to-r from-amber-500 to-orange-500 active:scale-95 shadow-lg shadow-amber-500/30"
                       : "bg-white/10 opacity-50"
                   }`}
                 >
-                  {boostActive && pendingMin <= 0
+                  {kelimeAviBoostActivated && pendingMin <= 0
                     ? "⚡ Boost Aktif"
                     : pendingMin > 0
                     ? `Boostu Aktif Et (${pendingMin} dk)`
@@ -304,8 +304,8 @@ const KelimeAviPage = () => {
                   {rocketAnim && (
                     <Lottie
                       animationData={rocketAnim}
-                      loop={boostActive}
-                      autoplay={boostActive}
+                      loop={kelimeAviBoostActivated}
+                      autoplay={kelimeAviBoostActivated}
                       style={{ width: "100%", height: "100%" }}
                     />
                   )}
