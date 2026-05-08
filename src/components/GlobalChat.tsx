@@ -234,8 +234,22 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           if (timeDiff < thirtyMinutes) return;
         }
 
-        toast.info(
-          "🤖 Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.",
+        toast.custom(
+          (t) => (
+            <div className="flex items-stretch gap-3 bg-[#1e2d45] border border-white/10 rounded-2xl p-3 shadow-xl w-[360px] max-w-[92vw]">
+              <div className="shrink-0 self-stretch flex items-center">
+                <Lottie
+                  animationData={aiRobotAnim}
+                  loop
+                  autoplay
+                  style={{ width: 72, height: '100%', minHeight: 72 }}
+                />
+              </div>
+              <div className="flex-1 text-[13px] leading-snug text-white/90">
+                🎉 Hoşgeldiniz! Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.
+              </div>
+            </div>
+          ),
           { duration: 8000, position: "top-center" },
         );
 
