@@ -1813,6 +1813,7 @@ export type Database = {
         Args: { p_bonus_points: number; p_user_id: string }
         Returns: undefined
       }
+      award_kelime_avi_boost: { Args: never; Returns: Json }
       award_kelimele_badge: { Args: { p_user_id: string }; Returns: boolean }
       ban_user_for_inappropriate_content: {
         Args: {
