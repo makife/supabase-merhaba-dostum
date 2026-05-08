@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const GAME_DURATION = 90;
 const GRID = 5;
