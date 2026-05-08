@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export type ChallengeType = "word_hunt" | "anagram" | "word_chain" | "puzzle" | "reaktor" | "neon_blitz" | "memory";
+export type ChallengeType = "word_hunt" | "anagram" | "word_chain" | "puzzle" | "reaktor" | "neon_blitz" | "memory" | "kelime_avi";
 
 interface ChallengeScore {
   id: string;
