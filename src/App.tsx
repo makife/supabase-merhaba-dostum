@@ -567,6 +567,14 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path="/challenge/kelime-avi"
+            element={
+              <ProtectedRoute>
+                <KelimeAviPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/private-room/waiting/:roomCode"
             element={
               <ProtectedRoute>
