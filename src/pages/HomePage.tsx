@@ -900,7 +900,7 @@ const HomePage = () => {
                   <div className="flex items-center gap-2">
                     {totalCredits > 5 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-3 opacity-50">
+                        <div className="flex gap-0.5 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
                             <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={48} />
                           ))}
@@ -911,7 +911,7 @@ const HomePage = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex gap-3">
+                      <div className="flex gap-0.5">
                         {Array.from({ length: 5 }, (_, i) => (
                           <HakIcon
                             key={i}
