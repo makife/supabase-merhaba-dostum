@@ -313,9 +313,6 @@ const KelimeAviPage = () => {
               </div>
             )}
 
-            <div className="w-full max-w-sm mt-2 flex-1 min-h-0 flex flex-col">
-              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
-            </div>
           </div>
         )}
 
