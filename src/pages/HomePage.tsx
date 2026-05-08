@@ -902,12 +902,12 @@ const HomePage = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex gap-3 opacity-50">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={36} />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={48} />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-8 h-8">
-                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-8 h-8 object-contain" />
-                          <span className="absolute text-black text-[12px] font-bold">+{totalCredits - 5}</span>
+                        <div className="relative inline-flex items-center justify-center w-9 h-9">
+                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
+                          <span className="absolute text-black text-[13px] font-bold">+{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
@@ -917,7 +917,7 @@ const HomePage = () => {
                             key={i}
                             animData={sayfaHakAnim}
                             filled={i < totalCredits}
-                            size={32}
+                            size={44}
                           />
                         ))}
                       </div>
