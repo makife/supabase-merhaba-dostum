@@ -238,9 +238,6 @@ const GamePage = ({
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
   const processedCountdownRef = useRef<string | null>(null); // 🔒 İşlenmiş countdown timestamp'ini sakla - çift tetiklemeyi önler
-  // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
-  const submitTouchTsRef = useRef(0);
-
   // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
   const participantsRef = useRef(participants);
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
@@ -8328,14 +8325,10 @@ const GamePage = ({
                 <div className="grid grid-cols-2 gap-2 shrink-0">
                   <Button
                     variant="ghost"
-                    onTouchStart={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      clearWord();
-                    }}
                     onClick={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
+                      e.stopPropagation();
                       clearWord();
                     }}
                     className="h-12 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 rounded-xl font-bold"
@@ -8347,17 +8340,10 @@ const GamePage = ({
                   </Button>
 
                   <Button
-                    onTouchStart={(e) => {
-                      if (!gameStarted) return;
-                      e.preventDefault();
-                      submitTouchTsRef.current = Date.now();
-                      playSound("buttonClick");
-                      submitWord();
-                    }}
                     onClick={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
-                      if (Date.now() - submitTouchTsRef.current < 500) return;
+                      e.stopPropagation();
                       playSound("buttonClick");
                       submitWord();
                     }}
