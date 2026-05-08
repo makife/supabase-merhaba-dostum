@@ -997,6 +997,7 @@ export type Database = {
           longest_word_length: number | null
           losses: number | null
           monthly_first_count: number
+          pending_boost_minutes: number
           premium_until: string | null
           private_room_games: number | null
           push_token: string | null
@@ -1053,6 +1054,7 @@ export type Database = {
           longest_word_length?: number | null
           losses?: number | null
           monthly_first_count?: number
+          pending_boost_minutes?: number
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null
@@ -1109,6 +1111,7 @@ export type Database = {
           longest_word_length?: number | null
           losses?: number | null
           monthly_first_count?: number
+          pending_boost_minutes?: number
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null
@@ -1875,6 +1878,7 @@ export type Database = {
         Returns: Json[]
       }
       claim_premium_daily_jokers: { Args: { p_user_id: string }; Returns: Json }
+      claim_score_boost: { Args: never; Returns: Json }
       cleanup_expired_bans: { Args: never; Returns: undefined }
       cleanup_expired_matchmaking_rooms: { Args: never; Returns: undefined }
       cleanup_expired_rematch_requests: { Args: never; Returns: undefined }
