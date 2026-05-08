@@ -163,7 +163,7 @@ const ChallengePrizeDialog = () => {
   const parsePrizes = (message: string) => {
     const prizes: { label: string; amount: string; icon: string }[] = [];
     const inkMatch = message.match(/(\d+)\s*Mürekkep\s*Damla/i);
-    if (inkMatch) prizes.push({ label: "Mürekkep", amount: inkMatch[1], icon: "/murekkepikon.png" });
+    if (inkMatch) prizes.push({ label: "Mürekkep", amount: inkMatch[1], icon: "/damlaMurekkep.png" });
     const creditMatch = message.match(/(\d+)\s*Oyun\s*Sayfas/i);
     if (creditMatch) prizes.push({ label: "Oyun Sayfası", amount: creditMatch[1], icon: "" });
     const spinMatch = message.match(/(\d+)\s*Çark\s*Çevirme/i);
