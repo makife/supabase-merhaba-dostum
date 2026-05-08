@@ -1003,6 +1003,7 @@ export type Database = {
           push_token: string | null
           random_match_games: number | null
           rank_points: number
+          score_boost_source: string | null
           score_boost_until: string | null
           season_first_count: number
           senyaz_joker_used: number | null
@@ -1060,6 +1061,7 @@ export type Database = {
           push_token?: string | null
           random_match_games?: number | null
           rank_points?: number
+          score_boost_source?: string | null
           score_boost_until?: string | null
           season_first_count?: number
           senyaz_joker_used?: number | null
@@ -1117,6 +1119,7 @@ export type Database = {
           push_token?: string | null
           random_match_games?: number | null
           rank_points?: number
+          score_boost_source?: string | null
           score_boost_until?: string | null
           season_first_count?: number
           senyaz_joker_used?: number | null
