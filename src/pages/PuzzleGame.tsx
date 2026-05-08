@@ -317,7 +317,10 @@ const PuzzleGamePage: React.FC = () => {
                   <p className="text-xs text-white/40 mt-1">(en düşük puan = en iyi sıralama)</p>
                   <div className="mt-3 bg-amber-500/10 border border-amber-400/20 rounded-lg p-3">
                     <p className="text-xs text-amber-300 font-bold">🏆 1. Lik Ödülü</p>
-                    <p className="text-sm text-white mt-1">🖊️ 3 Damla Mürekkep</p>
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <img src="/damlaMurekkep.png" alt="mürekkep" className="w-5 h-5 object-contain brightness-110" />
+                      <span className="text-sm text-white">3 Damla Mürekkep</span>
+                    </div>
                   </div>
                 </div>
 
