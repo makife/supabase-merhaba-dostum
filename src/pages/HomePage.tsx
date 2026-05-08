@@ -291,6 +291,7 @@ const HomePage = () => {
       reaktor: false,
       neon_blitz: false,
       memory: false,
+      kelime_avi: false,
     };
   });
   const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
