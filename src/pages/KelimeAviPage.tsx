@@ -67,6 +67,7 @@ const KelimeAviPage = () => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [rocketAnim, setRocketAnim] = useState<any>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [claiming, setClaiming] = useState(false);
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
