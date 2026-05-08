@@ -197,6 +197,48 @@ Deno.serve(async (req) => {
         }
 
         results.push(`memory: ${awarded} players awarded`);
+      } else if (challengeType === "kelime_avi") {
+        // Kelime Avı: top-1 winner gets 1 hour x2 score boost
+        const { data: topScorer } = await supabase
+          .from("challenge_scores")
+          .select("user_id, username, score")
+          .eq("challenge_type", "kelime_avi")
+          .eq("date", yesterdayDate)
+          .order("score", { ascending: false })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (!topScorer || !topScorer.user_id || Number(topScorer.score) <= 0) {
+          results.push("kelime_avi: No players");
+          continue;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("score_boost_until")
+          .eq("id", topScorer.user_id)
+          .single();
+
+        const nowMs = Date.now();
+        const oneHourLater = new Date(nowMs + 60 * 60 * 1000);
+        const currentBoost = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
+        const newBoost = currentBoost && currentBoost.getTime() > oneHourLater.getTime() ? currentBoost : oneHourLater;
+
+        await supabase
+          .from("profiles")
+          .update({ score_boost_until: newBoost.toISOString(), updated_at: new Date().toISOString() })
+          .eq("id", topScorer.user_id);
+
+        const { error: notifError } = await supabase.from("notifications").insert({
+          user_id: topScorer.user_id,
+          type: "challenge_prize",
+          message: `🕸️ Tebrikler! Dünkü Kelime Avı'nda 1. oldun! 1 saatlik x2 puan boost kazandın! ⚡`,
+        });
+        if (notifError) console.error(`❌ Notification insert error (kelime_avi): ${notifError.message}`);
+
+        results.push(`kelime_avi: Winner ${topScorer.username} (${topScorer.score}) → 1h boost`);
+        console.log(`🎁 Kelime Avı boost awarded to ${topScorer.username}`);
       } else {
         // Standard challenge: top 1 winner
         const { data: topScorer } = await supabase
