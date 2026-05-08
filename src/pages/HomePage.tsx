@@ -139,7 +139,7 @@ const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: 
     style={{ width: size, height: size }}
   >
     {animData ? (
-      <Lottie animationData={animData} loop={false} autoplay={false} style={{ width: "100%", height: "100%" }} />
+      <Lottie animationData={animData} loop={true} autoplay={true} style={{ width: "100%", height: "100%" }} />
     ) : (
       <div className="w-full h-full bg-slate-700 rounded-sm" />
     )}
