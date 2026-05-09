@@ -913,6 +913,26 @@ const GamePage = ({
   const gameEndedRef = useRef(false); // 🔒 Ref for synchronous guard in timer
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
+  const reviewPromptedRef = useRef(false);
+  const { maybeRequestReview, incrementMatchCount } = useAppReviewPrompt();
+
+  // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
+  useEffect(() => {
+    if (!gameEnded || reviewPromptedRef.current) return;
+    reviewPromptedRef.current = true;
+    // Maç bitiş animasyonları + diğer dialog'ların oturması için kısa gecikme
+    const t = setTimeout(async () => {
+      try {
+        await incrementMatchCount();
+        await maybeRequestReview("match_end", {
+          accountCreatedAt: (profile as any)?.created_at ?? null,
+        });
+      } catch {
+        /* noop */
+      }
+    }, 4500);
+    return () => clearTimeout(t);
+  }, [gameEnded, maybeRequestReview, incrementMatchCount, profile]);
 
   useEffect(() => {
     if (gameEnded && user?.id) {
