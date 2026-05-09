@@ -63,6 +63,7 @@ import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import { useAppReviewPrompt } from "@/hooks/useAppReviewPrompt";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
@@ -912,6 +913,26 @@ const GamePage = ({
   const gameEndedRef = useRef(false); // 🔒 Ref for synchronous guard in timer
   const statsUpdatedRef = useRef(false);
   const attemptedAutoCompleteRef = useRef(false);
+  const reviewPromptedRef = useRef(false);
+  const { maybeRequestReview, incrementMatchCount } = useAppReviewPrompt();
+
+  // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
+  useEffect(() => {
+    if (!gameEnded || reviewPromptedRef.current) return;
+    reviewPromptedRef.current = true;
+    // Maç bitiş animasyonları + diğer dialog'ların oturması için kısa gecikme
+    const t = setTimeout(async () => {
+      try {
+        await incrementMatchCount();
+        await maybeRequestReview("match_end", {
+          accountCreatedAt: (profile as any)?.created_at ?? null,
+        });
+      } catch {
+        /* noop */
+      }
+    }, 4500);
+    return () => clearTimeout(t);
+  }, [gameEnded, maybeRequestReview, incrementMatchCount, profile]);
 
   useEffect(() => {
     if (gameEnded && user?.id) {
@@ -1332,6 +1353,17 @@ const GamePage = ({
   // Rank-up detection
   const [showRankUp, setShowRankUp] = useState(false);
   const [rankUpTier, setRankUpTier] = useState<RankTier | null>(null);
+
+  // 🌟 Rank atlama → match-end review dialog'unu ezerek native review tetikle
+  useEffect(() => {
+    if (!showRankUp || !rankUpTier) return;
+    const t = setTimeout(() => {
+      maybeRequestReview("rank_up", {
+        accountCreatedAt: (profile as any)?.created_at ?? null,
+      });
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [showRankUp, rankUpTier, maybeRequestReview, profile]);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
