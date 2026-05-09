@@ -1353,6 +1353,17 @@ const GamePage = ({
   // Rank-up detection
   const [showRankUp, setShowRankUp] = useState(false);
   const [rankUpTier, setRankUpTier] = useState<RankTier | null>(null);
+
+  // 🌟 Rank atlama → match-end review dialog'unu ezerek native review tetikle
+  useEffect(() => {
+    if (!showRankUp || !rankUpTier) return;
+    const t = setTimeout(() => {
+      maybeRequestReview("rank_up", {
+        accountCreatedAt: (profile as any)?.created_at ?? null,
+      });
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [showRankUp, rankUpTier, maybeRequestReview, profile]);
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
