@@ -63,6 +63,7 @@ import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import { useAppReviewPrompt } from "@/hooks/useAppReviewPrompt";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
