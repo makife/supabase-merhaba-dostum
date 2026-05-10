@@ -26313,6 +26313,7 @@ klostrofobi
 kloş
 klozet
 klüz
+koala
 koalisyon
 koaptör
 kobalt
@@ -26561,6 +26562,8 @@ koloridye
 kolorimetre
 kolorimetri
 kolostrum
+kolpa
+kolpacı
 kolpo
 kolpocu
 kolsu
