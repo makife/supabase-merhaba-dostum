@@ -580,6 +580,8 @@ export const useSounds = () => {
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
+    if (isIOSNative) return;
+
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -613,6 +615,8 @@ export const useSounds = () => {
   const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
+    if (isIOSNative) return;
+
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -645,6 +649,8 @@ export const useSounds = () => {
 
   const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
+
+    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
