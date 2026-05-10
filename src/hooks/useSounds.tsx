@@ -9,6 +9,8 @@ import {
   isNativeAudioReady
 } from "@/services/nativeAudioService";
 
+const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+
 interface SoundConfig {
   buttonClick: string;
   correctWord: string;
@@ -39,7 +41,7 @@ const unlockGlobalAudio = () => {
   // Native platform için Native Audio kullan
   // Not: initNativeAudio zaten App.tsx'te await ile çağrılıyor
   // Burada sadece tetikleme yapmak yeterli, zaten singleton pattern ile çalışıyor
-  if (isNativePlatform() && !nativeAudioInitialized) {
+  if (isNativePlatform() && !isIOSNative && !nativeAudioInitialized) {
     // Eğer henüz hazır değilse başlat
     if (!isNativeAudioReady()) {
       initNativeAudio().then(() => {
