@@ -383,6 +383,8 @@ export const useSounds = () => {
     async (soundKey: keyof SoundConfig) => {
       if (!soundsEnabled) return;
 
+      if (isIOSNative) return;
+
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
 
@@ -520,6 +522,8 @@ export const useSounds = () => {
 
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
+
+    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
