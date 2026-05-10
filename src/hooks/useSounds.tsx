@@ -9,6 +9,8 @@ import {
   isNativeAudioReady
 } from "@/services/nativeAudioService";
 
+const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+
 interface SoundConfig {
   buttonClick: string;
   correctWord: string;
@@ -39,7 +41,7 @@ const unlockGlobalAudio = () => {
   // Native platform için Native Audio kullan
   // Not: initNativeAudio zaten App.tsx'te await ile çağrılıyor
   // Burada sadece tetikleme yapmak yeterli, zaten singleton pattern ile çalışıyor
-  if (isNativePlatform() && !nativeAudioInitialized) {
+  if (isNativePlatform() && !isIOSNative && !nativeAudioInitialized) {
     // Eğer henüz hazır değilse başlat
     if (!isNativeAudioReady()) {
       initNativeAudio().then(() => {
@@ -381,6 +383,8 @@ export const useSounds = () => {
     async (soundKey: keyof SoundConfig) => {
       if (!soundsEnabled) return;
 
+      if (isIOSNative) return;
+
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
 
@@ -519,6 +523,8 @@ export const useSounds = () => {
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
 
+    if (isIOSNative) return;
+
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -574,6 +580,8 @@ export const useSounds = () => {
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
+    if (isIOSNative) return;
+
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -607,6 +615,8 @@ export const useSounds = () => {
   const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
+    if (isIOSNative) return;
+
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -639,6 +649,8 @@ export const useSounds = () => {
 
   const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
+
+    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -674,6 +686,8 @@ export const useSounds = () => {
   const playSpecialSound = useCallback(
     async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
+
+      if (isIOSNative) return;
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();

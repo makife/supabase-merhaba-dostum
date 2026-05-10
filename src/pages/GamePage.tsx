@@ -6855,7 +6855,7 @@ const GamePage = ({
       setLastClickTime(now);
 
       // Haptic feedback (mobil cihazlarda titreşim)
-      if ("vibrate" in navigator) {
+      if (!isNative && "vibrate" in navigator) {
         navigator.vibrate(50);
       }
 
