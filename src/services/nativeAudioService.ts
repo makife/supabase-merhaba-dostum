@@ -149,6 +149,11 @@ export const initNativeAudio = async (): Promise<void> => {
  * HTML5 Audio fallback - Native ses yüklenemediğinde
  */
 const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => {
+  // 🔧 iOS crash guard: Native app içinde HTML5 Audio fallback yapma.
+  // Özellikle harf seçimi/kelime gönderimi gibi yoğun aksiyonlarda WebView audio stack'i
+  // native audio ile çakışıp uygulamayı oyundan atabiliyor.
+  if (isNative) return false;
+
   try {
     // public/ prefix'ini kaldır
     const webPath = assetPath.replace('public/', '/');
@@ -192,7 +197,8 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   
   // 🔧 AUDIO FAILSAFE: Ses preload edilmemişse HTML5 fallback
   if (!preloadedSounds.has(assetId)) {
-    console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş - HTML5 fallback`);
+    console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
+    if (isNative) return false;
     const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
@@ -225,7 +231,8 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     return true;
   } catch (error: any) {
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
-    console.error(`❌ NativeAudio: ${assetId} çalınamadı, HTML5 fallback:`, error);
+    console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
+    if (isNative) return false;
     const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);

@@ -51,6 +51,15 @@ const unlockGlobalAudio = () => {
       console.log("✅ useSounds: Native Audio already ready");
     }
   }
+
+  // 🔧 iOS crash guard: Native app içinde Web Audio / HTML5 Audio unlock oluşturma.
+  // Harf seçimi gibi sık tetiklenen aksiyonlarda AudioContext + NativeAudio karışımı
+  // iOS WebView/AVAudioSession tarafında uygulamayı oyundan atabiliyor.
+  if (isNativePlatform()) {
+    globalAudioUnlocked = true;
+    console.log("✅ useSounds: Native audio unlock only");
+    return;
+  }
   
   // AudioContext oluştur ve resume et
   if (!globalAudioContext) {
@@ -207,6 +216,12 @@ export const useSounds = () => {
   const unlockAudioForMobile = useCallback(() => {
     // Global unlock'u tetikle
     unlockGlobalAudio();
+
+    // Native platformda AudioContext'e hiç dokunma; tüm efektler NativeAudio üzerinden gider.
+    if (isNativePlatform()) {
+      audioUnlockedRef.current = true;
+      return;
+    }
     
     if (audioUnlockedRef.current && globalAudioUnlocked) return;
     
