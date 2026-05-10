@@ -242,7 +242,7 @@ const AppRoutes = () => {
 
   // İlk yüklemede audio başlat
   useEffect(() => {
-    if (isNativePlatform()) {
+    if (isNativePlatform() && Capacitor.getPlatform() !== "ios") {
       initNativeAudio().catch(console.error);
     }
   }, []);
