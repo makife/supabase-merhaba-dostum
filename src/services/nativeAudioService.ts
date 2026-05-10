@@ -8,6 +8,7 @@ import { NativeAudio } from '@capacitor-community/native-audio';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
+const isIOSNative = isNative && Capacitor.getPlatform() === 'ios';
 
 // Preload edilmiş ses listesi
 const preloadedSounds = new Set<string>();
@@ -88,6 +89,11 @@ export const isNativeAudioReady = (): boolean => initialized;
 export const initNativeAudio = async (): Promise<void> => {
   if (!isNative) {
     console.log('🔊 NativeAudio: Web ortamı, HTML5 Audio kullanılacak');
+    return;
+  }
+
+  if (isIOSNative) {
+    console.warn('🔇 NativeAudio: iOS üzerinde devre dışı (AVAudioSession crash guard)');
     return;
   }
 
@@ -179,6 +185,10 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
+    return false;
+  }
+
+  if (isIOSNative) {
     return false;
   }
   
