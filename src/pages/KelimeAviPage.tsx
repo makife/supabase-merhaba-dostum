@@ -405,6 +405,42 @@ const KelimeAviPage = () => {
                   </div>
                 );
               })}
+
+              {/* Path line overlay */}
+              {gridSize > 0 && path.length > 0 && (
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  width={gridSize}
+                  height={gridSize}
+                  viewBox={`0 0 ${gridSize} ${gridSize}`}
+                >
+                  {path.length > 1 && (
+                    <polyline
+                      points={path.map(i => {
+                        const { x, y } = cellCenter(i);
+                        return `${x},${y}`;
+                      }).join(" ")}
+                      fill="none"
+                      stroke="rgba(232, 121, 249, 0.85)"
+                      strokeWidth={Math.max(6, gridSize * 0.025)}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {path.map((i, idx) => {
+                    const { x, y } = cellCenter(i);
+                    return (
+                      <circle
+                        key={idx}
+                        cx={x}
+                        cy={y}
+                        r={Math.max(5, gridSize * 0.018)}
+                        fill="rgba(240, 171, 252, 0.95)"
+                      />
+                    );
+                  })}
+                </svg>
+              )}
             </div>
 
             {foundWords.length > 0 && (
