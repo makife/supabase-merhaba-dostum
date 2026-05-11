@@ -383,7 +383,7 @@ const KelimeAviPage = () => {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              className="grid grid-cols-5 gap-1.5 select-none touch-none mx-auto"
+              className="relative grid grid-cols-5 gap-1.5 select-none touch-none mx-auto"
               style={{ width: "min(100%, 360px)" }}
             >
               {letters.map((letter, i) => {
