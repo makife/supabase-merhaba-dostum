@@ -147,9 +147,35 @@ const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: 
 ));
 HakIcon.displayName = "HakIcon";
 
-const VipCrownIcon = ({ className = "" }: { className?: string }) => (
-  <img src="/icons/vipkraliyet.svg" className={className} alt="" />
-);
+let _premiumLottieCache: any = null;
+let _premiumLottiePromise: Promise<any> | null = null;
+const loadPremiumLottie = () => {
+  if (_premiumLottieCache) return Promise.resolve(_premiumLottieCache);
+  if (!_premiumLottiePromise) {
+    _premiumLottiePromise = fetch("/premiumLottie.json")
+      .then((r) => r.json())
+      .then((d) => {
+        _premiumLottieCache = d;
+        return d;
+      })
+      .catch(() => null);
+  }
+  return _premiumLottiePromise;
+};
+
+const VipCrownIcon = ({ className = "" }: { className?: string }) => {
+  const [data, setData] = useState<any>(_premiumLottieCache);
+  useEffect(() => {
+    if (!data) loadPremiumLottie().then((d) => d && setData(d));
+  }, [data]);
+  return (
+    <div className={className} style={{ display: "inline-block" }}>
+      {data ? (
+        <Lottie animationData={data} loop autoplay style={{ width: "100%", height: "100%" }} />
+      ) : null}
+    </div>
+  );
+};
 
 const getLevelFruitIcon = (level: number): string => {
   if (level < 5) return "/icons/yaprak.svg";
