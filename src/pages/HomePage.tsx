@@ -714,7 +714,7 @@ const HomePage = () => {
                 </div>
                 {!!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
                   <div className="absolute -bottom-1 -right-1 z-20 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
-                    <VipCrownIcon className="w-2.5 h-2.5" />
+                    <VipCrownIcon className="w-5 h-5" />
                   </div>
                 )}
               </div>
