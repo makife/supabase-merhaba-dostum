@@ -712,11 +712,6 @@ const HomePage = () => {
                     <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
                   </Avatar>
                 </div>
-                {!!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
-                  <div className="absolute -bottom-1 -right-1 z-20">
-                    <VipCrownIcon className="w-8 h-8" />
-                  </div>
-                )}
               </div>
               <div>
                 <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
