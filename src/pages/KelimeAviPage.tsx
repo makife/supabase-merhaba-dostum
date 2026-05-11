@@ -70,6 +70,7 @@ const KelimeAviPage = () => {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
+  const [gridSize, setGridSize] = useState(0);
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
   const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
@@ -95,6 +96,29 @@ const KelimeAviPage = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
+
+  // Track grid pixel size for SVG overlay
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    const measure = () => {
+      if (gridRef.current) setGridSize(gridRef.current.clientWidth);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [gameState]);
+
+  // Compute pixel center of a cell index (gap-1.5 = 6px)
+  const GAP = 6;
+  const cellCenter = (idx: number) => {
+    const cell = (gridSize - GAP * (GRID - 1)) / GRID;
+    const r = Math.floor(idx / GRID);
+    const c = idx % GRID;
+    return {
+      x: c * (cell + GAP) + cell / 2,
+      y: r * (cell + GAP) + cell / 2,
+    };
+  };
 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
@@ -359,7 +383,7 @@ const KelimeAviPage = () => {
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              className="grid grid-cols-5 gap-1.5 select-none touch-none mx-auto"
+              className="relative grid grid-cols-5 gap-1.5 select-none touch-none mx-auto"
               style={{ width: "min(100%, 360px)" }}
             >
               {letters.map((letter, i) => {
@@ -381,6 +405,42 @@ const KelimeAviPage = () => {
                   </div>
                 );
               })}
+
+              {/* Path line overlay */}
+              {gridSize > 0 && path.length > 0 && (
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  width={gridSize}
+                  height={gridSize}
+                  viewBox={`0 0 ${gridSize} ${gridSize}`}
+                >
+                  {path.length > 1 && (
+                    <polyline
+                      points={path.map(i => {
+                        const { x, y } = cellCenter(i);
+                        return `${x},${y}`;
+                      }).join(" ")}
+                      fill="none"
+                      stroke="rgba(232, 121, 249, 0.85)"
+                      strokeWidth={Math.max(6, gridSize * 0.025)}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {path.map((i, idx) => {
+                    const { x, y } = cellCenter(i);
+                    return (
+                      <circle
+                        key={idx}
+                        cx={x}
+                        cy={y}
+                        r={Math.max(5, gridSize * 0.018)}
+                        fill="rgba(240, 171, 252, 0.95)"
+                      />
+                    );
+                  })}
+                </svg>
+              )}
             </div>
 
             {foundWords.length > 0 && (
