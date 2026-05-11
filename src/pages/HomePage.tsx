@@ -841,7 +841,7 @@ const HomePage = () => {
                       vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
                     }`}
                   >
-                    <VipCrownIcon className={`w-5 h-5 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
+                    <VipCrownIcon className={`w-8 h-8 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
                   </div>
                   <div className="flex flex-col">
                     <span
