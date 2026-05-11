@@ -70,6 +70,7 @@ const KelimeAviPage = () => {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
+  const [gridSize, setGridSize] = useState(0);
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
   const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
