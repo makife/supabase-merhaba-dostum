@@ -552,7 +552,15 @@ const MarketPage = () => {
 
       {/* Ana İçerik */}
       <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
-        <Tabs defaultValue="ink-store" value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="h-full flex flex-col">
+        <Tabs
+          defaultValue="ink-store"
+          value={activeTab}
+          onValueChange={(val) => {
+            playSound("buttonClick");
+            setActiveTab(val);
+          }}
+          className="h-full flex flex-col"
+        >
           <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
             <TabsTrigger
               value="ink-store"
@@ -798,7 +806,7 @@ const MarketPage = () => {
                       <div className="bg-amber-400 p-1 rounded-full -ml-2">
                         <img src="/icons/senyaz.svg" className="w-4 h-4" alt="joker" />
                       </div>
-                      <span className="font-bold text-sm ml-1 text-white">Her Gün 3'er Bedava Joker!</span>
+                      <span className="font-bold text-sm ml-1 text-white">Her Gün 5'er Bedava Joker!</span>
                     </div>
                   </div>
 
@@ -856,7 +864,11 @@ const MarketPage = () => {
             <div className="relative flex items-center gap-3">
               {itemToBuy?.image && (
                 <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <img src={itemToBuy.image} className="w-10 h-10 object-contain drop-shadow-lg" alt={itemToBuy?.name} />
+                  <img
+                    src={itemToBuy.image}
+                    className="w-10 h-10 object-contain drop-shadow-lg"
+                    alt={itemToBuy?.name}
+                  />
                 </div>
               )}
               <div className="flex-1 min-w-0">
@@ -889,7 +901,9 @@ const MarketPage = () => {
                 {quantityToBuy > 1 && itemToBuy?.type === "joker" && (
                   <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-white/5">
                     <span className="text-xs text-slate-400">Adet</span>
-                    <span className="text-sm font-bold text-white">{quantityToBuy} × {itemToBuy?.name}</span>
+                    <span className="text-sm font-bold text-white">
+                      {quantityToBuy} × {itemToBuy?.name}
+                    </span>
                   </div>
                 )}
 
@@ -901,9 +915,7 @@ const MarketPage = () => {
                   </span>
                 </div>
 
-                <p className="text-[11px] text-slate-400 text-center pt-1">
-                  Tutar mürekkep haznenizden düşülecektir.
-                </p>
+                <p className="text-[11px] text-slate-400 text-center pt-1">Tutar mürekkep haznenizden düşülecektir.</p>
               </div>
             </AlertDialogDescription>
           </div>
