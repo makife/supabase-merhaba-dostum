@@ -836,13 +836,7 @@ const HomePage = () => {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <div
-                    className={`p-1.5 rounded-full ${
-                      vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
-                    }`}
-                  >
-                    <VipCrownIcon className={`w-8 h-8 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
-                  </div>
+                  <VipCrownIcon className="w-10 h-10" />
                   <div className="flex flex-col">
                     <span
                       className={`text-sm font-bold ${
