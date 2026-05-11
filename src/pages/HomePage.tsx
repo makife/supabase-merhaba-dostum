@@ -147,9 +147,35 @@ const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: 
 ));
 HakIcon.displayName = "HakIcon";
 
-const VipCrownIcon = ({ className = "" }: { className?: string }) => (
-  <img src="/icons/vipkraliyet.svg" className={className} alt="" />
-);
+let _premiumLottieCache: any = null;
+let _premiumLottiePromise: Promise<any> | null = null;
+const loadPremiumLottie = () => {
+  if (_premiumLottieCache) return Promise.resolve(_premiumLottieCache);
+  if (!_premiumLottiePromise) {
+    _premiumLottiePromise = fetch("/premiumLottie.json")
+      .then((r) => r.json())
+      .then((d) => {
+        _premiumLottieCache = d;
+        return d;
+      })
+      .catch(() => null);
+  }
+  return _premiumLottiePromise;
+};
+
+const VipCrownIcon = ({ className = "" }: { className?: string }) => {
+  const [data, setData] = useState<any>(_premiumLottieCache);
+  useEffect(() => {
+    if (!data) loadPremiumLottie().then((d) => d && setData(d));
+  }, [data]);
+  return (
+    <div className={className} style={{ display: "inline-block" }}>
+      {data ? (
+        <Lottie animationData={data} loop autoplay style={{ width: "100%", height: "100%" }} />
+      ) : null}
+    </div>
+  );
+};
 
 const getLevelFruitIcon = (level: number): string => {
   if (level < 5) return "/icons/yaprak.svg";
@@ -688,7 +714,7 @@ const HomePage = () => {
                 </div>
                 {!!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
                   <div className="absolute -bottom-1 -right-1 z-20 bg-amber-500 rounded-full p-1 border-2 border-[#1a1a2e]">
-                    <VipCrownIcon className="w-2.5 h-2.5" />
+                    <VipCrownIcon className="w-5 h-5" />
                   </div>
                 )}
               </div>
@@ -815,7 +841,7 @@ const HomePage = () => {
                       vipType === "yearly" || vipType === "monthly" ? "bg-white/30" : "bg-amber-100"
                     }`}
                   >
-                    <VipCrownIcon className={`w-5 h-5 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
+                    <VipCrownIcon className={`w-8 h-8 ${vipType === "yearly" || vipType === "monthly" ? "" : ""}`} />
                   </div>
                   <div className="flex flex-col">
                     <span
