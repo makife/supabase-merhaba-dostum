@@ -97,6 +97,29 @@ const KelimeAviPage = () => {
   const gridRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
 
+  // Track grid pixel size for SVG overlay
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    const measure = () => {
+      if (gridRef.current) setGridSize(gridRef.current.clientWidth);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [gameState]);
+
+  // Compute pixel center of a cell index (gap-1.5 = 6px)
+  const GAP = 6;
+  const cellCenter = (idx: number) => {
+    const cell = (gridSize - GAP * (GRID - 1)) / GRID;
+    const r = Math.floor(idx / GRID);
+    const c = idx % GRID;
+    return {
+      x: c * (cell + GAP) + cell / 2,
+      y: r * (cell + GAP) + cell / 2,
+    };
+  };
+
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
     fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
