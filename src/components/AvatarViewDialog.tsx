@@ -18,8 +18,8 @@ export const AvatarViewDialog = ({
 }: AvatarViewDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-        <div className="relative w-full aspect-square">
+      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden rounded-full bg-transparent border-none shadow-none">
+        <div className="relative w-full aspect-square rounded-full overflow-hidden">
           <img
             src={avatarUrl}
             alt={username}
