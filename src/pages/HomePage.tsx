@@ -761,7 +761,7 @@ const HomePage = () => {
               }
 
               return (
-                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-indigo-500/20">
+                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-white/30">
                   <div className="flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
@@ -796,7 +796,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-indigo-500/20 flex justify-around">
+            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-white/30 flex justify-around">
               {[
                 { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
                 { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
@@ -871,12 +871,12 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center gap-3 backdrop-blur-md border rounded-xl p-2 px-3 ${
+                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
-                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30"
-                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30"
-                    : "bg-[#1e2d45] border-indigo-500/20"
+                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
+                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10"
+                    : "bg-[#1e2d45]"
                 }`}
               >
                 <span
