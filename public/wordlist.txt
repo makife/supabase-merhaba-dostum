@@ -66,6 +66,7 @@ abes
 abeslik
 abıhayat
 abıkevser
+abi
 abide
 abideleşme
 abideleşmek
@@ -15045,7 +15046,7 @@ Fenike
 Fenikeli
 fenlenme
 fenlenmek
-fennî
+fenni
 fenol
 fenoloji
 fenolojik
@@ -35161,6 +35162,7 @@ pancarlaşma
 pancarlaşmak
 panda
 pandantif
+pandemi
 pandispanya
 pandomim
 pandül
