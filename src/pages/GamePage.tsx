@@ -955,6 +955,14 @@ const GamePage = ({
 
   const handleWatchAd = async () => {
     if (!user?.id) return;
+
+    // Reklam izlemeye başlayınca opt-out yap: karşı taraf rematch isteği gönderemesin
+    await supabase.from("rematch_opt_outs").upsert({
+      user_id: user.id,
+      opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
     // Reklam sürecinde rematch kabul butonunu kilitle
     window.dispatchEvent(new CustomEvent("adBusyChange", { detail: { busy: true } }));
 
