@@ -5499,15 +5499,14 @@ const GamePage = ({
 
   // Timer effect - start only when match truly starts and guard early-finish
   useEffect(() => {
-    const isMp = gameMode === "random-match" || gameMode === "private-room";
-    const haveTwoRealPlayers = participants.filter((p) => !p.is_bot).length >= 2;
-    const roomActive = currentRoom?.status === "active";
+    // 🔧 FIX (timer freeze): gameStarted=true ise (countdown bitmiş) timer'ı her durumda başlat.
+    // Önceki katı koşul (roomActive + haveTwoRealPlayers) realtime gecikmesinde
+    // timer'ın hiç başlamamasına ve süre 2:00'da donmasına yol açıyordu.
     const canStart =
       gameType === "timed" &&
       gameStarted &&
       !gameEnded &&
-      !timerRef.current &&
-      (!isMp || (roomActive && haveTwoRealPlayers));
+      !timerRef.current;
 
     if (!canStart) return;
 
