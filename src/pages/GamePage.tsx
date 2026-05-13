@@ -5874,6 +5874,37 @@ const GamePage = ({
         lastSeenTime = remaining;
         stuckSince = Date.now();
 
+        // 🔧 FIX: Effect re-trigger fail ederse, interval'ı doğrudan watchdog başlatsın
+        setTimeout(() => {
+          if (!isMountedRef.current || gameEndedRef.current) return;
+          if (timerRef.current) return; // Effect zaten başlattıysa atla
+
+          console.warn("🩺 [Watchdog] Effect tetiklenmedi, interval doğrudan başlatılıyor (fallback)");
+          let lastSec = timeLeftRef.current;
+          timerRef.current = setInterval(() => {
+            if (!endsAtTimestampRef.current || !isMountedRef.current || gameEndedRef.current) {
+              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+              return;
+            }
+            const now = Date.now() + serverTimeOffset;
+            const sec = Math.min(120, Math.max(0, Math.floor((endsAtTimestampRef.current - now) / 1000)));
+            if (sec !== lastSec) {
+              lastSec = sec;
+              timeLeftRef.current = sec;
+              setDisplayTime(sec);
+            }
+            if (sec <= 0 && !gameEndedRef.current) {
+              gameEndedRef.current = true;
+              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+              handleGameEnd();
+              setTimeout(() => {
+                setGameEnded(true);
+                checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
+              }, 50);
+            }
+          }, 200);
+        }, 500);
+
         console.log("🩺 [Watchdog] ✅ Kurtarma tamamlandı, timer yeniden başlatıldı", {
           recoveredEndsAt: new Date(recoveredEndsAt).toISOString(),
           remaining,
