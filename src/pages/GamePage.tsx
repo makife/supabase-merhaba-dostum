@@ -5814,9 +5814,9 @@ const GamePage = ({
         return;
       }
 
-      // 120 saniye durağan ve 5sn'den uzun sürüyorsa = donmuş
+      // 🔧 FIX: Sadece 120'de değil, HERHANGİ bir değerde 5sn+ donmuşsa kurtar
       const stuckMs = Date.now() - stuckSince;
-      if (timeLeftRef.current !== 120 || stuckMs < 5000) return;
+      if (stuckMs < 5000) return;
       if (watchdogRecoveringRef.current) return;
 
       console.warn("🩺 [Watchdog] Timer 2:00'da donmuş tespit edildi, kurtarma başlıyor...", {
