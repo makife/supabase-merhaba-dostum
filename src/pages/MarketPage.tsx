@@ -524,10 +524,10 @@ const MarketPage = () => {
               <Lottie
                 animationData={marketAnim}
                 loop={true}
-                className="h-64 w-auto max-w-none"
+                className="h-[512px] w-auto max-w-none"
               />
             ) : (
-              <div className="h-64 w-64" />
+              <div className="h-[512px] w-[512px]" />
             )}
           </div>
 
