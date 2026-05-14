@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { App } from "@capacitor/app";
@@ -19,11 +20,18 @@ function isPushSuppressed(): boolean {
   return Date.now() < pushSuppressUntil;
 }
 
+function isActiveGameRoute(pathname: string): boolean {
+  return pathname.startsWith("/game/") || pathname.startsWith("/tournament/game/");
+}
+
 export function useActivityTracker() {
   const { user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+
+    const currentlyInGame = isActiveGameRoute(location.pathname);
 
     const updateLastSeen = async () => {
       // Push suppression aktifse güncelleme yapma
@@ -32,22 +40,22 @@ export function useActivityTracker() {
         return;
       }
 
-      // 🚀 Matchmaking aktifken heartbeat atla
-      if (matchmakingMode.isActive()) {
+      // 🚀 Matchmaking aktifken heartbeat atla, ama oyun rotasındaysa in_game mutlaka güncellensin
+      if (matchmakingMode.isActive() && !currentlyInGame) {
         return;
       }
 
       try {
         const now = new Date().toISOString();
 
-        // 🔥 BASİT: Sadece last_seen güncelle, is_online flag'i artık kullanılmıyor
-        await supabase.from("profiles").update({ last_seen: now }).eq("id", user.id);
+        // 🔥 Route tabanlı oyun durumu: /game/* veya /tournament/game/* açıkken mavi nokta için in_game=true
+        await supabase.from("profiles").update({ last_seen: now, in_game: currentlyInGame }).eq("id", user.id);
 
         await supabase
           .from("user_presence")
           .upsert({ user_id: user.id, last_seen: now, is_online: true }, { onConflict: "user_id" });
 
-        console.log("💓 Heartbeat sent (last_seen updated)");
+        console.log(`💓 Heartbeat sent (last_seen updated, in_game=${currentlyInGame})`);
       } catch (error) {
         console.error("Error updating last_seen:", error);
       }
@@ -75,7 +83,7 @@ export function useActivityTracker() {
       if (document.visibilityState === "visible") {
         updateLastSeen();
       }
-    }, 45000);
+    }, currentlyInGame ? 15000 : 45000);
 
     // 🔥 Visibility change: öne gelince heartbeat, arka plana geçince bir şey yapma
     const handleVisibilityChange = () => {
@@ -117,5 +125,5 @@ export function useActivityTracker() {
       window.removeEventListener("force-presence-update", handleForcePresence);
       appStateListenerPromise.then((l) => l.remove());
     };
-  }, [user]);
+  }, [user?.id, location.pathname]);
 }
