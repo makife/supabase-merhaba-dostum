@@ -1024,6 +1024,7 @@ const HomePage = () => {
                   mode={mode}
                   onClick={() => handleGameModeClick(mode.id)}
                   searchingCount={searchingPlayersCount}
+                  activeTournamentCount={activeTournamentCount}
                 />
               ))}
             </div>
