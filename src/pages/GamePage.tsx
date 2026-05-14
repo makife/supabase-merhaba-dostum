@@ -906,6 +906,25 @@ const GamePage = ({
     };
   }, []);
 
+  // 🔵 in_game flag: kullanıcı aktif oyundayken profilinde mavi nokta için
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    supabase.from("profiles").update({ in_game: true }).eq("id", uid).then(() => {
+      console.log("🔵 in_game = true");
+    });
+    const clear = () => {
+      supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
+        console.log("⚪ in_game = false");
+      });
+    };
+    window.addEventListener("beforeunload", clear);
+    return () => {
+      window.removeEventListener("beforeunload", clear);
+      clear();
+    };
+  }, [user?.id]);
+
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
   const [waitingForPlayer, setWaitingForPlayer] = useState(false);

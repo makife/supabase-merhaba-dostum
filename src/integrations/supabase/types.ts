@@ -987,6 +987,7 @@ export type Database = {
           highest_word_score: number | null
           hint_credits: number | null
           id: string
+          in_game: boolean
           ink_count: number
           last_credit_refresh: string | null
           last_daily_reset: string | null
@@ -1045,6 +1046,7 @@ export type Database = {
           highest_word_score?: number | null
           hint_credits?: number | null
           id: string
+          in_game?: boolean
           ink_count?: number
           last_credit_refresh?: string | null
           last_daily_reset?: string | null
@@ -1103,6 +1105,7 @@ export type Database = {
           highest_word_score?: number | null
           hint_credits?: number | null
           id?: string
+          in_game?: boolean
           ink_count?: number
           last_credit_refresh?: string | null
           last_daily_reset?: string | null

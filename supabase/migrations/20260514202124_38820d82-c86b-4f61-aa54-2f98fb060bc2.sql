@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS in_game boolean NOT NULL DEFAULT false;

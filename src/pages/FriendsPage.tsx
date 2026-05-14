@@ -19,6 +19,7 @@ interface FriendItem {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
+  in_game: boolean;
   status: string;
   is_sender: boolean;
   isPremium: boolean;
@@ -96,7 +97,7 @@ const FriendsPage = () => {
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until").in("id", friendIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until, in_game").in("id", friendIds);
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
@@ -121,6 +122,7 @@ const FriendsPage = () => {
           username: profile?.username || "Oyuncu",
           avatar_url: profile?.avatar_url || null,
           is_online: onlineSet.has(friendId),
+          in_game: !!(profile as any)?.in_game,
           status: f.status,
           is_sender: f.user_id === user.id,
           isPremium: isUserPremium((profile as any)?.premium_until),
@@ -498,6 +500,11 @@ const FriendCard = ({
             friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
           }`}
         />
+        {friend.in_game && (
+          <Circle
+            className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 text-blue-400 fill-blue-400 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]"
+          />
+        )}
         {friend.isPremium && (
           <div className="absolute -top-1 -left-1 z-20">
             <VipBadge size="xs" />
