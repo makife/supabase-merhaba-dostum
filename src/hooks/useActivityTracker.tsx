@@ -21,7 +21,7 @@ function isPushSuppressed(): boolean {
 }
 
 function isActiveGameRoute(pathname: string): boolean {
-  return pathname.startsWith("/game/") || pathname.startsWith("/tournament/game/");
+  return pathname === "/game" || pathname.startsWith("/game/") || pathname.startsWith("/tournament/game/");
 }
 
 export function useActivityTracker() {
