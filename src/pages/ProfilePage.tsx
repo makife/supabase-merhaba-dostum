@@ -599,6 +599,7 @@ const ProfilePage = () => {
       const { data } = profileResult;
 
       if (data) {
+        setProfileInGame(!!(data as any).in_game);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
