@@ -865,11 +865,31 @@ const TournamentBracketPage = () => {
 
   if (showChampion) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
-        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon" />
-        {/* Konfeti canvas */}
+      <div
+        className="fixed inset-0 z-[100] flex flex-col items-center overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        {/* Üst katman: random kazanma görseli */}
+        <div className="relative w-full flex-1 flex items-center justify-center">
+          {championLottie && (
+            <Lottie
+              animationData={championLottie}
+              loop
+              autoplay
+              className="w-full h-full max-h-[55vh] object-contain"
+            />
+          )}
+          {/* Konfeti üst katman */}
+          {konfetiLottie && (
+            <div className="absolute inset-0 pointer-events-none z-20">
+              <Lottie animationData={konfetiLottie} loop={false} autoplay className="w-full h-full" />
+            </div>
+          )}
+        </div>
+        {/* Eski canvas konfeti (yedek partikül efekti) */}
         <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
-        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-8">
+        {/* Ödül kartı (aynı kalıyor) */}
+        <div className="relative z-30 flex flex-col items-center justify-end w-full pb-8">
           {wonReward && (
             <div className="text-center">
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
