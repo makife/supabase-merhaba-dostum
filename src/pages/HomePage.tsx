@@ -235,7 +235,7 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/ozeloda.svg" className={className} alt="" />
 );
 
-const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
+const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
@@ -264,6 +264,12 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
             className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
           />
           <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
+        </div>
+      )}
+      {mode.id === "tournament" && typeof activeTournamentCount === "number" && activeTournamentCount > 0 && (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-[10px] text-white font-medium">{activeTournamentCount} aktif turnuva</span>
         </div>
       )}
     </div>
