@@ -80,18 +80,14 @@ const LeaderboardPage = () => {
         .in("id", userIds);
       if (data) {
         const now = new Date();
-        setPremiumUsers(prev => {
-          const newSet = new Set(prev);
-          data.forEach((p: any) => {
-            if (p.premium_until && new Date(p.premium_until) > now) newSet.add(p.id);
-          });
-          return newSet;
+        const premSet = new Set<string>();
+        const gameSet = new Set<string>();
+        data.forEach((p: any) => {
+          if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
+          if (p.in_game) gameSet.add(p.id);
         });
-        setInGameUsers(prev => {
-          const newSet = new Set(prev);
-          data.forEach((p: any) => { if (p.in_game) newSet.add(p.id); });
-          return newSet;
-        });
+        setPremiumUsers(premSet);
+        setInGameUsers(gameSet);
       }
     } catch (e) {
       console.error("Error fetching premium status:", e);
@@ -223,7 +219,7 @@ const LeaderboardPage = () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
 
-  // Fetch premium status whenever leaders change
+  // Fetch premium status whenever leaders change + poll every 15s for in_game updates
   useEffect(() => {
     const allUserIds = [
       ...allTimeLeaders.map(l => l.user_id),
@@ -231,7 +227,10 @@ const LeaderboardPage = () => {
       ...monthlyLeaders.map(l => l.user_id),
     ];
     const uniqueIds = [...new Set(allUserIds)];
-    if (uniqueIds.length > 0) fetchPremiumStatus(uniqueIds);
+    if (uniqueIds.length === 0) return;
+    fetchPremiumStatus(uniqueIds);
+    const interval = setInterval(() => fetchPremiumStatus(uniqueIds), 15000);
+    return () => clearInterval(interval);
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
