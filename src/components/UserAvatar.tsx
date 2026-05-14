@@ -44,7 +44,8 @@ export function UserAvatar({
   editable = false,
   onAvatarChange,
   className,
-  isPremium = false
+  isPremium = false,
+  inGame = false
 }: UserAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAvatar, deleteAvatar, uploading } = useAvatarUpload();
