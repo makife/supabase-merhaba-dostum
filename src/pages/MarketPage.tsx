@@ -536,7 +536,7 @@ const MarketPage = () => {
           <div className="w-16 shrink-0"></div>
         </div>
         {/* Bakiye Kartı */}
-        <Card className="mt-[70px] bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
+        <Card className="mt-[50px] bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-white p-2 rounded-full shadow-inner">
