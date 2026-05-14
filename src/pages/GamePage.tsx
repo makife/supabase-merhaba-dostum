@@ -920,7 +920,6 @@ const GamePage = ({
     };
 
     markInGame();
-    const keepAlive = window.setInterval(markInGame, 20000);
 
     const clear = () => {
       supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
@@ -929,7 +928,6 @@ const GamePage = ({
     };
     window.addEventListener("beforeunload", clear);
     return () => {
-      window.clearInterval(keepAlive);
       window.removeEventListener("beforeunload", clear);
       window.setTimeout(() => {
         if (inGamePresenceSession === sessionId) clear();
