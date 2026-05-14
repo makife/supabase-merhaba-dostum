@@ -15,6 +15,7 @@ interface UserAvatarProps {
   onAvatarChange?: (newUrl: string | null) => void;
   className?: string;
   isPremium?: boolean;
+  inGame?: boolean;
 }
 
 const sizeClasses = {
