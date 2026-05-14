@@ -912,14 +912,29 @@ const GamePage = ({
     const uid = user?.id;
     if (!uid) return;
     const sessionId = ++inGamePresenceSession;
+    const activityMatchId = currentRoom?.id || tournamentMatch?.id || `solo-${uid}`;
 
     const markInGame = async () => {
-      const { error } = await supabase.from("profiles").update({ in_game: true }).eq("id", uid);
+      const now = new Date().toISOString();
+      const [{ error }, { error: activityError }] = await Promise.all([
+        supabase.from("profiles").update({ in_game: true, last_seen: now }).eq("id", uid),
+        supabase.from("player_activities").upsert(
+          {
+            player_id: uid,
+            match_id: activityMatchId,
+            last_action_time: now,
+            updated_at: now,
+          },
+          { onConflict: "match_id,player_id" },
+        ),
+      ]);
       if (error) console.error("🔵 in_game true error:", error);
-      else if (inGamePresenceSession === sessionId) console.log("🔵 in_game = true");
+      if (activityError) console.error("🔵 player activity error:", activityError);
+      else if (inGamePresenceSession === sessionId) console.log("🔵 in_game heartbeat = true");
     };
 
     markInGame();
+    const heartbeat = window.setInterval(markInGame, 10_000);
 
     const clear = () => {
       supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
@@ -929,11 +944,12 @@ const GamePage = ({
     window.addEventListener("beforeunload", clear);
     return () => {
       window.removeEventListener("beforeunload", clear);
+      window.clearInterval(heartbeat);
       window.setTimeout(() => {
         if (inGamePresenceSession === sessionId) clear();
       }, 1500);
     };
-  }, [user?.id]);
+  }, [user?.id, currentRoom?.id, tournamentMatch?.id]);
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
