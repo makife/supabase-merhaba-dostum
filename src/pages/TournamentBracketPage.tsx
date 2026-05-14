@@ -199,6 +199,26 @@ const TournamentBracketPage = () => {
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
+  const [championLottie, setChampionLottie] = useState<any>(null);
+  const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
+  const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
+
+  useEffect(() => {
+    if (!showChampion) return;
+    const idx = championLottieIndexRef.current;
+    let cancelled = false;
+    Promise.all([
+      fetch(`/turnuvaKazanma${idx}.json`).then((r) => r.json()).catch(() => null),
+      fetch(`/turnuvaKazanmaKonfeti.json`).then((r) => r.json()).catch(() => null),
+    ]).then(([champ, konfeti]) => {
+      if (cancelled) return;
+      setChampionLottie(champ);
+      setKonfetiLottie(konfeti);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showChampion]);
 
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
