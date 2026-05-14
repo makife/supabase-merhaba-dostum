@@ -526,7 +526,6 @@ const HomePage = () => {
         .eq("id", user.id);
       if (!error) {
         await refreshProfile();
-        toast.success(`🎮 +1 Kredi eklendi!`);
         playSound("buttonClick");
       }
     } catch (error) {
