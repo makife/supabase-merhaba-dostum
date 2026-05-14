@@ -524,7 +524,8 @@ const MarketPage = () => {
               <Lottie
                 animationData={marketAnim}
                 loop={true}
-                className="h-[512px] w-auto max-w-none"
+                className="h-[512px] w-[512px] max-w-none scale-200 origin-center"
+                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
               />
             ) : (
               <div className="h-[512px] w-[512px]" />
