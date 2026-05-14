@@ -15,6 +15,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, ChevronDown } from "lucide-react";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import Lottie from "lottie-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +69,7 @@ const MarketPage = () => {
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [marketAnim, setMarketAnim] = useState<any>(null);
 
   // Onay Penceresi State'leri
   const [itemToBuy, setItemToBuy] = useState<StationeryItem | null>(null);
@@ -78,6 +80,13 @@ const MarketPage = () => {
   const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const QUANTITY_OPTIONS = [1, 3, 5, 10];
+
+  useEffect(() => {
+    fetch("/marketGorsel.json")
+      .then((r) => r.json())
+      .then(setMarketAnim)
+      .catch(console.error);
+  }, []);
 
   const isNativePlatform = Capacitor.isNativePlatform();
 
@@ -511,11 +520,15 @@ const MarketPage = () => {
 
           {/* ORTA - BAŞLIK GÖRSELİ */}
           <div className="absolute left-1/2 -top-[144px] transform -translate-x-1/2 z-10 pointer-events-none">
-            <img
-              src="/kirtasiyeBaslik.png"
-              alt="Kırtasiye"
-              className="h-64 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
-            />
+            {marketAnim ? (
+              <Lottie
+                animationData={marketAnim}
+                loop={true}
+                className="h-64 w-auto max-w-none"
+              />
+            ) : (
+              <div className="h-64 w-64" />
+            )}
           </div>
 
           {/* Sağ Boşluk */}
