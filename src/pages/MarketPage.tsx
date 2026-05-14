@@ -520,11 +520,15 @@ const MarketPage = () => {
 
           {/* ORTA - BAŞLIK GÖRSELİ */}
           <div className="absolute left-1/2 -top-[144px] transform -translate-x-1/2 z-10 pointer-events-none">
-            <img
-              src="/kirtasiyeBaslik.png"
-              alt="Kırtasiye"
-              className="h-64 w-auto max-w-none object-contain drop-shadow-2xl filter brightness-110"
-            />
+            {marketAnim ? (
+              <Lottie
+                animationData={marketAnim}
+                loop={true}
+                className="h-64 w-auto max-w-none"
+              />
+            ) : (
+              <div className="h-64 w-64" />
+            )}
           </div>
 
           {/* Sağ Boşluk */}
