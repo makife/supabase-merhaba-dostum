@@ -81,6 +81,7 @@ function calcLevelFromScore(totalScore: number): number {
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
 const isUuid = (v?: string | null) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+let inGamePresenceSession = 0;
 
 interface TournamentMatch {
   id: string;
@@ -910,9 +911,16 @@ const GamePage = ({
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
-    supabase.from("profiles").update({ in_game: true }).eq("id", uid).then(() => {
-      console.log("🔵 in_game = true");
-    });
+    const sessionId = ++inGamePresenceSession;
+
+    const markInGame = async () => {
+      const { error } = await supabase.from("profiles").update({ in_game: true }).eq("id", uid);
+      if (error) console.error("🔵 in_game true error:", error);
+      else if (inGamePresenceSession === sessionId) console.log("🔵 in_game = true");
+    };
+
+    markInGame();
+
     const clear = () => {
       supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
         console.log("⚪ in_game = false");
@@ -921,7 +929,9 @@ const GamePage = ({
     window.addEventListener("beforeunload", clear);
     return () => {
       window.removeEventListener("beforeunload", clear);
-      clear();
+      window.setTimeout(() => {
+        if (inGamePresenceSession === sessionId) clear();
+      }, 1500);
     };
   }, [user?.id]);
 
