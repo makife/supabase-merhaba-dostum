@@ -398,7 +398,10 @@ const HomePage = () => {
       .then(setSayfaHakAnim)
       .catch(() => {});
 
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(tournamentInterval);
+    };
   }, [user?.id, profile?.bonus_spins]);
 
   const [greeting] = useState(() => {
