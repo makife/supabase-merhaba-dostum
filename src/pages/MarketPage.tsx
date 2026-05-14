@@ -519,7 +519,7 @@ const MarketPage = () => {
           </Button>
 
           {/* ORTA - BAŞLIK GÖRSELİ */}
-          <div className="absolute left-1/2 -top-[144px] transform -translate-x-1/2 z-10 pointer-events-none">
+          <div className="absolute left-1/2 -top-[272px] transform -translate-x-1/2 z-10 pointer-events-none">
             {marketAnim ? (
               <Lottie
                 animationData={marketAnim}
