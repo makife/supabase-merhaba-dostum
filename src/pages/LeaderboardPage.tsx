@@ -74,14 +74,24 @@ const LeaderboardPage = () => {
   const fetchPremiumStatus = async (userIds: string[]) => {
     if (userIds.length === 0) return;
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, premium_until, in_game")
-        .in("id", userIds);
+      const now = new Date();
+      const activeSince = new Date(now.getTime() - 20_000).toISOString();
+
+      const [{ data }, { data: activePlayers }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, premium_until, in_game")
+          .in("id", userIds),
+        supabase
+          .from("player_activities")
+          .select("player_id")
+          .in("player_id", userIds)
+          .gte("last_action_time", activeSince),
+      ]);
+
       if (data) {
-        const now = new Date();
         const premSet = new Set<string>();
-        const gameSet = new Set<string>();
+        const gameSet = new Set<string>((activePlayers || []).map((p: any) => p.player_id));
         data.forEach((p: any) => {
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
           if (p.in_game) gameSet.add(p.id);
