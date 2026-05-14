@@ -912,7 +912,7 @@ const GamePage = ({
     const uid = user?.id;
     if (!uid) return;
     const sessionId = ++inGamePresenceSession;
-    const activityMatchId = currentRoom?.id || tournamentMatch?.id || `solo-${uid}`;
+    const activityMatchId = currentRoom?.id || tournamentMatch?.id || uid;
 
     const markInGame = async () => {
       const now = new Date().toISOString();
