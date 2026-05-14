@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import Lottie from "lottie-react";
 
 // ── Tur bilgileri ─────────────────────────────────────────────────────────────
 const ROUND_INFO = {
