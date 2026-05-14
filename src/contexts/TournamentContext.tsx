@@ -117,8 +117,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
           if (totalCredits < 3) {
             toast({
-              title: "Yetersiz Kredi",
-              description: "Turnuvaya katılmak için en az 3 kredi gerekli",
+              title: "Yetersiz Sayfa",
+              description: "Turnuvaya katılmak için en az 3 sayfa gerekli",
               variant: "destructive",
             });
             return null;
@@ -208,8 +208,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           const totalCredits = (profile.game_credits || 0) + (profile.bonus_credits || 0);
           if (totalCredits < 3) {
             toast({
-              title: "Yetersiz Kredi",
-              description: "Turnuvaya katılmak için en az 3 kredi gerekli",
+              title: "Yetersiz Sayfa",
+              description: "Turnuvaya katılmak için en az 3 sayfa gerekli",
               variant: "destructive",
             });
             return false;

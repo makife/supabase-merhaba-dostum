@@ -64,7 +64,7 @@ export const useOnboarding = () => {
     {
       id: "daily-wheel",
       title: "Günlük Çark 🎡",
-      description: "Her gün çarkı çevirip ödüller kazanabilirsiniz! Joker, kredi ve daha fazlası...",
+      description: "Her gün çarkı çevirip ödüller kazanabilirsiniz! Joker, sayfa ve daha fazlası...",
       targetSelector: '[data-onboarding="daily-wheel"]',
       position: "bottom",
     },
