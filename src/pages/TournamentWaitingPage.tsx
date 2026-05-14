@@ -13,6 +13,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
+  const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/turnuvaYukleniyor.json")
+      .then((r) => r.json())
+      .then(setYukleniyorAnim)
+      .catch(console.error);
+  }, []);
+
   const {
     currentTournament,
     participants,
