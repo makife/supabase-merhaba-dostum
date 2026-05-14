@@ -953,6 +953,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         fallback={message.username.charAt(0).toUpperCase()}
                         size="xs"
                         isPremium={message.user_id ? !!userPremiumMap[message.user_id] : false}
+                        inGame={message.user_id ? !!userInGameMap[message.user_id] : false}
                         className={`border-2 ${message.username === "kelimeciBot" ? "border-blue-500" : "border-chat-300"}`}
                       />
                     </div>
