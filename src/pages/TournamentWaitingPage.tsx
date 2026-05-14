@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Bot, User, ArrowLeft, Trophy, Crown } from "lucide-react";
@@ -12,6 +13,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
+  const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/turnuvaYukleniyor.json")
+      .then((r) => r.json())
+      .then(setYukleniyorAnim)
+      .catch(console.error);
+  }, []);
+
   const {
     currentTournament,
     participants,
@@ -59,7 +69,11 @@ const TournamentWaitingPage = () => {
         className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin mb-4" />
+        {yukleniyorAnim ? (
+          <Lottie animationData={yukleniyorAnim} loop autoplay style={{ width: 80, height: 80 }} />
+        ) : (
+          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin mb-4" />
+        )}
         <p className="text-white/60 text-sm font-medium uppercase tracking-widest">Turnuva yükleniyor</p>
       </div>
     );
