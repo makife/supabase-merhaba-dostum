@@ -62,6 +62,7 @@ const ProfilePage = () => {
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
   const [isUserOnline, setIsUserOnline] = useState(false);
+  const [profileInGame, setProfileInGame] = useState(false);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
@@ -319,6 +320,7 @@ const ProfilePage = () => {
       setIsUserOnline(!!presenceData);
 
       if (data) {
+        setProfileInGame(!!(data as any).in_game);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
@@ -597,6 +599,7 @@ const ProfilePage = () => {
       const { data } = profileResult;
 
       if (data) {
+        setProfileInGame(!!(data as any).in_game);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
@@ -991,6 +994,12 @@ const ProfilePage = () => {
                     <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 z-20">
                       <VipBadge size="lg" />
                     </div>
+                  )}
+                  {profileInGame && !isOwnProfile && (
+                    <span
+                      className="absolute bottom-1 left-1 w-5 h-5 rounded-full bg-blue-400 border-2 border-[#1a1a2e] z-30 shadow-[0_0_8px_rgba(96,165,250,0.9)]"
+                      aria-label="Maçta"
+                    />
                   )}
                 </div>
 

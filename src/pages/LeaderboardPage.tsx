@@ -67,22 +67,29 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
+  const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
 
-  // Fetch premium status for a list of user IDs
+  // Fetch premium status + in_game status for a list of user IDs
   const fetchPremiumStatus = async (userIds: string[]) => {
     if (userIds.length === 0) return;
     try {
-      const now = new Date().toISOString();
       const { data } = await supabase
         .from("profiles")
-        .select("id, premium_until")
-        .in("id", userIds)
-        .gt("premium_until", now);
+        .select("id, premium_until, in_game")
+        .in("id", userIds);
       if (data) {
+        const now = new Date();
         setPremiumUsers(prev => {
           const newSet = new Set(prev);
-          data.forEach((p: any) => newSet.add(p.id));
+          data.forEach((p: any) => {
+            if (p.premium_until && new Date(p.premium_until) > now) newSet.add(p.id);
+          });
+          return newSet;
+        });
+        setInGameUsers(prev => {
+          const newSet = new Set(prev);
+          data.forEach((p: any) => { if (p.in_game) newSet.add(p.id); });
           return newSet;
         });
       }
@@ -342,6 +349,9 @@ const LeaderboardPage = () => {
               {isUserOnline(leader.user_id) && (
                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#1a1a2e] rounded-full z-10" />
               )}
+              {inGameUsers.has(leader.user_id) && (
+                <span className="absolute bottom-0 left-0 w-3.5 h-3.5 bg-blue-400 border-2 border-[#1a1a2e] rounded-full z-10 shadow-[0_0_6px_rgba(96,165,250,0.9)]" />
+              )}
               {premiumUsers.has(leader.user_id) && (
                 <div className="absolute -top-1 -right-1 z-20">
                   <VipBadge size="xs" />
@@ -445,6 +455,9 @@ const LeaderboardPage = () => {
                   </div>
                   {isUserOnline(leader.user_id) && (
                     <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-[#1a1a2e] rounded-full" />
+                  )}
+                  {inGameUsers.has(leader.user_id) && (
+                    <span className="absolute bottom-0 left-0 w-4 h-4 bg-blue-400 border-2 border-[#1a1a2e] rounded-full shadow-[0_0_6px_rgba(96,165,250,0.9)]" />
                   )}
                   {premiumUsers.has(leader.user_id) && (
                     <div className="absolute -top-1 -right-1 z-20">
