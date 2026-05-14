@@ -62,6 +62,7 @@ const ProfilePage = () => {
   const [showBadgesDialog, setShowBadgesDialog] = useState(false);
   const [viewedProfile, setViewedProfile] = useState<{ avatar_url?: string | null } | null>(null);
   const [isUserOnline, setIsUserOnline] = useState(false);
+  const [profileInGame, setProfileInGame] = useState(false);
   const [profileData, setProfileData] = useState({
     username: user?.email?.split("@")[0] || "Oyuncu",
     totalGames: 0,
