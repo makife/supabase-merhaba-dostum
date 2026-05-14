@@ -282,6 +282,7 @@ const HomePage = () => {
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
   const searchingPlayersCount = useSearchingPlayersCount();
+  const [activeTournamentCount, setActiveTournamentCount] = useState<number>(0);
 
   usePremiumDailyRewards();
 
