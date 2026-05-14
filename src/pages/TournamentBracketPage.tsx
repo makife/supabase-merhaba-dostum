@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
+import Lottie from "lottie-react";
 
 // ── Tur bilgileri ─────────────────────────────────────────────────────────────
 const ROUND_INFO = {
@@ -198,6 +199,26 @@ const TournamentBracketPage = () => {
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
+  const [championLottie, setChampionLottie] = useState<any>(null);
+  const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
+  const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
+
+  useEffect(() => {
+    if (!showChampion) return;
+    const idx = championLottieIndexRef.current;
+    let cancelled = false;
+    Promise.all([
+      fetch(`/turnuvaKazanma${idx}.json`).then((r) => r.json()).catch(() => null),
+      fetch(`/turnuvaKazanmaKonfeti.json`).then((r) => r.json()).catch(() => null),
+    ]).then(([champ, konfeti]) => {
+      if (cancelled) return;
+      setChampionLottie(champ);
+      setKonfetiLottie(konfeti);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showChampion]);
 
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
@@ -844,11 +865,31 @@ const TournamentBracketPage = () => {
 
   if (showChampion) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
-        <img src="/Sampiyon.png" className="absolute inset-0 w-full h-full object-cover" alt="Şampiyon" />
-        {/* Konfeti canvas */}
+      <div
+        className="fixed inset-0 z-[100] flex flex-col items-center overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        {/* Üst katman: random kazanma görseli */}
+        <div className="relative w-full flex-1 flex items-center justify-center">
+          {championLottie && (
+            <Lottie
+              animationData={championLottie}
+              loop
+              autoplay
+              className="w-full h-full max-h-[55vh] object-contain"
+            />
+          )}
+          {/* Konfeti üst katman */}
+          {konfetiLottie && (
+            <div className="absolute inset-0 pointer-events-none z-20">
+              <Lottie animationData={konfetiLottie} loop={false} autoplay className="w-full h-full" />
+            </div>
+          )}
+        </div>
+        {/* Eski canvas konfeti (yedek partikül efekti) */}
         <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
-        <div className="relative z-10 flex flex-col items-center justify-end w-full h-full pb-8">
+        {/* Ödül kartı (aynı kalıyor) */}
+        <div className="relative z-30 flex flex-col items-center justify-end w-full pb-8">
           {wonReward && (
             <div className="text-center">
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
