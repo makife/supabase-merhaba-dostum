@@ -91,6 +91,14 @@ export function UserAvatar({
         </div>
       )}
 
+      {inGame && (
+        <span
+          className="absolute -bottom-0.5 -left-0.5 z-20 block rounded-full bg-blue-400 ring-2 ring-[#0f1729] shadow-[0_0_6px_rgba(96,165,250,0.9)]"
+          style={{ width: '28%', height: '28%', minWidth: 8, minHeight: 8 }}
+          aria-label="Maçta"
+        />
+      )}
+
       {editable && (
         <>
           {/* Upload overlay */}
