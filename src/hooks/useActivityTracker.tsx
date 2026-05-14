@@ -49,7 +49,11 @@ export function useActivityTracker() {
         const now = new Date().toISOString();
 
         // 🔥 Route tabanlı oyun durumu: /game/* veya /tournament/game/* açıkken mavi nokta için in_game=true
-        await supabase.from("profiles").update({ last_seen: now, in_game: currentlyInGame }).eq("id", user.id);
+        const { error: profileUpdateError } = await supabase
+          .from("profiles")
+          .update({ last_seen: now, in_game: currentlyInGame })
+          .eq("id", user.id);
+        if (profileUpdateError) throw profileUpdateError;
 
         await supabase
           .from("user_presence")
@@ -70,6 +74,9 @@ export function useActivityTracker() {
     } else {
       console.log("⏭️ ActivityTracker: İlk mount'ta push wake algılandı, online güncelleme atlanıyor");
     }
+
+    // GamePage cleanup/HMR gecikmeli false yazarsa, oyun rotasında tekrar true'ya sabitle
+    const inGameRetry = currentlyInGame ? window.setTimeout(updateLastSeen, 2500) : undefined;
 
     // 🔥 OAuth (Google/Apple) girişi sonrası presence'ı zorla güncelle
     const handleForcePresence = (e: Event) => {
@@ -120,6 +127,7 @@ export function useActivityTracker() {
     });
 
     return () => {
+      if (inGameRetry) window.clearTimeout(inGameRetry);
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("force-presence-update", handleForcePresence);
