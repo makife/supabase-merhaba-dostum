@@ -80,18 +80,14 @@ const LeaderboardPage = () => {
         .in("id", userIds);
       if (data) {
         const now = new Date();
-        setPremiumUsers(prev => {
-          const newSet = new Set(prev);
-          data.forEach((p: any) => {
-            if (p.premium_until && new Date(p.premium_until) > now) newSet.add(p.id);
-          });
-          return newSet;
+        const premSet = new Set<string>();
+        const gameSet = new Set<string>();
+        data.forEach((p: any) => {
+          if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
+          if (p.in_game) gameSet.add(p.id);
         });
-        setInGameUsers(prev => {
-          const newSet = new Set(prev);
-          data.forEach((p: any) => { if (p.in_game) newSet.add(p.id); });
-          return newSet;
-        });
+        setPremiumUsers(premSet);
+        setInGameUsers(gameSet);
       }
     } catch (e) {
       console.error("Error fetching premium status:", e);
