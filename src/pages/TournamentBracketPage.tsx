@@ -874,7 +874,7 @@ const TournamentBracketPage = () => {
           {championLottie && (
             <Lottie
               animationData={championLottie}
-              loop={false}
+              loop
               autoplay
               className="w-full h-full max-h-[55vh] object-contain"
             />
@@ -882,7 +882,7 @@ const TournamentBracketPage = () => {
           {/* Konfeti üst katman */}
           {konfetiLottie && (
             <div className="absolute inset-0 pointer-events-none z-20">
-              <Lottie animationData={konfetiLottie} loop={false} autoplay className="w-full h-full" />
+              <Lottie animationData={konfetiLottie} loop autoplay className="w-full h-full" />
             </div>
           )}
         </div>
