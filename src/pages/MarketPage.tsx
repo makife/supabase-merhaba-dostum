@@ -508,14 +508,14 @@ const MarketPage = () => {
           {/* SOL BUTON */}
           <Button
             variant="outline"
-            size="icon"
             onClick={() => {
               playSound("buttonClick");
               navigate("/");
             }}
-            className="border-2 border-red-400 text-white bg-red-600 hover:bg-red-700 shrink-0 relative z-20 shadow-md h-9 w-9 -mt-[80px]"
+            className="border-2 border-red-400 text-white bg-red-600 hover:bg-red-700 shrink-0 relative z-20 shadow-md h-9 px-3 gap-1 -mt-[110px]"
           >
             <ArrowLeft className="w-5 h-5" />
+            <span className="font-semibold">Geri</span>
           </Button>
 
           {/* ORTA - BAŞLIK GÖRSELİ */}
