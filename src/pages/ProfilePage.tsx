@@ -995,6 +995,12 @@ const ProfilePage = () => {
                       <VipBadge size="lg" />
                     </div>
                   )}
+                  {profileInGame && !isOwnProfile && (
+                    <span
+                      className="absolute bottom-1 left-1 w-5 h-5 rounded-full bg-blue-400 border-2 border-[#1a1a2e] z-30 shadow-[0_0_8px_rgba(96,165,250,0.9)]"
+                      aria-label="Maçta"
+                    />
+                  )}
                 </div>
 
                 {/* Rank Badge (sağ taraf, çerçevesiz) */}
