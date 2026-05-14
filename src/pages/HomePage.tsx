@@ -235,7 +235,7 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/ozeloda.svg" className={className} alt="" />
 );
 
-const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
+const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => (
   <div
     onClick={onClick}
     className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
@@ -266,6 +266,12 @@ const GameModeCard = memo(({ mode, onClick, searchingCount }: any) => (
           <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
         </div>
       )}
+      {mode.id === "tournament" && typeof activeTournamentCount === "number" && activeTournamentCount > 0 && (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-[10px] text-white font-medium">{activeTournamentCount} aktif turnuva</span>
+        </div>
+      )}
     </div>
   </div>
 ));
@@ -282,6 +288,7 @@ const HomePage = () => {
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
   const searchingPlayersCount = useSearchingPlayersCount();
+  const [activeTournamentCount, setActiveTournamentCount] = useState<number>(0);
 
   usePremiumDailyRewards();
 
@@ -348,6 +355,18 @@ const HomePage = () => {
   // Fetch daily challenge completion status & wheel spin availability
   useEffect(() => {
     if (!user?.id) return;
+
+    // Fetch active tournament count
+    const fetchActiveTournaments = async () => {
+      const { count } = await supabase
+        .from("tournaments")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "waiting");
+      setActiveTournamentCount(count || 0);
+    };
+    fetchActiveTournaments();
+    const tournamentInterval = setInterval(fetchActiveTournaments, 30000);
+
     const fetchChallengeStatus = () => {
       sessionStorage.removeItem("challengeStatus");
       getDailyChallengeStatus(user.id).then((status) => {
@@ -385,7 +404,10 @@ const HomePage = () => {
       .then(setSayfaHakAnim)
       .catch(() => {});
 
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(tournamentInterval);
+    };
   }, [user?.id, profile?.bonus_spins]);
 
   const [greeting] = useState(() => {
@@ -1008,6 +1030,7 @@ const HomePage = () => {
                   mode={mode}
                   onClick={() => handleGameModeClick(mode.id)}
                   searchingCount={searchingPlayersCount}
+                  activeTournamentCount={activeTournamentCount}
                 />
               ))}
             </div>
