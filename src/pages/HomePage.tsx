@@ -257,19 +257,22 @@ const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCoun
 
     <div className="relative z-10">
       <h3 className="text-lg font-bold text-white leading-none mb-1 drop-shadow-md">{mode.title}</h3>
-      <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
+      {mode.id === "tournament" ? (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${(activeTournamentCount ?? 0) > 0 ? "bg-amber-400 animate-pulse" : "bg-slate-400"}`}
+          />
+          <span className="text-[10px] text-white font-medium">{activeTournamentCount ?? 0} aktif turnuva</span>
+        </div>
+      ) : (
+        <p className="text-[11px] text-white/80 font-medium line-clamp-1">{mode.description}</p>
+      )}
       {mode.id === "random-match" && typeof searchingCount === "number" && (
         <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
           <span
             className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
           />
           <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
-        </div>
-      )}
-      {mode.id === "tournament" && typeof activeTournamentCount === "number" && activeTournamentCount > 0 && (
-        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-[10px] text-white font-medium">{activeTournamentCount} aktif turnuva</span>
         </div>
       )}
     </div>
