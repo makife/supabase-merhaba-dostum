@@ -349,6 +349,18 @@ const HomePage = () => {
   // Fetch daily challenge completion status & wheel spin availability
   useEffect(() => {
     if (!user?.id) return;
+
+    // Fetch active tournament count
+    const fetchActiveTournaments = async () => {
+      const { count } = await supabase
+        .from("tournaments")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "waiting");
+      setActiveTournamentCount(count || 0);
+    };
+    fetchActiveTournaments();
+    const tournamentInterval = setInterval(fetchActiveTournaments, 30000);
+
     const fetchChallengeStatus = () => {
       sessionStorage.removeItem("challengeStatus");
       getDailyChallengeStatus(user.id).then((status) => {
