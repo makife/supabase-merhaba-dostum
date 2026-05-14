@@ -16,6 +16,14 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   totalParticipants,
   isCreator,
 }) => {
+  const [basliyorAnim, setBasliyorAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/turnuvaBasliyor.json")
+      .then((r) => r.json())
+      .then(setBasliyorAnim)
+      .catch(console.error);
+  }, []);
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
