@@ -97,7 +97,7 @@ const FriendsPage = () => {
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until").in("id", friendIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until, in_game").in("id", friendIds);
 
       // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
@@ -122,6 +122,7 @@ const FriendsPage = () => {
           username: profile?.username || "Oyuncu",
           avatar_url: profile?.avatar_url || null,
           is_online: onlineSet.has(friendId),
+          in_game: !!(profile as any)?.in_game,
           status: f.status,
           is_sender: f.user_id === user.id,
           isPremium: isUserPremium((profile as any)?.premium_until),
