@@ -1,5 +1,7 @@
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, Users, Bot } from "lucide-react";
+import { Users, Bot } from "lucide-react";
+import Lottie from "lottie-react";
 
 interface TournamentCountdownProps {
   timeLeft: number;
