@@ -500,6 +500,11 @@ const FriendCard = ({
             friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
           }`}
         />
+        {friend.in_game && (
+          <Circle
+            className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 text-blue-400 fill-blue-400 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]"
+          />
+        )}
         {friend.isPremium && (
           <div className="absolute -top-1 -left-1 z-20">
             <VipBadge size="xs" />
