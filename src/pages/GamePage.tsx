@@ -81,6 +81,7 @@ function calcLevelFromScore(totalScore: number): number {
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
 const isUuid = (v?: string | null) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+let inGamePresenceSession = 0;
 
 interface TournamentMatch {
   id: string;
@@ -895,7 +896,6 @@ const GamePage = ({
   // Bu ref true olduktan sonra countdown ASLA yeniden başlatılamaz
   // Production oyunlardaki gibi: sunucu zamanı bir kez belirlenir, client sadece hesaplar
   const countdownInitiatedRef = useRef(false);
-  const inGameSessionRef = useRef(0);
 
   // ⚠️ CRITICAL: Track component mount status to prevent ghost timer updates
   useEffect(() => {
@@ -911,12 +911,16 @@ const GamePage = ({
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
-    const sessionId = inGameSessionRef.current + 1;
-    inGameSessionRef.current = sessionId;
+    const sessionId = ++inGamePresenceSession;
 
-    supabase.from("profiles").update({ in_game: true }).eq("id", uid).then(() => {
-      if (inGameSessionRef.current === sessionId) console.log("🔵 in_game = true");
-    });
+    const markInGame = async () => {
+      const { error } = await supabase.from("profiles").update({ in_game: true }).eq("id", uid);
+      if (error) console.error("🔵 in_game true error:", error);
+      else if (inGamePresenceSession === sessionId) console.log("🔵 in_game = true");
+    };
+
+    markInGame();
+    const keepAlive = window.setInterval(markInGame, 20000);
 
     const clear = () => {
       supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
@@ -925,9 +929,10 @@ const GamePage = ({
     };
     window.addEventListener("beforeunload", clear);
     return () => {
+      window.clearInterval(keepAlive);
       window.removeEventListener("beforeunload", clear);
       window.setTimeout(() => {
-        if (inGameSessionRef.current === sessionId) clear();
+        if (inGamePresenceSession === sessionId) clear();
       }, 1500);
     };
   }, [user?.id]);
