@@ -910,9 +910,14 @@ const GamePage = ({
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
+    let cancelled = false;
+    const clearTimer = window.setTimeout(() => {}, 0);
+    window.clearTimeout(clearTimer);
+
     supabase.from("profiles").update({ in_game: true }).eq("id", uid).then(() => {
-      console.log("🔵 in_game = true");
+      if (!cancelled) console.log("🔵 in_game = true");
     });
+
     const clear = () => {
       supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
         console.log("⚪ in_game = false");
@@ -920,8 +925,9 @@ const GamePage = ({
     };
     window.addEventListener("beforeunload", clear);
     return () => {
+      cancelled = true;
       window.removeEventListener("beforeunload", clear);
-      clear();
+      window.setTimeout(clear, 1500);
     };
   }, [user?.id]);
 
