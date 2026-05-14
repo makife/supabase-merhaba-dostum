@@ -154,13 +154,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url, premium_until")
+        .select("id, avatar_url, premium_until, in_game")
         .in("id", validUserIds as any);
 
       if (error) throw error;
 
       const avatarMap: { [userId: string]: string } = {};
       const premiumMap: { [userId: string]: boolean } = {};
+      const inGameMap: { [userId: string]: boolean } = {};
       const now = new Date();
       (data as any[])?.forEach((profile: any) => {
         if (profile.avatar_url) {
@@ -169,10 +170,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         if (profile.premium_until && new Date(profile.premium_until) > now) {
           premiumMap[profile.id] = true;
         }
+        if (profile.in_game) {
+          inGameMap[profile.id] = true;
+        }
       });
 
       setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
       setUserPremiumMap((prev) => ({ ...prev, ...premiumMap }));
+      setUserInGameMap((prev) => ({ ...prev, ...inGameMap }));
     } catch (error) {
       console.error("Error fetching user avatars:", error);
     }
