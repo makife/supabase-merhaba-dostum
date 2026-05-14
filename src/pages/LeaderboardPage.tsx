@@ -219,7 +219,7 @@ const LeaderboardPage = () => {
     await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
   }, []);
 
-  // Fetch premium status whenever leaders change
+  // Fetch premium status whenever leaders change + poll every 15s for in_game updates
   useEffect(() => {
     const allUserIds = [
       ...allTimeLeaders.map(l => l.user_id),
@@ -227,7 +227,10 @@ const LeaderboardPage = () => {
       ...monthlyLeaders.map(l => l.user_id),
     ];
     const uniqueIds = [...new Set(allUserIds)];
-    if (uniqueIds.length > 0) fetchPremiumStatus(uniqueIds);
+    if (uniqueIds.length === 0) return;
+    fetchPremiumStatus(uniqueIds);
+    const interval = setInterval(() => fetchPremiumStatus(uniqueIds), 15000);
+    return () => clearInterval(interval);
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
   usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
