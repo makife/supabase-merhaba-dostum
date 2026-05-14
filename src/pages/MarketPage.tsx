@@ -69,6 +69,7 @@ const MarketPage = () => {
 
   const [activeTab, setActiveTab] = useState("ink-store");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [marketAnim, setMarketAnim] = useState<any>(null);
 
   // Onay Penceresi State'leri
   const [itemToBuy, setItemToBuy] = useState<StationeryItem | null>(null);
@@ -79,6 +80,13 @@ const MarketPage = () => {
   const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const QUANTITY_OPTIONS = [1, 3, 5, 10];
+
+  useEffect(() => {
+    fetch("/marketGorsel.json")
+      .then((r) => r.json())
+      .then(setMarketAnim)
+      .catch(console.error);
+  }, []);
 
   const isNativePlatform = Capacitor.isNativePlatform();
 
