@@ -19,6 +19,7 @@ interface FriendItem {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
+  in_game: boolean;
   status: string;
   is_sender: boolean;
   isPremium: boolean;
