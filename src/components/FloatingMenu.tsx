@@ -48,7 +48,7 @@ const menuItems = [
   },
   {
     route: "/market",
-    textIcon: "/icons/kirtasiye-text.svg",
+    textIcon: "/icons/marketText.svg",
     gorselIcon: "/icons/kirtasiye-gorsel.svg",
     dotColor: "bg-purple-400",
     bgColor: "bg-purple-500/20",
