@@ -874,7 +874,7 @@ const TournamentBracketPage = () => {
           {championLottie && (
             <Lottie
               animationData={championLottie}
-              loop
+              loop={false}
               autoplay
               className="w-full h-full max-h-[55vh] object-contain"
             />
