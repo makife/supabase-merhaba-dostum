@@ -895,6 +895,7 @@ const GamePage = ({
   // Bu ref true olduktan sonra countdown ASLA yeniden başlatılamaz
   // Production oyunlardaki gibi: sunucu zamanı bir kez belirlenir, client sadece hesaplar
   const countdownInitiatedRef = useRef(false);
+  const inGameSessionRef = useRef(0);
 
   // ⚠️ CRITICAL: Track component mount status to prevent ghost timer updates
   useEffect(() => {
@@ -910,12 +911,11 @@ const GamePage = ({
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
-    let cancelled = false;
-    const clearTimer = window.setTimeout(() => {}, 0);
-    window.clearTimeout(clearTimer);
+    const sessionId = inGameSessionRef.current + 1;
+    inGameSessionRef.current = sessionId;
 
     supabase.from("profiles").update({ in_game: true }).eq("id", uid).then(() => {
-      if (!cancelled) console.log("🔵 in_game = true");
+      if (inGameSessionRef.current === sessionId) console.log("🔵 in_game = true");
     });
 
     const clear = () => {
@@ -925,9 +925,10 @@ const GamePage = ({
     };
     window.addEventListener("beforeunload", clear);
     return () => {
-      cancelled = true;
       window.removeEventListener("beforeunload", clear);
-      window.setTimeout(clear, 1500);
+      window.setTimeout(() => {
+        if (inGameSessionRef.current === sessionId) clear();
+      }, 1500);
     };
   }, [user?.id]);
 
