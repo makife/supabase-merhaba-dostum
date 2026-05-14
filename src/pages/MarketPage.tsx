@@ -513,7 +513,7 @@ const MarketPage = () => {
               playSound("buttonClick");
               navigate("/");
             }}
-            className="border-2 border-white/70 text-white bg-white/10 hover:bg-white/20 shrink-0 relative z-20 shadow-md h-9 w-9"
+            className="border-2 border-white/70 text-white bg-white/10 hover:bg-white/20 shrink-0 relative z-20 shadow-md h-9 w-9 -mt-[10px]"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -536,7 +536,7 @@ const MarketPage = () => {
           <div className="w-16 shrink-0"></div>
         </div>
         {/* Bakiye Kartı */}
-        <Card className="mt-[50px] bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
+        <Card className="mt-[45px] bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-white p-2 rounded-full shadow-inner">
