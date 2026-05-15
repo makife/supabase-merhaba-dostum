@@ -604,15 +604,22 @@ const ProfilePage = () => {
     console.log("🔄 [ProfilePage] Resync triggered - profil verileri yeniden yükleniyor...");
 
     try {
-      const [profileResult, tournamentStats] = await Promise.all([
+      const inGameThreshold = getInGameActivityThreshold();
+      const [profileResult, tournamentStats, activityResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle(),
         fetchTournamentStats(),
+        supabase
+          .from("player_activities")
+          .select("player_id")
+          .eq("player_id", viewedUserId)
+          .gte("last_action_time", inGameThreshold)
+          .maybeSingle(),
       ]);
 
       const { data } = profileResult;
 
       if (data) {
-        setProfileInGame(!!(data as any).in_game);
+        setProfileInGame(!!activityResult.data);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
