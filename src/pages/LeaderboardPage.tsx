@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import {
   ArrowLeft,
   Trophy,
@@ -75,7 +76,7 @@ const LeaderboardPage = () => {
     if (userIds.length === 0) return;
     try {
       const now = new Date();
-      const activeSince = new Date(now.getTime() - 20_000).toISOString();
+      const activeSince = getInGameActivityThreshold();
 
       const [{ data }, { data: activePlayers }] = await Promise.all([
         supabase
@@ -94,7 +95,6 @@ const LeaderboardPage = () => {
         const gameSet = new Set<string>((activePlayers || []).map((p: any) => p.player_id));
         data.forEach((p: any) => {
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
-          if (p.in_game) gameSet.add(p.id);
         });
         setPremiumUsers(premSet);
         setInGameUsers(gameSet);
@@ -239,7 +239,7 @@ const LeaderboardPage = () => {
     const uniqueIds = [...new Set(allUserIds)];
     if (uniqueIds.length === 0) return;
     fetchPremiumStatus(uniqueIds);
-    const interval = setInterval(() => fetchPremiumStatus(uniqueIds), 15000);
+    const interval = setInterval(() => fetchPremiumStatus(uniqueIds), IN_GAME_STATUS_POLL_MS);
     return () => clearInterval(interval);
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 

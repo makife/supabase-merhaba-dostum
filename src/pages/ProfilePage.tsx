@@ -16,6 +16,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { VipBadge } from "@/components/VipBadge";
 import { BadgesDialog } from "@/components/BadgesDialog";
@@ -319,17 +320,17 @@ const ProfilePage = () => {
 
       setIsUserOnline(!!presenceData);
 
-      // 🔵 In-game freshness check via player_activities (35s window)
-      const inGameThreshold = new Date(Date.now() - 35 * 1000).toISOString();
+      // 🔵 In-game freshness check via player_activities; profiles.in_game tek başına stale kalabiliyor
+      const inGameThreshold = getInGameActivityThreshold();
       const { data: activityData } = await supabase
         .from("player_activities")
         .select("player_id")
         .eq("player_id", viewedUserId)
-        .gte("updated_at", inGameThreshold)
+        .gte("last_action_time", inGameThreshold)
         .maybeSingle();
 
       if (data) {
-        setProfileInGame(!!(data as any).in_game || !!activityData);
+        setProfileInGame(!!activityData);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
@@ -382,7 +383,7 @@ const ProfilePage = () => {
 
     fetchProfile();
     if (isOwnProfile || !viewedUserId) return;
-    const interval = setInterval(fetchProfile, 10000);
+    const interval = setInterval(fetchProfile, IN_GAME_STATUS_POLL_MS);
     return () => clearInterval(interval);
   }, [viewedUserId, isOwnProfile]);
 
@@ -603,15 +604,22 @@ const ProfilePage = () => {
     console.log("🔄 [ProfilePage] Resync triggered - profil verileri yeniden yükleniyor...");
 
     try {
-      const [profileResult, tournamentStats] = await Promise.all([
+      const inGameThreshold = getInGameActivityThreshold();
+      const [profileResult, tournamentStats, activityResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", viewedUserId).maybeSingle(),
         fetchTournamentStats(),
+        supabase
+          .from("player_activities")
+          .select("player_id")
+          .eq("player_id", viewedUserId)
+          .gte("last_action_time", inGameThreshold)
+          .maybeSingle(),
       ]);
 
       const { data } = profileResult;
 
       if (data) {
-        setProfileInGame(!!(data as any).in_game);
+        setProfileInGame(!!activityResult.data);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 

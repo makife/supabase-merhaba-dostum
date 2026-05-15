@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useMessageCooldown } from "@/hooks/useMessageCooldown";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 
 interface ChatMessage {
   id: string;
@@ -63,8 +64,6 @@ interface SelectedUser {
   username: string;
   avatar_url?: string;
 }
-
-const IN_GAME_STALE_MS = 35 * 1000;
 
 export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
@@ -167,7 +166,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
       if (error) throw error;
 
-      const activeSince = new Date(Date.now() - IN_GAME_STALE_MS).toISOString();
+      const activeSince = getInGameActivityThreshold();
       const { data: activityData } = await supabase
         .from("player_activities")
         .select("player_id")
@@ -227,7 +226,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       if (userIds.length > 0) {
         fetchUserAvatars(userIds);
       }
-    }, 10000);
+    }, IN_GAME_STATUS_POLL_MS);
 
     return () => window.clearInterval(interval);
   }, [isOpen, messages]);
