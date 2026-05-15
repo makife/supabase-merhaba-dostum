@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_versions: {
+        Row: {
+          force_update: boolean
+          id: string
+          latest_version: string
+          min_version: string
+          platform: string
+          release_notes: string | null
+          store_url: string
+          updated_at: string
+        }
+        Insert: {
+          force_update?: boolean
+          id?: string
+          latest_version: string
+          min_version: string
+          platform: string
+          release_notes?: string | null
+          store_url: string
+          updated_at?: string
+        }
+        Update: {
+          force_update?: boolean
+          id?: string
+          latest_version?: string
+          min_version?: string
+          platform?: string
+          release_notes?: string | null
+          store_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           condition_type: string
