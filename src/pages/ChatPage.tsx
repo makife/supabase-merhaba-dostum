@@ -162,7 +162,7 @@ export default function ChatPage() {
 
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, premium_until")
+        .select("id, username, avatar_url, premium_until, in_game")
         .in("id", validUserIDs);
 
       if (usersError) {
@@ -170,7 +170,21 @@ export default function ChatPage() {
         return;
       }
 
-      setAllUsers(users || []);
+      // player_activities ile ek olarak son 20s aktif olanları maçta say
+      const activeSince = new Date(Date.now() - 20 * 1000).toISOString();
+      const { data: activityData } = await supabase
+        .from("player_activities")
+        .select("player_id")
+        .in("player_id", validUserIDs)
+        .gte("last_action_time", activeSince);
+      const activeSet = new Set((activityData || []).map((a) => a.player_id).filter(Boolean));
+
+      const merged = (users || []).map((u: any) => ({
+        ...u,
+        in_game: !!u.in_game || activeSet.has(u.id),
+      }));
+
+      setAllUsers(merged);
     } catch (error) {
       console.error("🔍 DEBUG: fetchAllUsers error:", error);
     }
