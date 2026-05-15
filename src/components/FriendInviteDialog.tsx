@@ -51,12 +51,18 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       const twoMinutesAgo = new Date(Date.now() - 120 * 1000).toISOString();
-      const [{ data: profiles }, { data: presenceData }] = await Promise.all([
-        supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds),
+      const activeSince = new Date(Date.now() - 20 * 1000).toISOString();
+      const [{ data: profiles }, { data: presenceData }, { data: activityData }] = await Promise.all([
+        supabase.from("profiles").select("id, username, avatar_url, in_game").in("id", friendIds),
         supabase.from("user_presence").select("user_id").in("user_id", friendIds).gte("last_seen", twoMinutesAgo),
+        supabase.from("player_activities").select("player_id").in("player_id", friendIds).gte("last_action_time", activeSince),
       ]);
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
+      const inGameSet = new Set<string>([
+        ...((profiles || []).filter((p: any) => p.in_game).map((p) => p.id)),
+        ...((activityData || []).map((a) => a.player_id).filter(Boolean) as string[]),
+      ]);
 
       const items: Friend[] = (profiles || []).map((p) => {
         return {
@@ -64,6 +70,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
           username: p.username || "Oyuncu",
           avatar_url: p.avatar_url,
           is_online: onlineSet.has(p.id),
+          in_game: inGameSet.has(p.id),
         };
       });
 
