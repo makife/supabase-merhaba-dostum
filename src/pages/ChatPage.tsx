@@ -252,16 +252,7 @@ export default function ChatPage() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles" },
-        (payload) => {
-          const changedUserId = (payload.new as any)?.id;
-          if (!changedUserId) return;
-
-          setAllUsers((prev) => {
-            if (!prev.some((chatUser) => chatUser.id === changedUserId)) return prev;
-            fetchAllUsers();
-            return prev;
-          });
-        },
+        () => fetchAllUsers(),
       )
       .subscribe();
 
