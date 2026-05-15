@@ -187,15 +187,13 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
                     </Avatar>
                     <Circle
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${
-                        friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
+                        friend.in_game
+                          ? "text-blue-400 fill-blue-400 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]"
+                          : friend.is_online
+                            ? "text-green-400 fill-green-400"
+                            : "text-zinc-600 fill-zinc-600"
                       }`}
                     />
-                    {friend.in_game && (
-                      <span
-                        className="absolute -bottom-0.5 -left-0.5 z-20 block w-3 h-3 rounded-full bg-blue-400 ring-2 ring-slate-900 shadow-[0_0_6px_rgba(96,165,250,0.9)]"
-                        aria-label="Maçta"
-                      />
-                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">

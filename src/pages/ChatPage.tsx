@@ -491,11 +491,9 @@ export default function ChatPage() {
                         size="sm"
                         isPremium={isUserPremium(targetUser.premium_until)}
                       className={`${unreadCount > 0 ? "ring-2 ring-chat-500 ring-offset-2" : ""} border-2 ${
-                          targetUser.in_game
-                            ? "border-blue-400"
-                            : isUserOnline(targetUser.id)
-                              ? "border-green-400"
-                              : "border-gray-300"
+                          isUserOnline(targetUser.id) || targetUser.in_game
+                            ? "border-green-400"
+                            : "border-gray-300"
                         }`}
                       />
                       <div className="flex-1 min-w-0">
@@ -509,15 +507,14 @@ export default function ChatPage() {
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
-                        {targetUser.in_game ? (
+                        {isUserOnline(targetUser.id) || targetUser.in_game ? (
                           <div
-                            className="w-4 h-4 bg-blue-500 rounded-full border border-white shadow-[0_0_6px_rgba(96,165,250,0.9)]"
-                            title="Maçta"
-                          />
-                        ) : isUserOnline(targetUser.id) ? (
-                          <div
-                            className="w-4 h-4 bg-green-500 rounded-full border border-white shadow-sm"
-                            title="Çevrimiçi"
+                            className={`w-4 h-4 rounded-full border border-white ${
+                              targetUser.in_game
+                                ? "bg-blue-500 shadow-[0_0_6px_rgba(96,165,250,0.9)]"
+                                : "bg-green-500 shadow-sm"
+                            }`}
+                            title={targetUser.in_game ? "Maçta" : "Çevrimiçi"}
                           />
                         ) : null}
                         {unreadCount > 0 && (
