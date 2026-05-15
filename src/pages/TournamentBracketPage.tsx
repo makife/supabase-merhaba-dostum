@@ -889,7 +889,7 @@ const TournamentBracketPage = () => {
         {/* Eski canvas konfeti (yedek partikül efekti) */}
         <canvas ref={confettiCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
         {/* Ödül kartı (aynı kalıyor) */}
-        <div className="relative z-30 flex flex-col items-center justify-end w-full pb-8 -translate-y-[100px]">
+        <div className="relative z-30 flex flex-col items-center justify-end w-full pb-8 -translate-y-[70px]">
           {wonReward && (
             <div className="text-center">
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
