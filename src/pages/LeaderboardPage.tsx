@@ -371,18 +371,23 @@ const LeaderboardPage = () => {
             </div>
           </div>
         </div>
-        <div className="text-center min-w-0 w-full h-[28px] flex flex-col items-center justify-center">
-          <h3
-            className="font-bold text-white text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
-            onClick={() => navigate(`/profile/${leader.user_id}`)}
-          >
-            {leader.username}
-            {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
-          </h3>
-        </div>
-        <div className="flex items-center gap-1 text-[10px] text-slate-400">
-          <Target className="w-3 h-3" />
-          <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+        <div
+          className="flex flex-col items-center rounded-lg border px-2 py-1 mt-[-8px] bg-transparent"
+          style={{ borderColor: frameColor }}
+        >
+          <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
+            <h3
+              className="font-bold text-white text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
+              onClick={() => navigate(`/profile/${leader.user_id}`)}
+            >
+              {leader.username}
+              {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <Target className="w-3 h-3" />
+            <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+          </div>
         </div>
       </div>
     );
