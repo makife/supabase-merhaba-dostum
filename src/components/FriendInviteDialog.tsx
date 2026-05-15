@@ -13,6 +13,7 @@ interface Friend {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
+  in_game: boolean;
 }
 
 interface FriendInviteDialogProps {
@@ -50,12 +51,18 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       const twoMinutesAgo = new Date(Date.now() - 120 * 1000).toISOString();
-      const [{ data: profiles }, { data: presenceData }] = await Promise.all([
-        supabase.from("profiles").select("id, username, avatar_url").in("id", friendIds),
+      const activeSince = new Date(Date.now() - 20 * 1000).toISOString();
+      const [{ data: profiles }, { data: presenceData }, { data: activityData }] = await Promise.all([
+        supabase.from("profiles").select("id, username, avatar_url, in_game").in("id", friendIds),
         supabase.from("user_presence").select("user_id").in("user_id", friendIds).gte("last_seen", twoMinutesAgo),
+        supabase.from("player_activities").select("player_id").in("player_id", friendIds).gte("last_action_time", activeSince),
       ]);
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
+      const inGameSet = new Set<string>([
+        ...((profiles || []).filter((p: any) => p.in_game).map((p) => p.id)),
+        ...((activityData || []).map((a) => a.player_id).filter(Boolean) as string[]),
+      ]);
 
       const items: Friend[] = (profiles || []).map((p) => {
         return {
@@ -63,6 +70,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
           username: p.username || "Oyuncu",
           avatar_url: p.avatar_url,
           is_online: onlineSet.has(p.id),
+          in_game: inGameSet.has(p.id),
         };
       });
 
@@ -85,6 +93,10 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
   const handleInvite = async (friend: Friend) => {
     if (!user || sendingId) return;
+    if (friend.in_game) {
+      toast.error(`${friend.username} şu anda maçta, davet edilemez.`);
+      return;
+    }
     setSendingId(friend.id);
 
     try {
@@ -178,21 +190,29 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
                         friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
                       }`}
                     />
+                    {friend.in_game && (
+                      <span
+                        className="absolute -bottom-0.5 -left-0.5 z-20 block w-3 h-3 rounded-full bg-blue-400 ring-2 ring-slate-900 shadow-[0_0_6px_rgba(96,165,250,0.9)]"
+                        aria-label="Maçta"
+                      />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{friend.username}</p>
-                    <p className={`text-[10px] ${friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
-                      {friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
+                    <p className={`text-[10px] ${friend.in_game ? "text-blue-400" : friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
+                      {friend.in_game ? "Maçta" : friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
                     </p>
                   </div>
 
                   <Button
                     size="sm"
-                    disabled={invited || sendingId === friend.id}
+                    disabled={invited || sendingId === friend.id || friend.in_game}
                     onClick={() => handleInvite(friend)}
                     className={`text-xs font-bold px-3 ${
-                      invited
+                      friend.in_game
+                        ? "bg-zinc-700/40 text-zinc-400 border border-zinc-600/30 cursor-not-allowed hover:bg-zinc-700/40"
+                        : invited
                         ? "bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/20"
                         : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
                     }`}
