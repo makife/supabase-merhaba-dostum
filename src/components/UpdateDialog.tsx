@@ -102,7 +102,6 @@ export const UpdateDialog: React.FC = () => {
         style={{ backgroundColor: "#1e2d45" }}
         onPointerDownOutside={(e) => forceUpdate && e.preventDefault()}
         onEscapeKeyDown={(e) => forceUpdate && e.preventDefault()}
-        hideClose={forceUpdate as any}
       >
         <DialogHeader>
           <DialogTitle className="text-center text-white text-xl">
