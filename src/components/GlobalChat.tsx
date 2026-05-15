@@ -162,10 +162,18 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url, premium_until, in_game")
+        .select("id, avatar_url, premium_until, in_game, last_seen")
         .in("id", validUserIds as any);
 
       if (error) throw error;
+
+      const activeSince = new Date(Date.now() - IN_GAME_STALE_MS).toISOString();
+      const { data: activityData } = await supabase
+        .from("player_activities")
+        .select("player_id")
+        .in("player_id", validUserIds as any)
+        .gte("last_action_time", activeSince);
+      const activeSet = new Set((activityData || []).map((a: any) => a.player_id).filter(Boolean));
 
       const avatarMap: { [userId: string]: string } = {};
       const premiumMap: { [userId: string]: boolean } = {};
@@ -178,14 +186,27 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         if (profile.premium_until && new Date(profile.premium_until) > now) {
           premiumMap[profile.id] = true;
         }
-        if (profile.in_game) {
+        if (
+          activeSet.has(profile.id) ||
+          (!!profile.in_game && !!profile.last_seen && new Date(profile.last_seen).getTime() >= Date.now() - IN_GAME_STALE_MS)
+        ) {
           inGameMap[profile.id] = true;
         }
       });
 
       setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
       setUserPremiumMap((prev) => ({ ...prev, ...premiumMap }));
-      setUserInGameMap((prev) => ({ ...prev, ...inGameMap }));
+      setUserInGameMap((prev) => {
+        const next = { ...prev };
+        validUserIds.forEach((id) => {
+          if (inGameMap[id]) {
+            next[id] = true;
+          } else {
+            delete next[id];
+          }
+        });
+        return next;
+      });
     } catch (error) {
       console.error("Error fetching user avatars:", error);
     }
@@ -193,10 +214,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   useEffect(() => {
     if (messages.length > 0) {
-      const userIds = messages
-        .map((m) => m.user_id)
-        .filter((id) => id && id !== "null" && id !== "undefined")
-        .filter((id, index, arr) => arr.indexOf(id) === index);
+      const userIds = getMessageUserIds(messages);
 
       if (userIds.length > 0) {
         fetchUserAvatars(userIds);
