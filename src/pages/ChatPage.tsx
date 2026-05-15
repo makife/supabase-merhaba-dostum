@@ -231,6 +231,45 @@ export default function ChatPage() {
     }
   }, [viewMode, user?.id]);
 
+  useEffect(() => {
+    if (viewMode !== "users" || !user?.id) return;
+
+    const interval = window.setInterval(fetchAllUsers, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [viewMode, user?.id]);
+
+  useEffect(() => {
+    if (viewMode !== "users" || !user?.id) return;
+
+    const channel = supabase
+      .channel(`chat-in-game-status-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_activities" },
+        () => fetchAllUsers(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        (payload) => {
+          const changedUserId = (payload.new as any)?.id;
+          if (!changedUserId) return;
+
+          setAllUsers((prev) => {
+            if (!prev.some((chatUser) => chatUser.id === changedUserId)) return prev;
+            fetchAllUsers();
+            return prev;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [viewMode, user?.id]);
+
   // URL'den openPrivateChat parametresini kontrol et
   useEffect(() => {
     const openPrivateChatUserId = searchParams.get("openPrivateChat");
