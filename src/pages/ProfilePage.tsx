@@ -319,8 +319,17 @@ const ProfilePage = () => {
 
       setIsUserOnline(!!presenceData);
 
+      // 🔵 In-game freshness check via player_activities (35s window)
+      const inGameThreshold = new Date(Date.now() - 35 * 1000).toISOString();
+      const { data: activityData } = await supabase
+        .from("player_activities")
+        .select("player_id")
+        .eq("player_id", viewedUserId)
+        .gte("updated_at", inGameThreshold)
+        .maybeSingle();
+
       if (data) {
-        setProfileInGame(!!(data as any).in_game);
+        setProfileInGame(!!(data as any).in_game || !!activityData);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
@@ -372,7 +381,10 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
-  }, [viewedUserId]);
+    if (isOwnProfile || !viewedUserId) return;
+    const interval = setInterval(fetchProfile, 10000);
+    return () => clearInterval(interval);
+  }, [viewedUserId, isOwnProfile]);
 
   useEffect(() => {
     const fetchJokers = async () => {
@@ -914,10 +926,12 @@ const ProfilePage = () => {
     ) : (
       <h1 className="text-lg font-bold text-white">{profileData.username}</h1>
     )}
-    {isUserOnline && !isOwnProfile && (
+    {(isUserOnline || profileInGame) && !isOwnProfile && (
       <div className="flex items-center gap-1 mt-0.5">
-        <div className="w-3 h-3 bg-green-500 rounded-full" />
-        <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
+        <div className={`w-3 h-3 rounded-full ${profileInGame ? "bg-blue-500 shadow-[0_0_6px_rgba(96,165,250,0.9)]" : "bg-green-500"}`} />
+        <span className={`text-[10px] font-medium ${profileInGame ? "text-blue-400" : "text-green-400"}`}>
+          {profileInGame ? "Maçta" : "Çevrimiçi"}
+        </span>
       </div>
     )}
   </div>
