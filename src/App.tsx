@@ -652,6 +652,7 @@ const AppRoutes = () => {
       </React.Suspense>
       <RoomAutoNavigator />
       <GlobalRematchDialogWrapper />
+      <UpdateDialog />
     </>
   );
 };
