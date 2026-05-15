@@ -93,6 +93,10 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
   const handleInvite = async (friend: Friend) => {
     if (!user || sendingId) return;
+    if (friend.in_game) {
+      toast.error(`${friend.username} şu anda maçta, davet edilemez.`);
+      return;
+    }
     setSendingId(friend.id);
 
     try {
