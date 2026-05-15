@@ -64,6 +64,8 @@ interface SelectedUser {
   avatar_url?: string;
 }
 
+const IN_GAME_STALE_MS = 35 * 1000;
+
 export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline, refreshOnlineUsers } = useUser();
@@ -112,6 +114,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getMessageUserIds = (items: ChatMessage[]) =>
+    items
+      .map((m) => m.user_id)
+      .filter((id) => id && id !== "null" && id !== "undefined")
+      .filter((id, index, arr) => arr.indexOf(id) === index);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -154,30 +162,48 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url, premium_until, in_game")
-        .in("id", validUserIds as any);
+        .select("id, avatar_url, premium_until")
+        .in("id", validUserIds);
 
       if (error) throw error;
+
+      const activeSince = new Date(Date.now() - IN_GAME_STALE_MS).toISOString();
+      const { data: activityData } = await supabase
+        .from("player_activities")
+        .select("player_id")
+        .in("player_id", validUserIds)
+        .gte("last_action_time", activeSince);
+      const activeSet = new Set((activityData || []).map((activity) => activity.player_id).filter(Boolean));
 
       const avatarMap: { [userId: string]: string } = {};
       const premiumMap: { [userId: string]: boolean } = {};
       const inGameMap: { [userId: string]: boolean } = {};
       const now = new Date();
-      (data as any[])?.forEach((profile: any) => {
+      (data || []).forEach((profile) => {
         if (profile.avatar_url) {
           avatarMap[profile.id] = profile.avatar_url;
         }
         if (profile.premium_until && new Date(profile.premium_until) > now) {
           premiumMap[profile.id] = true;
         }
-        if (profile.in_game) {
+        if (activeSet.has(profile.id)) {
           inGameMap[profile.id] = true;
         }
       });
 
       setUserAvatars((prev) => ({ ...prev, ...avatarMap }));
       setUserPremiumMap((prev) => ({ ...prev, ...premiumMap }));
-      setUserInGameMap((prev) => ({ ...prev, ...inGameMap }));
+      setUserInGameMap((prev) => {
+        const next = { ...prev };
+        validUserIds.forEach((id) => {
+          if (inGameMap[id]) {
+            next[id] = true;
+          } else {
+            delete next[id];
+          }
+        });
+        return next;
+      });
     } catch (error) {
       console.error("Error fetching user avatars:", error);
     }
@@ -185,16 +211,54 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
   useEffect(() => {
     if (messages.length > 0) {
-      const userIds = messages
-        .map((m) => m.user_id)
-        .filter((id) => id && id !== "null" && id !== "undefined")
-        .filter((id, index, arr) => arr.indexOf(id) === index);
+      const userIds = getMessageUserIds(messages);
 
       if (userIds.length > 0) {
         fetchUserAvatars(userIds);
       }
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!isOpen || messages.length === 0) return;
+
+    const interval = window.setInterval(() => {
+      const userIds = getMessageUserIds(messages);
+      if (userIds.length > 0) {
+        fetchUserAvatars(userIds);
+      }
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [isOpen, messages]);
+
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+
+    const channel = supabase
+      .channel(`global-chat-in-game-status-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_activities" },
+        () => {
+          const userIds = getMessageUserIds(messages);
+          if (userIds.length > 0) fetchUserAvatars(userIds);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => {
+          const userIds = getMessageUserIds(messages);
+          if (userIds.length > 0) fetchUserAvatars(userIds);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user?.id, messages]);
 
   const fetchAllUsers = async () => {
     try {
@@ -973,9 +1037,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       {message.username === "kelimeciBot" && " 🤖"}
                     </span>
 
-                    {message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) && (
+                    {message.user_id && message.username !== "kelimeciBot" && userInGameMap[message.user_id] ? (
+                      <div className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_6px_rgba(96,165,250,0.9)]" />
+                    ) : message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) ? (
                       <div className="w-3 h-3 bg-green-500 rounded-full" />
-                    )}
+                    ) : null}
 
                     <span className="text-xs text-gray-400">{formatTime(message.created_at)}</span>
 

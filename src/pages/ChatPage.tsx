@@ -44,6 +44,8 @@ interface BanInfo {
   remaining_hours: number;
 }
 
+const IN_GAME_STALE_MS = 35 * 1000;
+
 export default function ChatPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -162,7 +164,7 @@ export default function ChatPage() {
 
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, premium_until, in_game")
+        .select("id, username, avatar_url, premium_until")
         .in("id", validUserIDs);
 
       if (usersError) {
@@ -170,8 +172,8 @@ export default function ChatPage() {
         return;
       }
 
-      // player_activities ile ek olarak son 20s aktif olanları maçta say
-      const activeSince = new Date(Date.now() - 20 * 1000).toISOString();
+      // Maç durumu sadece taze heartbeat ile geçerli; eski in_game=true değerine takılmasın
+      const activeSince = new Date(Date.now() - IN_GAME_STALE_MS).toISOString();
       const { data: activityData } = await supabase
         .from("player_activities")
         .select("player_id")
@@ -179,9 +181,9 @@ export default function ChatPage() {
         .gte("last_action_time", activeSince);
       const activeSet = new Set((activityData || []).map((a) => a.player_id).filter(Boolean));
 
-      const merged = (users || []).map((u: any) => ({
+      const merged = (users || []).map((u) => ({
         ...u,
-        in_game: !!u.in_game || activeSet.has(u.id),
+        in_game: activeSet.has(u.id),
       }));
 
       setAllUsers(merged);
@@ -225,6 +227,36 @@ export default function ChatPage() {
       fetchAllUsers();
       fetchUnreadCounts();
     }
+  }, [viewMode, user?.id]);
+
+  useEffect(() => {
+    if (viewMode !== "users" || !user?.id) return;
+
+    const interval = window.setInterval(fetchAllUsers, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [viewMode, user?.id]);
+
+  useEffect(() => {
+    if (viewMode !== "users" || !user?.id) return;
+
+    const channel = supabase
+      .channel(`chat-in-game-status-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_activities" },
+        () => fetchAllUsers(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        () => fetchAllUsers(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [viewMode, user?.id]);
 
   // URL'den openPrivateChat parametresini kontrol et
