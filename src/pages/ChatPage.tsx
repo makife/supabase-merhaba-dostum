@@ -164,7 +164,7 @@ export default function ChatPage() {
 
       const { data: users, error: usersError } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url, premium_until, in_game, last_seen")
+        .select("id, username, avatar_url, premium_until")
         .in("id", validUserIDs);
 
       if (usersError) {
@@ -183,9 +183,7 @@ export default function ChatPage() {
 
       const merged = (users || []).map((u: any) => ({
         ...u,
-        in_game:
-          activeSet.has(u.id) ||
-          (!!u.in_game && !!u.last_seen && new Date(u.last_seen).getTime() >= Date.now() - IN_GAME_STALE_MS),
+        in_game: activeSet.has(u.id),
       }));
 
       setAllUsers(merged);
