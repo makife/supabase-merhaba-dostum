@@ -61,6 +61,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { supabase } from "@/integrations/supabase/client";
 import RoomAutoNavigator from "@/components/RoomAutoNavigator";
 import { RematchDialog } from "@/components/RematchDialog";
+import { UpdateDialog } from "@/components/UpdateDialog";
 import { useAppState } from "@/hooks/useAppState";
 import { useAppForegroundState } from "@/hooks/useAppForegroundState";
 import { OnboardingPermissions } from "@/components/OnboardingPermissions";
