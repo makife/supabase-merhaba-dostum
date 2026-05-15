@@ -15,6 +15,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { toast } from "sonner";
 import { isUserPremium } from "@/components/VipBadge";
 import {
@@ -43,8 +44,6 @@ interface BanInfo {
   banned_until: string;
   remaining_hours: number;
 }
-
-const IN_GAME_STALE_MS = 35 * 1000;
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -173,7 +172,7 @@ export default function ChatPage() {
       }
 
       // Maç durumu sadece taze heartbeat ile geçerli; eski in_game=true değerine takılmasın
-      const activeSince = new Date(Date.now() - IN_GAME_STALE_MS).toISOString();
+      const activeSince = getInGameActivityThreshold();
       const { data: activityData } = await supabase
         .from("player_activities")
         .select("player_id")
@@ -232,7 +231,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (viewMode !== "users" || !user?.id) return;
 
-    const interval = window.setInterval(fetchAllUsers, 10000);
+    const interval = window.setInterval(fetchAllUsers, IN_GAME_STATUS_POLL_MS);
 
     return () => window.clearInterval(interval);
   }, [viewMode, user?.id]);
