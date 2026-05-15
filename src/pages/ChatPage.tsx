@@ -34,6 +34,7 @@ interface SelectedUser {
   username: string;
   avatar_url?: string;
   premium_until?: string | null;
+  in_game?: boolean;
 }
 
 interface BanInfo {
