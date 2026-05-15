@@ -13,6 +13,7 @@ interface Friend {
   username: string;
   avatar_url: string | null;
   is_online: boolean;
+  in_game: boolean;
 }
 
 interface FriendInviteDialogProps {
