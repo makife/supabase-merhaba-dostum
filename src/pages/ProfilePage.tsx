@@ -926,10 +926,12 @@ const ProfilePage = () => {
     ) : (
       <h1 className="text-lg font-bold text-white">{profileData.username}</h1>
     )}
-    {isUserOnline && !isOwnProfile && (
+    {(isUserOnline || profileInGame) && !isOwnProfile && (
       <div className="flex items-center gap-1 mt-0.5">
-        <div className="w-3 h-3 bg-green-500 rounded-full" />
-        <span className="text-[10px] text-green-400 font-medium">Çevrimiçi</span>
+        <div className={`w-3 h-3 rounded-full ${profileInGame ? "bg-blue-500 shadow-[0_0_6px_rgba(96,165,250,0.9)]" : "bg-green-500"}`} />
+        <span className={`text-[10px] font-medium ${profileInGame ? "text-blue-400" : "text-green-400"}`}>
+          {profileInGame ? "Maçta" : "Çevrimiçi"}
+        </span>
       </div>
     )}
   </div>
