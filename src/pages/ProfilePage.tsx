@@ -381,7 +381,10 @@ const ProfilePage = () => {
     };
 
     fetchProfile();
-  }, [viewedUserId]);
+    if (isOwnProfile || !viewedUserId) return;
+    const interval = setInterval(fetchProfile, 10000);
+    return () => clearInterval(interval);
+  }, [viewedUserId, isOwnProfile]);
 
   useEffect(() => {
     const fetchJokers = async () => {
