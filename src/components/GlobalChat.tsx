@@ -64,6 +64,8 @@ interface SelectedUser {
   avatar_url?: string;
 }
 
+const IN_GAME_STALE_MS = 35 * 1000;
+
 export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivateChat }: GlobalChatProps) {
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline, refreshOnlineUsers } = useUser();
@@ -111,6 +113,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const getMessageUserIds = (items: ChatMessage[]) =>
+    items
+      .map((m) => m.user_id)
+      .filter((id) => id && id !== "null" && id !== "undefined")
+      .filter((id, index, arr) => arr.indexOf(id) === index);
 
   useEffect(() => {
     scrollToBottom();
