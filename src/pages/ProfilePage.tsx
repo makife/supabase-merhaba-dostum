@@ -319,8 +319,17 @@ const ProfilePage = () => {
 
       setIsUserOnline(!!presenceData);
 
+      // 🔵 In-game freshness check via player_activities (35s window)
+      const inGameThreshold = new Date(Date.now() - 35 * 1000).toISOString();
+      const { data: activityData } = await supabase
+        .from("player_activities")
+        .select("player_id")
+        .eq("player_id", viewedUserId)
+        .gte("updated_at", inGameThreshold)
+        .maybeSingle();
+
       if (data) {
-        setProfileInGame(!!(data as any).in_game);
+        setProfileInGame(!!(data as any).in_game || !!activityData);
         const levelData = calculateLevel(data.total_score || 0);
         const username = data.username || user?.email?.split("@")[0] || "Oyuncu";
 
