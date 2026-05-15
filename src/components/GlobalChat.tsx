@@ -163,7 +163,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       const { data, error } = await supabase
         .from("profiles")
         .select("id, avatar_url, premium_until")
-        .in("id", validUserIds as any);
+        .in("id", validUserIds);
 
       if (error) throw error;
 
@@ -171,15 +171,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       const { data: activityData } = await supabase
         .from("player_activities")
         .select("player_id")
-        .in("player_id", validUserIds as any)
+        .in("player_id", validUserIds)
         .gte("last_action_time", activeSince);
-      const activeSet = new Set((activityData || []).map((a: any) => a.player_id).filter(Boolean));
+      const activeSet = new Set((activityData || []).map((activity) => activity.player_id).filter(Boolean));
 
       const avatarMap: { [userId: string]: string } = {};
       const premiumMap: { [userId: string]: boolean } = {};
       const inGameMap: { [userId: string]: boolean } = {};
       const now = new Date();
-      (data as any[])?.forEach((profile: any) => {
+      (data || []).forEach((profile) => {
         if (profile.avatar_url) {
           avatarMap[profile.id] = profile.avatar_url;
         }
@@ -248,10 +248,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles" },
-        (payload) => {
-          const changedUserId = (payload.new as any)?.id;
-          if (!changedUserId || !messages.some((message) => message.user_id === changedUserId)) return;
-
+        () => {
           const userIds = getMessageUserIds(messages);
           if (userIds.length > 0) fetchUserAvatars(userIds);
         },
