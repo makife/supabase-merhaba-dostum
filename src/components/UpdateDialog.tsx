@@ -93,7 +93,7 @@ export const UpdateDialog: React.FC = () => {
 
         // Opsiyonel ise: aynı sürümü tekrar göstermeyelim
         if (!force) {
-          const dismissed = localStorage.getItem(DISMISS_KEY);
+          const dismissed = await nativeStorage.getItem(DISMISS_KEY);
           if (dismissed === latest) return;
         }
 
@@ -118,9 +118,9 @@ export const UpdateDialog: React.FC = () => {
     }
   };
 
-  const handleLater = () => {
+  const handleLater = async () => {
     if (latestVersion) {
-      localStorage.setItem(DISMISS_KEY, latestVersion);
+      await nativeStorage.setItem(DISMISS_KEY, latestVersion);
     }
     setOpen(false);
   };
