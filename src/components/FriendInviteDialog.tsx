@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Circle, Loader2, Users, Check } from "lucide-react";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { toast } from "sonner";
 
 interface Friend {
@@ -31,9 +32,9 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async (showLoading = true) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
 
     try {
       const { data } = await supabase
@@ -51,7 +52,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
       const twoMinutesAgo = new Date(Date.now() - 120 * 1000).toISOString();
-      const activeSince = new Date(Date.now() - 20 * 1000).toISOString();
+      const activeSince = getInGameActivityThreshold();
       const [{ data: profiles }, { data: presenceData }, { data: activityData }] = await Promise.all([
         supabase.from("profiles").select("id, username, avatar_url, in_game").in("id", friendIds),
         supabase.from("user_presence").select("user_id").in("user_id", friendIds).gte("last_seen", twoMinutesAgo),
@@ -60,7 +61,6 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
       const inGameSet = new Set<string>([
-        ...((profiles || []).filter((p: any) => p.in_game).map((p) => p.id)),
         ...((activityData || []).map((a) => a.player_id).filter(Boolean) as string[]),
       ]);
 
@@ -80,7 +80,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
     } catch (err) {
       console.error("Arkadaş listesi hatası:", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [user]);
 
@@ -89,6 +89,12 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
       fetchFriends();
       setInvitedIds(new Set());
     }
+  }, [open, fetchFriends]);
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = window.setInterval(() => fetchFriends(false), IN_GAME_STATUS_POLL_MS);
+    return () => window.clearInterval(interval);
   }, [open, fetchFriends]);
 
   const handleInvite = async (friend: Friend) => {
