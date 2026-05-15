@@ -240,7 +240,7 @@ const LeaderboardPrizeDialog = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="w-full bg-slate-800/60 border border-white/10 rounded-2xl p-4 mb-4"
+            className="w-full bg-slate-800/60 border border-white/10 rounded-2xl p-4 mb-4 -translate-y-[50px]"
           >
             <p className="text-xs text-slate-400 mb-3 flex items-center justify-center gap-1.5">
               <Gift className={`w-3.5 h-3.5 ${theme.giftIcon}`} />
