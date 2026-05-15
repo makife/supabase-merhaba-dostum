@@ -32,37 +32,73 @@ export const UpdateDialog: React.FC = () => {
     const check = async () => {
       try {
         if (!Capacitor.isNativePlatform()) return;
-        const platform = Capacitor.getPlatform(); // 'ios' | 'android'
+        const platform = Capacitor.getPlatform();
         if (platform !== "ios" && platform !== "android") return;
 
         const info = await CapacitorApp.getInfo();
         const currentVersion = info.version;
 
-        const { data, error } = await supabase
-          .from("app_versions")
-          .select("latest_version, min_version, store_url, force_update, release_notes")
-          .eq("platform", platform)
-          .maybeSingle();
+        // 1) Mağaza versiyonunu otomatik çek (Apple lookup / Play Store)
+        let storeLatest: string | null = null;
+        let resolvedStoreUrl = "";
+        try {
+          const { data, error } = await supabase.functions.invoke("check-app-version", {
+            body: { platform },
+          });
+          if (!error && data) {
+            storeLatest = data.latest_version || null;
+            resolvedStoreUrl = data.store_url || "";
+          }
+        } catch (e) {
+          console.warn("[UpdateDialog] store version fetch failed:", e);
+        }
 
-        if (error || !data) return;
+        // 2) Manuel override (Supabase tablosu) — opsiyonel kill switch
+        let manualLatest: string | null = null;
+        let manualMin: string | null = null;
+        let manualForce = false;
+        let manualStoreUrl = "";
+        let manualNotes = "";
+        try {
+          const { data: row } = await supabase
+            .from("app_versions")
+            .select("latest_version, min_version, store_url, force_update, release_notes")
+            .eq("platform", platform)
+            .maybeSingle();
+          if (row) {
+            manualLatest = row.latest_version;
+            manualMin = row.min_version;
+            manualForce = !!row.force_update;
+            manualStoreUrl = row.store_url || "";
+            manualNotes = row.release_notes || "";
+          }
+        } catch (e) {
+          console.warn("[UpdateDialog] manual override fetch failed:", e);
+        }
 
-        const isBelowMin = compareVersions(currentVersion, data.min_version) < 0;
-        const isBelowLatest = compareVersions(currentVersion, data.latest_version) < 0;
+        // En yüksek bilinen sürümü kullan: mağaza vs manuel
+        const candidates = [storeLatest, manualLatest].filter(Boolean) as string[];
+        if (candidates.length === 0) return;
+        const latest = candidates.reduce((a, b) => (compareVersions(a, b) >= 0 ? a : b));
+
+        const isBelowLatest = compareVersions(currentVersion, latest) < 0;
+        const isBelowMin = manualMin
+          ? compareVersions(currentVersion, manualMin) < 0
+          : false;
 
         if (!isBelowLatest && !isBelowMin) return;
 
-        // Zorunlu mu?
-        const force = isBelowMin || data.force_update;
+        const force = isBelowMin || manualForce;
 
         // Opsiyonel ise: aynı sürümü tekrar göstermeyelim
         if (!force) {
           const dismissed = localStorage.getItem(DISMISS_KEY);
-          if (dismissed === data.latest_version) return;
+          if (dismissed === latest) return;
         }
 
-        setLatestVersion(data.latest_version);
-        setStoreUrl(data.store_url);
-        setReleaseNotes(data.release_notes || "");
+        setLatestVersion(latest);
+        setStoreUrl(resolvedStoreUrl || manualStoreUrl);
+        setReleaseNotes(manualNotes);
         setForceUpdate(force);
         setOpen(true);
       } catch (e) {
@@ -92,7 +128,6 @@ export const UpdateDialog: React.FC = () => {
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        // Zorunlu güncellemede kapatmaya izin verme
         if (forceUpdate) return;
         if (!v) handleLater();
       }}

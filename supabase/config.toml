@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.award-challenge-prizes]
 verify_jwt = false
+
+[functions.check-app-version]
+verify_jwt = false
