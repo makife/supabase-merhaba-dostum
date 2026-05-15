@@ -190,21 +190,29 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
                         friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
                       }`}
                     />
+                    {friend.in_game && (
+                      <span
+                        className="absolute -bottom-0.5 -left-0.5 z-20 block w-3 h-3 rounded-full bg-blue-400 ring-2 ring-slate-900 shadow-[0_0_6px_rgba(96,165,250,0.9)]"
+                        aria-label="Maçta"
+                      />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{friend.username}</p>
-                    <p className={`text-[10px] ${friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
-                      {friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
+                    <p className={`text-[10px] ${friend.in_game ? "text-blue-400" : friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
+                      {friend.in_game ? "Maçta" : friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
                     </p>
                   </div>
 
                   <Button
                     size="sm"
-                    disabled={invited || sendingId === friend.id}
+                    disabled={invited || sendingId === friend.id || friend.in_game}
                     onClick={() => handleInvite(friend)}
                     className={`text-xs font-bold px-3 ${
-                      invited
+                      friend.in_game
+                        ? "bg-zinc-700/40 text-zinc-400 border border-zinc-600/30 cursor-not-allowed hover:bg-zinc-700/40"
+                        : invited
                         ? "bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/20"
                         : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
                     }`}
