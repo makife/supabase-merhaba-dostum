@@ -1037,9 +1037,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       {message.username === "kelimeciBot" && " 🤖"}
                     </span>
 
-                    {message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) && (
+                    {message.user_id && message.username !== "kelimeciBot" && userInGameMap[message.user_id] ? (
+                      <div className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_6px_rgba(96,165,250,0.9)]" />
+                    ) : message.user_id && message.username !== "kelimeciBot" && isUserOnline(message.user_id) ? (
                       <div className="w-3 h-3 bg-green-500 rounded-full" />
-                    )}
+                    ) : null}
 
                     <span className="text-xs text-gray-400">{formatTime(message.created_at)}</span>
 
