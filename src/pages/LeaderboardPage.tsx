@@ -330,8 +330,9 @@ const LeaderboardPage = () => {
     const avatarPx = size === "lg" ? 72 : 52;
     const lottiePx = size === "lg" ? 120 : 90;
     const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
+    const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
     return (
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
           {/* Lottie animation frame */}
           {animData && (
