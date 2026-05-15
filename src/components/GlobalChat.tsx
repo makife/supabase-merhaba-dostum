@@ -162,7 +162,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, avatar_url, premium_until, in_game, last_seen")
+        .select("id, avatar_url, premium_until")
         .in("id", validUserIds as any);
 
       if (error) throw error;
@@ -186,10 +186,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         if (profile.premium_until && new Date(profile.premium_until) > now) {
           premiumMap[profile.id] = true;
         }
-        if (
-          activeSet.has(profile.id) ||
-          (!!profile.in_game && !!profile.last_seen && new Date(profile.last_seen).getTime() >= Date.now() - IN_GAME_STALE_MS)
-        ) {
+        if (activeSet.has(profile.id)) {
           inGameMap[profile.id] = true;
         }
       });
