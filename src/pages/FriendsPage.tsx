@@ -10,6 +10,7 @@ import { ArrowLeft, MessageCircle, UserMinus, Circle, UserPlus, Check, X, Bell, 
 import { useSounds } from "@/hooks/useSounds";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import Lottie from "lottie-react";
 import friendsSayfaAnim from "@/assets/friendsSayfa.json";
 
@@ -74,9 +75,9 @@ const FriendsPage = () => {
     }
   };
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async (showLoading = true) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
 
     try {
       // Fetch all friendships involving current user
@@ -96,20 +97,16 @@ const FriendsPage = () => {
       // Get unique friend IDs
       const friendIds = data.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id));
 
-      // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url, premium_until, in_game").in("id", friendIds);
-
-      // Fetch presence with server-side filtering
       const oneMinuteAgo = new Date(Date.now() - 120 * 1000).toISOString();
-      // 🔥 is_online flag'i artık güvenilmez (useActivityTracker güncellemiyor)
-      // Sadece last_seen 2dk içindeyse online kabul et
-      const { data: presenceData } = await supabase
-        .from("user_presence")
-        .select("user_id, last_seen")
-        .in("user_id", friendIds)
-        .gte("last_seen", oneMinuteAgo);
+      const activeSince = getInGameActivityThreshold();
+      const [{ data: profiles }, { data: presenceData }, { data: activityData }] = await Promise.all([
+        supabase.from("profiles").select("id, username, avatar_url, premium_until").in("id", friendIds),
+        supabase.from("user_presence").select("user_id, last_seen").in("user_id", friendIds).gte("last_seen", oneMinuteAgo),
+        supabase.from("player_activities").select("player_id").in("player_id", friendIds).gte("last_action_time", activeSince),
+      ]);
 
       const onlineSet = new Set(presenceData?.map((p) => p.user_id) || []);
+      const inGameSet = new Set((activityData || []).map((a) => a.player_id).filter(Boolean));
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
       const items: FriendItem[] = data.map((f) => {
@@ -122,7 +119,7 @@ const FriendsPage = () => {
           username: profile?.username || "Oyuncu",
           avatar_url: profile?.avatar_url || null,
           is_online: onlineSet.has(friendId),
-          in_game: !!(profile as any)?.in_game,
+          in_game: inGameSet.has(friendId),
           status: f.status,
           is_sender: f.user_id === user.id,
           isPremium: isUserPremium((profile as any)?.premium_until),
@@ -134,13 +131,19 @@ const FriendsPage = () => {
     } catch (err) {
       console.error("Arkadaş listesi hatası:", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
     fetchFriends();
   }, [fetchFriends]);
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = window.setInterval(() => fetchFriends(false), IN_GAME_STATUS_POLL_MS);
+    return () => window.clearInterval(interval);
+  }, [user, fetchFriends]);
 
   // Realtime subscription - friendships + presence changes
   useEffect(() => {
