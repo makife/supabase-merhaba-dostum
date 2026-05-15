@@ -181,7 +181,7 @@ export default function ChatPage() {
         .gte("last_action_time", activeSince);
       const activeSet = new Set((activityData || []).map((a) => a.player_id).filter(Boolean));
 
-      const merged = (users || []).map((u: any) => ({
+      const merged = (users || []).map((u) => ({
         ...u,
         in_game: activeSet.has(u.id),
       }));
