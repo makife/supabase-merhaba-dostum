@@ -419,7 +419,7 @@ const LeaderboardPage = () => {
             )}
             {/* 2nd & 3rd side by side */}
             {(second || third) && (
-              <div className="flex justify-center gap-14">
+              <div className="flex justify-center gap-20">
                 {second && renderPodiumItem(second, 2, "sm")}
                 {third && renderPodiumItem(third, 3, "sm")}
               </div>
