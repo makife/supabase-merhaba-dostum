@@ -372,7 +372,7 @@ const LeaderboardPage = () => {
           </div>
         </div>
         <div
-          className="flex flex-col items-center rounded-lg border px-2 py-1 mt-[-8px] bg-transparent"
+          className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
           style={{ borderColor: frameColor }}
         >
           <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
