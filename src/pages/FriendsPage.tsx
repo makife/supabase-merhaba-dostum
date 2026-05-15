@@ -497,14 +497,13 @@ const FriendCard = ({
         </Avatar>
         <Circle
           className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${
-            friend.is_online ? "text-green-400 fill-green-400" : "text-zinc-600 fill-zinc-600"
+            friend.in_game
+              ? "text-blue-400 fill-blue-400 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]"
+              : friend.is_online
+                ? "text-green-400 fill-green-400"
+                : "text-zinc-600 fill-zinc-600"
           }`}
         />
-        {friend.in_game && (
-          <Circle
-            className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 text-blue-400 fill-blue-400 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]"
-          />
-        )}
         {friend.isPremium && (
           <div className="absolute -top-1 -left-1 z-20">
             <VipBadge size="xs" />
@@ -514,8 +513,8 @@ const FriendCard = ({
 
       <button onClick={onProfile} className="flex-1 min-w-0 text-left">
         <p className="text-sm font-semibold truncate">{friend.username}</p>
-        <p className={`text-[10px] ${friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
-          {friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
+        <p className={`text-[10px] ${friend.in_game ? "text-blue-400" : friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
+          {friend.in_game ? "Maçta" : friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
         </p>
       </button>
 
