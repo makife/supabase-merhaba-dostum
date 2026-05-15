@@ -222,6 +222,50 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (!isOpen || messages.length === 0) return;
+
+    const interval = window.setInterval(() => {
+      const userIds = getMessageUserIds(messages);
+      if (userIds.length > 0) {
+        fetchUserAvatars(userIds);
+      }
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [isOpen, messages]);
+
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+
+    const channel = supabase
+      .channel(`global-chat-in-game-status-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_activities" },
+        () => {
+          const userIds = getMessageUserIds(messages);
+          if (userIds.length > 0) fetchUserAvatars(userIds);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        (payload) => {
+          const changedUserId = (payload.new as any)?.id;
+          if (!changedUserId || !messages.some((message) => message.user_id === changedUserId)) return;
+
+          const userIds = getMessageUserIds(messages);
+          if (userIds.length > 0) fetchUserAvatars(userIds);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user?.id, messages]);
+
   const fetchAllUsers = async () => {
     try {
       const { data, error } = await supabase
