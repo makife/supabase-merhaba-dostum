@@ -7959,8 +7959,8 @@ const GamePage = ({
                       animationData={matchBgAnim}
                       loop
                       autoplay
-                      renderer="canvas"
-                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 }}
+                      renderer={"canvas" as any}
+                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 } as any}
                       onDOMLoaded={() => {
                         matchBgLottieRef.current?.setSubframe(false);
                         matchBgLottieRef.current?.setSpeed(0.85);
