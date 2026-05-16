@@ -866,7 +866,13 @@ const TournamentBracketPage = () => {
         className="fixed inset-0 flex flex-col items-center justify-center"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin mb-4" />
+        <div className="w-24 h-24 mb-4">
+          {cupLottie ? (
+            <Lottie animationData={cupLottie} loop autoplay />
+          ) : (
+            <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin mx-auto mt-6" />
+          )}
+        </div>
         <p className="text-white/60 text-sm font-medium uppercase tracking-widest">Turnuva yükleniyor</p>
       </div>
     );
