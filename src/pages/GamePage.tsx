@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useAppState } from "@/hooks/useAppState";
@@ -162,7 +162,8 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * 4)]);
+  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+  const matchBgLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -967,6 +968,20 @@ const GamePage = ({
   const attemptedAutoCompleteRef = useRef(false);
   const reviewPromptedRef = useRef(false);
   const { maybeRequestReview, incrementMatchCount } = useAppReviewPrompt();
+
+  useEffect(() => {
+    const bgAnimation = matchBgLottieRef.current;
+    if (!bgAnimation) return;
+
+    bgAnimation.setSubframe(false);
+    bgAnimation.setSpeed(0.85);
+
+    if (isInBackground || gameEnded) {
+      bgAnimation.pause();
+    } else {
+      bgAnimation.play();
+    }
+  }, [isInBackground, gameEnded]);
 
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
@@ -7940,10 +7955,16 @@ const GamePage = ({
                 {matchBgAnim && (
                   <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                     <Lottie
+                      lottieRef={matchBgLottieRef}
                       animationData={matchBgAnim}
                       loop
                       autoplay
-                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice" }}
+                      renderer={"canvas" as any}
+                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 } as any}
+                      onDOMLoaded={() => {
+                        matchBgLottieRef.current?.setSubframe(false);
+                        matchBgLottieRef.current?.setSpeed(0.85);
+                      }}
                       style={{ width: "100%", height: "100%" }}
                     />
                   </div>
