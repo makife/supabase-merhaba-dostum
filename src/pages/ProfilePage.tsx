@@ -43,6 +43,7 @@ import {
   Star,
   Sparkles,
   Gift,
+  Rocket,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -87,6 +88,8 @@ const ProfilePage = () => {
     monthlyFirstCount: 0,
     seasonFirstCount: 0,
     rankPoints: 0,
+    scoreBoostUntil: null as string | null,
+    scoreBoostSource: null as string | null,
   });
 
   const [badges, setBadges] = useState<
@@ -360,6 +363,8 @@ const ProfilePage = () => {
           monthlyFirstCount: data.monthly_first_count || 0,
           seasonFirstCount: data.season_first_count || 0,
           rankPoints: (data as any).rank_points || 0,
+          scoreBoostUntil: data.score_boost_until || null,
+          scoreBoostSource: data.score_boost_source || null,
         }));
 
         setUserStats({
@@ -473,6 +478,8 @@ const ProfilePage = () => {
               nextLevelExp: levelData.nextLevelExp,
               averageScore: newData.average_score ?? prev.averageScore,
               rankPoints: newData.rank_points ?? prev.rankPoints,
+              scoreBoostUntil: newData.score_boost_until ?? prev.scoreBoostUntil,
+              scoreBoostSource: newData.score_boost_source ?? prev.scoreBoostSource,
             };
           });
 
@@ -645,6 +652,8 @@ const ProfilePage = () => {
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
+          scoreBoostUntil: data.score_boost_until || null,
+          scoreBoostSource: data.score_boost_source || null,
         }));
 
         setUserStats({
@@ -738,7 +747,45 @@ const ProfilePage = () => {
     return { subscriptionType, timeLeft, diffDays };
   };
 
+  const getBoostInfo = () => {
+    if (!profileData.scoreBoostUntil) return null;
+
+    const boostDate = new Date(profileData.scoreBoostUntil);
+    const now = new Date();
+
+    if (boostDate <= now) return null;
+
+    const diff = boostDate.getTime() - now.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    let timeLeft = "";
+    if (days > 0) {
+      timeLeft = `${days}g ${hours}s ${minutes}dk`;
+    } else if (hours > 0) {
+      timeLeft = `${hours}s ${minutes}dk ${seconds}sn`;
+    } else if (minutes > 0) {
+      timeLeft = `${minutes}dk ${seconds}sn`;
+    } else {
+      timeLeft = `${seconds}sn`;
+    }
+
+    const sourceLabels: Record<string, string> = {
+      weekly: "Haftalık",
+      monthly: "Aylık",
+      season: "Sezonluk",
+    };
+
+    return {
+      timeLeft,
+      sourceLabel: sourceLabels[profileData.scoreBoostSource || ""] || "Puan Boostu",
+    };
+  };
+
   const subscriptionInfo = getSubscriptionInfo();
+  const boostInfo = getBoostInfo();
 
   const checkBadges = async (userId: string) => {
     try {
@@ -883,6 +930,8 @@ const ProfilePage = () => {
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
+          scoreBoostUntil: data.score_boost_until || null,
+          scoreBoostSource: data.score_boost_source || null,
         }));
       }
 
@@ -1161,6 +1210,31 @@ const ProfilePage = () => {
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
                     style={{ width: `${Math.max(0, Math.min(100, ((30 - subscriptionInfo.diffDays) / 30) * 100))}%` }}
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BOOST INFO */}
+        {boostInfo && (
+          <div className="px-5 mb-6">
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-600/20 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Rocket className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white">{boostInfo.sourceLabel}</h3>
+                    <span className="text-[10px] font-bold bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                      x2 Puan
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/70 mt-0.5">
+                    Kalan süre: <span className="text-white font-bold">{boostInfo.timeLeft}</span>
+                  </p>
                 </div>
               </div>
             </div>
