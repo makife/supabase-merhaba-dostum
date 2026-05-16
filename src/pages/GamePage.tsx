@@ -156,6 +156,8 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
+  const [matchBgAnim, setMatchBgAnim] = useState<any>(null);
+  const matchBgIndexRef = useRef<number>(Math.floor(Math.random() * 4) + 1);
 
   useEffect(() => {
     Promise.all([
@@ -165,13 +167,15 @@ const GamePage = ({
       fetch("/kazanmajson.json").then(r => r.json()),
       fetch("/altiharf.json").then(r => r.json()),
       fetch("/gunlukKonfeti.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
+      fetch(`/macArkaPlan${matchBgIndexRef.current}.json`).then(r => r.json()),
+    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti, matchBg]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
       setAltiHarfAnim(altiHarf);
       setGunlukKonfetiAnim(gunlukKonfeti);
+      setMatchBgAnim(matchBg);
     }).catch(console.error);
   }, []);
   const {
