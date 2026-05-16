@@ -311,6 +311,20 @@ const GamePage = ({
   const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
   const [isInBackground, setIsInBackground] = useState(false);
 
+  useEffect(() => {
+    const bgAnimation = matchBgLottieRef.current;
+    if (!bgAnimation) return;
+
+    bgAnimation.setSubframe(false);
+    bgAnimation.setSpeed(0.85);
+
+    if (isInBackground || gameEnded) {
+      bgAnimation.pause();
+    } else {
+      bgAnimation.play();
+    }
+  }, [isInBackground, gameEnded]);
+
   // Ref'ler - arka plan disconnect için güncel değerleri tut
   const gameStartedRef = useRef(false);
   const currentRoomRef = useRef(currentRoom);
