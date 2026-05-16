@@ -171,15 +171,13 @@ const GamePage = ({
       fetch("/kazanmajson.json").then(r => r.json()),
       fetch("/altiharf.json").then(r => r.json()),
       fetch("/gunlukKonfeti.json").then(r => r.json()),
-      fetch(`/macArkaPlan${matchBgIndexRef.current}.json`).then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti, matchBg]) => {
+    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
       setAltiHarfAnim(altiHarf);
       setGunlukKonfetiAnim(gunlukKonfeti);
-      setMatchBgAnim(matchBg);
     }).catch(console.error);
   }, []);
   const {
