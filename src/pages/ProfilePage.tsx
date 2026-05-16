@@ -649,6 +649,8 @@ const ProfilePage = () => {
           tournamentsLost: tournamentStats.lost,
           tournamentsPlayed: tournamentStats.played,
           tournamentWinRate: tournamentStats.winRate,
+          scoreBoostUntil: data.score_boost_until || null,
+          scoreBoostSource: data.score_boost_source || null,
         }));
 
         setUserStats({
