@@ -41,7 +41,8 @@ import macArkaPlan1 from "@/assets/macArkaPlan1.json";
 import macArkaPlan2 from "@/assets/macArkaPlan2.json";
 import macArkaPlan3 from "@/assets/macArkaPlan3.json";
 import macArkaPlan4 from "@/assets/macArkaPlan4.json";
-const MAC_ARKA_PLANLAR = [macArkaPlan1, macArkaPlan2, macArkaPlan3, macArkaPlan4];
+import macArkaPlan5 from "@/assets/macArkaPlan5.json";
+const MAC_ARKA_PLANLAR = [macArkaPlan1, macArkaPlan2, macArkaPlan3, macArkaPlan4, macArkaPlan5];
 import {
   ArrowLeft,
   Clock,
