@@ -156,6 +156,8 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
+  const [matchBgAnim, setMatchBgAnim] = useState<any>(null);
+  const matchBgIndexRef = useRef<number>(Math.floor(Math.random() * 4) + 1);
 
   useEffect(() => {
     Promise.all([
@@ -165,13 +167,15 @@ const GamePage = ({
       fetch("/kazanmajson.json").then(r => r.json()),
       fetch("/altiharf.json").then(r => r.json()),
       fetch("/gunlukKonfeti.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
+      fetch(`/macArkaPlan${matchBgIndexRef.current}.json`).then(r => r.json()),
+    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti, matchBg]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
       setAltiHarfAnim(altiHarf);
       setGunlukKonfetiAnim(gunlukKonfeti);
+      setMatchBgAnim(matchBg);
     }).catch(console.error);
   }, []);
   const {
@@ -7929,8 +7933,19 @@ const GamePage = ({
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
-            >
-              <div className="h-full flex flex-col px-2 relative z-15">
+              >
+                {matchBgAnim && (
+                  <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                    <Lottie
+                      animationData={matchBgAnim}
+                      loop
+                      autoplay
+                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice" }}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
+                )}
+               <div className="h-full flex flex-col px-2 relative z-15">
                 {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
