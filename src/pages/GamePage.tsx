@@ -8314,7 +8314,7 @@ const GamePage = ({
                               ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
                               : inputFlash === "error"
                                 ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
-                                : "border border-white/15 bg-white/5"
+                                : "border border-white/10 bg-slate-900/70"
                       }`}
                     >
                       <AnimatePresence mode="popLayout">
