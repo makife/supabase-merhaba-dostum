@@ -37,6 +37,11 @@ import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/Server
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
+import macArkaPlan1 from "@/assets/macArkaPlan1.json";
+import macArkaPlan2 from "@/assets/macArkaPlan2.json";
+import macArkaPlan3 from "@/assets/macArkaPlan3.json";
+import macArkaPlan4 from "@/assets/macArkaPlan4.json";
+const MAC_ARKA_PLANLAR = [macArkaPlan1, macArkaPlan2, macArkaPlan3, macArkaPlan4];
 import {
   ArrowLeft,
   Clock,
