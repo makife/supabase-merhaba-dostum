@@ -221,6 +221,14 @@ const TournamentBracketPage = () => {
     };
   }, [showChampion]);
 
+  // Kupa Lottie yükle
+  useEffect(() => {
+    fetch('/kupajson.json')
+      .then((r) => r.json())
+      .then((data) => setCupLottie(data))
+      .catch(() => {});
+  }, []);
+
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
     degistir: "/degistirOdul.png",
