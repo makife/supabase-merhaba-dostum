@@ -7933,8 +7933,19 @@ const GamePage = ({
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
-            >
-              <div className="h-full flex flex-col px-2 relative z-15">
+              >
+                {matchBgAnim && (
+                  <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                    <Lottie
+                      animationData={matchBgAnim}
+                      loop
+                      autoplay
+                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice" }}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
+                )}
+               <div className="h-full flex flex-col px-2 relative z-15">
                 {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
