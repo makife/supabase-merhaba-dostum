@@ -478,6 +478,8 @@ const ProfilePage = () => {
               nextLevelExp: levelData.nextLevelExp,
               averageScore: newData.average_score ?? prev.averageScore,
               rankPoints: newData.rank_points ?? prev.rankPoints,
+              scoreBoostUntil: newData.score_boost_until ?? prev.scoreBoostUntil,
+              scoreBoostSource: newData.score_boost_source ?? prev.scoreBoostSource,
             };
           });
 
