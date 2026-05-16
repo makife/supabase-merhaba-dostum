@@ -201,6 +201,7 @@ const TournamentBracketPage = () => {
   const [wonReward, setWonReward] = useState<any>(null);
   const [championLottie, setChampionLottie] = useState<any>(null);
   const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
+  const [cupLottie, setCupLottie] = useState<any>(null);
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
 
   useEffect(() => {
