@@ -7985,7 +7985,7 @@ const GamePage = ({
                         } ${
                           displayTime <= 30
                             ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                            : "bg-white/5 border border-white/15"
+                            : "bg-slate-900/70 border border-white/10"
                         }`}
                         style={{ minWidth: "110px" }}
                       >
