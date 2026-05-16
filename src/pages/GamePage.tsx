@@ -37,6 +37,11 @@ import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/Server
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
+import macArkaPlan1 from "@/assets/macArkaPlan1.json";
+import macArkaPlan2 from "@/assets/macArkaPlan2.json";
+import macArkaPlan3 from "@/assets/macArkaPlan3.json";
+import macArkaPlan4 from "@/assets/macArkaPlan4.json";
+const MAC_ARKA_PLANLAR = [macArkaPlan1, macArkaPlan2, macArkaPlan3, macArkaPlan4];
 import {
   ArrowLeft,
   Clock,
@@ -156,8 +161,7 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim, setMatchBgAnim] = useState<any>(null);
-  const matchBgIndexRef = useRef<number>(Math.floor(Math.random() * 4) + 1);
+  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * 4)]);
 
   useEffect(() => {
     Promise.all([
@@ -167,15 +171,13 @@ const GamePage = ({
       fetch("/kazanmajson.json").then(r => r.json()),
       fetch("/altiharf.json").then(r => r.json()),
       fetch("/gunlukKonfeti.json").then(r => r.json()),
-      fetch(`/macArkaPlan${matchBgIndexRef.current}.json`).then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti, matchBg]) => {
+    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
       setWinAnim(win);
       setLoseAnim(lose);
       setTieAnim(tie);
       setConfettiAnim(confetti);
       setAltiHarfAnim(altiHarf);
       setGunlukKonfetiAnim(gunlukKonfeti);
-      setMatchBgAnim(matchBg);
     }).catch(console.error);
   }, []);
   const {
