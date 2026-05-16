@@ -87,6 +87,8 @@ const ProfilePage = () => {
     monthlyFirstCount: 0,
     seasonFirstCount: 0,
     rankPoints: 0,
+    scoreBoostUntil: null as string | null,
+    scoreBoostSource: null as string | null,
   });
 
   const [badges, setBadges] = useState<
