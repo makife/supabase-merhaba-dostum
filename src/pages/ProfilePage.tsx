@@ -745,7 +745,45 @@ const ProfilePage = () => {
     return { subscriptionType, timeLeft, diffDays };
   };
 
+  const getBoostInfo = () => {
+    if (!profileData.scoreBoostUntil) return null;
+
+    const boostDate = new Date(profileData.scoreBoostUntil);
+    const now = new Date();
+
+    if (boostDate <= now) return null;
+
+    const diff = boostDate.getTime() - now.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    let timeLeft = "";
+    if (days > 0) {
+      timeLeft = `${days}g ${hours}s ${minutes}dk`;
+    } else if (hours > 0) {
+      timeLeft = `${hours}s ${minutes}dk ${seconds}sn`;
+    } else if (minutes > 0) {
+      timeLeft = `${minutes}dk ${seconds}sn`;
+    } else {
+      timeLeft = `${seconds}sn`;
+    }
+
+    const sourceLabels: Record<string, string> = {
+      weekly: "Haftalık",
+      monthly: "Aylık",
+      season: "Sezonluk",
+    };
+
+    return {
+      timeLeft,
+      sourceLabel: sourceLabels[profileData.scoreBoostSource || ""] || "Puan Boostu",
+    };
+  };
+
   const subscriptionInfo = getSubscriptionInfo();
+  const boostInfo = getBoostInfo();
 
   const checkBadges = async (userId: string) => {
     try {
