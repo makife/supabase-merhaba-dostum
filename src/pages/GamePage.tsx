@@ -8370,7 +8370,7 @@ const GamePage = ({
                       </div>
                     </div>
 
-                    <div className="bg-white/10 border border-white/15 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
+                    <div className="bg-slate-900/70 border border-white/10 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
                       {currentWord.length}
                     </div>
                   </div>
