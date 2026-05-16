@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import Lottie from "lottie-react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { useAppState } from "@/hooks/useAppState";
@@ -162,7 +162,8 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * 4)]);
+  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+  const matchBgLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
     Promise.all([
