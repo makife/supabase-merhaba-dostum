@@ -1214,6 +1214,31 @@ const ProfilePage = () => {
           </div>
         )}
 
+        {/* BOOST INFO */}
+        {boostInfo && (
+          <div className="px-5 mb-6">
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-600/20 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
+              <div className="relative z-10 flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Rocket className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white">{boostInfo.sourceLabel}</h3>
+                    <span className="text-[10px] font-bold bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20">
+                      x2 Puan
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/70 mt-0.5">
+                    Kalan süre: <span className="text-white font-bold">{boostInfo.timeLeft}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* STATS GRID */}
         <div className="px-5 mb-6">
           <div className="flex items-center gap-2 mb-4">
