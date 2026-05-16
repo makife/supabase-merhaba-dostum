@@ -969,6 +969,20 @@ const GamePage = ({
   const reviewPromptedRef = useRef(false);
   const { maybeRequestReview, incrementMatchCount } = useAppReviewPrompt();
 
+  useEffect(() => {
+    const bgAnimation = matchBgLottieRef.current;
+    if (!bgAnimation) return;
+
+    bgAnimation.setSubframe(false);
+    bgAnimation.setSpeed(0.85);
+
+    if (isInBackground || gameEnded) {
+      bgAnimation.pause();
+    } else {
+      bgAnimation.play();
+    }
+  }, [isInBackground, gameEnded]);
+
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
     if (!gameEnded || reviewPromptedRef.current) return;
