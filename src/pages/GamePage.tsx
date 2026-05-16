@@ -7985,7 +7985,7 @@ const GamePage = ({
                         } ${
                           displayTime <= 30
                             ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                            : "bg-white/5 border border-white/15"
+                            : "bg-slate-900/70 border border-white/10"
                         }`}
                         style={{ minWidth: "110px" }}
                       >
@@ -8314,7 +8314,7 @@ const GamePage = ({
                               ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
                               : inputFlash === "error"
                                 ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
-                                : "border border-white/15 bg-white/5"
+                                : "border border-white/10 bg-slate-900/70"
                       }`}
                     >
                       <AnimatePresence mode="popLayout">
@@ -8370,7 +8370,7 @@ const GamePage = ({
                       </div>
                     </div>
 
-                    <div className="bg-white/10 border border-white/15 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
+                    <div className="bg-slate-900/70 border border-white/10 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
                       {currentWord.length}
                     </div>
                   </div>
