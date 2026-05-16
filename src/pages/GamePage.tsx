@@ -161,8 +161,7 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim, setMatchBgAnim] = useState<any>(null);
-  const matchBgIndexRef = useRef<number>(Math.floor(Math.random() * 4) + 1);
+  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * 4)]);
 
   useEffect(() => {
     Promise.all([
