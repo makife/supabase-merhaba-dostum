@@ -43,6 +43,7 @@ import {
   Star,
   Sparkles,
   Gift,
+  Rocket,
 } from "lucide-react";
 
 const ProfilePage = () => {
