@@ -362,6 +362,8 @@ const ProfilePage = () => {
           monthlyFirstCount: data.monthly_first_count || 0,
           seasonFirstCount: data.season_first_count || 0,
           rankPoints: (data as any).rank_points || 0,
+          scoreBoostUntil: data.score_boost_until || null,
+          scoreBoostSource: data.score_boost_source || null,
         }));
 
         setUserStats({
