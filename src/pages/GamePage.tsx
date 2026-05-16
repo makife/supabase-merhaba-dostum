@@ -7955,10 +7955,16 @@ const GamePage = ({
                 {matchBgAnim && (
                   <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                     <Lottie
+                      lottieRef={matchBgLottieRef}
                       animationData={matchBgAnim}
                       loop
                       autoplay
-                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice" }}
+                      renderer="canvas"
+                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 }}
+                      onDOMLoaded={() => {
+                        matchBgLottieRef.current?.setSubframe(false);
+                        matchBgLottieRef.current?.setSpeed(0.85);
+                      }}
                       style={{ width: "100%", height: "100%" }}
                     />
                   </div>
