@@ -983,6 +983,13 @@ const GamePage = ({
     }
   }, [isInBackground, gameEnded]);
 
+  // 🎨 Yeni oyun / rematch başladığında farklı arka plan seç
+  useEffect(() => {
+    if (showCountdown && !gameEnded) {
+      setMatchBgAnim(MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+    }
+  }, [showCountdown, gameEnded]);
+
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
     if (!gameEnded || reviewPromptedRef.current) return;
