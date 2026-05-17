@@ -162,7 +162,7 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+  const [matchBgAnim, setMatchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
   const matchBgLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
@@ -982,6 +982,13 @@ const GamePage = ({
       bgAnimation.play();
     }
   }, [isInBackground, gameEnded]);
+
+  // 🎨 Yeni oyun / rematch başladığında farklı arka plan seç
+  useEffect(() => {
+    if (showCountdown && !gameEnded) {
+      setMatchBgAnim(MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+    }
+  }, [showCountdown, gameEnded]);
 
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
