@@ -94,7 +94,9 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    console.warn('🔇 NativeAudio: iOS üzerinde devre dışı (AVAudioSession crash guard)');
+    console.log('🔊 NativeAudio: iOS → Web Audio API moduna geçiliyor');
+    initialized = true;
+    await initIOSWebAudio(SOUND_DEFINITIONS);
     return;
   }
 
