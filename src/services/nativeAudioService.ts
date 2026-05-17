@@ -192,7 +192,9 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    return false;
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const fallbackUrl = soundDef?.assetPath.replace(/^public\//, '/');
+    return playIOSWebSound(assetId, volume ?? soundDef?.volume ?? 0.7, fallbackUrl);
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
