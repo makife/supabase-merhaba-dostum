@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import { initIOSWebAudio, playIOSWebSound } from './iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -93,7 +94,9 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    console.warn('🔇 NativeAudio: iOS üzerinde devre dışı (AVAudioSession crash guard)');
+    console.log('🔊 NativeAudio: iOS → Web Audio API moduna geçiliyor');
+    initialized = true;
+    await initIOSWebAudio(SOUND_DEFINITIONS);
     return;
   }
 
@@ -189,7 +192,9 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    return false;
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const fallbackUrl = soundDef?.assetPath.replace(/^public\//, '/');
+    return playIOSWebSound(assetId, volume ?? soundDef?.volume ?? 0.7, fallbackUrl);
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
