@@ -77,6 +77,11 @@ const configureIOSNativeAudio = async (): Promise<void> => {
   iosAudioConfigured = true;
 };
 
+const getIOSAssetPath = (assetPath: string): string => {
+  const fileName = assetPath.split('/').pop() || assetPath;
+  return `sounds/${fileName}`;
+};
+
 const preloadIOSNativeSound = async (sound: SoundDefinition): Promise<boolean> => {
   if (preloadedSounds.has(sound.assetId)) return true;
   const existing = iosPreloadPromises.get(sound.assetId);
@@ -88,7 +93,7 @@ const preloadIOSNativeSound = async (sound: SoundDefinition): Promise<boolean> =
       const channels = Math.max(1, sound.channels ?? 1);
       await NativeAudio.preload({
         assetId: sound.assetId,
-        assetPath: sound.assetPath,
+        assetPath: getIOSAssetPath(sound.assetPath),
         audioChannelNum: channels,
         channels,
         volume: sound.volume ?? 0.7,
