@@ -64,6 +64,52 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
 // Initialization flag
 let initialized = false;
 let initPromise: Promise<void> | null = null;
+let iosAudioConfigured = false;
+const iosPreloadPromises = new Map<string, Promise<boolean>>();
+
+const configureIOSNativeAudio = async (): Promise<void> => {
+  if (!isIOSNative || iosAudioConfigured) return;
+  try {
+    await NativeAudio.configure({ focus: false, fade: false });
+  } catch {
+    // Configure desteklenmezse çalmayı yine de dene.
+  }
+  iosAudioConfigured = true;
+};
+
+const preloadIOSNativeSound = async (sound: SoundDefinition): Promise<boolean> => {
+  if (preloadedSounds.has(sound.assetId)) return true;
+  const existing = iosPreloadPromises.get(sound.assetId);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    await configureIOSNativeAudio();
+    try {
+      const channels = Math.max(1, sound.channels ?? 1);
+      await NativeAudio.preload({
+        assetId: sound.assetId,
+        assetPath: sound.assetPath,
+        audioChannelNum: channels,
+        channels,
+        volume: sound.volume ?? 0.7,
+        isUrl: false,
+      } as any);
+      preloadedSounds.add(sound.assetId);
+      return true;
+    } catch (e: any) {
+      if (String(e?.message ?? e).includes('already exists')) {
+        preloadedSounds.add(sound.assetId);
+        return true;
+      }
+      return false;
+    } finally {
+      iosPreloadPromises.delete(sound.assetId);
+    }
+  })();
+
+  iosPreloadPromises.set(sound.assetId, promise);
+  return promise;
+};
 
 /**
  * Native Audio hazır olana kadar bekle
@@ -93,10 +139,12 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    // iOS IPA güvenlik guardı: ses efektleri WebView/AVAudioSession çakışması
-    // yaratabildiği için iOS native içinde tamamen sessiz no-op çalışır.
-    initialized = true;
-    return;
+    if (initialized) return;
+    if (initPromise) return initPromise;
+    initPromise = configureIOSNativeAudio().then(() => {
+      initialized = true;
+    });
+    return initPromise;
   }
 
   if (initialized) return;
@@ -191,7 +239,25 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    return false;
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (!soundDef) return false;
+    const ready = await preloadIOSNativeSound(soundDef);
+    if (!ready) return false;
+
+    try {
+      await NativeAudio.play({ assetId, time: 0 });
+      return true;
+    } catch {
+      preloadedSounds.delete(assetId);
+      const reloaded = await preloadIOSNativeSound(soundDef);
+      if (!reloaded) return false;
+      try {
+        await NativeAudio.play({ assetId, time: 0 });
+        return true;
+      } catch {
+        return false;
+      }
+    }
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
