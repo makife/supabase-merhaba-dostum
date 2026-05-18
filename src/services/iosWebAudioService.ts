@@ -166,15 +166,14 @@ export const playIOSWebSound = async (
   if (!c) return false;
 
   // iOS context unlock değilse resume'u BEKLE (gesture ise resume olur)
-  if (c.state !== "running") {
+  if ((c.state as string) !== "running") {
     try {
       await tryUnlock();
     } catch {}
-    // Hâlâ açılmadıysa son bir resume daha dene
-    if (c.state !== "running") {
+    if ((c.state as string) !== "running") {
       try { await c.resume(); } catch {}
     }
-    if (c.state !== "running") {
+    if ((c.state as string) !== "running") {
       console.warn(`[iOSWebAudio] ${assetId} çalınamadı: ctx state=${c.state}`);
       return false;
     }
