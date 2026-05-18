@@ -447,14 +447,52 @@ const TournamentBracketPage = () => {
 
       if (!pendingMatches || pendingMatches.length === 0) return;
 
+      // 🔒 Güncel katılımcı listesini DB'den al (turnuvayı terk edenler dahil)
+      const { data: freshParticipants } = await supabase
+        .from("tournament_participants")
+        .select("user_id, is_bot")
+        .eq("tournament_id", tournamentId);
+
       const botIds = new Set<string>();
-      participants.forEach((p) => {
-        if (p.is_bot && p.user_id) botIds.add(p.user_id);
+      const presentUserIds = new Set<string>();
+      (freshParticipants || []).forEach((p) => {
+        if (p.user_id) {
+          presentUserIds.add(p.user_id);
+          if (p.is_bot) botIds.add(p.user_id);
+        }
       });
 
       for (const match of pendingMatches) {
         const p1Bot = botIds.has(match.player1_id || "") || match.player1_id?.startsWith("bot_");
         const p2Bot = botIds.has(match.player2_id || "") || match.player2_id?.startsWith("bot_");
+
+        // 🚪 Geri sayım sırasında ayrılan oyuncuyu tespit et
+        const p1Missing = !p1Bot && !!match.player1_id && !presentUserIds.has(match.player1_id);
+        const p2Missing = !p2Bot && !!match.player2_id && !presentUserIds.has(match.player2_id);
+
+        if (p1Missing || p2Missing) {
+          // En az bir oyuncu turnuvadan ayrılmış → kalan oyuncu otomatik kazanır
+          let winnerId: string | null = null;
+          if (p1Missing && p2Missing) {
+            // İkisi de ayrılmış (nadir) — rastgele
+            winnerId = Math.random() < 0.5 ? match.player1_id : match.player2_id;
+          } else if (p1Missing) {
+            winnerId = match.player2_id;
+          } else {
+            winnerId = match.player1_id;
+          }
+          await supabase
+            .from("tournament_matches")
+            .update({
+              status: "completed",
+              winner_id: winnerId,
+              player1_score: p1Missing ? 0 : 1,
+              player2_score: p2Missing ? 0 : 1,
+            })
+            .eq("id", match.id);
+          console.log("🚪 Ayrılan oyuncu tespit edildi, maç otomatik sonuçlandırıldı:", { matchId: match.id, winnerId });
+          continue;
+        }
 
         if (p1Bot && p2Bot) {
           const p1s = Math.floor(Math.random() * 50) + 20;
