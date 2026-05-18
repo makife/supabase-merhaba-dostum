@@ -249,7 +249,7 @@ const KelimeAviPage = () => {
       toast.error(`"${word}" geçersiz!`);
       return;
     }
-    const pts = wordPoints(word.length);
+    const pts = wordPoints(word);
     setScore(s => s + pts);
     setFoundWords(f => [{ w: word, p: pts }, ...f]);
     playSound("correctWord");
