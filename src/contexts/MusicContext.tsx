@@ -32,8 +32,30 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const wasPlayingBeforeBackgroundRef = useRef(false);
   const musicEnabledRef = useRef(true);
 
+  // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
+  const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const iosAudioCtxRef = useRef<AudioContext | null>(null);
+  const iosGainRef = useRef<GainNode | null>(null);
+  const iosSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const iosEndedWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
+  const getMusicVolume = (): number => {
+    if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
+    return backgroundMusicRef.current?.volume ?? 0;
+  };
+  const setMusicVolume = (v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    if (isIOSNative && iosGainRef.current) {
+      try { iosGainRef.current.gain.value = clamped; } catch {}
+    }
+    if (backgroundMusicRef.current) {
+      try { backgroundMusicRef.current.volume = clamped; } catch {}
+    }
+  };
 
   // Hızlı fade out fonksiyonu (arka plan için)
   const quickFadeOut = () => {
@@ -45,15 +67,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const audio = backgroundMusicRef.current;
-    const fadeStep = audio.volume / 10; // 500ms'de 10 adım = 50ms aralık
+    const startVol = getMusicVolume();
+    const fadeStep = startVol / 10; // 500ms'de 10 adım = 50ms aralık
 
     console.log("🎵 Hızlı fade out başlatılıyor...");
 
     backgroundFadeRef.current = setInterval(() => {
-      if (audio.volume > fadeStep) {
-        audio.volume = Math.max(0, audio.volume - fadeStep);
+      const cur = getMusicVolume();
+      if (cur > fadeStep) {
+        setMusicVolume(cur - fadeStep);
       } else {
-        audio.volume = 0;
+        setMusicVolume(0);
         audio.pause();
         if (backgroundFadeRef.current) {
           clearInterval(backgroundFadeRef.current);
@@ -85,7 +109,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
         console.log("🎵 Müzik ön plan için devam ettiriliyor");
         wasPlayingBeforeBackgroundRef.current = false;
-        backgroundMusicRef.current.volume = originalVolumeRef.current;
+        setMusicVolume(originalVolumeRef.current);
         backgroundMusicRef.current.play().catch(console.warn);
       } else {
         wasPlayingBeforeBackgroundRef.current = false;
@@ -126,7 +150,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (wasPlayingBeforeBackgroundRef.current && musicEnabledRef.current && backgroundMusicRef.current) {
               console.log("🎵 Ön plan - müzik devam ettiriliyor");
               wasPlayingBeforeBackgroundRef.current = false;
-              backgroundMusicRef.current.volume = originalVolumeRef.current;
+              setMusicVolume(originalVolumeRef.current);
               backgroundMusicRef.current.play().catch(console.warn);
             } else {
               wasPlayingBeforeBackgroundRef.current = false;
@@ -284,10 +308,37 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Event listeners for state tracking
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
-      backgroundMusicRef.current.onended = () => {
+
+      // 🔥 iOS: HTMLAudioElement.volume yok sayılır → Web Audio GainNode ile sar
+      if (isIOSNative) {
+        try {
+          if (!iosAudioCtxRef.current) {
+            const Ctor: typeof AudioContext =
+              (window as any).AudioContext || (window as any).webkitAudioContext;
+            if (Ctor) iosAudioCtxRef.current = new Ctor();
+          }
+          const ctx = iosAudioCtxRef.current;
+          if (ctx) {
+            // Önceki source'u disconnect et (yeni audio için yeni node lazım)
+            try { iosSourceRef.current?.disconnect(); } catch {}
+            try { iosGainRef.current?.disconnect(); } catch {}
+            iosSourceRef.current = ctx.createMediaElementSource(backgroundMusicRef.current);
+            iosGainRef.current = ctx.createGain();
+            iosGainRef.current.gain.value = originalVolumeRef.current;
+            iosSourceRef.current.connect(iosGainRef.current).connect(ctx.destination);
+          }
+        } catch (e) {
+          console.warn("🎵 [iOS] MediaElementSource bağlanamadı:", e);
+        }
+      }
+
+      const handleTrackEnd = () => {
         setIsPlaying(false);
+        if (iosEndedWatchdogRef.current) {
+          clearInterval(iosEndedWatchdogRef.current);
+          iosEndedWatchdogRef.current = null;
+        }
         // For default pack, move to next track in shuffled playlist and autoplay the next one
-        // 🔥 FIX: musicEnabledRef kullan, stale closure'dan kaçın
         if (musicPack === "default" && musicEnabledRef.current) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
 
@@ -300,13 +351,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
-            // 🔥 FIX: Tekrar kontrol et - bu süre içinde kullanıcı müziği kapatmış olabilir
             if (musicEnabledRef.current) {
               startBackgroundMusic();
             }
           }, 120);
         }
       };
+
+      backgroundMusicRef.current.onended = handleTrackEnd;
+      // 🔥 iOS: onended bazen tetiklenmez — timeupdate watchdog ekle
+      if (isIOSNative) {
+        if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
+        iosEndedWatchdogRef.current = setInterval(() => {
+          const a = backgroundMusicRef.current;
+          if (!a) return;
+          if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
+            console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
+            try { a.pause(); } catch {}
+            handleTrackEnd();
+          }
+        }, 500);
+      }
     };
 
     initMusic();
@@ -369,6 +434,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Cleanup on unmount
     return () => {
+      if (iosEndedWatchdogRef.current) {
+        clearInterval(iosEndedWatchdogRef.current);
+        iosEndedWatchdogRef.current = null;
+      }
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         backgroundMusicRef.current.pause();
         backgroundMusicRef.current.currentTime = 0;
@@ -449,7 +518,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
-      backgroundMusicRef.current.volume = originalVolumeRef.current;
+      setMusicVolume(originalVolumeRef.current);
     }
     isStartingRef.current = false;
   };
@@ -494,23 +563,24 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const audio = backgroundMusicRef.current;
-    const startVolume = audio.volume;
+    const startVolume = getMusicVolume();
     const fadeStep = startVolume / (duration / 50); // 50ms intervals
 
-    console.log(`🎵 [MusicContext] Web fade out başlıyor: ${startVolume} → 0`);
+    console.log(`🎵 [MusicContext] Web/iOS fade out başlıyor: ${startVolume} → 0`);
 
     fadeIntervalRef.current = setInterval(() => {
-      if (audio.volume > fadeStep) {
-        audio.volume = Math.max(0, audio.volume - fadeStep);
+      const cur = getMusicVolume();
+      if (cur > fadeStep) {
+        setMusicVolume(cur - fadeStep);
       } else {
-        audio.volume = 0;
+        setMusicVolume(0);
         audio.pause();
-        audio.volume = originalVolumeRef.current; // Reset for next time
+        setMusicVolume(originalVolumeRef.current); // Reset for next time
         if (fadeIntervalRef.current) {
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
         }
-        console.log("🎵 [MusicContext] Web fade out tamamlandı");
+        console.log("🎵 [MusicContext] Web/iOS fade out tamamlandı");
       }
     }, 50);
   };
@@ -565,10 +635,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
-    audio.volume = 0;
+    setMusicVolume(0);
     audio.currentTime = 0;
 
     isStartingRef.current = true;
+
+    // iOS: AudioContext suspended olabilir, resume dene
+    if (isIOSNative && iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
+      try { await iosAudioCtxRef.current.resume(); } catch {}
+    }
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
@@ -577,10 +652,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const fadeStep = targetVolume / (duration / 50); // 50ms intervals
 
           fadeIntervalRef.current = setInterval(() => {
-            if (audio.volume < targetVolume - fadeStep) {
-              audio.volume = Math.min(targetVolume, audio.volume + fadeStep);
+            const cur = getMusicVolume();
+            if (cur < targetVolume - fadeStep) {
+              setMusicVolume(cur + fadeStep);
             } else {
-              audio.volume = targetVolume;
+              setMusicVolume(targetVolume);
               if (fadeIntervalRef.current) {
                 clearInterval(fadeIntervalRef.current);
                 fadeIntervalRef.current = null;
