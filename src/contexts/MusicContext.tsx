@@ -631,10 +631,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
-    audio.volume = 0;
+    setMusicVolume(0);
     audio.currentTime = 0;
 
     isStartingRef.current = true;
+
+    // iOS: AudioContext suspended olabilir, resume dene
+    if (isIOSNative && iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
+      try { await iosAudioCtxRef.current.resume(); } catch {}
+    }
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
@@ -643,10 +648,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const fadeStep = targetVolume / (duration / 50); // 50ms intervals
 
           fadeIntervalRef.current = setInterval(() => {
-            if (audio.volume < targetVolume - fadeStep) {
-              audio.volume = Math.min(targetVolume, audio.volume + fadeStep);
+            const cur = getMusicVolume();
+            if (cur < targetVolume - fadeStep) {
+              setMusicVolume(cur + fadeStep);
             } else {
-              audio.volume = targetVolume;
+              setMusicVolume(targetVolume);
               if (fadeIntervalRef.current) {
                 clearInterval(fadeIntervalRef.current);
                 fadeIntervalRef.current = null;
