@@ -216,6 +216,11 @@ export const useSounds = () => {
 
   // 🔓 Unlock audio for mobile - ses çalmadan önce çağır
   const unlockAudioForMobile = useCallback(() => {
+    if (isIOSNative) {
+      audioUnlockedRef.current = true;
+      return;
+    }
+
     // Global unlock'u tetikle
     unlockGlobalAudio();
 
@@ -337,6 +342,7 @@ export const useSounds = () => {
   const playGeneratedSound = useCallback(
     (frequency: number, duration: number, type: OscillatorType = "sine") => {
       if (!soundsEnabled) return;
+      if (isIOSNative) return;
 
       // 🔓 Mobil için unlock - AudioContext kullanmadan önce
       unlockAudioForMobile();
@@ -391,6 +397,7 @@ export const useSounds = () => {
       // kullanmak yes/wow/yahoo/sureAzaliyor sesleri çalarken AVAudioSession çakışması
       // sebebiyle iOS'ta sustu yapıyor.
       if (isNativePlatform()) {
+        if (isIOSNative) return;
         const nativeMap: Partial<Record<keyof SoundConfig, string>> = {
           letterSelect: 'letter_select',
           buttonClick: 'button_click',
@@ -525,6 +532,7 @@ export const useSounds = () => {
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+    if (isIOSNative) return;
 
     // 🔧 iOS-fix: Native platformda NativeAudio kullan, HTML5 Audio AVAudioSession
     // çakışması yaparak diğer kısa sesleri (harf tıklama) susturuyor.
@@ -580,6 +588,7 @@ export const useSounds = () => {
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+    if (isIOSNative) return;
 
     // 🎵 Native platform için Native Audio kullan
     if (isNativePlatform()) {
@@ -613,6 +622,7 @@ export const useSounds = () => {
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+    if (isIOSNative) return;
 
     // 🎵 Native platform için Native Audio kullan
     if (isNativePlatform()) {
@@ -646,6 +656,7 @@ export const useSounds = () => {
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
+    if (isIOSNative) return;
 
     // 🎵 Native platform için Native Audio kullan
     if (isNativePlatform()) {
@@ -681,6 +692,7 @@ export const useSounds = () => {
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
+      if (isIOSNative) return;
 
       // 🎵 Native platform için Native Audio kullan - FALLBACK YOK
       if (isNativePlatform()) {

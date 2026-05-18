@@ -1,5 +1,6 @@
 import { useEffect, useRef, memo, useState } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
 import { initNativeAudio, playNativeSound, isNativePlatform, isNativeAudioReady } from "@/services/nativeAudioService";
 import { useMusic } from "@/contexts/MusicContext";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
@@ -34,9 +35,11 @@ let audioPoolInitialized = false;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 let nativeAudioReady = false;
+const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
 // Native Audio'yu başlat
 const initNativeCountdownAudio = async () => {
+  if (isIOSNative) return;
   if (!isNativePlatform()) return;
   if (nativeAudioReady) return;
 
@@ -56,6 +59,11 @@ const initNativeCountdownAudio = async () => {
 // Mobil tarayıcılar ve Capacitor için ses kilidi açma
 const unlockAudio = () => {
   if (audioUnlocked) return;
+
+  if (isIOSNative) {
+    audioUnlocked = true;
+    return;
+  }
 
   if (isNativePlatform()) {
     initNativeCountdownAudio();
@@ -135,6 +143,8 @@ const initAudioPool = () => {
 
 // Ses çalma fonksiyonu
 const playFromPool = async (pool: AudioPool, soundType: "countdown" | "start") => {
+  if (isIOSNative) return;
+
   if (isNativePlatform()) {
     try {
       await playNativeSound(soundType, soundType === "countdown" ? 0.6 : 0.7);
