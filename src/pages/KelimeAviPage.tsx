@@ -36,13 +36,30 @@ function generateGrid(): string[] {
   return cells;
 }
 
-const wordPoints = (len: number) => {
-  if (len <= 3) return 5;
-  if (len === 4) return 10;
-  if (len === 5) return 20;
-  if (len === 6) return 35;
-  if (len === 7) return 55;
-  return 55 + (len - 7) * 20;
+// Türkçe harf nadirlik değerleri (Scrabble mantığı)
+const LETTER_VALUES: Record<string, number> = {
+  A: 1, E: 1, İ: 1, I: 1, K: 1, L: 1, N: 1, R: 1, T: 1,
+  B: 2, D: 2, G: 2, M: 2, O: 2, S: 2, U: 2, Y: 2,
+  C: 3, Ç: 3, H: 3, Ö: 3, P: 3, Ş: 3, Z: 3,
+  F: 5, Ğ: 5, J: 5, V: 5,
+};
+
+const lengthBase = (len: number) => {
+  if (len <= 3) return 2;
+  if (len === 4) return 6;
+  if (len === 5) return 15;
+  if (len === 6) return 30;
+  if (len === 7) return 50;
+  return 80 + (len - 8) * 20;
+};
+
+const wordPoints = (word: string) => {
+  const len = word.length;
+  let letterSum = 0;
+  for (const ch of word.toUpperCase()) {
+    letterSum += LETTER_VALUES[ch] ?? 1;
+  }
+  return lengthBase(len) + letterSum;
 };
 
 const isAdjacent = (a: number, b: number) => {
@@ -232,7 +249,7 @@ const KelimeAviPage = () => {
       toast.error(`"${word}" geçersiz!`);
       return;
     }
-    const pts = wordPoints(word.length);
+    const pts = wordPoints(word);
     setScore(s => s + pts);
     setFoundWords(f => [{ w: word, p: pts }, ...f]);
     playSound("correctWord");
