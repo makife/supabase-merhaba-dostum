@@ -318,7 +318,7 @@ const DinoRunner = () => {
       sameKindStreakRef.current = last === kind ? streak + 1 : 1;
       lastObstacleKindRef.current = kind;
       if (isCeiling) {
-        const height = 30 + Math.floor(Math.random() * 51); // 30-80
+        const height = 30 + Math.floor(Math.random() * 91); // 30-120
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
