@@ -117,7 +117,7 @@ const WheelPage = () => {
         ...segment,
         pathData: `M 0 0 L ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} Z`,
         rotateAngle,
-        isGrandPrize: segment.type === "ink",
+        isGrandPrize: false,
       };
     });
   }, []);
