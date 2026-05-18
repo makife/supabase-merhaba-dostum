@@ -291,10 +291,37 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Event listeners for state tracking
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
-      backgroundMusicRef.current.onended = () => {
+
+      // 🔥 iOS: HTMLAudioElement.volume yok sayılır → Web Audio GainNode ile sar
+      if (isIOSNative) {
+        try {
+          if (!iosAudioCtxRef.current) {
+            const Ctor: typeof AudioContext =
+              (window as any).AudioContext || (window as any).webkitAudioContext;
+            if (Ctor) iosAudioCtxRef.current = new Ctor();
+          }
+          const ctx = iosAudioCtxRef.current;
+          if (ctx) {
+            // Önceki source'u disconnect et (yeni audio için yeni node lazım)
+            try { iosSourceRef.current?.disconnect(); } catch {}
+            try { iosGainRef.current?.disconnect(); } catch {}
+            iosSourceRef.current = ctx.createMediaElementSource(backgroundMusicRef.current);
+            iosGainRef.current = ctx.createGain();
+            iosGainRef.current.gain.value = originalVolumeRef.current;
+            iosSourceRef.current.connect(iosGainRef.current).connect(ctx.destination);
+          }
+        } catch (e) {
+          console.warn("🎵 [iOS] MediaElementSource bağlanamadı:", e);
+        }
+      }
+
+      const handleTrackEnd = () => {
         setIsPlaying(false);
+        if (iosEndedWatchdogRef.current) {
+          clearInterval(iosEndedWatchdogRef.current);
+          iosEndedWatchdogRef.current = null;
+        }
         // For default pack, move to next track in shuffled playlist and autoplay the next one
-        // 🔥 FIX: musicEnabledRef kullan, stale closure'dan kaçın
         if (musicPack === "default" && musicEnabledRef.current) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
 
@@ -307,13 +334,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
-            // 🔥 FIX: Tekrar kontrol et - bu süre içinde kullanıcı müziği kapatmış olabilir
             if (musicEnabledRef.current) {
               startBackgroundMusic();
             }
           }, 120);
         }
       };
+
+      backgroundMusicRef.current.onended = handleTrackEnd;
+      // 🔥 iOS: onended bazen tetiklenmez — timeupdate watchdog ekle
+      if (isIOSNative) {
+        if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
+        iosEndedWatchdogRef.current = setInterval(() => {
+          const a = backgroundMusicRef.current;
+          if (!a) return;
+          if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
+            console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
+            try { a.pause(); } catch {}
+            handleTrackEnd();
+          }
+        }, 500);
+      }
     };
 
     initMusic();
