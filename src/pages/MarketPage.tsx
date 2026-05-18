@@ -810,6 +810,10 @@ const MarketPage = () => {
                       <Zap className="w-5 h-5 text-amber-100" />
                       <span className="font-medium text-sm">Reklamsız Deneyim</span>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 flex items-center justify-center font-black text-amber-100 text-base">×2</span>
+                      <span className="font-medium text-sm">Maç sonu puanların 2 katı!</span>
+                    </div>
                     <div className="flex items-center gap-3 border-t border-white/10 pt-2">
                       <div className="bg-amber-400 p-1 rounded-full">
                         <img src="/icons/degistir.svg" className="w-4 h-4" alt="joker" />
