@@ -559,23 +559,24 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const audio = backgroundMusicRef.current;
-    const startVolume = audio.volume;
+    const startVolume = getMusicVolume();
     const fadeStep = startVolume / (duration / 50); // 50ms intervals
 
-    console.log(`🎵 [MusicContext] Web fade out başlıyor: ${startVolume} → 0`);
+    console.log(`🎵 [MusicContext] Web/iOS fade out başlıyor: ${startVolume} → 0`);
 
     fadeIntervalRef.current = setInterval(() => {
-      if (audio.volume > fadeStep) {
-        audio.volume = Math.max(0, audio.volume - fadeStep);
+      const cur = getMusicVolume();
+      if (cur > fadeStep) {
+        setMusicVolume(cur - fadeStep);
       } else {
-        audio.volume = 0;
+        setMusicVolume(0);
         audio.pause();
-        audio.volume = originalVolumeRef.current; // Reset for next time
+        setMusicVolume(originalVolumeRef.current); // Reset for next time
         if (fadeIntervalRef.current) {
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
         }
-        console.log("🎵 [MusicContext] Web fade out tamamlandı");
+        console.log("🎵 [MusicContext] Web/iOS fade out tamamlandı");
       }
     }, 50);
   };
