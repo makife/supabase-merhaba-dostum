@@ -348,10 +348,9 @@ const DinoRunner = () => {
         setGameState("gameOver");
         gameStateRef.current = "gameOver";
         playSound(150, "sawtooth", 0.5);
-        const distanceScore = Math.floor(scoreRef.current / 5);
-        // Word bonus: completed word length * 5 for each completed word
+        const letterScore = Math.floor(scoreRef.current);
         const wordBonus = wordBonusRef.current;
-        const finalScore = distanceScore + wordBonus;
+        const finalScore = letterScore + wordBonus;
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
