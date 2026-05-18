@@ -22,6 +22,7 @@ const isIOSNative =
 let ctx: AudioContext | null = null;
 let unlocked = false;
 let unlockBound = false;
+let unlockPromise: Promise<void> | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer | null>>();
 
@@ -42,30 +43,39 @@ const getContext = (): AudioContext | null => {
   }
 };
 
-const tryUnlock = () => {
+const tryUnlock = (): Promise<void> => {
   const c = getContext();
-  if (!c) return;
-  if (c.state === "suspended") {
-    c.resume()
-      .then(() => {
-        unlocked = true;
-        // Sessiz buffer çal — iOS WebKit'i kesin uyandırır
-        try {
-          const buf = c.createBuffer(1, 1, 22050);
-          const src = c.createBufferSource();
-          src.buffer = buf;
-          src.connect(c.destination);
-          src.start(0);
-        } catch {}
-      })
-      .catch(() => {});
-  } else {
+  if (!c) return Promise.resolve();
+  if (c.state === "running") {
     unlocked = true;
+    return Promise.resolve();
   }
+  if (unlockPromise) return unlockPromise;
+  unlockPromise = (async () => {
+    try {
+      // Sessiz buffer'ı resume'dan ÖNCE start et — Safari için kritik
+      try {
+        const buf = c.createBuffer(1, 1, 22050);
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        src.connect(c.destination);
+        src.start(0);
+      } catch {}
+      await c.resume();
+      unlocked = c.state === "running";
+      if (unlocked) console.log("🔓 [iOSWebAudio] AudioContext unlocked");
+    } catch (e) {
+      console.warn("[iOSWebAudio] unlock hatası:", e);
+    } finally {
+      // Bir sonraki gesture'da tekrar deneyebilmek için suspended kaldıysa sıfırla
+      if (c.state !== "running") unlockPromise = null;
+    }
+  })();
+  return unlockPromise;
 };
 
 const bindUnlockOnce = () => {
-  if (unlockBound || !isIOSNative) return;
+  if (unlockBound) return;
   unlockBound = true;
   const handler = () => {
     tryUnlock();
@@ -75,7 +85,13 @@ const bindUnlockOnce = () => {
   window.addEventListener("touchend", handler, opts);
   window.addEventListener("pointerdown", handler, opts);
   window.addEventListener("click", handler, opts);
+  window.addEventListener("keydown", handler, opts);
 };
+
+// Modül yüklenir yüklenmez gesture dinleyicilerini bağla — init beklenmesin
+if (isIOSNative && typeof window !== "undefined") {
+  bindUnlockOnce();
+}
 
 const loadBuffer = async (
   assetId: string,
