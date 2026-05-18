@@ -233,8 +233,17 @@ const PrivateRoomWaitingPage = () => {
       )
       .subscribe();
 
+    // 🔁 POLLING FALLBACK: realtime event kaçarsa diye her 2.5sn'de bir kontrol et
+    // (özellikle iOS↔Android arası realtime kopmalarında kritik)
+    const pollInterval = setInterval(() => {
+      if (!unsubscribed && !navigated) {
+        fetchParticipants();
+      }
+    }, 2500);
+
     return () => {
       unsubscribed = true;
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [roomId, gameType, user, navigated, startGameAndNavigate]);
