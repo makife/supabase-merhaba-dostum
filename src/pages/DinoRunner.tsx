@@ -421,7 +421,7 @@ const DinoRunner = () => {
       if (isWordComplete) {
         // Track completed word for bonus scoring
         completedWordsRef.current.push(currentWord);
-        wordBonusRef.current += currentWord.length * 5;
+        wordBonusRef.current += currentWord.length * 10;
         setCompletedWords([...completedWordsRef.current]);
         showFeedback(true);
         
