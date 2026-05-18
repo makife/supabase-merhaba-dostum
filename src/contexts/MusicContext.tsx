@@ -434,6 +434,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Cleanup on unmount
     return () => {
+      if (iosEndedWatchdogRef.current) {
+        clearInterval(iosEndedWatchdogRef.current);
+        iosEndedWatchdogRef.current = null;
+      }
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         backgroundMusicRef.current.pause();
         backgroundMusicRef.current.currentTime = 0;
