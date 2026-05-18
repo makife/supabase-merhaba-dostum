@@ -282,7 +282,6 @@ const DinoRunner = () => {
 
     dinoRotationRef.current += speedRef.current * 4 * dt;
     speedRef.current += 0.001 * dt;
-    scoreRef.current += 1 * dt;
 
     groundOffsetRef.current = (groundOffsetRef.current + speedRef.current * dt) % 40;
 
@@ -319,8 +318,7 @@ const DinoRunner = () => {
       sameKindStreakRef.current = last === kind ? streak + 1 : 1;
       lastObstacleKindRef.current = kind;
       if (isCeiling) {
-        const ceilingHeights = [30, 45, 60];
-        const height = ceilingHeights[Math.floor(Math.random() * ceilingHeights.length)];
+        const height = 30 + Math.floor(Math.random() * 51); // 30-80
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -330,14 +328,14 @@ const DinoRunner = () => {
           type: "ceiling",
         });
       } else {
-        const types = ["short", "tall", "box"];
-        const type = types[Math.floor(Math.random() * types.length)];
+        const height = 30 + Math.floor(Math.random() * 51); // 30-80
+        const type = height <= 35 ? "short" : height >= 65 ? "tall" : "box";
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
           y: 0,
           width: OBSTACLE_WIDTH,
-          height: type === "short" ? 30 : type === "tall" ? 60 : 40,
+          height,
           type: type,
         });
       }
@@ -350,10 +348,9 @@ const DinoRunner = () => {
         setGameState("gameOver");
         gameStateRef.current = "gameOver";
         playSound(150, "sawtooth", 0.5);
-        const distanceScore = Math.floor(scoreRef.current / 5);
-        // Word bonus: completed word length * 5 for each completed word
+        const letterScore = Math.floor(scoreRef.current);
         const wordBonus = wordBonusRef.current;
-        const finalScore = distanceScore + wordBonus;
+        const finalScore = letterScore + wordBonus;
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
@@ -402,6 +399,9 @@ const DinoRunner = () => {
         letter.collected = true;
         playSound(1000, "square", 0.1);
         
+        // Her toplanan harf = 10 puan
+        scoreRef.current += 10;
+
         // Yeni: Set güncelleme
         const newSet = new Set(collectedIndicesRef.current);
         newSet.add(letter.indexInWord);
@@ -474,7 +474,7 @@ const DinoRunner = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameState]);
 
-  const liveScore = Math.floor(scoreRef.current / 5) + wordBonusRef.current;
+  const liveScore = Math.floor(scoreRef.current) + wordBonusRef.current;
   const shownScore = gameState === "gameOver" ? score : liveScore;
 
   return (
