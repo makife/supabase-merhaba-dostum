@@ -44,7 +44,7 @@ const RAW_SEGMENTS: WheelReward[] = [
   { type: "credits", value: 1, text: "1 Oyun", color: WHEEL_COLORS.blue },
   { type: "joker", value: 2, item: "degistir", text: "2x Değiştir", color: WHEEL_COLORS.green },
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
-  { type: "ink", value: 5, text: "5 Mürekkep", color: WHEEL_COLORS.indigo },
+  { type: "ink", value: 5, text: "5 Mürekkep", color: WHEEL_COLORS.purple },
   { type: "joker", value: 1, item: "senyaz", text: "Sen Yaz", color: WHEEL_COLORS.red },
   { type: "empty", value: 0, text: "Pas", color: WHEEL_COLORS.gray },
   { type: "joker", value: 2, item: "fisilida", text: "2x Fısılda", color: WHEEL_COLORS.yellow },
