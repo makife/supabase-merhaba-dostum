@@ -32,6 +32,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const wasPlayingBeforeBackgroundRef = useRef(false);
   const musicEnabledRef = useRef(true);
 
+  // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
+  const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const iosAudioCtxRef = useRef<AudioContext | null>(null);
+  const iosGainRef = useRef<GainNode | null>(null);
+  const iosSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const iosEndedWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
 
