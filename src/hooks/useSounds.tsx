@@ -41,7 +41,7 @@ const unlockGlobalAudio = () => {
   // Native platform için Native Audio kullan
   // Not: initNativeAudio zaten App.tsx'te await ile çağrılıyor
   // Burada sadece tetikleme yapmak yeterli, zaten singleton pattern ile çalışıyor
-  if (isNativePlatform() && !isIOSNative && !nativeAudioInitialized) {
+  if (isNativePlatform() && !nativeAudioInitialized) {
     // Eğer henüz hazır değilse başlat
     if (!isNativeAudioReady()) {
       initNativeAudio().then(() => {
