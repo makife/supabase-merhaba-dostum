@@ -514,7 +514,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
-      backgroundMusicRef.current.volume = originalVolumeRef.current;
+      setMusicVolume(originalVolumeRef.current);
     }
     isStartingRef.current = false;
   };
