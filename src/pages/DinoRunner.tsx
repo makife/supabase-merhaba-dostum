@@ -282,7 +282,6 @@ const DinoRunner = () => {
 
     dinoRotationRef.current += speedRef.current * 4 * dt;
     speedRef.current += 0.001 * dt;
-    scoreRef.current += 1 * dt;
 
     groundOffsetRef.current = (groundOffsetRef.current + speedRef.current * dt) % 40;
 
