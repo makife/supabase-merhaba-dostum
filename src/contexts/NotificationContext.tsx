@@ -1,9 +1,10 @@
-import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
+import { createContext, useContext, ReactNode, useEffect, useRef, useState } from "react";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { PremiumGiftDialog } from "@/components/PremiumGiftDialog";
 
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
@@ -135,6 +136,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const hasLoadedInvites = useRef(false);
   const lastKnownCredits = useRef<number | null>(null);
   const purchaseSuppressRef = useRef(false);
+  const [premiumGift, setPremiumGift] = useState<{ open: boolean; message?: string }>({ open: false });
 
   // Satın alma sırasında toast'u bastırmak için global event dinle
   useEffect(() => {
@@ -275,6 +277,12 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           });
         }
 
+        if (notification.type === "premium_gift") {
+          supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
+          setPremiumGift({ open: true, message: notification.message });
+          return;
+        }
+
         if (notification.type === "friend_request") {
           toast.info(`🤝 ${notification.message}`, {
             duration: 8000,
@@ -352,6 +360,29 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   }, [user, navigate]);
 
+  // Bekleyen premium_gift bildirimini girişte yakala
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("notifications")
+          .select("id, message")
+          .eq("user_id", user.id)
+          .eq("type", "premium_gift")
+          .eq("is_read", false)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data[0]) {
+          await supabase.from("notifications").update({ is_read: true }).eq("id", data[0].id);
+          setPremiumGift({ open: true, message: data[0].message });
+        }
+      } catch (err) {
+        console.error("premium_gift kontrol hatası:", err);
+      }
+    })();
+  }, [user]);
+
   const markAsRead = async (notificationId: string) => {
     try {
       await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
@@ -360,5 +391,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   };
 
-  return <NotificationContext.Provider value={{ unreadCount, markAsRead }}>{children}</NotificationContext.Provider>;
+  return (
+    <NotificationContext.Provider value={{ unreadCount, markAsRead }}>
+      {children}
+      <PremiumGiftDialog
+        open={premiumGift.open}
+        message={premiumGift.message}
+        onClose={() => setPremiumGift({ open: false })}
+      />
+    </NotificationContext.Provider>
+  );
 };
