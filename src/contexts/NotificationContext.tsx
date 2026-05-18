@@ -277,6 +277,12 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           });
         }
 
+        if (notification.type === "premium_gift") {
+          supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
+          setPremiumGift({ open: true, message: notification.message });
+          return;
+        }
+
         if (notification.type === "friend_request") {
           toast.info(`🤝 ${notification.message}`, {
             duration: 8000,
