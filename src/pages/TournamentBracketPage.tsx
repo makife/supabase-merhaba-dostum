@@ -732,6 +732,23 @@ const TournamentBracketPage = () => {
     if (!tournamentEndToastShownRef.current) {
       tournamentEndToastShownRef.current = true;
 
+      // 🎯 Turnuva puanını oynanan aşama sayısına böl (idempotent, tüm katılımcılar için)
+      (async () => {
+        try {
+          const { data: finRes, error: finErr } = await (supabase.rpc as any)("finalize_tournament_score", {
+            p_user_id: user.id,
+            p_tournament_id: tournamentId,
+          });
+          if (finErr) console.error("❌ finalize_tournament_score:", finErr);
+          else {
+            console.log("✅ finalize_tournament_score:", finRes);
+            refreshProfile?.();
+          }
+        } catch (e) {
+          console.error("❌ finalize_tournament_score exception:", e);
+        }
+      })();
+
       if (finalMatch.winner_id === user.id) {
         // Şampiyon
         championSoundPlayedRef.current = true;
