@@ -318,7 +318,7 @@ const DinoRunner = () => {
       sameKindStreakRef.current = last === kind ? streak + 1 : 1;
       lastObstacleKindRef.current = kind;
       if (isCeiling) {
-        const height = 30 + Math.floor(Math.random() * 51); // 30-80
+        const height = 30 + Math.floor(Math.random() * 91); // 30-120
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -328,8 +328,8 @@ const DinoRunner = () => {
           type: "ceiling",
         });
       } else {
-        const height = 30 + Math.floor(Math.random() * 51); // 30-80
-        const type = height <= 35 ? "short" : height >= 65 ? "tall" : "box";
+        const height = 30 + Math.floor(Math.random() * 91); // 30-120
+        const type = height <= 50 ? "short" : height >= 90 ? "tall" : "box";
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -421,7 +421,7 @@ const DinoRunner = () => {
       if (isWordComplete) {
         // Track completed word for bonus scoring
         completedWordsRef.current.push(currentWord);
-        wordBonusRef.current += currentWord.length * 5;
+        wordBonusRef.current += currentWord.length * 10;
         setCompletedWords([...completedWordsRef.current]);
         showFeedback(true);
         
