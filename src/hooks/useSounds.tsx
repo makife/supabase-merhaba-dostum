@@ -383,8 +383,6 @@ export const useSounds = () => {
     async (soundKey: keyof SoundConfig) => {
       if (!soundsEnabled) return;
 
-      if (isIOSNative) return;
-
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
 
@@ -399,6 +397,8 @@ export const useSounds = () => {
           correctWord: 'correct_word',
           wrongWord: 'wrong_word',
           timeWarning: 'beep',
+          gameWin: 'celebration',
+          gameLose: 'game_lose',
         };
         const assetId = nativeMap[soundKey];
         if (assetId) {
@@ -523,8 +523,6 @@ export const useSounds = () => {
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
 
-    if (isIOSNative) return;
-
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -580,8 +578,6 @@ export const useSounds = () => {
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
-    if (isIOSNative) return;
-
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -615,8 +611,6 @@ export const useSounds = () => {
   const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
 
-    if (isIOSNative) return;
-
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
 
@@ -649,8 +643,6 @@ export const useSounds = () => {
 
   const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
-
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -686,8 +678,6 @@ export const useSounds = () => {
   const playSpecialSound = useCallback(
     async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
-
-      if (isIOSNative) return;
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
