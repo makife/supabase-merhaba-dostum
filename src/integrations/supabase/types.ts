@@ -1372,6 +1372,7 @@ export type Database = {
           is_bot: boolean | null
           is_ready: boolean | null
           joined_at: string | null
+          score_finalized: boolean
           seed: number | null
           tournament_id: string | null
           user_id: string | null
@@ -1381,6 +1382,7 @@ export type Database = {
           is_bot?: boolean | null
           is_ready?: boolean | null
           joined_at?: string | null
+          score_finalized?: boolean
           seed?: number | null
           tournament_id?: string | null
           user_id?: string | null
@@ -1390,6 +1392,7 @@ export type Database = {
           is_bot?: boolean | null
           is_ready?: boolean | null
           joined_at?: string | null
+          score_finalized?: boolean
           seed?: number | null
           tournament_id?: string | null
           user_id?: string | null
@@ -1990,6 +1993,10 @@ export type Database = {
       }
       expire_stale_waiting_rooms: { Args: never; Returns: undefined }
       export_user_data: { Args: never; Returns: Json }
+      finalize_tournament_score: {
+        Args: { p_tournament_id: string; p_user_id: string }
+        Returns: Json
+      }
       generate_random_grid: { Args: never; Returns: Json }
       get_avatar_url: { Args: { user_id: string }; Returns: string }
       get_daily_top_leaders: {
