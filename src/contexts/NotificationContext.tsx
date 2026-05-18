@@ -360,6 +360,29 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   }, [user, navigate]);
 
+  // Bekleyen premium_gift bildirimini girişte yakala
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("notifications")
+          .select("id, message")
+          .eq("user_id", user.id)
+          .eq("type", "premium_gift")
+          .eq("is_read", false)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data[0]) {
+          await supabase.from("notifications").update({ is_read: true }).eq("id", data[0].id);
+          setPremiumGift({ open: true, message: data[0].message });
+        }
+      } catch (err) {
+        console.error("premium_gift kontrol hatası:", err);
+      }
+    })();
+  }, [user]);
+
   const markAsRead = async (notificationId: string) => {
     try {
       await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
@@ -368,5 +391,15 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   };
 
-  return <NotificationContext.Provider value={{ unreadCount, markAsRead }}>{children}</NotificationContext.Provider>;
+  return (
+    <NotificationContext.Provider value={{ unreadCount, markAsRead }}>
+      {children}
+      <PremiumGiftDialog
+        open={premiumGift.open}
+        message={premiumGift.message}
+        onClose={() => setPremiumGift({ open: false })}
+      />
+    </NotificationContext.Provider>
+  );
+};
 };
