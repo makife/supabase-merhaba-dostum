@@ -2289,6 +2289,25 @@ const GamePage = ({
           console.log("✅ Turnuva puanları liderlik sıralamasına yansıtıldı");
           await forceRefreshProfile?.();
         }
+
+        // 🎯 Kullanıcının turnuva yolculuğu bittiyse puanı oynanan aşama sayısına böl
+        // - Maçı kaybettiyse (eliminated) veya finali oynadıysa (round 3) yolculuk biter
+        const userJourneyEnded = !userIsWinner || tournamentMatch.round >= 3;
+        if (userJourneyEnded && tournamentMatch.tournament_id) {
+          try {
+            const { data: finRes, error: finErr } = await (supabase.rpc as any)("finalize_tournament_score", {
+              p_user_id: user.id,
+              p_tournament_id: tournamentMatch.tournament_id,
+            });
+            if (finErr) console.error("❌ finalize_tournament_score:", finErr);
+            else {
+              console.log("✅ finalize_tournament_score (GamePage):", finRes);
+              await forceRefreshProfile?.();
+            }
+          } catch (e) {
+            console.error("❌ finalize_tournament_score exception:", e);
+          }
+        }
       }
 
       // Aynı turdaki TÜM maçları kontrol et
