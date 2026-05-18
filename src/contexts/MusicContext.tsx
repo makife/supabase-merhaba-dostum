@@ -42,6 +42,21 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
+  const getMusicVolume = (): number => {
+    if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
+    return backgroundMusicRef.current?.volume ?? 0;
+  };
+  const setMusicVolume = (v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    if (isIOSNative && iosGainRef.current) {
+      try { iosGainRef.current.gain.value = clamped; } catch {}
+    }
+    if (backgroundMusicRef.current) {
+      try { backgroundMusicRef.current.volume = clamped; } catch {}
+    }
+  };
+
   // Hızlı fade out fonksiyonu (arka plan için)
   const quickFadeOut = () => {
     if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
@@ -52,15 +67,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const audio = backgroundMusicRef.current;
-    const fadeStep = audio.volume / 10; // 500ms'de 10 adım = 50ms aralık
+    const startVol = getMusicVolume();
+    const fadeStep = startVol / 10; // 500ms'de 10 adım = 50ms aralık
 
     console.log("🎵 Hızlı fade out başlatılıyor...");
 
     backgroundFadeRef.current = setInterval(() => {
-      if (audio.volume > fadeStep) {
-        audio.volume = Math.max(0, audio.volume - fadeStep);
+      const cur = getMusicVolume();
+      if (cur > fadeStep) {
+        setMusicVolume(cur - fadeStep);
       } else {
-        audio.volume = 0;
+        setMusicVolume(0);
         audio.pause();
         if (backgroundFadeRef.current) {
           clearInterval(backgroundFadeRef.current);
