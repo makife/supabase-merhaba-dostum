@@ -328,8 +328,8 @@ const DinoRunner = () => {
           type: "ceiling",
         });
       } else {
-        const height = 30 + Math.floor(Math.random() * 51); // 30-80
-        const type = height <= 35 ? "short" : height >= 65 ? "tall" : "box";
+        const height = 30 + Math.floor(Math.random() * 91); // 30-120
+        const type = height <= 50 ? "short" : height >= 90 ? "tall" : "box";
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
