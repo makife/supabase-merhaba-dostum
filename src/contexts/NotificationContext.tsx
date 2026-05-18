@@ -136,6 +136,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const hasLoadedInvites = useRef(false);
   const lastKnownCredits = useRef<number | null>(null);
   const purchaseSuppressRef = useRef(false);
+  const [premiumGift, setPremiumGift] = useState<{ open: boolean; message?: string }>({ open: false });
 
   // Satın alma sırasında toast'u bastırmak için global event dinle
   useEffect(() => {
