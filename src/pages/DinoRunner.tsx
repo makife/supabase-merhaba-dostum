@@ -399,6 +399,9 @@ const DinoRunner = () => {
         letter.collected = true;
         playSound(1000, "square", 0.1);
         
+        // Her toplanan harf = 10 puan
+        scoreRef.current += 10;
+
         // Yeni: Set güncelleme
         const newSet = new Set(collectedIndicesRef.current);
         newSet.add(letter.indexInWord);
