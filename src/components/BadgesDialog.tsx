@@ -84,9 +84,17 @@ const formatProgress = (current: number, target: number): string => {
 export const BadgesDialog = ({ open, onOpenChange, badges, userStats }: BadgesDialogProps) => {
   const earnedBadges = badges.filter((b) => b.earned);
   const lockedBadges = badges.filter((b) => !b.earned);
+  const { playSound } = useSounds();
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next && open) {
+      playSound("buttonClick");
+    }
+    onOpenChange(next);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] border-white/10 text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
