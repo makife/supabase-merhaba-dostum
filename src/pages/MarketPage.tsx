@@ -824,7 +824,11 @@ const MarketPage = () => {
                       <div className="bg-amber-400 p-1 rounded-full -ml-2">
                         <img src="/icons/senyaz.svg" className="w-4 h-4" alt="joker" />
                       </div>
-                      <span className="font-bold text-sm ml-1 text-white">Her Gün 5'er Bedava Joker!</span>
+                      <span className="font-bold text-sm ml-1 text-white">Her Gün Bedava Joker!</span>
+                    </div>
+                    <div className="text-xs text-amber-50/90 pl-1 space-y-1">
+                      <div>• <span className="font-semibold">Aylık:</span> Günlük 5'er Değiştir, Fısılda ve Sen Yaz jokeri</div>
+                      <div>• <span className="font-semibold">Yıllık:</span> Günlük 7'şer Değiştir, Fısılda ve Sen Yaz jokeri</div>
                     </div>
                   </div>
 
@@ -835,6 +839,7 @@ const MarketPage = () => {
                       disabled={isSubscriptionLoading}
                     >
                       <span className="text-lg">Aylık</span>
+                      <span className="text-[10px] opacity-80">5 joker / gün</span>
                       <span className="text-xs opacity-70">₺249.99</span>
                     </Button>
                     <Button
@@ -846,6 +851,7 @@ const MarketPage = () => {
                         %50 İNDİRİM
                       </span>
                       <span className="text-lg">Yıllık</span>
+                      <span className="text-[10px] opacity-80">7 joker / gün</span>
                       <span className="text-xs opacity-70">₺1499.99</span>
                     </Button>
                   </div>
@@ -853,6 +859,7 @@ const MarketPage = () => {
                   <p className="text-[10px] text-center text-amber-100/80 italic">
                     * Günlük jokerler her gece 00:00'da yenilenir.
                   </p>
+
 
                   {/* Satın Alımları Geri Yükle */}
                   {isNativePlatform && (
