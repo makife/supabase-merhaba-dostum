@@ -56,21 +56,25 @@ export const usePremiumDailyRewards = () => {
         return { success: false, message: error.message };
       }
 
-      const result = data as { success: boolean; message: string; jokers?: any };
+      const result = data as { success: boolean; message: string; jokers?: any; premium_type?: string; amount?: number };
       
       if (result.success) {
         setHasClaimedToday(true);
-        
+
+        const amount = result.amount ?? 5;
+        const isYearly = result.premium_type === 'premium_yearly';
+        const planLabel = isYearly ? 'Yıllık VIP' : 'Aylık VIP';
+
         // Toast bildirimi
-        toast.success('🎁 Günlük VIP Jokerleri Alındı!', {
-          description: 'Değiştir, Fısılda ve Sen Yaz jokerleriniz eklendi (+5)'
+        toast.success(`🎁 Günlük ${planLabel} Jokerleri Alındı!`, {
+          description: `Değiştir, Fısılda ve Sen Yaz jokerleriniz +${amount} eklendi`
         });
-        
+
         // Push notification gönder
         if (isPermissionGranted) {
           showLocalNotification(
-            '🎁 VIP Günlük Hediye!',
-            'Günlük 5x Değiştir, 5x Fısılda, 5x Sen Yaz jokerleriniz eklendi!',
+            `🎁 ${planLabel} Günlük Hediye!`,
+            `Günlük ${amount}x Değiştir, ${amount}x Fısılda, ${amount}x Sen Yaz jokerleriniz eklendi!`,
             { type: 'premium_daily_jokers' }
           );
         }
