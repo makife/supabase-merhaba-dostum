@@ -482,7 +482,7 @@ export function PrivateChat({ chatId, otherUser, onBack }: PrivateChatProps) {
             className={`flex-1 bg-white/10 border-white/20 text-white focus:border-green-400/50 focus:ring-green-400/30 ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
           />
           <Button
-            onClick={sendMessage}
+            onClick={() => { playSound("buttonClick"); sendMessage(); }}
             disabled={!newMessage.trim() || isLoading || isCoolingDown}
             size="sm"
             className="px-3 flex-shrink-0 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
