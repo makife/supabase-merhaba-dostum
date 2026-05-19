@@ -523,6 +523,7 @@ export const useSounds = () => {
 
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
+    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
