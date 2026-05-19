@@ -40,7 +40,6 @@ const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 
 // Native Audio'yu başlat
 const initNativeCountdownAudio = async () => {
   if (!isNativePlatform()) return;
-  if (isIOSNative) return;
   if (nativeAudioReady) return;
 
   if (isNativeAudioReady()) {
@@ -139,7 +138,6 @@ const initAudioPool = () => {
 // Ses çalma fonksiyonu
 const playFromPool = async (pool: AudioPool, soundType: "countdown" | "start") => {
   if (isNativePlatform()) {
-    if (isIOSNative) return;
     try {
       await playNativeSound(soundType, soundType === "countdown" ? 0.6 : 0.7);
     } catch (e) {
