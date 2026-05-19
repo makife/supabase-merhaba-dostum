@@ -141,9 +141,10 @@ export const initNativeAudio = async (): Promise<void> => {
           });
           preloadedSounds.add(sound.assetId);
           console.log(`✅ NativeAudio: ${sound.assetId} yüklendi`);
-        } catch (e: any) {
+        } catch (e: unknown) {
           // "already exists" hatası - aslında yüklü demek
-          if (e?.message?.includes('already exists')) {
+          const message = e instanceof Error ? e.message : String(e);
+          if (message.includes('already exists')) {
             preloadedSounds.add(sound.assetId);
             console.log(`✅ NativeAudio: ${sound.assetId} zaten mevcut`);
           } else {
@@ -254,7 +255,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     await NativeAudio.play({ assetId });
     console.log(`🔊 NativeAudio: ${assetId} çalındı`);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
     console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
     if (isNative) return false;
