@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { initNativeAudio, playNativeSound, isNativePlatform, isNativeAudioReady } from "@/services/nativeAudioService";
 import { useMusic } from "@/contexts/MusicContext";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+import { Capacitor } from "@capacitor/core";
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
@@ -34,10 +35,12 @@ let audioPoolInitialized = false;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 let nativeAudioReady = false;
+const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
 // Native Audio'yu başlat
 const initNativeCountdownAudio = async () => {
   if (!isNativePlatform()) return;
+  if (isIOSNative) return;
   if (nativeAudioReady) return;
 
   if (isNativeAudioReady()) {
@@ -136,6 +139,7 @@ const initAudioPool = () => {
 // Ses çalma fonksiyonu
 const playFromPool = async (pool: AudioPool, soundType: "countdown" | "start") => {
   if (isNativePlatform()) {
+    if (isIOSNative) return;
     try {
       await playNativeSound(soundType, soundType === "countdown" ? 0.6 : 0.7);
     } catch (e) {
