@@ -144,11 +144,11 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    if (initialized) return;
-    if (initPromise) return initPromise;
-    initPromise = configureIOSNativeAudio().then(() => {
-      initialized = true;
-    });
+    // iOS IPA'da @capacitor-community/native-audio oyun içi sık tetiklenen
+    // efektlerde AVAudioSession çakışmasıyla uygulamayı maçtan atabiliyor.
+    // Bu yüzden iOS native'de ses efektleri bilinçli olarak no-op kalır.
+    initialized = true;
+    initPromise = Promise.resolve();
     return initPromise;
   }
 
@@ -244,25 +244,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
-    if (!soundDef) return false;
-    const ready = await preloadIOSNativeSound(soundDef);
-    if (!ready) return false;
-
-    try {
-      await NativeAudio.play({ assetId, time: 0 });
-      return true;
-    } catch {
-      preloadedSounds.delete(assetId);
-      const reloaded = await preloadIOSNativeSound(soundDef);
-      if (!reloaded) return false;
-      try {
-        await NativeAudio.play({ assetId, time: 0 });
-        return true;
-      } catch {
-        return false;
-      }
-    }
+    return false;
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
@@ -383,7 +365,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
-  if (!isNative) return;
+  if (!isNative || isIOSNative) return;
   
   for (const assetId of preloadedSounds) {
     try {
@@ -398,7 +380,7 @@ export const stopAllSounds = async (): Promise<void> => {
  * Tüm sesleri temizle (unload)
  */
 export const unloadAllSounds = async (): Promise<void> => {
-  if (!isNative) return;
+  if (!isNative || isIOSNative) return;
   
   for (const assetId of preloadedSounds) {
     try {
