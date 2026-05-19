@@ -35,7 +35,6 @@ let audioPoolInitialized = false;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 let nativeAudioReady = false;
-const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
 // Native Audio'yu başlat
 const initNativeCountdownAudio = async () => {
