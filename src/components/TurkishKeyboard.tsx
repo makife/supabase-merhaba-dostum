@@ -1,4 +1,4 @@
-import { useSounds } from "@/hooks/useSounds";
+
 
 const ROWS = [
   ["E", "R", "T", "Y", "U", "I", "O", "P", "Ğ", "Ü"],
@@ -15,14 +15,13 @@ interface Props {
 }
 
 export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, highlightLetter }: Props) => {
-  const { playSound } = useSounds();
   return (
     <div className="w-full px-1 py-2 space-y-1.5">
       {ROWS.map((row, ri) => (
         <div key={ri} className="flex justify-center gap-[3px]">
           {ri === 2 && (
             <button
-              onClick={() => { playSound("buttonClick"); onSubmit(); }}
+              onClick={onSubmit}
               disabled={disabled}
               className="h-10 px-3 rounded-lg bg-emerald-600 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
@@ -34,7 +33,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
             return (
               <button
                 key={letter}
-                onClick={() => { playSound("buttonClick"); onKeyPress(letter); }}
+                onClick={() => onKeyPress(letter)}
                 disabled={disabled}
                 className={`h-10 min-w-[28px] flex-1 max-w-[36px] rounded-lg text-[13px] font-bold active:scale-90 transition-all disabled:opacity-30
                   ${isHighlighted
@@ -48,7 +47,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
           })}
           {ri === 2 && (
             <button
-              onClick={() => { playSound("buttonClick"); onBackspace(); }}
+              onClick={onBackspace}
               disabled={disabled}
               className="h-10 px-3 rounded-lg bg-white/10 border border-white/10 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
