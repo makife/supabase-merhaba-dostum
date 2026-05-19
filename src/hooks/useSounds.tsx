@@ -520,7 +520,6 @@ export const useSounds = () => {
 
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -576,7 +575,6 @@ export const useSounds = () => {
 
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -610,7 +608,6 @@ export const useSounds = () => {
 
   const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -644,7 +641,6 @@ export const useSounds = () => {
 
   const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -680,8 +676,6 @@ export const useSounds = () => {
   const playSpecialSound = useCallback(
     async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
-
-      if (isIOSNative) return;
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
