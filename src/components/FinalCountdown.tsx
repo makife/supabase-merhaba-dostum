@@ -1,6 +1,7 @@
 import { useEffect, useRef, memo } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { Capacitor } from "@capacitor/core";
+import { playNativeSound } from "@/services/nativeAudioService";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
@@ -22,8 +23,11 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
   const showCountdown = displayTime >= 1 && displayTime <= 10;
 
   const playPitchSound = (secondsLeft: number) => {
-    if (isIOSNative) return;
     if (!isSoundEffectsEnabled()) return;
+    if (Capacitor.isNativePlatform()) {
+      playNativeSound("beep", 0.7);
+      return;
+    }
     try {
       const audio = new Audio("/onsaniyegerisayim.mp3");
       const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
