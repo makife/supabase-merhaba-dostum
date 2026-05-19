@@ -48,7 +48,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
           })}
           {ri === 2 && (
             <button
-              onClick={onBackspace}
+              onClick={() => { playSound("buttonClick"); onBackspace(); }}
               disabled={disabled}
               className="h-10 px-3 rounded-lg bg-white/10 border border-white/10 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
