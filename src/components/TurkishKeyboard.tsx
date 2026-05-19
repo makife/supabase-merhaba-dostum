@@ -1,4 +1,4 @@
-
+import { useSounds } from "@/hooks/useSounds";
 
 const ROWS = [
   ["E", "R", "T", "Y", "U", "I", "O", "P", "Ğ", "Ü"],
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, highlightLetter }: Props) => {
+  const { playSound } = useSounds();
   return (
     <div className="w-full px-1 py-2 space-y-1.5">
       {ROWS.map((row, ri) => (
