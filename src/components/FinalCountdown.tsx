@@ -14,7 +14,6 @@ interface FinalCountdownProps {
 // displayTime range we display: 9 → 1
 const FPS = 30;
 const TOTAL_FRAMES = 306;
-const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
 const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownProps) => {
   const lastTickRef = useRef<number | null>(null);
