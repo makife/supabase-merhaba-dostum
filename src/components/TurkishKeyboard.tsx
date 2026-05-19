@@ -34,7 +34,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
             return (
               <button
                 key={letter}
-                onClick={() => onKeyPress(letter)}
+                onClick={() => { playSound("buttonClick"); onKeyPress(letter); }}
                 disabled={disabled}
                 className={`h-10 min-w-[28px] flex-1 max-w-[36px] rounded-lg text-[13px] font-bold active:scale-90 transition-all disabled:opacity-30
                   ${isHighlighted
