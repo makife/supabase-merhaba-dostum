@@ -79,6 +79,7 @@ export const useNativeSubscriptions = () => {
           .from("profiles")
           .update({
             premium_until: subscriptionEnd ? subscriptionEnd.toISOString() : null,
+            premium_type: isActive ? productId : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", user.user.id);

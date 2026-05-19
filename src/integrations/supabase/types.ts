@@ -1032,6 +1032,7 @@ export type Database = {
           losses: number | null
           monthly_first_count: number
           pending_boost_minutes: number
+          premium_type: string | null
           premium_until: string | null
           private_room_games: number | null
           push_token: string | null
@@ -1091,6 +1092,7 @@ export type Database = {
           losses?: number | null
           monthly_first_count?: number
           pending_boost_minutes?: number
+          premium_type?: string | null
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null
@@ -1150,6 +1152,7 @@ export type Database = {
           losses?: number | null
           monthly_first_count?: number
           pending_boost_minutes?: number
+          premium_type?: string | null
           premium_until?: string | null
           private_room_games?: number | null
           push_token?: string | null

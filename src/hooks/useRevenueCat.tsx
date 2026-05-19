@@ -206,6 +206,7 @@ export const useRevenueCat = () => {
           .from('profiles')
           .update({ 
             premium_until: premiumUntil.toISOString(),
+            premium_type: productId,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
