@@ -354,6 +354,8 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('senyaz.mp3')) assetId = 'joker_senyaz';
   else if (soundFile.includes('sampiyon.mp3')) assetId = 'sampiyon';
   else if (soundFile.includes('didyouseethat.mp3')) assetId = 'didyouseethat';
+  else if (soundFile.includes('geriSayimKlik.mp3')) assetId = 'final_countdown_click';
+  else if (soundFile.includes('turKazanma.mp3')) assetId = 'tournament_win';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
@@ -376,6 +378,10 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    return;
+  }
   if (!isNative || isIOSNative) return;
   
   for (const assetId of preloadedSounds) {
