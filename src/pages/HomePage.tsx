@@ -832,7 +832,10 @@ const HomePage = () => {
                 <div
                   key={i}
                   className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
-                  onClick={() => navigate("/market")}
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/market");
+                  }}
                 >
                   <img
                     src={j.img}
