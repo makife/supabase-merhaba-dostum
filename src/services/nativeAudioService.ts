@@ -149,11 +149,15 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    // iOS IPA'da @capacitor-community/native-audio oyun içi sık tetiklenen
-    // efektlerde AVAudioSession çakışmasıyla uygulamayı maçtan atabiliyor.
-    // Bu yüzden iOS native'de ses efektleri bilinçli olarak no-op kalır.
-    initialized = true;
-    initPromise = Promise.resolve();
+    if (initialized) return;
+    if (initPromise) return initPromise;
+
+    // iOS'ta @capacitor-community/native-audio yerine tek güvenli WebAudio yolu kullanılır.
+    // NativeAudio/HTML5 Audio karışımı maç içi sık efektlerde AVAudioSession crash'i yaratıyordu.
+    initPromise = initIOSWebAudio(SOUND_DEFINITIONS).then(() => {
+      SOUND_DEFINITIONS.forEach((sound) => preloadedSounds.add(sound.assetId));
+      initialized = true;
+    });
     return initPromise;
   }
 
@@ -249,7 +253,9 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    return false;
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (!soundDef) return false;
+    return playIOSWebSound(assetId, volume ?? soundDef.volume ?? 0.7, toWebAssetUrl(soundDef.assetPath));
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
