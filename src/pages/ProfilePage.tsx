@@ -1359,7 +1359,10 @@ const ProfilePage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowBadgesDialog(true)}
+              onClick={() => {
+                playSound("buttonClick");
+                setShowBadgesDialog(true);
+              }}
               className="text-xs text-white/70 hover:text-white hover:bg-white/10"
             >
               Tümünü Gör
