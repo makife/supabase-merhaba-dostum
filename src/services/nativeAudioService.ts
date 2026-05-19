@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import { initIOSWebAudio, playIOSWebSound, stopAllIOSWebSounds } from '@/services/iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -57,64 +58,17 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'beep', assetPath: 'public/onsaniyegerisayim.mp3', volume: 0.7, channels: 4 },
   // 🔧 Izgara harf butonları → butonsesi.mp3
   { assetId: 'letter_select', assetPath: 'public/butonsesi.mp3', volume: 0.5, channels: 4 },
-  // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
+  // 30 saniye uyarı sesi
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
+  { assetId: 'final_countdown_click', assetPath: 'public/geriSayimKlik.mp3', volume: 0.7, channels: 4 },
+  { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
+
+const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
 
 // Initialization flag
 let initialized = false;
 let initPromise: Promise<void> | null = null;
-let iosAudioConfigured = false;
-const iosPreloadPromises = new Map<string, Promise<boolean>>();
-
-const configureIOSNativeAudio = async (): Promise<void> => {
-  if (!isIOSNative || iosAudioConfigured) return;
-  try {
-    await NativeAudio.configure({ focus: false, fade: false });
-  } catch {
-    // Configure desteklenmezse çalmayı yine de dene.
-  }
-  iosAudioConfigured = true;
-};
-
-const getIOSAssetPath = (assetPath: string): string => {
-  const fileName = assetPath.split('/').pop() || assetPath;
-  return `sounds/${fileName}`;
-};
-
-const preloadIOSNativeSound = async (sound: SoundDefinition): Promise<boolean> => {
-  if (preloadedSounds.has(sound.assetId)) return true;
-  const existing = iosPreloadPromises.get(sound.assetId);
-  if (existing) return existing;
-
-  const promise = (async () => {
-    await configureIOSNativeAudio();
-    try {
-      const channels = Math.max(1, sound.channels ?? 1);
-      await NativeAudio.preload({
-        assetId: sound.assetId,
-        assetPath: getIOSAssetPath(sound.assetPath),
-        audioChannelNum: channels,
-        channels,
-        volume: sound.volume ?? 0.7,
-        isUrl: false,
-      } as any);
-      preloadedSounds.add(sound.assetId);
-      return true;
-    } catch (e: any) {
-      if (String(e?.message ?? e).includes('already exists')) {
-        preloadedSounds.add(sound.assetId);
-        return true;
-      }
-      return false;
-    } finally {
-      iosPreloadPromises.delete(sound.assetId);
-    }
-  })();
-
-  iosPreloadPromises.set(sound.assetId, promise);
-  return promise;
-};
 
 /**
  * Native Audio hazır olana kadar bekle
@@ -144,11 +98,15 @@ export const initNativeAudio = async (): Promise<void> => {
   }
 
   if (isIOSNative) {
-    // iOS IPA'da @capacitor-community/native-audio oyun içi sık tetiklenen
-    // efektlerde AVAudioSession çakışmasıyla uygulamayı maçtan atabiliyor.
-    // Bu yüzden iOS native'de ses efektleri bilinçli olarak no-op kalır.
-    initialized = true;
-    initPromise = Promise.resolve();
+    if (initialized) return;
+    if (initPromise) return initPromise;
+
+    // iOS'ta @capacitor-community/native-audio yerine tek güvenli WebAudio yolu kullanılır.
+    // NativeAudio/HTML5 Audio karışımı maç içi sık efektlerde AVAudioSession crash'i yaratıyordu.
+    initPromise = initIOSWebAudio(SOUND_DEFINITIONS).then(() => {
+      SOUND_DEFINITIONS.forEach((sound) => preloadedSounds.add(sound.assetId));
+      initialized = true;
+    });
     return initPromise;
   }
 
@@ -183,9 +141,10 @@ export const initNativeAudio = async (): Promise<void> => {
           });
           preloadedSounds.add(sound.assetId);
           console.log(`✅ NativeAudio: ${sound.assetId} yüklendi`);
-        } catch (e: any) {
+        } catch (e: unknown) {
           // "already exists" hatası - aslında yüklü demek
-          if (e?.message?.includes('already exists')) {
+          const message = e instanceof Error ? e.message : String(e);
+          if (message.includes('already exists')) {
             preloadedSounds.add(sound.assetId);
             console.log(`✅ NativeAudio: ${sound.assetId} zaten mevcut`);
           } else {
@@ -244,7 +203,9 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    return false;
+    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    if (!soundDef) return false;
+    return playIOSWebSound(assetId, volume ?? soundDef.volume ?? 0.7, toWebAssetUrl(soundDef.assetPath));
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
@@ -294,7 +255,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     await NativeAudio.play({ assetId });
     console.log(`🔊 NativeAudio: ${assetId} çalındı`);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
     console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
     if (isNative) return false;
@@ -343,6 +304,8 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('senyaz.mp3')) assetId = 'joker_senyaz';
   else if (soundFile.includes('sampiyon.mp3')) assetId = 'sampiyon';
   else if (soundFile.includes('didyouseethat.mp3')) assetId = 'didyouseethat';
+  else if (soundFile.includes('geriSayimKlik.mp3')) assetId = 'final_countdown_click';
+  else if (soundFile.includes('turKazanma.mp3')) assetId = 'tournament_win';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
@@ -365,6 +328,10 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    return;
+  }
   if (!isNative || isIOSNative) return;
   
   for (const assetId of preloadedSounds) {

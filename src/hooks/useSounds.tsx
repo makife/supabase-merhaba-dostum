@@ -54,9 +54,8 @@ const unlockGlobalAudio = () => {
     }
   }
 
-  // 🔧 iOS crash guard: Native app içinde Web Audio / HTML5 Audio unlock oluşturma.
-  // Harf seçimi gibi sık tetiklenen aksiyonlarda AudioContext + NativeAudio karışımı
-  // iOS WebView/AVAudioSession tarafında uygulamayı oyundan atabiliyor.
+  // Native app içinde HTML5 Audio unlock oluşturma. iOS efektleri ayrı tek WebAudio
+  // servisinde, Android efektleri NativeAudio'da kalır.
   if (isNativePlatform()) {
     globalAudioUnlocked = true;
     console.log("✅ useSounds: Native audio unlock only");
@@ -387,10 +386,8 @@ export const useSounds = () => {
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
 
-      // 🔧 iOS-fix: Native platformda sık çalan kısa sesleri (letterSelect, buttonClick,
-      // correctWord, wrongWord) NativeAudio multi-channel ile çal. Oscillator/Web Audio
-      // kullanmak yes/wow/yahoo/sureAzaliyor sesleri çalarken AVAudioSession çakışması
-      // sebebiyle iOS'ta sustu yapıyor.
+      // Native platformda sesler ortak servis üzerinden gider:
+      // Android -> NativeAudio, iOS -> tek güvenli WebAudio buffer yolu.
       if (isNativePlatform()) {
         const nativeMap: Partial<Record<keyof SoundConfig, string>> = {
           letterSelect: 'letter_select',
@@ -523,7 +520,6 @@ export const useSounds = () => {
 
   const playTimeWarningSequence = useCallback(() => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -579,7 +575,6 @@ export const useSounds = () => {
 
   const playCelebrationSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -613,7 +608,6 @@ export const useSounds = () => {
 
   const playGameLoseSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -647,7 +641,6 @@ export const useSounds = () => {
 
   const playTieSound = useCallback(async () => {
     if (!soundsEnabled) return;
-    if (isIOSNative) return;
 
     // 🔓 Mobil için unlock
     unlockAudioForMobile();
@@ -683,8 +676,6 @@ export const useSounds = () => {
   const playSpecialSound = useCallback(
     async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
-
-      if (isIOSNative) return;
 
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
