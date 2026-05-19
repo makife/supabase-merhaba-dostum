@@ -1400,7 +1400,7 @@ const ProfilePage = () => {
             <h3 className="text-xs font-black text-white uppercase tracking-widest">Detaylı İstatistikler</h3>
           </div>
           <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-5 space-y-4">
-            <DetailRow label="Toplam Puan" value={profileData.totalScore.toLocaleString()} />
+            <DetailRow label="Toplam XP" value={profileData.totalScore.toLocaleString()} />
             <DetailRow
               label="En Uzun Kelime"
               value={
