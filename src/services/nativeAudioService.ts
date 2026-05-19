@@ -58,7 +58,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'beep', assetPath: 'public/onsaniyegerisayim.mp3', volume: 0.7, channels: 4 },
   // 🔧 Izgara harf butonları → butonsesi.mp3
   { assetId: 'letter_select', assetPath: 'public/butonsesi.mp3', volume: 0.5, channels: 4 },
-  // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
+  // 30 saniye uyarı sesi
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
   { assetId: 'final_countdown_click', assetPath: 'public/geriSayimKlik.mp3', volume: 0.7, channels: 4 },
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
@@ -69,57 +69,6 @@ const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\
 // Initialization flag
 let initialized = false;
 let initPromise: Promise<void> | null = null;
-let iosAudioConfigured = false;
-const iosPreloadPromises = new Map<string, Promise<boolean>>();
-
-const configureIOSNativeAudio = async (): Promise<void> => {
-  if (!isIOSNative || iosAudioConfigured) return;
-  try {
-    await NativeAudio.configure({ focus: false, fade: false });
-  } catch {
-    // Configure desteklenmezse çalmayı yine de dene.
-  }
-  iosAudioConfigured = true;
-};
-
-const getIOSAssetPath = (assetPath: string): string => {
-  const fileName = assetPath.split('/').pop() || assetPath;
-  return `sounds/${fileName}`;
-};
-
-const preloadIOSNativeSound = async (sound: SoundDefinition): Promise<boolean> => {
-  if (preloadedSounds.has(sound.assetId)) return true;
-  const existing = iosPreloadPromises.get(sound.assetId);
-  if (existing) return existing;
-
-  const promise = (async () => {
-    await configureIOSNativeAudio();
-    try {
-      const channels = Math.max(1, sound.channels ?? 1);
-      await NativeAudio.preload({
-        assetId: sound.assetId,
-        assetPath: getIOSAssetPath(sound.assetPath),
-        audioChannelNum: channels,
-        channels,
-        volume: sound.volume ?? 0.7,
-        isUrl: false,
-      } as any);
-      preloadedSounds.add(sound.assetId);
-      return true;
-    } catch (e: any) {
-      if (String(e?.message ?? e).includes('already exists')) {
-        preloadedSounds.add(sound.assetId);
-        return true;
-      }
-      return false;
-    } finally {
-      iosPreloadPromises.delete(sound.assetId);
-    }
-  })();
-
-  iosPreloadPromises.set(sound.assetId, promise);
-  return promise;
-};
 
 /**
  * Native Audio hazır olana kadar bekle
