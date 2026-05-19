@@ -1170,7 +1170,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             className={`flex-1 bg-white/10 border-white/20 text-white ${isCoolingDown ? "placeholder:text-red-400/70" : "placeholder:text-gray-400"}`}
           />
           <Button
-            onClick={sendMessage}
+            onClick={() => { playSound("buttonClick"); sendMessage(); }}
             disabled={!newMessage.trim() || isLoading || isCoolingDown}
             size="sm"
             className="px-4 bg-green-600 text-white"
