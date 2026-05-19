@@ -104,16 +104,19 @@ const getUnlimitedType = (profile: any): "maraton" | "short" | null => {
   return hoursLeft > 2 ? "maraton" : "short";
 };
 
-const getVipType = (profile: any): "yearly" | "monthly" | "short" | null => {
+const getVipType = (profile: any): "yearly" | "monthly" | null => {
   if (!profile?.premium_until) return null;
   const now = new Date();
   const premiumUntil = new Date(profile.premium_until);
   if (premiumUntil <= now) return null;
-  // 🔧 FIX: Math.floor kullanarak tutarlı hesaplama
-  const daysRemaining = Math.floor((premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (daysRemaining >= 300) return "yearly";
-  if (daysRemaining >= 1) return "monthly";
-  return "short";
+
+  // Öncelik: DB'de tutulan premium_type (satın alma anında set edilir)
+  if (profile.premium_type === "premium_yearly") return "yearly";
+  if (profile.premium_type === "premium_monthly") return "monthly";
+
+  // Fallback: kalan süreye göre tahmin (eski kayıtlar için)
+  const daysRemaining = (premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  return daysRemaining > 60 ? "yearly" : "monthly";
 };
 
 // --- BİLEŞENLER ---
