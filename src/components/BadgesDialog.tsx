@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Award, Lock } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface BadgeData {
   id: string;
