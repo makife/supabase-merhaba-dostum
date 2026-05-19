@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { initNativeAudio, playNativeSound, isNativePlatform, isNativeAudioReady } from "@/services/nativeAudioService";
 import { useMusic } from "@/contexts/MusicContext";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
-import { Capacitor } from "@capacitor/core";
 interface GameCountdownProps {
   onComplete: () => void;
   className?: string;
