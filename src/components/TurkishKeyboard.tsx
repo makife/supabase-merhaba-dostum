@@ -22,7 +22,7 @@ export const TurkishKeyboard = ({ onKeyPress, onBackspace, onSubmit, disabled, h
         <div key={ri} className="flex justify-center gap-[3px]">
           {ri === 2 && (
             <button
-              onClick={onSubmit}
+              onClick={() => { playSound("buttonClick"); onSubmit(); }}
               disabled={disabled}
               className="h-10 px-3 rounded-lg bg-emerald-600 text-white active:scale-90 transition-transform disabled:opacity-30 shrink-0"
             >
