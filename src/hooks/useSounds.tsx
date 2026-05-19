@@ -680,6 +680,8 @@ export const useSounds = () => {
     async (soundFile: string, volume: number = 0.7) => {
       if (!soundsEnabled) return;
 
+      if (isIOSNative) return;
+
       // 🔓 Mobil için unlock
       unlockAudioForMobile();
 
