@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import { initIOSWebAudio, playIOSWebSound, stopAllIOSWebSounds } from '@/services/iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -59,7 +60,11 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'letter_select', assetPath: 'public/butonsesi.mp3', volume: 0.5, channels: 4 },
   // 🔧 iOS-fix: 30 saniye uyarı sesi de NativeAudio üzerinden (HTML5 Audio iOS'ta WebKit AudioContext'i bozuyor)
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
+  { assetId: 'final_countdown_click', assetPath: 'public/geriSayimKlik.mp3', volume: 0.7, channels: 4 },
+  { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
+
+const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
 
 // Initialization flag
 let initialized = false;
