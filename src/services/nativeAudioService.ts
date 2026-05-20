@@ -5,7 +5,6 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
-import { initIOSWebAudio, playIOSWebSound, stopAllIOSWebSounds } from '@/services/iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -64,7 +63,6 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
 
-const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
 const toIOSNativeAssetPath = (assetPath: string): string => {
   const fileName = assetPath.replace(/^public\//, '').split('/').pop();
   return fileName ? `sounds/${fileName}` : assetPath;
@@ -368,11 +366,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
-  if (isIOSNative) {
-    stopAllIOSWebSounds();
-    return;
-  }
-  if (!isNative || isIOSNative) return;
+  if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
     try {
@@ -387,7 +381,7 @@ export const stopAllSounds = async (): Promise<void> => {
  * Tüm sesleri temizle (unload)
  */
 export const unloadAllSounds = async (): Promise<void> => {
-  if (!isNative || isIOSNative) return;
+  if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
     try {
