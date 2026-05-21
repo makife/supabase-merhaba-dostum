@@ -328,12 +328,12 @@ const FriendsPage = () => {
 
       {/* Content */}
       <div className="px-4 py-4 pb-28 space-y-2">
-        {/* Friends page Lottie */}
+        {/* Friends page Lottie - statik (animasyon kapal\u0131) */}
         <div className="w-screen -ml-4 -mr-4 -mt-4 mb-2">
           <Lottie
             animationData={friendsSayfaAnim}
-            loop={true}
-            autoplay={true}
+            loop={false}
+            autoplay={false}
             style={{ width: '100%', height: 140 }}
           />
         </div>
