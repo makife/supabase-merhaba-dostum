@@ -983,10 +983,14 @@ const GamePage = ({
     }
   }, [isInBackground, gameEnded]);
 
-  // 🎨 Yeni oyun / rematch başladığında farklı arka plan seç
+  // 🎨 Yeni oyun / rematch başladığında farklı arka plan seç (öncekiyle aynı olmasın)
   useEffect(() => {
     if (showCountdown && !gameEnded) {
-      setMatchBgAnim(MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+      setMatchBgAnim((prev: any) => {
+        const others = MAC_ARKA_PLANLAR.filter((b) => b !== prev);
+        const pool = others.length > 0 ? others : MAC_ARKA_PLANLAR;
+        return pool[Math.floor(Math.random() * pool.length)];
+      });
     }
   }, [showCountdown, gameEnded]);
 
