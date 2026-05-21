@@ -267,7 +267,7 @@ const FriendsPage = () => {
   const offlineFriends = friends.filter((f) => !f.is_online);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'auto' as any, touchAction: 'pan-y' }}>
       {/* Header */}
       <div className="sticky top-0 z-40 bg-[#1e2d45] border-b border-indigo-500/20 px-4 py-3">
         <div className="flex items-center gap-3">
@@ -328,12 +328,12 @@ const FriendsPage = () => {
 
       {/* Content */}
       <div className="px-4 py-4 pb-28 space-y-2">
-        {/* Friends page Lottie - statik (animasyon kapal\u0131) */}
+        {/* Friends page Lottie */}
         <div className="w-screen -ml-4 -mr-4 -mt-4 mb-2">
           <Lottie
             animationData={friendsSayfaAnim}
-            loop={false}
-            autoplay={false}
+            loop={true}
+            autoplay={true}
             style={{ width: '100%', height: 140 }}
           />
         </div>
