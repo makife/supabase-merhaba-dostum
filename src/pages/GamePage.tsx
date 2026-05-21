@@ -7985,6 +7985,7 @@ const GamePage = ({
                 {matchBgAnim && (
                   <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                     <Lottie
+                      key={MAC_ARKA_PLANLAR.indexOf(matchBgAnim)}
                       lottieRef={matchBgLottieRef}
                       animationData={matchBgAnim}
                       loop
