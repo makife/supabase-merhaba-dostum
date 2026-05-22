@@ -6629,7 +6629,7 @@ const GamePage = ({
               setOpponentWords((prev) => [...prev, word]);
               setOpponentWordsWithScores((prev) => [...prev, { word, score: points }]);
 
-              playSound("correctWord");
+              // 🔇 AI rakip kelime yazdığında bip sesi çıkarılmıyor (kullanıcı isteği)
 
               // globalUsedWordsRef'i güncelle - set state async olduğundan ref üzerinden de ekle
               globalUsedWordsRef.current = new Set([...currentGlobalUsed, normalizedWord]);
