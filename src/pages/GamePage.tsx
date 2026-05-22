@@ -3833,7 +3833,6 @@ const GamePage = ({
     setSelectedLetters([]);
     // currentWord artık derived value, manuel set'e gerek yok
 
-    playSound("correctWord");
   };
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
@@ -4212,7 +4211,6 @@ const GamePage = ({
             const newUsedWords = new Set([...usedWords, normalizedWord]);
             setUsedWords(newUsedWords);
 
-            playSound("correctWord");
             const newScore = playerScore + result.points;
             setPlayerScore(newScore);
 
@@ -7180,8 +7178,7 @@ const GamePage = ({
       // SADECE KENDİ LİSTEME EKLE - global'a ekleme, o real-time olarak gelecek
       setUsedWords((prev) => new Set([...prev, normalizedWord]));
 
-      // Ses efektleri ve puan hesaplama HEMEN
-      playSound("correctWord");
+      // Puan hesaplama HEMEN
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
 
