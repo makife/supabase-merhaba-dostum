@@ -386,7 +386,11 @@ const ChallengePrizeDialog = () => {
                           border: `1px solid ${theme.borderColor}`,
                         }}
                       >
-                        {prize.icon ? (
+                        {prize.isLottie && sayfaHakAnim ? (
+                          <div className="w-10 h-10 flex items-center justify-center">
+                            <Lottie animationData={sayfaHakAnim} loop autoplay style={{ width: 40, height: 40 }} />
+                          </div>
+                        ) : prize.icon ? (
                           <img
                             src={prize.icon}
                             alt={prize.label}
