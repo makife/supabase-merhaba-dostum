@@ -93,12 +93,17 @@ const ChallengePrizeDialog = () => {
   const [notifications, setNotifications] = useState<PrizeNotification[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [konfettiAnim, setKonfettiAnim] = useState<any>(null);
+  const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetch("/gunlukKonfeti.json")
       .then((r) => r.json())
       .then(setKonfettiAnim)
+      .catch(console.error);
+    fetch("/sayfaHak.json")
+      .then((r) => r.json())
+      .then(setSayfaHakAnim)
       .catch(console.error);
   }, []);
 
@@ -161,19 +166,19 @@ const ChallengePrizeDialog = () => {
   };
 
   const parsePrizes = (message: string) => {
-    const prizes: { label: string; amount: string; icon: string }[] = [];
+    const prizes: { label: string; amount: string; icon: string; isLottie?: boolean }[] = [];
     const inkMatch = message.match(/(\d+)\s*Mürekkep\s*Damla/i);
     if (inkMatch) prizes.push({ label: "Mürekkep", amount: inkMatch[1], icon: "/damlaMurekkep.png" });
     const creditMatch = message.match(/(\d+)\s*Oyun\s*Sayfas/i);
-    if (creditMatch) prizes.push({ label: "Oyun Sayfası", amount: creditMatch[1], icon: "" });
+    if (creditMatch) prizes.push({ label: "Oyun Sayfası", amount: creditMatch[1], icon: "/sayfaHak.json", isLottie: true });
     const spinMatch = message.match(/(\d+)\s*Çark\s*Çevirme/i);
-    if (spinMatch) prizes.push({ label: "Çark Hakkı", amount: spinMatch[1], icon: "/carkOdul.png" });
+    if (spinMatch) prizes.push({ label: "Çark Hakkı", amount: spinMatch[1], icon: "/icons/cark.svg" });
     const fisildaMatch = message.match(/(\d+)\s*Fısıl[dt]a/i);
-    if (fisildaMatch) prizes.push({ label: "Fısılda", amount: fisildaMatch[1], icon: "/fisildaIkon.png" });
+    if (fisildaMatch) prizes.push({ label: "Fısılda", amount: fisildaMatch[1], icon: "/icons/fisilda.svg" });
     const degistirMatch = message.match(/(\d+)\s*Değiştir/i);
-    if (degistirMatch) prizes.push({ label: "Değiştir", amount: degistirMatch[1], icon: "/degistirIkon.png" });
-    const senyazMatch = message.match(/(\d+)\s*Senyaz/i);
-    if (senyazMatch) prizes.push({ label: "Senyaz", amount: senyazMatch[1], icon: "/senyazIkon.png" });
+    if (degistirMatch) prizes.push({ label: "Değiştir", amount: degistirMatch[1], icon: "/icons/degistir.svg" });
+    const senyazMatch = message.match(/(\d+)\s*Sen\s*Yaz|(\d+)\s*Senyaz/i);
+    if (senyazMatch) prizes.push({ label: "Sen Yaz", amount: senyazMatch[1] || senyazMatch[2], icon: "/icons/senyaz.svg" });
     return prizes;
   };
 
@@ -381,7 +386,11 @@ const ChallengePrizeDialog = () => {
                           border: `1px solid ${theme.borderColor}`,
                         }}
                       >
-                        {prize.icon ? (
+                        {prize.isLottie && sayfaHakAnim ? (
+                          <div className="w-10 h-10 flex items-center justify-center">
+                            <Lottie animationData={sayfaHakAnim} loop autoplay style={{ width: 40, height: 40 }} />
+                          </div>
+                        ) : prize.icon ? (
                           <img
                             src={prize.icon}
                             alt={prize.label}
