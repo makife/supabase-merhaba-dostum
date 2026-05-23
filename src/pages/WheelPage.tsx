@@ -412,28 +412,43 @@ const WheelPage = () => {
     const segmentAngleSize = 360 / RAW_SEGMENTS.length;
     lastSegmentIndexRef.current = -1;
 
-    // Programatik tick sesi — AudioContext oscillator
+    // Programatik tick sesi — daha tok, mekanik tıkırtı
     const playGeneratedTick = (volume: number) => {
-      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
-        playSpecialNativeSound("/carkSesi.mp3", Math.min(0.35, volume));
-        return;
-      }
       const ctx = audioCtxRef.current;
       if (!ctx) return;
       if (ctx.state === 'suspended') ctx.resume();
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      // Tok tıkırtı: düşük sine (gövde) + orta triangle (tiz klik)
+      const oscBody = ctx.createOscillator();
+      const oscClick = ctx.createOscillator();
+      const gainBody = ctx.createGain();
+      const gainClick = ctx.createGain();
+      const masterGain = ctx.createGain();
 
-      osc.type = 'square';
-      osc.frequency.value = 1800;
-      gain.gain.setValueAtTime(volume, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+      oscBody.connect(gainBody);
+      oscClick.connect(gainClick);
+      gainBody.connect(masterGain);
+      gainClick.connect(masterGain);
+      masterGain.connect(ctx.destination);
 
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.03);
+      oscBody.type = 'sine';
+      oscBody.frequency.value = 420; // Gövde: tok, düşük
+      oscClick.type = 'triangle';
+      oscClick.frequency.value = 850; // Klik: keskin, orta
+
+      masterGain.gain.setValueAtTime(volume, ctx.currentTime);
+      masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.045);
+
+      gainBody.gain.setValueAtTime(0.75, ctx.currentTime);
+      gainBody.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+      gainClick.gain.setValueAtTime(0.35, ctx.currentTime);
+      gainClick.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+
+      oscBody.start(ctx.currentTime);
+      oscClick.start(ctx.currentTime);
+      oscBody.stop(ctx.currentTime + 0.045);
+      oscClick.stop(ctx.currentTime + 0.045);
     };
 
     const startTime = performance.now();
