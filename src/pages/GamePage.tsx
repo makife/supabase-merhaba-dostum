@@ -983,16 +983,8 @@ const GamePage = ({
     }
   }, [isInBackground, gameEnded]);
 
-  // 🎨 Yeni oyun / rematch başladığında farklı arka plan seç (öncekiyle aynı olmasın)
-  useEffect(() => {
-    if (showCountdown && !gameEnded) {
-      setMatchBgAnim((prev: any) => {
-        const others = MAC_ARKA_PLANLAR.filter((b) => b !== prev);
-        const pool = others.length > 0 ? others : MAC_ARKA_PLANLAR;
-        return pool[Math.floor(Math.random() * pool.length)];
-      });
-    }
-  }, [showCountdown, gameEnded]);
+  // 🎨 Arka plan mount'ta seçilir ve maç boyunca sabit kalır (geri sayımda değişmez)
+
 
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
