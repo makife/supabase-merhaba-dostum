@@ -93,12 +93,17 @@ const ChallengePrizeDialog = () => {
   const [notifications, setNotifications] = useState<PrizeNotification[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [konfettiAnim, setKonfettiAnim] = useState<any>(null);
+  const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetch("/gunlukKonfeti.json")
       .then((r) => r.json())
       .then(setKonfettiAnim)
+      .catch(console.error);
+    fetch("/sayfaHak.json")
+      .then((r) => r.json())
+      .then(setSayfaHakAnim)
       .catch(console.error);
   }, []);
 
