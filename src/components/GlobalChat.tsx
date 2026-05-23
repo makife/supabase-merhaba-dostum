@@ -305,7 +305,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
         toast.custom(
           (t) => (
-            <div className="flex items-stretch gap-3 bg-[#1e2d45] border border-white/10 rounded-2xl p-3 shadow-xl w-[360px] max-w-[92vw]">
+            <div className="flex items-stretch gap-3 bg-[#1e2d45] border border-white/10 rounded-2xl p-3 shadow-xl w-[calc(100vw-24px)] max-w-[480px] mx-auto">
               <div className="shrink-0 self-stretch flex items-center">
                 <Lottie
                   animationData={aiRobotAnim}
