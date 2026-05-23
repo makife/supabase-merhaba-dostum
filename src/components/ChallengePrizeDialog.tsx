@@ -161,19 +161,19 @@ const ChallengePrizeDialog = () => {
   };
 
   const parsePrizes = (message: string) => {
-    const prizes: { label: string; amount: string; icon: string }[] = [];
+    const prizes: { label: string; amount: string; icon: string; isLottie?: boolean }[] = [];
     const inkMatch = message.match(/(\d+)\s*Mürekkep\s*Damla/i);
     if (inkMatch) prizes.push({ label: "Mürekkep", amount: inkMatch[1], icon: "/damlaMurekkep.png" });
     const creditMatch = message.match(/(\d+)\s*Oyun\s*Sayfas/i);
-    if (creditMatch) prizes.push({ label: "Oyun Sayfası", amount: creditMatch[1], icon: "" });
+    if (creditMatch) prizes.push({ label: "Oyun Sayfası", amount: creditMatch[1], icon: "/sayfaHak.json", isLottie: true });
     const spinMatch = message.match(/(\d+)\s*Çark\s*Çevirme/i);
-    if (spinMatch) prizes.push({ label: "Çark Hakkı", amount: spinMatch[1], icon: "/carkOdul.png" });
+    if (spinMatch) prizes.push({ label: "Çark Hakkı", amount: spinMatch[1], icon: "/icons/cark.svg" });
     const fisildaMatch = message.match(/(\d+)\s*Fısıl[dt]a/i);
-    if (fisildaMatch) prizes.push({ label: "Fısılda", amount: fisildaMatch[1], icon: "/fisildaIkon.png" });
+    if (fisildaMatch) prizes.push({ label: "Fısılda", amount: fisildaMatch[1], icon: "/icons/fisilda.svg" });
     const degistirMatch = message.match(/(\d+)\s*Değiştir/i);
-    if (degistirMatch) prizes.push({ label: "Değiştir", amount: degistirMatch[1], icon: "/degistirIkon.png" });
-    const senyazMatch = message.match(/(\d+)\s*Senyaz/i);
-    if (senyazMatch) prizes.push({ label: "Senyaz", amount: senyazMatch[1], icon: "/senyazIkon.png" });
+    if (degistirMatch) prizes.push({ label: "Değiştir", amount: degistirMatch[1], icon: "/icons/degistir.svg" });
+    const senyazMatch = message.match(/(\d+)\s*Sen\s*Yaz|(\d+)\s*Senyaz/i);
+    if (senyazMatch) prizes.push({ label: "Sen Yaz", amount: senyazMatch[1] || senyazMatch[2], icon: "/icons/senyaz.svg" });
     return prizes;
   };
 
