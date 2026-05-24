@@ -110,13 +110,14 @@ const getVipType = (profile: any): "yearly" | "monthly" | null => {
   const premiumUntil = new Date(profile.premium_until);
   if (premiumUntil <= now) return null;
 
-  // Öncelik: DB'de tutulan premium_type (satın alma anında set edilir)
-  if (profile.premium_type === "premium_yearly") return "yearly";
-  if (profile.premium_type === "premium_monthly") return "monthly";
-
-  // Fallback: kalan süreye göre tahmin (eski kayıtlar için)
+  // Kalan süreye göre tespit — manuel SQL güncellemeleri ve farklı store productId'leri
+  // (premium_type ile uyumsuz olabilir) için en güvenilir yol budur.
   const daysRemaining = (premiumUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return daysRemaining > 60 ? "yearly" : "monthly";
+  if (daysRemaining > 45) return "yearly";
+
+  // 45 günden az kalanlar için premium_type'a bak
+  if (profile.premium_type && String(profile.premium_type).toLowerCase().includes("year")) return "yearly";
+  return "monthly";
 };
 
 // --- BİLEŞENLER ---
