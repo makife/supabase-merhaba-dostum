@@ -2246,6 +2246,40 @@ export type Database = {
         Args: { p_tournament_id: string }
         Returns: Json
       }
+      submit_room_score: {
+        Args: { p_room_id: string; p_score: number }
+        Returns: {
+          countdown_started_at: string | null
+          created_at: string | null
+          current_grid: string[] | null
+          ends_at: string | null
+          finished_at: string | null
+          game_duration: number | null
+          game_mode: string
+          game_type_new: string | null
+          host_id: string | null
+          id: string
+          max_players: number | null
+          max_score: number | null
+          player1_id: string | null
+          player1_score: number | null
+          player2_id: string | null
+          player2_score: number | null
+          room_code: string | null
+          started_at: string | null
+          status: string | null
+          time_limit: number | null
+          updated_at: string | null
+          used_words: Json | null
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "game_rooms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       test_game_completion: { Args: { p_user_id: string }; Returns: undefined }
       trigger_global_storage_clear: { Args: never; Returns: undefined }
       update_daily_leaderboard:

@@ -1223,37 +1223,31 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       if (!user || !currentRoom) return;
 
       try {
-        // Game participants tablosunu güncelle
-        await supabase.from("game_participants").update({ score }).eq("room_id", currentRoom.id).eq("user_id", user.id);
+        // Skoru tek RPC ile yaz: server odadaki gerçek oyuncuyu bulur ve sadece kendi kolonunu günceller.
+        const { data: updatedRoom, error } = await supabase.rpc("submit_room_score" as never, {
+          p_room_id: currentRoom.id,
+          p_score: score,
+        } as never);
 
-        // 🔥 YENİ: Game rooms skorlarını DA güncelle (yalnızca eşleşme atandıysa)
-        const isP1 = currentRoom.player1_id === user.id;
-        const isP2 = currentRoom.player2_id === user.id;
-        if (isP1 || isP2) {
-          const scoreField = isP1 ? "player1_score" : "player2_score";
-          await supabase
-            .from("game_rooms")
-            .update({
-              [scoreField]: score,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", currentRoom.id);
-        } else {
-          console.log("ℹ️ Skor sadece participants tablosunda güncellendi (player1/2 eşleşmesi daha atanmadı).");
+        if (error) {
+          console.error("❌ submit_room_score hatası:", error);
+          // Fallback: RPC hata verirse en azından kendi participant skorunu güncelle.
+          await supabase.from("game_participants").update({ score }).eq("room_id", currentRoom.id).eq("user_id", user.id);
+        } else if (updatedRoom) {
+          setCurrentRoom(updatedRoom as GameRoom);
         }
 
         // Local state'i de güncelle - FUNCTIONAL UPDATE (race condition fix)
         setParticipants((prevParticipants) => 
-          prevParticipants.map((p) => (p.user_id === user.id ? { ...p, score } : p))
+          prevParticipants.map((p) => (p.user_id === user.id ? { ...p, score: Math.max(p.score || 0, score) } : p))
         );
 
-        const fieldLabel = isP1 ? "player1_score" : isP2 ? "player2_score" : "participants_only";
-        console.log("🔄 Skor güncellendi:", score, "Field:", fieldLabel);
+        console.log("🔄 Skor RPC ile güncellendi:", score);
       } catch (error) {
         console.error("Error updating score:", error);
       }
     },
-    [user, currentRoom],
+    [user, currentRoom, setCurrentRoom],
   );
 
   // Start game
@@ -2021,6 +2015,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // ✅ ROOM UPDATES SUBSCRIPTION (RealtimeManager ile)
     const roomChannel = realtimeManager.subscribe("game_rooms", user.id, `id=eq.${subscriptionRoomId}`, (payload) => {
       const newRoom = payload.new as GameRoom;
+      if (!newRoom?.id) return;
       console.log("🏠 Room güncelleme:", newRoom);
 
       // 🎯 Countdown event - fire only when value changes (avoid stale-closure issue)
@@ -2037,6 +2032,20 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Do not dispatch 'playerDisconnected' on normal finish; handled by result flow instead.
 
       setCurrentRoom(newRoom);
+
+      // Skor için game_rooms'u yedek gerçek kaynak olarak kullan.
+      // Bazı cihazlarda game_participants UPDATE event'i kaçarsa rakip skorunun 0'da kalmasını engeller.
+      setParticipants((prev) =>
+        prev.map((participant) => {
+          if (participant.user_id === newRoom.player1_id && typeof newRoom.player1_score === "number") {
+            return { ...participant, score: Math.max(participant.score || 0, newRoom.player1_score || 0) };
+          }
+          if (participant.user_id === newRoom.player2_id && typeof newRoom.player2_score === "number") {
+            return { ...participant, score: Math.max(participant.score || 0, newRoom.player2_score || 0) };
+          }
+          return participant;
+        }),
+      );
     });
 
     console.log("🔧 Real-time subscriptions active (RealtimeManager + Presence)");

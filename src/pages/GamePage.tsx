@@ -4312,6 +4312,39 @@ const GamePage = ({
     }
   }, [participants, gameMode, user?.id, gameStarted, opponentScore, playerScore]);
 
+  // 🎯 MP skor yedeği: participant realtime event'i kaçarsa game_rooms skor kolonlarından senkronize et
+  useEffect(() => {
+    if (gameMode !== "private-room" && gameMode !== "random-match") return;
+    if (!user?.id || !currentRoom?.id || !gameStarted) return;
+
+    const isPlayer1 = currentRoom.player1_id === user.id;
+    const isPlayer2 = currentRoom.player2_id === user.id;
+    if (!isPlayer1 && !isPlayer2) return;
+
+    const roomPlayerScore = isPlayer1 ? currentRoom.player1_score : currentRoom.player2_score;
+    const roomOpponentScore = isPlayer1 ? currentRoom.player2_score : currentRoom.player1_score;
+
+    if (typeof roomOpponentScore === "number") {
+      setOpponentScore((prev) => {
+        if (gameStarted && roomOpponentScore < prev && prev > 0) return prev;
+        return roomOpponentScore !== prev ? roomOpponentScore : prev;
+      });
+    }
+
+    if (typeof roomPlayerScore === "number") {
+      setPlayerScore((prev) => (roomPlayerScore > prev ? roomPlayerScore : prev));
+    }
+  }, [
+    gameMode,
+    user?.id,
+    currentRoom?.id,
+    currentRoom?.player1_id,
+    currentRoom?.player2_id,
+    currentRoom?.player1_score,
+    currentRoom?.player2_score,
+    gameStarted,
+  ]);
+
   // Load wordlist from public/wordlist.txt
   useEffect(() => {
     const loadWordlist = async () => {
