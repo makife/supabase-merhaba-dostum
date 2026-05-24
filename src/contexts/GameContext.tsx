@@ -2015,6 +2015,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     // ✅ ROOM UPDATES SUBSCRIPTION (RealtimeManager ile)
     const roomChannel = realtimeManager.subscribe("game_rooms", user.id, `id=eq.${subscriptionRoomId}`, (payload) => {
       const newRoom = payload.new as GameRoom;
+      if (!newRoom?.id) return;
       console.log("🏠 Room güncelleme:", newRoom);
 
       // 🎯 Countdown event - fire only when value changes (avoid stale-closure issue)
@@ -2031,6 +2032,20 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       // Do not dispatch 'playerDisconnected' on normal finish; handled by result flow instead.
 
       setCurrentRoom(newRoom);
+
+      // Skor için game_rooms'u yedek gerçek kaynak olarak kullan.
+      // Bazı cihazlarda game_participants UPDATE event'i kaçarsa rakip skorunun 0'da kalmasını engeller.
+      setParticipants((prev) =>
+        prev.map((participant) => {
+          if (participant.user_id === newRoom.player1_id && typeof newRoom.player1_score === "number") {
+            return { ...participant, score: Math.max(participant.score || 0, newRoom.player1_score || 0) };
+          }
+          if (participant.user_id === newRoom.player2_id && typeof newRoom.player2_score === "number") {
+            return { ...participant, score: Math.max(participant.score || 0, newRoom.player2_score || 0) };
+          }
+          return participant;
+        }),
+      );
     });
 
     console.log("🔧 Real-time subscriptions active (RealtimeManager + Presence)");
