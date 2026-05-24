@@ -1224,10 +1224,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       try {
         // Skoru tek RPC ile yaz: server odadaki gerçek oyuncuyu bulur ve sadece kendi kolonunu günceller.
-        const { data: updatedRoom, error } = await (supabase.rpc as any)("submit_room_score", {
+        const { data: updatedRoom, error } = await supabase.rpc("submit_room_score" as never, {
           p_room_id: currentRoom.id,
           p_score: score,
-        });
+        } as never);
 
         if (error) {
           console.error("❌ submit_room_score hatası:", error);
