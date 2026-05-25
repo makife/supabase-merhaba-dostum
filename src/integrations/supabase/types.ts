@@ -1822,6 +1822,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_random_match_bot: { Args: { p_room_id: string }; Returns: string }
       admin_add_joker: {
         Args: { p_joker_type: string; p_quantity?: number; p_username: string }
         Returns: Json
@@ -2331,6 +2332,17 @@ export type Database = {
           p_game_mode?: string
           p_is_winner: boolean
           p_play_time?: number
+          p_score: number
+          p_user_id: string
+          p_words: Json
+        }
+        Returns: undefined
+      }
+      update_game_stats_vs_bot: {
+        Args: {
+          p_first_word_time?: number
+          p_game_duration?: number
+          p_is_winner: boolean
           p_score: number
           p_user_id: string
           p_words: Json
