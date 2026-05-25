@@ -2431,7 +2431,8 @@ const GamePage = ({
       const storageKey = `botRematchDecision:${roomKey}`;
       let decision = sessionStorage.getItem(storageKey) as "accepted" | "left" | null;
       if (!decision) {
-        decision = Math.random() < 0.5 ? "accepted" : "left";
+        // %75 kabul / %25 ayrıldı
+        decision = Math.random() < 0.75 ? "accepted" : "left";
         sessionStorage.setItem(storageKey, decision);
       }
 
