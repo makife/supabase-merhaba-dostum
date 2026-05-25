@@ -320,6 +320,35 @@ const GamePage = ({
   }, [gameMode, currentRoom?.game_mode, urlGameType]);
 
   const gameType = getGameType();
+  const getCurrentBotIdentity = useCallback((): BotIdentity | null => {
+    const seedParam = Number(searchParams.get("botSeed"));
+    const nameParam = searchParams.get("botName");
+    const avatarParam = searchParams.get("botAvatar");
+    if (Number.isFinite(seedParam) && nameParam) {
+      return { seed: seedParam, name: nameParam, avatar: avatarParam || generateBotAvatar(seedParam, nameParam) };
+    }
+
+    const storedMeta = currentRoom?.id ? sessionStorage.getItem(`${BOT_REMATCH_META_PREFIX}${currentRoom.id}`) : null;
+    if (storedMeta) {
+      try {
+        const parsed = JSON.parse(storedMeta) as BotIdentity;
+        if (typeof parsed?.seed === "number" && parsed.name) {
+          return { seed: parsed.seed, name: parsed.name, avatar: parsed.avatar || generateBotAvatar(parsed.seed, parsed.name) };
+        }
+      } catch {
+        sessionStorage.removeItem(`${BOT_REMATCH_META_PREFIX}${currentRoom?.id}`);
+      }
+    }
+
+    const botParticipant = participants.find((p) => p.is_bot === true);
+    if (!botParticipant) return null;
+    const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
+    const seed = seedFromText(seedSrc);
+    const name = generateBotName(seed);
+    return { seed, name, avatar: generateBotAvatar(seed, name) };
+  }, [currentRoom?.id, participants, searchParams]);
+
+  const currentBotIdentity = useMemo(() => getCurrentBotIdentity(), [getCurrentBotIdentity]);
   const [timeWarningPlayed, setTimeWarningPlayed] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showTournamentExitDialog, setShowTournamentExitDialog] = useState(false);
