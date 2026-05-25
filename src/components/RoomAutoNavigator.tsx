@@ -43,8 +43,15 @@ const RoomAutoNavigator = () => {
     // Aynı odaya tekrar tekrar yönlendirme yapmayalım
     if (lastNavigatedRoomRef.current === roomId) return;
 
-    // 🔒 KRİTİK: Zaten game sayfasındaysak ve aynı odaysa, navigasyon yapma
+    // 🔒 KRİTİK: Game veya waiting sayfasındayken otomatik yönlendirme yapma.
+    // Rematch akışında eski currentRoom kısa süre context'te kalabiliyor ve yeni waiting/game rotasını ezebiliyordu.
     const isAlreadyOnGamePage = location.pathname.includes('/game/');
+    const isWaitingPage = location.pathname.startsWith('/private-room/waiting');
+    if (isAlreadyOnGamePage || isWaitingPage) {
+      console.log('🚫 RoomAutoNavigator: Active game/waiting route, skipping auto navigation');
+      return;
+    }
+
     if (isAlreadyOnGamePage && location.search.includes(`room=${roomId}`)) {
       console.log('🚫 RoomAutoNavigator: Already on game page with same room, skipping');
       return;
