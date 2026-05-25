@@ -2470,10 +2470,9 @@ const GamePage = ({
 
         if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
 
-        const botSeed = Math.floor(Math.random() * 100000);
         await supabase.from("game_participants").insert([
           { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
-          { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true, bot_seed: botSeed } as any,
+          { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true },
         ] as any);
 
         navigate(`/private-room/waiting/${roomCode}?botRematch=1&roomId=${room.id}&gameType=${currentGameType}`);
