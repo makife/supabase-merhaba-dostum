@@ -2459,103 +2459,118 @@ const GamePage = ({
       return;
     }
 
-    // 🤖 Bot rakip için özel akış: oda başına sabit karar (%75 kabul / %25 ayrıldı)
+    // 🤖 Bot rakip için özel akış: 2-7s gerçekçi gecikme, %75 kabul / %25 ret
     if (hasMultiplayerBotOpponent) {
       const roomKey = currentRoom?.id || "bot-room";
       const storageKey = `botRematchDecision:${roomKey}`;
       let decision = sessionStorage.getItem(storageKey) as "accepted" | "left" | null;
       if (!decision) {
-        // %75 kabul / %25 ayrıldı
         decision = Math.random() < 0.75 ? "accepted" : "left";
         sessionStorage.setItem(storageKey, decision);
       }
 
-      if (decision === "left") {
-        toast({
-          title: "⚠️ Rakip Ayrıldı",
-          description: "Rakibiniz oyundan ayrıldı.",
-          variant: "destructive",
-          duration: 1500,
-        });
-        return;
-      }
-
-      const currentGameType: "timed" | "score" = gameType;
-      const botIdentity = currentBotIdentity || (() => {
-        const fallbackSeed = seedFromText(`${currentRoom?.id || "bot-room"}:rematch`);
-        const fallbackName = generateBotName(fallbackSeed);
-        return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
-      })();
-
-      roomSessionRef.current += 1;
-      if (pendingEndGameTimeoutRef.current) {
-        clearTimeout(pendingEndGameTimeoutRef.current);
-        pendingEndGameTimeoutRef.current = null;
-      }
-      if (currentRoom?.id) {
-        matchBanlist.add(currentRoom.id);
-      }
-      setRematchRequested(true);
-      setWaitingForRematchResponse(false);
-
+      // Gerçek oyuncuya gönderilmiş gibi "istek gönderildi" toastu
+      setWaitingForRematchResponse(true);
       toast({
-        title: "✅ Rakip Kabul Etti",
-        description: "Özel odaya yönlendiriliyorsunuz...",
-        duration: 1500,
+        title: "🔄 Tekrar Oyun İsteği Gönderildi",
+        description: "Rakibinizin yanıtını bekliyoruz...",
+        duration: 3000,
       });
 
-      try {
-        const roomCode = generateRoomCode();
-        const grid = generateRandomGrid().flat();
+      const delayMs = 2000 + Math.floor(Math.random() * 5001); // 2000-7000ms
 
-        const roomInsert = {
-          host_id: user.id,
-          room_code: roomCode,
-          game_mode: `private-room-${currentGameType}`,
-          game_type_new: currentGameType,
-          status: "waiting",
-          max_players: 2,
-          time_limit: currentGameType === "timed" ? 120 : 0,
-          max_score: currentGameType === "score" ? 500 : 0,
-          current_grid: grid,
-        };
+      setTimeout(async () => {
+        if (!isMountedRef.current) return;
 
-        const { data: room, error: roomError } = await supabase
-          .from("game_rooms")
-          .insert(roomInsert)
-          .select("id")
-          .single();
+        if (decision === "left") {
+          setWaitingForRematchResponse(false);
+          toast({
+            title: "❌ Rematch Reddedildi",
+            description: "Rakip rematch isteğini reddetti.",
+            variant: "destructive",
+            duration: 1500,
+          });
+          return;
+        }
 
-        if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
+        const currentGameType: "timed" | "score" = gameType;
+        const botIdentity = currentBotIdentity || (() => {
+          const fallbackSeed = seedFromText(`${currentRoom?.id || "bot-room"}:rematch`);
+          const fallbackName = generateBotName(fallbackSeed);
+          return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
+        })();
 
-        const { error: participantsError } = await supabase.from("game_participants").insert([
-          { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
-          { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true },
-        ]);
-        if (participantsError) throw participantsError;
+        roomSessionRef.current += 1;
+        if (pendingEndGameTimeoutRef.current) {
+          clearTimeout(pendingEndGameTimeoutRef.current);
+          pendingEndGameTimeoutRef.current = null;
+        }
+        if (currentRoom?.id) {
+          matchBanlist.add(currentRoom.id);
+        }
+        setRematchRequested(true);
+        setWaitingForRematchResponse(false);
 
-        sessionStorage.setItem(`${BOT_REMATCH_META_PREFIX}${room.id}`, JSON.stringify(botIdentity));
-
-        const params = new URLSearchParams({
-          botRematch: "1",
-          roomId: room.id,
-          gameType: currentGameType,
-          botSeed: String(botIdentity.seed),
-          botName: botIdentity.name,
-          botAvatar: botIdentity.avatar,
-        });
-        navigate(`/private-room/waiting/${roomCode}?${params.toString()}`, { replace: true });
-      } catch (error) {
-        console.error("❌ Bot rematch room oluşturma hatası:", error);
-        setRematchRequested(false);
         toast({
-          title: "Hata",
-          description: "Tekrar oyun odası oluşturulamadı.",
-          variant: "destructive",
+          title: "✅ Rakip Kabul Etti",
+          description: "Özel odaya yönlendiriliyorsunuz...",
+          duration: 1500,
         });
-      }
-      return;
 
+        try {
+          const roomCode = generateRoomCode();
+          const grid = generateRandomGrid().flat();
+
+          const roomInsert = {
+            host_id: user.id,
+            room_code: roomCode,
+            game_mode: `private-room-${currentGameType}`,
+            game_type_new: currentGameType,
+            status: "waiting",
+            max_players: 2,
+            time_limit: currentGameType === "timed" ? 120 : 0,
+            max_score: currentGameType === "score" ? 500 : 0,
+            current_grid: grid,
+          };
+
+          const { data: room, error: roomError } = await supabase
+            .from("game_rooms")
+            .insert(roomInsert)
+            .select("id")
+            .single();
+
+          if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
+
+          const { error: participantsError } = await supabase.from("game_participants").insert([
+            { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
+            { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true },
+          ]);
+          if (participantsError) throw participantsError;
+
+          sessionStorage.setItem(`${BOT_REMATCH_META_PREFIX}${room.id}`, JSON.stringify(botIdentity));
+
+          const params = new URLSearchParams({
+            botRematch: "1",
+            roomId: room.id,
+            gameType: currentGameType,
+            botSeed: String(botIdentity.seed),
+            botName: botIdentity.name,
+            botAvatar: botIdentity.avatar,
+          });
+          navigate(`/private-room/waiting/${roomCode}?${params.toString()}`, { replace: true });
+        } catch (error) {
+          console.error("❌ Bot rematch room oluşturma hatası:", error);
+          setRematchRequested(false);
+          setWaitingForRematchResponse(false);
+          toast({
+            title: "Hata",
+            description: "Tekrar oyun odası oluşturulamadı.",
+            variant: "destructive",
+          });
+        }
+      }, delayMs);
+
+      return;
     }
 
 
