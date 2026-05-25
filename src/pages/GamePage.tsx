@@ -3553,11 +3553,13 @@ const GamePage = ({
     }
 
     // Diğer modlar için normal akış
+    // Rastgele eşleşmede bot rakip de gerçek oyuncu gibi davranır (çıkışta ceza dialog'u)
     const isRealActiveGame =
       gameStarted &&
       !gameEnded &&
       participants.length >= 2 &&
-      participants.some((p) => !p.is_bot && p.user_id !== user?.id);
+      (participants.some((p) => !p.is_bot && p.user_id !== user?.id) ||
+        (gameMode === "random-match" && participants.some((p) => p.is_bot === true)));
 
     if (isRealActiveGame) {
       setShowExitDialog(true);
