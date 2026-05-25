@@ -3518,9 +3518,7 @@ const GamePage = ({
       case "random-match":
         const botParticipant = participants.find((p) => p.is_bot === true);
         if (botParticipant) {
-          const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
-          const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
-          return generateBotName(seed);
+          return currentBotIdentity?.name || generateBotName(seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`));
         }
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
           return opponentName;
@@ -7775,10 +7773,12 @@ const GamePage = ({
         if (gameMode === "random-match" || gameMode === "private-room") {
           const botParticipant = participants.find((p) => p.is_bot === true);
           if (botParticipant) {
-            const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
-            const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
-            const botName = generateBotName(seed);
-            return { name: botName, icon: User, avatar: generateBotAvatar(seed, botName), isPremium: false };
+            const bot = currentBotIdentity || (() => {
+              const seed = seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`);
+              const name = generateBotName(seed);
+              return { seed, name, avatar: generateBotAvatar(seed, name) };
+            })();
+            return { name: bot.name, icon: User, avatar: bot.avatar, isPremium: false };
           }
         }
         if (participants.length >= 2) {
