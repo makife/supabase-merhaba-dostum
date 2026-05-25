@@ -216,6 +216,10 @@ const GamePage = ({
     () => gameMode === "random-match" && participants.some((p) => p.is_bot === true),
     [gameMode, participants],
   );
+  const hasMultiplayerBotOpponent = useMemo(
+    () => (gameMode === "random-match" || gameMode === "private-room") && participants.some((p) => p.is_bot === true),
+    [gameMode, participants],
+  );
 
   const { validateWord, isValidating } = useWordValidation();
   const {
@@ -1152,8 +1156,8 @@ const GamePage = ({
     } else if (currentRoom?.id) {
       matchId = currentRoom.id;
       myUserId = user.id;
-      if (hasRandomMatchBotOpponent) {
-        console.log("💓 Random-match bot rakip, heartbeat atlanıyor");
+      if (hasMultiplayerBotOpponent) {
+        console.log("💓 Multiplayer bot rakip, heartbeat atlanıyor");
         return;
       }
       opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
@@ -1351,7 +1355,7 @@ const GamePage = ({
     currentRoom?.id,
     currentRoom?.player1_id,
     currentRoom?.player2_id,
-    hasRandomMatchBotOpponent,
+    hasMultiplayerBotOpponent,
     user?.id,
     tournamentMatch?.id,
     tournamentMatch?.player1_id,
@@ -1462,7 +1466,7 @@ const GamePage = ({
   const savedRoomIdRef = useRef<string | null>(null);
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
-    if (hasRandomMatchBotOpponent) {
+    if (hasMultiplayerBotOpponent) {
       return null;
     }
 
@@ -1484,7 +1488,7 @@ const GamePage = ({
 
     // State temizlenmiş olabilir, ref'ten al
     return savedOpponentIdRef.current;
-  }, [hasRandomMatchBotOpponent, participants, currentRoom, user?.id]);
+  }, [hasMultiplayerBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
@@ -2422,7 +2426,7 @@ const GamePage = ({
     }
 
     // 🤖 Bot rakip için özel akış: oda başına sabit karar (%50 kabul / %50 ayrıldı)
-    if (hasRandomMatchBotOpponent) {
+    if (hasMultiplayerBotOpponent) {
       const roomKey = currentRoom?.id || "bot-room";
       const storageKey = `botRematchDecision:${roomKey}`;
       let decision = sessionStorage.getItem(storageKey) as "accepted" | "left" | null;
@@ -2441,16 +2445,51 @@ const GamePage = ({
         return;
       }
 
-      const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
+      const currentGameType: "timed" | "score" = gameType;
       toast({
         title: "✅ Rakip Kabul Etti",
-        description: "Yeni oyun başlatılıyor...",
+        description: "Özel odaya yönlendiriliyorsunuz...",
         duration: 1500,
       });
-      // Home'a dön ve auto-rematch ile yeni bot maçını matchmaking akışında başlat
-      setTimeout(() => {
-        window.location.href = `/?autoRematch=1&type=${currentGameType}&botNow=1`;
-      }, 700);
+
+      try {
+        const roomCode = generateRoomCode();
+        const grid = generateRandomGrid().flat();
+
+        const roomInsert = {
+          host_id: user.id,
+          room_code: roomCode,
+          game_mode: `private-room-${currentGameType}`,
+          game_type_new: currentGameType,
+          status: "waiting",
+          max_players: 2,
+          time_limit: currentGameType === "timed" ? 120 : 0,
+          max_score: currentGameType === "score" ? 500 : 0,
+          current_grid: grid,
+        };
+
+        const { data: room, error: roomError } = await supabase
+          .from("game_rooms")
+          .insert(roomInsert)
+          .select("id")
+          .single();
+
+        if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
+
+        await supabase.from("game_participants").insert([
+          { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
+          { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true },
+        ]);
+
+        navigate(`/private-room/waiting/${roomCode}?botRematch=1&roomId=${room.id}&gameType=${currentGameType}`);
+      } catch (error) {
+        console.error("❌ Bot rematch room oluşturma hatası:", error);
+        toast({
+          title: "Hata",
+          description: "Tekrar oyun odası oluşturulamadı.",
+          variant: "destructive",
+        });
+      }
       return;
 
     }
@@ -3263,7 +3302,7 @@ const GamePage = ({
         const isTie = finalUserScore === finalOpponentScore;
 
         // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
-        const isBotOpponentRandomMatch = hasRandomMatchBotOpponent;
+        const isBotOpponentRandomMatch = hasMultiplayerBotOpponent;
 
         if (isBotOpponentRandomMatch) {
           const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
@@ -6285,7 +6324,7 @@ const GamePage = ({
           return false;
         }
         case "private-room":
-          return participants.length < 2;
+          return participants.some((p) => p.is_bot === true) || participants.length < 2;
         case "random-match":
           const hasAI = participants.some((p) => p.is_bot);
           const hasRealOpponent = participants.filter((p) => !p.is_bot).length >= 2;
@@ -7633,7 +7672,7 @@ const GamePage = ({
       case "random-match":
       case "private-room":
         // 🤖 Bot rakip varsa (random-match fallback) tournament tarzı isim/avatar göster
-        if (gameMode === "random-match") {
+        if (gameMode === "random-match" || gameMode === "private-room") {
           const botParticipant = participants.find((p) => p.is_bot === true);
           if (botParticipant) {
             const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
