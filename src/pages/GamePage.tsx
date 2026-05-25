@@ -212,6 +212,11 @@ const GamePage = ({
     return gameParticipants || [];
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
 
+  const hasRandomMatchBotOpponent = useMemo(
+    () => gameMode === "random-match" && participants.some((p) => p.is_bot === true),
+    [gameMode, participants],
+  );
+
   const { validateWord, isValidating } = useWordValidation();
   const {
     playSound,
