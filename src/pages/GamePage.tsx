@@ -216,6 +216,10 @@ const GamePage = ({
     () => gameMode === "random-match" && participants.some((p) => p.is_bot === true),
     [gameMode, participants],
   );
+  const hasMultiplayerBotOpponent = useMemo(
+    () => (gameMode === "random-match" || gameMode === "private-room") && participants.some((p) => p.is_bot === true),
+    [gameMode, participants],
+  );
 
   const { validateWord, isValidating } = useWordValidation();
   const {
@@ -3298,7 +3302,7 @@ const GamePage = ({
         const isTie = finalUserScore === finalOpponentScore;
 
         // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
-        const isBotOpponentRandomMatch = hasRandomMatchBotOpponent;
+        const isBotOpponentRandomMatch = hasMultiplayerBotOpponent;
 
         if (isBotOpponentRandomMatch) {
           const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
@@ -6320,7 +6324,7 @@ const GamePage = ({
           return false;
         }
         case "private-room":
-          return participants.length < 2;
+          return participants.some((p) => p.is_bot === true) || participants.length < 2;
         case "random-match":
           const hasAI = participants.some((p) => p.is_bot);
           const hasRealOpponent = participants.filter((p) => !p.is_bot).length >= 2;
