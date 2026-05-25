@@ -351,13 +351,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Create room
         const roomCode = generateRoomCode();
-        const baseMode = currentGameMode?.includes("random-match") ? "random-match" : "private-room";
-        const mode = `${baseMode}-${gameType}`;
+        const mode = `private-room-${gameType}`;
 
         const { data: room, error: roomError } = await supabase
           .from("game_rooms")
           .insert({
             game_mode: mode,
+            game_type_new: gameType,
             host_id: userId,
             room_code: roomCode,
             current_grid: generateGrid(),
