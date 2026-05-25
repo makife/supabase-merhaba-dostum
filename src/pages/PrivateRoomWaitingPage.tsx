@@ -26,6 +26,7 @@ const PrivateRoomWaitingPage = () => {
   const { user } = useAuth();
 
   const roomCode = paramCode || searchParams.get("code");
+  const isBotRematch = searchParams.get("botRematch") === "1";
 
   const [roomId, setRoomId] = useState<string | null>(searchParams.get("roomId"));
   const [gameType, setGameType] = useState<"timed" | "score" | null>(
@@ -53,13 +54,16 @@ const PrivateRoomWaitingPage = () => {
       setParticipants(parts);
       // Check if both players are ready
       const realPlayers = parts.filter(p => !p.is_bot);
-      const allReady = realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
+      const hasReadyBot = parts.some(p => p.is_bot && p.is_ready);
+      const allReady = isBotRematch
+        ? realPlayers.length >= 1 && hasReadyBot && realPlayers.every(p => p.is_ready)
+        : realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
       
       if (allReady && !navigated) {
         await startGameAndNavigate();
       }
     }
-  }, [roomId, navigated]);
+  }, [roomId, navigated, isBotRematch]);
 
   usePageResync(handleRoomResync, "PrivateRoomWaitingPage", true);
 
@@ -79,7 +83,7 @@ const PrivateRoomWaitingPage = () => {
         .order("joined_at", { ascending: true } as any);
 
       const player1Id = realPlayers?.[0]?.user_id || null;
-      const player2Id = realPlayers?.[1]?.user_id || null;
+      const player2Id = isBotRematch ? null : realPlayers?.[1]?.user_id || null;
 
       await supabase
         .from("game_rooms")
@@ -109,7 +113,7 @@ const PrivateRoomWaitingPage = () => {
 
     const basePath = "/game/private-room";
     navigate(`${basePath}?room=${roomId}&type=${gameType}`);
-  }, [roomId, gameType, navigated, navigate]);
+  }, [roomId, gameType, navigated, navigate, isBotRematch]);
 
   // 1. Oda Bilgilerini Çekme
   useEffect(() => {
