@@ -522,7 +522,27 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       setSearchChannel(channelName);
       console.log("📡 Realtime subscription aktif (participants + room updates) - auto-reconnect destekli");
+
+      // 4️⃣ BOT FALLBACK: 10 saniye içinde gerçek oyuncu bulunamazsa bot ekle
+      clearBotFallbackTimer();
+      botFallbackTimerRef.current = window.setTimeout(async () => {
+        console.log("🤖 10s doldu, gerçek oyuncu yok - bot rakip ekleniyor...");
+        try {
+          const { data: countdownTs, error: botErr } = await supabase.rpc("add_random_match_bot" as any, {
+            p_room_id: newRoomId,
+          });
+          if (botErr) {
+            console.error("❌ Bot ekleme hatası:", botErr);
+            return;
+          }
+          console.log("✅ Bot rakip eklendi, countdown:", countdownTs);
+          // Realtime room update zaten countdown_started_at'i yakalayıp navigate edecek
+        } catch (e) {
+          console.error("❌ Bot fallback exception:", e);
+        }
+      }, 10000);
     } catch (error) {
+
       console.error("❌ Matchmaking hatası:", error);
       setIsSearching(false);
       clearProgressTimer();
