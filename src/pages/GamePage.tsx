@@ -1935,9 +1935,10 @@ const GamePage = ({
           }
 
           const currentRealPlayers = latestParticipants.filter((p) => !p.is_bot);
+          const currentHasBot = latestParticipants.some((p) => p.is_bot === true);
           const stillAmIInRoom = latestParticipants.some((p) => p.user_id === user?.id);
 
-          if (currentRealPlayers.length < 2 && stillAmIInRoom && !disconnectHandledRef.current) {
+          if (currentRealPlayers.length < 2 && !currentHasBot && stillAmIInRoom && !disconnectHandledRef.current) {
             console.log("🚪 Fallback disconnect doğrulandı - oyun sonlandırılıyor");
             disconnectHandledRef.current = true;
             window.dispatchEvent(
