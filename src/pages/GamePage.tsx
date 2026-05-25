@@ -1466,7 +1466,7 @@ const GamePage = ({
   const savedRoomIdRef = useRef<string | null>(null);
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
-    if (hasRandomMatchBotOpponent) {
+    if (hasMultiplayerBotOpponent) {
       return null;
     }
 
@@ -1488,7 +1488,7 @@ const GamePage = ({
 
     // State temizlenmiş olabilir, ref'ten al
     return savedOpponentIdRef.current;
-  }, [hasRandomMatchBotOpponent, participants, currentRoom, user?.id]);
+  }, [hasMultiplayerBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
@@ -2426,7 +2426,7 @@ const GamePage = ({
     }
 
     // 🤖 Bot rakip için özel akış: oda başına sabit karar (%50 kabul / %50 ayrıldı)
-    if (hasRandomMatchBotOpponent) {
+    if (hasMultiplayerBotOpponent) {
       const roomKey = currentRoom?.id || "bot-room";
       const storageKey = `botRematchDecision:${roomKey}`;
       let decision = sessionStorage.getItem(storageKey) as "accepted" | "left" | null;
@@ -7672,7 +7672,7 @@ const GamePage = ({
       case "random-match":
       case "private-room":
         // 🤖 Bot rakip varsa (random-match fallback) tournament tarzı isim/avatar göster
-        if (gameMode === "random-match") {
+        if (gameMode === "random-match" || gameMode === "private-room") {
           const botParticipant = participants.find((p) => p.is_bot === true);
           if (botParticipant) {
             const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
