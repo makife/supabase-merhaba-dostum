@@ -125,20 +125,11 @@ export const isMaleName = (name: string): boolean => {
   return maleNames.includes(baseName);
 };
 
-// İsme göre bot avatarı oluştur
-export const generateBotAvatar = (seed: number, botName?: string): string => {
-  const avatarCount = 18;
+// İsme göre bot avatarı oluştur — /avatarlar/{1..90}.svg
+export const generateBotAvatar = (seed: number, _botName?: string): string => {
+  const avatarCount = 90;
   const avatarIndex = (Math.abs(seed) % avatarCount) + 1;
-  
-  // Eğer bot ismi verilmişse, cinsiyete göre suffix belirle
-  if (botName) {
-    const suffix = isMaleName(botName) ? 'e' : 'k';
-    return `/${avatarIndex}${suffix}.jpg`;
-  }
-  
-  // Fallback: seed'e göre rastgele
-  const suffix = seed % 2 === 0 ? 'e' : 'k';
-  return `/${avatarIndex}${suffix}.jpg`;
+  return `/avatarlar/${avatarIndex}.svg`;
 };
 
 export const generateBotName = (index: number): string => {
