@@ -7547,8 +7547,19 @@ const GamePage = ({
         return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar, isPremium: false };
       case "random-match":
       case "private-room":
+        // 🤖 Bot rakip varsa (random-match fallback) tournament tarzı isim/avatar göster
+        if (gameMode === "random-match") {
+          const botParticipant = participants.find((p) => p.is_bot === true);
+          if (botParticipant) {
+            const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
+            const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
+            const botName = generateBotName(seed);
+            return { name: botName, icon: User, avatar: generateBotAvatar(seed, botName), isPremium: false };
+          }
+        }
         if (participants.length >= 2) {
           const opponent = participants.find((p) => String(p.user_id) !== String(user?.id));
+
           if (opponent && (opponent as any).profiles?.username) {
             console.log("✅ Rakip bilgisi gösteriliyor:", (opponent as any).profiles.username);
             return {
