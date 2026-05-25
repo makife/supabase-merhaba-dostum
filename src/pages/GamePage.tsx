@@ -3368,6 +3368,15 @@ const GamePage = ({
       case "private-room":
         return "Arkadaş";
       case "random-match":
+        const botParticipant = participants.find((p) => p.is_bot === true);
+        if (botParticipant) {
+          const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
+          const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
+          return generateBotName(seed);
+        }
+        if (opponentName && opponentName !== "Rakip Aranıyor...") {
+          return opponentName;
+        }
         return "Rakip";
       default:
         return "AI Rakip";
