@@ -207,7 +207,10 @@ const PrivateRoomWaitingPage = () => {
         
         // Check if both ready
         const realPlayers = parts.filter(p => !p.is_bot);
-        const allReady = realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
+        const hasReadyBot = parts.some(p => p.is_bot && p.is_ready);
+        const allReady = isBotRematch
+          ? realPlayers.length >= 1 && hasReadyBot && realPlayers.every(p => p.is_ready)
+          : realPlayers.length >= 2 && realPlayers.every(p => p.is_ready);
         
         if (allReady && !navigated) {
           await startGameAndNavigate();
@@ -250,7 +253,7 @@ const PrivateRoomWaitingPage = () => {
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [roomId, gameType, user, navigated, startGameAndNavigate]);
+  }, [roomId, gameType, user, navigated, startGameAndNavigate, isBotRematch]);
 
   const handleReady = async () => {
     if (!roomId || !user || settingReady) return;
@@ -297,8 +300,11 @@ const PrivateRoomWaitingPage = () => {
   };
 
   const realPlayers = participants.filter(p => !p.is_bot);
-  const opponentJoined = realPlayers.length >= 2;
-  const opponentReady = opponentJoined && realPlayers.filter(p => p.user_id !== user?.id).every(p => p.is_ready);
+  const hasReadyBot = participants.some(p => p.is_bot && p.is_ready);
+  const opponentJoined = isBotRematch ? hasReadyBot : realPlayers.length >= 2;
+  const opponentReady = isBotRematch
+    ? hasReadyBot
+    : opponentJoined && realPlayers.filter(p => p.user_id !== user?.id).every(p => p.is_ready);
 
   if (loading) {
     return (
