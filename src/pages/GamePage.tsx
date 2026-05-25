@@ -2441,16 +2441,50 @@ const GamePage = ({
         return;
       }
 
-      const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
+      const currentGameType: "timed" | "score" = gameType;
       toast({
         title: "✅ Rakip Kabul Etti",
-        description: "Yeni oyun başlatılıyor...",
+        description: "Özel odaya yönlendiriliyorsunuz...",
         duration: 1500,
       });
-      // Home'a dön ve auto-rematch ile yeni bot maçını matchmaking akışında başlat
-      setTimeout(() => {
-        window.location.href = `/?autoRematch=1&type=${currentGameType}&botNow=1`;
-      }, 700);
+
+      try {
+        const roomCode = generateRoomCode();
+        const grid = generateRandomGrid().flat();
+
+        const { data: room, error: roomError } = await supabase
+          .from("game_rooms")
+          .insert({
+            host_id: user.id,
+            room_code: roomCode,
+            game_mode: "random-match",
+            game_type_new: currentGameType,
+            status: "waiting",
+            max_players: 2,
+            time_limit: currentGameType === "timed" ? 120 : 0,
+            max_score: currentGameType === "score" ? 500 : 0,
+            current_grid: grid,
+          } as any)
+          .select("id")
+          .single();
+
+        if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
+
+        const botSeed = Math.floor(Math.random() * 100000);
+        await supabase.from("game_participants").insert([
+          { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
+          { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true, bot_seed: botSeed } as any,
+        ] as any);
+
+        navigate(`/private-room/waiting/${roomCode}?botRematch=1&roomId=${room.id}&gameType=${currentGameType}`);
+      } catch (error) {
+        console.error("❌ Bot rematch room oluşturma hatası:", error);
+        toast({
+          title: "Hata",
+          description: "Tekrar oyun odası oluşturulamadı.",
+          variant: "destructive",
+        });
+      }
       return;
 
     }
