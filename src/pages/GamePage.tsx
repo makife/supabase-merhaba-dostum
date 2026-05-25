@@ -6867,17 +6867,19 @@ const GamePage = ({
             const normalizedWord = word.toLocaleUpperCase("tr-TR");
 
             if (!currentGlobalUsed.has(normalizedWord)) {
-              // Turnuva modunda daha yüksek puan aralığı (12-35), diğerlerinde 8-22
+              // Random-match botu normal AI moduna göre biraz daha yüksek puan kazanır
               const basePoints =
                 gameMode === "tournament"
                   ? Math.floor(Math.random() * 24) + 12 // 12-35 puan
-                  : Math.floor(Math.random() * 15) + 8; // 8-22 puan
+                  : gameMode === "random-match"
+                    ? Math.floor(Math.random() * 18) + 11 // 11-28 puan
+                    : Math.floor(Math.random() * 15) + 8; // 8-22 puan (ai mode)
               // Uzun kelimelere bonus
               const lengthBonus =
                 word.length >= 8
-                  ? Math.floor(Math.random() * 15) + 10
+                  ? Math.floor(Math.random() * (gameMode === "random-match" ? 18 : 15)) + (gameMode === "random-match" ? 12 : 10)
                   : word.length >= 6
-                    ? Math.floor(Math.random() * 8) + 5
+                    ? Math.floor(Math.random() * (gameMode === "random-match" ? 10 : 8)) + (gameMode === "random-match" ? 6 : 5)
                     : 0;
               const points = basePoints + lengthBonus;
 
