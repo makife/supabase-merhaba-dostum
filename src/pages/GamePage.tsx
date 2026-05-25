@@ -262,6 +262,8 @@ const GamePage = ({
   // 🔒 REMATCH FIX: Closure sorunu çözümü - güncel değerleri ref'lerde sakla
   const participantsRef = useRef(participants);
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
+  const roomSessionRef = useRef(0);
+  const pendingEndGameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   const globalUsedWordsRef = useRef<Set<string>>(new Set());
@@ -2814,6 +2816,13 @@ const GamePage = ({
   const resetGameForRematch = () => {
     console.log("🔄 resetGameForRematch: Başlatılıyor");
 
+    roomSessionRef.current += 1;
+    if (pendingEndGameTimeoutRef.current) {
+      clearTimeout(pendingEndGameTimeoutRef.current);
+      pendingEndGameTimeoutRef.current = null;
+      console.log("✅ Pending endGame timeout cleared for rematch");
+    }
+
     // Clear existing timers and intervals
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -3704,6 +3713,7 @@ const GamePage = ({
       }
 
       // Yeni oda açıldığında rematch ve disconnect bayraklarını temizle
+      resetGameForRematch();
       setRematchRequested(false);
       setWaitingForRematchResponse(false);
       disconnectHandledRef.current = false;
@@ -5126,7 +5136,20 @@ const GamePage = ({
           gameResult: gameResult,
         });
 
-        setTimeout(async () => {
+        const endGameRoomId = currentRoom.id;
+        const endGameSession = roomSessionRef.current;
+        pendingEndGameTimeoutRef.current = setTimeout(async () => {
+          pendingEndGameTimeoutRef.current = null;
+          if (!isMountedRef.current || roomSessionRef.current !== endGameSession || currentRoomIdRef.current !== endGameRoomId) {
+            console.log("🚫 Eski maç endGame callback'i iptal edildi", {
+              endGameRoomId: endGameRoomId?.slice(-8),
+              currentRoomId: currentRoomIdRef.current?.slice(-8),
+              endGameSession,
+              currentSession: roomSessionRef.current,
+            });
+            return;
+          }
+
           console.log("⏰ setTimeout tetiklendi, endGame çağrılıyor...");
 
           const playerStats = user
