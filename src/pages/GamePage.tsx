@@ -1147,6 +1147,11 @@ const GamePage = ({
     } else if (currentRoom?.id) {
       matchId = currentRoom.id;
       myUserId = user.id;
+      const hasBotOpponent = gameMode === "random-match" && participants.some((p) => p.is_bot === true);
+      if (hasBotOpponent) {
+        console.log("💓 Random-match bot rakip, heartbeat atlanıyor");
+        return;
+      }
       opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
     } else {
       return;
@@ -1342,6 +1347,7 @@ const GamePage = ({
     currentRoom?.id,
     currentRoom?.player1_id,
     currentRoom?.player2_id,
+    participants,
     user?.id,
     tournamentMatch?.id,
     tournamentMatch?.player1_id,
