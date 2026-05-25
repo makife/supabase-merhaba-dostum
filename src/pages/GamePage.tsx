@@ -2452,19 +2452,21 @@ const GamePage = ({
         const roomCode = generateRoomCode();
         const grid = generateRandomGrid().flat();
 
+        const roomInsert = {
+          host_id: user.id,
+          room_code: roomCode,
+          game_mode: "random-match",
+          game_type_new: currentGameType,
+          status: "waiting",
+          max_players: 2,
+          time_limit: currentGameType === "timed" ? 120 : 0,
+          max_score: currentGameType === "score" ? 500 : 0,
+          current_grid: grid,
+        };
+
         const { data: room, error: roomError } = await supabase
           .from("game_rooms")
-          .insert({
-            host_id: user.id,
-            room_code: roomCode,
-            game_mode: "random-match",
-            game_type_new: currentGameType,
-            status: "waiting",
-            max_players: 2,
-            time_limit: currentGameType === "timed" ? 120 : 0,
-            max_score: currentGameType === "score" ? 500 : 0,
-            current_grid: grid,
-          } as any)
+          .insert(roomInsert as any)
           .select("id")
           .single();
 
