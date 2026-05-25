@@ -4567,11 +4567,25 @@ const GamePage = ({
         return;
       }
 
+      // 🛡️ Aynı oda için kredi sadece bir kez düşürülsün (remount koruması)
+      const roomKeyForCredit = searchParams.get("room") || currentRoom?.id || "";
+      if (roomKeyForCredit) {
+        const creditKey = `creditConsumed:${roomKeyForCredit}`;
+        if (sessionStorage.getItem(creditKey) === "1") {
+          console.log("Credit already consumed for this room, skipping");
+          return;
+        }
+        sessionStorage.setItem(creditKey, "1");
+      }
+
       if (!isPremium) {
         console.log("User is not premium, consuming credit...");
         const creditConsumed = await consumeCredit();
         console.log("Credit consumed result:", creditConsumed);
         if (!creditConsumed) {
+          if (roomKeyForCredit) {
+            sessionStorage.removeItem(`creditConsumed:${roomKeyForCredit}`);
+          }
           toast({
             title: "Sayfaların tükendi",
             description: "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
@@ -4591,6 +4605,7 @@ const GamePage = ({
       fadeInBackgroundMusic(1000);
     };
   }, []);
+
 
   // Load tournament match data from URL parameters
   useEffect(() => {
