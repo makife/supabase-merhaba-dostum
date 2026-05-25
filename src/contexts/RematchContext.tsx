@@ -319,7 +319,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 user_id: userId,
                 score: 0,
                 is_bot: false,
+                is_ready: true,
               });
+            } else {
+              await supabase
+                .from("game_participants")
+                .update({ is_ready: true })
+                .eq("id", existing.id);
             }
 
             const gameType = room.game_mode?.includes("score") ? "score" : "timed";
@@ -330,7 +336,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               duration: 1000,
             });
 
-            navigate(`/private-room/waiting/${existingFromOpponent.room_code}`);
+            navigate(`/private-room/waiting/${existingFromOpponent.room_code}?roomId=${room.id}&gameType=${gameType}`);
             return true;
           }
         }
@@ -372,6 +378,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           user_id: userId,
           score: 0,
           is_bot: false,
+          is_ready: false,
         });
 
         // Create rematch request
@@ -512,7 +519,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           user_id: userId,
           score: 0,
           is_bot: false,
+          is_ready: true,
         });
+      } else {
+        await supabase
+          .from("game_participants")
+          .update({ is_ready: true })
+          .eq("id", existing.id);
       }
 
       const gameType = room.game_mode?.includes("score") ? "score" : "timed";
@@ -520,7 +533,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIncomingRequest(null);
 
       // Navigate
-      navigate(`/private-room/waiting/${incomingRequest.roomCode}`);
+      navigate(`/private-room/waiting/${incomingRequest.roomCode}?roomId=${room.id}&gameType=${gameType}`);
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
@@ -658,7 +671,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   duration: 1000,
                 });
 
-                navigate(`/private-room/waiting/${request.room_code}`);
+                navigate(`/private-room/waiting/${request.room_code}?roomId=${room.id}&gameType=${gameType}`);
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
