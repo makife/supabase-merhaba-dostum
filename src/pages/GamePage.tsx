@@ -6721,9 +6721,9 @@ const GamePage = ({
 
     const scheduleNextAIWord = () => {
       if (cancelled) return;
-      // Turnuva modunda daha agresif: 1.5-10 saniye, diğer modlarda 2.5-17.5
-      const minDelay = gameMode === "tournament" ? 2500 : 2500;
-      const maxDelay = gameMode === "tournament" ? 25000 : 25000;
+      // Random-match botu normal AI moduna göre daha agresif
+      const minDelay = gameMode === "tournament" ? 2500 : gameMode === "random-match" ? 1500 : 2500;
+      const maxDelay = gameMode === "tournament" ? 25000 : gameMode === "random-match" ? 12000 : 25000;
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
       setTimeout(async () => {
         if (cancelled) return;
