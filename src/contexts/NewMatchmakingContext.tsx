@@ -523,14 +523,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setSearchChannel(channelName);
       console.log("📡 Realtime subscription aktif (participants + room updates) - auto-reconnect destekli");
 
-      // 4️⃣ BOT FALLBACK: 10 saniye içinde gerçek oyuncu bulunamazsa bot ekle
+      // 4️⃣ BOT FALLBACK: 5-12 saniye içinde gerçek oyuncu bulunamazsa bot ekle
       // ?botNow=1 (rematch sonrası) varsa hemen bot ekle
       const urlParams = new URLSearchParams(window.location.search);
       const instantBot = urlParams.get("botNow") === "1";
-      const botDelay = instantBot ? 300 : 10000;
+      const botDelay = instantBot ? 300 : (5000 + Math.floor(Math.random() * 7001));
       clearBotFallbackTimer();
       botFallbackTimerRef.current = window.setTimeout(async () => {
-        console.log(`🤖 ${instantBot ? "Instant" : "10s"} bot fallback tetiklendi`);
+        console.log(`🤖 ${instantBot ? "Instant" : `${botDelay}ms`} bot fallback tetiklendi`);
         try {
           const { data: countdownTs, error: botErr } = await supabase.rpc("add_random_match_bot" as any, {
             p_room_id: newRoomId,
