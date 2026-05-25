@@ -119,12 +119,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     console.log("🧹 Matchmaking cleanup başlatılıyor...");
 
     clearProgressTimer();
+    clearBotFallbackTimer();
 
     if (searchChannel) {
       autoReconnect.unregisterChannel(searchChannel);
       setSearchChannel(null);
       console.log("📡 Real-time channel kapatıldı");
     }
+
 
     setIsSearching(false);
     setCurrentRoom(null);
