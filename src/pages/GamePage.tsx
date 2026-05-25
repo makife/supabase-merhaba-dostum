@@ -1156,8 +1156,8 @@ const GamePage = ({
     } else if (currentRoom?.id) {
       matchId = currentRoom.id;
       myUserId = user.id;
-      if (hasRandomMatchBotOpponent) {
-        console.log("💓 Random-match bot rakip, heartbeat atlanıyor");
+      if (hasMultiplayerBotOpponent) {
+        console.log("💓 Multiplayer bot rakip, heartbeat atlanıyor");
         return;
       }
       opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
@@ -1355,7 +1355,7 @@ const GamePage = ({
     currentRoom?.id,
     currentRoom?.player1_id,
     currentRoom?.player2_id,
-    hasRandomMatchBotOpponent,
+    hasMultiplayerBotOpponent,
     user?.id,
     tournamentMatch?.id,
     tournamentMatch?.player1_id,
@@ -2459,7 +2459,7 @@ const GamePage = ({
         const roomInsert = {
           host_id: user.id,
           room_code: roomCode,
-          game_mode: "random-match",
+          game_mode: `private-room-${currentGameType}`,
           game_type_new: currentGameType,
           status: "waiting",
           max_players: 2,
