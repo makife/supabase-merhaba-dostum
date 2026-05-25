@@ -2421,10 +2421,17 @@ const GamePage = ({
       return;
     }
 
-    // 🤖 Bot rakip için özel akış: %50 kabul, %50 "rakip ayrıldı"
+    // 🤖 Bot rakip için özel akış: oda başına sabit karar (%50 kabul / %50 ayrıldı)
     if (hasRandomMatchBotOpponent) {
-      const accepted = Math.random() < 0.5;
-      if (!accepted) {
+      const roomKey = currentRoom?.id || "bot-room";
+      const storageKey = `botRematchDecision:${roomKey}`;
+      let decision = sessionStorage.getItem(storageKey) as "accepted" | "left" | null;
+      if (!decision) {
+        decision = Math.random() < 0.5 ? "accepted" : "left";
+        sessionStorage.setItem(storageKey, decision);
+      }
+
+      if (decision === "left") {
         toast({
           title: "⚠️ Rakip Ayrıldı",
           description: "Rakibiniz oyundan ayrıldı.",
@@ -2433,18 +2440,20 @@ const GamePage = ({
         });
         return;
       }
+
       const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
       toast({
         title: "✅ Rakip Kabul Etti",
         description: "Yeni oyun başlatılıyor...",
         duration: 1500,
       });
-      // Mevcut odadan çık ve yeni random-match arama akışına gir
+      // Aynı path'e navigate React Router'ı remount etmeyebilir - hard reload ile yeni bot maçı tetikle
       setTimeout(() => {
-        navigate(`/game/random-match?type=${currentGameType}`, { replace: true });
-      }, 600);
+        window.location.href = `/game/random-match?type=${currentGameType}&botNow=1`;
+      }, 700);
       return;
     }
+
 
     if (!opponentId) {
       console.error("❌ Rematch: Opponent yok");
