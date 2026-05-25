@@ -125,9 +125,7 @@ const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GamePar
 
   for (const p of list) {
     if (p.is_bot) {
-      // Random-match'te bot'a izin verme
-      if (gameMode?.startsWith("random-match")) continue;
-      // Diğer modlarda sadece tek bot'a izin ver
+      // 🤖 Tüm modlarda (random-match fallback dahil) tek bot'a izin ver
       if (!botEntry) botEntry = p as GameParticipant;
       continue;
     }
