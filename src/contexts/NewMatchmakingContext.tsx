@@ -467,6 +467,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
                 console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
 
+                // Bot fallback'i iptal et - gerçek oyuncu geldi
+                clearBotFallbackTimer();
+
                 // SADECE countdown bilgisini dinle, navigate için bekle
                 // Countdown Player 1 tarafından başlatıldı, biz sadece tespit ediyoruz
                 console.log("⏳ Player 1 countdown başlattı, realtime'dan bekliyoruz...");
@@ -481,6 +484,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
                 // Navigate etmeden önce countdown_started_at'ın set edilmesini bekle
                 // Bu bilgi room update realtime'ından gelecek
               }
+
             },
           )
           .on(
