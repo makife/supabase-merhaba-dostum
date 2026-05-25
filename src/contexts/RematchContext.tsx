@@ -291,12 +291,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (existingFromOpponent) {
           console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
 
-          // Auto-accept the existing request
-          await supabase
-            .from("rematch_requests")
-            .update({ status: "accepted", responded_at: new Date().toISOString() })
-            .eq("id", existingFromOpponent.id);
-
           // Get the room
           const { data: room } = await supabase
             .from("game_rooms")
@@ -314,15 +308,28 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               .maybeSingle();
 
             if (!existing) {
-              await supabase.from("game_participants").insert({
+              const { error: participantError } = await supabase.from("game_participants").insert({
                 room_id: room.id,
                 user_id: userId,
                 score: 0,
                 is_bot: false,
+                is_ready: true,
               });
+              if (participantError) throw participantError;
+            } else {
+              const { error: readyError } = await supabase
+                .from("game_participants")
+                .update({ is_ready: true })
+                .eq("id", existing.id);
+              if (readyError) throw readyError;
             }
 
             const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+            await supabase
+              .from("rematch_requests")
+              .update({ status: "accepted", responded_at: new Date().toISOString() })
+              .eq("id", existingFromOpponent.id);
 
             toast({
               title: "✅ Rematch Eşleşti",
@@ -330,7 +337,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               duration: 1000,
             });
 
-            navigate(`/private-room/waiting/${existingFromOpponent.room_code}`);
+            navigate(`/private-room/waiting/${existingFromOpponent.room_code}?roomId=${room.id}&gameType=${gameType}`);
             return true;
           }
         }
@@ -345,13 +352,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Create room
         const roomCode = generateRoomCode();
-        const baseMode = currentGameMode?.includes("random-match") ? "random-match" : "private-room";
-        const mode = `${baseMode}-${gameType}`;
+        const mode = `private-room-${gameType}`;
 
         const { data: room, error: roomError } = await supabase
           .from("game_rooms")
           .insert({
             game_mode: mode,
+            game_type_new: gameType,
             host_id: userId,
             room_code: roomCode,
             current_grid: generateGrid(),
@@ -367,12 +374,14 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
 
         // Add sender as participant
-        await supabase.from("game_participants").insert({
+        const { error: senderParticipantError } = await supabase.from("game_participants").insert({
           room_id: room.id,
           user_id: userId,
           score: 0,
           is_bot: false,
+          is_ready: false,
         });
+        if (senderParticipantError) throw senderParticipantError;
 
         // Create rematch request
         const { error: requestError } = await supabase.from("rematch_requests").insert({
@@ -471,15 +480,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
-      // Update status
-      await supabase
-        .from("rematch_requests")
-        .update({
-          status: "accepted",
-          responded_at: new Date().toISOString(),
-        })
-        .eq("id", incomingRequest.id);
-
       // Get room
       const { data: room } = await supabase
         .from("game_rooms")
@@ -507,20 +507,36 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .maybeSingle();
 
       if (!existing) {
-        await supabase.from("game_participants").insert({
+        const { error: participantError } = await supabase.from("game_participants").insert({
           room_id: room.id,
           user_id: userId,
           score: 0,
           is_bot: false,
+          is_ready: true,
         });
+        if (participantError) throw participantError;
+      } else {
+        const { error: readyError } = await supabase
+          .from("game_participants")
+          .update({ is_ready: true })
+          .eq("id", existing.id);
+        if (readyError) throw readyError;
       }
 
       const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
+      await supabase
+        .from("rematch_requests")
+        .update({
+          status: "accepted",
+          responded_at: new Date().toISOString(),
+        })
+        .eq("id", incomingRequest.id);
+
       setIncomingRequest(null);
 
       // Navigate
-      navigate(`/private-room/waiting/${incomingRequest.roomCode}`);
+      navigate(`/private-room/waiting/${incomingRequest.roomCode}?roomId=${room.id}&gameType=${gameType}`);
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
@@ -658,7 +674,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   duration: 1000,
                 });
 
-                navigate(`/private-room/waiting/${request.room_code}`);
+                navigate(`/private-room/waiting/${request.room_code}?roomId=${room.id}&gameType=${gameType}`);
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
