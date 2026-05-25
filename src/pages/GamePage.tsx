@@ -3209,48 +3209,73 @@ const GamePage = ({
 
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
-        const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1; // Premium/boost sunucuda uygulanıyor
-        const { data, error } = await (supabase.rpc as any)("update_game_stats", {
-          p_user_id: user.id,
-          p_score: finalUserScore * scoreMultiplier,
-          p_words: playerWordsWithScores,
-          p_is_winner: isWinner,
-          p_game_duration: gameDuration,
-          p_first_word_time: firstWordTime,
-          p_game_mode: gameMode,
-        });
 
-        if (error) {
-          console.error("İstatistik güncelleme hatası:", error);
+        // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
+        const isBotOpponentRandomMatch =
+          gameMode === "random-match" && participants.some((p) => p.is_bot === true);
+
+        if (isBotOpponentRandomMatch) {
+          const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
+          const { error } = await (supabase.rpc as any)("update_game_stats_vs_bot", {
+            p_user_id: user.id,
+            p_score: finalUserScore * scoreMultiplier,
+            p_words: playerWordsWithScores,
+            p_is_winner: isWinner,
+            p_game_duration: gameDuration,
+            p_first_word_time: firstWordTime,
+          });
+          if (error) {
+            console.error("İstatistik (bot maç) güncelleme hatası:", error);
+          } else {
+            console.log("✅ Bot maç istatistikleri güncellendi (RP/liderlik atlandı)");
+            await forceRefreshProfile?.();
+          }
+          // RP güncellemesi YAPMA - bot maçında rank etkilenmez
         } else {
-          console.log("İstatistikler güncellendi - gameMode:", gameMode);
-          await forceRefreshProfile?.();
-        }
+          const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1; // Premium/boost sunucuda uygulanıyor
+          const { error } = await (supabase.rpc as any)("update_game_stats", {
+            p_user_id: user.id,
+            p_score: finalUserScore * scoreMultiplier,
+            p_words: playerWordsWithScores,
+            p_is_winner: isWinner,
+            p_game_duration: gameDuration,
+            p_first_word_time: firstWordTime,
+            p_game_mode: gameMode,
+          });
 
-        // Rank puanı güncelle - rastgele eşleşme ve özel oda
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
-        const rpChange = isWinner ? 50 : isTie ? 10 : -30;
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("rank_points")
-          .eq("id", user.id)
-          .single();
-        const currentRP = (currentProfile as any)?.rank_points || 0;
-        const newRP = Math.max(0, currentRP + rpChange);
-        const oldTier = getRankTier(currentRP);
-        const newTier = getRankTier(newRP);
-        await supabase
-          .from("profiles")
-          .update({ rank_points: newRP } as any)
-          .eq("id", user.id);
-        console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
-        if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
-          setRankUpTier(newTier);
-          setTimeout(() => setShowRankUp(true), 2000);
-        }
+          if (error) {
+            console.error("İstatistik güncelleme hatası:", error);
+          } else {
+            console.log("İstatistikler güncellendi - gameMode:", gameMode);
+            await forceRefreshProfile?.();
+          }
+
+          // Rank puanı güncelle - rastgele eşleşme ve özel oda
+          if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
+            const rpChange = isWinner ? 50 : isTie ? 10 : -30;
+            const { data: currentProfile } = await supabase
+              .from("profiles")
+              .select("rank_points")
+              .eq("id", user.id)
+              .single();
+            const currentRP = (currentProfile as any)?.rank_points || 0;
+            const newRP = Math.max(0, currentRP + rpChange);
+            const oldTier = getRankTier(currentRP);
+            const newTier = getRankTier(newRP);
+            await supabase
+              .from("profiles")
+              .update({ rank_points: newRP } as any)
+              .eq("id", user.id);
+            console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+              setRankUpTier(newTier);
+              setTimeout(() => setShowRankUp(true), 2000);
+            }
+          }
         }
       }
     }
+
 
     // Normal oyun sonu
     setGameEnded(true);
@@ -7547,8 +7572,19 @@ const GamePage = ({
         return { name: "Bilgisayar", icon: Bot, avatar: robotAvatar, isPremium: false };
       case "random-match":
       case "private-room":
+        // 🤖 Bot rakip varsa (random-match fallback) tournament tarzı isim/avatar göster
+        if (gameMode === "random-match") {
+          const botParticipant = participants.find((p) => p.is_bot === true);
+          if (botParticipant) {
+            const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
+            const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
+            const botName = generateBotName(seed);
+            return { name: botName, icon: User, avatar: generateBotAvatar(seed, botName), isPremium: false };
+          }
+        }
         if (participants.length >= 2) {
           const opponent = participants.find((p) => String(p.user_id) !== String(user?.id));
+
           if (opponent && (opponent as any).profiles?.username) {
             console.log("✅ Rakip bilgisi gösteriliyor:", (opponent as any).profiles.username);
             return {
@@ -7591,12 +7627,16 @@ const GamePage = ({
   // Emoji reactions hook - sadece multiplayer modlarda
   const isMultiplayerMode = gameMode === "random-match" || gameMode === "private-room";
   const emojiRoomId = isMultiplayerMode ? currentRoom?.id || "" : "";
+  const opponentIsBotForEmoji =
+    gameMode === "random-match" && participants.some((p) => p.is_bot === true);
   const emojiReactions = GameEmojiReactions({
     roomId: emojiRoomId,
     userId: user?.id || "",
     gameStarted,
     gameEnded,
+    simulateOpponentBot: opponentIsBotForEmoji,
   });
+
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 

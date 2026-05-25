@@ -43,6 +43,8 @@ interface GameEmojiReactionsProps {
   userId: string;
   gameStarted: boolean;
   gameEnded: boolean;
+  /** Rakip bot ise rastgele aralıklarla otomatik emoji gösterir */
+  simulateOpponentBot?: boolean;
 }
 
 interface EmojiOverlay {
@@ -51,7 +53,8 @@ interface EmojiOverlay {
   timestamp: number;
 }
 
-export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: GameEmojiReactionsProps) {
+export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, simulateOpponentBot = false }: GameEmojiReactionsProps) {
+
   const [showPicker, setShowPicker] = useState(false);
   const [playerEmoji, setPlayerEmoji] = useState<EmojiOverlay | null>(null);
   const [opponentEmoji, setOpponentEmoji] = useState<EmojiOverlay | null>(null);
@@ -97,6 +100,49 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded }: G
       if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
     };
   }, [roomId, userId]);
+
+  // 🤖 Bot rakip otomatik emoji simülasyonu
+  useEffect(() => {
+    if (!simulateOpponentBot || !gameStarted || gameEnded) return;
+
+    let cancelled = false;
+    let timerId: NodeJS.Timeout | null = null;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      // 20-55s arasında rastgele aralık
+      const delay = 20000 + Math.random() * 35000;
+      timerId = setTimeout(() => {
+        if (cancelled) return;
+        // %70 ihtimalle gönder, %30 atla (doğal hissiyat)
+        if (Math.random() < 0.7) {
+          const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+          setOpponentEmoji({ userId: "bot", emojiSrc: emoji.src, timestamp: Date.now() });
+          if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+          opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+          try { playNativeSound('beep', 0.5); } catch {}
+        }
+        scheduleNext();
+      }, delay);
+    };
+
+    // İlk emoji 15-30s sonra
+    timerId = setTimeout(() => {
+      if (cancelled) return;
+      const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+      setOpponentEmoji({ userId: "bot", emojiSrc: emoji.src, timestamp: Date.now() });
+      if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+      try { playNativeSound('beep', 0.5); } catch {}
+      scheduleNext();
+    }, 15000 + Math.random() * 15000);
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [simulateOpponentBot, gameStarted, gameEnded]);
+
 
   const sendEmoji = useCallback(
     (emojiSrc: string) => {
