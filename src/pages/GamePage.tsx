@@ -3228,8 +3228,7 @@ const GamePage = ({
         const isTie = finalUserScore === finalOpponentScore;
 
         // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
-        const isBotOpponentRandomMatch =
-          gameMode === "random-match" && participants.some((p) => p.is_bot === true);
+        const isBotOpponentRandomMatch = hasRandomMatchBotOpponent;
 
         if (isBotOpponentRandomMatch) {
           const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
