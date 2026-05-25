@@ -405,7 +405,7 @@ const PrivateRoomWaitingPage = () => {
                     </span>
                   ) : opponentJoined ? (
                     <span className="text-amber-200 font-bold text-sm bg-amber-500/30 px-3 py-1 rounded-full animate-pulse">
-                      ⚡ Katıldı — Hazır değil
+                      {isBotRematch ? "🤖 Otomatik hazır" : "⚡ Katıldı — Hazır değil"}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-zinc-300 text-sm bg-white/10 px-3 py-1 rounded-full">
