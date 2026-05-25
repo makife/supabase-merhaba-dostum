@@ -116,7 +116,7 @@ const isValidParticipantPayload = (payload: any): payload is GameParticipantPayl
   return payload && typeof payload === "object";
 };
 
-// Katılımcıları tekilleştir - Random-match'te sadece gerçek oyuncular, diğer modlarda bot+oyuncu
+// Katılımcıları tekilleştir - gerçek oyuncuları tekilleştir, bot fallback'i ayrı rakip olarak koru
 const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GameParticipant[] => {
   if (!Array.isArray(list)) return [];
 
@@ -137,8 +137,12 @@ const dedupeParticipants = (list: GameParticipant[], gameMode?: string): GamePar
 
   const realUsers = Array.from(usersMap.values());
 
-  // Random-match: Sadece gerçek oyuncular (max 2)
-  if (gameMode?.startsWith("random-match")) return realUsers.slice(0, 2);
+  // Random-match: 2 gerçek oyuncu varsa onları kullan; yoksa bot fallback'i rakip olarak koru
+  if (gameMode?.startsWith("random-match")) {
+    if (realUsers.length >= 2) return realUsers.slice(0, 2);
+    if (realUsers.length === 1) return botEntry ? [realUsers[0], botEntry] : realUsers;
+    return botEntry ? [botEntry] : [];
+  }
 
   // Diğer modlar: Gerçek oyuncular + opsiyonel bot
   if (realUsers.length >= 2) return realUsers.slice(0, 2);
