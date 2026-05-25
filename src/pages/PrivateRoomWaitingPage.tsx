@@ -111,9 +111,18 @@ const PrivateRoomWaitingPage = () => {
       console.warn("Countdown başlatma hatası (devam ediliyor):", err);
     }
 
+    const params = new URLSearchParams({ room: roomId, type: gameType });
+    if (isBotRematch) {
+      params.set("botRematch", "1");
+      ["botSeed", "botName", "botAvatar"].forEach((key) => {
+        const value = searchParams.get(key);
+        if (value) params.set(key, value);
+      });
+    }
+
     const basePath = "/game/private-room";
-    navigate(`${basePath}?room=${roomId}&type=${gameType}`);
-  }, [roomId, gameType, navigated, navigate, isBotRematch]);
+    navigate(`${basePath}?${params.toString()}`);
+  }, [roomId, gameType, navigated, navigate, isBotRematch, searchParams]);
 
   // 1. Oda Bilgilerini Çekme
   useEffect(() => {
