@@ -7627,12 +7627,16 @@ const GamePage = ({
   // Emoji reactions hook - sadece multiplayer modlarda
   const isMultiplayerMode = gameMode === "random-match" || gameMode === "private-room";
   const emojiRoomId = isMultiplayerMode ? currentRoom?.id || "" : "";
+  const opponentIsBotForEmoji =
+    gameMode === "random-match" && participants.some((p) => p.is_bot === true);
   const emojiReactions = GameEmojiReactions({
     roomId: emojiRoomId,
     userId: user?.id || "",
     gameStarted,
     gameEnded,
+    simulateOpponentBot: opponentIsBotForEmoji,
   });
+
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 
