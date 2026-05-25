@@ -57,6 +57,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
   const progressIntervalRef = React.useRef<number | null>(null);
+  const botFallbackTimerRef = React.useRef<number | null>(null);
+
+  const clearBotFallbackTimer = () => {
+    if (botFallbackTimerRef.current) {
+      clearTimeout(botFallbackTimerRef.current);
+      botFallbackTimerRef.current = null;
+    }
+  };
+
+
 
   // Arka plan yönetimi - matchmaking devam ediyor mu kontrol et
   const matchmakingStateRef = React.useRef({ isSearching: false, foundMatch: false });
