@@ -1,67 +1,54 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-const RANDOM_MATCH_TTL_MS = 2 * 60 * 1000;
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * Rastgele eşleşme arayan oyuncu sayısını çeker.
- * - Doğru kaynak: public.game_rooms
- * - Doğru mod: game_mode = 'random-match'
- * - Eş zamanlı güncelleme: Realtime
- * - Güvenlik ağı: 1 dakikalık polling
+ * Ana sayfada "X kişi arıyor" göstergesi için sahte (canlı görünen) sayaç.
+ * 8 ile 35 arasında 4-9 saniyede bir küçük adımlarla değişir, doğal görünür.
+ * Gerçek kuyruktaki kişi sayısını sorgulamayız - sadece UI hissiyatı.
  */
 export const useSearchingPlayersCount = () => {
-  const [count, setCount] = useState<number>(0);
-  const isMountedRef = useRef(true);
-
-  const fetchCount = useCallback(async () => {
-    try {
-      const twoMinAgo = new Date(Date.now() - RANDOM_MATCH_TTL_MS).toISOString();
-
-      const { count: roomCount, error } = await supabase
-        .from('game_rooms')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'waiting')
-        .eq('game_mode', 'random-match')
-        .gt('created_at', twoMinAgo);
-
-      if (!error && roomCount !== null && isMountedRef.current) {
-        setCount(roomCount);
-      }
-    } catch {
-      // Sessizce devam et
-    }
-  }, []);
+  const [count, setCount] = useState<number>(() => 8 + Math.floor(Math.random() * 28)); // 8..35
+  const targetRef = useRef<number>(count);
 
   useEffect(() => {
-    isMountedRef.current = true;
+    let cancelled = false;
 
-    fetchCount();
+    const pickNewTarget = () => {
+      // Mevcut hedefe yakın yeni bir hedef seç (büyük sıçramaları önle)
+      const drift = Math.floor(Math.random() * 11) - 5; // -5..+5
+      let next = targetRef.current + drift;
+      if (next < 8) next = 8 + Math.floor(Math.random() * 4);
+      if (next > 35) next = 32 - Math.floor(Math.random() * 4);
+      targetRef.current = next;
+    };
 
-    const refreshInterval = window.setInterval(fetchCount, 60000);
+    const tick = () => {
+      if (cancelled) return;
+      pickNewTarget();
+      // Hedefe doğru kademeli geçiş için birkaç ara adım
+      const start = count;
+      const end = targetRef.current;
+      const steps = 3 + Math.floor(Math.random() * 3); // 3-5 ara adım
+      const stepDelay = 500 + Math.floor(Math.random() * 400); // 500-900ms
+      for (let i = 1; i <= steps; i++) {
+        setTimeout(() => {
+          if (cancelled) return;
+          const v = Math.round(start + ((end - start) * i) / steps);
+          setCount(v);
+        }, i * stepDelay);
+      }
+      const totalStepMs = steps * stepDelay;
+      const wait = totalStepMs + 4000 + Math.floor(Math.random() * 5000); // 4-9s ek bekleme
+      setTimeout(tick, wait);
+    };
 
-    const channel = supabase
-      .channel('searching-players-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'game_rooms',
-          filter: 'game_mode=eq.random-match',
-        },
-        () => {
-          fetchCount();
-        },
-      )
-      .subscribe();
+    const initial = setTimeout(tick, 3000 + Math.random() * 2000);
 
     return () => {
-      isMountedRef.current = false;
-      window.clearInterval(refreshInterval);
-      supabase.removeChannel(channel);
+      cancelled = true;
+      clearTimeout(initial);
     };
-  }, [fetchCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return count;
 };
