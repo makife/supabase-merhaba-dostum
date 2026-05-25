@@ -87,6 +87,9 @@ function calcLevelFromScore(totalScore: number): number {
 // Safe helpers
 const shortId = (v?: string | null) => (v ? String(v).slice(-8) : "NULL");
 const isUuid = (v?: string | null) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+const BOT_REMATCH_META_PREFIX = "botRematchMeta:";
+type BotIdentity = { seed: number; name: string; avatar: string };
+const seedFromText = (text: string) => Array.from(text).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
 let inGamePresenceSession = 0;
 
 interface TournamentMatch {
