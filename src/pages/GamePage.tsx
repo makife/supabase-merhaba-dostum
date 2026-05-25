@@ -1462,7 +1462,7 @@ const GamePage = ({
   const savedRoomIdRef = useRef<string | null>(null);
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
-    if (gameMode === "random-match" && participants.some((p) => p.is_bot === true)) {
+    if (hasRandomMatchBotOpponent) {
       return null;
     }
 
@@ -1484,7 +1484,7 @@ const GamePage = ({
 
     // State temizlenmiş olabilir, ref'ten al
     return savedOpponentIdRef.current;
-  }, [gameMode, participants, currentRoom, user?.id]);
+  }, [hasRandomMatchBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
