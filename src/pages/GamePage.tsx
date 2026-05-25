@@ -212,6 +212,11 @@ const GamePage = ({
     return gameParticipants || [];
   }, [gameMode, propsParticipants, gameParticipants, tournamentParticipants]);
 
+  const hasRandomMatchBotOpponent = useMemo(
+    () => gameMode === "random-match" && participants.some((p) => p.is_bot === true),
+    [gameMode, participants],
+  );
+
   const { validateWord, isValidating } = useWordValidation();
   const {
     playSound,
@@ -1147,6 +1152,10 @@ const GamePage = ({
     } else if (currentRoom?.id) {
       matchId = currentRoom.id;
       myUserId = user.id;
+      if (hasRandomMatchBotOpponent) {
+        console.log("💓 Random-match bot rakip, heartbeat atlanıyor");
+        return;
+      }
       opponentId = currentRoom.player1_id === myUserId ? currentRoom.player2_id : currentRoom.player1_id;
     } else {
       return;
@@ -1342,6 +1351,7 @@ const GamePage = ({
     currentRoom?.id,
     currentRoom?.player1_id,
     currentRoom?.player2_id,
+    hasRandomMatchBotOpponent,
     user?.id,
     tournamentMatch?.id,
     tournamentMatch?.player1_id,
@@ -1452,6 +1462,10 @@ const GamePage = ({
   const savedRoomIdRef = useRef<string | null>(null);
   // Opponent ID'yi hesapla ve ref'e kaydet
   const opponentId = useMemo(() => {
+    if (hasRandomMatchBotOpponent) {
+      return null;
+    }
+
     // Önce participants'tan bul
     const opponent = participants.find((p) => !p.is_bot && p.user_id !== user?.id);
     if (opponent?.user_id) {
@@ -1470,7 +1484,7 @@ const GamePage = ({
 
     // State temizlenmiş olabilir, ref'ten al
     return savedOpponentIdRef.current;
-  }, [participants, currentRoom, user?.id]);
+  }, [hasRandomMatchBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
   const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
@@ -3214,8 +3228,7 @@ const GamePage = ({
         const isTie = finalUserScore === finalOpponentScore;
 
         // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
-        const isBotOpponentRandomMatch =
-          gameMode === "random-match" && participants.some((p) => p.is_bot === true);
+        const isBotOpponentRandomMatch = hasRandomMatchBotOpponent;
 
         if (isBotOpponentRandomMatch) {
           const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
@@ -3358,6 +3371,15 @@ const GamePage = ({
       case "private-room":
         return "Arkadaş";
       case "random-match":
+        const botParticipant = participants.find((p) => p.is_bot === true);
+        if (botParticipant) {
+          const seedSrc = `${currentRoom?.id || ""}${botParticipant.id || ""}`;
+          const seed = Array.from(seedSrc).reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 7;
+          return generateBotName(seed);
+        }
+        if (opponentName && opponentName !== "Rakip Aranıyor...") {
+          return opponentName;
+        }
         return "Rakip";
       default:
         return "AI Rakip";
