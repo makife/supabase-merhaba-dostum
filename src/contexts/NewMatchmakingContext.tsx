@@ -559,6 +559,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
     clearProgressTimer();
+    clearBotFallbackTimer();
+
 
     if (searchChannel) {
       autoReconnect.unregisterChannel(searchChannel);
