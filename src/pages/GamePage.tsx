@@ -2447,11 +2447,12 @@ const GamePage = ({
         description: "Yeni oyun başlatılıyor...",
         duration: 1500,
       });
-      // Aynı path'e navigate React Router'ı remount etmeyebilir - hard reload ile yeni bot maçı tetikle
+      // Home'a dön ve auto-rematch ile yeni bot maçını matchmaking akışında başlat
       setTimeout(() => {
-        window.location.href = `/game/random-match?type=${currentGameType}&botNow=1`;
+        window.location.href = `/?autoRematch=1&type=${currentGameType}&botNow=1`;
       }, 700);
       return;
+
     }
 
 

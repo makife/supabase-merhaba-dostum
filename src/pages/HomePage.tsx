@@ -325,6 +325,24 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
 
+  // 🤖 Auto-rematch: GamePage'den rematch sonrası /?autoRematch=1&type=...&botNow=1 ile gelinince
+  // doğrudan matchmaking akışını başlat (instant bot fallback botNow=1 ile çalışır)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("autoRematch") !== "1") return;
+    const type: "timed" | "score" = params.get("type") === "score" ? "score" : "timed";
+    setMatchmakingGameType(type);
+    setMatchmakingKey(Date.now());
+    setShowMatchmaking(true);
+    setTimeout(() => startSearch(type), 100);
+    // autoRematch param'ını temizle (botNow context tarafından okunduktan sonra kalabilir, sorun yok)
+    const url = new URL(window.location.href);
+    url.searchParams.delete("autoRematch");
+    window.history.replaceState({}, "", url.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
     try {
       const cached = sessionStorage.getItem("challengeStatus");
