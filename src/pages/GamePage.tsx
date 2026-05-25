@@ -2421,6 +2421,31 @@ const GamePage = ({
       return;
     }
 
+    // 🤖 Bot rakip için özel akış: %50 kabul, %50 "rakip ayrıldı"
+    if (hasRandomMatchBotOpponent) {
+      const accepted = Math.random() < 0.5;
+      if (!accepted) {
+        toast({
+          title: "⚠️ Rakip Ayrıldı",
+          description: "Rakibiniz oyundan ayrıldı.",
+          variant: "destructive",
+          duration: 1500,
+        });
+        return;
+      }
+      const currentGameType: "timed" | "score" = currentRoom?.game_mode?.includes("score") ? "score" : "timed";
+      toast({
+        title: "✅ Rakip Kabul Etti",
+        description: "Yeni oyun başlatılıyor...",
+        duration: 1500,
+      });
+      // Mevcut odadan çık ve yeni random-match arama akışına gir
+      setTimeout(() => {
+        navigate(`/game/random-match?type=${currentGameType}`, { replace: true });
+      }, 600);
+      return;
+    }
+
     if (!opponentId) {
       console.error("❌ Rematch: Opponent yok");
       toast({
