@@ -57,6 +57,10 @@ export const useBackButton = () => {
            path.match(/^\/game\/[a-zA-Z0-9-]+/);
   }, []);
 
+  const isBotRematchWaitingPage = useCallback((path: string, search: string) => {
+    return path.startsWith("/private-room/waiting") && new URLSearchParams(search).get("botRematch") === "1";
+  }, []);
+
   const isHomePage = useCallback((path: string) => {
     return path === HOME_ROUTE;
   }, []);
@@ -69,7 +73,7 @@ export const useBackButton = () => {
     const currentPath = location.pathname;
 
     // Oyun sayfasındaysa - çıkış onayı göster
-    if (isGamePage(currentPath)) {
+    if (isGamePage(currentPath) || isBotRematchWaitingPage(currentPath, location.search)) {
       setDialogType("game-exit");
       return;
     }
@@ -88,7 +92,7 @@ export const useBackButton = () => {
 
     // Tanımsız sayfa - ana sayfaya git
     navigate("/");
-  }, [location.pathname, isGamePage, isHomePage, canGoBack, navigate]);
+  }, [location.pathname, location.search, isGamePage, isBotRematchWaitingPage, isHomePage, canGoBack, navigate]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
