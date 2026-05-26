@@ -7854,7 +7854,17 @@ const GamePage = ({
     gameStarted,
     gameEnded,
     simulateOpponentBot: opponentIsBotForEmoji,
+    botContext: opponentIsBotForEmoji
+      ? {
+          botScore: opponentScore,
+          playerScore: playerScore,
+          timeLeftSec: displayTime,
+          totalTimeSec: gameType === "timed" ? 120 : 0,
+          gridLetters: gameGrid.flat(),
+        }
+      : undefined,
   });
+
 
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
