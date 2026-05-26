@@ -45,6 +45,14 @@ interface GameEmojiReactionsProps {
   gameEnded: boolean;
   /** Rakip bot ise rastgele aralıklarla otomatik emoji gösterir */
   simulateOpponentBot?: boolean;
+  /** Bot davranışını bağlamsal hale getirmek için kullanılır */
+  botContext?: {
+    botScore?: number;
+    playerScore?: number;
+    timeLeftSec?: number;
+    totalTimeSec?: number;
+    gridLetters?: string[];
+  };
 }
 
 interface EmojiOverlay {
@@ -53,7 +61,8 @@ interface EmojiOverlay {
   timestamp: number;
 }
 
-export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, simulateOpponentBot = false }: GameEmojiReactionsProps) {
+export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, simulateOpponentBot = false, botContext }: GameEmojiReactionsProps) {
+
 
   const [showPicker, setShowPicker] = useState(false);
   const [playerEmoji, setPlayerEmoji] = useState<EmojiOverlay | null>(null);
