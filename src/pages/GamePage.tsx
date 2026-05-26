@@ -3553,13 +3553,14 @@ const GamePage = ({
     }
 
     // Diğer modlar için normal akış
-    // Rastgele eşleşmede bot rakip de gerçek oyuncu gibi davranır (çıkışta ceza dialog'u)
+    // Random bot rematch özel odaya taşındığı için private-room botu da gerçek oyuncu gibi davranır.
+    const hasRealOpponent = participants.some((p) => !p.is_bot && p.user_id !== user?.id);
+    const hasBotOpponent = hasMultiplayerBotOpponent || searchParams.get("botRematch") === "1";
     const isRealActiveGame =
       gameStarted &&
       !gameEnded &&
-      participants.length >= 2 &&
-      (participants.some((p) => !p.is_bot && p.user_id !== user?.id) ||
-        (gameMode === "random-match" && participants.some((p) => p.is_bot === true)));
+      (participants.length >= 2 || hasBotOpponent) &&
+      (hasRealOpponent || hasBotOpponent);
 
     if (isRealActiveGame) {
       setShowExitDialog(true);
@@ -6721,7 +6722,7 @@ const GamePage = ({
 
     const scheduleNextAIWord = () => {
       if (cancelled) return;
-      // Random-match botu normal AI moduna göre daha agresif
+      // Random-match botu normal AI modundan biraz güçlü, ama puan kazanımı daha yumuşak
       const minDelay = gameMode === "tournament" ? 2500 : gameMode === "random-match" ? 1500 : 2500;
       const maxDelay = gameMode === "tournament" ? 25000 : gameMode === "random-match" ? 12000 : 25000;
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
@@ -6872,14 +6873,14 @@ const GamePage = ({
                 gameMode === "tournament"
                   ? Math.floor(Math.random() * 24) + 12 // 12-35 puan
                   : gameMode === "random-match"
-                    ? Math.floor(Math.random() * 18) + 11 // 11-28 puan
+                    ? Math.floor(Math.random() * 14) + 10 // 10-23 puan
                     : Math.floor(Math.random() * 15) + 8; // 8-22 puan (ai mode)
               // Uzun kelimelere bonus
               const lengthBonus =
                 word.length >= 8
-                  ? Math.floor(Math.random() * (gameMode === "random-match" ? 18 : 15)) + (gameMode === "random-match" ? 12 : 10)
+                  ? Math.floor(Math.random() * (gameMode === "random-match" ? 13 : 15)) + (gameMode === "random-match" ? 10 : 10)
                   : word.length >= 6
-                    ? Math.floor(Math.random() * (gameMode === "random-match" ? 10 : 8)) + (gameMode === "random-match" ? 6 : 5)
+                    ? Math.floor(Math.random() * (gameMode === "random-match" ? 7 : 8)) + (gameMode === "random-match" ? 5 : 5)
                     : 0;
               const points = basePoints + lengthBonus;
 
