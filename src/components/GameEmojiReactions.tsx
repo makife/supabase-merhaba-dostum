@@ -110,47 +110,112 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, sim
     };
   }, [roomId, userId]);
 
-  // 🤖 Bot rakip otomatik emoji simülasyonu
+  // Bot context'i ref'te tut, effect'i yeniden tetiklemeden güncel oku
+  const botContextRef = useRef(botContext);
+  useEffect(() => {
+    botContextRef.current = botContext;
+  }, [botContext]);
+
+  // 🤖 Bot rakip bağlamsal emoji simülasyonu
   useEffect(() => {
     if (!simulateOpponentBot || !gameStarted || gameEnded) return;
 
     let cancelled = false;
     let timerId: NodeJS.Timeout | null = null;
+    const sentOnce = new Set<string>(); // tek seferlik emojiler için
+
+    const pickContextualEmoji = (): { id: string; src: string } | null => {
+      const ctx = botContextRef.current || {};
+      const botScore = ctx.botScore ?? 0;
+      const playerScore = ctx.playerScore ?? 0;
+      const diff = botScore - playerScore;
+      const timeLeft = ctx.timeLeftSec ?? 999;
+      const totalTime = ctx.totalTimeSec ?? 120;
+      const elapsed = totalTime - timeLeft;
+      const grid = ctx.gridLetters || [];
+      const hasAE = grid.some((l) => {
+        const lower = (l || "").toLocaleLowerCase("tr-TR");
+        return lower === "a" || lower === "e";
+      });
+
+      const candidates: Array<{ id: string; weight: number }> = [];
+
+      // Bot öndeyse → "sanırım kazanıyorum"
+      if (diff >= 25 && !sentOnce.has("sanirim")) {
+        candidates.push({ id: "sanirim", weight: 4 });
+      }
+      // Bot geride ise → "galiba kaybediyorum"
+      if (diff <= -25 && !sentOnce.has("galiba")) {
+        candidates.push({ id: "galiba", weight: 4 });
+      }
+      // Maç sonuna doğru (son 30sn, ama bitmemiş) → "tekrar oynayalım"
+      if (timeLeft > 5 && timeLeft <= 30 && !sentOnce.has("tekraroynayalim")) {
+        candidates.push({ id: "tekraroynayalim", weight: 3 });
+      }
+      // Izgarada a ve e harfi yoksa (oyun başında) → "ızgara zormuş"
+      if (grid.length > 0 && !hasAE && elapsed < 45 && !sentOnce.has("izgara")) {
+        candidates.push({ id: "izgara", weight: 5 });
+      }
+
+      // Genel doğal hissiyat için arada hafif emojiler
+      const fillerIds = ["gulen", "kahkaha", "iyiolan", "aklimagelmiyor"];
+      fillerIds.forEach((id) => candidates.push({ id, weight: 1 }));
+
+      if (candidates.length === 0) return null;
+      const total = candidates.reduce((s, c) => s + c.weight, 0);
+      let r = Math.random() * total;
+      let chosenId = candidates[0].id;
+      for (const c of candidates) {
+        if ((r -= c.weight) <= 0) {
+          chosenId = c.id;
+          break;
+        }
+      }
+      const found = EMOJIS.find((e) => e.id === chosenId);
+      if (!found) return null;
+      // Tek seferlik kategorideyse işaretle
+      if (["sanirim", "galiba", "tekraroynayalim", "izgara"].includes(chosenId)) {
+        sentOnce.add(chosenId);
+      }
+      return { id: found.id, src: found.src };
+    };
+
+    const showEmoji = () => {
+      const picked = pickContextualEmoji();
+      if (!picked) return;
+      setOpponentEmoji({ userId: "bot", emojiSrc: picked.src, timestamp: Date.now() });
+      if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
+      try { playNativeSound('beep', 0.5); } catch {}
+    };
 
     const scheduleNext = () => {
       if (cancelled) return;
-      // 20-55s arasında rastgele aralık
-      const delay = 20000 + Math.random() * 35000;
+      // 18-40s arasında rastgele aralık
+      const delay = 18000 + Math.random() * 22000;
       timerId = setTimeout(() => {
         if (cancelled) return;
-        // %70 ihtimalle gönder, %30 atla (doğal hissiyat)
-        if (Math.random() < 0.7) {
-          const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-          setOpponentEmoji({ userId: "bot", emojiSrc: emoji.src, timestamp: Date.now() });
-          if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-          opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
-          try { playNativeSound('beep', 0.5); } catch {}
+        // %65 ihtimalle gönder, %35 atla
+        if (Math.random() < 0.65) {
+          showEmoji();
         }
         scheduleNext();
       }, delay);
     };
 
-    // İlk emoji 15-30s sonra
+    // İlk emoji 8-18s sonra (zor ızgara tepkisi için erken)
     timerId = setTimeout(() => {
       if (cancelled) return;
-      const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-      setOpponentEmoji({ userId: "bot", emojiSrc: emoji.src, timestamp: Date.now() });
-      if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
-      opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
-      try { playNativeSound('beep', 0.5); } catch {}
+      showEmoji();
       scheduleNext();
-    }, 15000 + Math.random() * 15000);
+    }, 8000 + Math.random() * 10000);
 
     return () => {
       cancelled = true;
       if (timerId) clearTimeout(timerId);
     };
   }, [simulateOpponentBot, gameStarted, gameEnded]);
+
 
 
   const sendEmoji = useCallback(
