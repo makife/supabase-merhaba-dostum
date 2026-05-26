@@ -3553,13 +3553,14 @@ const GamePage = ({
     }
 
     // Diğer modlar için normal akış
-    // Rastgele eşleşmede bot rakip de gerçek oyuncu gibi davranır (çıkışta ceza dialog'u)
+    // Random bot rematch özel odaya taşındığı için private-room botu da gerçek oyuncu gibi davranır.
+    const hasRealOpponent = participants.some((p) => !p.is_bot && p.user_id !== user?.id);
+    const hasBotOpponent = hasMultiplayerBotOpponent || searchParams.get("botRematch") === "1";
     const isRealActiveGame =
       gameStarted &&
       !gameEnded &&
-      participants.length >= 2 &&
-      (participants.some((p) => !p.is_bot && p.user_id !== user?.id) ||
-        (gameMode === "random-match" && participants.some((p) => p.is_bot === true)));
+      (participants.length >= 2 || hasBotOpponent) &&
+      (hasRealOpponent || hasBotOpponent);
 
     if (isRealActiveGame) {
       setShowExitDialog(true);
