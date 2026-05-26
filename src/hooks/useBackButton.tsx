@@ -147,7 +147,7 @@ export const BackButtonDialog: React.FC = () => {
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isGameExit 
-              ? "Oyundan çıkmak istediğinize emin misiniz? Mevcut oyununuz kaybedilecek."
+              ? "Oyundan çıkmak istediğinize emin misiniz? Aktif maçtan çıkarsanız puan kaybedebilirsiniz."
               : "Uygulamadan çıkmak istediğinize emin misiniz?"
             }
           </AlertDialogDescription>
