@@ -25,6 +25,12 @@ const TournamentPage = () => {
   }, []);
   useEffect(() => {
     fetchTournaments();
+    // Bot turnuvalarının var olduğundan emin ol — eksikse oluştur
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.functions.invoke("ensure-bot-tournaments")
+        .then(() => fetchTournaments())
+        .catch(() => {});
+    });
   }, []);
 
   // 🔄 Global Resync Hook
