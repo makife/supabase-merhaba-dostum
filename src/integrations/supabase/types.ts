@@ -1419,6 +1419,7 @@ export type Database = {
           finished_at: string | null
           game_type: string | null
           id: string
+          is_bot_tournament: boolean
           max_participants: number | null
           name: string | null
           next_round_starts_at: string | null
@@ -1435,6 +1436,7 @@ export type Database = {
           finished_at?: string | null
           game_type?: string | null
           id?: string
+          is_bot_tournament?: boolean
           max_participants?: number | null
           name?: string | null
           next_round_starts_at?: string | null
@@ -1451,6 +1453,7 @@ export type Database = {
           finished_at?: string | null
           game_type?: string | null
           id?: string
+          is_bot_tournament?: boolean
           max_participants?: number | null
           name?: string | null
           next_round_starts_at?: string | null

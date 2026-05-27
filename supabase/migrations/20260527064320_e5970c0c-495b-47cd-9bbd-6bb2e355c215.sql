@@ -1,0 +1,2 @@
+ALTER TABLE public.tournaments ADD COLUMN IF NOT EXISTS is_bot_tournament boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_tournaments_bot_waiting ON public.tournaments(is_bot_tournament, status, created_at DESC);
