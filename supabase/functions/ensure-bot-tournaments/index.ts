@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Cleanup: cancel stale bot tournaments
-    const staleCutoff = new Date(Date.now() - BOT_TOURNAMENT_TTL_MIN * 60 * 1000).toISOString();
+    // Cleanup: cancel stale bot tournaments (>30s old, still waiting)
+    const staleCutoff = new Date(Date.now() - BOT_TOURNAMENT_TTL_SEC * 1000).toISOString();
     await supabase
       .from("tournaments")
       .update({ status: "cancelled" })
@@ -55,12 +55,13 @@ Deno.serve(async (req) => {
       .eq("is_bot_tournament", true)
       .eq("status", "waiting");
 
+    const target = pickTarget();
     const have = count ?? 0;
-    const need = Math.max(0, TARGET_BOT_TOURNAMENTS - have);
+    const need = Math.max(0, target - have);
     const created: string[] = [];
 
     for (let i = 0; i < need; i++) {
-      const expiresAt = new Date(Date.now() + (8 + Math.floor(Math.random() * 7)) * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + BOT_TOURNAMENT_TTL_SEC * 1000).toISOString();
       const hour = new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
       const { data: t, error } = await supabase
         .from("tournaments")
