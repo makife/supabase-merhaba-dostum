@@ -19,6 +19,7 @@ import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
+import { useActiveTournamentDisplayCount } from "@/hooks/useActiveTournamentDisplayCount";
 import Lottie from "lottie-react";
 
 import {
@@ -295,7 +296,7 @@ const HomePage = () => {
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
   const { jokers, loadJokers } = useJokerInventory();
   const searchingPlayersCount = useSearchingPlayersCount();
-  const [activeTournamentCount, setActiveTournamentCount] = useState<number>(0);
+  const activeTournamentCount = useActiveTournamentDisplayCount();
 
   usePremiumDailyRewards();
 
@@ -374,16 +375,14 @@ const HomePage = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fetch active tournament count
-    const fetchActiveTournaments = async () => {
-      const { count } = await supabase
-        .from("tournaments")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "waiting");
-      setActiveTournamentCount(count || 0);
-    };
-    fetchActiveTournaments();
-    const tournamentInterval = setInterval(fetchActiveTournaments, 30000);
+    // Bot turnuvalarının arka planda oluşturulmasını tetikle (debounced via session flag)
+    try {
+      const lastEnsure = Number(sessionStorage.getItem("botTournamentsEnsuredAt") || 0);
+      if (Date.now() - lastEnsure > 60_000) {
+        sessionStorage.setItem("botTournamentsEnsuredAt", String(Date.now()));
+        supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
+      }
+    } catch {}
 
     const fetchChallengeStatus = () => {
       sessionStorage.removeItem("challengeStatus");
