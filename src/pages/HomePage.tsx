@@ -375,14 +375,9 @@ const HomePage = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Bot turnuvalarının arka planda oluşturulmasını tetikle (debounced via session flag)
-    try {
-      const lastEnsure = Number(sessionStorage.getItem("botTournamentsEnsuredAt") || 0);
-      if (Date.now() - lastEnsure > 60_000) {
-        sessionStorage.setItem("botTournamentsEnsuredAt", String(Date.now()));
-        supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
-      }
-    } catch {}
+    // Bot turnuvaları artık useActiveTournamentDisplayCount hook'u tarafından
+    // her 30s'de bir tetikleniyor — burada ekstra çağrıya gerek yok.
+
 
     const fetchChallengeStatus = () => {
       sessionStorage.removeItem("challengeStatus");

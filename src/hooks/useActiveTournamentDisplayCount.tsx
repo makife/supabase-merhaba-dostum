@@ -1,51 +1,39 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Ana sayfa turnuva kartı için canlı görünen sayaç.
- * 6-28 arasında 4-9 saniyede bir küçük adımlarla dalgalanır.
- * useSearchingPlayersCount ile aynı pattern.
+ * Ana sayfa turnuva kartı için aktif (waiting) turnuva sayısını
+ * her 30 saniyede bir yeniler. Bot turnuvaları 30 saniyede bir döner
+ * (ensure-bot-tournaments edge function tarafından).
  */
 export const useActiveTournamentDisplayCount = () => {
-  const [count, setCount] = useState<number>(() => 6 + Math.floor(Math.random() * 23)); // 6..28
-  const targetRef = useRef<number>(count);
+  const [count, setCount] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    const pickNewTarget = () => {
-      const drift = Math.floor(Math.random() * 9) - 4; // -4..+4
-      let next = targetRef.current + drift;
-      if (next < 6) next = 6 + Math.floor(Math.random() * 3);
-      if (next > 28) next = 26 - Math.floor(Math.random() * 3);
-      targetRef.current = next;
-    };
+    const fetchCount = async () => {
+      try {
+        // ensure-bot-tournaments'i tetikle (stale temizler + eksikleri doldurur)
+        supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
 
-    const tick = () => {
-      if (cancelled) return;
-      pickNewTarget();
-      const start = count;
-      const end = targetRef.current;
-      const steps = 3 + Math.floor(Math.random() * 3);
-      const stepDelay = 500 + Math.floor(Math.random() * 400);
-      for (let i = 1; i <= steps; i++) {
-        setTimeout(() => {
-          if (cancelled) return;
-          const v = Math.round(start + ((end - start) * i) / steps);
-          setCount(v);
-        }, i * stepDelay);
+        const { count: c } = await supabase
+          .from("tournaments")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "waiting");
+
+        if (!cancelled) setCount(c ?? 0);
+      } catch {
+        // sessiz
       }
-      const totalStepMs = steps * stepDelay;
-      const wait = totalStepMs + 4000 + Math.floor(Math.random() * 5000);
-      setTimeout(tick, wait);
     };
 
-    const initial = setTimeout(tick, 3000 + Math.random() * 2000);
-
+    fetchCount();
+    const id = setInterval(fetchCount, 30_000);
     return () => {
       cancelled = true;
-      clearTimeout(initial);
+      clearInterval(id);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return count;
