@@ -247,6 +247,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
               .update({ expires_at: new Date().toISOString(), creator_id: user.id })
               .eq("id", tournamentId);
             await supabase.rpc("start_tournament_with_bots_v2", { p_tournament_id: tournamentId });
+            await supabase.rpc("deduct_tournament_credits", { p_tournament_id: tournamentId });
             const nextRound = new Date(Date.now() + 10_000).toISOString();
             await supabase
               .from("tournaments")
