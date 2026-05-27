@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       else created.push(t.id);
     }
 
-    return new Response(JSON.stringify({ ok: true, have, created: created.length }), {
+    return new Response(JSON.stringify({ ok: true, have, target, created: created.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
