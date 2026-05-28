@@ -3476,17 +3476,21 @@ const GamePage = ({
       if (!opponentId) {
         setIsAIOpponent(true);
         setOpponentName("Bekleniyor...");
-      } else if (String(opponentId).startsWith("bot_")) {
-        setIsAIOpponent(true);
-        const seed = Array.from(String(opponentId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        setOpponentName(generateBotName(seed));
       } else {
-        setIsAIOpponent(false);
-        const realOpponent = participants.find((p) => String(p.user_id) === String(opponentId));
-        if (realOpponent && (realOpponent as any).profiles?.username) {
-          setOpponentName((realOpponent as any).profiles.username);
+        const oppParticipant = participants.find((p) => String(p.user_id) === String(opponentId));
+        const isBotById = String(opponentId).startsWith("bot_");
+        const isBotByFlag = (oppParticipant as any)?.is_bot === true;
+        if (isBotById || isBotByFlag) {
+          setIsAIOpponent(true);
+          const seed = Array.from(String(opponentId)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+          setOpponentName(generateBotName(seed));
         } else {
-          setOpponentName("Turnuva Oyuncusu");
+          setIsAIOpponent(false);
+          if (oppParticipant && (oppParticipant as any).profiles?.username) {
+            setOpponentName((oppParticipant as any).profiles.username);
+          } else {
+            setOpponentName("Turnuva Oyuncusu");
+          }
         }
       }
     }
