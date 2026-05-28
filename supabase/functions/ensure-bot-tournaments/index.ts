@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 // Hedef sayıyı her çağrıda 6-28 arası rastgele seç
-const pickTarget = () => 6 + Math.floor(Math.random() * 23);
+const pickTarget = () => 2 + Math.floor(Math.random() * 8);
 const BOT_TOURNAMENT_TTL_SEC = 30; // her turnuva 30 saniye yaşar
 
 // Inline minimal name/avatar helpers (duplicated from client to avoid bundling)
