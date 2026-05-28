@@ -227,37 +227,26 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       console.log("✅ Turnuvaya katıldı");
 
-      // 🤖 Bot turnuvasıysa ve 8/8 dolduysa otomatik başlat
+      // 🤖 Bot turnuvasıysa: ilk gerçek oyuncu kurucu olur, geri sayım 30s'e uzar
       try {
         const { data: tInfo } = await supabase
           .from("tournaments")
-          .select("is_bot_tournament, status, max_participants")
+          .select("is_bot_tournament, status, creator_id")
           .eq("id", tournamentId)
           .maybeSingle();
 
-        if (tInfo && (tInfo as any).is_bot_tournament && tInfo.status === "waiting") {
-          const { count } = await supabase
-            .from("tournament_participants")
-            .select("id", { count: "exact", head: true })
-            .eq("tournament_id", tournamentId);
-          if ((count || 0) >= (tInfo.max_participants || 8)) {
-            console.log("🤖 Bot turnuvası 8/8 doldu, başlatılıyor...");
-            await supabase
-              .from("tournaments")
-              .update({ expires_at: new Date().toISOString(), creator_id: user.id })
-              .eq("id", tournamentId);
-            await supabase.rpc("start_tournament_with_bots_v2", { p_tournament_id: tournamentId });
-            await supabase.rpc("deduct_tournament_credits", { p_tournament_id: tournamentId });
-            const nextRound = new Date(Date.now() + 10_000).toISOString();
-            await supabase
-              .from("tournaments")
-              .update({ next_round_starts_at: nextRound })
-              .eq("id", tournamentId);
-          }
+        if (tInfo && (tInfo as any).is_bot_tournament && tInfo.status === "waiting" && !tInfo.creator_id) {
+          const newExpiresAt = new Date(Date.now() + 30_000).toISOString();
+          await supabase
+            .from("tournaments")
+            .update({ creator_id: user.id, expires_at: newExpiresAt })
+            .eq("id", tournamentId);
+          console.log("👑 Bot turnuvasında kurucu olarak atandı, +30s sayaç");
         }
       } catch (e) {
-        console.error("Bot turnuva auto-start hatası", e);
+        console.error("Bot turnuva kurucu atama hatası", e);
       }
+
 
       await fetchTournamentDetails(tournamentId);
       return true;
