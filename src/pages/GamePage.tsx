@@ -3387,27 +3387,8 @@ const GamePage = ({
         const isWinner = finalUserScore > finalOpponentScore;
         const isTie = finalUserScore === finalOpponentScore;
 
-        // 🤖 Random-match'te bot rakip mi? (RP ve liderlik etkilenmemeli)
-        const isBotOpponentRandomMatch = hasMultiplayerBotOpponent;
-
-        if (isBotOpponentRandomMatch) {
-          const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1;
-          const { error } = await (supabase.rpc as any)("update_game_stats_vs_bot", {
-            p_user_id: user.id,
-            p_score: finalUserScore * scoreMultiplier,
-            p_words: playerWordsWithScores,
-            p_is_winner: isWinner,
-            p_game_duration: gameDuration,
-            p_first_word_time: firstWordTime,
-          });
-          if (error) {
-            console.error("İstatistik (bot maç) güncelleme hatası:", error);
-          } else {
-            console.log("✅ Bot maç istatistikleri güncellendi (RP/liderlik atlandı)");
-            await forceRefreshProfile?.();
-          }
-          // RP güncellemesi YAPMA - bot maçında rank etkilenmez
-        } else {
+        // 🤖 Random-match'te bot rakip de olsa puanlar normal şekilde işlensin (liderlik + RP)
+        {
           const scoreMultiplier = isWinner ? 5 : isTie ? 2 : 1; // Premium/boost sunucuda uygulanıyor
           const { error } = await (supabase.rpc as any)("update_game_stats", {
             p_user_id: user.id,
