@@ -39,14 +39,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Cleanup: cancel stale bot tournaments (>30s old, still waiting)
+    // Cleanup: sadece gerçek oyuncusu olmayan, eski (>30s) bot turnuvalarını iptal et
     const staleCutoff = new Date(Date.now() - BOT_TOURNAMENT_TTL_SEC * 1000).toISOString();
-    await supabase
+    const { data: staleCandidates } = await supabase
       .from("tournaments")
-      .update({ status: "cancelled" })
+      .select("id")
       .eq("is_bot_tournament", true)
       .eq("status", "waiting")
       .lt("created_at", staleCutoff);
+
+    if (staleCandidates && staleCandidates.length > 0) {
+      for (const t of staleCandidates) {
+        const { count: realCount } = await supabase
+          .from("tournament_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("tournament_id", t.id)
+          .eq("is_bot", false);
+        if ((realCount || 0) === 0) {
+          await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", t.id);
+        }
+      }
+    }
 
     // Count existing active bot tournaments
     const { count } = await supabase
@@ -84,20 +97,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // insert 7 bot participants with unique fake user_ids
-      const bots = Array.from({ length: 7 }, (_, idx) => {
-        const seed = Date.now() + i * 1000 + idx * 37;
-        const bot = makeBot(seed);
-        return {
-          tournament_id: t.id,
-          user_id: crypto.randomUUID(),
-          is_bot: true,
-          // joined_at default now()
-        };
-      });
-      const { error: pErr } = await supabase.from("tournament_participants").insert(bots);
-      if (pErr) console.error("insert bots failed", pErr);
-      else created.push(t.id);
+      // Gerçek turnuvalar gibi BOŞ başlatılır. Gerçek oyuncu katılınca
+      // expires_at +30s uzatılır; süre dolduğunda start_tournament_with_bots_v2
+      // eksik slotları botla doldurup başlatır.
+      created.push(t.id);
     }
 
     return new Response(JSON.stringify({ ok: true, have, target, created: created.length }), {
