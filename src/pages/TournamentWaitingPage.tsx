@@ -1,14 +1,12 @@
 import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Users, Bot, User, ArrowLeft, Trophy, Crown } from "lucide-react";
+import { Bot, ArrowLeft, Trophy, Crown } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
 import { usePageResync } from "@/hooks/useGlobalResync";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
@@ -80,8 +78,9 @@ const TournamentWaitingPage = () => {
   }
 
   const realPlayers = participants.filter((p) => !p.is_bot);
-  const bots = participants.filter((p) => p.is_bot);
-  const emptySlots = 8 - participants.length;
+  const isBotTournament = Boolean(currentTournament.is_bot_tournament);
+  const displayParticipants = isBotTournament ? participants : realPlayers;
+  const emptySlots = isBotTournament ? 0 : Math.max(0, 8 - realPlayers.length);
 
   return (
     <div
@@ -130,8 +129,8 @@ const TournamentWaitingPage = () => {
           <TournamentCountdown
             timeLeft={timeLeft}
             realPlayerCount={realPlayerCount}
-            totalParticipants={participants.length}
             isCreator={isCreator}
+            isBotTournament={isBotTournament}
           />
         </div>
 
@@ -143,39 +142,38 @@ const TournamentWaitingPage = () => {
               <div className="w-1 h-5 bg-indigo-400 rounded-full" />
               <h3 className="text-sm font-black text-white uppercase tracking-widest">Katılımcılar</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/20 px-2 py-1 rounded-lg">
-                {realPlayerCount} Oyuncu
-              </span>
-              {bots.length > 0 && (
-                <span className="text-xs text-slate-400 bg-white/5 ring-1 ring-white/10 px-2 py-1 rounded-lg">
-                  {bots.length} Bot
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Liste */}
           <div className="px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
-            {/* Gerçek oyuncular */}
-            {realPlayers.map((participant) => (
+            {displayParticipants.map((participant) => (
               <div
                 key={participant.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-emerald-500/8 ring-1 ring-emerald-500/15"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl ${participant.is_bot ? "bg-white/4 ring-1 ring-white/8" : "bg-emerald-500/8 ring-1 ring-emerald-500/15"}`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                <Avatar className="w-9 h-9 flex-shrink-0" showFrame={true}>
-                  <AvatarImage src={participant.profiles?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-emerald-500/20 text-emerald-300 text-xs font-bold">
-                    {participant.profiles?.username?.charAt(0)?.toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${participant.is_bot ? "bg-slate-500" : "bg-emerald-400"}`} />
+                {participant.is_bot ? (
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-500/20 ring-1 ring-white/10 flex items-center justify-center flex-shrink-0">
+                    {participant.profiles?.avatar_url ? (
+                      <img src={participant.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Bot className="w-4 h-4 text-slate-400" />
+                    )}
+                  </div>
+                ) : (
+                  <Avatar className="w-9 h-9 flex-shrink-0" showFrame={true}>
+                    <AvatarImage src={participant.profiles?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                      {participant.profiles?.username?.charAt(0)?.toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white/95 truncate">
-                      {participant.profiles?.username || "Oyuncu"}
+                    <span className={`text-sm truncate ${participant.is_bot ? "font-medium text-slate-400" : "font-semibold text-white/95"}`}>
+                      {participant.profiles?.username || (participant.is_bot ? "Bot" : "Oyuncu")}
                     </span>
-                    {participant.user_id === currentTournament.creator_id && (
+                    {!participant.is_bot && participant.user_id === currentTournament.creator_id && (
                       <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 bg-amber-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
                         <Crown className="w-2.5 h-2.5" />
                         KURUCU
@@ -183,28 +181,9 @@ const TournamentWaitingPage = () => {
                     )}
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide flex-shrink-0">
-                  Oyuncu
+                <span className={`text-[10px] font-bold uppercase tracking-wide flex-shrink-0 ${participant.is_bot ? "text-slate-500" : "text-emerald-400"}`}>
+                  {participant.is_bot ? "Bot" : "Oyuncu"}
                 </span>
-              </div>
-            ))}
-
-            {/* Botlar */}
-            {bots.map((participant) => (
-              <div
-                key={participant.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-white/4 ring-1 ring-white/8"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-500 flex-shrink-0" />
-                <div className="w-9 h-9 rounded-full bg-slate-500/20 ring-1 ring-white/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-slate-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-slate-400 truncate">
-                    {participant.profiles?.username || "Bot"}
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex-shrink-0">Bot</span>
               </div>
             ))}
 

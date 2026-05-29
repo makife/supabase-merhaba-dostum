@@ -1,12 +1,12 @@
-// Ensures that a minimum number of bot-created tournaments are always waiting,
-// each pre-filled with 7 bot participants so that a single real player can join
-// as the 8th and immediately start the bracket.
+// Ensures that a random number of global bot-created tournaments are always waiting.
+// Bot tournaments are pre-filled with bot slots; real players replace those slots.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-// Hedef sayıyı her çağrıda 6-28 arası rastgele seç
+// Hedef sayıyı her çağrıda 2-9 arası rastgele seç
 const pickTarget = () => 2 + Math.floor(Math.random() * 8);
 const BOT_TOURNAMENT_TTL_SEC = 30; // her turnuva 30 saniye yaşar
+const MAX_PARTICIPANTS = 8;
 
 // Inline minimal name/avatar helpers (duplicated from client to avoid bundling)
 const MALE = ["ahmet","mehmet","ali","emre","can","burak","yusuf","berk","arda","efe","emir","kaan","mert","kerem","bora","doruk","eren","alp","ege","koray","tolga","onur","umut","barış"];
@@ -28,6 +28,30 @@ function makeBot(seed: number) {
     decor === 2 ? `${name}.${Math.abs(seed) % 100}` :
                   `${name.charAt(0).toUpperCase()}${name.slice(1)}${num}`;
   return { username: finalName, avatar_url: `/avatarlar/${av}.svg` };
+}
+
+async function fillBotSlots(supabase: ReturnType<typeof createClient>, tournamentId: string) {
+  const { count } = await supabase
+    .from("tournament_participants")
+    .select("id", { count: "exact", head: true })
+    .eq("tournament_id", tournamentId);
+
+  const missing = Math.max(0, MAX_PARTICIPANTS - (count || 0));
+  if (missing === 0) return 0;
+
+  const rows = Array.from({ length: missing }, () => ({
+    tournament_id: tournamentId,
+    user_id: crypto.randomUUID(),
+    is_bot: true,
+  }));
+
+  const { error } = await supabase.from("tournament_participants").insert(rows);
+  if (error) {
+    console.error("fill bot slots failed", tournamentId, error);
+    return 0;
+  }
+
+  return missing;
 }
 
 Deno.serve(async (req) => {
@@ -61,15 +85,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Count existing active bot tournaments
-    const { count } = await supabase
+    // Waiting bot turnuvalarında katılımcı listesi her zaman 8 bot/oyuncu slotu dolu olsun
+    const { data: activeBotTournaments } = await supabase
       .from("tournaments")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("is_bot_tournament", true)
       .eq("status", "waiting");
 
+    let slotsFilled = 0;
+    for (const t of activeBotTournaments || []) {
+      slotsFilled += await fillBotSlots(supabase, t.id);
+    }
+
+    // Count existing active bot tournaments
+    const have = activeBotTournaments?.length ?? 0;
+
     const target = pickTarget();
-    const have = count ?? 0;
     const need = Math.max(0, target - have);
     const created: string[] = [];
 
@@ -97,13 +128,13 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Gerçek turnuvalar gibi BOŞ başlatılır. Gerçek oyuncu katılınca
-      // expires_at +30s uzatılır; süre dolduğunda start_tournament_with_bots_v2
-      // eksik slotları botla doldurup başlatır.
+      // Katılımcı listesi baştan 8 bot slotuyla dolu görünür.
+      // Gerçek oyuncu katılınca rastgele bir bot slotunun yerini alır.
+      slotsFilled += await fillBotSlots(supabase, t.id);
       created.push(t.id);
     }
 
-    return new Response(JSON.stringify({ ok: true, have, target, created: created.length }), {
+    return new Response(JSON.stringify({ ok: true, have, target, created: created.length, slotsFilled }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

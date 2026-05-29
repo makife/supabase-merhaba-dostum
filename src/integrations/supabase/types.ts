@@ -2133,6 +2133,10 @@ export type Database = {
             Args: { p_amount: number; p_user_id: string; p_week_start: string }
             Returns: undefined
           }
+      join_tournament_replacing_bot: {
+        Args: { p_tournament_id: string }
+        Returns: Json
+      }
       leave_tournament_with_transfer: {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json

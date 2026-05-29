@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Bot } from "lucide-react";
 import Lottie from "lottie-react";
 
 interface TournamentCountdownProps {
   timeLeft: number;
   realPlayerCount: number;
-  totalParticipants: number;
   isCreator: boolean;
+  isBotTournament?: boolean;
 }
 
 export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   timeLeft,
   realPlayerCount,
-  totalParticipants,
   isCreator,
+  isBotTournament = false,
 }) => {
   const [basliyorAnim, setBasliyorAnim] = useState<any>(null);
 
@@ -30,9 +29,15 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getBotCount = () => totalParticipants - realPlayerCount;
-
   const getStatusMessage = () => {
+    if (isBotTournament && realPlayerCount < 8) {
+      return {
+        text: "Eksik slotlar botlarla hazır, gerçek oyuncular katıldıkça botların yerini alacak.",
+        color: "text-blue-400",
+        emoji: "🤖",
+      };
+    }
+
     if (realPlayerCount < 2) {
       return {
         text: "En az 2 oyuncu gerekli",
@@ -79,27 +84,13 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
         <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(timeLeft)}</div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 font-bold">{realPlayerCount} Oyuncu</span>
-            </div>
-
-            {getBotCount() > 0 && (
-              <div className="flex items-center space-x-2">
-                <Bot className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-400">{getBotCount()} Bot</span>
-              </div>
-            )}
-          </div>
-
           <p className={`text-sm font-medium ${status.color}`}>
             {status.emoji} {status.text}
           </p>
 
           {!isCreator && <p className="text-blue-300 text-sm">Turnuvanın başlaması bekleniyor...</p>}
 
-          {isCreator && realPlayerCount < 2 && (
+          {isCreator && !isBotTournament && realPlayerCount < 2 && (
             <p className="text-red-300 text-sm">⏱️ Süre bittiğinde turnuva iptal edilecek</p>
           )}
         </div>
