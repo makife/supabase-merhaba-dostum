@@ -217,36 +217,35 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         }
       }
 
-      const { error } = await supabase.from("tournament_participants").insert({
-        tournament_id: tournamentId,
-        user_id: user.id,
-        is_bot: false,
+      const { count: realPlayerCount } = await supabase
+        .from("tournament_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("tournament_id", tournamentId)
+        .eq("is_bot", false);
+
+      if ((realPlayerCount || 0) >= 8) {
+        toast({ title: "Turnuva dolu", description: "Bu turnuvada 8 gerçek oyuncu var." });
+        return false;
+      }
+
+      const { data: joinResult, error } = await supabase.rpc("join_tournament_replacing_bot" as any, {
+        p_tournament_id: tournamentId,
       });
 
       if (error) throw error;
 
-      console.log("✅ Turnuvaya katıldı");
-
-      // 🤖 Bot turnuvasıysa: ilk gerçek oyuncu kurucu olur, geri sayım 30s'e uzar
-      try {
-        const { data: tInfo } = await supabase
-          .from("tournaments")
-          .select("is_bot_tournament, status, creator_id")
-          .eq("id", tournamentId)
-          .maybeSingle();
-
-        if (tInfo && (tInfo as any).is_bot_tournament && tInfo.status === "waiting" && !tInfo.creator_id) {
-          const newExpiresAt = new Date(Date.now() + 30_000).toISOString();
-          await supabase
-            .from("tournaments")
-            .update({ creator_id: user.id, expires_at: newExpiresAt })
-            .eq("id", tournamentId);
-          console.log("👑 Bot turnuvasında kurucu olarak atandı, +30s sayaç");
-        }
-      } catch (e) {
-        console.error("Bot turnuva kurucu atama hatası", e);
+      const result = joinResult as { success?: boolean; error?: string; already_joined?: boolean; replaced_bot?: boolean };
+      if (!result?.success) {
+        const isFull = result?.error === "Turnuva dolu";
+        toast({
+          title: isFull ? "Turnuva dolu" : "Turnuvaya katılınamadı",
+          description: isFull ? "Bu turnuvada 8 gerçek oyuncu var." : result?.error || "Lütfen tekrar deneyin.",
+          variant: isFull ? undefined : "destructive",
+        });
+        return false;
       }
 
+      console.log(result.replaced_bot ? "✅ Bot slotu gerçek oyuncuyla değiştirildi" : "✅ Turnuvaya katıldı");
 
       await fetchTournamentDetails(tournamentId);
       return true;
