@@ -5,7 +5,6 @@ import Lottie from "lottie-react";
 interface TournamentCountdownProps {
   timeLeft: number;
   realPlayerCount: number;
-  totalParticipants: number;
   isCreator: boolean;
 }
 
