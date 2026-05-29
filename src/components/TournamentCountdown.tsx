@@ -12,7 +12,6 @@ interface TournamentCountdownProps {
 export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   timeLeft,
   realPlayerCount,
-  totalParticipants,
   isCreator,
 }) => {
   const [basliyorAnim, setBasliyorAnim] = useState<any>(null);
