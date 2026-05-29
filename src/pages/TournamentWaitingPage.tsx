@@ -80,7 +80,6 @@ const TournamentWaitingPage = () => {
   }
 
   const realPlayers = participants.filter((p) => !p.is_bot);
-  const bots = participants.filter((p) => p.is_bot);
   const isBotTournament = Boolean(currentTournament.is_bot_tournament);
   const displayParticipants = isBotTournament ? participants : realPlayers;
   const emptySlots = isBotTournament ? 0 : Math.max(0, 8 - realPlayers.length);
@@ -132,7 +131,6 @@ const TournamentWaitingPage = () => {
           <TournamentCountdown
             timeLeft={timeLeft}
             realPlayerCount={realPlayerCount}
-            totalParticipants={participants.length}
             isCreator={isCreator}
           />
         </div>
