@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Clock, Swords, Ban } from 'lucide-react';
+import { Trophy, Clock, Swords, Ban } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
-import { supabase } from '@/integrations/supabase/client';
 
 
 interface TournamentCardProps {
@@ -19,22 +18,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
   disabled = false,
   hasLeft = false
 }) => {
-  const [participantCount, setParticipantCount] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
-
-  // Fetch real participant count
-  useEffect(() => {
-    const fetchParticipants = async () => {
-      const { count } = await supabase
-        .from('tournament_participants')
-        .select('*', { count: 'exact', head: true })
-        .eq('tournament_id', tournament.id);
-      
-      setParticipantCount(count || 0);
-    };
-
-    fetchParticipants();
-  }, [tournament.id]);
 
   // Calculate time remaining
   useEffect(() => {
@@ -61,7 +45,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isDisabled = disabled || participantCount >= 8 || timeRemaining === 0 || hasLeft;
+  const isDisabled = disabled || timeRemaining === 0 || hasLeft;
   
   const getButtonContent = () => {
     if (hasLeft) {
@@ -71,9 +55,6 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
           Ayrıldın
         </>
       );
-    }
-    if (participantCount >= 8) {
-      return 'Dolu';
     }
     return (
       <>
@@ -96,11 +77,6 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
               <h3 className="font-bold text-white mb-1">{tournament.name}</h3>
               
               <div className="flex items-center space-x-4 text-sm text-gray-300">
-                <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-1" />
-                  <span>{participantCount}/8</span>
-                </div>
-                
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
                   <span>{formatTime(timeRemaining)}</span>
