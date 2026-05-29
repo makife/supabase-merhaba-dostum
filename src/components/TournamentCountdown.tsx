@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Bot } from "lucide-react";
 import Lottie from "lottie-react";
 
 interface TournamentCountdownProps {
@@ -29,8 +28,6 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
-
-  const getBotCount = () => totalParticipants - realPlayerCount;
 
   const getStatusMessage = () => {
     if (realPlayerCount < 2) {
@@ -79,20 +76,6 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
         <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(timeLeft)}</div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 font-bold">{realPlayerCount} Oyuncu</span>
-            </div>
-
-            {getBotCount() > 0 && (
-              <div className="flex items-center space-x-2">
-                <Bot className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-400">{getBotCount()} Bot</span>
-              </div>
-            )}
-          </div>
-
           <p className={`text-sm font-medium ${status.color}`}>
             {status.emoji} {status.text}
           </p>
