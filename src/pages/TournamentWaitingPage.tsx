@@ -130,6 +130,7 @@ const TournamentWaitingPage = () => {
             timeLeft={timeLeft}
             realPlayerCount={realPlayerCount}
             isCreator={isCreator}
+            isBotTournament={isBotTournament}
           />
         </div>
 
