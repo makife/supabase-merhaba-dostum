@@ -1,14 +1,12 @@
 import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Bot, ArrowLeft, Trophy, Crown } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
 import { usePageResync } from "@/hooks/useGlobalResync";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
