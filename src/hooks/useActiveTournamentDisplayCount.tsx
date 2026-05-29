@@ -14,8 +14,8 @@ export const useActiveTournamentDisplayCount = () => {
 
     const fetchCount = async () => {
       try {
-        // ensure-bot-tournaments'i tetikle (stale temizler + eksikleri doldurur)
-        supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
+        // ensure-bot-tournaments'i bekle (stale temizler + eksikleri doldurur), sonra gerçek DB sayısını göster
+        await supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
 
         const { count: c } = await supabase
           .from("tournaments")
