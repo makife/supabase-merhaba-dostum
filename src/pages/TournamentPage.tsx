@@ -1,12 +1,9 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Home, Trophy, Users, Plus, RefreshCw } from "lucide-react";
+import { Home, Users, Plus, RefreshCw } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
 import { useTournamentContext } from "@/contexts/TournamentContext";
-import { getRealPlayerCount } from "@/utils/tournamentHelpers";
 import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
