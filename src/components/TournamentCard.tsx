@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Clock, Swords, Ban } from 'lucide-react';
 import { Tournament } from '@/types/tournament';
+import { useServerTimeContext } from '@/contexts/ServerTimeContext';
 
 
 interface TournamentCardProps {
@@ -19,6 +20,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
   hasLeft = false
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const { serverNow } = useServerTimeContext();
 
   // Calculate time remaining
   useEffect(() => {
@@ -30,14 +32,14 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
     const expiresAt = new Date(tournament.expires_at).getTime();
     
     const tick = () => {
-      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.floor((expiresAt - serverNow()) / 1000));
       setTimeRemaining(remaining);
     };
 
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [tournament.expires_at]);
+  }, [tournament.expires_at, serverNow]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

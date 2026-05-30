@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
-import { Bot, ArrowLeft, Trophy, Crown } from "lucide-react";
+import { Bot, ArrowLeft, Trophy } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
@@ -173,17 +173,8 @@ const TournamentWaitingPage = () => {
                     <span className={`text-sm truncate ${participant.is_bot ? "font-medium text-slate-400" : "font-semibold text-white/95"}`}>
                       {participant.profiles?.username || (participant.is_bot ? "Bot" : "Oyuncu")}
                     </span>
-                    {!participant.is_bot && participant.user_id === currentTournament.creator_id && (
-                      <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 bg-amber-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                        <Crown className="w-2.5 h-2.5" />
-                        KURUCU
-                      </span>
-                    )}
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wide flex-shrink-0 ${participant.is_bot ? "text-slate-500" : "text-emerald-400"}`}>
-                  {participant.is_bot ? "Bot" : "Oyuncu"}
-                </span>
               </div>
             ))}
 

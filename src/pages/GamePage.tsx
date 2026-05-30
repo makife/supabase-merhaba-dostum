@@ -3482,10 +3482,12 @@ const GamePage = ({
     if (gameMode === "tournament" && tournamentMatch) {
       const opponentId =
         tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+      const opponentParticipant = participants.find((p) => String(p.user_id) === String(opponentId));
+      const isBotOpponent = Boolean(opponentParticipant?.is_bot) || String(opponentId || "").startsWith("bot_");
 
-      if (!opponentId || String(opponentId).startsWith("bot_")) {
+      if (!opponentId || isBotOpponent) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        return generateBotName(seed);
+        return opponentParticipant?.profiles?.username || generateBotName(seed);
       }
 
       // Eğer state'te belirlenmiş bir rakip adı varsa onu kullan
@@ -7729,10 +7731,12 @@ const GamePage = ({
     if (gameMode === "tournament" && tournamentMatch) {
       const opponentId =
         tournamentMatch.player1_id === user?.id ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+      const opponentParticipant = participants.find((p) => String(p.user_id) === String(opponentId));
+      const isBotOpponent = Boolean(opponentParticipant?.is_bot) || String(opponentId || "").startsWith("bot_");
 
-      if (!opponentId || String(opponentId).startsWith("bot_")) {
+      if (!opponentId || isBotOpponent) {
         const seed = Array.from(String(opponentId || "bot")).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        const botName = generateBotName(seed);
+        const botName = opponentParticipant?.profiles?.username || generateBotName(seed);
         return { name: botName, icon: Trophy, avatar: generateBotAvatar(seed, botName), isPremium: false };
       }
 
@@ -7741,7 +7745,7 @@ const GamePage = ({
         return { name: "Rakip", icon: Trophy, avatar: null, isPremium: false };
       }
 
-      const realOpponent = participants.find((p) => p.user_id === opponentId && !p.is_bot && p.user_id !== null);
+      const realOpponent = opponentParticipant && !opponentParticipant.is_bot ? opponentParticipant : null;
 
       if (realOpponent) {
         return {
