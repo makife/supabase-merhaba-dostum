@@ -6942,16 +6942,20 @@ const GamePage = ({
               const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
               try {
-                await supabase
+                supabase
                   .from("tournament_matches")
                   .update({
                     [updateField]: newScore,
                     updated_at: new Date().toISOString(),
                   })
-                  .eq("id", tournamentMatch.id);
+                  .eq("id", tournamentMatch.id)
+                  .then(({ error }) => {
+                    if (error) console.error("❌ Bot fallback score update error:", error);
+                  });
               } catch (error) {
                 console.error("❌ Bot fallback score update error:", error);
               }
+
             }
           }
         } catch (error) {
