@@ -5,6 +5,7 @@ import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tour
 import { toast } from "@/components/ui/use-toast";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
+import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -70,7 +71,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       await supabase.rpc("cleanup_expired_tournaments");
 
-      const nowIso = new Date().toISOString();
+      const nowIso = new Date(getGlobalServerNow()).toISOString();
 
       const { data, error } = await supabase
         .from("tournaments")
