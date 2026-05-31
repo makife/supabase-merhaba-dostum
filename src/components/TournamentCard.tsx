@@ -11,13 +11,15 @@ interface TournamentCardProps {
   onJoin: (tournamentId: string) => void;
   disabled?: boolean;
   hasLeft?: boolean; // Kullanıcı bu turnuvadan ayrılmış mı?
+  onExpired?: (tournamentId: string) => void;
 }
 
 export const TournamentCard: React.FC<TournamentCardProps> = ({
   tournament,
   onJoin,
   disabled = false,
-  hasLeft = false
+  hasLeft = false,
+  onExpired,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const { serverNow } = useServerTimeContext();
@@ -34,12 +36,13 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
     const tick = () => {
       const remaining = Math.max(0, Math.floor((expiresAt - serverNow()) / 1000));
       setTimeRemaining(remaining);
+      if (remaining === 0) onExpired?.(tournament.id);
     };
 
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [tournament.expires_at, serverNow]);
+  }, [onExpired, serverNow, tournament.expires_at, tournament.id]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
