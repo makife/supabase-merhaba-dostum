@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { Home, Users, Plus, RefreshCw } from "lucide-react";
@@ -56,6 +56,10 @@ const TournamentPage = () => {
       navigate(`/tournament/waiting/${tournamentId}`);
     }
   };
+
+  const handleTournamentExpired = useCallback(() => {
+    void fetchTournaments();
+  }, [fetchTournaments]);
 
   return (
     <div
@@ -182,6 +186,7 @@ const TournamentPage = () => {
                     onJoin={handleJoinTournament}
                     disabled={loading}
                     hasLeft={hasLeftTournament(tournament.id)}
+                    onExpired={handleTournamentExpired}
                   />
                 ))}
               </div>
