@@ -6709,10 +6709,20 @@ const GamePage = ({
 
     const scheduleNextAIWord = () => {
       if (cancelled) return;
-      // Random-match botu normal AI modundan biraz güçlü, ama puan kazanımı daha yumuşak
-      const minDelay = gameMode === "tournament" ? 2500 : gameMode === "random-match" ? 1500 : 2500;
-      const maxDelay = gameMode === "tournament" ? 25000 : gameMode === "random-match" ? 12000 : 25000;
+      // Turnuva: round'a göre artan zorluk (çeyrek 2.5-25s, yarı 2.5-20s, final 2.5-15s)
+      // Random-match botu normal AI modundan biraz daha hızlı
+      let minDelay = 2500;
+      let maxDelay = 25000;
+      if (gameMode === "tournament") {
+        const round = tournamentMatch?.round ?? 1;
+        minDelay = 2500;
+        maxDelay = round >= 3 ? 15000 : round === 2 ? 20000 : 25000;
+      } else if (gameMode === "random-match") {
+        minDelay = 1500;
+        maxDelay = 12000;
+      }
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
+
       setTimeout(async () => {
         if (cancelled) return;
         try {
@@ -6893,18 +6903,22 @@ const GamePage = ({
                 const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
                 try {
-                  await supabase
+                  // Fire-and-forget — botun bir sonraki kelimeyi planlamasını network gecikmesi bloklamasın
+                  supabase
                     .from("tournament_matches")
                     .update({
                       [updateField]: newOpponentScore,
                       updated_at: new Date().toISOString(),
                     })
-                    .eq("id", tournamentMatch.id);
-
-                  console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
+                    .eq("id", tournamentMatch.id)
+                    .then(({ error }) => {
+                      if (error) console.error("❌ Bot tournament score update error:", error);
+                      else console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
+                    });
                 } catch (error) {
                   console.error("❌ Bot tournament score update error:", error);
                 }
+
               }
 
               wordUsed = true;
@@ -6928,16 +6942,20 @@ const GamePage = ({
               const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
               try {
-                await supabase
+                supabase
                   .from("tournament_matches")
                   .update({
                     [updateField]: newScore,
                     updated_at: new Date().toISOString(),
                   })
-                  .eq("id", tournamentMatch.id);
+                  .eq("id", tournamentMatch.id)
+                  .then(({ error }) => {
+                    if (error) console.error("❌ Bot fallback score update error:", error);
+                  });
               } catch (error) {
                 console.error("❌ Bot fallback score update error:", error);
               }
+
             }
           }
         } catch (error) {
@@ -6959,7 +6977,7 @@ const GamePage = ({
       console.log("🤖 Stopping AI play for game mode:", gameMode);
       cancelled = true;
     };
-  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, playSound]);
+  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, tournamentMatch?.round]);
 
   // lastPlayerAction'ı başlat
   useEffect(() => {
