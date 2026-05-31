@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
+import { fetchActiveTournamentList } from "@/utils/activeTournaments";
 
 /**
  * Ana sayfa turnuva kartı için aktif (waiting) turnuva sayısını
@@ -15,17 +14,8 @@ export const useActiveTournamentDisplayCount = () => {
 
     const fetchCount = async () => {
       try {
-        // Havuzu DB tarafında kilitli şekilde yenile; çoklu cihaz çağrıları turnuva sayısını şişirmez.
-        await (supabase as any).rpc("ensure_bot_tournament_pool").catch(() => {});
-        const nowIso = new Date(getGlobalServerNow()).toISOString();
-
-        const { count: c } = await supabase
-          .from("tournaments")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "waiting")
-          .gt("expires_at", nowIso);
-
-        if (!cancelled) setCount(c ?? 0);
+        const activeTournaments = await fetchActiveTournamentList();
+        if (!cancelled) setCount(activeTournaments.length);
       } catch {
         // sessiz
       }
