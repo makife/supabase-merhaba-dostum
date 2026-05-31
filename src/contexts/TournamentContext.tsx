@@ -59,6 +59,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     setParticipants([]);
     setMatches([]);
     setLoading(false);
+    hasLoadedTournamentsRef.current = false;
     // leftTournaments'ı resetleme - oturum boyunca kalmalı
   };
 
