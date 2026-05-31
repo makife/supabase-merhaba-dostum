@@ -17,6 +17,7 @@ const TournamentPage = () => {
   const { profile, isPremium } = useUser();
 
   const [kupaAnim, setKupaAnim] = useState<any>(null);
+  const [isListRefreshing, setIsListRefreshing] = useState(false);
   useEffect(() => {
     fetch("/kupajson.json").then(r => r.json()).then(setKupaAnim).catch(console.error);
   }, []);
@@ -61,6 +62,17 @@ const TournamentPage = () => {
     void fetchTournaments();
   }, [fetchTournaments]);
 
+  const handleRefreshTournaments = useCallback(async () => {
+    if (isListRefreshing) return;
+    playSound("buttonClick");
+    setIsListRefreshing(true);
+    try {
+      await fetchTournaments();
+    } finally {
+      setIsListRefreshing(false);
+    }
+  }, [fetchTournaments, isListRefreshing, playSound]);
+
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
@@ -101,11 +113,11 @@ const TournamentPage = () => {
 
           {/* Yenile butonu */}
           <button
-            onClick={() => { playSound("buttonClick"); void fetchTournaments(); }}
-            disabled={loading}
+            onClick={handleRefreshTournaments}
+            disabled={isListRefreshing}
             className="w-10 h-10 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform hover:bg-white/12 disabled:opacity-40"
           >
-            <RefreshCw className={`w-4 h-4 text-white/70 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-white/70 ${isListRefreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
 
@@ -162,7 +174,7 @@ const TournamentPage = () => {
           </div>
 
           <div className="px-4 py-4">
-            {loading ? (
+            {loading && tournaments.length === 0 ? (
               <div className="flex flex-col items-center py-8 gap-3">
                 <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-amber-400 animate-spin" />
                 <p className="text-xs text-slate-400 uppercase tracking-widest">Yükleniyor</p>

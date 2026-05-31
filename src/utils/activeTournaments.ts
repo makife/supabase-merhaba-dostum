@@ -9,17 +9,7 @@ export const getTournamentServerNow = async (): Promise<Date> => {
   return new Date(data as string);
 };
 
-export const fetchActiveTournamentList = async (limit = ACTIVE_TOURNAMENT_LIMIT): Promise<Tournament[]> => {
-  const { error: ensureError } = await supabase.functions.invoke("ensure-bot-tournaments");
-
-  if (ensureError) {
-    try {
-      await supabase.rpc("cleanup_expired_tournaments");
-    } catch {
-      // Edge function already failed silently; keep list refresh best-effort.
-    }
-  }
-
+const queryActiveTournaments = async (limit: number): Promise<Tournament[]> => {
   const serverNow = await getTournamentServerNow();
   const { data, error } = await supabase
     .from("tournaments")
@@ -32,4 +22,22 @@ export const fetchActiveTournamentList = async (limit = ACTIVE_TOURNAMENT_LIMIT)
   if (error) throw error;
 
   return (data || []) as Tournament[];
+};
+
+const runEnsurePoolInBackground = () => {
+  void supabase.functions.invoke("ensure-bot-tournaments").then(async ({ error }) => {
+    if (!error) return;
+    try {
+      await supabase.rpc("cleanup_expired_tournaments");
+    } catch {
+      // Liste yenilemesini bloke etme.
+    }
+  });
+};
+
+export const fetchActiveTournamentList = async (limit = ACTIVE_TOURNAMENT_LIMIT): Promise<Tournament[]> => {
+  const activeTournaments = await queryActiveTournaments(limit);
+  runEnsurePoolInBackground();
+
+  return activeTournaments;
 };

@@ -47,6 +47,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [leftTournaments, setLeftTournaments] = useState<string[]>([]);
 
   const fetchingRef = useRef(false);
+  const hasLoadedTournamentsRef = useRef(false);
 
   const hasLeftTournament = (tournamentId: string): boolean => {
     return leftTournaments.includes(tournamentId);
@@ -58,6 +59,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     setParticipants([]);
     setMatches([]);
     setLoading(false);
+    hasLoadedTournamentsRef.current = false;
     // leftTournaments'ı resetleme - oturum boyunca kalmalı
   };
 
@@ -65,16 +67,19 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const fetchTournaments = async () => {
     if (!user || fetchingRef.current) return;
 
+    const showInitialLoader = !hasLoadedTournamentsRef.current;
+
     try {
       fetchingRef.current = true;
-      setLoading(true);
+      if (showInitialLoader) setLoading(true);
 
       const activeTournaments = await fetchActiveTournamentList();
       setTournaments(activeTournaments);
+      hasLoadedTournamentsRef.current = true;
     } catch (error) {
       console.error("❌ Turnuva listesi hatası:", error);
     } finally {
-      setLoading(false);
+      if (showInitialLoader) setLoading(false);
       fetchingRef.current = false;
     }
   };
