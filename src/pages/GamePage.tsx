@@ -6709,10 +6709,20 @@ const GamePage = ({
 
     const scheduleNextAIWord = () => {
       if (cancelled) return;
-      // Random-match botu normal AI modundan biraz güçlü, ama puan kazanımı daha yumuşak
-      const minDelay = gameMode === "tournament" ? 2500 : gameMode === "random-match" ? 1500 : 2500;
-      const maxDelay = gameMode === "tournament" ? 25000 : gameMode === "random-match" ? 12000 : 25000;
+      // Turnuva: round'a göre artan zorluk (çeyrek 2.5-25s, yarı 2.5-20s, final 2.5-15s)
+      // Random-match botu normal AI modundan biraz daha hızlı
+      let minDelay = 2500;
+      let maxDelay = 25000;
+      if (gameMode === "tournament") {
+        const round = tournamentMatch?.round ?? 1;
+        minDelay = 2500;
+        maxDelay = round >= 3 ? 15000 : round === 2 ? 20000 : 25000;
+      } else if (gameMode === "random-match") {
+        minDelay = 1500;
+        maxDelay = 12000;
+      }
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
+
       setTimeout(async () => {
         if (cancelled) return;
         try {
