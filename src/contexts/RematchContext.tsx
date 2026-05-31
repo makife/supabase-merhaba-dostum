@@ -234,6 +234,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (sendingRef.current) {
         return false;
       }
+
+      // 🔒 Bu rakip daha önce isteği reddettiyse tekrar gönderme
+      if (rejectedOpponentsRef.current.has(opponentId)) {
+        toast({
+          title: "Rematch Gönderilemedi",
+          description: "Rakibiniz daha önce isteğinizi reddetti.",
+          variant: "destructive",
+          duration: 2000,
+        });
+        return false;
+      }
+
       sendingRef.current = true;
       setIsSending(true);
 
