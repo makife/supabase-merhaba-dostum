@@ -15,8 +15,8 @@ export const useActiveTournamentDisplayCount = () => {
 
     const fetchCount = async () => {
       try {
-        // ensure-bot-tournaments'i bekle (stale temizler + eksikleri doldurur), sonra süresi gerçekten devam eden DB sayısını göster
-        await supabase.functions.invoke("ensure-bot-tournaments").catch(() => {});
+        // Havuzu DB tarafında kilitli şekilde yenile; çoklu cihaz çağrıları turnuva sayısını şişirmez.
+        await supabase.rpc("ensure_bot_tournament_pool" as any).catch(() => {});
         const nowIso = new Date(getGlobalServerNow()).toISOString();
 
         const { count: c } = await supabase
