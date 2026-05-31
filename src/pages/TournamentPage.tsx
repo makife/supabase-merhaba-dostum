@@ -22,12 +22,6 @@ const TournamentPage = () => {
   }, []);
   useEffect(() => {
     fetchTournaments();
-    // Bot turnuvalarının var olduğundan emin ol — eksikse oluştur
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.functions.invoke("ensure-bot-tournaments")
-        .then(() => fetchTournaments())
-        .catch(() => {});
-    });
   }, []);
 
   // 🔄 Global Resync Hook
@@ -103,7 +97,7 @@ const TournamentPage = () => {
 
           {/* Yenile butonu */}
           <button
-            onClick={() => { playSound("buttonClick"); fetchTournaments(); }}
+            onClick={() => { playSound("buttonClick"); void fetchTournaments(); }}
             disabled={loading}
             className="w-10 h-10 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform hover:bg-white/12 disabled:opacity-40"
           >
