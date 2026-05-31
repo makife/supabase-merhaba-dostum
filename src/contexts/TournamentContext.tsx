@@ -70,13 +70,13 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       await supabase.rpc("cleanup_expired_tournaments");
 
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const nowIso = new Date().toISOString();
 
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
         .eq("status", "waiting")
-        .gt("created_at", oneHourAgo)
+        .gt("expires_at", nowIso)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
