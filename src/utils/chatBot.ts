@@ -183,18 +183,11 @@ export const containsBannedWords = (message: string): { found: boolean; word?: s
       continue; // Beyaz listedeyse bu kelimeyi atla
     }
     
-    // Kısa kelimeler için kelime sınırı kontrolü yap
-    if (word.length <= 3) {
-      if (containsWordBoundary(originalLower, word) || containsWordBoundary(normalizedMessage, normalizedWord)) {
-        console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
-        return { found: true, word, severity: 'high' };
-      }
-    } else {
-      // Uzun kelimeler için includes yeterli
-      if (originalLower.includes(word) || normalizedMessage.includes(normalizedWord)) {
-        console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
-        return { found: true, word, severity: 'high' };
-      }
+    // Tüm kelimeler için kelime sınırı kontrolü yap (uzun kelimelerde bile,
+    // yoksa "tuzlayarak" gibi masum kelimeler "yarak" yüzünden banlanır)
+    if (containsWordBoundary(originalLower, word) || containsWordBoundary(normalizedMessage, normalizedWord)) {
+      console.log(`🚫 Ağır küfür tespit edildi: "${word}" mesajda: "${message}"`);
+      return { found: true, word, severity: 'high' };
     }
   }
   
@@ -210,19 +203,30 @@ export const containsBannedWords = (message: string): { found: boolean; word?: s
   }
   
   // Bypass pattern'leri kontrol et (mention'sız metinde)
+  // Not: Kelime sınırı (başta/sonda harf olmamalı) eklenir ki
+  // "tuzlayarak", "siklet", "götür" gibi masum kelimeler yakalanmasın.
+  const BOUNDARY_START = '(^|[^a-zçğıöşüA-ZÇĞİÖŞÜ])';
+  const BOUNDARY_END = '([^a-zçğıöşüA-ZÇĞİÖŞÜ]|$)';
   const bypassPatterns = [
-    /s+[^a-z]*i+[^a-z]*k/i,      // s-i-k, s.i.k, s i k vb
-    /a+[^a-z]*m+[^a-z]*[ck]/i,   // a-m-k, a.m.c.k vb
-    /y+[^a-z]*a+[^a-z]*r+[^a-z]*a+[^a-z]*k/i, // y-a-r-a-k vb
-    /o+[^a-z]*r+[^a-z]*o+[^a-z]*s+[^a-z]*p/i, // o-r-o-s-p vb
-    /p+[^a-z]*[iı1!]+[^a-z]*[cç]/i, // p-i-ç vb
-    /g+[^a-z]*[oö0]+[^a-z]*t/i,    // g-ö-t vb
+    new RegExp(`${BOUNDARY_START}s+[^a-z]{0,2}i+[^a-z]{0,2}k${BOUNDARY_END}`, 'i'),
+    new RegExp(`${BOUNDARY_START}a+[^a-z]{0,2}m+[^a-z]{0,2}[ck]${BOUNDARY_END}`, 'i'),
+    new RegExp(`${BOUNDARY_START}y+[^a-z]{0,2}a+[^a-z]{0,2}r+[^a-z]{0,2}a+[^a-z]{0,2}k${BOUNDARY_END}`, 'i'),
+    new RegExp(`${BOUNDARY_START}o+[^a-z]{0,2}r+[^a-z]{0,2}o+[^a-z]{0,2}s+[^a-z]{0,2}p`, 'i'),
+    new RegExp(`${BOUNDARY_START}p+[^a-z]{0,2}[iı1!]+[^a-z]{0,2}[cç]${BOUNDARY_END}`, 'i'),
+    new RegExp(`${BOUNDARY_START}g+[^a-z]{0,2}[oö0]+[^a-z]{0,2}t${BOUNDARY_END}`, 'i'),
   ];
   
   for (const pattern of bypassPatterns) {
     if (pattern.test(messageWithoutMentions)) {
-      console.log(`🔍 Bypass pattern tespit edildi: ${pattern} mesajda: "${message}"`);
-      return { found: true, word: 'bypass-pattern', severity: 'high' };
+      // Tek harfli normal kelime aralıklarında false positive olmaması için
+      // pattern içinde gerçekten karakter atlama (boşluk/nokta/yıldız) varsa şüpheli say
+      const hasSeparators = /[\s.\-_*]/.test(messageWithoutMentions);
+      const matchedRaw = messageWithoutMentions.match(pattern)?.[0] || '';
+      const looksLikeBypass = /[\s.\-_*0-9!@$]/.test(matchedRaw);
+      if (looksLikeBypass) {
+        console.log(`🔍 Bypass pattern tespit edildi: ${pattern} mesajda: "${message}"`);
+        return { found: true, word: 'bypass-pattern', severity: 'high' };
+      }
     }
   }
   
