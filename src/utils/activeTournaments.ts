@@ -14,7 +14,11 @@ export const fetchActiveTournamentList = async (limit = ACTIVE_TOURNAMENT_LIMIT)
   const { error: ensureError } = await supabase.functions.invoke("ensure-bot-tournaments");
 
   if (ensureError) {
-    await supabase.rpc("cleanup_expired_tournaments").catch(() => undefined);
+    try {
+      await supabase.rpc("cleanup_expired_tournaments");
+    } catch {
+      // Edge function already failed silently; keep list refresh best-effort.
+    }
   }
 
   const serverNow = await getTournamentServerNow();
