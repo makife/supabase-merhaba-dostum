@@ -107,7 +107,8 @@ export const initNativeAudio = async (): Promise<void> => {
     // Tek yol olarak NativeAudio kullanıyoruz; HTML5/oscillator fallback yok, bu yüzden AVAudioSession çakışması da yok.
     initPromise = (async () => {
       try {
-        await NativeAudio.configure({ fade: false, focus: true });
+        // 🔧 iOS: focus:false → AVAudioSession ambient mod, arka plan müziğini kesmez
+        await NativeAudio.configure({ fade: false, focus: false });
       } catch (e) {
         console.warn('⚠️ NativeAudio iOS configure atlandı:', e);
       }

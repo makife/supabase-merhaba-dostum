@@ -56,6 +56,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 🔒 Reddedildiyse aynı rakibe tekrar istek gönderilmesin (oturum boyunca)
+  const rejectedOpponentsRef = useRef<Set<string>>(new Set());
 
   const userId = user?.id;
 
@@ -232,6 +234,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (sendingRef.current) {
         return false;
       }
+
+      // 🔒 Bu rakip daha önce isteği reddettiyse tekrar gönderme
+      if (rejectedOpponentsRef.current.has(opponentId)) {
+        toast({
+          title: "Rematch Gönderilemedi",
+          description: "Rakibiniz daha önce isteğinizi reddetti.",
+          variant: "destructive",
+          duration: 2000,
+        });
+        return false;
+      }
+
       sendingRef.current = true;
       setIsSending(true);
 
@@ -684,6 +698,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 waitingTimeoutRef.current = null;
               }
               setIsWaiting(false);
+
+              // 🔒 Bu rakibe oturum boyunca tekrar istek gönderme
+              if (request.to_user_id) {
+                rejectedOpponentsRef.current.add(request.to_user_id);
+              }
 
               toast({
                 title: "❌ Rematch Reddedildi",

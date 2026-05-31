@@ -231,12 +231,21 @@ const WheelPage = () => {
     if (!user) return;
 
     const today = getTodayLocalDate();
-    const { data: spinData } = await supabase
-      .from("wheel_spins")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("date", today)
-      .maybeSingle();
+    // 🔥 RACE-FIX: Hem wheel_spins hem profili TAZE oku — stale profil yüzünden
+    // peşpeşe spinlerde bonus_spins düşmüyordu.
+    const [{ data: spinData }, { data: freshProfile }] = await Promise.all([
+      supabase
+        .from("wheel_spins")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", today)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("bonus_spins")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
 
     const dailySpinAvailable = !spinData;
 
@@ -251,12 +260,13 @@ const WheelPage = () => {
       return;
     }
 
-    const currentBonusSpins = profile?.bonus_spins || 0;
+    const currentBonusSpins = freshProfile?.bonus_spins || 0;
     if (currentBonusSpins > 0) {
       await supabase
         .from("profiles")
         .update({ bonus_spins: currentBonusSpins - 1 })
         .eq("id", user.id);
+      bonusSpinsRef.current = currentBonusSpins - 1;
     }
   };
 
