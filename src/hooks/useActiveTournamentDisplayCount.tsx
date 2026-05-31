@@ -16,7 +16,7 @@ export const useActiveTournamentDisplayCount = () => {
     const fetchCount = async () => {
       try {
         // Havuzu DB tarafında kilitli şekilde yenile; çoklu cihaz çağrıları turnuva sayısını şişirmez.
-        await supabase.rpc("ensure_bot_tournament_pool" as any).catch(() => {});
+        await (supabase as any).rpc("ensure_bot_tournament_pool").catch(() => {});
         const nowIso = new Date(getGlobalServerNow()).toISOString();
 
         const { count: c } = await supabase
