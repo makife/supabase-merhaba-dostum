@@ -1,13 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
 import { Tournament } from "@/types/tournament";
 
 const ACTIVE_TOURNAMENT_LIMIT = 8;
 
 export const getTournamentServerNow = async (): Promise<Date> => {
   const { data, error } = await supabase.rpc("get_server_time");
-  if (!error && data) return new Date(data as string);
-  return new Date(getGlobalServerNow());
+  if (error || !data) throw error || new Error("Server time alınamadı");
+  return new Date(data as string);
 };
 
 export const fetchActiveTournamentList = async (limit = ACTIVE_TOURNAMENT_LIMIT): Promise<Tournament[]> => {
