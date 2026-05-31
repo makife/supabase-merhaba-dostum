@@ -699,6 +699,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               }
               setIsWaiting(false);
 
+              // 🔒 Bu rakibe oturum boyunca tekrar istek gönderme
+              if (request.to_user_id) {
+                rejectedOpponentsRef.current.add(request.to_user_id);
+              }
+
               toast({
                 title: "❌ Rematch Reddedildi",
                 description: "Rakip rematch isteğini reddetti.",
