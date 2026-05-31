@@ -1998,6 +1998,7 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_bot_tournament_pool: { Args: never; Returns: Json }
       expire_stale_waiting_rooms: { Args: never; Returns: undefined }
       export_user_data: { Args: never; Returns: Json }
       finalize_tournament_score: {
