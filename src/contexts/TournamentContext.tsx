@@ -5,7 +5,7 @@ import { Tournament, TournamentParticipant, TournamentMatch } from "@/types/tour
 import { toast } from "@/components/ui/use-toast";
 import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
-import { getGlobalServerNow } from "@/contexts/ServerTimeContext";
+import { fetchActiveTournamentList } from "@/utils/activeTournaments";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -69,19 +69,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       fetchingRef.current = true;
       setLoading(true);
 
-      await supabase.rpc("cleanup_expired_tournaments");
-
-      const nowIso = new Date(getGlobalServerNow()).toISOString();
-
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("*")
-        .eq("status", "waiting")
-        .gt("expires_at", nowIso)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setTournaments((data || []) as Tournament[]);
+      const activeTournaments = await fetchActiveTournamentList();
+      setTournaments(activeTournaments);
     } catch (error) {
       console.error("❌ Turnuva listesi hatası:", error);
     } finally {
