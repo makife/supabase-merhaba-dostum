@@ -6969,7 +6969,7 @@ const GamePage = ({
       console.log("🤖 Stopping AI play for game mode:", gameMode);
       cancelled = true;
     };
-  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, playSound]);
+  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, tournamentMatch?.round]);
 
   // lastPlayerAction'ı başlat
   useEffect(() => {
