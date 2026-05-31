@@ -123,6 +123,13 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, sim
     let cancelled = false;
     let timerId: NodeJS.Timeout | null = null;
     const sentOnce = new Set<string>(); // tek seferlik emojiler için
+    let sentCount = 0;
+
+    // Maç başında %10-60 arası rastgele olasılık belirle
+    const willSendEmojis = Math.random() < (0.10 + Math.random() * 0.50);
+    if (!willSendEmojis) {
+      return; // Bu maçta hiç emoji gönderme
+    }
 
     const pickContextualEmoji = (): { id: string; src: string } | null => {
       const ctx = botContextRef.current || {};
@@ -181,8 +188,10 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, sim
     };
 
     const showEmoji = () => {
+      if (sentCount >= 2) return; // En fazla 2 emoji
       const picked = pickContextualEmoji();
       if (!picked) return;
+      sentCount++;
       setOpponentEmoji({ userId: "bot", emojiSrc: picked.src, timestamp: Date.now() });
       if (opponentTimerRef.current) clearTimeout(opponentTimerRef.current);
       opponentTimerRef.current = setTimeout(() => setOpponentEmoji(null), 3000);
@@ -190,25 +199,26 @@ export function GameEmojiReactions({ roomId, userId, gameStarted, gameEnded, sim
     };
 
     const scheduleNext = () => {
-      if (cancelled) return;
+      if (cancelled || sentCount >= 2) return;
       // 18-40s arasında rastgele aralık
       const delay = 18000 + Math.random() * 22000;
       timerId = setTimeout(() => {
-        if (cancelled) return;
-        // %65 ihtimalle gönder, %35 atla
-        if (Math.random() < 0.65) {
-          showEmoji();
+        if (cancelled || sentCount >= 2) return;
+        showEmoji();
+        if (sentCount < 2) {
+          scheduleNext();
         }
-        scheduleNext();
       }, delay);
     };
 
-    // İlk emoji 8-18s sonra (zor ızgara tepkisi için erken)
+    // İlk emoji 12-30s sonra
     timerId = setTimeout(() => {
       if (cancelled) return;
       showEmoji();
-      scheduleNext();
-    }, 8000 + Math.random() * 10000);
+      if (sentCount < 2) {
+        scheduleNext();
+      }
+    }, 12000 + Math.random() * 18000);
 
     return () => {
       cancelled = true;
