@@ -6903,18 +6903,22 @@ const GamePage = ({
                 const updateField = isPlayer1 ? "player2_score" : "player1_score";
 
                 try {
-                  await supabase
+                  // Fire-and-forget — botun bir sonraki kelimeyi planlamasını network gecikmesi bloklamasın
+                  supabase
                     .from("tournament_matches")
                     .update({
                       [updateField]: newOpponentScore,
                       updated_at: new Date().toISOString(),
                     })
-                    .eq("id", tournamentMatch.id);
-
-                  console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
+                    .eq("id", tournamentMatch.id)
+                    .then(({ error }) => {
+                      if (error) console.error("❌ Bot tournament score update error:", error);
+                      else console.log("🏆 Tournament bot score updated in DB:", newOpponentScore);
+                    });
                 } catch (error) {
                   console.error("❌ Bot tournament score update error:", error);
                 }
+
               }
 
               wordUsed = true;
