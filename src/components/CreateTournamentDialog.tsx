@@ -27,7 +27,6 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
-        style={{ left: "50%", transform: "translateX(-50%)" }}
       >
         <div className="px-5 pt-6 pb-4 border-b border-white/5">
           <div className="flex items-center gap-2">
