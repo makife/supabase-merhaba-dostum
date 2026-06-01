@@ -676,6 +676,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     joinTournament,
     leaveTournament,
     startTournament,
+    startPrivateCountdown,
     fetchTournaments,
     fetchTournamentDetails,
     advanceToNextRound,
