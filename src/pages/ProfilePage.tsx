@@ -1468,6 +1468,22 @@ const ProfilePage = () => {
             />
           </div>
         </div>
+
+        {/* ÜYELİK TARİHİ */}
+        {profileData.createdAt && (
+          <div className="text-center mt-4 mb-2">
+            <p className="text-xs text-white/50 font-medium">
+              Üyelik tarihi:{" "}
+              <span className="text-white/70">
+                {new Date(profileData.createdAt).toLocaleDateString("tr-TR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* DIALOGS */}
