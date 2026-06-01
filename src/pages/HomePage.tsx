@@ -267,7 +267,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCoun
           <span
             className={`w-1.5 h-1.5 rounded-full ${(activeTournamentCount ?? 0) > 0 ? "bg-amber-400 animate-pulse" : "bg-slate-400"}`}
           />
-          <span className="text-[10px] text-white font-medium" style={{ textShadow: '0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000' }}>{activeTournamentCount ?? 0} aktif turnuva</span>
+          <span className="text-[10px] text-white font-medium" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>{activeTournamentCount ?? 0} aktif turnuva</span>
         </div>
       ) : (
         <p className="text-[11px] text-white/80 font-medium line-clamp-1" style={{ textShadow: '0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000' }}>{mode.description}</p>
