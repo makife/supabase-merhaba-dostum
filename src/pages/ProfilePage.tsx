@@ -703,6 +703,16 @@ const ProfilePage = () => {
       return;
     }
 
+    // Aynı isim ise kontrol etmeye gerek yok
+    if (editedUsername.toLowerCase() !== (profileData.username || "").toLowerCase()) {
+      const { checkUsernameAvailable, usernameErrorMessage } = await import("@/utils/usernameValidation");
+      const result = await checkUsernameAvailable(editedUsername);
+      if (result !== "ok") {
+        toast.error(usernameErrorMessage(result) ?? "Rumuz uygun değil");
+        return;
+      }
+    }
+
     try {
       const { error } = await supabase.from("profiles").update({ username: editedUsername }).eq("id", user.id);
 
@@ -716,6 +726,7 @@ const ProfilePage = () => {
       toast.error("Profil güncellenirken hata oluştu");
     }
   };
+
 
   const getSubscriptionInfo = () => {
     if (!profileData.premiumUntil) return null;
