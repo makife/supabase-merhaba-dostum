@@ -14,6 +14,7 @@ interface CreateTournamentDialogProps {
 const AVATAR_OPTIONS: string[] = Array.from({ length: 36 }, (_, i) => `/turnuvaGorsel/tur${i + 1}.svg`);
 
 const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: CreateTournamentDialogProps) => {
+  const { playSound } = useSounds();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>(AVATAR_OPTIONS[0]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -21,6 +22,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
 
   const handleSubmit = () => {
     if (loading) return;
+    playSound("buttonClick");
     onCreate({ name: name.trim(), avatarUrl: avatar, isPrivate });
   };
 
