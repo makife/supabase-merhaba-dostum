@@ -90,6 +90,7 @@ const ProfilePage = () => {
     rankPoints: 0,
     scoreBoostUntil: null as string | null,
     scoreBoostSource: null as string | null,
+    createdAt: null as string | null,
   });
 
   const [badges, setBadges] = useState<
@@ -365,6 +366,7 @@ const ProfilePage = () => {
           rankPoints: (data as any).rank_points || 0,
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
+          createdAt: (data as any).created_at || null,
         }));
 
         setUserStats({
@@ -654,6 +656,7 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
+          createdAt: (data as any).created_at || null,
         }));
 
         setUserStats({
@@ -943,6 +946,7 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
+          createdAt: (data as any).created_at || null,
         }));
       }
 
@@ -1464,6 +1468,22 @@ const ProfilePage = () => {
             />
           </div>
         </div>
+
+        {/* ÜYELİK TARİHİ */}
+        {profileData.createdAt && (
+          <div className="text-center mt-4 mb-2">
+            <p className="text-xs text-white/50 font-medium">
+              Üyelik tarihi:{" "}
+              <span className="text-white/70">
+                {new Date(profileData.createdAt).toLocaleDateString("tr-TR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* DIALOGS */}
