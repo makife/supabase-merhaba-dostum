@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Trophy, Globe, Lock, Check, X } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface CreateTournamentDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface CreateTournamentDialogProps {
 const AVATAR_OPTIONS: string[] = Array.from({ length: 36 }, (_, i) => `/turnuvaGorsel/tur${i + 1}.svg`);
 
 const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: CreateTournamentDialogProps) => {
+  const { playSound } = useSounds();
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>(AVATAR_OPTIONS[0]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -20,6 +22,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
 
   const handleSubmit = () => {
     if (loading) return;
+    playSound("buttonClick");
     onCreate({ name: name.trim(), avatarUrl: avatar, isPrivate });
   };
 
@@ -51,7 +54,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 )}
               </div>
               <button
-                onClick={() => setAvatarPickerOpen(true)}
+                onClick={() => { playSound("buttonClick"); setAvatarPickerOpen(true); }}
                 className="flex-1 h-12 rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/20 hover:bg-amber-500/15 active:scale-95 transition-all text-sm font-semibold text-amber-300"
               >
                 Avatar Seç
@@ -79,7 +82,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setIsPrivate(false)}
+                onClick={() => { playSound("buttonClick"); setIsPrivate(false); }}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl ring-1 transition-all active:scale-95 ${
                   !isPrivate
                     ? "bg-emerald-500/15 ring-emerald-500/30 text-emerald-300"
@@ -91,7 +94,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 <span className="text-[10px] opacity-70">Herkese açık</span>
               </button>
               <button
-                onClick={() => setIsPrivate(true)}
+                onClick={() => { playSound("buttonClick"); setIsPrivate(true); }}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl ring-1 transition-all active:scale-95 ${
                   isPrivate
                     ? "bg-indigo-500/15 ring-indigo-500/30 text-indigo-300"
@@ -126,7 +129,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 <h2 className="text-sm font-black text-white uppercase tracking-widest">Avatar Seç</h2>
               </div>
               <button
-                onClick={() => setAvatarPickerOpen(false)}
+                onClick={() => { playSound("buttonClick"); setAvatarPickerOpen(false); }}
                 className="w-8 h-8 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform"
               >
                 <X className="w-4 h-4 text-white/70" />
@@ -140,6 +143,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                     <button
                       key={src}
                       onClick={() => {
+                        playSound("buttonClick");
                         setAvatar(src);
                         setAvatarPickerOpen(false);
                       }}
