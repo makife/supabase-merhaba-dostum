@@ -149,7 +149,7 @@ const TournamentPage = () => {
           </div>
           <div className="px-4 py-4">
             <div
-              onClick={!loading ? handleCreateTournament : undefined}
+              onClick={!loading ? handleOpenCreate : undefined}
               className={`flex items-center gap-3 cursor-pointer rounded-2xl px-3 py-3 ring-1 transition-colors duration-150 active:scale-95 shadow-[0_2px_12px_rgba(0,0,0,0.3)]
                 ${
                   loading
