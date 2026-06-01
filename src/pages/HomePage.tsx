@@ -1263,7 +1263,8 @@ const HomePage = () => {
                 )}
               </div>
               <div className="relative z-10 flex-1">
-                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md">
+                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md"
+                  style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>
                   {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
                 </h3>
                 <p className="text-[10px] text-white/70 font-medium">
