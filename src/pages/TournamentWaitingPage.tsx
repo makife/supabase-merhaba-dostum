@@ -14,6 +14,7 @@ import { useSounds } from "@/hooks/useSounds";
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [starting, setStarting] = useState(false);
