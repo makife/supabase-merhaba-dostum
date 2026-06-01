@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { checkUsernameAvailable, usernameErrorMessage } from "@/utils/usernameValidation";
 import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
