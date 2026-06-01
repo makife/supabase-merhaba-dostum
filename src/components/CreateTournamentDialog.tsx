@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Trophy, Globe, Lock, Check, X } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface CreateTournamentDialogProps {
   open: boolean;
