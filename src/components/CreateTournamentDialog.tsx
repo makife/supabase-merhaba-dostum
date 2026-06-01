@@ -129,7 +129,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 <h2 className="text-sm font-black text-white uppercase tracking-widest">Avatar Seç</h2>
               </div>
               <button
-                onClick={() => setAvatarPickerOpen(false)}
+                onClick={() => { playSound("buttonClick"); setAvatarPickerOpen(false); }}
                 className="w-8 h-8 rounded-xl bg-white/8 ring-1 ring-white/10 flex items-center justify-center active:scale-90 transition-transform"
               >
                 <X className="w-4 h-4 text-white/70" />
