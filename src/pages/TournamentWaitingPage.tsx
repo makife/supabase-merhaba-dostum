@@ -14,6 +14,9 @@ const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const { startPrivateCountdown } = useTournamentContext();
 
   useEffect(() => {
     fetch("/turnuvaYukleniyor.json")
