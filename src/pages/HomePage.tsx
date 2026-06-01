@@ -261,7 +261,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCoun
     </div>
 
     <div className="relative z-10">
-      <h3 className="text-lg font-bold text-white leading-none mb-1" style={{ textShadow: '0 1.5px 0 #000, 0 -1.5px 0 #000, 1.5px 0 0 #000, -1.5px 0 0 #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}>{mode.title}</h3>
+      <h3 className="text-lg font-bold text-white leading-none mb-1" style={{ WebkitTextStroke: '3px #000', paintOrder: 'stroke fill' } as any}>{mode.title}</h3>
       {mode.id === "tournament" ? (
         <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
           <span
