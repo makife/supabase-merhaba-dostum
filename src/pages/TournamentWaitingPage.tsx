@@ -16,7 +16,8 @@ const TournamentWaitingPage = () => {
   const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [starting, setStarting] = useState(false);
-  const { startPrivateCountdown } = useTournamentContext();
+  const { startPrivateCountdown, joinTournament: ctxJoinTournament } = useTournamentContext();
+  const autoJoinAttemptedRef = (window as any).__tournament_autojoin_ref || ((window as any).__tournament_autojoin_ref = { current: new Set<string>() });
 
   useEffect(() => {
     fetch("/turnuvaYukleniyor.json")
