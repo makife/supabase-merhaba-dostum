@@ -74,11 +74,11 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
               {tournament.avatar_url ? (
-                <img src={tournament.avatar_url} alt="" className="w-9 h-9 object-contain" />
+                <img src={tournament.avatar_url} alt="" className="w-12 h-12 object-contain" />
               ) : (
-                <Trophy className="w-6 h-6 text-white" />
+                <Trophy className="w-6 h-6 text-amber-400" />
               )}
             </div>
             
