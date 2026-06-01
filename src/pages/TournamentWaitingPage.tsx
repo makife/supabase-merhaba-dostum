@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { Bot, ArrowLeft, Trophy, UserPlus, Play } from "lucide-react";
