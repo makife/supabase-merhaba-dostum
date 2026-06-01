@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { checkUsernameAvailable, usernameErrorMessage } from "@/utils/usernameValidation";
 import kelimeleLogo from "/kelimeleLogo.png";
 
 const AuthPage = () => {
@@ -92,6 +93,19 @@ const AuthPage = () => {
     e.preventDefault();
     if (signUpCooldown > 0) return;
     setLoading(true);
+
+    // Username (rumuz) doğrulaması: benzersizlik (büyük/küçük harf duyarsız) + banlist
+    const usernameCheck = await checkUsernameAvailable(signUpData.username);
+    if (usernameCheck !== "ok") {
+      setLoading(false);
+      toast({
+        title: "Geçersiz Rumuz",
+        description: usernameErrorMessage(usernameCheck) ?? "Lütfen başka bir rumuz deneyin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
 
     const { data: existingUser } = await supabase
       .from("profiles")

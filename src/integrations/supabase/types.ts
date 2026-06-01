@@ -1928,6 +1928,10 @@ export type Database = {
           remaining_hours: number
         }[]
       }
+      check_username_available: {
+        Args: { p_username: string }
+        Returns: string
+      }
       check_words_per_game_badge: {
         Args: { p_user_id: string; p_words_count: number }
         Returns: Json[]
