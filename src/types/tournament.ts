@@ -15,6 +15,8 @@ export interface Tournament {
 
   next_round_starts_at?: string | null;
   is_bot_tournament?: boolean;
+  is_private?: boolean;
+  avatar_url?: string | null;
   // Eski isimler için alias
   max_players?: number;
   current_players?: number;
