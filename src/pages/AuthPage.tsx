@@ -94,6 +94,19 @@ const AuthPage = () => {
     if (signUpCooldown > 0) return;
     setLoading(true);
 
+    // Username (rumuz) doğrulaması: benzersizlik (büyük/küçük harf duyarsız) + banlist
+    const usernameCheck = await checkUsernameAvailable(signUpData.username);
+    if (usernameCheck !== "ok") {
+      setLoading(false);
+      toast({
+        title: "Geçersiz Rumuz",
+        description: usernameErrorMessage(usernameCheck) ?? "Lütfen başka bir rumuz deneyin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+
     const { data: existingUser } = await supabase
       .from("profiles")
       .select("id")
