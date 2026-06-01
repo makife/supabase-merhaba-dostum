@@ -191,7 +191,7 @@ const TournamentWaitingPage = () => {
         {isPrivate && isCreator && (
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setInviteOpen(true)}
+              onClick={() => { playSound("buttonClick"); setInviteOpen(true); }}
               className="h-12 rounded-2xl bg-cyan-500/15 ring-1 ring-cyan-500/30 hover:bg-cyan-500/20 active:scale-95 transition-all text-sm font-bold text-cyan-200 flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
