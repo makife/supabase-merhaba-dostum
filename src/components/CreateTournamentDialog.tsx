@@ -82,7 +82,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setIsPrivate(false)}
+                onClick={() => { playSound("buttonClick"); setIsPrivate(false); }}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl ring-1 transition-all active:scale-95 ${
                   !isPrivate
                     ? "bg-emerald-500/15 ring-emerald-500/30 text-emerald-300"
@@ -94,7 +94,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 <span className="text-[10px] opacity-70">Herkese açık</span>
               </button>
               <button
-                onClick={() => setIsPrivate(true)}
+                onClick={() => { playSound("buttonClick"); setIsPrivate(true); }}
                 className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl ring-1 transition-all active:scale-95 ${
                   isPrivate
                     ? "bg-indigo-500/15 ring-indigo-500/30 text-indigo-300"
