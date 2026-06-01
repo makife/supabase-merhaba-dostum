@@ -366,6 +366,7 @@ const ProfilePage = () => {
           rankPoints: (data as any).rank_points || 0,
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
+          createdAt: (data as any).created_at || null,
         }));
 
         setUserStats({
