@@ -30,7 +30,7 @@ const TournamentPage = () => {
   // 🔄 Global Resync Hook
   usePageResync(fetchTournaments, "TournamentPage", true);
 
-  const handleCreateTournament = async () => {
+  const handleOpenCreate = () => {
     const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
     if (!isPremium && totalCredits < 3) {
       toast.error("Yetersiz oyun sayfası!", {
@@ -39,8 +39,13 @@ const TournamentPage = () => {
       });
       return;
     }
-    const tournamentId = await createTournament();
+    setCreateOpen(true);
+  };
+
+  const handleConfirmCreate = async (opts: { name: string; avatarUrl: string | null; isPrivate: boolean }) => {
+    const tournamentId = await createTournament(opts);
     if (tournamentId) {
+      setCreateOpen(false);
       navigate(`/tournament/waiting/${tournamentId}`);
     }
   };
