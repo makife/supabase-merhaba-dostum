@@ -31,6 +31,7 @@ const TournamentPage = () => {
   usePageResync(fetchTournaments, "TournamentPage", true);
 
   const handleOpenCreate = () => {
+    playSound("buttonClick");
     const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
     if (!isPremium && totalCredits < 3) {
       toast.error("Yetersiz oyun sayfası!", {
