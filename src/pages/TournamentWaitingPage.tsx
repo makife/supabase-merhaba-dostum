@@ -84,8 +84,18 @@ const TournamentWaitingPage = () => {
 
   const realPlayers = participants.filter((p) => !p.is_bot);
   const isBotTournament = Boolean(currentTournament.is_bot_tournament);
+  const isPrivate = Boolean((currentTournament as any).is_private);
+  const tournamentAvatar = (currentTournament as any).avatar_url as string | null | undefined;
   const displayParticipants = isBotTournament ? participants : realPlayers;
   const emptySlots = isBotTournament ? 0 : Math.max(0, 8 - realPlayers.length);
+  const countdownPending = isPrivate && !currentTournament.expires_at;
+
+  const handleStartPrivate = async () => {
+    if (!tournamentId || starting) return;
+    setStarting(true);
+    const ok = await startPrivateCountdown(tournamentId, 5);
+    if (!ok) setStarting(false);
+  };
 
   return (
     <div
