@@ -55,6 +55,15 @@ const TournamentWaitingPage = () => {
     }
   }, [tournamentId]);
 
+  // Davet linkiyle giren kullanıcıyı turnuvaya otomatik dahil et
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || autoJoinedRef.current) return;
+    if (currentTournament.status !== "waiting") return;
+    if (hasJoined) return;
+    autoJoinedRef.current = true;
+    ctxJoinTournament(tournamentId).then(() => fetchTournamentDetails(tournamentId));
+  }, [tournamentId, currentTournament, hasJoined, ctxJoinTournament, fetchTournamentDetails]);
+
   // Turnuva başladıysa bracket sayfasına yönlendir
   useEffect(() => {
     if (currentTournament?.status === "in_progress" && tournamentId) {
