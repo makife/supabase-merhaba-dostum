@@ -289,6 +289,13 @@ const TournamentWaitingPage = () => {
           <div className="h-2" />
         </DialogContent>
       </Dialog>
+
+      <TournamentInviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        tournamentId={tournamentId || ""}
+        tournamentName={currentTournament.name}
+      />
     </div>
   );
 };
