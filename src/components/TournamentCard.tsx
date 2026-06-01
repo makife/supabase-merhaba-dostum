@@ -50,9 +50,13 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isDisabled = disabled || timeRemaining === 0 || hasLeft;
+  const isPrivate = Boolean((tournament as any).is_private);
+  const isDisabled = disabled || isPrivate || timeRemaining === 0 || hasLeft;
   
   const getButtonContent = () => {
+    if (isPrivate) {
+      return "Özel";
+    }
     if (hasLeft) {
       return (
         <>
@@ -70,7 +74,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
   };
 
   return (
-    <Card className={`bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all ${hasLeft ? 'opacity-60' : ''}`}>
+    <Card className={`bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all ${hasLeft || isPrivate ? 'opacity-70' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -86,18 +90,29 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({
               <h3 className="font-bold text-white mb-1">{tournament.name}</h3>
               
               <div className="flex items-center space-x-4 text-sm text-gray-300">
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span>{formatTime(timeRemaining)}</span>
-                </div>
+                {!isPrivate && (
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span>{formatTime(timeRemaining)}</span>
+                  </div>
+                )}
+                {isPrivate && (
+                  <span className="text-xs text-red-200/90">Davetli oyuncular</span>
+                )}
               </div>
             </div>
           </div>
           
           <Button 
-            onClick={() => onJoin(tournament.id)}
+            onClick={() => !isPrivate && onJoin(tournament.id)}
             disabled={isDisabled}
-            className={`${hasLeft ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'} text-white disabled:opacity-50`}
+            className={`${
+              isPrivate
+                ? 'bg-red-600 hover:bg-red-600 text-white !opacity-100 cursor-not-allowed'
+                : hasLeft
+                  ? 'bg-gray-500 text-white disabled:opacity-50'
+                  : 'bg-green-500 hover:bg-green-600 text-white disabled:opacity-50'
+            }`}
             size="sm"
           >
             {getButtonContent()}
