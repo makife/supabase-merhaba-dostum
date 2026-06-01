@@ -105,6 +105,7 @@ const TournamentWaitingPage = () => {
 
   const handleStartPrivate = async () => {
     if (!tournamentId || starting) return;
+    playSound("buttonClick");
     setStarting(true);
     const ok = await startPrivateCountdown(tournamentId, 5);
     if (!ok) setStarting(false);
