@@ -97,9 +97,10 @@ export const useTournament = (tournamentId?: string) => {
     const currentRealPlayers = freshParticipants?.filter((p) => !p.is_bot).length || 0;
     console.log("🎮 Gerçek oyuncu sayısı (DB'den):", currentRealPlayers);
 
-    // Bot turnuvasında min oyuncu şartı yok, normal turnuvada min 2
+    // Bot turnuvasında min oyuncu şartı yok, özel turnuvada 1 yeterli, normal turnuvada min 2
     const isBotTournament = (context.currentTournament as any)?.is_bot_tournament === true;
-    const minRealPlayers = isBotTournament ? 0 : 2;
+    const isPrivateTournament = (context.currentTournament as any)?.is_private === true;
+    const minRealPlayers = isBotTournament ? 0 : isPrivateTournament ? 1 : 2;
     if (currentRealPlayers < minRealPlayers) {
       console.log(`❌ Yeterli oyuncu yok (min ${minRealPlayers} gerekli), iptal ediliyor`);
       await supabase.from("tournaments").update({ status: "cancelled" }).eq("id", tournamentId);
