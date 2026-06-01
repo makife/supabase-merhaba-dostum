@@ -3,6 +3,7 @@ import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { Home, Users, Plus, RefreshCw } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
+import CreateTournamentDialog from "@/components/CreateTournamentDialog";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -18,6 +19,7 @@ const TournamentPage = () => {
 
   const [kupaAnim, setKupaAnim] = useState<any>(null);
   const [isListRefreshing, setIsListRefreshing] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   useEffect(() => {
     fetch("/kupajson.json").then(r => r.json()).then(setKupaAnim).catch(console.error);
   }, []);
