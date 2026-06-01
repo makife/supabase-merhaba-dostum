@@ -15,7 +15,8 @@ interface TournamentContextType {
   loading: boolean;
   leftTournaments: string[];
 
-  createTournament: () => Promise<string | null>;
+  createTournament: (options?: { name?: string; avatarUrl?: string | null; isPrivate?: boolean }) => Promise<string | null>;
+  startPrivateCountdown: (tournamentId: string, seconds?: number) => Promise<boolean>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
   startTournament: (tournamentId: string) => Promise<boolean>;
