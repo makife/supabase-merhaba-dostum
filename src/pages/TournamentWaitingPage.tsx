@@ -9,6 +9,7 @@ import { useTournamentContext } from "@/contexts/TournamentContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import TournamentInviteDialog from "@/components/TournamentInviteDialog";
+import { useSounds } from "@/hooks/useSounds";
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
