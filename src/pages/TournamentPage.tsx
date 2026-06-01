@@ -238,6 +238,13 @@ const TournamentPage = () => {
           <div className="h-2" />
         </div>
       </div>
+
+      <CreateTournamentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        loading={loading}
+        onCreate={handleConfirmCreate}
+      />
     </div>
   );
 };
