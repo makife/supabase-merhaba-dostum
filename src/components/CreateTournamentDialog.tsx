@@ -143,6 +143,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                     <button
                       key={src}
                       onClick={() => {
+                        playSound("buttonClick");
                         setAvatar(src);
                         setAvatarPickerOpen(false);
                       }}
