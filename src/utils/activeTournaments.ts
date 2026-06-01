@@ -15,7 +15,6 @@ const queryActiveTournaments = async (limit: number): Promise<Tournament[]> => {
     .from("tournaments")
     .select("*")
     .eq("status", "waiting")
-    .eq("is_private", false)
     .gt("expires_at", serverNow.toISOString())
     .order("created_at", { ascending: false })
     .limit(limit);
