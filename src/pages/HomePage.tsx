@@ -1084,7 +1084,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Puzzle</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
                   </p>
@@ -1119,7 +1119,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Reaktör Koşusu</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Reaktör Koşusu</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
                   </p>
@@ -1154,7 +1154,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Refleks</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Refleks</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
                   </p>
@@ -1189,7 +1189,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Hafıza</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
                   </p>
@@ -1224,7 +1224,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md">Kelime Avı</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Komşu harfleri birleştir"}
                   </p>
