@@ -656,6 +656,7 @@ const ProfilePage = () => {
           tournamentWinRate: tournamentStats.winRate,
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
+          createdAt: (data as any).created_at || null,
         }));
 
         setUserStats({
