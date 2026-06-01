@@ -74,6 +74,7 @@ const TournamentWaitingPage = () => {
   }, [currentTournament?.status, tournamentId, navigate]);
 
   const handleLeave = async () => {
+    playSound("buttonClick");
     await leaveTournament();
   };
 
