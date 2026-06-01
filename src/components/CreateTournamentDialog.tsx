@@ -54,7 +54,7 @@ const CreateTournamentDialog = ({ open, onOpenChange, loading, onCreate }: Creat
                 )}
               </div>
               <button
-                onClick={() => setAvatarPickerOpen(true)}
+                onClick={() => { playSound("buttonClick"); setAvatarPickerOpen(true); }}
                 className="flex-1 h-12 rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/20 hover:bg-amber-500/15 active:scale-95 transition-all text-sm font-semibold text-amber-300"
               >
                 Avatar Seç
