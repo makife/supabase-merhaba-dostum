@@ -9,10 +9,12 @@ import { useTournamentContext } from "@/contexts/TournamentContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import TournamentInviteDialog from "@/components/TournamentInviteDialog";
+import { useSounds } from "@/hooks/useSounds";
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -72,6 +74,7 @@ const TournamentWaitingPage = () => {
   }, [currentTournament?.status, tournamentId, navigate]);
 
   const handleLeave = async () => {
+    playSound("buttonClick");
     await leaveTournament();
   };
 
@@ -102,6 +105,7 @@ const TournamentWaitingPage = () => {
 
   const handleStartPrivate = async () => {
     if (!tournamentId || starting) return;
+    playSound("buttonClick");
     setStarting(true);
     const ok = await startPrivateCountdown(tournamentId, 5);
     if (!ok) setStarting(false);
@@ -187,7 +191,7 @@ const TournamentWaitingPage = () => {
         {isPrivate && isCreator && (
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setInviteOpen(true)}
+              onClick={() => { playSound("buttonClick"); setInviteOpen(true); }}
               className="h-12 rounded-2xl bg-cyan-500/15 ring-1 ring-cyan-500/30 hover:bg-cyan-500/20 active:scale-95 transition-all text-sm font-bold text-cyan-200 flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
