@@ -1,17 +1,23 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
-import { Bot, ArrowLeft, Trophy } from "lucide-react";
+import { Bot, ArrowLeft, Trophy, UserPlus, Play } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TournamentCountdown } from "@/components/TournamentCountdown";
 import { useTournament } from "@/hooks/useTournament";
+import { useTournamentContext } from "@/contexts/TournamentContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import TournamentInviteDialog from "@/components/TournamentInviteDialog";
 
 const TournamentWaitingPage = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
   const [yukleniyorAnim, setYukleniyorAnim] = useState<any>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const { startPrivateCountdown, joinTournament: ctxJoinTournament } = useTournamentContext();
+  const autoJoinedRef = useRef(false);
 
   useEffect(() => {
     fetch("/turnuvaYukleniyor.json")
@@ -49,6 +55,15 @@ const TournamentWaitingPage = () => {
     }
   }, [tournamentId]);
 
+  // Davet linkiyle giren kullanıcıyı turnuvaya otomatik dahil et
+  useEffect(() => {
+    if (!tournamentId || !currentTournament || autoJoinedRef.current) return;
+    if (currentTournament.status !== "waiting") return;
+    if (hasJoined) return;
+    autoJoinedRef.current = true;
+    ctxJoinTournament(tournamentId).then(() => fetchTournamentDetails(tournamentId));
+  }, [tournamentId, currentTournament, hasJoined, ctxJoinTournament, fetchTournamentDetails]);
+
   // Turnuva başladıysa bracket sayfasına yönlendir
   useEffect(() => {
     if (currentTournament?.status === "in_progress" && tournamentId) {
@@ -79,8 +94,18 @@ const TournamentWaitingPage = () => {
 
   const realPlayers = participants.filter((p) => !p.is_bot);
   const isBotTournament = Boolean(currentTournament.is_bot_tournament);
+  const isPrivate = Boolean((currentTournament as any).is_private);
+  const tournamentAvatar = (currentTournament as any).avatar_url as string | null | undefined;
   const displayParticipants = isBotTournament ? participants : realPlayers;
   const emptySlots = isBotTournament ? 0 : Math.max(0, 8 - realPlayers.length);
+  const countdownPending = isPrivate && !currentTournament.expires_at;
+
+  const handleStartPrivate = async () => {
+    if (!tournamentId || starting) return;
+    setStarting(true);
+    const ok = await startPrivateCountdown(tournamentId, 5);
+    if (!ok) setStarting(false);
+  };
 
   return (
     <div
@@ -124,15 +149,60 @@ const TournamentWaitingPage = () => {
 
       {/* ── SCROLLABLE İÇERİK ── */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 pb-8 relative z-10">
-        {/* Countdown */}
-        <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl p-5 shadow-xl">
-          <TournamentCountdown
-            timeLeft={timeLeft}
-            realPlayerCount={realPlayerCount}
-            isCreator={isCreator}
-            isBotTournament={isBotTournament}
-          />
-        </div>
+        {/* Turnuva Avatarı */}
+        {tournamentAvatar && (
+          <div className="flex justify-center">
+            <div className="w-24 h-24 rounded-3xl bg-[#16213e]/80 ring-1 ring-white/10 flex items-center justify-center shadow-xl">
+              <img src={tournamentAvatar} alt="" className="w-16 h-16 object-contain" />
+            </div>
+          </div>
+        )}
+
+        {/* Countdown / Özel Kontrol */}
+        {countdownPending ? (
+          <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl p-5 shadow-xl text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 ring-1 ring-indigo-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-300">Özel Turnuva</span>
+            </div>
+            <h2 className="text-lg font-bold text-white">Arkadaşlarını davet et</h2>
+            <p className="text-xs text-slate-400">
+              {isCreator
+                ? "Hazır olduğunda manuel olarak başlatabilirsin. Boş slotlar botlarla doldurulur."
+                : "Kurucunun turnuvayı başlatması bekleniyor."}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl p-5 shadow-xl">
+            <TournamentCountdown
+              timeLeft={timeLeft}
+              realPlayerCount={realPlayerCount}
+              isCreator={isCreator}
+              isBotTournament={isBotTournament}
+            />
+          </div>
+        )}
+
+        {/* Özel turnuva aksiyon butonları (sadece kurucu) */}
+        {isPrivate && isCreator && (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setInviteOpen(true)}
+              className="h-12 rounded-2xl bg-cyan-500/15 ring-1 ring-cyan-500/30 hover:bg-cyan-500/20 active:scale-95 transition-all text-sm font-bold text-cyan-200 flex items-center justify-center gap-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              Davet Et
+            </button>
+            <button
+              onClick={handleStartPrivate}
+              disabled={!countdownPending || starting}
+              className="h-12 rounded-2xl bg-amber-500/15 ring-1 ring-amber-500/30 hover:bg-amber-500/20 active:scale-95 transition-all text-sm font-bold text-amber-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4" />
+              {!countdownPending ? "Başlatılıyor..." : "Başlat"}
+            </button>
+          </div>
+        )}
 
         {/* Katılımcılar */}
         <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl overflow-hidden shadow-xl">
@@ -229,6 +299,13 @@ const TournamentWaitingPage = () => {
           <div className="h-2" />
         </DialogContent>
       </Dialog>
+
+      <TournamentInviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        tournamentId={tournamentId || ""}
+        tournamentName={currentTournament.name}
+      />
     </div>
   );
 };

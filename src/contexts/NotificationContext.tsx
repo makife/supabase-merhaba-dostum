@@ -312,6 +312,18 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           return;
         }
 
+        if (notification.type === "tournament_invite" && notification.related_id) {
+          supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
+          toast.info(`🏆 ${notification.message}`, {
+            duration: 10000,
+            action: {
+              label: "Katıl",
+              onClick: () => navigate(`/tournament/waiting/${notification.related_id}`),
+            },
+          });
+          return;
+        }
+
         if (notification.type === "invite_response") {
           supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
           const isAccepted = notification.message?.includes("kabul");

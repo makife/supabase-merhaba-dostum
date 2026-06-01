@@ -3,6 +3,7 @@ import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { Home, Users, Plus, RefreshCw } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
+import CreateTournamentDialog from "@/components/CreateTournamentDialog";
 import { useTournamentContext } from "@/contexts/TournamentContext";
 import { useUser } from "@/contexts/UserContext";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -18,6 +19,7 @@ const TournamentPage = () => {
 
   const [kupaAnim, setKupaAnim] = useState<any>(null);
   const [isListRefreshing, setIsListRefreshing] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   useEffect(() => {
     fetch("/kupajson.json").then(r => r.json()).then(setKupaAnim).catch(console.error);
   }, []);
@@ -28,7 +30,7 @@ const TournamentPage = () => {
   // 🔄 Global Resync Hook
   usePageResync(fetchTournaments, "TournamentPage", true);
 
-  const handleCreateTournament = async () => {
+  const handleOpenCreate = () => {
     const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
     if (!isPremium && totalCredits < 3) {
       toast.error("Yetersiz oyun sayfası!", {
@@ -37,8 +39,13 @@ const TournamentPage = () => {
       });
       return;
     }
-    const tournamentId = await createTournament();
+    setCreateOpen(true);
+  };
+
+  const handleConfirmCreate = async (opts: { name: string; avatarUrl: string | null; isPrivate: boolean }) => {
+    const tournamentId = await createTournament(opts);
     if (tournamentId) {
+      setCreateOpen(false);
       navigate(`/tournament/waiting/${tournamentId}`);
     }
   };
@@ -142,7 +149,7 @@ const TournamentPage = () => {
           </div>
           <div className="px-4 py-4">
             <div
-              onClick={!loading ? handleCreateTournament : undefined}
+              onClick={!loading ? handleOpenCreate : undefined}
               className={`flex items-center gap-3 cursor-pointer rounded-2xl px-3 py-3 ring-1 transition-colors duration-150 active:scale-95 shadow-[0_2px_12px_rgba(0,0,0,0.3)]
                 ${
                   loading
@@ -231,6 +238,13 @@ const TournamentPage = () => {
           <div className="h-2" />
         </div>
       </div>
+
+      <CreateTournamentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        loading={loading}
+        onCreate={handleConfirmCreate}
+      />
     </div>
   );
 };

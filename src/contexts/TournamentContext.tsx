@@ -15,7 +15,8 @@ interface TournamentContextType {
   loading: boolean;
   leftTournaments: string[];
 
-  createTournament: () => Promise<string | null>;
+  createTournament: (options?: { name?: string; avatarUrl?: string | null; isPrivate?: boolean }) => Promise<string | null>;
+  startPrivateCountdown: (tournamentId: string, seconds?: number) => Promise<boolean>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
   startTournament: (tournamentId: string) => Promise<boolean>;
@@ -85,7 +86,9 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Create tournament
-  const createTournament = async (): Promise<string | null> => {
+  const createTournament = async (
+    options?: { name?: string; avatarUrl?: string | null; isPrivate?: boolean },
+  ): Promise<string | null> => {
     if (!user) return null;
 
     try {
@@ -121,10 +124,20 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         }
       }
 
-      const expiresAt = new Date();
-      expiresAt.setSeconds(expiresAt.getSeconds() + 30);
+      const isPrivate = options?.isPrivate === true;
 
-      const tournamentName = `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+      // Özel turnuva: expires_at başlangıçta null (geri sayım yok, manuel başlatılır).
+      // Genel turnuva: 30sn geri sayım.
+      const expiresAtIso = isPrivate
+        ? null
+        : (() => {
+            const expiresAt = new Date();
+            expiresAt.setSeconds(expiresAt.getSeconds() + 30);
+            return expiresAt.toISOString();
+          })();
+
+      const fallbackName = `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
+      const tournamentName = options?.name?.trim() || fallbackName;
 
       const { data: tournament, error } = await supabase
         .from("tournaments")
@@ -136,8 +149,10 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           max_participants: 8,
           current_round: 1,
           timeout_duration: 120,
-          expires_at: expiresAt.toISOString(),
-        })
+          expires_at: expiresAtIso,
+          is_private: isPrivate,
+          avatar_url: options?.avatarUrl ?? null,
+        } as any)
         .select()
         .single();
 
@@ -151,7 +166,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (participantError) throw participantError;
 
-      console.log("✅ Turnuva oluşturuldu:", tournament.id);
+      console.log("✅ Turnuva oluşturuldu:", tournament.id, isPrivate ? "(özel)" : "(genel)");
       await fetchTournaments();
       return tournament.id;
     } catch (error: any) {
@@ -430,6 +445,24 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
+  // Manuel başlatma — özel turnuvalar için kısa geri sayım tetikler (varsayılan 5sn).
+  const startPrivateCountdown = async (tournamentId: string, seconds: number = 5): Promise<boolean> => {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + seconds);
+      const { error } = await supabase
+        .from("tournaments")
+        .update({ expires_at: expiresAt.toISOString() })
+        .eq("id", tournamentId);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("❌ Özel turnuva başlatma hatası:", error);
+      toast({ title: "Hata", description: "Turnuva başlatılamadı", variant: "destructive" });
+      return false;
+    }
+  };
+
   // Fetch tournament details
   const fetchTournamentDetails = async (tournamentId: string) => {
     if (!user) return;
@@ -643,6 +676,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     joinTournament,
     leaveTournament,
     startTournament,
+    startPrivateCountdown,
     fetchTournaments,
     fetchTournamentDetails,
     advanceToNextRound,

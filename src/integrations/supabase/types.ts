@@ -1412,6 +1412,7 @@ export type Database = {
       }
       tournaments: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           creator_id: string | null
           current_round: number | null
@@ -1420,6 +1421,7 @@ export type Database = {
           game_type: string | null
           id: string
           is_bot_tournament: boolean
+          is_private: boolean
           max_participants: number | null
           name: string | null
           next_round_starts_at: string | null
@@ -1429,6 +1431,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           creator_id?: string | null
           current_round?: number | null
@@ -1437,6 +1440,7 @@ export type Database = {
           game_type?: string | null
           id?: string
           is_bot_tournament?: boolean
+          is_private?: boolean
           max_participants?: number | null
           name?: string | null
           next_round_starts_at?: string | null
@@ -1446,6 +1450,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           creator_id?: string | null
           current_round?: number | null
@@ -1454,6 +1459,7 @@ export type Database = {
           game_type?: string | null
           id?: string
           is_bot_tournament?: boolean
+          is_private?: boolean
           max_participants?: number | null
           name?: string | null
           next_round_starts_at?: string | null
