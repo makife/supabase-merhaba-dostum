@@ -445,6 +445,24 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
+  // Manuel başlatma — özel turnuvalar için kısa geri sayım tetikler (varsayılan 5sn).
+  const startPrivateCountdown = async (tournamentId: string, seconds: number = 5): Promise<boolean> => {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + seconds);
+      const { error } = await supabase
+        .from("tournaments")
+        .update({ expires_at: expiresAt.toISOString() })
+        .eq("id", tournamentId);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("❌ Özel turnuva başlatma hatası:", error);
+      toast({ title: "Hata", description: "Turnuva başlatılamadı", variant: "destructive" });
+      return false;
+    }
+  };
+
   // Fetch tournament details
   const fetchTournamentDetails = async (tournamentId: string) => {
     if (!user) return;
