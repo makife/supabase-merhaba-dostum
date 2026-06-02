@@ -757,22 +757,48 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Mürekkep */}
-            <div
-              onClick={() => {
-                playSound("buttonClick");
-                navigate("/market");
-              }}
-              className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
-            >
-              <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
-                <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
+            {/* Mürekkep + Bildirim */}
+            <div className="flex flex-col items-end gap-2">
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/market");
+                }}
+                className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
+              >
+                <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                  <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
+                </div>
+                <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
+                <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
+                  <span className="text-xs leading-none text-white font-bold">+</span>
+                </div>
               </div>
-              <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center ml-1">
-                <span className="text-xs leading-none text-white font-bold">+</span>
-              </div>
+
+              {/* Sistem Mesajları Bildirim Görseli */}
+              <button
+                type="button"
+                onClick={() => {
+                  playSound("buttonClick");
+                  setShowSystemMessages(true);
+                  markSystemRead();
+                }}
+                className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
+                aria-label="Sistem mesajları"
+              >
+                <img
+                  src="/bildirimGorsel.svg"
+                  alt="Bildirimler"
+                  className="w-10 h-10 object-contain drop-shadow-md"
+                />
+                {systemUnread > 0 && (
+                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0f1729]">
+                    {systemUnread > 9 ? "9+" : systemUnread}
+                  </span>
+                )}
+              </button>
             </div>
+
           </div>
 
           {/* --- LEVEL VE XP KARTI --- */}
