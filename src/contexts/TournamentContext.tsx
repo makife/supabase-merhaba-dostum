@@ -136,8 +136,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
             return expiresAt.toISOString();
           })();
 
-      const fallbackName = `Turnuva ${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}`;
-      const tournamentName = options?.name?.trim() || fallbackName;
+      const tournamentName = options?.name?.trim() || "Turnuva";
 
       const { data: tournament, error } = await supabase
         .from("tournaments")
