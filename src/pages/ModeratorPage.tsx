@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft, Bell, Send, Loader2 } from 'lucide-react';
+import { AlertCircle, Ban, CheckCircle, Clock, MessageSquare, Shield, ArrowLeft, Bell, Send, Loader2, Megaphone, Trash2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { usePageResync } from '@/hooks/useGlobalResync';
 import {
