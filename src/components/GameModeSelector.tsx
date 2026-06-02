@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, X, Play } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useUser } from "@/contexts/UserContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +17,7 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
   const [selectedType, setSelectedType] = useState<"timed" | "score">("timed");
   const { playSound } = useSounds();
   const { profile, isPremium } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const getTheme = () => {
@@ -69,11 +71,11 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
       (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > new Date())
     );
 
-    if (!hasCredit && profile?.id) {
+    if (!hasCredit && user?.id) {
       const { data } = await supabase
         .from("profiles")
         .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
-        .eq("id", profile.id)
+        .eq("id", user.id)
         .maybeSingle();
       const now = new Date();
       hasCredit = Boolean(
