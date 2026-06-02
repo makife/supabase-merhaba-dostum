@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
+// tournament invite push uses sendPushNotification directly for proper text
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ interface Props {
 
 const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentName }: Props) => {
   const { user } = useAuth();
-  const { sendGameInviteNotification } = useSmartNotifications();
+  const { sendPushNotification } = useSmartNotifications();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
@@ -112,7 +113,13 @@ const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentNa
         is_read: false,
       });
 
-      await sendGameInviteNotification(friend.id, senderName, tournamentId);
+      await sendPushNotification(
+        friend.id,
+        "🏆 Turnuva Daveti",
+        `${senderName} seni "${tournamentName}" turnuvasına davet ediyor!`,
+        { type: "tournament_invite", tournamentId },
+        true,
+      );
 
       setInvitedIds((prev) => new Set(prev).add(friend.id));
       toast.success(`${friend.username} adlı arkadaşına davet gönderildi!`);
