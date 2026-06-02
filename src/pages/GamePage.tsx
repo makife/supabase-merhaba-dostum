@@ -3412,6 +3412,7 @@ const GamePage = ({
     if (!winnerRef.current) {
       winnerRef.current = resolvedWinner;
       setWinner(resolvedWinner);
+      playEndResultSoundOnce(resolvedWinner);
       setButtonsEnabled(false);
       setTimeout(() => setButtonsEnabled(true), 1000);
       setFinalPlayerScore(finalUserScore);
