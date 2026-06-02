@@ -781,7 +781,6 @@ const HomePage = () => {
                 onClick={() => {
                   playSound("buttonClick");
                   setShowSystemMessages(true);
-                  markSystemRead();
                 }}
                 className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
                 aria-label="Sistem mesajları"
