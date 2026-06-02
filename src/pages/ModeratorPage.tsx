@@ -391,7 +391,7 @@ const ModeratorPage = () => {
         </div>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full max-w-md ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'max-w-2xl grid-cols-4' : 'max-w-md grid-cols-2'}`}>
             <TabsTrigger value="reports" className="gap-2">
               <MessageSquare className="w-4 h-4" />
               Raporlar ({reports.filter(r => r.status === 'pending').length})
@@ -404,6 +404,12 @@ const ModeratorPage = () => {
               <TabsTrigger value="push" className="gap-2">
                 <Bell className="w-4 h-4" />
                 Push Bildirim
+              </TabsTrigger>
+            )}
+            {isAdmin && (
+              <TabsTrigger value="system" className="gap-2">
+                <Megaphone className="w-4 h-4" />
+                Sistem Mesajları
               </TabsTrigger>
             )}
           </TabsList>
