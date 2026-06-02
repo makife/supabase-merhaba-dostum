@@ -4,6 +4,7 @@ import { Clock, X, Play } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GameModeSelectorProps {
   mode: string;
@@ -60,9 +61,29 @@ const GameModeSelector = ({ mode, onStart, onClose }: GameModeSelectorProps) => 
 
   const theme = getTheme();
 
-  const handleStart = () => {
+  const handleStart = async () => {
     playSound("buttonClick");
-    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+    let hasCredit = Boolean(
+      isPremium ||
+      (profile?.game_credits || 0) + (profile?.bonus_credits || 0) > 0 ||
+      (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > new Date())
+    );
+
+    if (!hasCredit && profile?.id) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+        .eq("id", profile.id)
+        .maybeSingle();
+      const now = new Date();
+      hasCredit = Boolean(
+        ((data?.game_credits || 0) + (data?.bonus_credits || 0) > 0) ||
+        (data?.premium_until && new Date(data.premium_until) > now) ||
+        (data?.unlimited_lives_until && new Date(data.unlimited_lives_until) > now)
+      );
+    }
+
+    if (!hasCredit) {
       toast({
         title: "Oyun için yeterli sayfan yok!",
         description: "Oyun oynamak için sayfa satın al veya dolmasını bekle.",
