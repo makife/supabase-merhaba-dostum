@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface Props {
   open: boolean;
