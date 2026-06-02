@@ -328,7 +328,7 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
-  const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead } = useSystemMessages();
+  const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
