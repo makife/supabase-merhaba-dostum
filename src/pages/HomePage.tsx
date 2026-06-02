@@ -328,7 +328,7 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
-  const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead } = useSystemMessages();
+  const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
@@ -781,7 +781,6 @@ const HomePage = () => {
                 onClick={() => {
                   playSound("buttonClick");
                   setShowSystemMessages(true);
-                  markSystemRead();
                 }}
                 className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
                 aria-label="Sistem mesajları"
@@ -1378,6 +1377,8 @@ const HomePage = () => {
           onOpenChange={setShowSystemMessages}
           messages={systemMessages}
           loading={systemLoading}
+          readIds={systemReadIds}
+          markAllRead={markSystemRead}
         />
       </div>
     </>
