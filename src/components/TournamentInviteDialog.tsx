@@ -27,7 +27,7 @@ interface Props {
 
 const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentName }: Props) => {
   const { user } = useAuth();
-  const { sendGameInviteNotification } = useSmartNotifications();
+  const { sendPushNotification } = useSmartNotifications();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
