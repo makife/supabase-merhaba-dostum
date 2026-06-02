@@ -1464,6 +1464,7 @@ const GamePage = ({
     gameStartedRef.current = gameStarted;
   }, [gameStarted]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
+  const winnerRef = useRef<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
   const [buttonsEnabled, setButtonsEnabled] = useState(false);
 
@@ -1471,26 +1472,31 @@ const GamePage = ({
   // checkWinnerWithScores'taki early-return ve native'de çift 'celebration' çağrısı
   // (playSound("gameWin") + playCelebrationSound) sesi susturuyordu.
   const endSoundPlayedRef = useRef(false);
-  useEffect(() => {
-    if (!winner) {
-      endSoundPlayedRef.current = false;
-      return;
-    }
+  const playEndResultSoundOnce = useCallback((result: "player" | "opponent" | "tie") => {
     if (endSoundPlayedRef.current) return;
     endSoundPlayedRef.current = true;
-    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", winner);
+    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", result);
     try {
-      if (winner === "player") {
+      if (result === "player") {
         playCelebrationSound();
-      } else if (winner === "opponent") {
+      } else if (result === "opponent") {
         playGameLoseSound();
-      } else if (winner === "tie") {
+      } else {
         playTieSound();
       }
     } catch (err) {
       console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
     }
-  }, [winner, playCelebrationSound, playGameLoseSound, playTieSound]);
+  }, [playCelebrationSound, playGameLoseSound, playTieSound]);
+
+  useEffect(() => {
+    winnerRef.current = winner;
+    if (!winner) {
+      endSoundPlayedRef.current = false;
+      return;
+    }
+    playEndResultSoundOnce(winner);
+  }, [winner, playEndResultSoundOnce]);
   //
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
@@ -3401,6 +3407,18 @@ const GamePage = ({
       return; // Erken çık
     }
 
+    const resolvedWinner: "player" | "opponent" | "tie" =
+      finalUserScore > finalOpponentScore ? "player" : finalUserScore < finalOpponentScore ? "opponent" : "tie";
+    if (!winnerRef.current) {
+      winnerRef.current = resolvedWinner;
+      setWinner(resolvedWinner);
+      playEndResultSoundOnce(resolvedWinner);
+      setButtonsEnabled(false);
+      setTimeout(() => setButtonsEnabled(true), 1000);
+      setFinalPlayerScore(finalUserScore);
+      setFinalOpponentScore(finalOpponentScore);
+    }
+
     // vs-computer modunda istatistik güncelle
     if (user) {
       if (statsUpdatedRef.current) {
@@ -5037,7 +5055,7 @@ const GamePage = ({
     async (currentPlayerScore: number, currentOpponentScore: number) => {
       // gameEnded state'i bazı akışlarda checkWinner çağrısından önce set ediliyor.
       // Bu durumda erken çıkmak skor/istatistik RPC'sini tamamen kaçırıyor.
-      if (winner !== null) return;
+      const existingWinner = winnerRef.current;
 
       let gameResult: "player" | "opponent" | "tie";
       // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=x1
@@ -5049,8 +5067,12 @@ const GamePage = ({
         return;
       }
 
-      // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
-      if (gameMode === "vs-computer") {
+      if (existingWinner) {
+        gameResult = existingWinner;
+        scoreMultiplier = gameResult === "player" ? 5 : gameResult === "tie" ? 2 : 1;
+        console.log("🏆 Winner zaten handleGameEnd içinde belirlendi, cleanup akışı devam ediyor:", gameResult);
+      } else if (gameMode === "vs-computer") {
+        // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
         // vs-computer için mevcut mantık
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
