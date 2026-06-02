@@ -5133,6 +5133,7 @@ benzol
 beraat
 beraatizimmet
 beraber
+berabere
 beraberce
 beraberinde
 beraberlik
