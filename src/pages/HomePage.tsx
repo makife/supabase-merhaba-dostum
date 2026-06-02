@@ -605,12 +605,28 @@ const HomePage = () => {
   }, []);
 
   const handleGameModeClick = useCallback(
-    (modeId: string) => {
+    async (modeId: string) => {
       playSound("buttonClick");
+      const hasUsableCredit = async () => {
+        if (isPremium || isUnlimitedLivesActive(profile)) return true;
+        if ((profile?.game_credits || 0) + (profile?.bonus_credits || 0) > 0) return true;
+        if (!user?.id) return false;
+
+        const { data } = await supabase
+          .from("profiles")
+          .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+          .eq("id", user.id)
+          .maybeSingle();
+        const now = new Date();
+        return Boolean(
+          ((data?.game_credits || 0) + (data?.bonus_credits || 0) > 0) ||
+          (data?.premium_until && new Date(data.premium_until) > now) ||
+          (data?.unlimited_lives_until && new Date(data.unlimited_lives_until) > now)
+        );
+      };
+
       if (
-        !isPremium &&
-        (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0 &&
-        !isUnlimitedLivesActive(profile)
+        !(await hasUsableCredit())
       ) {
         toast.error("Oyun için yeterli sayfan yok!", { description: "Oyun oynamak için sayfa satın alın." });
         navigate("/market");
@@ -619,7 +635,7 @@ const HomePage = () => {
       if (modeId === "tournament") navigate("/tournament");
       else setSelectedMode(modeId);
     },
-    [playSound, isPremium, profile?.game_credits, profile?.bonus_credits, profile?.unlimited_lives_until, navigate],
+    [playSound, isPremium, profile, user?.id, navigate],
   );
 
   const handleMatchFound = (roomId: string) => {
