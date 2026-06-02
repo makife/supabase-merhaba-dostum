@@ -1472,27 +1472,31 @@ const GamePage = ({
   // checkWinnerWithScores'taki early-return ve native'de çift 'celebration' çağrısı
   // (playSound("gameWin") + playCelebrationSound) sesi susturuyordu.
   const endSoundPlayedRef = useRef(false);
+  const playEndResultSoundOnce = useCallback((result: "player" | "opponent" | "tie") => {
+    if (endSoundPlayedRef.current) return;
+    endSoundPlayedRef.current = true;
+    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", result);
+    try {
+      if (result === "player") {
+        playCelebrationSound();
+      } else if (result === "opponent") {
+        playGameLoseSound();
+      } else {
+        playTieSound();
+      }
+    } catch (err) {
+      console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
+    }
+  }, [playCelebrationSound, playGameLoseSound, playTieSound]);
+
   useEffect(() => {
     winnerRef.current = winner;
     if (!winner) {
       endSoundPlayedRef.current = false;
       return;
     }
-    if (endSoundPlayedRef.current) return;
-    endSoundPlayedRef.current = true;
-    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", winner);
-    try {
-      if (winner === "player") {
-        playCelebrationSound();
-      } else if (winner === "opponent") {
-        playGameLoseSound();
-      } else if (winner === "tie") {
-        playTieSound();
-      }
-    } catch (err) {
-      console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
-    }
-  }, [winner, playCelebrationSound, playGameLoseSound, playTieSound]);
+    playEndResultSoundOnce(winner);
+  }, [winner, playEndResultSoundOnce]);
   //
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
