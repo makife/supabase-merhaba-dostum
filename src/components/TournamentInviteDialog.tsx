@@ -104,11 +104,14 @@ const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentNa
         .eq("id", user.id)
         .single();
       const senderName = myProfile?.username || "Bir oyuncu";
+      const cleanName = (tournamentName || "")
+        .replace(/\s*[-–—]?\s*\d{1,2}[:.]\d{2}\s*$/u, "")
+        .trim();
 
       await supabase.from("notifications").insert({
         user_id: friend.id,
         type: "tournament_invite",
-        message: `${senderName} seni "${tournamentName}" turnuvasına davet ediyor!`,
+        message: `${senderName} seni "${cleanName}" turnuvasına davet ediyor!`,
         related_id: tournamentId,
         is_read: false,
       });
@@ -116,7 +119,7 @@ const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentNa
       await sendPushNotification(
         friend.id,
         "🏆 Turnuva Daveti",
-        `${senderName} seni "${tournamentName}" turnuvasına davet ediyor!`,
+        `${senderName} seni "${cleanName}" turnuvasına davet ediyor!`,
         { type: "tournament_invite", tournamentId },
         true,
       );
