@@ -1372,6 +1372,13 @@ const HomePage = () => {
           avatarUrl={profile?.avatar_url || user?.user_metadata?.avatar_url || ""}
           username={profile?.username || "Oyuncu"}
         />
+
+        <SystemMessagesDialog
+          open={showSystemMessages}
+          onOpenChange={setShowSystemMessages}
+          messages={systemMessages}
+          loading={systemLoading}
+        />
       </div>
     </>
   );
