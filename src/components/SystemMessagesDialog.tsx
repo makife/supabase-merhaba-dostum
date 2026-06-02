@@ -25,6 +25,7 @@ export function SystemMessagesDialog({
   // Açılışta okunma durumunun anlık görüntüsü; kullanıcı "Yeni" tabını boş görmesin
   const [snapshotRead, setSnapshotRead] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"new" | "read">("new");
+  const { playSound } = useSounds();
 
   useEffect(() => {
     if (open) {
