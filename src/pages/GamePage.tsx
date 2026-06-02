@@ -1464,6 +1464,7 @@ const GamePage = ({
     gameStartedRef.current = gameStarted;
   }, [gameStarted]);
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
+  const winnerRef = useRef<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
   const [buttonsEnabled, setButtonsEnabled] = useState(false);
 
@@ -1472,6 +1473,7 @@ const GamePage = ({
   // (playSound("gameWin") + playCelebrationSound) sesi susturuyordu.
   const endSoundPlayedRef = useRef(false);
   useEffect(() => {
+    winnerRef.current = winner;
     if (!winner) {
       endSoundPlayedRef.current = false;
       return;
@@ -3401,6 +3403,17 @@ const GamePage = ({
       return; // Erken çık
     }
 
+    const resolvedWinner: "player" | "opponent" | "tie" =
+      finalUserScore > finalOpponentScore ? "player" : finalUserScore < finalOpponentScore ? "opponent" : "tie";
+    if (!winnerRef.current) {
+      winnerRef.current = resolvedWinner;
+      setWinner(resolvedWinner);
+      setButtonsEnabled(false);
+      setTimeout(() => setButtonsEnabled(true), 1000);
+      setFinalPlayerScore(finalUserScore);
+      setFinalOpponentScore(finalOpponentScore);
+    }
+
     // vs-computer modunda istatistik güncelle
     if (user) {
       if (statsUpdatedRef.current) {
@@ -5037,7 +5050,7 @@ const GamePage = ({
     async (currentPlayerScore: number, currentOpponentScore: number) => {
       // gameEnded state'i bazı akışlarda checkWinner çağrısından önce set ediliyor.
       // Bu durumda erken çıkmak skor/istatistik RPC'sini tamamen kaçırıyor.
-      if (winner !== null) return;
+      if (winnerRef.current !== null) return;
 
       let gameResult: "player" | "opponent" | "tie";
       // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=x1
