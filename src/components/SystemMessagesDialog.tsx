@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
+import { useSounds } from "@/hooks/useSounds";
 
 interface Props {
   open: boolean;
@@ -24,6 +25,7 @@ export function SystemMessagesDialog({
   // Açılışta okunma durumunun anlık görüntüsü; kullanıcı "Yeni" tabını boş görmesin
   const [snapshotRead, setSnapshotRead] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"new" | "read">("new");
+  const { playSound } = useSounds();
 
   useEffect(() => {
     if (open) {
@@ -85,7 +87,7 @@ export function SystemMessagesDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "new" | "read")}>
+        <Tabs value={tab} onValueChange={(v) => { playSound("buttonClick"); setTab(v as "new" | "read"); }}>
           <TabsList className="grid w-full grid-cols-2 bg-white/5">
             <TabsTrigger value="new" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
               Yeni Mesajlar {unread.length > 0 && `(${unread.length})`}
