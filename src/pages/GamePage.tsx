@@ -5055,7 +5055,7 @@ const GamePage = ({
     async (currentPlayerScore: number, currentOpponentScore: number) => {
       // gameEnded state'i bazı akışlarda checkWinner çağrısından önce set ediliyor.
       // Bu durumda erken çıkmak skor/istatistik RPC'sini tamamen kaçırıyor.
-      if (winnerRef.current !== null) return;
+      const existingWinner = winnerRef.current;
 
       let gameResult: "player" | "opponent" | "tie";
       // Skor çarpanı: Kazanma=x5, Beraberlik=x2, Kaybetme=x1
@@ -5067,8 +5067,12 @@ const GamePage = ({
         return;
       }
 
-      // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
-      if (gameMode === "vs-computer") {
+      if (existingWinner) {
+        gameResult = existingWinner;
+        scoreMultiplier = gameResult === "player" ? 5 : gameResult === "tie" ? 2 : 1;
+        console.log("🏆 Winner zaten handleGameEnd içinde belirlendi, cleanup akışı devam ediyor:", gameResult);
+      } else if (gameMode === "vs-computer") {
+        // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
         // vs-computer için mevcut mantık
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
