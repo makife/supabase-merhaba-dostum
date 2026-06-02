@@ -87,7 +87,7 @@ export function SystemMessagesDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "new" | "read")}>
+        <Tabs value={tab} onValueChange={(v) => { playSound("buttonClick"); setTab(v as "new" | "read"); }}>
           <TabsList className="grid w-full grid-cols-2 bg-white/5">
             <TabsTrigger value="new" className="data-[state=active]:bg-amber-500 data-[state=active]:text-black">
               Yeni Mesajlar {unread.length > 0 && `(${unread.length})`}
