@@ -1377,6 +1377,8 @@ const HomePage = () => {
           onOpenChange={setShowSystemMessages}
           messages={systemMessages}
           loading={systemLoading}
+          readIds={systemReadIds}
+          markAllRead={markSystemRead}
         />
       </div>
     </>
