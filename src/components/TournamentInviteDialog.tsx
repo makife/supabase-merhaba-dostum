@@ -113,7 +113,13 @@ const TournamentInviteDialog = ({ open, onOpenChange, tournamentId, tournamentNa
         is_read: false,
       });
 
-      await sendGameInviteNotification(friend.id, senderName, tournamentId);
+      await sendPushNotification(
+        friend.id,
+        "🏆 Turnuva Daveti",
+        `${senderName} seni "${tournamentName}" turnuvasına davet ediyor!`,
+        { type: "tournament_invite", tournamentId },
+        true,
+      );
 
       setInvitedIds((prev) => new Set(prev).add(friend.id));
       toast.success(`${friend.username} adlı arkadaşına davet gönderildi!`);
