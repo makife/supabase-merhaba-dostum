@@ -21,6 +21,8 @@ import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
 import { useActiveTournamentDisplayCount } from "@/hooks/useActiveTournamentDisplayCount";
 import Lottie from "lottie-react";
+import { useSystemMessages } from "@/hooks/useSystemMessages";
+import { SystemMessagesDialog } from "@/components/SystemMessagesDialog";
 
 import {
   Bot,
