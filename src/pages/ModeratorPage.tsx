@@ -601,6 +601,101 @@ const ModeratorPage = () => {
               </Card>
             </TabsContent>
           )}
+
+          {/* Sistem Mesajları Tab - Sadece Admin */}
+          {isAdmin && (
+            <TabsContent value="system" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="w-5 h-5" />
+                    Sistem Mesajı Yayınla
+                  </CardTitle>
+                  <CardDescription>
+                    Yazdığınız mesaj tüm kullanıcıların ana sayfasındaki bildirim ikonunda kırmızı rozet olarak görünür.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sys-title">Başlık</Label>
+                    <Input
+                      id="sys-title"
+                      placeholder="Örn: Yeni güncelleme!"
+                      value={sysTitle}
+                      onChange={(e) => setSysTitle(e.target.value)}
+                      maxLength={120}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sys-body">Konu</Label>
+                    <Textarea
+                      id="sys-body"
+                      placeholder="Mesaj içeriği..."
+                      value={sysBody}
+                      onChange={(e) => setSysBody(e.target.value)}
+                      maxLength={1000}
+                      rows={5}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSendSystemMessage}
+                    disabled={sysSending || !sysTitle.trim() || !sysBody.trim()}
+                    className="w-full gap-2"
+                  >
+                    {sysSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Yayınlanıyor...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Yayınla
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Yayınlanan Mesajlar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {systemMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      Henüz sistem mesajı yok
+                    </p>
+                  ) : (
+                    systemMessages.map((m) => (
+                      <div
+                        key={m.id}
+                        className="border border-border rounded-lg p-3 space-y-1"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-sm">{m.title}</h4>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => handleDeleteSystemMessage(m.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                          {m.body}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(m.created_at).toLocaleString('tr-TR')}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
