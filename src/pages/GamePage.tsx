@@ -1466,6 +1466,31 @@ const GamePage = ({
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
   const [buttonsEnabled, setButtonsEnabled] = useState(false);
+
+  // 🔊 Maç sonu sesi - winner set olduğunda kesin oynat (her path için tek noktadan)
+  // checkWinnerWithScores'taki early-return ve native'de çift 'celebration' çağrısı
+  // (playSound("gameWin") + playCelebrationSound) sesi susturuyordu.
+  const endSoundPlayedRef = useRef(false);
+  useEffect(() => {
+    if (!winner) {
+      endSoundPlayedRef.current = false;
+      return;
+    }
+    if (endSoundPlayedRef.current) return;
+    endSoundPlayedRef.current = true;
+    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", winner);
+    try {
+      if (winner === "player") {
+        playCelebrationSound();
+      } else if (winner === "opponent") {
+        playGameLoseSound();
+      } else if (winner === "tie") {
+        playTieSound();
+      }
+    } catch (err) {
+      console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
+    }
+  }, [winner, playCelebrationSound, playGameLoseSound, playTieSound]);
   //
   const [hasShownStartMessage, setHasShownStartMessage] = useState(false);
   const [lastPlayerAction, setLastPlayerAction] = useState<number>(0);
