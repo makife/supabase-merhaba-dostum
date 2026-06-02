@@ -397,6 +397,9 @@ export const useSounds = () => {
           timeWarning: 'beep',
           gameWin: 'celebration',
           gameLose: 'game_lose',
+          celebration: 'celebration',
+          gameLoseSound: 'game_lose',
+          tieSound: 'tie',
         };
         const assetId = nativeMap[soundKey];
         if (assetId) {
