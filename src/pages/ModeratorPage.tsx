@@ -68,6 +68,62 @@ const ModeratorPage = () => {
   const [pushBody, setPushBody] = useState('');
   const [pushSending, setPushSending] = useState(false);
 
+  // Sistem mesajı state
+  const [sysTitle, setSysTitle] = useState('');
+  const [sysBody, setSysBody] = useState('');
+  const [sysSending, setSysSending] = useState(false);
+  const [systemMessages, setSystemMessages] = useState<any[]>([]);
+
+  const fetchSystemMessages = useCallback(async () => {
+    const { data } = await supabase
+      .from('system_messages' as any)
+      .select('id,title,body,created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setSystemMessages((data as any) || []);
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) fetchSystemMessages();
+  }, [isAdmin, fetchSystemMessages]);
+
+  const handleSendSystemMessage = async () => {
+    if (!sysTitle.trim() || !sysBody.trim()) {
+      toast.error('Başlık ve konu alanları boş olamaz');
+      return;
+    }
+    setSysSending(true);
+    try {
+      const { error } = await supabase.from('system_messages' as any).insert({
+        title: sysTitle.trim(),
+        body: sysBody.trim(),
+        created_by: user?.id,
+      } as any);
+      if (error) throw error;
+      toast.success('Sistem mesajı tüm kullanıcılara gönderildi ✅');
+      setSysTitle('');
+      setSysBody('');
+      fetchSystemMessages();
+    } catch (e) {
+      console.error('System message error', e);
+      toast.error('Sistem mesajı gönderilemedi');
+    } finally {
+      setSysSending(false);
+    }
+  };
+
+  const handleDeleteSystemMessage = async (id: string) => {
+    try {
+      const { error } = await supabase.from('system_messages' as any).delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Sistem mesajı silindi');
+      fetchSystemMessages();
+    } catch (e) {
+      console.error('Delete system message error', e);
+      toast.error('Silinemedi');
+    }
+  };
+
   // Ana resync fonksiyonu
   const handleModeratorResync = useCallback(async () => {
     await Promise.all([fetchReports(), fetchBans()]);
