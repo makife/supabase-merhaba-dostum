@@ -10256,6 +10256,7 @@ darmadumanlık
 darmstadtiyum
 darp
 darphane
+dart
 daru
 darülaceze
 darülbedayi
@@ -26286,6 +26287,7 @@ kloş
 klozet
 klüz
 koala
+koah
 koalisyon
 koaptör
 kobalt
@@ -31153,9 +31155,10 @@ mirasçı
 mirasyedi
 mirasyedilik
 mirat
-mirî
-mirîci
+miri
+mirici
 mirim
+mirket
 mirliva
 mirlivalık
 mirza
