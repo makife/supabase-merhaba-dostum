@@ -26,6 +26,10 @@ let unlockPromise: Promise<void> | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer | null>>();
 
+type WebAudioWindow = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
 export const isIOSWebAudioTarget = (): boolean => isIOSNative;
 
 const getContext = (): AudioContext | null => {
@@ -33,7 +37,7 @@ const getContext = (): AudioContext | null => {
   if (ctx) return ctx;
   try {
     const Ctor: typeof AudioContext =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext || (window as WebAudioWindow).webkitAudioContext;
     if (!Ctor) return null;
     ctx = new Ctor();
     return ctx;
@@ -60,7 +64,9 @@ const tryUnlock = (): Promise<void> => {
         src.buffer = buf;
         src.connect(c.destination);
         src.start(0);
-      } catch {}
+      } catch {
+        // Safari unlock denemesi başarısız olursa resume yine denenir.
+      }
       await c.resume();
       unlocked = c.state === "running";
       if (unlocked) console.log("🔓 [iOSWebAudio] AudioContext unlocked");
@@ -169,9 +175,15 @@ export const playIOSWebSound = async (
   if ((c.state as string) !== "running") {
     try {
       await tryUnlock();
-    } catch {}
+    } catch {
+      // Gesture dışı denemelerde iOS resume'u reddedebilir.
+    }
     if ((c.state as string) !== "running") {
-      try { await c.resume(); } catch {}
+      try {
+        await c.resume();
+      } catch {
+        // Hâlâ kilitliyse aşağıdaki state kontrolü false döndürür.
+      }
     }
     if ((c.state as string) !== "running") {
       console.warn(`[iOSWebAudio] ${assetId} çalınamadı: ctx state=${c.state}`);
