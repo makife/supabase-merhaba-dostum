@@ -212,7 +212,11 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     if (!soundDef) return false;
 
     if (!initialized) {
-      try { await initNativeAudio(); } catch {}
+      try {
+        await initNativeAudio();
+      } catch (error) {
+        console.warn('⚠️ iOS WebAudio init hatası:', error);
+      }
     }
 
     return playIOSWebSound(
