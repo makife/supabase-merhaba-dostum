@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import { initIOSWebAudio, playIOSWebSound, stopAllIOSWebSounds } from '@/services/iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -63,10 +64,10 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
 
-const toIOSNativeAssetPath = (assetPath: string): string => {
-  const fileName = assetPath.replace(/^public\//, '').split('/').pop();
-  return fileName ? `sounds/${fileName}` : assetPath;
-};
+const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
+
+const getSoundDefinition = (assetId: string): SoundDefinition | undefined =>
+  SOUND_DEFINITIONS.find((sound) => sound.assetId === assetId);
 
 // Initialization flag
 let initialized = false;
@@ -103,43 +104,13 @@ export const initNativeAudio = async (): Promise<void> => {
     if (initialized) return;
     if (initPromise) return initPromise;
 
-    // iOS IPA'da WKWebView/WebAudio bazı kısa efektleri sessiz bırakabiliyor.
-    // Tek yol olarak NativeAudio kullanıyoruz; HTML5/oscillator fallback yok, bu yüzden AVAudioSession çakışması da yok.
+    // iOS IPA'da NativeAudio/HTML5 Audio AVAudioSession çakışması tüm efektleri susturabiliyor.
+    // Proje standardı: iOS efektleri tek WebAudio buffer servisinden çalar.
     initPromise = (async () => {
-      try {
-        // 🔧 iOS: focus:false → AVAudioSession ambient mod, arka plan müziğini kesmez
-        await NativeAudio.configure({ fade: false, focus: false });
-      } catch (e) {
-        console.warn('⚠️ NativeAudio iOS configure atlandı:', e);
-      }
-
-      await Promise.all(SOUND_DEFINITIONS.map(async (sound) => {
-        try {
-          if (preloadedSounds.has(sound.assetId)) return;
-          try { await NativeAudio.unload({ assetId: sound.assetId }); } catch {}
-          await NativeAudio.preload({
-            assetId: sound.assetId,
-            assetPath: toIOSNativeAssetPath(sound.assetPath),
-            audioChannelNum: sound.channels ?? 1,
-            isUrl: false,
-          });
-          if (sound.volume !== undefined) {
-            try { await NativeAudio.setVolume({ assetId: sound.assetId, volume: sound.volume }); } catch {}
-          }
-          preloadedSounds.add(sound.assetId);
-          console.log(`✅ NativeAudio iOS: ${sound.assetId} yüklendi`);
-        } catch (e: unknown) {
-          const message = e instanceof Error ? e.message : String(e);
-          if (message.includes('already exists')) {
-            preloadedSounds.add(sound.assetId);
-          } else {
-            console.warn(`⚠️ NativeAudio iOS: ${sound.assetId} yüklenemedi:`, e);
-          }
-        }
-      }));
-
+      await initIOSWebAudio(SOUND_DEFINITIONS);
+      SOUND_DEFINITIONS.forEach((sound) => preloadedSounds.add(sound.assetId));
       initialized = true;
-      console.log(`🔊 NativeAudio iOS: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses hazır ✅`);
+      console.log(`🔊 iOS WebAudio: ${SOUND_DEFINITIONS.length} ses hattı hazır ✅`);
     })();
     return initPromise;
   }
@@ -229,7 +200,7 @@ const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => 
 export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
   // 🔧 AUDIO FAILSAFE: Web ortamında direkt HTML5 kullan
   if (!isNative) {
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
@@ -237,14 +208,22 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    if (!initialized && initPromise) {
+    const soundDef = getSoundDefinition(assetId);
+    if (!soundDef) return false;
+
+    if (!initialized) {
       try {
-        await Promise.race([
-          initPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('iOS preload timeout')), 2000))
-        ]);
-      } catch {}
+        await initNativeAudio();
+      } catch (error) {
+        console.warn('⚠️ iOS WebAudio init hatası:', error);
+      }
     }
+
+    return playIOSWebSound(
+      assetId,
+      volume ?? soundDef.volume ?? 0.7,
+      toWebAssetUrl(soundDef.assetPath),
+    );
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
@@ -264,7 +243,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   if (!preloadedSounds.has(assetId)) {
     console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
     if (isNative) return false;
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
@@ -272,7 +251,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   try {
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     const isMultiChannel = (soundDef?.channels ?? 1) > 1;
 
     // 🔧 iOS-fix: Çok kanallı sesler için stop ÇAĞIRMA — kanallar overlap edebilsin.
@@ -298,7 +277,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
     console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
     if (isNative) return false;
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
@@ -367,6 +346,11 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    return;
+  }
+
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
@@ -382,6 +366,14 @@ export const stopAllSounds = async (): Promise<void> => {
  * Tüm sesleri temizle (unload)
  */
 export const unloadAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    preloadedSounds.clear();
+    initialized = false;
+    initPromise = null;
+    return;
+  }
+
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
