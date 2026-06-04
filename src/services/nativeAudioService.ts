@@ -64,11 +64,6 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
 
-const toIOSNativeAssetPath = (assetPath: string): string => {
-  const fileName = assetPath.replace(/^public\//, '').split('/').pop();
-  return fileName ? `sounds/${fileName}` : assetPath;
-};
-
 const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
 
 const getSoundDefinition = (assetId: string): SoundDefinition | undefined =>
@@ -205,7 +200,7 @@ const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => 
 export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
   // 🔧 AUDIO FAILSAFE: Web ortamında direkt HTML5 kullan
   if (!isNative) {
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
@@ -213,14 +208,18 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   if (isIOSNative) {
-    if (!initialized && initPromise) {
-      try {
-        await Promise.race([
-          initPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('iOS preload timeout')), 2000))
-        ]);
-      } catch {}
+    const soundDef = getSoundDefinition(assetId);
+    if (!soundDef) return false;
+
+    if (!initialized) {
+      try { await initNativeAudio(); } catch {}
     }
+
+    return playIOSWebSound(
+      assetId,
+      volume ?? soundDef.volume ?? 0.7,
+      toWebAssetUrl(soundDef.assetPath),
+    );
   }
   
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
@@ -240,7 +239,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   if (!preloadedSounds.has(assetId)) {
     console.warn(`⚠️ NativeAudio: ${assetId} preload edilmemiş`);
     if (isNative) return false;
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
@@ -248,7 +247,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
   }
 
   try {
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     const isMultiChannel = (soundDef?.channels ?? 1) > 1;
 
     // 🔧 iOS-fix: Çok kanallı sesler için stop ÇAĞIRMA — kanallar overlap edebilsin.
@@ -274,7 +273,7 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     // 🔧 AUDIO FAILSAFE: Native hata (status=0x1 vb) durumunda HTML5 fallback
     console.error(`❌ NativeAudio: ${assetId} çalınamadı:`, error);
     if (isNative) return false;
-    const soundDef = SOUND_DEFINITIONS.find(s => s.assetId === assetId);
+    const soundDef = getSoundDefinition(assetId);
     if (soundDef) {
       return playHTML5Fallback(soundDef.assetPath, volume || soundDef.volume || 0.7);
     }
