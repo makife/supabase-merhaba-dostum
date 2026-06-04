@@ -342,6 +342,11 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    return;
+  }
+
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
@@ -357,6 +362,14 @@ export const stopAllSounds = async (): Promise<void> => {
  * Tüm sesleri temizle (unload)
  */
 export const unloadAllSounds = async (): Promise<void> => {
+  if (isIOSNative) {
+    stopAllIOSWebSounds();
+    preloadedSounds.clear();
+    initialized = false;
+    initPromise = null;
+    return;
+  }
+
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
