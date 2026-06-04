@@ -36,8 +36,7 @@ const getContext = (): AudioContext | null => {
   if (!isIOSNative) return null;
   if (ctx) return ctx;
   try {
-    const Ctor: typeof AudioContext =
-      window.AudioContext || (window as WebAudioWindow).webkitAudioContext;
+    const Ctor = window.AudioContext || (window as WebAudioWindow).webkitAudioContext;
     if (!Ctor) return null;
     ctx = new Ctor();
     return ctx;
