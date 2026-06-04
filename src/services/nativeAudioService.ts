@@ -5,6 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import { initIOSWebAudio, playIOSWebSound, stopAllIOSWebSounds } from '@/services/iosWebAudioService';
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -68,6 +69,11 @@ const toIOSNativeAssetPath = (assetPath: string): string => {
   return fileName ? `sounds/${fileName}` : assetPath;
 };
 
+const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
+
+const getSoundDefinition = (assetId: string): SoundDefinition | undefined =>
+  SOUND_DEFINITIONS.find((sound) => sound.assetId === assetId);
+
 // Initialization flag
 let initialized = false;
 let initPromise: Promise<void> | null = null;
@@ -103,43 +109,13 @@ export const initNativeAudio = async (): Promise<void> => {
     if (initialized) return;
     if (initPromise) return initPromise;
 
-    // iOS IPA'da WKWebView/WebAudio bazı kısa efektleri sessiz bırakabiliyor.
-    // Tek yol olarak NativeAudio kullanıyoruz; HTML5/oscillator fallback yok, bu yüzden AVAudioSession çakışması da yok.
+    // iOS IPA'da NativeAudio/HTML5 Audio AVAudioSession çakışması tüm efektleri susturabiliyor.
+    // Proje standardı: iOS efektleri tek WebAudio buffer servisinden çalar.
     initPromise = (async () => {
-      try {
-        // 🔧 iOS: focus:false → AVAudioSession ambient mod, arka plan müziğini kesmez
-        await NativeAudio.configure({ fade: false, focus: false });
-      } catch (e) {
-        console.warn('⚠️ NativeAudio iOS configure atlandı:', e);
-      }
-
-      await Promise.all(SOUND_DEFINITIONS.map(async (sound) => {
-        try {
-          if (preloadedSounds.has(sound.assetId)) return;
-          try { await NativeAudio.unload({ assetId: sound.assetId }); } catch {}
-          await NativeAudio.preload({
-            assetId: sound.assetId,
-            assetPath: toIOSNativeAssetPath(sound.assetPath),
-            audioChannelNum: sound.channels ?? 1,
-            isUrl: false,
-          });
-          if (sound.volume !== undefined) {
-            try { await NativeAudio.setVolume({ assetId: sound.assetId, volume: sound.volume }); } catch {}
-          }
-          preloadedSounds.add(sound.assetId);
-          console.log(`✅ NativeAudio iOS: ${sound.assetId} yüklendi`);
-        } catch (e: unknown) {
-          const message = e instanceof Error ? e.message : String(e);
-          if (message.includes('already exists')) {
-            preloadedSounds.add(sound.assetId);
-          } else {
-            console.warn(`⚠️ NativeAudio iOS: ${sound.assetId} yüklenemedi:`, e);
-          }
-        }
-      }));
-
+      await initIOSWebAudio(SOUND_DEFINITIONS);
+      SOUND_DEFINITIONS.forEach((sound) => preloadedSounds.add(sound.assetId));
       initialized = true;
-      console.log(`🔊 NativeAudio iOS: ${preloadedSounds.size}/${SOUND_DEFINITIONS.length} ses hazır ✅`);
+      console.log(`🔊 iOS WebAudio: ${SOUND_DEFINITIONS.length} ses hattı hazır ✅`);
     })();
     return initPromise;
   }
