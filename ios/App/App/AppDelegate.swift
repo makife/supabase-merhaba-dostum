@@ -3,6 +3,7 @@ import Capacitor
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -12,6 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private var pendingAPNsToken: Data?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        configurePlaybackAudioSession()
         FirebaseApp.configure()
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
@@ -28,6 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        configurePlaybackAudioSession()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -124,6 +127,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             name: .capacitorDidRegisterForRemoteNotifications,
             object: token
         )
+    }
+
+    private func configurePlaybackAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            print("🔊 [Audio] AVAudioSession playback aktif")
+        } catch {
+            print("⚠️ [Audio] AVAudioSession ayarlanamadı: \(error.localizedDescription)")
+        }
     }
 }
 
