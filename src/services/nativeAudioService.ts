@@ -63,8 +63,6 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
 ];
 
-const toWebAssetUrl = (assetPath: string): string => assetPath.replace(/^public\//, '/');
-
 const toIOSNativeAssetPath = (assetPath: string): string => {
   const fileName = assetPath.split('/').pop() || assetPath;
   return `sounds/${fileName}`;
@@ -213,26 +211,13 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
     return false;
   }
 
-  if (isIOSNative) {
-    const soundDef = getSoundDefinition(assetId);
-    if (!soundDef) return false;
-
-    if (!initialized) {
-      try {
-        await initNativeAudio();
-      } catch (error) {
-        console.warn('⚠️ iOS WebAudio init hatası:', error);
-      }
-    }
-
-    return playIOSWebSound(
-      assetId,
-      volume ?? soundDef.volume ?? 0.7,
-      toWebAssetUrl(soundDef.assetPath),
-    );
-  }
-  
   // Eğer henüz başlatılmadıysa bekle (max 2 saniye)
+  if (!initialized && !initPromise) {
+    await initNativeAudio().catch((error) => {
+      console.warn(`⚠️ NativeAudio: ${assetId} için init başlatılamadı:`, error);
+    });
+  }
+
   if (!initialized && initPromise) {
     console.log(`⏳ NativeAudio: ${assetId} için preload bekleniyor...`);
     try {
@@ -352,11 +337,6 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
  * Tüm sesleri kapat
  */
 export const stopAllSounds = async (): Promise<void> => {
-  if (isIOSNative) {
-    stopAllIOSWebSounds();
-    return;
-  }
-
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
@@ -372,14 +352,6 @@ export const stopAllSounds = async (): Promise<void> => {
  * Tüm sesleri temizle (unload)
  */
 export const unloadAllSounds = async (): Promise<void> => {
-  if (isIOSNative) {
-    stopAllIOSWebSounds();
-    preloadedSounds.clear();
-    initialized = false;
-    initPromise = null;
-    return;
-  }
-
   if (!isNative) return;
   
   for (const assetId of preloadedSounds) {
