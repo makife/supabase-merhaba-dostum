@@ -1015,15 +1015,11 @@ const GamePage = ({
   useEffect(() => {
     const bgAnimation = matchBgLottieRef.current;
     if (!bgAnimation) return;
-
-    bgAnimation.setSubframe(false);
-    bgAnimation.setSpeed(0.85);
-
-    if (isInBackground || gameEnded) {
-      bgAnimation.pause();
-    } else {
-      bgAnimation.play();
-    }
+    // Performans: arka plan animasyonu hareketsiz tutuluyor (ilk frame).
+    try {
+      bgAnimation.setSubframe(false);
+      bgAnimation.goToAndStop(0, true);
+    } catch {}
   }, [isInBackground, gameEnded]);
 
   // 🎨 Arka plan mount'ta seçilir ve maç boyunca sabit kalır (geri sayımda değişmez)
