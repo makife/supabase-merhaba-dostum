@@ -37,12 +37,46 @@ import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/Server
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
-import macArkaPlan1 from "@/assets/macArkaPlan1.json";
-import macArkaPlan2 from "@/assets/macArkaPlan2.json";
-import macArkaPlan3 from "@/assets/macArkaPlan3.json";
-import macArkaPlan4 from "@/assets/macArkaPlan4.json";
-import macArkaPlan5 from "@/assets/macArkaPlan5.json";
-const MAC_ARKA_PLANLAR = [macArkaPlan1, macArkaPlan2, macArkaPlan3, macArkaPlan4, macArkaPlan5];
+const MAC_ARKA_PLANLAR: string[] = [
+  "/macArkaPlanlar/macArkaPlan1.jpg",
+  "/macArkaPlanlar/macArkaPlan2.jpeg",
+  "/macArkaPlanlar/macArkaPlan3.jpeg",
+  "/macArkaPlanlar/macArkaPlan4.jpeg",
+  "/macArkaPlanlar/macArkaPlan5.jpeg",
+  "/macArkaPlanlar/macArkaPlan6.jpg",
+  "/macArkaPlanlar/macArkaPlan8.jpg",
+  "/macArkaPlanlar/macArkaPlan9.jpg",
+  "/macArkaPlanlar/macArkaPlan10.png",
+  "/macArkaPlanlar/macArkaPlan11.png",
+  "/macArkaPlanlar/macArkaPlan12.png",
+  "/macArkaPlanlar/macArkaPlan13.png",
+  "/macArkaPlanlar/macArkaPlan14.png",
+  "/macArkaPlanlar/macArkaPlan15.jpg",
+  "/macArkaPlanlar/macArkaPlan16.jpg",
+  "/macArkaPlanlar/macArkaPlan17.jpg",
+  "/macArkaPlanlar/macArkaPlan18.jpg",
+  "/macArkaPlanlar/macArkaPlan19.png",
+  "/macArkaPlanlar/macArkaPlan20.jpg",
+  "/macArkaPlanlar/macArkaPlan21.jpg",
+  "/macArkaPlanlar/macArkaPlan22.jpg",
+  "/macArkaPlanlar/macArkaPlan23.jpg",
+  "/macArkaPlanlar/macArkaPlan24.jpg",
+  "/macArkaPlanlar/macArkaPlan25.jpg",
+  "/macArkaPlanlar/macArkaPlan26.jpg",
+  "/macArkaPlanlar/macArkaPlan27.jpeg",
+  "/macArkaPlanlar/macArkaPlan28.jpeg",
+  "/macArkaPlanlar/macArkaPlan29.jpeg",
+  "/macArkaPlanlar/macArkaPlan30.jpeg",
+  "/macArkaPlanlar/macArkaPlan31.jpeg",
+  "/macArkaPlanlar/macArkaPlan32.jpg",
+  "/macArkaPlanlar/macArkaPlan33.jpeg",
+  "/macArkaPlanlar/macArkaPlan34.jpg",
+  "/macArkaPlanlar/macArkaPlan35.jpg",
+  "/macArkaPlanlar/macArkaPlan36.jpeg",
+  "/macArkaPlanlar/macArkaPlan37.jpg",
+  "/macArkaPlanlar/macArkaPlan38.jpg",
+  "/macArkaPlanlar/macArkaPlan39.jpeg",
+];
 import {
   ArrowLeft,
   Clock,
@@ -165,7 +199,7 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim, setMatchBgAnim] = useState<any>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+  const [matchBgAnim, setMatchBgAnim] = useState<string>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
   const matchBgLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
@@ -1012,15 +1046,7 @@ const GamePage = ({
   const reviewPromptedRef = useRef(false);
   const { maybeRequestReview, incrementMatchCount } = useAppReviewPrompt();
 
-  useEffect(() => {
-    const bgAnimation = matchBgLottieRef.current;
-    if (!bgAnimation) return;
-    // Performans: arka plan animasyonu hareketsiz tutuluyor (ilk frame).
-    try {
-      bgAnimation.setSubframe(false);
-      bgAnimation.goToAndStop(0, true);
-    } catch {}
-  }, [isInBackground, gameEnded]);
+  // Arka plan artık statik görsel; Lottie efekti kaldırıldı.
 
   // 🎨 Arka plan mount'ta seçilir ve maç boyunca sabit kalır (geri sayımda değişmez)
 
@@ -8325,21 +8351,12 @@ const GamePage = ({
               >
                 {matchBgAnim && (
                   <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                    <Lottie
-                      key={MAC_ARKA_PLANLAR.indexOf(matchBgAnim)}
-                      lottieRef={matchBgLottieRef}
-                      animationData={matchBgAnim}
-                      loop={false}
-                      autoplay={false}
-                      renderer={"canvas" as any}
-                      rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 } as any}
-                      onDOMLoaded={() => {
-                        try {
-                          matchBgLottieRef.current?.setSubframe(false);
-                          matchBgLottieRef.current?.goToAndStop(0, true);
-                        } catch {}
-                      }}
-                      style={{ width: "100%", height: "100%" }}
+                    <img
+                      src={matchBgAnim}
+                      alt=""
+                      aria-hidden="true"
+                      decoding="async"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                   </div>
                 )}
