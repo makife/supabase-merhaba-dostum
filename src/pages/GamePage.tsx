@@ -8333,13 +8333,15 @@ const GamePage = ({
                       key={MAC_ARKA_PLANLAR.indexOf(matchBgAnim)}
                       lottieRef={matchBgLottieRef}
                       animationData={matchBgAnim}
-                      loop
-                      autoplay
+                      loop={false}
+                      autoplay={false}
                       renderer={"canvas" as any}
                       rendererSettings={{ preserveAspectRatio: "xMidYMid slice", clearCanvas: true, dpr: 1 } as any}
                       onDOMLoaded={() => {
-                        matchBgLottieRef.current?.setSubframe(false);
-                        matchBgLottieRef.current?.setSpeed(0.85);
+                        try {
+                          matchBgLottieRef.current?.setSubframe(false);
+                          matchBgLottieRef.current?.goToAndStop(0, true);
+                        } catch {}
                       }}
                       style={{ width: "100%", height: "100%" }}
                     />
