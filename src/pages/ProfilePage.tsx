@@ -184,9 +184,15 @@ const ProfilePage = () => {
     if (!viewedUserId) return { won: 0, lost: 0, played: 0, winRate: 0 };
 
     try {
-      const { data: finalMatches, error } = await supabase
+      const { data: profileStats } = await supabase
+        .from("profiles")
+        .select("tournament_wins")
+        .eq("id", viewedUserId)
+        .maybeSingle();
+
+      const { data: userMatches, error } = await supabase
         .from("tournament_matches")
-        .select("winner_id, player1_id, player2_id, status, tournament_id, round")
+        .select("tournament_id")
         .or(`player1_id.eq.${viewedUserId},player2_id.eq.${viewedUserId}`)
         .eq("status", "completed");
 
@@ -195,34 +201,34 @@ const ProfilePage = () => {
         return { won: 0, lost: 0, played: 0, winRate: 0 };
       }
 
-      if (!finalMatches || finalMatches.length === 0) {
-        return { won: 0, lost: 0, played: 0, winRate: 0 };
+      const tournamentIds = Array.from(new Set((userMatches || []).map((match) => match.tournament_id).filter(Boolean)));
+      const won = profileStats?.tournament_wins || 0;
+
+      if (tournamentIds.length === 0) {
+        return { won, lost: 0, played: won, winRate: won > 0 ? 100 : 0 };
       }
 
-      const tournamentMaxRounds: Record<string, number> = {};
-      finalMatches.forEach((match) => {
-        if (match.tournament_id) {
-          tournamentMaxRounds[match.tournament_id] = Math.max(
-            tournamentMaxRounds[match.tournament_id] || 0,
-            match.round,
-          );
-        }
+      const { data: allMatches, error: allMatchesError } = await supabase
+        .from("tournament_matches")
+        .select("winner_id, player1_id, player2_id, tournament_id, round")
+        .in("tournament_id", tournamentIds)
+        .eq("status", "completed");
+
+      if (allMatchesError) {
+        console.error("Turnuva final istatistikleri hatası:", allMatchesError);
+        return { won, lost: 0, played: won, winRate: won > 0 ? 100 : 0 };
+      }
+
+      const playedTournamentIds = new Set<string>();
+      tournamentIds.forEach((tournamentId) => {
+        const tournamentMatches = (allMatches || []).filter((match) => match.tournament_id === tournamentId);
+        const maxRound = Math.max(...tournamentMatches.map((match) => match.round || 0));
+        const finalRoundMatches = tournamentMatches.filter((match) => match.round === maxRound);
+        if (maxRound > 0 && finalRoundMatches.length === 1) playedTournamentIds.add(tournamentId);
       });
 
-      let won = 0;
-      let lost = 0;
-
-      finalMatches.forEach((match) => {
-        if (match.tournament_id && match.round === tournamentMaxRounds[match.tournament_id]) {
-          if (match.winner_id === viewedUserId) {
-            won++;
-          } else {
-            lost++;
-          }
-        }
-      });
-
-      const played = won + lost;
+      const played = Math.max(playedTournamentIds.size, won);
+      const lost = Math.max(played - won, 0);
       const winRate = played > 0 ? Math.round((won / played) * 100) : 0;
 
       return { won, lost, played, winRate };
