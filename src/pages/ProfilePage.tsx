@@ -1427,6 +1427,7 @@ const ProfilePage = () => {
               }
             />
             <DetailRow label="Kaybetme" value={profileData.losses.toString()} />
+            <DetailRow label="Kazanma" value={profileData.wins.toString()} />
             <DetailRow label="Kazanma Oranı" value={`${profileData.winRate}%`} />
             <DetailRow label="Ortalama Puan" value={Math.round(profileData.averageScore).toString()} />
 
