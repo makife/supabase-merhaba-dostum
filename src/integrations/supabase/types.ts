@@ -1460,6 +1460,52 @@ export type Database = {
           },
         ]
       }
+      tournament_win_awards: {
+        Row: {
+          awarded_at: string
+          final_match_id: string | null
+          id: string
+          tournament_id: string
+          winner_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          final_match_id?: string | null
+          id?: string
+          tournament_id: string
+          winner_id: string
+        }
+        Update: {
+          awarded_at?: string
+          final_match_id?: string | null
+          id?: string
+          tournament_id?: string
+          winner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_win_awards_final_match_id_fkey"
+            columns: ["final_match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_win_awards_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: true
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_win_awards_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournaments: {
         Row: {
           avatar_url: string | null
@@ -1923,6 +1969,14 @@ export type Database = {
       }
       award_kelime_avi_boost: { Args: never; Returns: Json }
       award_kelimele_badge: { Args: { p_user_id: string }; Returns: boolean }
+      award_tournament_win_if_final: {
+        Args: {
+          p_final_match_id?: string
+          p_tournament_id: string
+          p_winner_id: string
+        }
+        Returns: boolean
+      }
       ban_user_for_inappropriate_content: {
         Args: {
           p_ban_duration_hours?: number
