@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 
 const GRID_SIZE = 20;
 const CELL_SIZE_PERCENT = 100 / GRID_SIZE;
