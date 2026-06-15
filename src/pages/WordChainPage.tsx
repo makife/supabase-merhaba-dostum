@@ -310,6 +310,7 @@ const WordChainPage = () => {
           />
         </div>
       )}
+      {ExitConfirmDialog}
     </div>
   );
 };

@@ -444,6 +444,7 @@ const PuzzleGamePage: React.FC = () => {
           </div>
         )}
       </div>
+      {ExitConfirmDialog}
     </div>
   );
 };

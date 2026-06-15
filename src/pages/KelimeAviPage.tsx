@@ -528,6 +528,7 @@ const KelimeAviPage = () => {
           </div>
         </div>
       )}
+      {ExitConfirmDialog}
     </div>
   );
 };

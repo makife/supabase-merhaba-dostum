@@ -297,6 +297,7 @@ const WordHuntPage = () => {
           </div>
         )}
       </div>
+      {ExitConfirmDialog}
     </div>
   );
 };

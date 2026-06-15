@@ -445,6 +445,7 @@ const WordMemoryGame = () => {
           </div>
         )}
       </div>
+      {ExitConfirmDialog}
     </div>
   );
 };
