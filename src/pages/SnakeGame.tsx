@@ -37,8 +37,9 @@ function useInterval(callback: () => void, delay: number | null) {
 
 const SnakeGame = () => {
   const { playSound: playButtonSound } = useSounds();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
 
-  const navigate = () => {
+  const doNavigate = () => {
     playButtonSound("buttonClick");
     if (window.history.length > 1) {
       window.history.back();
@@ -46,6 +47,7 @@ const SnakeGame = () => {
       window.location.href = "/";
     }
   };
+  const navigate = () => requestExit(doNavigate);
 
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [wordList, setWordList] = useState<string[]>([]);
