@@ -904,6 +904,7 @@ const DinoRunner = () => {
         }
         .start-btn:active { transform: scale(0.95); }
       `}</style>
+      {ExitConfirmDialog}
     </div>
   );
 };
