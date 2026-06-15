@@ -47,7 +47,7 @@ const SnakeGame = () => {
       window.location.href = "/";
     }
   };
-  const navigate = () => requestExit(doNavigate);
+  // navigate tanımı, gameRunning/gameOver state'lerinden sonra aşağıda yapılıyor.
 
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [wordList, setWordList] = useState<string[]>([]);
