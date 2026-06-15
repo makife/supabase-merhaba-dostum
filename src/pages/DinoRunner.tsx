@@ -14,7 +14,7 @@ const DinoRunner = () => {
       window.location.href = "/";
     }
   };
-  const navigate = () => requestExit(doNavigate);
+  // navigate, gameState tanımından sonra aşağıda tanımlanıyor.
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
   const { playSound: playButtonSound } = useSounds();
