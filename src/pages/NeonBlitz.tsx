@@ -260,7 +260,7 @@ const NeonBlitz: React.FC = () => {
       <button
         onClick={() => {
           playSound("buttonClick");
-          navigate(-1);
+          requestExit(() => navigate(-1));
         }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
       >
@@ -378,7 +378,7 @@ const NeonBlitz: React.FC = () => {
           <button
             onClick={() => {
               playSound("buttonClick");
-              returnToMenu();
+              requestExit(() => returnToMenu());
             }}
             style={s.iconBtn}
           >
