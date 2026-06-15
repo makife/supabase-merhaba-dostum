@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import Lottie from "lottie-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
@@ -71,6 +72,7 @@ const isAdjacent = (a: number, b: number) => {
 
 const KelimeAviPage = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const { profile, refreshProfile } = useUser();
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } =
@@ -273,13 +275,15 @@ const KelimeAviPage = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              if (gameState === "playing") {
-                if (timerRef.current) clearInterval(timerRef.current);
-                setGameState("finished");
-              } else {
-                navigate(-1);
-              }
               playSound("buttonClick");
+              requestExit(() => {
+                if (gameState === "playing") {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  setGameState("finished");
+                } else {
+                  navigate(-1);
+                }
+              });
             }}
             className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
           >
@@ -524,6 +528,7 @@ const KelimeAviPage = () => {
           </div>
         </div>
       )}
+      {ExitConfirmDialog}
     </div>
   );
 };

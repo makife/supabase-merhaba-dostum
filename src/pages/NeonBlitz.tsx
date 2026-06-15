@@ -4,6 +4,7 @@ import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-rea
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";
@@ -38,6 +39,7 @@ const generateColor = () => {
 
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
@@ -258,7 +260,7 @@ const NeonBlitz: React.FC = () => {
       <button
         onClick={() => {
           playSound("buttonClick");
-          navigate(-1);
+          requestExit(() => navigate(-1));
         }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
       >
@@ -376,7 +378,7 @@ const NeonBlitz: React.FC = () => {
           <button
             onClick={() => {
               playSound("buttonClick");
-              returnToMenu();
+              requestExit(() => returnToMenu());
             }}
             style={s.iconBtn}
           >
@@ -577,6 +579,7 @@ const NeonBlitz: React.FC = () => {
       {gameState === "MENU" && renderMenu()}
       {gameState === "PLAYING" && renderPlaying()}
       {gameState === "GAMEOVER" && renderGameOver()}
+      {ExitConfirmDialog}
     </div>
   );
 };

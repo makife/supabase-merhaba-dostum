@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, RotateCcw, Trophy, Target, ArrowLeft } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 
 const GRID_SIZE = 20;
 const CELL_SIZE_PERCENT = 100 / GRID_SIZE;
@@ -36,8 +37,9 @@ function useInterval(callback: () => void, delay: number | null) {
 
 const SnakeGame = () => {
   const { playSound: playButtonSound } = useSounds();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
 
-  const navigate = () => {
+  const doNavigate = () => {
     playButtonSound("buttonClick");
     if (window.history.length > 1) {
       window.history.back();
@@ -45,6 +47,7 @@ const SnakeGame = () => {
       window.location.href = "/";
     }
   };
+  const navigate = () => requestExit(doNavigate);
 
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [wordList, setWordList] = useState<string[]>([]);
@@ -623,6 +626,7 @@ const SnakeGame = () => {
         </div>
       </div>
       <style>{`@keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }`}</style>
+      {ExitConfirmDialog}
     </div>
   );
 };

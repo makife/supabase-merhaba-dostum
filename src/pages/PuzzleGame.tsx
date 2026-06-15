@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 
 interface GameState {
   board: number[];
@@ -62,6 +63,7 @@ const getDailyWord = (words: string[]): string => {
 
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const {
     hasPlayedToday,
@@ -267,8 +269,8 @@ const PuzzleGamePage: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              navigate(-1);
               playSound("buttonClick");
+              requestExit(() => navigate(-1));
             }}
             className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
           >
@@ -442,6 +444,7 @@ const PuzzleGamePage: React.FC = () => {
           </div>
         )}
       </div>
+      {ExitConfirmDialog}
     </div>
   );
 };

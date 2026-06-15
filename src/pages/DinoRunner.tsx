@@ -2,16 +2,19 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
 const DinoRunner = () => {
-  const navigate = () => {
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
+  const doNavigate = () => {
     if (window.history.length > 1) {
       window.history.back();
     } else {
       window.location.href = "/";
     }
   };
+  const navigate = () => requestExit(doNavigate);
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
   const { playSound: playButtonSound } = useSounds();
@@ -901,6 +904,7 @@ const DinoRunner = () => {
         }
         .start-btn:active { transform: scale(0.95); }
       `}</style>
+      {ExitConfirmDialog}
     </div>
   );
 };
