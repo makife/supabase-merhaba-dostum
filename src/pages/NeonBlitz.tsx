@@ -4,6 +4,7 @@ import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-rea
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useSounds } from "@/hooks/useSounds";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
 type GameState = "MENU" | "PLAYING" | "GAMEOVER";

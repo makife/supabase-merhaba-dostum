@@ -11,6 +11,7 @@ import {
 } from "@/utils/challengeWordlist";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
+import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 
 const GAME_DURATION = 120;
 const LETTER_COUNT = 14;
@@ -142,14 +143,16 @@ const WordHuntPage = () => {
       {/* Header */}
       <div className="px-5 pt-12 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => { 
-            if (gameState === "playing") {
-              clearInterval(timerRef.current!);
-              setGameState("finished");
-            } else {
-              navigate(-1);
-            }
-            playSound("buttonClick"); 
+          <button onClick={() => {
+            playSound("buttonClick");
+            requestExit(() => {
+              if (gameState === "playing") {
+                clearInterval(timerRef.current!);
+                setGameState("finished");
+              } else {
+                navigate(-1);
+              }
+            });
           }} className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform">
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
