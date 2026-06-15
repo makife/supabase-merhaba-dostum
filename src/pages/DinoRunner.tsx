@@ -36,6 +36,7 @@ const DinoRunner = () => {
 
   // --- OYUN STATE'LERİ ---
   const [gameState, setGameState] = useState("waiting");
+  const navigate = () => requestExit(doNavigate, gameState !== "playing");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
