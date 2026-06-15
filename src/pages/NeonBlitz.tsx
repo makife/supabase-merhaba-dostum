@@ -579,6 +579,7 @@ const NeonBlitz: React.FC = () => {
       {gameState === "MENU" && renderMenu()}
       {gameState === "PLAYING" && renderPlaying()}
       {gameState === "GAMEOVER" && renderGameOver()}
+      {ExitConfirmDialog}
     </div>
   );
 };
