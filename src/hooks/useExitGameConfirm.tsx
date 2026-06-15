@@ -28,7 +28,11 @@ export const useExitGameConfirm = (options?: {
   const [open, setOpen] = useState(false);
   const actionRef = useRef<(() => void) | null>(null);
 
-  const requestExit = useCallback((onConfirm: () => void) => {
+  const requestExit = useCallback((onConfirm: () => void, skipConfirm = false) => {
+    if (skipConfirm) {
+      onConfirm();
+      return;
+    }
     actionRef.current = onConfirm;
     setOpen(true);
   }, []);
