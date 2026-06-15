@@ -18,6 +18,7 @@ const LETTER_COUNT = 14;
 
 const WordHuntPage = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const inputRef = useRef<HTMLInputElement>(null);
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("word_hunt");

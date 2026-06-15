@@ -72,6 +72,7 @@ const isAdjacent = (a: number, b: number) => {
 
 const KelimeAviPage = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const { profile, refreshProfile } = useUser();
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } =

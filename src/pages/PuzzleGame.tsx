@@ -63,6 +63,7 @@ const getDailyWord = (words: string[]): string => {
 
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const {
     hasPlayedToday,

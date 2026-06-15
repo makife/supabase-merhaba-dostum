@@ -39,6 +39,7 @@ const generateColor = () => {
 
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 

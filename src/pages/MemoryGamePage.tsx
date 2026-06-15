@@ -22,6 +22,7 @@ const SURE = 90;
 
 const WordMemoryGame = () => {
   const navigate = useNavigate();
+  const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const {
     hasPlayedToday,
