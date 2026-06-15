@@ -60,6 +60,7 @@ const SnakeGame = () => {
 
   const [gameRunning, setGameRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const navigate = () => requestExit(doNavigate, !gameRunning || gameOver);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [speed, setSpeed] = useState(200);
