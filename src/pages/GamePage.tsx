@@ -2284,13 +2284,12 @@ const GamePage = ({
       setButtonsEnabled(false);
       setTimeout(() => setButtonsEnabled(true), 1000);
 
+      // 🔊 Ses: setWinner üstte tetiklendi → winner-effect (playEndResultSoundOnce)
+      // celebration/gameLose sesini tek seferde çalacak. Burada tekrar çağırmıyoruz
+      // (aksi halde native NativeAudio.stop+play çakışıp ses tamamen susuyor).
       if (userIsWinner) {
-        playSound("gameWin");
-        setTimeout(() => playCelebrationSound(), 500);
         console.log("✅ User WINS - Setting winner to player");
       } else {
-        playSound("gameLose");
-        setTimeout(() => playGameLoseSound(), 500);
         console.log("❌ User LOSES - Setting winner to opponent");
       }
 
