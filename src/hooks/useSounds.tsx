@@ -395,8 +395,10 @@ export const useSounds = () => {
           correctWord: 'correct_word',
           wrongWord: 'wrong_word',
           timeWarning: 'beep',
-          gameWin: 'celebration',
-          gameLose: 'game_lose',
+          // 🔧 gameWin/gameLose/tieSound burada YOK çünkü zaten 500ms sonra
+          // playCelebrationSound/playGameLoseSound/playTieSound çağrılıyor.
+          // İkisi de aynı native asset'i (celebration/game_lose/tie) çalıp
+          // çift ses oluşturuyordu (özellikle turnuva maç sonunda brackete dönerken).
           celebration: 'celebration',
           gameLoseSound: 'game_lose',
           tieSound: 'tie',
