@@ -623,9 +623,20 @@ const TournamentBracketPage = () => {
     if (!currentTournament.next_round_starts_at) return;
 
     const target = new Date(currentTournament.next_round_starts_at).getTime();
+    lastCountdownBeepRef.current = null;
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((target - serverNow()) / 1000));
       setCountdown(remaining);
+
+      // Son 10 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
+      if (remaining >= 1 && remaining <= 10 && remaining !== lastCountdownBeepRef.current) {
+        lastCountdownBeepRef.current = remaining;
+        if (isSoundEffectsEnabled()) {
+          const pitchRate = 1.0 + (10 - remaining) * 0.22;
+          playPitchedBeep(BRACKET_BEEP_URL, pitchRate, 0.7).catch(() => {});
+        }
+      }
+
       if (remaining === 0) {
         if (countdownRef.current) {
           clearInterval(countdownRef.current);
