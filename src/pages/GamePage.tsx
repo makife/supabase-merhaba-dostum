@@ -1943,9 +1943,8 @@ const GamePage = ({
         console.log("Credit refund skipped/failed:", err);
       }
 
-      // Ses efekti çal
-      playSound("gameWin");
-      setTimeout(() => playCelebrationSound(), 500);
+      // Ses efekti çal (disconnect-win akışı, winner state'i bu blokta set edilmiyor)
+      playCelebrationSound();
 
       // 🎯 Odayı finished yap ve kazananı belirle
       if (currentRoom?.id && user?.id) {
