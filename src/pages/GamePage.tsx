@@ -1754,8 +1754,8 @@ const GamePage = ({
           timerRef.current = null;
         }
 
-        playSound("gameWin");
-        setTimeout(() => playCelebrationSound(), 500);
+        // Ses: setWinner üstte olmadığı için burada manuel tetikle (disconnect-win akışı)
+        playCelebrationSound();
 
         toast({
           title: "Rakip Bağlantısı Koptu",
