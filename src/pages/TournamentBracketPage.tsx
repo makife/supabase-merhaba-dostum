@@ -253,6 +253,7 @@ const TournamentBracketPage = () => {
   const tournamentEndToastShownRef = useRef(false);
   const roundWinSoundPlayedRef = useRef<Set<number>>(new Set());
   const championSoundPlayedRef = useRef(false);
+  const lastCountdownBeepRef = useRef<number | null>(null);
 
   // Component içine ekle (useRef'ler yanına)
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
