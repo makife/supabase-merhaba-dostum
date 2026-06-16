@@ -5094,22 +5094,22 @@ const GamePage = ({
       } else if (gameMode === "vs-computer") {
         // Final winner determination - Multiplayer ve vs-computer için ayrı mantık
         // vs-computer için mevcut mantık
+        // 🔊 Maç sonu sesi: setWinner çağrısı playEndResultSoundOnce effect'ini
+        // tetikleyerek celebration/gameLose/tie sesini TEK seferde çalıyor.
+        // Burada ayrıca playSound("gameWin") + playCelebrationSound çağrısı
+        // native'de NativeAudio.stop+play çakışmasına yol açıp sesi susturuyordu.
         if (currentPlayerScore > currentOpponentScore) {
           gameResult = "player";
           scoreMultiplier = 5;
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameWin");
-          setTimeout(() => playCelebrationSound(), 500);
           console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
         } else if (currentPlayerScore < currentOpponentScore) {
           gameResult = "opponent";
           setWinner("opponent");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameLose");
-          setTimeout(() => playGameLoseSound(), 500);
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
           gameResult = "tie";
@@ -5117,8 +5117,6 @@ const GamePage = ({
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameLose"); // Nötr ses
-          setTimeout(() => playTieSound(), 500);
           console.log("🏆 It's a tie! Both scores:", currentPlayerScore);
         }
       } else {
@@ -5135,16 +5133,12 @@ const GamePage = ({
           setWinner("player");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameWin");
-          setTimeout(() => playCelebrationSound(), 500);
           console.log("🏆 Player wins! Score:", currentPlayerScore, "vs", currentOpponentScore);
         } else if (currentPlayerScore < currentOpponentScore) {
           gameResult = "opponent";
           setWinner("opponent");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameLose");
-          setTimeout(() => playGameLoseSound(), 500);
           console.log("🏆 Opponent wins! Score:", currentOpponentScore, "vs", currentPlayerScore);
         } else {
           // Beraberlik (tournament mode buraya gelmez, zaten backend'de handle edilir)
@@ -5153,8 +5147,6 @@ const GamePage = ({
           setWinner("tie");
           setButtonsEnabled(false);
           setTimeout(() => setButtonsEnabled(true), 1000);
-          playSound("gameLose"); // Nötr ses
-          setTimeout(() => playTieSound(), 500);
           console.log("🏆 Tie! Both scores:", currentPlayerScore);
         }
       }
