@@ -27,6 +27,11 @@ import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie from "lottie-react";
+import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
+import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+
+const BRACKET_BEEP_URL = "/onsaniyegerisayim.mp3";
+preloadPitchedBeep(BRACKET_BEEP_URL).catch(() => {});
 
 // ── Tur bilgileri ─────────────────────────────────────────────────────────────
 const ROUND_INFO = {
