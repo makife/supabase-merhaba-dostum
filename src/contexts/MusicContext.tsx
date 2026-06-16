@@ -348,6 +348,52 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
 
           const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
+
+          // 🔥 iOS FIX: Yeni Audio elementi oluşturmak yerine MEVCUT elementin src'sini değiştir.
+          // Yeni HTMLAudioElement + createMediaElementSource her seferinde yeniden bağlanınca
+          // iOS Web Audio gesture/unlock state'ini kaybediyor ve play() sessizce reddediliyor.
+          // Aynı elementi yeniden kullanmak GainNode bağlantısını ve unlock state'ini korur.
+          if (isIOSNative && backgroundMusicRef.current) {
+            const audio = backgroundMusicRef.current;
+            try {
+              audio.src = defaultPlaylist[nextTrackIndex];
+              audio.load();
+              audio.currentTime = 0;
+              setMusicVolume(originalVolumeRef.current);
+              // iOS: AudioContext suspended olabilir, resume dene
+              if (iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
+                iosAudioCtxRef.current.resume().catch(() => {});
+              }
+              audio.play()
+                .then(() => {
+                  console.log("🎵 [iOS] Sıradaki şarkı başlatıldı:", nextTrackIndex);
+                  setIsPlaying(true);
+                  // Watchdog'u yeniden kur
+                  if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
+                  iosEndedWatchdogRef.current = setInterval(() => {
+                    const a = backgroundMusicRef.current;
+                    if (!a) return;
+                    if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
+                      console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
+                      try { a.pause(); } catch {}
+                      handleTrackEnd();
+                    }
+                  }, 500);
+                })
+                .catch((e) => console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e));
+              // currentTrackIndex state'i sadece UI için güncelle, effect re-run'ı tetiklememesi için
+              // sırayla setTimeout'la yapılır (effect yine çalışsa bile aynı src ile init eder).
+              setCurrentTrackIndex(nextTrackIndex);
+            } catch (e) {
+              console.warn("🎵 [iOS] src değiştirme hatası, fallback:", e);
+              setCurrentTrackIndex(nextTrackIndex);
+              setTimeout(() => {
+                if (musicEnabledRef.current) startBackgroundMusic();
+              }, 120);
+            }
+            return;
+          }
+
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
           setTimeout(() => {
@@ -357,6 +403,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }, 120);
         }
       };
+
 
       backgroundMusicRef.current.onended = handleTrackEnd;
       // 🔥 iOS: onended bazen tetiklenmez — timeupdate watchdog ekle
