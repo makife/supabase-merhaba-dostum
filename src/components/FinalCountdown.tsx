@@ -1,8 +1,7 @@
 import { useEffect, useRef, memo } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
-import { Capacitor } from "@capacitor/core";
-import { playNativeSound } from "@/services/nativeAudioService";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
 import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
 interface FinalCountdownProps {
@@ -14,6 +13,10 @@ interface FinalCountdownProps {
 // displayTime range we display: 9 → 1
 const FPS = 30;
 const TOTAL_FRAMES = 306;
+const BEEP_URL = "/onsaniyegerisayim.mp3";
+
+// Modül yüklendiğinde sesi preload et — ilk tıkın gecikmemesi için
+preloadPitchedBeep(BEEP_URL).catch(() => {});
 
 const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownProps) => {
   const lastTickRef = useRef<number | null>(null);
@@ -23,22 +26,12 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const playPitchSound = (secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
-    if (Capacitor.isNativePlatform()) {
-      playNativeSound("beep", 0.7);
-      return;
-    }
-    try {
-      const audio = new Audio("/onsaniyegerisayim.mp3");
-      const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
-      // @ts-ignore
-      audio.preservesPitch = false;
-      // @ts-ignore
-      audio.webkitPreservesPitch = false;
-      audio.playbackRate = pitchRate;
-      audio.play().catch((err) => console.error("Ses çalma bloklandı:", err));
-    } catch (error) {
-      console.error("Audio hatası:", error);
-    }
+    // Web Audio API hem iOS/Android native hem web'de playbackRate'i destekler.
+    // NativeAudio plugin'i pitch desteklemediği için tüm platformlarda burayı kullanıyoruz.
+    const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
+    playPitchedBeep(BEEP_URL, pitchRate, 0.7).catch((err) =>
+      console.error("Pitched beep hatası:", err)
+    );
   };
 
   useEffect(() => {
