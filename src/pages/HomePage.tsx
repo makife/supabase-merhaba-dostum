@@ -963,7 +963,7 @@ const HomePage = () => {
       ? getUnlimitedType(profile) === "maraton"
         ? "text-amber-400"
         : "text-blue-400"
-      : "text-slate-500 self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-300/20"
+      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-500"
   }`}
 >
   {isUnlimitedLivesActive(profile) ? (
