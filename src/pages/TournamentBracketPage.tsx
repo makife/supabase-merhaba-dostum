@@ -253,7 +253,7 @@ const TournamentBracketPage = () => {
   const tournamentEndToastShownRef = useRef(false);
   const roundWinSoundPlayedRef = useRef<Set<number>>(new Set());
   const championSoundPlayedRef = useRef(false);
-  const lastCountdownBeepRef = useRef<number | null>(null);
+  const playedCountdownSecondsRef = useRef<Set<number>>(new Set());
 
   // Component içine ekle (useRef'ler yanına)
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -623,14 +623,14 @@ const TournamentBracketPage = () => {
     if (!currentTournament.next_round_starts_at) return;
 
     const target = new Date(currentTournament.next_round_starts_at).getTime();
-    lastCountdownBeepRef.current = null;
+    playedCountdownSecondsRef.current.clear();
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((target - serverNow()) / 1000));
       setCountdown(remaining);
 
       // Son 10 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
-      if (remaining >= 1 && remaining <= 10 && remaining !== lastCountdownBeepRef.current) {
-        lastCountdownBeepRef.current = remaining;
+      if (remaining >= 1 && remaining <= 10 && !playedCountdownSecondsRef.current.has(remaining)) {
+        playedCountdownSecondsRef.current.add(remaining);
         if (isSoundEffectsEnabled()) {
           const pitchRate = 1.0 + (10 - remaining) * 0.22;
           playPitchedBeep(BRACKET_BEEP_URL, pitchRate, 0.7).catch(() => {});
