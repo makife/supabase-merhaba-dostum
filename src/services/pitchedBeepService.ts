@@ -1,11 +1,19 @@
 /**
- * Pitched Beep Service
+ * Pitched Beep Service (Synthesized)
  *
- * Maç sonu 10 saniye geri sayım sesini pitch (playbackRate) ile çalmak için
- * Web Audio API kullanır. Capacitor'ın NativeAudio plugin'i playbackRate
- * desteklemediği için iOS/Android native'de tüm tıklar aynı tonda çalıyordu.
- * Web Audio hem iOS WKWebView hem Android WebView'da çalışır ve diğer
- * native audio session'larıyla çakışmaz (ambient kategori).
+ * Maç sonu / bracket geri sayım sesini WebAudio OscillatorNode ile
+ * SENTETİK üretir. Dosya fetch/decode yok → ilk beep asla kaçmaz,
+ * "taramalı tüfek" (biriken çağrıların aynı anda patlaması) imkânsız.
+ *
+ * NativeAudio plugin'i playbackRate desteklemediği için iOS/Android
+ * native'de pitch için tek pratik yol bu. Web Audio iOS WKWebView ve
+ * Android WebView'da sorunsuz çalışır, NativeAudio ses session'ıyla
+ * çakışmaz (ambient kategori).
+ *
+ * Sinyal API uyumluluğu: imza eski haliyle aynı kalır
+ *   playPitchedBeep(url, playbackRate, volume)
+ * - `url` artık yok sayılır (geriye uyumluluk için tutuldu).
+ * - `playbackRate` taban frekans çarpanı olarak kullanılır.
  */
 
 type WebAudioWindow = Window & typeof globalThis & {
@@ -13,11 +21,16 @@ type WebAudioWindow = Window & typeof globalThis & {
 };
 
 let ctx: AudioContext | null = null;
-const buffers = new Map<string, AudioBuffer>();
-const inflight = new Map<string, Promise<AudioBuffer | null>>();
 let unlockBound = false;
 const lastPlayAt = new Map<string, number>();
-const MIN_PLAY_GAP_MS = 800;
+const MIN_PLAY_GAP_MS = 400;
+
+// Maç sonu beep'i için taban frekans. playbackRate ile çarpılır.
+// Eski mp3 (~880 Hz civarı bir "tik") hissini koruyacak değer.
+const BASE_FREQ_HZ = 880;
+const BEEP_DURATION_S = 0.12;
+const ATTACK_S = 0.005;
+const RELEASE_S = 0.08;
 
 const getCtx = (): AudioContext | null => {
   if (ctx) return ctx;
@@ -32,11 +45,11 @@ const getCtx = (): AudioContext | null => {
   }
 };
 
-const tryResume = async () => {
+const tryResume = () => {
   const c = getCtx();
   if (!c) return;
   if (c.state !== "running") {
-    try { await c.resume(); } catch {}
+    try { c.resume(); } catch {}
   }
 };
 
@@ -49,48 +62,29 @@ const bindUnlockOnce = () => {
   window.addEventListener("touchend", handler, opts);
   window.addEventListener("pointerdown", handler, opts);
   window.addEventListener("click", handler, opts);
+  // Sayfa görünür olunca da context'i ayağa kaldır (iOS arka plan dönüşü)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") tryResume();
+  });
 };
 
 if (typeof window !== "undefined") bindUnlockOnce();
 
-const loadBuffer = async (url: string): Promise<AudioBuffer | null> => {
-  if (buffers.has(url)) return buffers.get(url)!;
-  const ex = inflight.get(url);
-  if (ex) return ex;
-  const c = getCtx();
-  if (!c) return null;
-  const p = (async () => {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`);
-      const arr = await res.arrayBuffer();
-      const buf = await new Promise<AudioBuffer>((resolve, reject) => {
-        try {
-          const ret = c.decodeAudioData(arr, resolve, reject);
-          if (ret && typeof (ret as Promise<AudioBuffer>).then === "function") {
-            (ret as Promise<AudioBuffer>).then(resolve, reject);
-          }
-        } catch (e) { reject(e); }
-      });
-      buffers.set(url, buf);
-      return buf;
-    } catch (e) {
-      console.warn(`[pitchedBeep] decode hata ${url}:`, e);
-      return null;
-    } finally {
-      inflight.delete(url);
-    }
-  })();
-  inflight.set(url, p);
-  return p;
-};
-
-export const preloadPitchedBeep = async (url: string): Promise<void> => {
+/**
+ * Eski API ile uyumluluk için tutuldu. Sentetik üretim olduğu için
+ * gerçek bir önyükleme gerekmez; sadece AudioContext'i hazırlar.
+ */
+export const preloadPitchedBeep = async (_url?: string): Promise<void> => {
   bindUnlockOnce();
   getCtx();
-  await loadBuffer(url);
 };
 
+/**
+ * Pitched beep çalar.
+ * @param url    Geriye uyumluluk için, kullanılmıyor.
+ * @param playbackRate  Taban frekansa çarpan (eski API ile aynı semantik).
+ * @param volume Çıkış gain'i (0..1).
+ */
 export const playPitchedBeep = async (
   url: string,
   playbackRate: number = 1,
@@ -99,34 +93,40 @@ export const playPitchedBeep = async (
   const c = getCtx();
   if (!c) return false;
 
-  // Buffer henüz hazır değilse: yüklemeyi tetikle ama bu tick'i atla.
-  // Aksi halde await sırasında biriken çağrılar buffer hazır olunca
-  // aynı anda patlıyor ("taramalı tüfek" efekti).
-  const buf = buffers.get(url);
-  if (!buf) {
-    loadBuffer(url).catch(() => {});
-    if (c.state !== "running") { try { c.resume(); } catch {} }
-    return false;
-  }
+  // Aynı kaynaktan çok hızlı tekrar çağrıları yut (defansif guard).
+  const now = performance.now();
+  const key = url || "__default__";
+  const last = lastPlayAt.get(key) || 0;
+  if (now - last < MIN_PLAY_GAP_MS) return false;
+  lastPlayAt.set(key, now);
 
   if (c.state !== "running") {
     try { await c.resume(); } catch {}
+    // Hâlâ ayağa kalkmadıysa sessizce çık; bir sonraki tikte tekrar denenir.
     if ((c.state as string) !== "running") return false;
   }
 
   try {
-    const now = performance.now();
-    const last = lastPlayAt.get(url) || 0;
-    if (now - last < MIN_PLAY_GAP_MS) return false;
-    lastPlayAt.set(url, now);
+    const t0 = c.currentTime;
+    const freq = Math.max(80, Math.min(8000, BASE_FREQ_HZ * playbackRate));
+    const vol = Math.max(0, Math.min(1, volume));
 
-    const src = c.createBufferSource();
-    src.buffer = buf;
-    src.playbackRate.value = playbackRate;
+    const osc = c.createOscillator();
+    osc.type = "square"; // kısa, net "tik" hissi
+    osc.frequency.setValueAtTime(freq, t0);
+
     const gain = c.createGain();
-    gain.gain.value = Math.max(0, Math.min(1, volume));
-    src.connect(gain).connect(c.destination);
-    src.start(0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol, t0 + ATTACK_S);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + ATTACK_S + RELEASE_S);
+
+    osc.connect(gain).connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0 + BEEP_DURATION_S);
+    osc.onended = () => {
+      try { osc.disconnect(); } catch {}
+      try { gain.disconnect(); } catch {}
+    };
     return true;
   } catch (e) {
     console.warn(`[pitchedBeep] play hata:`, e);
