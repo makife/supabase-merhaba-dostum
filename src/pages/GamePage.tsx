@@ -8641,7 +8641,10 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.degistir}</span>
+                        <span 
+  className="absolute text-[10px] font-bold text-white"
+  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+>{jokers.degistir}</span>
                       </div>
                     </button>
                     {/* Fısılda */}
@@ -8670,7 +8673,10 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.fisilida}</span>
+                        <span 
+  className="absolute text-[10px] font-bold text-white"
+  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+>{jokers.fisilida}</span>
                       </div>
                     </button>
                     {/* Sen Yaz */}
@@ -8699,7 +8705,10 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.senYaz}</span>
+                        <span 
+  className="absolute text-[10px] font-bold text-white"
+  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+>{jokers.senyaz}</span>
                       </div>
                     </button>
                   </div>
