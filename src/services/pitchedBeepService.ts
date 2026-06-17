@@ -96,11 +96,22 @@ export const playPitchedBeep = async (
 ): Promise<boolean> => {
   const c = getCtx();
   if (!c) return false;
+
+  // Buffer henüz hazır değilse: yüklemeyi tetikle ama bu tick'i atla.
+  // Aksi halde await sırasında biriken çağrılar buffer hazır olunca
+  // aynı anda patlıyor ("taramalı tüfek" efekti).
+  const buf = buffers.get(url);
+  if (!buf) {
+    loadBuffer(url).catch(() => {});
+    if (c.state !== "running") { try { c.resume(); } catch {} }
+    return false;
+  }
+
   if (c.state !== "running") {
     try { await c.resume(); } catch {}
+    if ((c.state as string) !== "running") return false;
   }
-  const buf = await loadBuffer(url);
-  if (!buf) return false;
+
   try {
     const src = c.createBufferSource();
     src.buffer = buf;
