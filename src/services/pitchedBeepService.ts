@@ -109,7 +109,7 @@ export const playPitchedBeep = async (
 
   if (c.state !== "running") {
     try { await c.resume(); } catch {}
-    if (c.state !== "running") return false;
+    if ((c.state as string) !== "running") return false;
   }
 
   try {
