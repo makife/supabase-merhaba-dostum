@@ -8641,7 +8641,7 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-white">{jokers.degistir}</span>
+                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.degistir}</span>
                       </div>
                     </button>
                     {/* Fısılda */}
@@ -8670,7 +8670,7 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-white">{jokers.fisilida}</span>
+                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.fisilida}</span>
                       </div>
                     </button>
                     {/* Sen Yaz */}
@@ -8699,7 +8699,7 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-white">{jokers.senYaz}</span>
+                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.senYaz}</span>
                       </div>
                     </button>
                   </div>
