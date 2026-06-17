@@ -958,24 +958,23 @@ const HomePage = () => {
                 }`}
               >
                 <span
-                  className={`text-xs font-medium ${
-                    isUnlimitedLivesActive(profile)
-                      ? getUnlimitedType(profile) === "maraton"
-                        ? "text-amber-400"
-                        : "text-blue-400"
-                      : "text-slate-500"
-                  }`}
-                >
-                  {isUnlimitedLivesActive(profile) ? (
-                    <span className="flex items-center gap-1.5">
-                      <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
-                      {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
-                    </span>
-                  ) : (
-                    "Kalan Sayfalarım"
-                  )}
-                </span>
-
+  className={`text-xs font-medium ${
+    isUnlimitedLivesActive(profile)
+      ? getUnlimitedType(profile) === "maraton"
+        ? "text-amber-400"
+        : "text-blue-400"
+      : "text-slate-500 self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-300/20"
+  }`}
+>
+  {isUnlimitedLivesActive(profile) ? (
+    <span className="flex items-center gap-1.5">
+      <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
+      {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
+    </span>
+  ) : (
+    "Kalan Sayfalarım"
+  )}
+</span>
                 {isUnlimitedLivesActive(profile) ? (
                   <div className="flex items-center gap-2">
                     {unlimitedTimeLeft ? (
