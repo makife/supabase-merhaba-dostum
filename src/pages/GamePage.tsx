@@ -8640,8 +8640,8 @@ const GamePage = ({
                       <img src="/icons/degistir.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.degistir}</span>
+                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
+                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.degistir}</span>
                       </div>
                     </button>
                     {/* Fısılda */}
@@ -8669,8 +8669,8 @@ const GamePage = ({
                       <img src="/icons/fisilda.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.fisilida}</span>
+                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
+                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.fisilida}</span>
                       </div>
                     </button>
                     {/* Sen Yaz */}
@@ -8698,8 +8698,8 @@ const GamePage = ({
                       <img src="/icons/senyaz.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-6 h-6" alt="badge" />
-                        <span className="absolute text-[9px] font-bold text-pink-400">{jokers.senYaz}</span>
+                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
+                        <span className="absolute text-[10px] font-bold text-pink-400">{jokers.senYaz}</span>
                       </div>
                     </button>
                   </div>
