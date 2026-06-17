@@ -8708,7 +8708,7 @@ const GamePage = ({
                         <span 
   className="absolute text-[10px] font-bold text-white"
   style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
->{jokers.senyaz}</span>
+>{jokers.senYaz}</span>
                       </div>
                     </button>
                   </div>
