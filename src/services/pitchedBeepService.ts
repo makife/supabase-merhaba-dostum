@@ -16,6 +16,8 @@ let ctx: AudioContext | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer | null>>();
 let unlockBound = false;
+const lastPlayAt = new Map<string, number>();
+const MIN_PLAY_GAP_MS = 800;
 
 const getCtx = (): AudioContext | null => {
   if (ctx) return ctx;
@@ -113,6 +115,11 @@ export const playPitchedBeep = async (
   }
 
   try {
+    const now = performance.now();
+    const last = lastPlayAt.get(url) || 0;
+    if (now - last < MIN_PLAY_GAP_MS) return false;
+    lastPlayAt.set(url, now);
+
     const src = c.createBufferSource();
     src.buffer = buf;
     src.playbackRate.value = playbackRate;
