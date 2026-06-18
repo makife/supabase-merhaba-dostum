@@ -378,11 +378,33 @@ const DinoRunner = () => {
 
     if (currentWord && spawnIndexRef.current < currentWord.length && Date.now() > nextLetterTimeRef.current) {
       const charToSpawn = currentWord[spawnIndexRef.current];
-      const randomY = Math.max(30, Math.random() * 180);
+
+      // Engellerle çakışmayan bir Y konumu bul.
+      // Engeller ve harfler aynı hızda hareket ettiği için spawn anındaki
+      // dikey çakışma kalıcı olur; o yüzden mevcut engellerin yakınında
+      // (yatay olarak spawn noktasına yakın) olanların Y bandını dışla.
+      const spawnX = GAME_WIDTH;
+      const dangerObstacles = obstaclesRef.current.filter((o: any) => {
+        // Yatayda kalıcı çakışma riski olanlar (hız eşit olduğu için sabit kalır)
+        return o.x + o.width > spawnX - LETTER_SIZE - 10 && o.x < spawnX + LETTER_SIZE + 10;
+      });
+
+      const yMin = 30;
+      const yMax = 180;
+      let randomY = Math.max(yMin, Math.random() * yMax);
+      // En fazla 12 deneme yap; engelle çakışmayan Y bul
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const collides = dangerObstacles.some((o: any) => {
+          // [o.y, o.y + o.height] vs [randomY, randomY + LETTER_SIZE]
+          return randomY < o.y + o.height && randomY + LETTER_SIZE > o.y;
+        });
+        if (!collides) break;
+        randomY = Math.max(yMin, Math.random() * yMax);
+      }
 
       lettersRef.current.push({
         id: Math.random(),
-        x: GAME_WIDTH,
+        x: spawnX,
         y: randomY,
         char: charToSpawn,
         indexInWord: spawnIndexRef.current,
@@ -393,6 +415,7 @@ const DinoRunner = () => {
       spawnIndexRef.current++;
       nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
     }
+
 
     // Harf Toplama (Set Mantığı)
     lettersRef.current.forEach((letter) => {
