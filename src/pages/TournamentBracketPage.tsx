@@ -280,18 +280,20 @@ const TournamentBracketPage = () => {
     const justCompletedRound = (currentTournament.current_round || 1) - 1;
     if (justCompletedRound !== 1 && justCompletedRound !== 2) return;
 
-    if (roundWinSoundPlayedRef.current.has(justCompletedRound)) return;
-
     const wonMatch = matches.find(
       (m) => m.round === justCompletedRound && m.status === "completed" && m.winner_id === user.id,
     );
 
     if (!wonMatch) return;
 
+    if (roundWinSoundPlayedRef.current.has(justCompletedRound)) return;
+    roundWinSoundPlayedRef.current.add(justCompletedRound);
+
+    const roundSoundKey = `tournament_round_win_sound_${tournamentId}_${wonMatch.id}`;
+
     let cancelled = false;
     (async () => {
       // Aynı tur sesi aynı turnuva-maç kombinasyonunda bir kez çalsın (sayfaya tekrar dönünce tekrar etmesin)
-      const roundSoundKey = `tournament_round_win_sound_${tournamentId}_${wonMatch.id}`;
       const alreadyPlayed = await nativeStorage.getItem(roundSoundKey);
       if (alreadyPlayed || cancelled) return;
 
@@ -316,7 +318,6 @@ const TournamentBracketPage = () => {
       await nativeStorage.setItem(roundSoundKey, "1");
       if (cancelled || championSoundPlayedRef.current) return;
 
-      roundWinSoundPlayedRef.current.add(justCompletedRound);
       playSpecialSound("/turKazanma.mp3", 0.8);
     })();
 
