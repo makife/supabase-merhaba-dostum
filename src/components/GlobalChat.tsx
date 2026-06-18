@@ -1109,8 +1109,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       ))}
 
                     {showEmojiPicker === message.id ? (
-                      <div className="flex items-center gap-1 bg-[#2D3436] border border-white/20 rounded-full px-2 py-0.5">
-                        {["👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
+                      <div className="flex items-center gap-1 bg-[#2D3436] border border-white/20 rounded-full pl-2 pr-1 py-0.5">
+                        {["🙂", "🙏", "👍", "👎", "❤️", "😂", "😮", "😢", "🤔", "🔥"].map((emoji) => (
                           <button
                             key={emoji}
                             onClick={() => {
@@ -1122,7 +1122,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                             {emoji}
                           </button>
                         ))}
-                        <button onClick={() => setShowEmojiPicker(null)} className="text-gray-400 ml-0.5 text-xs">
+                        <button
+                          onClick={() => setShowEmojiPicker(null)}
+                          className="ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 text-white text-sm font-bold active:scale-90 transition-transform"
+                          aria-label="Kapat"
+                        >
                           ✕
                         </button>
                       </div>
