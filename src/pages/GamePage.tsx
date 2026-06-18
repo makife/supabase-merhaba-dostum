@@ -1498,6 +1498,10 @@ const GamePage = ({
   const playEndResultSoundOnce = useCallback((result: "player" | "opponent" | "tie") => {
     if (endSoundPlayedRef.current) return;
     endSoundPlayedRef.current = true;
+    if (gameMode === "tournament" && result === "player") {
+      console.log("🔇 [GamePage] Turnuva galibiyet sesi bracket sayfasına bırakıldı");
+      return;
+    }
     console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", result);
     try {
       if (result === "player") {
@@ -1510,7 +1514,7 @@ const GamePage = ({
     } catch (err) {
       console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
     }
-  }, [playCelebrationSound, playGameLoseSound, playTieSound]);
+  }, [gameMode, playCelebrationSound, playGameLoseSound, playTieSound]);
 
   useEffect(() => {
     winnerRef.current = winner;
