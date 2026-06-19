@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const COOLDOWN_SECONDS = 10;
+const COOLDOWN_SECONDS = 5;
 
 export function useMessageCooldown() {
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
