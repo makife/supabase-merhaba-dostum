@@ -5661,6 +5661,24 @@ const GamePage = ({
       return;
     }
 
+    // 🔒 REMATCH/STALE ROOM GUARD: currentRoom henüz URL'deki yeni oda ile eşleşmediyse hiçbir şey yapma.
+    // Aksi halde önceki maçın "countdown_started_at" değeri okunup oyun anında başlamış/bitmiş gibi davranır
+    // (rematch sonrası GamePage açılır açılmaz kapanma / saat ilerlemiş gibi görünme bug'ı).
+    if (gameMode === "private-room" || gameMode === "random-match") {
+      const urlRoomParam = searchParams.get("room");
+      if (
+        urlRoomParam &&
+        currentRoom.id !== urlRoomParam &&
+        (currentRoom as any).room_code !== urlRoomParam
+      ) {
+        console.log("⏳ currentRoom henüz URL room'una eşleşmedi, countdown bekleniyor", {
+          urlRoomParam,
+          currentRoomId: currentRoom.id?.slice(-8),
+        });
+        return;
+      }
+    }
+
     // 🔒 İLK YÜKLEME: Room'da zaten countdown_started_at varsa HEMEN başlat
     // ⚡ REMATCH FIX: Bu kontrolü channel varlığından ÖNCE yap
     // Aksi halde channel zaten varsa bu blok atlanır ve countdown tetiklenmez
