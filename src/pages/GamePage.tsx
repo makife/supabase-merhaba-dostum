@@ -1149,7 +1149,7 @@ const GamePage = ({
         console.error("[Ad Reward] Kredi verme hatası:", error);
       } else {
         console.log("[Ad Reward] ✅ +1 kredi verildi, yeni:", newGameCredits);
-        toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı kazandınız!" });
+        toast({ title: "Tebrikler! 🎉", description: "+1 Oyun Hakkı Kazandınız!" });
         window.dispatchEvent(new CustomEvent("refreshProfile"));
       }
     };
