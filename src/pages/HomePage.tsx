@@ -871,7 +871,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="bg-[#1e2d45] rounded-2xl p-3 border border-white/30 flex justify-around">
+            <div className="flex gap-2">
               {[
                 { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
                 { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
@@ -879,7 +879,7 @@ const HomePage = () => {
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center gap-1 flex-1 active:scale-90 transition-transform cursor-pointer group"
+                  className="flex-1 bg-[#1e2d45] rounded-2xl p-3 border border-white/30 flex flex-col items-center gap-1 active:scale-90 transition-transform cursor-pointer"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
@@ -895,6 +895,7 @@ const HomePage = () => {
               ))}
             </div>
           </div>
+
 
           {/* INFO PANELS (SÜRE & HAK) */}
           <div className="px-5 mt-2 space-y-2">
