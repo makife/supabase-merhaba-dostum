@@ -1190,7 +1190,7 @@ const ProfilePage = () => {
                   </span>
                   <span>{Math.round(progressPercent)}%</span>
                 </div>
-                <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="relative h-4 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500 shadow-lg"
                     style={{ width: `${progressPercent}%` }}
