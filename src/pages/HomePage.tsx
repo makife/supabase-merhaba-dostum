@@ -873,24 +873,29 @@ const HomePage = () => {
           <div className="px-5 mt-3">
             <div className="flex gap-2">
               {[
-                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir" },
-                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda" },
-                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz" },
+                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-cyan-500" },
+                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", layer: "bg-yellow-500" },
+                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", layer: "bg-green-500" },
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 bg-[#1e2d45] rounded-2xl p-3 border border-white/30 flex flex-col items-center gap-1 active:scale-90 transition-transform cursor-pointer"
+                  className="flex-1 bg-[#1e2d45] rounded-2xl border border-white/30 flex flex-col items-center active:scale-90 transition-transform cursor-pointer overflow-hidden"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
                   }}
                 >
-                  <img
-                    src={j.img}
-                    className="w-9 h-9 object-contain drop-shadow-lg"
-                    alt={j.name}
-                  />
-                  <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                  <div className={`relative w-full ${j.layer} flex items-center justify-center py-0.5`}>
+                    <span className="relative z-10 text-[10px] font-bold text-white">{j.name}</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 p-3">
+                    <img
+                      src={j.img}
+                      className="w-9 h-9 object-contain drop-shadow-lg"
+                      alt={j.name}
+                    />
+                    <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
+                  </div>
                 </div>
               ))}
             </div>
