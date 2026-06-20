@@ -850,7 +850,7 @@ const HomePage = () => {
                           {levelData.experience}/{levelData.nextLevelExp} XP
                         </span>
                       </div>
-                      <div className="h-2 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
+                      <div className="h-4 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
                         <div
                           className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
                           style={{ width: `${progressPercent}%` }}
