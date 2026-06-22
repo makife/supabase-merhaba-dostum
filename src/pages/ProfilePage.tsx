@@ -1477,9 +1477,29 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* SON ÇEVRİM İÇİ */}
+        <div className="text-center mt-4 mb-1">
+          <p className="text-xs text-white/50 font-medium">
+            Son çevrim içi:{" "}
+            <span className="text-white/70">
+              {isUserOnline
+                ? "Şu an çevrim içi"
+                : profileData.lastSeen
+                ? new Date(profileData.lastSeen).toLocaleString("tr-TR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Bilinmiyor"}
+            </span>
+          </p>
+        </div>
+
         {/* ÜYELİK TARİHİ */}
         {profileData.createdAt && (
-          <div className="text-center mt-4 mb-2">
+          <div className="text-center mb-2">
             <p className="text-xs text-white/50 font-medium">
               Üyelik tarihi:{" "}
               <span className="text-white/70">
