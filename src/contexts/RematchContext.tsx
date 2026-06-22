@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
+import { setLastRoomId } from "@/utils/persistentState";
 
 interface RematchRequest {
   id: string;
@@ -351,6 +352,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               duration: 1000,
             });
 
+            await setLastRoomId(null);
             navigate(`/private-room/waiting/${existingFromOpponent.room_code}?roomId=${room.id}&gameType=${gameType}`);
             return true;
           }
@@ -549,6 +551,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setIncomingRequest(null);
 
+      await setLastRoomId(null);
+
       // Navigate
       navigate(`/private-room/waiting/${incomingRequest.roomCode}?roomId=${room.id}&gameType=${gameType}`);
     } catch (error) {
@@ -688,6 +692,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                   duration: 1000,
                 });
 
+                await setLastRoomId(null);
                 navigate(`/private-room/waiting/${request.room_code}?roomId=${room.id}&gameType=${gameType}`);
               }
             } else if (request.status === "rejected") {

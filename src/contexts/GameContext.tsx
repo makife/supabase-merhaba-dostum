@@ -196,6 +196,13 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   useEffect(() => {
     if (!isSystemConnected || !user) return;
 
+    const path = window.location.pathname;
+    const isActiveRoomRoute = path.includes('/game/') || path.startsWith('/private-room/waiting');
+    if (isActiveRoomRoute) {
+      console.log("[GameContext] 🚫 Aktif oda rotasında eski room restore atlandı");
+      return;
+    }
+
     const restoreRoom = async () => {
       console.log("[GameContext] 🔄 isSystemConnected true, room restore kontrolü...");
       
