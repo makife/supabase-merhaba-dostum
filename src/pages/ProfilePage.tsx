@@ -91,6 +91,7 @@ const ProfilePage = () => {
     scoreBoostUntil: null as string | null,
     scoreBoostSource: null as string | null,
     createdAt: null as string | null,
+    lastSeen: null as string | null,
   });
 
   const [badges, setBadges] = useState<
@@ -322,13 +323,12 @@ const ProfilePage = () => {
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const { data: presenceData } = await supabase
         .from("user_presence")
-        .select("user_id")
+        .select("is_online, last_seen")
         .eq("user_id", viewedUserId)
-        .eq("is_online", true)
-        .gte("last_seen", oneMinuteAgo)
         .maybeSingle();
 
-      setIsUserOnline(!!presenceData);
+      const isOnlineNow = !!presenceData?.is_online && !!presenceData?.last_seen && presenceData.last_seen >= oneMinuteAgo;
+      setIsUserOnline(isOnlineNow);
 
       // 🔵 In-game freshness check via player_activities; profiles.in_game tek başına stale kalabiliyor
       const inGameThreshold = getInGameActivityThreshold();
@@ -373,6 +373,7 @@ const ProfilePage = () => {
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
           createdAt: (data as any).created_at || null,
+          lastSeen: presenceData?.last_seen || null,
         }));
 
         setUserStats({
@@ -1476,9 +1477,29 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* SON ÇEVRİM İÇİ */}
+        <div className="text-center mt-4 mb-1">
+          <p className="text-xs text-white/50 font-medium">
+            Son çevrim içi:{" "}
+            <span className="text-white/70">
+              {isUserOnline
+                ? "Şu an çevrim içi"
+                : profileData.lastSeen
+                ? new Date(profileData.lastSeen).toLocaleString("tr-TR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Bilinmiyor"}
+            </span>
+          </p>
+        </div>
+
         {/* ÜYELİK TARİHİ */}
         {profileData.createdAt && (
-          <div className="text-center mt-4 mb-2">
+          <div className="text-center mb-2">
             <p className="text-xs text-white/50 font-medium">
               Üyelik tarihi:{" "}
               <span className="text-white/70">
