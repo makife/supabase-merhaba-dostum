@@ -91,6 +91,7 @@ const ProfilePage = () => {
     scoreBoostUntil: null as string | null,
     scoreBoostSource: null as string | null,
     createdAt: null as string | null,
+    lastSeen: null as string | null,
   });
 
   const [badges, setBadges] = useState<
