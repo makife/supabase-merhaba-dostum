@@ -323,13 +323,12 @@ const ProfilePage = () => {
       const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
       const { data: presenceData } = await supabase
         .from("user_presence")
-        .select("user_id")
+        .select("is_online, last_seen")
         .eq("user_id", viewedUserId)
-        .eq("is_online", true)
-        .gte("last_seen", oneMinuteAgo)
         .maybeSingle();
 
-      setIsUserOnline(!!presenceData);
+      const isOnlineNow = !!presenceData?.is_online && !!presenceData?.last_seen && presenceData.last_seen >= oneMinuteAgo;
+      setIsUserOnline(isOnlineNow);
 
       // 🔵 In-game freshness check via player_activities; profiles.in_game tek başına stale kalabiliyor
       const inGameThreshold = getInGameActivityThreshold();
