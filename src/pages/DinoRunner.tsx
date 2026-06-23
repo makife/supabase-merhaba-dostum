@@ -22,6 +22,7 @@ const DinoRunner = () => {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
+  const arkaPlanLottieRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
@@ -226,6 +227,7 @@ const DinoRunner = () => {
     setLevel(1);
     wordsClearedRef.current = 0;
     setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
+    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
 
     completedWordsRef.current = [];
     setCompletedWords([]);
@@ -464,7 +466,15 @@ const DinoRunner = () => {
         wordsClearedRef.current += 1;
         
         if (wordsClearedRef.current >= 3) {
-           setLevel(prev => prev + 1);
+           setLevel(prev => {
+             const newLevel = prev + 1;
+             // Her level'da arka plan %20 hızlanır, max 4x
+             if (arkaPlanLottieRef.current) {
+               const newSpeed = Math.min(1 + (newLevel - 1) * 0.2, 4);
+               arkaPlanLottieRef.current.setSpeed(newSpeed);
+             }
+             return newLevel;
+           });
            wordsClearedRef.current = 0; // Sıfırla
            
            // Yeni Gradient ve Ses
@@ -551,7 +561,7 @@ const DinoRunner = () => {
           {/* Lottie Arka Plan */}
           {arkaPlanAnim && (
             <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-              <Lottie animationData={arkaPlanAnim} loop autoplay style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <Lottie lottieRef={arkaPlanLottieRef} animationData={arkaPlanAnim} loop autoplay style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           )}
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
