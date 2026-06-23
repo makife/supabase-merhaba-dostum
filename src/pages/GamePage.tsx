@@ -8638,6 +8638,7 @@ const GamePage = ({
                   {gameStarted && !gameEnded && (
                     <div className="absolute left-1/2 top-1/2 z-[9998] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                       <ComboBoost
+                        key={comboResetId}
                         comboEventId={comboEvent.id}
                         comboCount={comboEvent.count}
                         bonusEventId={bonusEvent.id}
