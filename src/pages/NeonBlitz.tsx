@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
@@ -54,6 +55,11 @@ const NeonBlitz: React.FC = () => {
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   const [bonusVisible, setBonusVisible] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [simsekAnim, setSimsekAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/simsekReflex.json").then(r => r.json()).then(setSimsekAnim).catch(() => {});
+  }, []);
 
   const wordListRef = useRef<string[]>(SAFE_FALLBACK);
   const usedWordsRef = useRef<Set<string>>(new Set());
@@ -266,6 +272,11 @@ const NeonBlitz: React.FC = () => {
       >
         <ArrowLeft size={22} color="#fff" />
       </button>
+      {simsekAnim && (
+        <div style={{ width: 100, height: 100, marginBottom: 8 }}>
+          <Lottie animationData={simsekAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+        </div>
+      )}
       <h1 style={{ ...s.title, textShadow: `0 0 30px ${themeColor}` }}>REFLEKS</h1>
       <p style={s.subtitle}>Hızlı Olan Kazanır</p>
 

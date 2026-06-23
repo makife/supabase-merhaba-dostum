@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Lottie from "lottie-react";
 import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
@@ -42,6 +43,11 @@ const WordMemoryGame = () => {
   const [oyunBasladi, setOyunBasladi] = useState(false);
   const [wordList, setWordList] = useState<string[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [beyinAnim, setBeyinAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/beyinKelimeHafiza.json").then(r => r.json()).then(setBeyinAnim).catch(() => {});
+  }, []);
 
   const renkler = [
     "from-purple-400 to-purple-600",
@@ -306,7 +312,13 @@ const WordMemoryGame = () => {
               <div className="flex flex-col items-center gap-4 mt-8">
                 <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 w-full">
                   <div className="text-center">
-                    <div className="text-4xl mb-3">🧠</div>
+                    <div className="flex justify-center mb-3">
+                      {beyinAnim ? (
+                        <Lottie animationData={beyinAnim} loop autoplay style={{ width: 80, height: 80 }} />
+                      ) : (
+                        <div className="text-4xl">🧠</div>
+                      )}
+                    </div>
                     <h2 className="text-xl font-bold text-white mb-2">Kelime Hafıza Oyunu</h2>
                     <p className="text-sm text-white/60 mb-1">5x5 Izgara • {SURE} saniye</p>
                     <p className="text-xs text-yellow-300/80 flex items-center justify-center gap-1">

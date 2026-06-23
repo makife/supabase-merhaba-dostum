@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Lottie from "lottie-react";
 import { Timer, RotateCcw, Trophy, ArrowLeft, Type } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -77,6 +78,11 @@ const PuzzleGamePage: React.FC = () => {
   const wordsRef = useRef<string[]>([]);
   const [isWordsLoaded, setIsWordsLoaded] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [puzzleAnim, setPuzzleAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/kelimePuzzle.json").then(r => r.json()).then(setPuzzleAnim).catch(() => {});
+  }, []);
 
   const [gameState, setGameState] = useState<GameState>({
     board: [],
@@ -312,7 +318,13 @@ const PuzzleGamePage: React.FC = () => {
             {!gameState.started && !gameState.isCompleted && (
               <div className="flex flex-col items-center gap-4 mt-8">
                 <div className="bg-white/10 p-5 rounded-xl backdrop-blur-sm border border-white/10 w-full text-center">
-                  <div className="text-4xl mb-3">🧩</div>
+                  <div className="flex justify-center mb-3">
+                    {puzzleAnim ? (
+                      <Lottie animationData={puzzleAnim} loop autoplay style={{ width: 80, height: 80 }} />
+                    ) : (
+                      <div className="text-4xl">🧩</div>
+                    )}
+                  </div>
                   <h2 className="text-xl font-bold text-white mb-2">Kelime Puzzle</h2>
                   <p className="text-sm text-white/60 mb-1">3x3 ızgarada harfleri doğru sıraya diz</p>
                   <p className="text-xs text-white/40 mt-1">Skor = Hamle + Süre÷5</p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
+import Lottie from "lottie-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { useSounds } from "@/hooks/useSounds";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
@@ -19,6 +20,11 @@ const DinoRunner = () => {
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
   const { playSound: playButtonSound } = useSounds();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [reaktorAnim, setReaktorAnim] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
+  }, []);
 
   // --- RENK PALETLERİ ---
   const getRandomGradient = () => {
@@ -602,6 +608,11 @@ const DinoRunner = () => {
           {gameState !== "playing" && (
             <div className="overlay">
               <div className="card">
+                {gameState === "waiting" && reaktorAnim && (
+                  <div style={{ width: 100, height: 100, margin: "0 auto 8px" }}>
+                    <Lottie animationData={reaktorAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+                  </div>
+                )}
                 <h2>{gameState === "waiting" ? "REAKTÖR KOŞUSU" : "SİSTEM ÇÖKTÜ!"}</h2>
                 {gameState === "gameOver" ? (
                   <div>
