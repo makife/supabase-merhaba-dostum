@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, memo } from "react";
 import Lottie from "lottie-react";
+import { playPitchedBeep } from "@/services/pitchedBeepService";
+import { playNativeSound } from "@/services/nativeAudioService";
 
 /**
  * ComboBoost
