@@ -59,6 +59,17 @@ const ComboBoost = memo(
     const lastComboIdRef = useRef(0);
     const lastBonusIdRef = useRef(0);
 
+    
+    // Reset tetiklendiğinde her şeyi temizle
+useEffect(() => {
+  if (!resetId) return;
+  setComboData(null);
+  setBonusData(null);
+  lastComboIdRef.current = 0;
+  lastBonusIdRef.current = 0;
+}, [resetId]);
+
+
     // Combo trigger
     useEffect(() => {
       if (comboEventId === 0 || comboEventId === lastComboIdRef.current) return;
@@ -91,15 +102,6 @@ const ComboBoost = memo(
       }, 1800);
       return () => clearTimeout(t);
     }, [bonusEventId, bonusAmount]);
-
-    // Reset tetiklendiğinde her şeyi temizle
-useEffect(() => {
-  if (!resetId) return;
-  setComboData(null);
-  setBonusData(null);
-  lastComboIdRef.current = 0;
-  lastBonusIdRef.current = 0;
-}, [resetId]);
 
     if (!comboData && !bonusData) return null;
 
