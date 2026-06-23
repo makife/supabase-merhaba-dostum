@@ -104,7 +104,7 @@ const ComboBoost = memo(
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: "0.1rem",
+          gap: "0.0rem",
         }}
       >
         {comboData && (
