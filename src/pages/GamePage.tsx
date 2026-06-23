@@ -3089,6 +3089,10 @@ const GamePage = ({
     setSelectedJoker(null);
     setHighlightedLetters([]);
     setIsJokerActive(false);
+    comboCountRef.current = 0;
+    setComboEvent({ id: 0, count: 0 });
+    setBonusEvent({ id: 0, amount: 0 });
+    setComboResetId((prev) => prev + 1);
 
     // Room'daki used words'ü temizle
     if (currentRoom) {
