@@ -53,7 +53,7 @@ if (typeof window !== "undefined") {
 }
 
 const ComboBoost = memo(
-  ({ comboEventId, comboCount, bonusEventId, bonusAmount }: ComboBoostProps) => {
+  ({ comboEventId, comboCount, bonusEventId, bonusAmount, resetId }: ComboBoostProps) => {
     const [comboData, setComboData] = useState<{ id: number; num: any; x: any } | null>(null);
     const [bonusData, setBonusData] = useState<{ id: number; data: any } | null>(null);
     const lastComboIdRef = useRef(0);
