@@ -7591,6 +7591,10 @@ const GamePage = ({
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
 
+      // 🔥 Combo boost tick (başarılı kelime)
+      tickCombo();
+
+
       // Calculate first word time (in seconds)
       const wordTimestamp = Date.now();
       if (firstWordTime === null && gameStartTime > 0) {
