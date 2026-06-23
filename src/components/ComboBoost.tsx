@@ -139,7 +139,7 @@ const ComboBoost = memo(
           </>
         )}
         {bonusData && !comboData && (
-          <div style={{ width: "22rem", height: "22rem" }}>
+          <div style={{ width: "28rem", height: "28rem" }}>
             <Lottie
               animationData={bonusData.data}
               loop={false}
