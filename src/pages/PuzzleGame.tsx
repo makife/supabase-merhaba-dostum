@@ -320,7 +320,18 @@ const PuzzleGamePage: React.FC = () => {
                 <div className="bg-white/10 p-5 rounded-xl backdrop-blur-sm border border-white/10 w-full text-center">
                   <div className="flex justify-center mb-3">
                     {puzzleAnim ? (
-                      <Lottie animationData={puzzleAnim} loop autoplay style={{ width: 80, height: 80 }} />
+                      // Yaklaşık 170. satırda, Lottie componentini şu şekilde güncelle:
+<Lottie 
+  animationData={puzzleAnim} 
+  loop 
+  autoplay 
+  style={{ width: 120, height: 120 }} 
+  rendererSettings={{
+    preserveAspectRatio: 'xMidYMid slice',
+    clearCanvas: true,
+    background: 'transparent'
+  }}
+/>
                     ) : (
                       <div className="text-4xl">🧩</div>
                     )}
