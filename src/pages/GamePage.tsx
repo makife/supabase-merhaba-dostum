@@ -36,6 +36,8 @@ import { calculateServerOffset } from "@/utils/serverTimeSync";
 import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
+import ComboBoost from "@/components/ComboBoost";
+
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan1.jpg",
@@ -967,6 +969,57 @@ const GamePage = ({
   useEffect(() => {
     opponentScoreRef.current = opponentScore;
   }, [opponentScore]);
+
+  // 🔥 COMBO BOOST SYSTEM
+  const comboCountRef = useRef<number>(0);
+  const comboBreakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [comboEvent, setComboEvent] = useState<{ id: number; count: number }>({ id: 0, count: 0 });
+  const [bonusEvent, setBonusEvent] = useState<{ id: number; amount: 0 | 10 | 20 | 30 | 50 | 100 }>({
+    id: 0,
+    amount: 0,
+  });
+
+  const breakCombo = useCallback(() => {
+    if (comboBreakTimerRef.current) {
+      clearTimeout(comboBreakTimerRef.current);
+      comboBreakTimerRef.current = null;
+    }
+    const reached = comboCountRef.current;
+    comboCountRef.current = 0;
+    const bonusMap: Record<number, 10 | 20 | 30 | 50 | 100> = {
+      5: 10,
+      6: 20,
+      7: 30,
+      8: 50,
+      9: 100,
+    };
+    const bonus = bonusMap[Math.min(9, reached)];
+    if (reached >= 5 && bonus) {
+      setPlayerScore((s) => s + bonus);
+      setBonusEvent((prev) => ({ id: prev.id + 1, amount: bonus }));
+    }
+  }, []);
+
+  const tickCombo = useCallback(() => {
+    // Yeni başarılı kelime: combo'yu artır
+    comboCountRef.current = Math.min(9, comboCountRef.current + 1);
+    // İlk kelime tek başına gösterilmez; 2x'ten itibaren
+    if (comboCountRef.current >= 2) {
+      setComboEvent((prev) => ({ id: prev.id + 1, count: comboCountRef.current }));
+    }
+    // 4sn timer reset
+    if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
+    comboBreakTimerRef.current = setTimeout(() => {
+      breakCombo();
+    }, 4000);
+  }, [breakCombo]);
+
+  useEffect(() => {
+    return () => {
+      if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
+    };
+  }, []);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const timeLeftRef = useRef<number>(gameType === "timed" ? 120 : 0);
   const [displayTime, setDisplayTime] = useState<number>(timeLeftRef.current);
@@ -7424,9 +7477,11 @@ const GamePage = ({
         console.log("❌ Word already used by me!");
         showCustomToast("Kelime Zaten Kullanıldı", "");
         playSound("wrongWord");
+        breakCombo();
         clearWord();
         return;
       }
+
 
       // LOCAL WORDLIST VALIDATION (CLIENT-SIDE, HIZLI)
       const result = validateWordLocal(currentWord);
@@ -7436,9 +7491,11 @@ const GamePage = ({
         showCustomToast("Geçersiz Kelime", "");
         setInputFlash("error");
         setTimeout(() => setInputFlash(null), 600);
+        breakCombo();
         clearWord();
         return;
       }
+
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
@@ -7535,6 +7592,10 @@ const GamePage = ({
       // Puan hesaplama HEMEN
       const newScore = playerScore + result.points;
       setPlayerScore(newScore);
+
+      // 🔥 Combo boost tick (başarılı kelime)
+      tickCombo();
+
 
       // Calculate first word time (in seconds)
       const wordTimestamp = Date.now();
@@ -8559,6 +8620,19 @@ const GamePage = ({
                       <FinalCountdown displayTime={displayTime} onCountdownTick={handleFinalCountdownTick} />
                     </div>
                   )}
+
+                  {/* 🔥 Combo Boost (2x..9x) ve bonus puan animasyonu */}
+                  {gameStarted && !gameEnded && (
+                    <div className="absolute left-1/2 top-1/2 z-[9998] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <ComboBoost
+                        comboEventId={comboEvent.id}
+                        comboCount={comboEvent.count}
+                        bonusEventId={bonusEvent.id}
+                        bonusAmount={bonusEvent.amount}
+                      />
+                    </div>
+                  )}
+
 
                   {/* Rakip kartı */}
                   <div
