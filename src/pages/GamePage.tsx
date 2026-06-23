@@ -7475,9 +7475,11 @@ const GamePage = ({
         console.log("❌ Word already used by me!");
         showCustomToast("Kelime Zaten Kullanıldı", "");
         playSound("wrongWord");
+        breakCombo();
         clearWord();
         return;
       }
+
 
       // LOCAL WORDLIST VALIDATION (CLIENT-SIDE, HIZLI)
       const result = validateWordLocal(currentWord);
