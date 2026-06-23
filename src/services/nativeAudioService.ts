@@ -61,6 +61,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
   { assetId: 'final_countdown_click', assetPath: 'public/geriSayimKlik.mp3', volume: 0.7, channels: 4 },
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
+  { assetId: 'boost_arti_ses', assetPath: 'public/BoostArtiSes.mp3', volume: 0.8, channels: 3 },
 ];
 
 const toIOSNativeAssetPath = (assetPath: string): string => {
