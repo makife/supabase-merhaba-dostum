@@ -7489,9 +7489,11 @@ const GamePage = ({
         showCustomToast("Geçersiz Kelime", "");
         setInputFlash("error");
         setTimeout(() => setInputFlash(null), 600);
+        breakCombo();
         clearWord();
         return;
       }
+
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
