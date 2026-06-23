@@ -66,6 +66,9 @@ const ComboBoost = memo(
       Promise.all([loadAnim(`/Boost${n}.json`), loadAnim("/BoostX.json")]).then(([num, x]) => {
         if (num && x) setComboData({ id: comboEventId, num, x });
       });
+      // İnce/yüksek bip — combo arttıkça pitch yükselsin (n=2 -> 1.4x, n=9 -> 2.8x)
+      const rate = 1.4 + (n - 2) * 0.2;
+      playPitchedBeep("combo", rate, 0.6).catch(() => {});
       // Auto clear after animation
       const t = setTimeout(() => {
         setComboData((prev) => (prev?.id === comboEventId ? null : prev));
@@ -80,6 +83,8 @@ const ComboBoost = memo(
       loadAnim(`/BoostArti${bonusAmount}.json`).then((data) => {
         if (data) setBonusData({ id: bonusEventId, data });
       });
+      // BoostArtiSes — native iOS/Android'de NativeAudio, web'de HTML5 fallback
+      playNativeSound("boost_arti_ses", 0.85).catch(() => {});
       const t = setTimeout(() => {
         setBonusData((prev) => (prev?.id === bonusEventId ? null : prev));
       }, 1800);
