@@ -21,9 +21,11 @@ const DinoRunner = () => {
   const { playSound: playButtonSound } = useSounds();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
+  const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
 
   useEffect(() => {
     fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
+    fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
@@ -544,8 +546,14 @@ const DinoRunner = () => {
         <div 
           className="game-stage" 
           onPointerDown={handleJump}
-          style={{ background: bgGradient }} // Inline style ile dinamik renk
+          style={{ background: "transparent" }}
         >
+          {/* Lottie Arka Plan */}
+          {arkaPlanAnim && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+              <Lottie animationData={arkaPlanAnim} loop autoplay style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          )}
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
           {renderState.letters.map((l) => (
@@ -755,8 +763,7 @@ const DinoRunner = () => {
         .game-stage {
             position: relative;
             width: 100%; height: 350px;
-            /* background burada inline olarak veriliyor, css default kalabilir */
-            transition: background 1s ease; /* Renk geçişi yumuşak olsun */
+            background: transparent;
             overflow: hidden; cursor: pointer;
             border: 2px solid rgba(255,255,255,0.1);
             border-top: none;
