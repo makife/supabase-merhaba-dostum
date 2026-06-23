@@ -304,6 +304,7 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
   const roomSessionRef = useRef(0);
   const pendingEndGameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [comboResetId, setComboResetId] = useState(0);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
   const globalUsedWordsRef = useRef<Set<string>>(new Set());
@@ -2174,6 +2175,7 @@ const GamePage = ({
     comboCountRef.current = 0;
     setComboEvent({ id: 0, count: 0 });
     setBonusEvent({ id: 0, amount: 0 });
+    setComboResetId((prev) => prev + 1);
   }, [currentRoom?.id]);
 
   // 🎯 REALTIME SUBSCRIPTION: Rakip participant silindiyinde anında tespit et
@@ -8632,6 +8634,7 @@ const GamePage = ({
                         comboCount={comboEvent.count}
                         bonusEventId={bonusEvent.id}
                         bonusAmount={bonusEvent.amount}
+                        resetId={comboResetId}
                       />
                     </div>
                   )}
