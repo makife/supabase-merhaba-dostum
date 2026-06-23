@@ -2,27 +2,27 @@ import { useEffect, useRef, useState, memo } from "react";
 import Lottie from "lottie-react";
 import { playPitchedBeep } from "@/services/pitchedBeepService";
 import { playNativeSound } from "@/services/nativeAudioService";
-
+ 
 /**
  * ComboBoost
  * - `comboEventId` her arttığında, comboCount değerine göre Boost{N}.json + BoostX.json yan yana oynatılır (2x-9x).
  * - `bonusEventId` her arttığında, bonusAmount değerine göre BoostArti{X}.json (10/20/30/50/100) oynatılır.
  * - Görseller "son 10 saniye" lottie boyutuyla aynı: 16rem x 16rem.
  */
-
+ 
 export type BonusAmount = 10 | 20 | 30 | 50 | 100;
-
+ 
 interface ComboBoostProps {
   comboEventId: number;
   comboCount: number; // 2..9
   bonusEventId: number;
   bonusAmount: BonusAmount | 0;
 }
-
+ 
 // Cache loaded animations
 const cache = new Map<string, any>();
 const loading = new Map<string, Promise<any>>();
-
+ 
 function loadAnim(path: string): Promise<any> {
   if (cache.has(path)) return Promise.resolve(cache.get(path));
   if (loading.has(path)) return loading.get(path)!;
@@ -41,7 +41,7 @@ function loadAnim(path: string): Promise<any> {
   loading.set(path, p);
   return p;
 }
-
+ 
 // Önceden yükle (idle)
 if (typeof window !== "undefined") {
   setTimeout(() => {
@@ -50,14 +50,14 @@ if (typeof window !== "undefined") {
     [10, 20, 30, 50, 100].forEach((n) => loadAnim(`/BoostArti${n}.json`));
   }, 1500);
 }
-
+ 
 const ComboBoost = memo(
   ({ comboEventId, comboCount, bonusEventId, bonusAmount }: ComboBoostProps) => {
     const [comboData, setComboData] = useState<{ id: number; num: any; x: any } | null>(null);
     const [bonusData, setBonusData] = useState<{ id: number; data: any } | null>(null);
     const lastComboIdRef = useRef(0);
     const lastBonusIdRef = useRef(0);
-
+ 
     // Combo trigger
     useEffect(() => {
       if (comboEventId === 0 || comboEventId === lastComboIdRef.current) return;
@@ -75,7 +75,7 @@ const ComboBoost = memo(
       }, 1200);
       return () => clearTimeout(t);
     }, [comboEventId, comboCount]);
-
+ 
     // Bonus trigger
     useEffect(() => {
       if (bonusEventId === 0 || bonusEventId === lastBonusIdRef.current || !bonusAmount) return;
@@ -90,21 +90,20 @@ const ComboBoost = memo(
       }, 1800);
       return () => clearTimeout(t);
     }, [bonusEventId, bonusAmount]);
-
+ 
     if (!comboData && !bonusData) return null;
-
+ 
     return (
       <div
         style={{
           position: "absolute",
           left: "50%",
-          top: "50%",
+          top: "calc(50% + 2cm)",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: "0.0rem",
         }}
       >
         {comboData && (
@@ -117,7 +116,7 @@ const ComboBoost = memo(
                 style={{ width: "100%", height: "100%" }}
               />
             </div>
-            <div style={{ width: "4rem", height: "4rem" }}>
+            <div style={{ width: "4rem", height: "4rem", marginLeft: "-1.2rem" }}>
               <Lottie
                 animationData={comboData.x}
                 loop={false}
@@ -141,7 +140,7 @@ const ComboBoost = memo(
     );
   }
 );
-
+ 
 ComboBoost.displayName = "ComboBoost";
-
+ 
 export default ComboBoost;
