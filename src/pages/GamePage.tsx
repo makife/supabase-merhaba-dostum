@@ -8619,6 +8619,19 @@ const GamePage = ({
                     </div>
                   )}
 
+                  {/* 🔥 Combo Boost (2x..9x) ve bonus puan animasyonu */}
+                  {gameStarted && !gameEnded && (
+                    <div className="absolute left-1/2 top-1/2 z-[9998] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <ComboBoost
+                        comboEventId={comboEvent.id}
+                        comboCount={comboEvent.count}
+                        bonusEventId={bonusEvent.id}
+                        bonusAmount={bonusEvent.amount}
+                      />
+                    </div>
+                  )}
+
+
                   {/* Rakip kartı */}
                   <div
                     className="relative rounded-2xl border border-white/10 overflow-hidden"
