@@ -1019,7 +1019,7 @@ const GamePage = ({
     if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
     comboBreakTimerRef.current = setTimeout(() => {
       breakCombo();
-    }, 3000);
+    }, 2000);
   }, [breakCombo]);
   
 
