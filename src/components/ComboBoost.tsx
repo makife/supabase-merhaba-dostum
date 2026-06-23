@@ -98,7 +98,7 @@ const ComboBoost = memo(
         style={{
           position: "absolute",
           left: "50%",
-          top: "calc(50% + 2.5cm)",
+          top: "calc(50% + 2.2cm)",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
           display: "flex",
@@ -108,7 +108,7 @@ const ComboBoost = memo(
       >
         {comboData && (
           <>
-            <div style={{ width: "4.5rem", height: "4.5rem" }}>
+            <div style={{ width: "5rem", height: "5rem" }}>
               <Lottie
                 animationData={comboData.num}
                 loop={false}
@@ -116,7 +116,7 @@ const ComboBoost = memo(
                 style={{ width: "100%", height: "100%" }}
               />
             </div>
-            <div style={{ width: "3rem", height: "3rem", marginLeft: "-0.9rem" }}>
+            <div style={{ width: "3.5rem", height: "3.5rem", marginLeft: "-0.9rem" }}>
               <Lottie
                 animationData={comboData.x}
                 loop={false}
