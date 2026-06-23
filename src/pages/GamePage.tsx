@@ -2171,6 +2171,9 @@ const GamePage = ({
     // 🎯 REMATCH FIX: Rematch state'lerini de sıfırla ki disconnect detection çalışsın
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
+    comboCountRef.current = 0;
+    setComboEvent({ id: 0, count: 0 });
+    setBonusEvent({ id: 0, amount: 0 });
   }, [currentRoom?.id]);
 
   // 🎯 REALTIME SUBSCRIPTION: Rakip participant silindiyinde anında tespit et
