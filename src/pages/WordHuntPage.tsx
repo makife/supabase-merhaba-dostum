@@ -12,17 +12,17 @@ import {
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
-
+ 
 const GAME_DURATION = 120;
 const LETTER_COUNT = 14;
-
+ 
 const WordHuntPage = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const { playSound } = useSounds();
   const inputRef = useRef<HTMLInputElement>(null);
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("word_hunt");
-
+ 
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<"ready" | "playing" | "finished">("ready");
   const [letters, setLetters] = useState<string[]>([]);
@@ -32,12 +32,12 @@ const WordHuntPage = () => {
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastWordTimeRef = useRef<number>(0); // timestamp of last scored word (or game start)
-
+ 
   useEffect(() => {
     loadChallengeWordlist().then(() => setLoading(false));
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
-
+ 
   const startGame = useCallback(() => {
     if (hasPlayedToday) {
       toast.error("Bugün zaten oynadın! Yarın tekrar gel 🕐");
@@ -52,7 +52,7 @@ const WordHuntPage = () => {
     setGameState("playing");
     lastWordTimeRef.current = Date.now();
     playSound("buttonClick");
-
+ 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -64,7 +64,7 @@ const WordHuntPage = () => {
       });
     }, 1000);
   }, [playSound, hasPlayedToday]);
-
+ 
   // Save score when game finishes
   useEffect(() => {
     if (gameState === "finished" && !hasPlayedToday) {
@@ -73,13 +73,13 @@ const WordHuntPage = () => {
       saveScore(finalScore, foundWords.length);
     }
   }, [gameState]);
-
+ 
   const handleLetterClick = (letter: string, index: number) => {
     if (gameState !== "playing") return;
     setCurrentWord((prev) => prev + letter);
     playSound("buttonClick");
   };
-
+ 
   const calculateWordPoints = (word: string): number => {
     const len = word.length;
     if (len === 3) return 10;
@@ -89,11 +89,11 @@ const WordHuntPage = () => {
     if (len === 7) return 70;
     return 70 + (len - 7) * 15;
   };
-
+ 
   const submitWord = () => {
     if (gameState !== "playing" || currentWord.length < 3) return;
     const upper = currentWord.toLocaleUpperCase("tr-TR");
-
+ 
     if (foundWords.includes(upper)) {
       toast.error("Bu kelimeyi zaten buldun!");
       setCurrentWord("");
@@ -110,7 +110,7 @@ const WordHuntPage = () => {
       setCurrentWord("");
       return;
     }
-
+ 
     const basePoints = calculateWordPoints(upper);
     const now = Date.now();
     const elapsedSec = Math.max(1, (now - lastWordTimeRef.current) / 1000);
@@ -122,15 +122,15 @@ const WordHuntPage = () => {
     playSound("correctWord");
     toast.success(`+${points.toFixed(1)} puan! (${basePoints}÷${elapsedSec.toFixed(0)}s) 🎯`);
   };
-
+ 
   const clearWord = () => setCurrentWord("");
-
+ 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
-
+ 
   if (loading || challengeLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}>
@@ -138,7 +138,7 @@ const WordHuntPage = () => {
       </div>
     );
   }
-
+ 
   return (
     <div className="fixed inset-0 flex flex-col text-slate-100 font-sans overflow-hidden" style={{ background: "linear-gradient(135deg, #0a1628 0%, #132240 50%, #0d3320 100%)" }}>
       {/* Header */}
@@ -169,7 +169,7 @@ const WordHuntPage = () => {
           </div>
         )}
       </div>
-
+ 
       {/* Game Content */}
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
         {gameState === "ready" && (
@@ -187,7 +187,7 @@ const WordHuntPage = () => {
               <span>• 5 harf = 35 puan</span>
               <span>• 6+ harf = 50+ puan</span>
             </div>
-
+ 
             {hasPlayedToday ? (
               <div className="flex flex-col items-center gap-3 shrink-0">
                 <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2">
@@ -201,14 +201,14 @@ const WordHuntPage = () => {
                 Başla! 🚀
               </button>
             )}
-
+ 
             {/* Leaderboard */}
             <div className="w-full max-w-sm mt-2 flex-1 min-h-0 flex flex-col">
               <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
           </div>
         )}
-
+ 
         {gameState === "playing" && (
           <div className="flex flex-col gap-5 mt-4">
             <div className="flex items-center justify-between">
@@ -218,17 +218,17 @@ const WordHuntPage = () => {
               </div>
               <span className="text-xs text-slate-500">{foundWords.length} kelime bulundu</span>
             </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
+ 
+            <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}>
               <div className="flex flex-wrap gap-2.5 justify-center">
                 {letters.map((letter, i) => (
-                  <button key={i} onClick={() => handleLetterClick(letter, i)} className="w-12 h-12 rounded-xl bg-gradient-to-b from-emerald-500/30 to-emerald-700/30 border border-emerald-400/30 flex items-center justify-center text-lg font-bold text-white active:scale-90 transition-transform hover:from-emerald-400/40 hover:to-emerald-600/40">
+                  <button key={i} onClick={() => handleLetterClick(letter, i)} className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-black active:scale-90 transition-transform" style={{ background: "linear-gradient(160deg, #d1fae5 0%, #6ee7b7 100%)", color: "#064e3b", boxShadow: "0 2px 8px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.6)", border: "1px solid rgba(52,211,153,0.4)", letterSpacing: "0.05em" }}>
                     {letter}
                   </button>
                 ))}
               </div>
             </div>
-
+ 
             <div className="flex gap-2">
               <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center">
                 <input
@@ -249,7 +249,7 @@ const WordHuntPage = () => {
                 <Send className="w-5 h-5 text-white" />
               </button>
             </div>
-
+ 
             {foundWords.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Bulunan Kelimeler</h3>
@@ -264,7 +264,7 @@ const WordHuntPage = () => {
             )}
           </div>
         )}
-
+ 
         {gameState === "finished" && (
           <div className="flex flex-col items-center gap-5 pt-6 flex-1 min-h-0">
             <div className="text-6xl shrink-0">🏆</div>
@@ -273,7 +273,7 @@ const WordHuntPage = () => {
               <p className="text-4xl font-black text-emerald-400">{score.toFixed(2)} Puan</p>
               <p className="text-sm text-slate-400 mt-2">{foundWords.length} kelime buldun</p>
             </div>
-
+ 
             {foundWords.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full max-w-xs max-h-24 overflow-y-auto shrink-0">
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -285,12 +285,12 @@ const WordHuntPage = () => {
                 </div>
               </div>
             )}
-
+ 
             {/* Leaderboard */}
             <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col">
               <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
-
+ 
             <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
               Ana Sayfa
             </button>
@@ -301,5 +301,6 @@ const WordHuntPage = () => {
     </div>
   );
 };
-
+ 
 export default WordHuntPage;
+ 
