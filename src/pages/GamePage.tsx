@@ -1012,7 +1012,7 @@ const GamePage = ({
     if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
     comboBreakTimerRef.current = setTimeout(() => {
       breakCombo();
-    }, 4000);
+    }, 3000);
   }, [breakCombo]);
 
   useEffect(() => {
