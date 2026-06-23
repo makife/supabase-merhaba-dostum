@@ -2,16 +2,16 @@ import { useEffect, useRef, useState, memo } from "react";
 import Lottie from "lottie-react";
 import { playPitchedBeep } from "@/services/pitchedBeepService";
 import { playNativeSound } from "@/services/nativeAudioService";
-
+ 
 /**
  * ComboBoost
  * - `comboEventId` her arttığında, comboCount değerine göre Boost{N}.json + BoostX.json yan yana oynatılır (2x-9x).
  * - `bonusEventId` her arttığında, bonusAmount değerine göre BoostArti{X}.json (10/20/30/50/100) oynatılır.
  * - Görseller "son 10 saniye" lottie boyutuyla aynı: 16rem x 16rem.
  */
-
+ 
 export type BonusAmount = 10 | 20 | 30 | 50 | 100;
-
+ 
 interface ComboBoostProps {
   comboEventId: number;
   comboCount: number; // 2..9
@@ -19,11 +19,11 @@ interface ComboBoostProps {
   bonusAmount: BonusAmount | 0;
   resetId?: number;
 }
-
+ 
 // Cache loaded animations
 const cache = new Map<string, any>();
 const loading = new Map<string, Promise<any>>();
-
+ 
 function loadAnim(path: string): Promise<any> {
   if (cache.has(path)) return Promise.resolve(cache.get(path));
   if (loading.has(path)) return loading.get(path)!;
@@ -42,7 +42,7 @@ function loadAnim(path: string): Promise<any> {
   loading.set(path, p);
   return p;
 }
-
+ 
 // Önceden yükle (idle)
 if (typeof window !== "undefined") {
   setTimeout(() => {
@@ -51,23 +51,26 @@ if (typeof window !== "undefined") {
     [10, 20, 30, 50, 100].forEach((n) => loadAnim(`/BoostArti${n}.json`));
   }, 1500);
 }
-
+ 
 const ComboBoost = memo(
   ({ comboEventId, comboCount, bonusEventId, bonusAmount, resetId }: ComboBoostProps) => {
     const [comboData, setComboData] = useState<{ id: number; num: any; x: any } | null>(null);
     const [bonusData, setBonusData] = useState<{ id: number; data: any } | null>(null);
     const lastComboIdRef = useRef(0);
     const lastBonusIdRef = useRef(0);
-
-    // Reset — diğer effect'lerden önce çalışsın
-    useEffect(() => {
-      if (!resetId) return;
-      setComboData(null);
-      setBonusData(null);
+ 
+    const lastResetIdRef = useRef(0);
+ 
+    // Reset — render anında kontrol et, effect bekleme
+    if (resetId && resetId !== lastResetIdRef.current) {
+      lastResetIdRef.current = resetId;
       lastComboIdRef.current = 0;
       lastBonusIdRef.current = 0;
-    }, [resetId]);
-
+      // State'leri sıfırla (bu render'da null olarak devam eder)
+      if (comboData !== null) setComboData(null);
+      if (bonusData !== null) setBonusData(null);
+    }
+ 
     // Combo trigger
     useEffect(() => {
       if (comboEventId === 0 || comboEventId === lastComboIdRef.current) return;
@@ -85,7 +88,7 @@ const ComboBoost = memo(
       }, 1200);
       return () => clearTimeout(t);
     }, [comboEventId, comboCount]);
-
+ 
     // Bonus trigger
     useEffect(() => {
       if (bonusEventId === 0 || bonusEventId === lastBonusIdRef.current || !bonusAmount) return;
@@ -100,11 +103,11 @@ const ComboBoost = memo(
       }, 1800);
       return () => clearTimeout(t);
     }, [bonusEventId, bonusAmount]);
-
-
-
+ 
+ 
+ 
     if (!comboData && !bonusData) return null;
-
+ 
     return (
       <div
         style={{
@@ -152,7 +155,8 @@ const ComboBoost = memo(
     );
   }
 );
-
+ 
 ComboBoost.displayName = "ComboBoost";
-
+ 
 export default ComboBoost;
+ 
