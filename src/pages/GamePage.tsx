@@ -36,6 +36,8 @@ import { calculateServerOffset } from "@/utils/serverTimeSync";
 import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
+import ComboBoost from "@/components/ComboBoost";
+
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan1.jpg",
