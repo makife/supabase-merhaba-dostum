@@ -1002,18 +1002,26 @@ const GamePage = ({
   }, []);
 
   const tickCombo = useCallback(() => {
-    // Yeni başarılı kelime: combo'yu artır
     comboCountRef.current = Math.min(9, comboCountRef.current + 1);
-    // İlk kelime tek başına gösterilmez; 2x'ten itibaren
     if (comboCountRef.current >= 2) {
       setComboEvent((prev) => ({ id: prev.id + 1, count: comboCountRef.current }));
     }
-    // 4sn timer reset
+
+    // 9x'e ulaşınca animasyon bitince sıfırla
+    if (comboCountRef.current === 9) {
+      if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
+      comboBreakTimerRef.current = null;
+      setTimeout(() => breakCombo(), 1200);
+      return;
+    }
+
+    // 3sn timer reset
     if (comboBreakTimerRef.current) clearTimeout(comboBreakTimerRef.current);
     comboBreakTimerRef.current = setTimeout(() => {
       breakCombo();
     }, 3000);
   }, [breakCombo]);
+  
 
   useEffect(() => {
     return () => {
