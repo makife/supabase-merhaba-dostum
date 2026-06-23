@@ -116,7 +116,7 @@ const ComboBoost = memo(
                 style={{ width: "100%", height: "100%" }}
               />
             </div>
-            <div style={{ width: "3.5rem", height: "3.5rem", marginLeft: "-0.9rem" }}>
+            <div style={{ width: "3.5rem", height: "3.5rem", marginLeft: "-1.1rem" }}>
               <Lottie
                 animationData={comboData.x}
                 loop={false}
