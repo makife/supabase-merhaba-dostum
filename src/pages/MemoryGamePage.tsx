@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -16,10 +16,51 @@ interface Kart {
   eslesti: boolean;
   renk: string;
   eslestirmeId: number;
+  // Görselin hangi parçasına karşılık geldiği (karıştırılmadan önceki grid pozisyonu)
+  gorselParca: number;
 }
 
-const GRID_PAIRS = 12; // 12 çift = 24 kart = ~5x5 (1 boş)
+const GRID_PAIRS = 12; // 12 çift = 24 kart
 const SURE = 90;
+const COLS = 5; // 5 sütun
+const ROWS = 5; // 5 satır (24 kart + 1 boş)
+const TOTAL_IMAGE_SLOTS = 24; // Görseli 24 parçaya böl
+
+// Günlük seed (Europe/Istanbul timezone)
+const getDailySeed = (): number => {
+  const dateKey = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+  let hash = 0;
+  for (let i = 0; i < dateKey.length; i++) {
+    hash = (hash * 31 + dateKey.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+};
+
+// Günlük görsel: ozluSozler1.jpg ... ozluSozler30.jpg
+const getDailyImage = (): string => {
+  const imgIndex = (getDailySeed() % 30) + 1;
+  return `/ozluSozler/ozluSozler${imgIndex}.jpg`;
+};
+
+// Görselin belirli parçasının background-position stilini hesapla
+// gorselParca: 0-23 arası (görselin hangi karesine karşılık geldiği)
+const getImageSliceStyle = (
+  gorselParca: number,
+  imageUrl: string,
+  containerCols = 4, // 4x6 = 24 parça (4 sütun, 6 satır)
+  containerRows = 6
+): React.CSSProperties => {
+  const col = gorselParca % containerCols;
+  const row = Math.floor(gorselParca / containerCols);
+  const xPercent = containerCols === 1 ? 0 : (col / (containerCols - 1)) * 100;
+  const yPercent = containerRows === 1 ? 0 : (row / (containerRows - 1)) * 100;
+
+  return {
+    backgroundImage: `url(${imageUrl})`,
+    backgroundSize: `${containerCols * 100}% ${containerRows * 100}%`,
+    backgroundPosition: `${xPercent}% ${yPercent}%`,
+  };
+};
 
 const WordMemoryGame = () => {
   const navigate = useNavigate();
@@ -44,10 +85,26 @@ const WordMemoryGame = () => {
   const [wordList, setWordList] = useState<string[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [beyinAnim, setBeyinAnim] = useState<any>(null);
+  const [gorselHazir, setGorselHazir] = useState(false);
+
+  // Animasyon state: kazanınca kartlar yerlerine kayıyor mu?
+  const [puzzleAciliyor, setPuzzleAciliyor] = useState(false);
+  // Her kartın hedef grid pozisyonu (gorselParca değerine göre sıralı)
+  const [kartHedefler, setKartHedefler] = useState<{ [kartId: number]: number }>({});
+
+  const dailyImage = getDailyImage();
 
   useEffect(() => {
     fetch("/beyinKelimeHafiza.json").then(r => r.json()).then(setBeyinAnim).catch(() => {});
   }, []);
+
+  // Görseli önceden yükle
+  useEffect(() => {
+    const img = new Image();
+    img.src = dailyImage;
+    img.onload = () => setGorselHazir(true);
+    img.onerror = () => setGorselHazir(true); // Hata olsa da devam et
+  }, [dailyImage]);
 
   const renkler = [
     "from-purple-400 to-purple-600",
@@ -77,18 +134,9 @@ const WordMemoryGame = () => {
         setWordList(words);
       } catch {
         setWordList([
-          "BAHÇE",
-          "KALEM",
-          "DÜNYA",
-          "GÜNEŞ",
-          "DENIZ",
-          "YILDIZ",
-          "ÇIÇEK",
-          "KITAP",
-          "PENCERE",
-          "KAHVE",
-          "MÜZIK",
-          "OYUN",
+          "BAHÇE", "KALEM", "DÜNYA", "GÜNEŞ", "DENIZ",
+          "YILDIZ", "ÇIÇEK", "KITAP", "PENCERE", "KAHVE",
+          "MÜZIK", "OYUN",
         ]);
       }
     };
@@ -110,7 +158,7 @@ const WordMemoryGame = () => {
     return () => clearInterval(timer);
   }, [oyunBasladi, oyunBitti, kalanSure]);
 
-  // Save score when completed
+  // Kazanınca puan kaydet + puzzle animasyonunu tetikle
   useEffect(() => {
     if (!oyunBitti) return;
     const kazandi = kartlar.length > 0 && kartlar.every((k) => k.eslesti);
@@ -120,6 +168,18 @@ const WordMemoryGame = () => {
       saveScore(rawScore, hamle);
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
+
+      // Puzzle açılma animasyonunu 600ms sonra başlat
+      setTimeout(() => {
+        // Her kartın gorselParca değerine göre hedef pozisyonunu hesapla
+        // Kart grid'de karışık durumda; gorselParca onun "doğru" sıra numarası
+        const hedefler: { [kartId: number]: number } = {};
+        kartlar.forEach((k) => {
+          hedefler[k.id] = k.gorselParca;
+        });
+        setKartHedefler(hedefler);
+        setPuzzleAciliyor(true);
+      }, 600);
     }
   }, [oyunBitti]);
 
@@ -149,24 +209,30 @@ const WordMemoryGame = () => {
     return karisik.join("");
   };
 
-  const ilkKartAcildiRef = React.useRef(false);
+  const ilkKartAcildiRef = useRef(false);
 
   const oyunuBaslat = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
     ilkKartAcildiRef.current = false;
+    setPuzzleAciliyor(false);
+    setKartHedefler({});
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
-    const kartToplamSayisi = GRID_PAIRS * 2;
-    const kullanilacakRenkler = [];
-    for (let i = 0; i < kartToplamSayisi; i++) {
-      kullanilacakRenkler.push(renkler[i % renkler.length]);
-    }
-    const karisikRenkler = kullanilacakRenkler.sort(() => Math.random() - 0.5);
+    const kartToplamSayisi = GRID_PAIRS * 2; // 24
+
+    // 0-23 arası görsel parça indekslerini karıştır
+    const gorselParcalari = Array.from({ length: kartToplamSayisi }, (_, i) => i);
+    const karisikParcalar = [...gorselParcalari].sort(() => Math.random() - 0.5);
+
+    const karisikRenkler = Array.from({ length: kartToplamSayisi }, (_, i) =>
+      renkler[i % renkler.length]
+    ).sort(() => Math.random() - 0.5);
 
     const yeniKartlar: Kart[] = [];
     secilenKelimeler.forEach((kelime, index) => {
       const karisikKelime = harfleriKaristir(kelime);
+
       yeniKartlar.push({
         id: index * 2,
         kelime,
@@ -175,6 +241,7 @@ const WordMemoryGame = () => {
         eslesti: false,
         renk: karisikRenkler[index * 2],
         eslestirmeId: index,
+        gorselParca: karisikParcalar[index * 2], // Karışık parça ataması
       });
       yeniKartlar.push({
         id: index * 2 + 1,
@@ -184,10 +251,13 @@ const WordMemoryGame = () => {
         eslesti: false,
         renk: karisikRenkler[index * 2 + 1],
         eslestirmeId: index,
+        gorselParca: karisikParcalar[index * 2 + 1],
       });
     });
 
+    // Kartları karıştır (grid'deki görsel sırası ≠ gorselParca, bu yüzden görsel dağınık görünür)
     const karisikKartlar = yeniKartlar.sort(() => Math.random() - 0.5);
+
     setTimeout(() => {
       setKartlar(karisikKartlar);
       setSecilenKartlar([]);
@@ -204,7 +274,6 @@ const WordMemoryGame = () => {
     if (kartlar[kartIndex].acik || kartlar[kartIndex].eslesti) return;
     if (oyunBitti) return;
 
-    // İlk kart açıldığında oynadı olarak işaretle
     if (!ilkKartAcildiRef.current) {
       ilkKartAcildiRef.current = true;
       markAsPlayed();
@@ -247,6 +316,42 @@ const WordMemoryGame = () => {
   };
 
   const kazandi = oyunBitti && kartlar.length > 0 && kartlar.every((k) => k.eslesti);
+
+  // Puzzle animasyonu için: kartları gorselParca sırasına göre yerleştir
+  // Animasyon aktifken her kartın transform'u hesaplanır
+  const getPuzzleTransform = (kartGridIndex: number, kart: Kart): React.CSSProperties => {
+    if (!puzzleAciliyor) return {};
+
+    // Kartın şu anki pozisyonu: kartGridIndex (0-23, soldan sağa, yukarıdan aşağıya)
+    // Kartın hedef pozisyonu: gorselParca (görselde olması gereken yer)
+    const hedefPos = kart.gorselParca;
+    const kaynakPos = kartGridIndex;
+
+    if (hedefPos === kaynakPos) return { transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)" };
+
+    // 5 sütunlu grid'de piksel farkını hesapla
+    const kaynakCol = kaynakPos % COLS;
+    const kaynakRow = Math.floor(kaynakPos / COLS);
+    // Hedef: 4 sütun, 6 satır düzeninde (görsel parçaları)
+    // Ama grid yine 5 sütun, bu yüzden hedefi de 5 sütun üzerinden hesapla
+    const hedefCol = hedefPos % COLS;
+    const hedefRow = Math.floor(hedefPos / COLS);
+
+    const deltaCol = hedefCol - kaynakCol;
+    const deltaRow = hedefRow - kaynakRow;
+
+    // Kart boyutu + gap yaklaşık hesabı (gap-2 = 8px, kart ~%20 - 8px)
+    // CSS transform ile % bazlı taşıma: her hücre genişliği = 100% + gap
+    const cardSizePercent = 100;
+    const gapPx = 8;
+
+    return {
+      transform: `translate(calc(${deltaCol} * (${cardSizePercent}% + ${gapPx}px)), calc(${deltaRow} * (${cardSizePercent}% + ${gapPx}px)))`,
+      transition: "transform 0.9s cubic-bezier(0.4,0,0.2,1)",
+      transitionDelay: `${Math.abs(deltaCol + deltaRow) * 60}ms`,
+      zIndex: puzzleAciliyor ? 10 : 1,
+    };
+  };
 
   if (challengeLoading) {
     return (
@@ -307,6 +412,7 @@ const WordMemoryGame = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-4 mt-2 flex-1 overflow-y-auto">
+
             {/* Start screen */}
             {!oyunBasladi && kartlar.length === 0 && !oyunBitti && (
               <div className="flex flex-col items-center gap-4 mt-8">
@@ -324,6 +430,9 @@ const WordMemoryGame = () => {
                     <p className="text-xs text-yellow-300/80 flex items-center justify-center gap-1">
                       <Zap className="w-3 h-3" />
                       Düzgün kelimeyi karışık haliyle eşleştir
+                    </p>
+                    <p className="text-xs text-purple-300/80 mt-1 flex items-center justify-center gap-1">
+                      🖼️ Tüm çiftleri bul, gizli görsel ortaya çıksın!
                     </p>
                     <p className="text-xs text-green-300/80 mt-2">🎡 Tamamlarsan +1 çark çevirme hakkı!</p>
                   </div>
@@ -387,7 +496,8 @@ const WordMemoryGame = () => {
                     <div className="text-amber-400 font-bold text-lg mt-2">
                       Skor: {SURE - kalanSure > 0 ? (10000 / ((SURE - kalanSure) * hamle)).toFixed(2) : 0}
                     </div>
-                    <div className="text-green-300 text-xs mt-2">🎡 +1 çark çevirme hakkı gün sonunda verilecek!</div>
+                    <div className="text-purple-300 text-xs mt-2 animate-pulse">🖼️ Gizli görsel açılıyor...</div>
+                    <div className="text-green-300 text-xs mt-1">🎡 +1 çark çevirme hakkı gün sonunda verilecek!</div>
                   </>
                 ) : (
                   <>
@@ -401,44 +511,102 @@ const WordMemoryGame = () => {
               </div>
             )}
 
-            {/* Card Grid - 5 columns */}
+            {/* ===================== KART GRİD ===================== */}
             {kartlar.length > 0 && (
-              <div className="grid grid-cols-5 gap-2">
-                {kartlar.map((kart, index) => (
-                  <div
-                    key={`${kart.kelime}-${kart.id}`}
-                    onClick={() => kartTikla(index)}
-                    className="aspect-square relative cursor-pointer transform transition-all duration-300"
-                    style={{ perspective: "1000px" }}
-                  >
+              <div
+                className="grid grid-cols-5 gap-2"
+                // Puzzle animasyonu aktifken overflow visible olsun ki kartlar kayabilsin
+                style={{ overflow: puzzleAciliyor ? "visible" : "hidden", position: "relative" }}
+              >
+                {kartlar.map((kart, index) => {
+                  // Kart arka yüzü: görselin bu karta düşen karışık parçası
+                  const imageSliceStyle = getImageSliceStyle(kart.gorselParca, dailyImage, 4, 6);
+
+                  // Puzzle animasyonu aktifse transform uygula
+                  const puzzleStyle = puzzleAciliyor ? getPuzzleTransform(index, kart) : {};
+
+                  return (
                     <div
-                      className={`w-full h-full relative transition-transform duration-500 ${kart.acik || kart.eslesti ? "[transform:rotateY(180deg)]" : ""}`}
-                      style={{ transformStyle: "preserve-3d" }}
+                      key={`${kart.kelime}-${kart.id}`}
+                      onClick={() => !puzzleAciliyor && kartTikla(index)}
+                      className="aspect-square relative cursor-pointer"
+                      style={{
+                        perspective: "1000px",
+                        position: "relative",
+                        ...puzzleStyle,
+                      }}
                     >
                       <div
-                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg border border-white/20 flex items-center justify-center"
-                        style={{ backfaceVisibility: "hidden" }}
+                        className={`w-full h-full relative transition-transform duration-500 ${
+                          kart.acik || kart.eslesti ? "[transform:rotateY(180deg)]" : ""
+                        }`}
+                        style={{ transformStyle: "preserve-3d" }}
                       >
-                        <div className="text-2xl">📝</div>
-                      </div>
-                      <div
-                        className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${kart.eslesti ? "opacity-20 scale-95" : ""} transition-all duration-300 [transform:rotateY(180deg)]`}
-                        style={{ backfaceVisibility: "hidden" }}
-                      >
+                        {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
-                          className={`text-white font-bold px-1 text-center break-all ${kart.kelime.length > 6 ? "text-[8px]" : kart.kelime.length > 5 ? "text-[9px]" : "text-[10px]"}`}
+                          className="absolute inset-0 w-full h-full rounded-lg border border-white/20 overflow-hidden"
+                          style={{
+                            backfaceVisibility: "hidden",
+                            ...imageSliceStyle,
+                          }}
                         >
-                          {kart.kelime}
+                          {/* Görsel yüklenmediyse veya puzzle animasyonu öncesi hafif overlay */}
+                          {!puzzleAciliyor && (
+                            <div className="absolute inset-0 bg-purple-900/40 backdrop-blur-[1px]" />
+                          )}
+                          {/* Köşe dekorasyon */}
+                          {!puzzleAciliyor && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-purple-300/60" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {kart.eslesti && (
-                          <div className="absolute inset-0 bg-green-500/20 rounded-lg flex items-center justify-center">
-                            <div className="text-2xl">✓</div>
+
+                        {/* ===== KART ÖNÜ: Kelime ===== */}
+                        <div
+                          className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
+                            kart.eslesti ? "opacity-20 scale-95" : ""
+                          } transition-all duration-300 [transform:rotateY(180deg)]`}
+                          style={{ backfaceVisibility: "hidden" }}
+                        >
+                          <div
+                            className={`text-white font-bold px-1 text-center break-all ${
+                              kart.kelime.length > 6
+                                ? "text-[8px]"
+                                : kart.kelime.length > 5
+                                ? "text-[9px]"
+                                : "text-[10px]"
+                            }`}
+                          >
+                            {kart.kelime}
                           </div>
-                        )}
+                          {kart.eslesti && (
+                            <div className="absolute inset-0 bg-green-500/20 rounded-lg flex items-center justify-center">
+                              <div className="text-2xl">✓</div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Puzzle tamamlandı - görsel tam açık göster */}
+            {puzzleAciliyor && (
+              <div className="mt-4 rounded-xl overflow-hidden border border-white/20 shadow-lg shadow-purple-500/20">
+                <img
+                  src={dailyImage}
+                  alt="Günlük özlü söz"
+                  className="w-full object-cover"
+                  style={{ animation: "fadeIn 1.5s ease 1s both" }}
+                />
+                <div className="bg-black/40 text-center py-2 text-xs text-white/60">
+                  Günün özlü sözü 🌟
+                </div>
               </div>
             )}
 
@@ -457,6 +625,14 @@ const WordMemoryGame = () => {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       {ExitConfirmDialog}
     </div>
   );
