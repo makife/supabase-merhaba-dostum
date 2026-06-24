@@ -22,11 +22,17 @@ const DinoRunner = () => {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
+  const [arkaPlanAnim2, setArkaPlanAnim2] = useState<any>(null);
+  const [portalAnim, setPortalAnim] = useState<any>(null);
+  const [activeBg, setActiveBg] = useState<"level1" | "level2">("level1");
+  const [showLevelUpText, setShowLevelUpText] = useState(false);
   const arkaPlanLottieRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
+    fetch("/DinoRunnerArkaPlan2.json").then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
+    fetch("/DinoRunnerArkaPlanPortal.json").then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
@@ -62,6 +68,7 @@ const DinoRunner = () => {
     letters: [] as any[],
     clouds: [] as any[],
     groundOffset: 0,
+    portal: null as null | { x: number },
   });
 
   // --- KELİME VE FEEDBACK SİSTEMİ ---
@@ -102,6 +109,14 @@ const DinoRunner = () => {
   const gameLoopRef = useRef<number>();
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
+
+  // Level 2 Portal Ref'leri
+  const levelRef = useRef(1);
+  useEffect(() => { levelRef.current = level; }, [level]);
+  const portalTriggeredRef = useRef(false); // 1000 puan + 2sn tetikleyicisi bir kez çalışsın
+  const portalRef = useRef<{ x: number } | null>(null);
+  const levelUpTimeoutRef = useRef<any>(null);
+  const PORTAL_WIDTH = 220;
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -229,6 +244,13 @@ const DinoRunner = () => {
     setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
     if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
 
+    // Level 2 Portal Sıfırlama
+    setActiveBg("level1");
+    portalTriggeredRef.current = false;
+    portalRef.current = null;
+    if (levelUpTimeoutRef.current) clearTimeout(levelUpTimeoutRef.current);
+    setShowLevelUpText(false);
+
     completedWordsRef.current = [];
     setCompletedWords([]);
     wordBonusRef.current = 0;
@@ -237,7 +259,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0 });
+    setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
@@ -246,12 +268,37 @@ const DinoRunner = () => {
     playSound(440, "triangle");
   };
 
+  const startLevel2 = () => {
+    playButtonSound("buttonClick");
+    setActiveBg("level2");
+    setLevel(2);
+    wordsClearedRef.current = 0;
+    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
+    setBgGradient(getRandomGradient());
+
+    obstaclesRef.current = [];
+    lettersRef.current = [];
+    lastObstacleKindRef.current = null;
+    sameKindStreakRef.current = 0;
+    portalRef.current = null;
+    nextObstacleTimeRef.current = Date.now() + 1200;
+    lastFrameTimeRef.current = 0;
+
+    setRenderState((prev) => ({ ...prev, obstacles: [], letters: [], portal: null }));
+
+    gameStateRef.current = "playing";
+    setGameState("playing");
+  };
+
   const handleJump = (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     if (gameStateRef.current !== "playing") {
+      // Geçiş ekranı veya 2. Level başlangıç kartı açıkken zıplama dokunuşu
+      // yeni bir oyun/challenge başlatmasın.
+      if (gameStateRef.current === "transition" || gameStateRef.current === "level2Start") return;
       // Do NOT auto-start if user already played today or data is still loading.
       // Otherwise pressing JUMP after game-over would re-launch the game.
       if (challengeLoadingRef.current || hasPlayedTodayRef.current) return;
@@ -378,6 +425,45 @@ const DinoRunner = () => {
     }
     // obstacles updated via ref, will batch render below
 
+    // --- LEVEL 2 PORTAL: 1000 puanı geçtikten 2sn sonra sağdan portal belirir ---
+    const currentTotalScore = Math.floor(scoreRef.current) + wordBonusRef.current;
+    if (!portalTriggeredRef.current && levelRef.current === 1 && currentTotalScore >= 1000) {
+      portalTriggeredRef.current = true;
+      setTimeout(() => {
+        if (gameStateRef.current === "playing") {
+          portalRef.current = { x: GAME_WIDTH };
+        }
+      }, 2000);
+    }
+
+    if (portalRef.current) {
+      portalRef.current.x -= speedRef.current * dt;
+
+      const pLeft = portalRef.current.x;
+      const pRight = portalRef.current.x + PORTAL_WIDTH;
+      const dLeft = DINO_LEFT;
+      const dRight = DINO_LEFT + DINO_WIDTH;
+      // Portal halkasının orta bölgesinden geçişte tetikle (dikey eksen önemsiz, portal kapı gibi tüm boyu kaplar)
+      const triggerLeft = pLeft + PORTAL_WIDTH * 0.35;
+      const triggerRight = pRight - PORTAL_WIDTH * 0.35;
+
+      if (dRight > triggerLeft && dLeft < triggerRight) {
+        portalRef.current = null;
+        gameStateRef.current = "transition";
+        setGameState("transition");
+        setShowLevelUpText(true);
+        playSound(900, "sine", 0.3);
+        levelUpTimeoutRef.current = setTimeout(() => {
+          setShowLevelUpText(false);
+          setGameState("level2Start");
+        }, 2200);
+        return;
+      } else if (portalRef.current.x < -PORTAL_WIDTH) {
+        // Güvenlik: bir şekilde çarpışma tetiklenmeden ekranı terk ederse temizle
+        portalRef.current = null;
+      }
+    }
+
     // Harfler (in-place update, düşük GC)
     for (let i = lettersRef.current.length - 1; i >= 0; i--) {
       lettersRef.current[i].x -= speedRef.current * dt;
@@ -499,6 +585,7 @@ const DinoRunner = () => {
       letters: activeLetters,
       clouds: [],
       groundOffset: groundOffsetRef.current,
+      portal: portalRef.current ? { x: portalRef.current.x } : null,
     });
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -559,11 +646,41 @@ const DinoRunner = () => {
           style={{ background: "transparent" }}
         >
           {/* Lottie Arka Plan */}
-          {arkaPlanAnim && (
+          {(activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2) && (
             <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-              <Lottie lottieRef={arkaPlanLottieRef} animationData={arkaPlanAnim} loop autoplay style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <Lottie
+                key={activeBg}
+                lottieRef={arkaPlanLottieRef}
+                animationData={activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
           )}
+
+          {/* Level 2 Portalı */}
+          {renderState.portal && portalAnim && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: "50%",
+                width: PORTAL_WIDTH,
+                height: PORTAL_WIDTH,
+                transform: `translate3d(${renderState.portal.x}px, -50%, 0)`,
+                zIndex: 6,
+                pointerEvents: "none",
+              }}
+            >
+              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
+            </div>
+          )}
+
+          {showLevelUpText && (
+            <div className="level-up-banner">🎉 Tebrikler 2. Levele geçtiniz!</div>
+          )}
+
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
 
           {renderState.letters.map((l) => (
@@ -623,7 +740,7 @@ const DinoRunner = () => {
             )}
           </div>
 
-          {gameState !== "playing" && (
+          {(gameState === "waiting" || gameState === "gameOver") && (
             <div className="overlay">
               <div className="card">
                 {gameState === "waiting" && reaktorAnim && (
@@ -674,6 +791,27 @@ const DinoRunner = () => {
                     {gameState === "waiting" ? "BAŞLAT" : "TEKRAR DENE"}
                   </button>
                 )}
+              </div>
+            </div>
+          )}
+
+          {gameState === "level2Start" && (
+            <div className="overlay">
+              <div className="card">
+                <h2>2. LEVEL AÇILDI!</h2>
+                <p>Portaldan geçtin, yeni bölge seni bekliyor.</p>
+                <div style={{marginTop: '10px', background: 'rgba(0,234,255,0.12)', border: '1px solid rgba(0,234,255,0.35)', borderRadius: '8px', padding: '8px 12px'}}>
+                  <p style={{fontSize: '12px', color: '#00eaff', fontWeight: 'bold'}}>Mevcut Puanın: {Math.floor(scoreRef.current) + wordBonusRef.current}</p>
+                </div>
+                <button
+                  className="start-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startLevel2();
+                  }}
+                >
+                  BAŞLA
+                </button>
               </div>
             </div>
           )}
@@ -937,6 +1075,40 @@ const DinoRunner = () => {
         }
         @keyframes fadeOut { to { opacity: 0; transform: translate(-50%, -60%) scale(1.1); } }
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        .level-up-banner {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 60;
+            font-size: 24px;
+            font-weight: 900;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 10px #00eaff, 0 0 25px #00eaff, 2px 2px 0 #000;
+            background: rgba(0,0,0,0.55);
+            padding: 16px 22px;
+            border-radius: 18px;
+            border: 2px solid rgba(0,234,255,0.6);
+            white-space: nowrap;
+            max-width: 90%;
+            animation:
+              levelUpGrow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+              levelUpPulse 0.9s ease-in-out 0.6s infinite;
+        }
+        @keyframes levelUpGrow {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            60% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes levelUpPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.08); }
+        }
+
+        @media (max-width: 400px) {
+            .level-up-banner { font-size: 17px; padding: 12px 16px; }
+        }
 
         .overlay {
             position: absolute;
