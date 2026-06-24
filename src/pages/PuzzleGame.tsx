@@ -327,9 +327,7 @@ const PuzzleGamePage: React.FC = () => {
   autoplay 
   style={{ width: 120, height: 120 }} 
   rendererSettings={{
-    preserveAspectRatio: 'xMidYMid slice',
-    clearCanvas: true,
-    background: 'transparent'
+    preserveAspectRatio: 'xMidYMid slice'
   }}
 />
                     ) : (
