@@ -442,11 +442,20 @@ const WordMemoryGame = () => {
                 </div>
 
                 {hasPlayedToday ? (
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center w-full flex flex-col items-center gap-3">
                     <span className="text-sm text-slate-400">Bugün zaten oynadın! Yarın tekrar gel 🕐</span>
                     {todayScore != null && todayScore > 0 && (
-                      <div className="text-amber-400 font-bold mt-2">Skorun: {todayScore}</div>
+                      <div className="text-amber-400 font-bold">Skorun: {todayScore}</div>
                     )}
+                    <div className="text-xs text-purple-300/80">🖼️ Bugün açtığın görsel</div>
+                    <div className="w-full rounded-xl overflow-hidden border border-white/10 shadow-lg shadow-purple-900/40 bg-black/30">
+                      <img
+                        src={dailyImage}
+                        alt="Günün özlü sözü"
+                        className="w-full h-auto block"
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <button
