@@ -111,9 +111,7 @@ const DinoRunner = () => {
   const lastFrameTimeRef = useRef<number>(0);
 
   // Level 2 Portal Ref'leri
-  const levelRef = useRef(1);
-  useEffect(() => { levelRef.current = level; }, [level]);
-  const portalTriggeredRef = useRef(false); // 1000 puan + 2sn tetikleyicisi bir kez çalışsın
+  const portalTriggeredRef = useRef(false); // 500 puan + 2sn tetikleyicisi bir kez çalışsın
   const portalRef = useRef<{ x: number } | null>(null);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 220;
@@ -425,9 +423,9 @@ const DinoRunner = () => {
     }
     // obstacles updated via ref, will batch render below
 
-    // --- LEVEL 2 PORTAL: 1000 puanı geçtikten 2sn sonra sağdan portal belirir ---
+    // --- LEVEL 2 PORTAL: 500 puanı geçtikten 2sn sonra sağdan portal belirir ---
     const currentTotalScore = Math.floor(scoreRef.current) + wordBonusRef.current;
-    if (!portalTriggeredRef.current && levelRef.current === 1 && currentTotalScore >= 1000) {
+    if (!portalTriggeredRef.current && currentTotalScore >= 500) {
       portalTriggeredRef.current = true;
       setTimeout(() => {
         if (gameStateRef.current === "playing") {
