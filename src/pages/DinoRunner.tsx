@@ -567,10 +567,12 @@ const DinoRunner = () => {
         if (wordsClearedRef.current >= 3) {
            setLevel(prev => {
              const newLevel = prev + 1;
-             // Her level'da arka plan %20 hızlanır, max 4x
+             // Level 3 ve 4'te ilgili arka planlara geç
+             let bgForSpeed: "level1" | "level2" | "level3" | "level4" = activeBg;
+             if (newLevel === 3) { setActiveBg("level3"); bgForSpeed = "level3"; }
+             else if (newLevel === 4) { setActiveBg("level4"); bgForSpeed = "level4"; }
              if (arkaPlanLottieRef.current) {
-               const newSpeed = Math.min(1 + (newLevel - 1) * 0.2, 4);
-               arkaPlanLottieRef.current.setSpeed(newSpeed);
+               arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bgForSpeed, newLevel));
              }
              return newLevel;
            });
