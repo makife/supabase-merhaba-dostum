@@ -785,7 +785,25 @@ const DinoRunner = () => {
             );
           })()}
 
-          {/* Level 2 Portalı */}
+          {/* Level başlangıç portalı (soldan çıkış) */}
+          {renderState.entryPortal && portalAnim && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: -PORTAL_VERTICAL_OVERSCAN,
+                width: PORTAL_WIDTH,
+                height: `calc(100% + ${PORTAL_VERTICAL_OVERSCAN * 2}px)`,
+                transform: `translate3d(${renderState.entryPortal.x}px, 0, 0)`,
+                zIndex: 6,
+                pointerEvents: "none",
+              }}
+            >
+              <Lottie animationData={portalAnim} loop autoplay style={{ width: "100%", height: "100%" }} rendererSettings={{ preserveAspectRatio: "none" }} />
+            </div>
+          )}
+
+          {/* Sağ level geçiş portalı */}
           {renderState.portal && portalAnim && (
             <div
               style={{
@@ -804,7 +822,7 @@ const DinoRunner = () => {
           )}
 
           {showLevelUpText && (
-            <div className="level-up-banner">🎉 Tebrikler 2. Levele geçtiniz!</div>
+            <div className="level-up-banner">{levelUpMessage}</div>
           )}
 
           {feedback && <div className={`feedback-popup ${feedback.type}`}>{feedback.text}</div>}
@@ -840,7 +858,7 @@ const DinoRunner = () => {
             style={{
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
-              transform: `translate3d(${DINO_LEFT}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
+              transform: `translate3d(${renderState.dinoX}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
             ☢️
@@ -921,10 +939,10 @@ const DinoRunner = () => {
             </div>
           )}
 
-          {gameState === "level2Start" && (
+          {gameState === "levelStart" && (
             <div className="overlay">
               <div className="card">
-                <h2>2. LEVEL AÇILDI!</h2>
+                <h2>{pendingLevelRef.current}. LEVEL AÇILDI!</h2>
                 <p>Portaldan geçtin, yeni bölge seni bekliyor.</p>
                 <div style={{marginTop: '10px', background: 'rgba(0,234,255,0.12)', border: '1px solid rgba(0,234,255,0.35)', borderRadius: '8px', padding: '8px 12px'}}>
                   <p style={{fontSize: '12px', color: '#00eaff', fontWeight: 'bold'}}>Mevcut Puanın: {Math.floor(scoreRef.current) + wordBonusRef.current}</p>
@@ -933,7 +951,7 @@ const DinoRunner = () => {
                   className="start-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    startLevel2();
+                    startLevel(pendingLevelRef.current);
                   }}
                 >
                   BAŞLA
