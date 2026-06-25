@@ -154,6 +154,7 @@ const DinoRunner = () => {
   useEffect(() => {
     fetch(`/reaktorKosma.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
+    fetch(`/DinoRunners/DinoRunnerArkaPlan11/ates1.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setAtesAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
