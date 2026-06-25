@@ -688,7 +688,7 @@ const DinoRunner = () => {
                 pointerEvents: "none",
               }}
             >
-              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} preserveAspectRatio="none" />
+              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} rendererSettings={{ preserveAspectRatio: "none" }} />
             </div>
           )}
 
