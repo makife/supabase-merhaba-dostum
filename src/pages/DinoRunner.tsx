@@ -661,18 +661,28 @@ const DinoRunner = () => {
           style={{ background: "transparent" }}
         >
           {/* Lottie Arka Plan */}
-          {(activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2) && (
-            <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-              <Lottie
-                key={activeBg}
-                lottieRef={arkaPlanLottieRef}
-                animationData={activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2}
-                loop
-                autoplay
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-          )}
+          {(() => {
+            const bgMap: Record<string, any> = {
+              level1: arkaPlanAnim,
+              level2: arkaPlanAnim2,
+              level3: arkaPlanAnim3,
+              level4: arkaPlanAnim4,
+            };
+            const data = bgMap[activeBg] ?? arkaPlanAnim;
+            if (!data) return null;
+            return (
+              <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+                <Lottie
+                  key={activeBg}
+                  lottieRef={arkaPlanLottieRef}
+                  animationData={data}
+                  loop
+                  autoplay
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            );
+          })()}
 
           {/* Level 2 Portalı */}
           {renderState.portal && portalAnim && (
