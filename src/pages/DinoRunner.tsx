@@ -9,6 +9,96 @@ import { toast } from "sonner";
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
+// --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
+const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src: string; speed: number }[]> = {
+  level1: [
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer07_Sky.png", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer06_Rocks.png", speed: 0.08 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer05_Hills.png", speed: 0.18 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer04_Clouds.png", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer03_Hills_Castle.png", speed: 0.3 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer02_Trees_rocks.png", speed: 0.55 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer01_Ground.png", speed: 1.0 },
+  ],
+  level2: [
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer07_Sky.png", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer06_Rocks.png", speed: 0.08 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer05_Clouds.png", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer04_Hills_2.png", speed: 0.22 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer03_Hills_1.png", speed: 0.38 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer02_Trees.png", speed: 0.6 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer01_Ground.png", speed: 1.0 },
+  ],
+  level3: [
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer09_Sky.png", speed: 0.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer08_Stars_1.png", speed: 0.04 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer07_Stars_2.png", speed: 0.07 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer06_Stars_3.png", speed: 0.11 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer05_Castle.png", speed: 0.25 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer03_Clouds_3.png", speed: 0.35 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer02_Clouds_2.png", speed: 0.5 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer01_Clouds_1.png", speed: 0.7 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer04_Path.png", speed: 1.0 },
+  ],
+  level4: [
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer06_sky.png", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer05_rocks.png", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer04_clouds.png", speed: 0.18 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer03_trees.png", speed: 0.42 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer02_cake.png", speed: 0.65 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer01_ground.png", speed: 1.0 },
+  ],
+};
+
+const ParallaxBackground: React.FC<{
+  bg: "level1" | "level2" | "level3" | "level4";
+  speedRef: React.MutableRefObject<number>;
+  pausedRef: React.MutableRefObject<boolean>;
+}> = ({ bg, speedRef, pausedRef }) => {
+  const layersRef = useRef<(HTMLDivElement | null)[]>([]);
+  const offsetsRef = useRef<number[]>([]);
+  const config = PARALLAX_CONFIGS[bg];
+
+  useEffect(() => {
+    offsetsRef.current = config.map(() => 0);
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 16.6667, 3);
+      last = now;
+      const baseSpeed = pausedRef.current ? 0 : speedRef.current;
+      for (let i = 0; i < config.length; i++) {
+        offsetsRef.current[i] = (offsetsRef.current[i] + baseSpeed * config[i].speed * dt) % 4096;
+        const el = layersRef.current[i];
+        if (el) el.style.backgroundPositionX = `${-offsetsRef.current[i]}px`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [bg, config, speedRef, pausedRef]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
+      {config.map((layer, i) => (
+        <div
+          key={layer.src}
+          ref={(el) => { layersRef.current[i] = el; }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${layer.src})`,
+            backgroundRepeat: "repeat-x",
+            backgroundPosition: "0 bottom",
+            backgroundSize: "auto 100%",
+            willChange: "background-position",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const doNavigate = () => {
