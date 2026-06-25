@@ -286,7 +286,7 @@ const DinoRunner = () => {
     setActiveBg("level2");
     setLevel(2);
     wordsClearedRef.current = 0;
-    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
+    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed("level2", 2));
     setBgGradient(getRandomGradient());
 
     obstaclesRef.current = [];
