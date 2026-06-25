@@ -980,8 +980,20 @@ const DinoRunner = () => {
                 width: o.width,
                 height: o.height,
                 transform: `translate3d(${o.x}px, ${-(o.y + GROUND_HEIGHT)}px, 0)`,
+                background: "transparent",
+                border: "none",
               }}
-            />
+            >
+              {atesAnim && (
+                <Lottie
+                  animationData={atesAnim}
+                  loop
+                  autoplay
+                  style={{ width: "100%", height: "100%" }}
+                  rendererSettings={{ preserveAspectRatio: "none" }}
+                />
+              )}
+            </div>
           ))}
 
           <div
