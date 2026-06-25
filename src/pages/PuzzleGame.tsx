@@ -7,6 +7,8 @@ import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useSounds } from "@/hooks/useSounds";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
+
 
 interface GameState {
   board: number[];
@@ -78,7 +80,9 @@ const PuzzleGamePage: React.FC = () => {
   const wordsRef = useRef<string[]>([]);
   const [isWordsLoaded, setIsWordsLoaded] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showCongratsDialog, setShowCongratsDialog] = useState(false);
   const [puzzleAnim, setPuzzleAnim] = useState<any>(null);
+
 
   useEffect(() => {
     fetch("/kelimePuzzle.json").then(r => r.json()).then(setPuzzleAnim).catch(() => {});
@@ -193,8 +197,11 @@ const PuzzleGamePage: React.FC = () => {
         time_seconds: gameState.timeElapsed,
       });
       markAsPlayed();
+      playChallengeWinSound();
+      setShowCongratsDialog(true);
     }
   }, [gameState.isCompleted, gameState.moves, gameState.timeElapsed]);
+
 
   const isValidMove = (index: number, emptyIndex: number) => {
     const row = Math.floor(index / DIFFICULTY);
@@ -465,7 +472,41 @@ const PuzzleGamePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {showCongratsDialog && gameState.isCompleted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5 animate-fade-in">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-2xl border border-white/20 bg-[#1e2d45] shadow-2xl shadow-purple-950/50 p-6 text-center animate-scale-in"
+          >
+            <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-2" />
+            <div className="text-2xl font-black text-white">🎉 Tebrikler!</div>
+            <div className="mt-2 text-sm text-purple-200">
+              "{gameState.targetWord}" kelimesini {gameState.moves} hamlede,{" "}
+              {formatTime(gameState.timeElapsed)} sürede tamamladın!
+            </div>
+            <div className="mt-3 text-amber-400 font-bold text-lg">
+              Skor: {calculateScore()}
+            </div>
+            <div className="mt-1 text-[11px] text-white/50">
+              (en düşük skor = en iyi sıralama)
+            </div>
+            <button
+              onClick={() => {
+                playSound("buttonClick");
+                setShowCongratsDialog(false);
+              }}
+              className="mt-5 w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl font-bold text-white active:scale-95 transition-transform shadow-lg shadow-purple-500/30"
+            >
+              Harika!
+            </button>
+          </div>
+        </div>
+      )}
+
       {ExitConfirmDialog}
+
     </div>
   );
 };

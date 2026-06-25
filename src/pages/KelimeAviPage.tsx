@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { ArrowLeft, Clock, Trophy, Lock, Zap } from "lucide-react";
@@ -195,6 +196,7 @@ const KelimeAviPage = () => {
     if (gameState !== "finished") return;
     if (score > 0) {
       saveScore(score, foundWords.length);
+      playChallengeWinSound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);

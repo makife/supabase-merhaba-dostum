@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
@@ -185,7 +186,9 @@ const NeonBlitz: React.FC = () => {
     if (gameState === "GAMEOVER") {
       const finalLevel = levelRef.current;
       const finalWords = completedWordsRef.current.length;
+      playChallengeWinSound();
       saveScore(finalLevel, finalWords).then((saved) => {
+
         if (saved) {
           if (finalLevel >= 25) {
             toast.success("🎉 Harika! 2 Fısılda + 2 Değiştir + 2 Senyaz kazandın!", { duration: 5000 });

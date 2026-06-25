@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { ArrowLeft, Trophy } from "lucide-react";
 import Lottie from "lottie-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
@@ -520,7 +521,9 @@ const DinoRunner = () => {
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
+        playChallengeWinSound();
         saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
+
           if (saved) {
             toast.success(`🎯 Challenge puanın kaydedildi: ${finalScore}`);
           }

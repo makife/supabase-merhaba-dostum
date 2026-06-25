@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { ArrowLeft, Clock, Send, Trophy, RotateCcw, Lock } from "lucide-react";
@@ -71,6 +72,7 @@ const WordHuntPage = () => {
       // Score is already calculated per-word with time factor, save as-is
       const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, foundWords.length);
+      playChallengeWinSound();
     }
   }, [gameState]);
  

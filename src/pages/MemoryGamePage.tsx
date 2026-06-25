@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import Lottie from "lottie-react";
 import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -170,6 +171,7 @@ const WordMemoryGame = () => {
       const timeSpent = SURE - kalanSure;
       const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
       saveScore(rawScore, hamle);
+      playChallengeWinSound();
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
 
