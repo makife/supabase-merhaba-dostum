@@ -661,6 +661,7 @@ const DinoRunner = () => {
 
       const portalDoorCenterX = portalRef.current.x + PORTAL_WIDTH * PORTAL_DOOR_CENTER_RATIO;
       const reactorCenterX = dinoXRef.current + DINO_WIDTH / 2;
+      updateBgMultFromPortal(portalDoorCenterX, reactorCenterX);
 
       if (reactorCenterX >= portalDoorCenterX) {
         const reachedLevel = portalRef.current.targetLevel;
