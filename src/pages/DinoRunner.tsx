@@ -6,6 +6,8 @@ import { useSounds } from "@/hooks/useSounds";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
+const DINO_RUNNER_ASSET_VERSION = "20260625-reaktor-bg-portal-fix";
+
 const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const doNavigate = () => {
@@ -30,11 +32,11 @@ const DinoRunner = () => {
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const arkaPlanLottieRef = useRef<any>(null);
 
-  // Her bg lottie'sinin temel hız çarpanı.
-  // level2 lottie'si diğerlerinden ~2x daha hızlı oynuyor; bu yüzden bazı 0.5
+  // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
+  // bu yüzden diğer arka planlarla aynı çarpanı kullanıyor.
   const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
     level1: 1,
-    level2: 0.5,
+    level2: 1,
     level3: 1,
     level4: 1,
   };
@@ -42,12 +44,12 @@ const DinoRunner = () => {
     Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
-    fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
-    fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
-    fetch("/DinoRunnerArkaPlan2.json").then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
-    fetch("/DinoRunnerArkaPlan3.json").then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
-    fetch("/DinoRunnerArkaPlan4.json").then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
-    fetch("/DinoRunnerArkaPlanPortal.json").then(r => r.json()).then(setPortalAnim).catch(() => {});
+    fetch(`/reaktorKosma.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setReaktorAnim).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan2.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan3.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan4.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
+    fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
@@ -129,7 +131,8 @@ const DinoRunner = () => {
   const portalTriggeredRef = useRef(false); // 500 puan + 2sn tetikleyicisi bir kez çalışsın
   const portalRef = useRef<{ x: number } | null>(null);
   const levelUpTimeoutRef = useRef<any>(null);
-  const PORTAL_WIDTH = 220;
+  const PORTAL_WIDTH = 300;
+  const PORTAL_VERTICAL_OVERSCAN = 24;
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -302,6 +305,14 @@ const DinoRunner = () => {
     gameStateRef.current = "playing";
     setGameState("playing");
   };
+
+  useEffect(() => {
+    if (!arkaPlanLottieRef.current) return;
+    const id = requestAnimationFrame(() => {
+      arkaPlanLottieRef.current?.setSpeed(computeBgSpeed(activeBg, level));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeBg, level]);
 
   const handleJump = (e) => {
     if (e) {
@@ -690,9 +701,9 @@ const DinoRunner = () => {
               style={{
                 position: "absolute",
                 left: 0,
-                top: 0,
+                top: -PORTAL_VERTICAL_OVERSCAN,
                 width: PORTAL_WIDTH,
-                height: "100%",
+                height: `calc(100% + ${PORTAL_VERTICAL_OVERSCAN * 2}px)`,
                 transform: `translate3d(${renderState.portal.x}px, 0, 0)`,
                 zIndex: 6,
                 pointerEvents: "none",
