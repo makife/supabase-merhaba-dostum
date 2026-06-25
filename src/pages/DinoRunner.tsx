@@ -844,29 +844,9 @@ const DinoRunner = () => {
           onPointerDown={handleJump}
           style={{ background: "transparent" }}
         >
-          {/* Lottie Arka Plan */}
-          {(() => {
-            const bgMap: Record<string, any> = {
-              level1: arkaPlanAnim,
-              level2: arkaPlanAnim3,
-              level3: arkaPlanAnim5 ?? arkaPlanAnim4,
-              level4: arkaPlanAnim4,
-            };
-            const data = bgMap[activeBg] ?? arkaPlanAnim;
-            if (!data) return null;
-            return (
-              <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-                <Lottie
-                  key={activeBg}
-                  lottieRef={arkaPlanLottieRef}
-                  animationData={data}
-                  loop
-                  autoplay
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-            );
-          })()}
+          {/* Parallax Arka Plan */}
+          <ParallaxBackground bg={activeBg} speedRef={speedRef} pausedRef={gameStateRef as any} />
+
 
           {/* Level başlangıç portalı (soldan çıkış) */}
           {renderState.entryPortal && portalAnim && (
