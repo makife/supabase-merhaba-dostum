@@ -348,6 +348,7 @@ const DinoRunner = () => {
 
   const startLevel = (targetLevel: number) => {
     playButtonSound("buttonClick");
+    playPortalGecisSound();
     const targetBg = getBgForLevel(targetLevel);
     setActiveBg(targetBg);
     setLevel(targetLevel);
