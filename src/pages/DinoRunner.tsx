@@ -560,7 +560,7 @@ const DinoRunner = () => {
         nextPortalScoreRef.current += 500;
         gameStateRef.current = "transition";
         setGameState("transition");
-        setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
+        setLevelUpMessage(`🎉🎊 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
         setShowLevelUpText(true);
         playSound(900, "sine", 0.3);
         levelUpTimeoutRef.current = setTimeout(() => {
