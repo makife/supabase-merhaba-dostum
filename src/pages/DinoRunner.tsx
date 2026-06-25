@@ -66,7 +66,7 @@ const ParallaxBackground: React.FC<{
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 16.6667, 3);
       last = now;
-      const baseSpeed = speedRef.current;
+      const baseSpeed = speedRef.current * multRef.current;
       for (let i = 0; i < config.length; i++) {
         offsetsRef.current[i] = (offsetsRef.current[i] + baseSpeed * config[i].speed * dt) % 4096;
         const el = layersRef.current[i];
