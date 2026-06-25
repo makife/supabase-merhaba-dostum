@@ -241,6 +241,7 @@ const DinoRunner = () => {
   const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
   const entryPortalRef = useRef<{ x: number } | null>(null);
   const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; fromY: number; toY: number; duration: number } | null>(null);
+  const exitFadeRef = useRef(0); // 0 → 1, reaktör çıkış portalından geçerken artar
   const pendingLevelRef = useRef(2);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 300;
@@ -394,11 +395,9 @@ const DinoRunner = () => {
     hasPlayedTodayRef.current = true;
     markAsPlayed();
 
-    setGameState("playing");
     gameStateRef.current = "playing";
 
-    dinoYRef.current = 0;
-    dinoXRef.current = DINO_LEFT;
+    dinoXRef.current = ENTRY_DINO_START_X;
     dinoRotationRef.current = 0;
     velocityRef.current = 0;
     speedRef.current = 2;
@@ -418,8 +417,21 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     nextPortalScoreRef.current = 500;
     portalRef.current = null;
-    entryPortalRef.current = null;
-    entryAnimationRef.current = null;
+    exitFadeRef.current = 0;
+
+    // Giriş portalı (level 1 için de portaldan giriş yap)
+    entryPortalRef.current = { x: ENTRY_PORTAL_X };
+    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT + ENTRY_PORTAL_Y_OFFSET;
+    dinoYRef.current = portalCenterDinoY;
+    entryAnimationRef.current = {
+      startTime: performance.now(),
+      fromX: ENTRY_DINO_START_X,
+      toX: DINO_LEFT,
+      fromY: portalCenterDinoY,
+      toY: 0,
+      duration: 1400,
+    };
+
     if (levelUpTimeoutRef.current) clearTimeout(levelUpTimeoutRef.current);
     setShowLevelUpText(false);
     setLevelUpMessage("");
@@ -432,13 +444,26 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, dinoOpacity: 1, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
+    setRenderState({
+      dinoX: ENTRY_DINO_START_X,
+      dinoY: portalCenterDinoY,
+      dinoRotation: 0,
+      dinoOpacity: 0,
+      obstacles: [],
+      letters: [],
+      clouds: [],
+      groundOffset: 0,
+      portal: null,
+      entryPortal: entryPortalRef.current,
+    });
     setFeedback(null);
 
-    nextObstacleTimeRef.current = Date.now() + 1000;
+    nextObstacleTimeRef.current = Date.now() + 1800;
 
     pickNewWord();
+    playPortalGecisSound();
     playSound(440, "triangle");
+    setGameState("playing");
   };
 
   const startLevel = (targetLevel: number) => {
@@ -458,6 +483,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     portalRef.current = null;
     portalTriggeredRef.current = false;
+    exitFadeRef.current = 0;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
     // Portalın dikey ortasından çıksın: portal yukarı kaydırıldığı için dinoY de yukarı kayar
@@ -677,7 +703,13 @@ const DinoRunner = () => {
       const reactorCenterX = dinoXRef.current + DINO_WIDTH / 2;
       updateBgMultFromPortal(portalDoorCenterX, reactorCenterX);
 
-      // Reaktör portalın içinden tamamen geçtikten sonra level atlasın
+      // Reaktör portal kapısına yaklaştıkça yavaşça solar (fade-out)
+      const fadeStart = portalDoorCenterX - DINO_WIDTH / 2;
+      const fadeEnd = portalDoorCenterX + DINO_WIDTH;
+      const fadeRange = Math.max(1, fadeEnd - fadeStart);
+      exitFadeRef.current = Math.min(Math.max((reactorCenterX - fadeStart) / fadeRange, 0), 1);
+
+      // Reaktör tamamen solduktan sonra level atlasın
       if (reactorCenterX >= portalDoorCenterX + DINO_WIDTH) {
         const reachedLevel = portalRef.current.targetLevel;
         portalRef.current = null;
@@ -803,6 +835,10 @@ const DinoRunner = () => {
       const ea = entryAnimationRef.current;
       const p = Math.min((performance.now() - ea.startTime) / ea.duration, 1);
       dinoOpacity = Math.min(1, p * 1.2);
+    }
+    // Çıkış portalından geçerken solma
+    if (exitFadeRef.current > 0) {
+      dinoOpacity = Math.min(dinoOpacity, 1 - exitFadeRef.current);
     }
     setRenderState({
       dinoX: dinoXRef.current,
