@@ -680,15 +680,15 @@ const DinoRunner = () => {
               style={{
                 position: "absolute",
                 left: 0,
-                top: "50%",
+                top: 0,
                 width: PORTAL_WIDTH,
-                height: PORTAL_WIDTH,
-                transform: `translate3d(${renderState.portal.x}px, -50%, 0)`,
+                height: "100%",
+                transform: `translate3d(${renderState.portal.x}px, 0, 0)`,
                 zIndex: 6,
                 pointerEvents: "none",
               }}
             >
-              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
+              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} preserveAspectRatio="none" />
             </div>
           )}
 
