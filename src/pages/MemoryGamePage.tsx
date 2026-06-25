@@ -90,8 +90,10 @@ const WordMemoryGame = () => {
   // Animasyon state: kazanınca kartlar yerlerine kayıyor mu?
   const [puzzleAciliyor, setPuzzleAciliyor] = useState(false);
   const [showCongratsDialog, setShowCongratsDialog] = useState(false);
-  // Her kartın hedef grid pozisyonu (gorselParca değerine göre sıralı)
-  const [kartHedefler, setKartHedefler] = useState<{ [kartId: number]: number }>({});
+
+  // FLIP animasyonu için kart referansları ve ilk pozisyonlar
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const firstRectsRef = useRef<Record<number, DOMRect>>({});
 
   const dailyImage = getDailyImage();
 
