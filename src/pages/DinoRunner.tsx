@@ -6,6 +6,8 @@ import { useSounds } from "@/hooks/useSounds";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
+const DINO_RUNNER_ASSET_VERSION = "20260625-reaktor-bg-portal-fix";
+
 const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const doNavigate = () => {
@@ -42,12 +44,12 @@ const DinoRunner = () => {
     Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
-    fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
-    fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
-    fetch("/DinoRunnerArkaPlan2.json").then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
-    fetch("/DinoRunnerArkaPlan3.json").then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
-    fetch("/DinoRunnerArkaPlan4.json").then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
-    fetch("/DinoRunnerArkaPlanPortal.json").then(r => r.json()).then(setPortalAnim).catch(() => {});
+    fetch(`/reaktorKosma.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setReaktorAnim).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan2.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan3.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan4.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
+    fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
