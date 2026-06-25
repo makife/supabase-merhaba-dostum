@@ -275,17 +275,24 @@ const DinoRunner = () => {
   const restoreBackgroundSpeed = (targetLevel = levelRef.current) => {
     const bg = getBgForLevel(targetLevel);
     if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bg, targetLevel));
+    // Parallax arka plan çarpanını anında geri aç
+    bgSpeedMultRef.current = 1;
   };
 
   const slowBackgroundToStop = () => {
+    // Lottie (varsa) için: yavaşlatarak durdur
     const startSpeed = computeBgSpeed(getBgForLevel(levelRef.current), levelRef.current);
     const startedAt = performance.now();
-    const duration = 900;
+    const duration = 500;
+    const startMult = bgSpeedMultRef.current;
     const tick = () => {
-      if (!arkaPlanLottieRef.current || gameStateRef.current !== "playing") return;
+      if (gameStateRef.current !== "playing") return;
       const progress = Math.min((performance.now() - startedAt) / duration, 1);
-      arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - progress));
+      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic — hızlı düşüş
+      bgSpeedMultRef.current = startMult * (1 - eased);
+      if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - eased));
       if (progress < 1) requestAnimationFrame(tick);
+      else bgSpeedMultRef.current = 0;
     };
     requestAnimationFrame(tick);
   };
