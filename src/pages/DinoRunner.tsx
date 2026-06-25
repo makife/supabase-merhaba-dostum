@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { ArrowLeft, Trophy } from "lucide-react";
 import Lottie from "lottie-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";

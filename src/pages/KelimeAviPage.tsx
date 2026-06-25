@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
 import { useSounds } from "@/hooks/useSounds";
 import { ArrowLeft, Clock, Trophy, Lock, Zap } from "lucide-react";
