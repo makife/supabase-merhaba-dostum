@@ -6,7 +6,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
-const DINO_RUNNER_ASSET_VERSION = "20260625-reaktor-bg-portal-fix";
+const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
@@ -30,6 +30,7 @@ const DinoRunner = () => {
   const [portalAnim, setPortalAnim] = useState<any>(null);
   const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
+  const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
 
   // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
@@ -79,6 +80,7 @@ const DinoRunner = () => {
 
   // Fiziksel Render State'leri - TEK BATCH STATE
   const [renderState, setRenderState] = useState({
+    dinoX: 50,
     dinoY: 0,
     dinoRotation: 0,
     obstacles: [] as any[],
@@ -86,6 +88,7 @@ const DinoRunner = () => {
     clouds: [] as any[],
     groundOffset: 0,
     portal: null as null | { x: number },
+    entryPortal: null as null | { x: number },
   });
 
   // --- KELİME VE FEEDBACK SİSTEMİ ---
@@ -100,6 +103,7 @@ const DinoRunner = () => {
 
   // --- OYUN MOTORU REF'LERİ ---
   const gameStateRef = useRef("waiting");
+  const dinoXRef = useRef(50);
   const dinoYRef = useRef(0);
   const dinoRotationRef = useRef(0);
   const velocityRef = useRef(0);
@@ -127,12 +131,19 @@ const DinoRunner = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
 
-  // Level 2 Portal Ref'leri
-  const portalTriggeredRef = useRef(false); // 500 puan + 2sn tetikleyicisi bir kez çalışsın
-  const portalRef = useRef<{ x: number } | null>(null);
+  // Portal Ref'leri: her 500 puanda sağ portal, sonraki level başlangıcında sol portal
+  const levelRef = useRef(1);
+  const portalTriggeredRef = useRef(false); // Portal spawn gecikmesi sırasında tekrar kurulum olmasın
+  const nextPortalScoreRef = useRef(500);
+  const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
+  const entryPortalRef = useRef<{ x: number } | null>(null);
+  const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; duration: number } | null>(null);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 300;
   const PORTAL_VERTICAL_OVERSCAN = 24;
+  const PORTAL_DOOR_CENTER_RATIO = 0.63;
+  const ENTRY_PORTAL_X = -PORTAL_WIDTH * PORTAL_DOOR_CENTER_RATIO;
+  const ENTRY_DINO_START_X = 4;
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -151,6 +162,31 @@ const DinoRunner = () => {
   const DINO_HEIGHT = 40;
   const OBSTACLE_WIDTH = 30;
   const LETTER_SIZE = 35;
+
+  const getBgForLevel = (lvl: number): "level1" | "level2" | "level3" | "level4" => {
+    if (lvl <= 1) return "level1";
+    if (lvl === 2) return "level2";
+    if (lvl === 3) return "level3";
+    return "level4";
+  };
+
+  const restoreBackgroundSpeed = (targetLevel = levelRef.current) => {
+    const bg = getBgForLevel(targetLevel);
+    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bg, targetLevel));
+  };
+
+  const slowBackgroundToStop = () => {
+    const startSpeed = computeBgSpeed(getBgForLevel(levelRef.current), levelRef.current);
+    const startedAt = performance.now();
+    const duration = 900;
+    const tick = () => {
+      if (!arkaPlanLottieRef.current || gameStateRef.current !== "playing") return;
+      const progress = Math.min((performance.now() - startedAt) / duration, 1);
+      arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - progress));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
 
   useEffect(() => {
     if (!audioContextRef.current) {
