@@ -620,20 +620,8 @@ const WordMemoryGame = () => {
               </div>
             )}
 
-            {/* Puzzle tamamlandı - görsel tam açık göster */}
-            {puzzleAciliyor && (
-              <div className="mt-4 rounded-xl overflow-hidden border border-white/20 shadow-lg shadow-purple-500/20">
-                <img
-                  src={dailyImage}
-                  alt="Günlük özlü söz"
-                  className="w-full object-cover"
-                  style={{ animation: "slowReveal 3.5s ease both" }}
-                />
-                <div className="bg-black/40 text-center py-2 text-xs text-white/60">
-                  Günün özlü sözü 🌟
-                </div>
-              </div>
-            )}
+
+
 
             {/* Home button */}
             {(oyunBitti || hasPlayedToday) && (
