@@ -797,10 +797,18 @@ const DinoRunner = () => {
     // Bulutlar kaldırıldı - gereksiz DOM + paint yükü
 
     // --- HER FRAME RENDER (60FPS) ---
+    // Entry animasyonu sırasında reaktör görünmezden görünür hale gelir
+    let dinoOpacity = 1;
+    if (entryAnimationRef.current) {
+      const ea = entryAnimationRef.current;
+      const p = Math.min((performance.now() - ea.startTime) / ea.duration, 1);
+      dinoOpacity = Math.min(1, p * 1.2);
+    }
     setRenderState({
       dinoX: dinoXRef.current,
       dinoY: dinoYRef.current,
       dinoRotation: dinoRotationRef.current,
+      dinoOpacity,
       obstacles: obstaclesRef.current,
       letters: activeLetters,
       clouds: [],
