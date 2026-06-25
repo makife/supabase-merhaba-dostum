@@ -53,8 +53,7 @@ const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src:
 const ParallaxBackground: React.FC<{
   bg: "level1" | "level2" | "level3" | "level4";
   speedRef: React.MutableRefObject<number>;
-  pausedRef: React.MutableRefObject<boolean>;
-}> = ({ bg, speedRef, pausedRef }) => {
+}> = ({ bg, speedRef }) => {
   const layersRef = useRef<(HTMLDivElement | null)[]>([]);
   const offsetsRef = useRef<number[]>([]);
   const config = PARALLAX_CONFIGS[bg];
@@ -66,7 +65,7 @@ const ParallaxBackground: React.FC<{
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 16.6667, 3);
       last = now;
-      const baseSpeed = pausedRef.current ? 0 : speedRef.current;
+      const baseSpeed = speedRef.current;
       for (let i = 0; i < config.length; i++) {
         offsetsRef.current[i] = (offsetsRef.current[i] + baseSpeed * config[i].speed * dt) % 4096;
         const el = layersRef.current[i];
@@ -76,7 +75,8 @@ const ParallaxBackground: React.FC<{
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [bg, config, speedRef, pausedRef]);
+  }, [bg, config, speedRef]);
+
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
