@@ -660,28 +660,7 @@ const DinoRunner = () => {
         setCompletedWords([...completedWordsRef.current]);
         showFeedback(true);
         
-        // Level Mantığı
         wordsClearedRef.current += 1;
-        
-        if (wordsClearedRef.current >= 3) {
-           setLevel(prev => {
-             const newLevel = prev + 1;
-             // Level 3 ve 4'te ilgili arka planlara geç
-             let bgForSpeed: "level1" | "level2" | "level3" | "level4" = activeBg;
-             if (newLevel === 3) { setActiveBg("level3"); bgForSpeed = "level3"; }
-             else if (newLevel === 4) { setActiveBg("level4"); bgForSpeed = "level4"; }
-             if (arkaPlanLottieRef.current) {
-               arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bgForSpeed, newLevel));
-             }
-             return newLevel;
-           });
-           wordsClearedRef.current = 0; // Sıfırla
-           
-           // Yeni Gradient ve Ses
-           setBgGradient(getRandomGradient());
-           playSound(600, "sine", 0.5); 
-           setWordNotification(`SEVİYE ${level + 1}!`);
-        }
 
       } else {
         showFeedback(false);
