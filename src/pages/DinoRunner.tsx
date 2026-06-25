@@ -845,7 +845,7 @@ const DinoRunner = () => {
           style={{ background: "transparent" }}
         >
           {/* Parallax Arka Plan */}
-          <ParallaxBackground bg={activeBg} speedRef={speedRef} pausedRef={gameStateRef as any} />
+          <ParallaxBackground bg={activeBg} speedRef={speedRef} />
 
 
           {/* Level başlangıç portalı (soldan çıkış) */}
