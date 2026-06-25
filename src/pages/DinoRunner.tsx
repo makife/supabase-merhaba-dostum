@@ -1105,7 +1105,7 @@ const DinoRunner = () => {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0);
-            z-index: 60;
+            z-index: 61;
             font-size: 24px;
             font-weight: 900;
             text-align: center;
