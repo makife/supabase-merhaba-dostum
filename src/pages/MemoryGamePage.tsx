@@ -180,9 +180,10 @@ const WordMemoryGame = () => {
           if (el) rects[Number(id)] = el.getBoundingClientRect();
         });
         firstRectsRef.current = rects;
-        setShowCongratsDialog(true);
+        setFlipRevealedIds(new Set());
         setPuzzleAciliyor(true);
       }, 600);
+
     }
   }, [oyunBitti]);
 
