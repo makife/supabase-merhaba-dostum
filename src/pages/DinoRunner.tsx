@@ -675,8 +675,8 @@ const DinoRunner = () => {
           {(() => {
             const bgMap: Record<string, any> = {
               level1: arkaPlanAnim,
-              level2: arkaPlanAnim2,
-              level3: arkaPlanAnim3,
+              level2: arkaPlanAnim3,
+              level3: arkaPlanAnim4,
               level4: arkaPlanAnim4,
             };
             const data = bgMap[activeBg] ?? arkaPlanAnim;
