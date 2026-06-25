@@ -137,15 +137,12 @@ const DinoRunner = () => {
   const nextPortalScoreRef = useRef(500);
   const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
   const entryPortalRef = useRef<{ x: number } | null>(null);
-  const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; fromY: number; toY: number; duration: number } | null>(null);
+  const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; duration: number } | null>(null);
   const pendingLevelRef = useRef(2);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 300;
   const PORTAL_VERTICAL_OVERSCAN = 24;
-  // Ölçüm: swirl halkasının görsel merkezi 1500x1500 kaynak canvas'ta x≈%84.5, y≈%58.2 noktasında
-  // (tam ortada değil - asset'in kendi içinde kaymış). Geçiş/çıkış noktalarını buna göre kalibre ediyoruz.
-  const PORTAL_DOOR_CENTER_RATIO = 0.845;
-  const PORTAL_RING_VERTICAL_RATIO = 0.582;
+  const PORTAL_DOOR_CENTER_RATIO = 0.63;
   const ENTRY_PORTAL_X = -PORTAL_WIDTH * PORTAL_DOOR_CENTER_RATIO;
   const ENTRY_DINO_START_X = 4;
 
@@ -166,15 +163,6 @@ const DinoRunner = () => {
   const DINO_HEIGHT = 40;
   const OBSTACLE_WIDTH = 30;
   const LETTER_SIZE = 35;
-
-  // Portal halkasının dikey merkezinin, dino'nun "yerden yükseklik" koordinat sistemindeki karşılığı.
-  // Stage'in üstünden olan mesafeyi (ring merkezi) zeminden-yükseklik birimine çeviriyoruz.
-  const PORTAL_RING_CENTER_FROM_TOP =
-    -PORTAL_VERTICAL_OVERSCAN + PORTAL_RING_VERTICAL_RATIO * (GAME_HEIGHT + PORTAL_VERTICAL_OVERSCAN * 2);
-  const ENTRY_POP_Y = Math.max(
-    0,
-    GAME_HEIGHT - GROUND_HEIGHT - DINO_HEIGHT / 2 - PORTAL_RING_CENTER_FROM_TOP
-  );
 
   const getBgForLevel = (lvl: number): "level1" | "level2" | "level3" | "level4" => {
     if (lvl <= 1) return "level1";
@@ -361,14 +349,12 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
-    dinoYRef.current = ENTRY_POP_Y;
+    dinoYRef.current = 0;
     velocityRef.current = 0;
     entryAnimationRef.current = {
       startTime: performance.now(),
       fromX: ENTRY_DINO_START_X,
       toX: DINO_LEFT,
-      fromY: ENTRY_POP_Y,
-      toY: 0,
       duration: 900,
     };
     nextObstacleTimeRef.current = Date.now() + 1800;
@@ -378,7 +364,7 @@ const DinoRunner = () => {
     setRenderState((prev) => ({
       ...prev,
       dinoX: ENTRY_DINO_START_X,
-      dinoY: ENTRY_POP_Y,
+      dinoY: 0,
       obstacles: [],
       letters: [],
       portal: null,
@@ -456,11 +442,8 @@ const DinoRunner = () => {
       const progress = Math.min((now - entry.startTime) / entry.duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       dinoXRef.current = entry.fromX + (entry.toX - entry.fromX) * eased;
-      dinoYRef.current = entry.fromY + (entry.toY - entry.fromY) * eased;
       if (progress >= 1) {
         dinoXRef.current = entry.toX;
-        dinoYRef.current = entry.toY;
-        velocityRef.current = 0;
         entryAnimationRef.current = null;
         entryPortalRef.current = null;
       }
@@ -577,7 +560,7 @@ const DinoRunner = () => {
         nextPortalScoreRef.current += 500;
         gameStateRef.current = "transition";
         setGameState("transition");
-        setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
+        setLevelUpMessage(`🎉🎊 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
         setShowLevelUpText(true);
         playSound(900, "sine", 0.3);
         levelUpTimeoutRef.current = setTimeout(() => {
