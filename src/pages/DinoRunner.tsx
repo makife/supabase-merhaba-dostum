@@ -280,22 +280,19 @@ const DinoRunner = () => {
     bgSpeedMultRef.current = 1;
   };
 
-  const slowBackgroundToStop = () => {
-    // Lottie (varsa) için: yavaşlatarak durdur
-    const startSpeed = computeBgSpeed(getBgForLevel(levelRef.current), levelRef.current);
-    const startedAt = performance.now();
-    const duration = 500;
-    const startMult = bgSpeedMultRef.current;
-    const tick = () => {
-      if (gameStateRef.current !== "playing") return;
-      const progress = Math.min((performance.now() - startedAt) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic — hızlı düşüş
-      bgSpeedMultRef.current = startMult * (1 - eased);
-      if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - eased));
-      if (progress < 1) requestAnimationFrame(tick);
-      else bgSpeedMultRef.current = 0;
-    };
-    requestAnimationFrame(tick);
+  // Arka planı, portalın oyuncuya yaklaşma oranıyla orantılı olarak yavaşlatır.
+  // Portal sağdan girip reaktör merkezine ulaştığında çarpan 0 olur.
+  const updateBgMultFromPortal = (portalX: number, reactorCenterX: number) => {
+    const startX = GAME_WIDTH; // portal spawn x
+    const endX = reactorCenterX; // hedef (level geçişi)
+    const range = Math.max(1, startX - endX);
+    const progress = Math.min(Math.max((startX - portalX) / range, 0), 1); // 0 → 1
+    const mult = 1 - progress; // 1 → 0 doğrusal
+    bgSpeedMultRef.current = mult;
+    if (arkaPlanLottieRef.current) {
+      const startSpeed = computeBgSpeed(getBgForLevel(levelRef.current), levelRef.current);
+      arkaPlanLottieRef.current.setSpeed(startSpeed * mult);
+    }
   };
 
   useEffect(() => {
