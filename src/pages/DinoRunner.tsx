@@ -28,11 +28,24 @@ const DinoRunner = () => {
   const [arkaPlanAnim2, setArkaPlanAnim2] = useState<any>(null);
   const [arkaPlanAnim3, setArkaPlanAnim3] = useState<any>(null);
   const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
+  const [arkaPlanAnim5, setArkaPlanAnim5] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
   const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
+  const portalGecisAudioRef = useRef<HTMLAudioElement | null>(null);
+  const playPortalGecisSound = () => {
+    try {
+      if (!portalGecisAudioRef.current) {
+        portalGecisAudioRef.current = new Audio(`/DinoRunnerPortalGecis.mp3?v=${DINO_RUNNER_ASSET_VERSION}`);
+        portalGecisAudioRef.current.volume = 0.7;
+      }
+      const a = portalGecisAudioRef.current;
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    } catch {}
+  };
 
   // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
   // bu yüzden diğer arka planlarla aynı çarpanı kullanıyor.
