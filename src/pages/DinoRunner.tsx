@@ -533,16 +533,18 @@ const DinoRunner = () => {
     // 60fps = 16.67ms referans, max 3 frame atlama (50ms) ile sınırla
     const dt = Math.min(rawDelta, 50) / 16.667;
 
-    // Fizik (delta-time normalized)
-    velocityRef.current -= GRAVITY * dt;
-    dinoYRef.current += velocityRef.current * dt;
-    if (dinoYRef.current <= 0) {
-      dinoYRef.current = 0;
-      velocityRef.current = 0;
-    }
-    if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
-      dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
-      velocityRef.current = -2;
+    // Fizik (delta-time normalized) — entry animasyonu sırasında yerçekimi devre dışı
+    if (!entryAnimationRef.current) {
+      velocityRef.current -= GRAVITY * dt;
+      dinoYRef.current += velocityRef.current * dt;
+      if (dinoYRef.current <= 0) {
+        dinoYRef.current = 0;
+        velocityRef.current = 0;
+      }
+      if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
+        dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
+        velocityRef.current = -2;
+      }
     }
 
     dinoRotationRef.current += speedRef.current * 4 * dt;
@@ -553,8 +555,11 @@ const DinoRunner = () => {
       const progress = Math.min((now - entry.startTime) / entry.duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       dinoXRef.current = entry.fromX + (entry.toX - entry.fromX) * eased;
+      dinoYRef.current = entry.fromY + (entry.toY - entry.fromY) * eased;
       if (progress >= 1) {
         dinoXRef.current = entry.toX;
+        dinoYRef.current = entry.toY;
+        velocityRef.current = 0;
         entryAnimationRef.current = null;
         entryPortalRef.current = null;
       }
