@@ -951,6 +951,7 @@ const DinoRunner = () => {
             style={{
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
+              opacity: renderState.dinoOpacity,
               transform: `translate3d(${renderState.dinoX}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
