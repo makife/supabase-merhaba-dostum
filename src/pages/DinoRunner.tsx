@@ -124,6 +124,7 @@ const DinoRunner = () => {
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
+  const bgSpeedMultRef = useRef(1); // Parallax bg için ekstra çarpan (portal eşiğinde 0'a iner)
   const portalGecisAudioRef = useRef<HTMLAudioElement | null>(null);
   const playPortalGecisSound = () => {
     try {
