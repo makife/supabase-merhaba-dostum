@@ -648,7 +648,7 @@ const DinoRunner = () => {
       lettersRef.current = [];
       nextObstacleTimeRef.current = Date.now() + 5000;
       nextLetterTimeRef.current = Date.now() + 5000;
-      slowBackgroundToStop();
+      // Arka plan, portal sağdan gelmeye başladığında oransal olarak yavaşlayacak.
       setTimeout(() => {
         if (gameStateRef.current === "playing") {
           portalRef.current = { x: GAME_WIDTH, targetLevel };
