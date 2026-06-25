@@ -254,9 +254,9 @@ const DinoRunner = () => {
   const ENTRY_PORTAL_Y_OFFSET = 130;
 
   const PRAISE_WORDS = [
-    "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
-    "Helaaal", "Yürü bee!", "Fevkalade", "İşte Azim", 
-    "Maşallah", "Biliyorsun bu işi :)"
+    "🫵", "Süper", "Çok iyi!", "👏", 
+    "👌", "Güzel", "👍", "💯", 
+    "İyi", "🤙"
   ];
 
   // --- AYARLAR ---
