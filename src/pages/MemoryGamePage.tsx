@@ -219,7 +219,7 @@ const WordMemoryGame = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
     ilkKartAcildiRef.current = false;
     setPuzzleAciliyor(false);
-    setShowCongratsDialog(false);
+    setFlipRevealedIds(new Set());
     firstRectsRef.current = {};
     setGameLoading(true);
 
