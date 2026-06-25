@@ -836,6 +836,10 @@ const DinoRunner = () => {
       const p = Math.min((performance.now() - ea.startTime) / ea.duration, 1);
       dinoOpacity = Math.min(1, p * 1.2);
     }
+    // Çıkış portalından geçerken solma
+    if (exitFadeRef.current > 0) {
+      dinoOpacity = Math.min(dinoOpacity, 1 - exitFadeRef.current);
+    }
     setRenderState({
       dinoX: dinoXRef.current,
       dinoY: dinoYRef.current,
