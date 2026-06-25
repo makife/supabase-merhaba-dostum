@@ -23,15 +23,30 @@ const DinoRunner = () => {
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
   const [arkaPlanAnim2, setArkaPlanAnim2] = useState<any>(null);
+  const [arkaPlanAnim3, setArkaPlanAnim3] = useState<any>(null);
+  const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
-  const [activeBg, setActiveBg] = useState<"level1" | "level2">("level1");
+  const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const arkaPlanLottieRef = useRef<any>(null);
+
+  // Her bg lottie'sinin temel hız çarpanı.
+  // level2 lottie'si diğerlerinden ~2x daha hızlı oynuyor; bu yüzden bazı 0.5
+  const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
+    level1: 1,
+    level2: 0.5,
+    level3: 1,
+    level4: 1,
+  };
+  const computeBgSpeed = (bg: "level1" | "level2" | "level3" | "level4", lvl: number) =>
+    Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
     fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
     fetch("/DinoRunnerArkaPlan2.json").then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
+    fetch("/DinoRunnerArkaPlan3.json").then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
+    fetch("/DinoRunnerArkaPlan4.json").then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
     fetch("/DinoRunnerArkaPlanPortal.json").then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
