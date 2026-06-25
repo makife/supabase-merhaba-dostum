@@ -239,7 +239,7 @@ const DinoRunner = () => {
   const nextPortalScoreRef = useRef(500);
   const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
   const entryPortalRef = useRef<{ x: number } | null>(null);
-  const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; duration: number } | null>(null);
+  const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; fromY: number; toY: number; duration: number } | null>(null);
   const pendingLevelRef = useRef(2);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 300;
@@ -456,12 +456,16 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
-    dinoYRef.current = 0;
+    // Portalın dikey ortasından fırlasın: dinoY = portal merkez yüksekliği
+    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT;
+    dinoYRef.current = portalCenterDinoY;
     velocityRef.current = 0;
     entryAnimationRef.current = {
       startTime: performance.now(),
       fromX: ENTRY_DINO_START_X,
       toX: DINO_LEFT,
+      fromY: portalCenterDinoY,
+      toY: 0,
       duration: 900,
     };
     nextObstacleTimeRef.current = Date.now() + 1800;
@@ -471,7 +475,7 @@ const DinoRunner = () => {
     setRenderState((prev) => ({
       ...prev,
       dinoX: ENTRY_DINO_START_X,
-      dinoY: 0,
+      dinoY: portalCenterDinoY,
       obstacles: [],
       letters: [],
       portal: null,
@@ -529,16 +533,18 @@ const DinoRunner = () => {
     // 60fps = 16.67ms referans, max 3 frame atlama (50ms) ile sınırla
     const dt = Math.min(rawDelta, 50) / 16.667;
 
-    // Fizik (delta-time normalized)
-    velocityRef.current -= GRAVITY * dt;
-    dinoYRef.current += velocityRef.current * dt;
-    if (dinoYRef.current <= 0) {
-      dinoYRef.current = 0;
-      velocityRef.current = 0;
-    }
-    if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
-      dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
-      velocityRef.current = -2;
+    // Fizik (delta-time normalized) — entry animasyonu sırasında yerçekimi devre dışı
+    if (!entryAnimationRef.current) {
+      velocityRef.current -= GRAVITY * dt;
+      dinoYRef.current += velocityRef.current * dt;
+      if (dinoYRef.current <= 0) {
+        dinoYRef.current = 0;
+        velocityRef.current = 0;
+      }
+      if (dinoYRef.current > GAME_HEIGHT - DINO_HEIGHT) {
+        dinoYRef.current = GAME_HEIGHT - DINO_HEIGHT;
+        velocityRef.current = -2;
+      }
     }
 
     dinoRotationRef.current += speedRef.current * 4 * dt;
@@ -549,8 +555,11 @@ const DinoRunner = () => {
       const progress = Math.min((now - entry.startTime) / entry.duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       dinoXRef.current = entry.fromX + (entry.toX - entry.fromX) * eased;
+      dinoYRef.current = entry.fromY + (entry.toY - entry.fromY) * eased;
       if (progress >= 1) {
         dinoXRef.current = entry.toX;
+        dinoYRef.current = entry.toY;
+        velocityRef.current = 0;
         entryAnimationRef.current = null;
         entryPortalRef.current = null;
       }
@@ -663,7 +672,8 @@ const DinoRunner = () => {
       const reactorCenterX = dinoXRef.current + DINO_WIDTH / 2;
       updateBgMultFromPortal(portalDoorCenterX, reactorCenterX);
 
-      if (reactorCenterX >= portalDoorCenterX) {
+      // Reaktör portalın içinden tamamen geçtikten sonra level atlasın
+      if (reactorCenterX >= portalDoorCenterX + DINO_WIDTH) {
         const reachedLevel = portalRef.current.targetLevel;
         portalRef.current = null;
         playPortalGecisSound();
