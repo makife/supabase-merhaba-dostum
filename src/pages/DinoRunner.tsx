@@ -395,11 +395,9 @@ const DinoRunner = () => {
     hasPlayedTodayRef.current = true;
     markAsPlayed();
 
-    setGameState("playing");
     gameStateRef.current = "playing";
 
-    dinoYRef.current = 0;
-    dinoXRef.current = DINO_LEFT;
+    dinoXRef.current = ENTRY_DINO_START_X;
     dinoRotationRef.current = 0;
     velocityRef.current = 0;
     speedRef.current = 2;
@@ -419,8 +417,21 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     nextPortalScoreRef.current = 500;
     portalRef.current = null;
-    entryPortalRef.current = null;
-    entryAnimationRef.current = null;
+    exitFadeRef.current = 0;
+
+    // Giriş portalı (level 1 için de portaldan giriş yap)
+    entryPortalRef.current = { x: ENTRY_PORTAL_X };
+    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT + ENTRY_PORTAL_Y_OFFSET;
+    dinoYRef.current = portalCenterDinoY;
+    entryAnimationRef.current = {
+      startTime: performance.now(),
+      fromX: ENTRY_DINO_START_X,
+      toX: DINO_LEFT,
+      fromY: portalCenterDinoY,
+      toY: 0,
+      duration: 1400,
+    };
+
     if (levelUpTimeoutRef.current) clearTimeout(levelUpTimeoutRef.current);
     setShowLevelUpText(false);
     setLevelUpMessage("");
@@ -433,13 +444,26 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, dinoOpacity: 1, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
+    setRenderState({
+      dinoX: ENTRY_DINO_START_X,
+      dinoY: portalCenterDinoY,
+      dinoRotation: 0,
+      dinoOpacity: 0,
+      obstacles: [],
+      letters: [],
+      clouds: [],
+      groundOffset: 0,
+      portal: null,
+      entryPortal: entryPortalRef.current,
+    });
     setFeedback(null);
 
-    nextObstacleTimeRef.current = Date.now() + 1000;
+    nextObstacleTimeRef.current = Date.now() + 1800;
 
     pickNewWord();
+    playPortalGecisSound();
     playSound(440, "triangle");
+    setGameState("playing");
   };
 
   const startLevel = (targetLevel: number) => {
