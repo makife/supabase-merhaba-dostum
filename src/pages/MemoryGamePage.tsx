@@ -172,15 +172,13 @@ const WordMemoryGame = () => {
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
 
-      // Puzzle açılma animasyonunu 600ms sonra başlat
+      // Puzzle açılma animasyonunu 600ms sonra başlat (FLIP için ilk rect'leri yakala)
       setTimeout(() => {
-        // Her kartın gorselParca değerine göre hedef pozisyonunu hesapla
-        // Kart grid'de karışık durumda; gorselParca onun "doğru" sıra numarası
-        const hedefler: { [kartId: number]: number } = {};
-        kartlar.forEach((k) => {
-          hedefler[k.id] = k.gorselParca;
+        const rects: Record<number, DOMRect> = {};
+        Object.entries(cardRefs.current).forEach(([id, el]) => {
+          if (el) rects[Number(id)] = el.getBoundingClientRect();
         });
-        setKartHedefler(hedefler);
+        firstRectsRef.current = rects;
         setShowCongratsDialog(true);
         setPuzzleAciliyor(true);
       }, 600);
