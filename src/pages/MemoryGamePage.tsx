@@ -345,19 +345,39 @@ const WordMemoryGame = () => {
       el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
     });
 
-    // Sonraki frame'de hedefe doğru animasyon
+    // Sonraki frame'de hedefe doğru kayma animasyonu (kelime yüzleri görünür)
+    const slideDuration = 900;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         Object.values(cardRefs.current).forEach((el) => {
           if (!el) return;
-          // Her karta hafif farklı gecikme (dalga efekti)
           const delay = Math.random() * 180;
-          el.style.transition = `transform 900ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
+          el.style.transition = `transform ${slideDuration}ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
           el.style.transform = "translate(0px, 0px) scale(1, 1)";
         });
       });
     });
+
+    // Kayma bittikten sonra sırayla (gorselParca 0 → 23) kartları çevir → resim açılsın
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const startFlipsAfter = slideDuration + 250;
+    const sorted = [...kartlar].sort((a, b) => a.gorselParca - b.gorselParca);
+    sorted.forEach((kart, i) => {
+      timeouts.push(
+        setTimeout(() => {
+          setFlipRevealedIds((prev) => {
+            const next = new Set(prev);
+            next.add(kart.id);
+            return next;
+          });
+          playSound("buttonClick");
+        }, startFlipsAfter + i * 110)
+      );
+    });
+
+    return () => timeouts.forEach(clearTimeout);
   }, [puzzleAciliyor]);
+
 
 
   if (challengeLoading) {
