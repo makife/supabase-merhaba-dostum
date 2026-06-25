@@ -878,13 +878,13 @@ const DinoRunner = () => {
           <ParallaxBackground bg={activeBg} speedRef={speedRef} multRef={bgSpeedMultRef} />
 
 
-          {/* Level başlangıç portalı (soldan çıkış) */}
+          {/* Level başlangıç portalı (yukarıda, dikeyde kaydırılmış) */}
           {renderState.entryPortal && portalAnim && (
             <div
               style={{
                 position: "absolute",
                 left: 0,
-                top: -PORTAL_VERTICAL_OVERSCAN,
+                top: -PORTAL_VERTICAL_OVERSCAN - ENTRY_PORTAL_Y_OFFSET,
                 width: PORTAL_WIDTH,
                 height: `calc(100% + ${PORTAL_VERTICAL_OVERSCAN * 2}px)`,
                 transform: `translate3d(${renderState.entryPortal.x}px, 0, 0)`,
