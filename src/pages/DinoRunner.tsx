@@ -214,6 +214,10 @@ const DinoRunner = () => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
+
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
@@ -283,6 +287,7 @@ const DinoRunner = () => {
     gameStateRef.current = "playing";
 
     dinoYRef.current = 0;
+    dinoXRef.current = DINO_LEFT;
     dinoRotationRef.current = 0;
     velocityRef.current = 0;
     speedRef.current = 2;
@@ -292,6 +297,7 @@ const DinoRunner = () => {
     
     // Level Sıfırlama
     setLevel(1);
+    levelRef.current = 1;
     wordsClearedRef.current = 0;
     setBgGradient("linear-gradient(180deg, #1a2a6c 0%, #b21f1f 100%)");
     if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
@@ -299,9 +305,13 @@ const DinoRunner = () => {
     // Level 2 Portal Sıfırlama
     setActiveBg("level1");
     portalTriggeredRef.current = false;
+    nextPortalScoreRef.current = 500;
     portalRef.current = null;
+    entryPortalRef.current = null;
+    entryAnimationRef.current = null;
     if (levelUpTimeoutRef.current) clearTimeout(levelUpTimeoutRef.current);
     setShowLevelUpText(false);
+    setLevelUpMessage("");
 
     completedWordsRef.current = [];
     setCompletedWords([]);
@@ -311,7 +321,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null });
+    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
@@ -320,12 +330,14 @@ const DinoRunner = () => {
     playSound(440, "triangle");
   };
 
-  const startLevel2 = () => {
+  const startLevel = (targetLevel: number) => {
     playButtonSound("buttonClick");
-    setActiveBg("level2");
-    setLevel(2);
+    const targetBg = getBgForLevel(targetLevel);
+    setActiveBg(targetBg);
+    setLevel(targetLevel);
+    levelRef.current = targetLevel;
     wordsClearedRef.current = 0;
-    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed("level2", 2));
+    restoreBackgroundSpeed(targetLevel);
     setBgGradient(getRandomGradient());
 
     obstaclesRef.current = [];
@@ -333,10 +345,30 @@ const DinoRunner = () => {
     lastObstacleKindRef.current = null;
     sameKindStreakRef.current = 0;
     portalRef.current = null;
-    nextObstacleTimeRef.current = Date.now() + 1200;
+    portalTriggeredRef.current = false;
+    entryPortalRef.current = { x: ENTRY_PORTAL_X };
+    dinoXRef.current = ENTRY_DINO_START_X;
+    dinoYRef.current = 0;
+    velocityRef.current = 0;
+    entryAnimationRef.current = {
+      startTime: performance.now(),
+      fromX: ENTRY_DINO_START_X,
+      toX: DINO_LEFT,
+      duration: 900,
+    };
+    nextObstacleTimeRef.current = Date.now() + 1800;
+    nextLetterTimeRef.current = Date.now() + 1400;
     lastFrameTimeRef.current = 0;
 
-    setRenderState((prev) => ({ ...prev, obstacles: [], letters: [], portal: null }));
+    setRenderState((prev) => ({
+      ...prev,
+      dinoX: ENTRY_DINO_START_X,
+      dinoY: 0,
+      obstacles: [],
+      letters: [],
+      portal: null,
+      entryPortal: entryPortalRef.current,
+    }));
 
     gameStateRef.current = "playing";
     setGameState("playing");
