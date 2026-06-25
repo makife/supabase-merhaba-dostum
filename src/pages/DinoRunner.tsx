@@ -53,7 +53,8 @@ const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src:
 const ParallaxBackground: React.FC<{
   bg: "level1" | "level2" | "level3" | "level4";
   speedRef: React.MutableRefObject<number>;
-}> = ({ bg, speedRef }) => {
+  multRef: React.MutableRefObject<number>;
+}> = ({ bg, speedRef, multRef }) => {
   const layersRef = useRef<(HTMLDivElement | null)[]>([]);
   const offsetsRef = useRef<number[]>([]);
   const config = PARALLAX_CONFIGS[bg];
