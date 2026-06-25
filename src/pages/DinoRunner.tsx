@@ -185,6 +185,7 @@ const DinoRunner = () => {
     dinoX: 50,
     dinoY: 0,
     dinoRotation: 0,
+    dinoOpacity: 1,
     obstacles: [] as any[],
     letters: [] as any[],
     clouds: [] as any[],
