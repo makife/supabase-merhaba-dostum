@@ -185,6 +185,7 @@ const DinoRunner = () => {
     dinoX: 50,
     dinoY: 0,
     dinoRotation: 0,
+    dinoOpacity: 1,
     obstacles: [] as any[],
     letters: [] as any[],
     clouds: [] as any[],
@@ -247,6 +248,9 @@ const DinoRunner = () => {
   const PORTAL_DOOR_CENTER_RATIO = 0.63;
   const ENTRY_PORTAL_X = -PORTAL_WIDTH * PORTAL_DOOR_CENTER_RATIO;
   const ENTRY_DINO_START_X = 4;
+  // Üst leveldeki giriş portalı dikeyde yukarı kaydırılır;
+  // reaktör portalın merkezinden görünmez başlayıp yere doğru fade-in ile düşer.
+  const ENTRY_PORTAL_Y_OFFSET = 130;
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -428,7 +432,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
+    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, dinoOpacity: 1, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
@@ -456,8 +460,8 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
-    // Portalın dikey ortasından fırlasın: dinoY = portal merkez yüksekliği
-    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT;
+    // Portalın dikey ortasından çıksın: portal yukarı kaydırıldığı için dinoY de yukarı kayar
+    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT + ENTRY_PORTAL_Y_OFFSET;
     dinoYRef.current = portalCenterDinoY;
     velocityRef.current = 0;
     entryAnimationRef.current = {
@@ -466,7 +470,7 @@ const DinoRunner = () => {
       toX: DINO_LEFT,
       fromY: portalCenterDinoY,
       toY: 0,
-      duration: 900,
+      duration: 1400,
     };
     nextObstacleTimeRef.current = Date.now() + 1800;
     nextLetterTimeRef.current = Date.now() + 1400;
@@ -476,6 +480,7 @@ const DinoRunner = () => {
       ...prev,
       dinoX: ENTRY_DINO_START_X,
       dinoY: portalCenterDinoY,
+      dinoOpacity: 0,
       obstacles: [],
       letters: [],
       portal: null,
@@ -792,10 +797,18 @@ const DinoRunner = () => {
     // Bulutlar kaldırıldı - gereksiz DOM + paint yükü
 
     // --- HER FRAME RENDER (60FPS) ---
+    // Entry animasyonu sırasında reaktör görünmezden görünür hale gelir
+    let dinoOpacity = 1;
+    if (entryAnimationRef.current) {
+      const ea = entryAnimationRef.current;
+      const p = Math.min((performance.now() - ea.startTime) / ea.duration, 1);
+      dinoOpacity = Math.min(1, p * 1.2);
+    }
     setRenderState({
       dinoX: dinoXRef.current,
       dinoY: dinoYRef.current,
       dinoRotation: dinoRotationRef.current,
+      dinoOpacity,
       obstacles: obstaclesRef.current,
       letters: activeLetters,
       clouds: [],
@@ -865,13 +878,13 @@ const DinoRunner = () => {
           <ParallaxBackground bg={activeBg} speedRef={speedRef} multRef={bgSpeedMultRef} />
 
 
-          {/* Level başlangıç portalı (soldan çıkış) */}
+          {/* Level başlangıç portalı (yukarıda, dikeyde kaydırılmış) */}
           {renderState.entryPortal && portalAnim && (
             <div
               style={{
                 position: "absolute",
                 left: 0,
-                top: -PORTAL_VERTICAL_OVERSCAN,
+                top: -PORTAL_VERTICAL_OVERSCAN - ENTRY_PORTAL_Y_OFFSET,
                 width: PORTAL_WIDTH,
                 height: `calc(100% + ${PORTAL_VERTICAL_OVERSCAN * 2}px)`,
                 transform: `translate3d(${renderState.entryPortal.x}px, 0, 0)`,
@@ -938,6 +951,7 @@ const DinoRunner = () => {
             style={{
               width: DINO_WIDTH,
               height: DINO_HEIGHT,
+              opacity: renderState.dinoOpacity,
               transform: `translate3d(${renderState.dinoX}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
