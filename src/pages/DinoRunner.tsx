@@ -456,12 +456,16 @@ const DinoRunner = () => {
     portalTriggeredRef.current = false;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
-    dinoYRef.current = 0;
+    // Portalın dikey ortasından fırlasın: dinoY = portal merkez yüksekliği
+    const portalCenterDinoY = GAME_HEIGHT / 2 - DINO_HEIGHT / 2 - GROUND_HEIGHT;
+    dinoYRef.current = portalCenterDinoY;
     velocityRef.current = 0;
     entryAnimationRef.current = {
       startTime: performance.now(),
       fromX: ENTRY_DINO_START_X,
       toX: DINO_LEFT,
+      fromY: portalCenterDinoY,
+      toY: 0,
       duration: 900,
     };
     nextObstacleTimeRef.current = Date.now() + 1800;
@@ -471,7 +475,7 @@ const DinoRunner = () => {
     setRenderState((prev) => ({
       ...prev,
       dinoX: ENTRY_DINO_START_X,
-      dinoY: 0,
+      dinoY: portalCenterDinoY,
       obstacles: [],
       letters: [],
       portal: null,
