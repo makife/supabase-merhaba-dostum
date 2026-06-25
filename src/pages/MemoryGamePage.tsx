@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Lottie from "lottie-react";
 import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
