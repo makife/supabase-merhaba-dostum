@@ -53,7 +53,8 @@ const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src:
 const ParallaxBackground: React.FC<{
   bg: "level1" | "level2" | "level3" | "level4";
   speedRef: React.MutableRefObject<number>;
-}> = ({ bg, speedRef }) => {
+  multRef: React.MutableRefObject<number>;
+}> = ({ bg, speedRef, multRef }) => {
   const layersRef = useRef<(HTMLDivElement | null)[]>([]);
   const offsetsRef = useRef<number[]>([]);
   const config = PARALLAX_CONFIGS[bg];
@@ -65,7 +66,7 @@ const ParallaxBackground: React.FC<{
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 16.6667, 3);
       last = now;
-      const baseSpeed = speedRef.current;
+      const baseSpeed = speedRef.current * multRef.current;
       for (let i = 0; i < config.length; i++) {
         offsetsRef.current[i] = (offsetsRef.current[i] + baseSpeed * config[i].speed * dt) % 4096;
         const el = layersRef.current[i];
@@ -124,6 +125,7 @@ const DinoRunner = () => {
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
+  const bgSpeedMultRef = useRef(1); // Parallax bg için ekstra çarpan (portal eşiğinde 0'a iner)
   const portalGecisAudioRef = useRef<HTMLAudioElement | null>(null);
   const playPortalGecisSound = () => {
     try {
@@ -274,17 +276,24 @@ const DinoRunner = () => {
   const restoreBackgroundSpeed = (targetLevel = levelRef.current) => {
     const bg = getBgForLevel(targetLevel);
     if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bg, targetLevel));
+    // Parallax arka plan çarpanını anında geri aç
+    bgSpeedMultRef.current = 1;
   };
 
   const slowBackgroundToStop = () => {
+    // Lottie (varsa) için: yavaşlatarak durdur
     const startSpeed = computeBgSpeed(getBgForLevel(levelRef.current), levelRef.current);
     const startedAt = performance.now();
-    const duration = 900;
+    const duration = 500;
+    const startMult = bgSpeedMultRef.current;
     const tick = () => {
-      if (!arkaPlanLottieRef.current || gameStateRef.current !== "playing") return;
+      if (gameStateRef.current !== "playing") return;
       const progress = Math.min((performance.now() - startedAt) / duration, 1);
-      arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - progress));
+      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic — hızlı düşüş
+      bgSpeedMultRef.current = startMult * (1 - eased);
+      if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(startSpeed * (1 - eased));
       if (progress < 1) requestAnimationFrame(tick);
+      else bgSpeedMultRef.current = 0;
     };
     requestAnimationFrame(tick);
   };
@@ -845,7 +854,7 @@ const DinoRunner = () => {
           style={{ background: "transparent" }}
         >
           {/* Parallax Arka Plan */}
-          <ParallaxBackground bg={activeBg} speedRef={speedRef} />
+          <ParallaxBackground bg={activeBg} speedRef={speedRef} multRef={bgSpeedMultRef} />
 
 
           {/* Level başlangıç portalı (soldan çıkış) */}
