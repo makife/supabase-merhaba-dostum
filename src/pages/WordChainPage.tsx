@@ -48,6 +48,7 @@ const WordChainPage = () => {
       scoreSavedRef.current = true;
       const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, chain.length);
+      playChallengeWinSound();
     }
   }, [gameState]);
 

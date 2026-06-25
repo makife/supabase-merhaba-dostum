@@ -56,6 +56,7 @@ const AnagramPage = () => {
     if (gameState === "finished" && !scoreSavedRef.current && !hasPlayedToday) {
       scoreSavedRef.current = true;
       saveScore(score, correctCount);
+      playChallengeWinSound();
     }
   }, [gameState]);
 
