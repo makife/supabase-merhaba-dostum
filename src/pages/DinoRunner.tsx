@@ -121,6 +121,7 @@ const DinoRunner = () => {
   const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [arkaPlanAnim5, setArkaPlanAnim5] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
+  const [atesAnim, setAtesAnim] = useState<any>(null);
   const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
@@ -153,6 +154,7 @@ const DinoRunner = () => {
   useEffect(() => {
     fetch(`/reaktorKosma.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
+    fetch(`/DinoRunners/DinoRunnerArkaPlan11/ates1.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setAtesAnim).catch(() => {});
   }, []);
 
   // --- RENK PALETLERİ ---
@@ -978,8 +980,20 @@ const DinoRunner = () => {
                 width: o.width,
                 height: o.height,
                 transform: `translate3d(${o.x}px, ${-(o.y + GROUND_HEIGHT)}px, 0)`,
+                background: "transparent",
+                border: "none",
               }}
-            />
+            >
+              {atesAnim && (
+                <Lottie
+                  animationData={atesAnim}
+                  loop
+                  autoplay
+                  style={{ width: "100%", height: "100%" }}
+                  rendererSettings={{ preserveAspectRatio: "none" }}
+                />
+              )}
+            </div>
           ))}
 
           <div
