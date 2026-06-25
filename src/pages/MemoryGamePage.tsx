@@ -89,11 +89,12 @@ const WordMemoryGame = () => {
 
   // Animasyon state: kazanınca kartlar yerlerine kayıyor mu?
   const [puzzleAciliyor, setPuzzleAciliyor] = useState(false);
-  const [showCongratsDialog, setShowCongratsDialog] = useState(false);
+  const [flipRevealedIds, setFlipRevealedIds] = useState<Set<number>>(new Set());
 
   // FLIP animasyonu için kart referansları ve ilk pozisyonlar
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const firstRectsRef = useRef<Record<number, DOMRect>>({});
+
 
   const dailyImage = getDailyImage();
 
@@ -179,9 +180,10 @@ const WordMemoryGame = () => {
           if (el) rects[Number(id)] = el.getBoundingClientRect();
         });
         firstRectsRef.current = rects;
-        setShowCongratsDialog(true);
+        setFlipRevealedIds(new Set());
         setPuzzleAciliyor(true);
       }, 600);
+
     }
   }, [oyunBitti]);
 
@@ -217,7 +219,7 @@ const WordMemoryGame = () => {
     if (wordList.length === 0 || hasPlayedToday) return;
     ilkKartAcildiRef.current = false;
     setPuzzleAciliyor(false);
-    setShowCongratsDialog(false);
+    setFlipRevealedIds(new Set());
     firstRectsRef.current = {};
     setGameLoading(true);
 
@@ -343,19 +345,39 @@ const WordMemoryGame = () => {
       el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
     });
 
-    // Sonraki frame'de hedefe doğru animasyon
+    // Sonraki frame'de hedefe doğru kayma animasyonu (kelime yüzleri görünür)
+    const slideDuration = 900;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         Object.values(cardRefs.current).forEach((el) => {
           if (!el) return;
-          // Her karta hafif farklı gecikme (dalga efekti)
           const delay = Math.random() * 180;
-          el.style.transition = `transform 900ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
+          el.style.transition = `transform ${slideDuration}ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
           el.style.transform = "translate(0px, 0px) scale(1, 1)";
         });
       });
     });
+
+    // Kayma bittikten sonra sırayla (gorselParca 0 → 23) kartları çevir → resim açılsın
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const startFlipsAfter = slideDuration + 250;
+    const sorted = [...kartlar].sort((a, b) => a.gorselParca - b.gorselParca);
+    sorted.forEach((kart, i) => {
+      timeouts.push(
+        setTimeout(() => {
+          setFlipRevealedIds((prev) => {
+            const next = new Set(prev);
+            next.add(kart.id);
+            return next;
+          });
+          playSound("buttonClick");
+        }, startFlipsAfter + i * 110)
+      );
+    });
+
+    return () => timeouts.forEach(clearTimeout);
   }, [puzzleAciliyor]);
+
 
 
   if (challengeLoading) {
@@ -559,7 +581,10 @@ const WordMemoryGame = () => {
                     >
                       <div
                         className={`w-full h-full relative transition-transform duration-500 ${
-                          !puzzleAciliyor && (kart.acik || kart.eslesti) ? "[transform:rotateY(180deg)]" : ""
+                          (!puzzleAciliyor && (kart.acik || kart.eslesti)) ||
+                          (puzzleAciliyor && !flipRevealedIds.has(kart.id))
+                            ? "[transform:rotateY(180deg)]"
+                            : ""
                         }`}
                         style={{ transformStyle: "preserve-3d" }}
                       >
@@ -573,11 +598,11 @@ const WordMemoryGame = () => {
                             ...imageSliceStyle,
                           }}
                         >
-                          {/* Görsel yüklenmediyse veya puzzle animasyonu öncesi hafif overlay */}
-                          {!puzzleAciliyor && (
+                          {/* Resim açılmadan önce overlay (gameplay ve slide sırasında) */}
+                          {!flipRevealedIds.has(kart.id) && (
                             <div className="absolute inset-0 bg-purple-900/40 backdrop-blur-[1px]" />
                           )}
-                          {/* Köşe dekorasyon */}
+                          {/* Köşe dekorasyon (sadece oyun sırasında) */}
                           {!puzzleAciliyor && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
@@ -586,6 +611,7 @@ const WordMemoryGame = () => {
                             </div>
                           )}
                         </div>
+
 
                         {/* ===== KART ÖNÜ: Kelime ===== */}
                         <div
@@ -618,20 +644,8 @@ const WordMemoryGame = () => {
               </div>
             )}
 
-            {/* Puzzle tamamlandı - görsel tam açık göster */}
-            {puzzleAciliyor && (
-              <div className="mt-4 rounded-xl overflow-hidden border border-white/20 shadow-lg shadow-purple-500/20">
-                <img
-                  src={dailyImage}
-                  alt="Günlük özlü söz"
-                  className="w-full object-cover"
-                  style={{ animation: "slowReveal 3.5s ease both" }}
-                />
-                <div className="bg-black/40 text-center py-2 text-xs text-white/60">
-                  Günün özlü sözü 🌟
-                </div>
-              </div>
-            )}
+
+
 
             {/* Home button */}
             {(oyunBitti || hasPlayedToday) && (
@@ -649,47 +663,13 @@ const WordMemoryGame = () => {
         )}
       </div>
 
-      {showCongratsDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Tebrikler görsel açılıyor"
-            className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/20 bg-[#1e2d45] shadow-2xl shadow-purple-950/50"
-            style={{ animation: "dialogIn 500ms ease both" }}
-          >
-            <div className="px-5 py-4 text-center">
-              <div className="text-lg font-black text-white">Tebrikler!</div>
-              <div className="mt-1 text-sm font-semibold text-purple-200">Görsel açılıyor...</div>
-            </div>
-            <img
-              src={dailyImage}
-              alt="Açılan günlük özlü söz görseli"
-              className="w-full object-cover"
-              style={{ animation: "slowReveal 3.5s ease both" }}
-              onAnimationEnd={() => {
-                setTimeout(() => setShowCongratsDialog(false), 700);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
-        @keyframes dialogIn {
-          from { opacity: 0; transform: translateY(14px) scale(0.94); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes slowReveal {
-          0% { opacity: 0; filter: blur(18px) brightness(0.55); transform: scale(0.9); }
-          55% { opacity: 1; filter: blur(5px) brightness(0.9); transform: scale(1); }
-          100% { opacity: 1; filter: blur(0) brightness(1.08); transform: scale(1); }
-        }
       `}</style>
+
 
       {ExitConfirmDialog}
     </div>
