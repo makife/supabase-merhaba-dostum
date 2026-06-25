@@ -672,7 +672,8 @@ const DinoRunner = () => {
       const reactorCenterX = dinoXRef.current + DINO_WIDTH / 2;
       updateBgMultFromPortal(portalDoorCenterX, reactorCenterX);
 
-      if (reactorCenterX >= portalDoorCenterX) {
+      // Reaktör portalın içinden tamamen geçtikten sonra level atlasın
+      if (reactorCenterX >= portalDoorCenterX + DINO_WIDTH) {
         const reachedLevel = portalRef.current.targetLevel;
         portalRef.current = null;
         playPortalGecisSound();
