@@ -23,15 +23,30 @@ const DinoRunner = () => {
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
   const [arkaPlanAnim2, setArkaPlanAnim2] = useState<any>(null);
+  const [arkaPlanAnim3, setArkaPlanAnim3] = useState<any>(null);
+  const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
-  const [activeBg, setActiveBg] = useState<"level1" | "level2">("level1");
+  const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const arkaPlanLottieRef = useRef<any>(null);
+
+  // Her bg lottie'sinin temel hız çarpanı.
+  // level2 lottie'si diğerlerinden ~2x daha hızlı oynuyor; bu yüzden bazı 0.5
+  const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
+    level1: 1,
+    level2: 0.5,
+    level3: 1,
+    level4: 1,
+  };
+  const computeBgSpeed = (bg: "level1" | "level2" | "level3" | "level4", lvl: number) =>
+    Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
     fetch("/reaktorKosma.json").then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch("/DinoRunnerArkaPlan.json").then(r => r.json()).then(setArkaPlanAnim).catch(() => {});
     fetch("/DinoRunnerArkaPlan2.json").then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
+    fetch("/DinoRunnerArkaPlan3.json").then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
+    fetch("/DinoRunnerArkaPlan4.json").then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
     fetch("/DinoRunnerArkaPlanPortal.json").then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
@@ -271,7 +286,7 @@ const DinoRunner = () => {
     setActiveBg("level2");
     setLevel(2);
     wordsClearedRef.current = 0;
-    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(1);
+    if (arkaPlanLottieRef.current) arkaPlanLottieRef.current.setSpeed(computeBgSpeed("level2", 2));
     setBgGradient(getRandomGradient());
 
     obstaclesRef.current = [];
@@ -552,10 +567,12 @@ const DinoRunner = () => {
         if (wordsClearedRef.current >= 3) {
            setLevel(prev => {
              const newLevel = prev + 1;
-             // Her level'da arka plan %20 hızlanır, max 4x
+             // Level 3 ve 4'te ilgili arka planlara geç
+             let bgForSpeed: "level1" | "level2" | "level3" | "level4" = activeBg;
+             if (newLevel === 3) { setActiveBg("level3"); bgForSpeed = "level3"; }
+             else if (newLevel === 4) { setActiveBg("level4"); bgForSpeed = "level4"; }
              if (arkaPlanLottieRef.current) {
-               const newSpeed = Math.min(1 + (newLevel - 1) * 0.2, 4);
-               arkaPlanLottieRef.current.setSpeed(newSpeed);
+               arkaPlanLottieRef.current.setSpeed(computeBgSpeed(bgForSpeed, newLevel));
              }
              return newLevel;
            });
@@ -644,18 +661,28 @@ const DinoRunner = () => {
           style={{ background: "transparent" }}
         >
           {/* Lottie Arka Plan */}
-          {(activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2) && (
-            <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-              <Lottie
-                key={activeBg}
-                lottieRef={arkaPlanLottieRef}
-                animationData={activeBg === "level1" ? arkaPlanAnim : arkaPlanAnim2}
-                loop
-                autoplay
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-          )}
+          {(() => {
+            const bgMap: Record<string, any> = {
+              level1: arkaPlanAnim,
+              level2: arkaPlanAnim2,
+              level3: arkaPlanAnim3,
+              level4: arkaPlanAnim4,
+            };
+            const data = bgMap[activeBg] ?? arkaPlanAnim;
+            if (!data) return null;
+            return (
+              <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+                <Lottie
+                  key={activeBg}
+                  lottieRef={arkaPlanLottieRef}
+                  animationData={data}
+                  loop
+                  autoplay
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            );
+          })()}
 
           {/* Level 2 Portalı */}
           {renderState.portal && portalAnim && (
@@ -663,15 +690,15 @@ const DinoRunner = () => {
               style={{
                 position: "absolute",
                 left: 0,
-                top: "50%",
+                top: 0,
                 width: PORTAL_WIDTH,
-                height: PORTAL_WIDTH,
-                transform: `translate3d(${renderState.portal.x}px, -50%, 0)`,
+                height: "100%",
+                transform: `translate3d(${renderState.portal.x}px, 0, 0)`,
                 zIndex: 6,
                 pointerEvents: "none",
               }}
             >
-              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
+              <Lottie animationData={portalAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} rendererSettings={{ preserveAspectRatio: "none" }} />
             </div>
           )}
 
