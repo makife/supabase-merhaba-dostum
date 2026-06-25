@@ -30,11 +30,11 @@ const DinoRunner = () => {
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const arkaPlanLottieRef = useRef<any>(null);
 
-  // Her bg lottie'sinin temel hız çarpanı.
-  // level2 lottie'si diğerlerinden ~2x daha hızlı oynuyor; bu yüzden bazı 0.5
+  // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
+  // bu yüzden diğer arka planlarla aynı çarpanı kullanıyor.
   const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
     level1: 1,
-    level2: 0.5,
+    level2: 1,
     level3: 1,
     level4: 1,
   };
@@ -129,7 +129,8 @@ const DinoRunner = () => {
   const portalTriggeredRef = useRef(false); // 500 puan + 2sn tetikleyicisi bir kez çalışsın
   const portalRef = useRef<{ x: number } | null>(null);
   const levelUpTimeoutRef = useRef<any>(null);
-  const PORTAL_WIDTH = 220;
+  const PORTAL_WIDTH = 300;
+  const PORTAL_VERTICAL_OVERSCAN = 24;
 
   const PRAISE_WORDS = [
     "Mükemmel", "Süper", "Çok iyi!", "Aferin", 
@@ -302,6 +303,14 @@ const DinoRunner = () => {
     gameStateRef.current = "playing";
     setGameState("playing");
   };
+
+  useEffect(() => {
+    if (!arkaPlanLottieRef.current) return;
+    const id = requestAnimationFrame(() => {
+      arkaPlanLottieRef.current?.setSpeed(computeBgSpeed(activeBg, level));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeBg, level]);
 
   const handleJump = (e) => {
     if (e) {
@@ -690,9 +699,9 @@ const DinoRunner = () => {
               style={{
                 position: "absolute",
                 left: 0,
-                top: 0,
+                top: -PORTAL_VERTICAL_OVERSCAN,
                 width: PORTAL_WIDTH,
-                height: "100%",
+                height: `calc(100% + ${PORTAL_VERTICAL_OVERSCAN * 2}px)`,
                 transform: `translate3d(${renderState.portal.x}px, 0, 0)`,
                 zIndex: 6,
                 pointerEvents: "none",
