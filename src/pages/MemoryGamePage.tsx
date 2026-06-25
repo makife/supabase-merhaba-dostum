@@ -528,26 +528,33 @@ const WordMemoryGame = () => {
             {/* ===================== KART GRİD ===================== */}
             {kartlar.length > 0 && (
               <div
-                className="grid grid-cols-5 gap-2"
-                // Puzzle animasyonu aktifken overflow visible olsun ki kartlar kayabilsin
-                style={{ overflow: puzzleAciliyor ? "visible" : "hidden", position: "relative" }}
+                className={`grid gap-2 ${puzzleAciliyor ? "grid-cols-4" : "grid-cols-5"}`}
+                style={{ overflow: "visible", position: "relative" }}
               >
                 {kartlar.map((kart, index) => {
                   // Kart arka yüzü: görselin bu karta düşen karışık parçası
                   const imageSliceStyle = getImageSliceStyle(kart.gorselParca, dailyImage, 4, 6);
 
-                  // Puzzle animasyonu aktifse transform uygula
-                  const puzzleStyle = puzzleAciliyor ? getPuzzleTransform(index, kart) : {};
+                  // Puzzle modunda kartı gorselParca pozisyonuna sabitle (4x6)
+                  const puzzlePlacement: React.CSSProperties = puzzleAciliyor
+                    ? {
+                        gridColumnStart: (kart.gorselParca % 4) + 1,
+                        gridRowStart: Math.floor(kart.gorselParca / 4) + 1,
+                      }
+                    : {};
 
                   return (
                     <div
                       key={`${kart.kelime}-${kart.id}`}
+                      ref={(el) => {
+                        cardRefs.current[kart.id] = el;
+                      }}
                       onClick={() => !puzzleAciliyor && kartTikla(index)}
                       className="aspect-square relative cursor-pointer"
                       style={{
                         perspective: "1000px",
                         position: "relative",
-                        ...puzzleStyle,
+                        ...puzzlePlacement,
                       }}
                     >
                       <div
@@ -558,9 +565,11 @@ const WordMemoryGame = () => {
                       >
                         {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
-                          className="absolute inset-0 w-full h-full rounded-lg border border-white/20 overflow-hidden"
+                          className="absolute inset-0 w-full h-full border border-white/20 overflow-hidden"
                           style={{
                             backfaceVisibility: "hidden",
+                            borderRadius: puzzleAciliyor ? 0 : 8,
+                            transition: "border-radius 600ms ease",
                             ...imageSliceStyle,
                           }}
                         >
