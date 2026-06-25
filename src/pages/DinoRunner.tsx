@@ -432,7 +432,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     lettersRef.current = [];
     cloudsRef.current = [];
-    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
+    setRenderState({ dinoX: DINO_LEFT, dinoY: 0, dinoRotation: 0, dinoOpacity: 1, obstacles: [], letters: [], clouds: [], groundOffset: 0, portal: null, entryPortal: null });
     setFeedback(null);
 
     nextObstacleTimeRef.current = Date.now() + 1000;
