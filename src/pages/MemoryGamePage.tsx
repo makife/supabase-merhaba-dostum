@@ -581,7 +581,10 @@ const WordMemoryGame = () => {
                     >
                       <div
                         className={`w-full h-full relative transition-transform duration-500 ${
-                          !puzzleAciliyor && (kart.acik || kart.eslesti) ? "[transform:rotateY(180deg)]" : ""
+                          (!puzzleAciliyor && (kart.acik || kart.eslesti)) ||
+                          (puzzleAciliyor && !flipRevealedIds.has(kart.id))
+                            ? "[transform:rotateY(180deg)]"
+                            : ""
                         }`}
                         style={{ transformStyle: "preserve-3d" }}
                       >
@@ -595,11 +598,11 @@ const WordMemoryGame = () => {
                             ...imageSliceStyle,
                           }}
                         >
-                          {/* Görsel yüklenmediyse veya puzzle animasyonu öncesi hafif overlay */}
-                          {!puzzleAciliyor && (
+                          {/* Resim açılmadan önce overlay (gameplay ve slide sırasında) */}
+                          {!flipRevealedIds.has(kart.id) && (
                             <div className="absolute inset-0 bg-purple-900/40 backdrop-blur-[1px]" />
                           )}
-                          {/* Köşe dekorasyon */}
+                          {/* Köşe dekorasyon (sadece oyun sırasında) */}
                           {!puzzleAciliyor && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
@@ -608,6 +611,7 @@ const WordMemoryGame = () => {
                             </div>
                           )}
                         </div>
+
 
                         {/* ===== KART ÖNÜ: Kelime ===== */}
                         <div
