@@ -121,6 +121,7 @@ const DinoRunner = () => {
   const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [arkaPlanAnim5, setArkaPlanAnim5] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
+  const [atesAnim, setAtesAnim] = useState<any>(null);
   const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
