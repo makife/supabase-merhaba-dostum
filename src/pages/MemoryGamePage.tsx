@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Lottie from "lottie-react";
 import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -90,8 +90,10 @@ const WordMemoryGame = () => {
   // Animasyon state: kazanınca kartlar yerlerine kayıyor mu?
   const [puzzleAciliyor, setPuzzleAciliyor] = useState(false);
   const [showCongratsDialog, setShowCongratsDialog] = useState(false);
-  // Her kartın hedef grid pozisyonu (gorselParca değerine göre sıralı)
-  const [kartHedefler, setKartHedefler] = useState<{ [kartId: number]: number }>({});
+
+  // FLIP animasyonu için kart referansları ve ilk pozisyonlar
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const firstRectsRef = useRef<Record<number, DOMRect>>({});
 
   const dailyImage = getDailyImage();
 
@@ -170,15 +172,13 @@ const WordMemoryGame = () => {
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
 
-      // Puzzle açılma animasyonunu 600ms sonra başlat
+      // Puzzle açılma animasyonunu 600ms sonra başlat (FLIP için ilk rect'leri yakala)
       setTimeout(() => {
-        // Her kartın gorselParca değerine göre hedef pozisyonunu hesapla
-        // Kart grid'de karışık durumda; gorselParca onun "doğru" sıra numarası
-        const hedefler: { [kartId: number]: number } = {};
-        kartlar.forEach((k) => {
-          hedefler[k.id] = k.gorselParca;
+        const rects: Record<number, DOMRect> = {};
+        Object.entries(cardRefs.current).forEach(([id, el]) => {
+          if (el) rects[Number(id)] = el.getBoundingClientRect();
         });
-        setKartHedefler(hedefler);
+        firstRectsRef.current = rects;
         setShowCongratsDialog(true);
         setPuzzleAciliyor(true);
       }, 600);
@@ -218,7 +218,7 @@ const WordMemoryGame = () => {
     ilkKartAcildiRef.current = false;
     setPuzzleAciliyor(false);
     setShowCongratsDialog(false);
-    setKartHedefler({});
+    firstRectsRef.current = {};
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
@@ -320,41 +320,43 @@ const WordMemoryGame = () => {
 
   const kazandi = oyunBitti && kartlar.length > 0 && kartlar.every((k) => k.eslesti);
 
-  // Puzzle animasyonu için: kartları gorselParca sırasına göre yerleştir
-  // Animasyon aktifken her kartın transform'u hesaplanır
-  const getPuzzleTransform = (kartGridIndex: number, kart: Kart): React.CSSProperties => {
-    if (!puzzleAciliyor) return {};
+  // FLIP: puzzleAciliyor true olduğunda kartlar 4x6 grid'e geçer; ilk pozisyondan
+  // yeni hedef pozisyona doğru yumuşakça uçar
+  useLayoutEffect(() => {
+    if (!puzzleAciliyor) return;
+    const firstRects = firstRectsRef.current;
+    if (!firstRects || Object.keys(firstRects).length === 0) return;
 
-    // Kartın şu anki pozisyonu: kartGridIndex (0-23, soldan sağa, yukarıdan aşağıya)
-    // Kartın hedef pozisyonu: gorselParca (görselde olması gereken yer)
-    const hedefPos = kart.gorselParca;
-    const kaynakPos = kartGridIndex;
+    // Yeni (last) pozisyonları ölç ve invert uygula
+    Object.entries(cardRefs.current).forEach(([id, el]) => {
+      if (!el) return;
+      const first = firstRects[Number(id)];
+      if (!first) return;
+      const last = el.getBoundingClientRect();
+      const dx = first.left - last.left;
+      const dy = first.top - last.top;
+      const sx = first.width / Math.max(last.width, 1);
+      const sy = first.height / Math.max(last.height, 1);
 
-    if (hedefPos === kaynakPos) return { transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)" };
+      el.style.transition = "none";
+      el.style.transformOrigin = "top left";
+      el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    });
 
-    // 5 sütunlu grid'de piksel farkını hesapla
-    const kaynakCol = kaynakPos % COLS;
-    const kaynakRow = Math.floor(kaynakPos / COLS);
-    // Hedef: 4 sütun, 6 satır düzeninde (görsel parçaları)
-    // Ama grid yine 5 sütun, bu yüzden hedefi de 5 sütun üzerinden hesapla
-    const hedefCol = hedefPos % COLS;
-    const hedefRow = Math.floor(hedefPos / COLS);
+    // Sonraki frame'de hedefe doğru animasyon
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        Object.values(cardRefs.current).forEach((el) => {
+          if (!el) return;
+          // Her karta hafif farklı gecikme (dalga efekti)
+          const delay = Math.random() * 180;
+          el.style.transition = `transform 900ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
+          el.style.transform = "translate(0px, 0px) scale(1, 1)";
+        });
+      });
+    });
+  }, [puzzleAciliyor]);
 
-    const deltaCol = hedefCol - kaynakCol;
-    const deltaRow = hedefRow - kaynakRow;
-
-    // Kart boyutu + gap yaklaşık hesabı (gap-2 = 8px, kart ~%20 - 8px)
-    // CSS transform ile % bazlı taşıma: her hücre genişliği = 100% + gap
-    const cardSizePercent = 100;
-    const gapPx = 8;
-
-    return {
-      transform: `translate(calc(${deltaCol} * (${cardSizePercent}% + ${gapPx}px)), calc(${deltaRow} * (${cardSizePercent}% + ${gapPx}px)))`,
-      transition: "transform 0.9s cubic-bezier(0.4,0,0.2,1)",
-      transitionDelay: `${Math.abs(deltaCol + deltaRow) * 60}ms`,
-      zIndex: puzzleAciliyor ? 10 : 1,
-    };
-  };
 
   if (challengeLoading) {
     return (
@@ -526,26 +528,33 @@ const WordMemoryGame = () => {
             {/* ===================== KART GRİD ===================== */}
             {kartlar.length > 0 && (
               <div
-                className="grid grid-cols-5 gap-2"
-                // Puzzle animasyonu aktifken overflow visible olsun ki kartlar kayabilsin
-                style={{ overflow: puzzleAciliyor ? "visible" : "hidden", position: "relative" }}
+                className={`grid gap-2 ${puzzleAciliyor ? "grid-cols-4" : "grid-cols-5"}`}
+                style={{ overflow: "visible", position: "relative" }}
               >
                 {kartlar.map((kart, index) => {
                   // Kart arka yüzü: görselin bu karta düşen karışık parçası
                   const imageSliceStyle = getImageSliceStyle(kart.gorselParca, dailyImage, 4, 6);
 
-                  // Puzzle animasyonu aktifse transform uygula
-                  const puzzleStyle = puzzleAciliyor ? getPuzzleTransform(index, kart) : {};
+                  // Puzzle modunda kartı gorselParca pozisyonuna sabitle (4x6)
+                  const puzzlePlacement: React.CSSProperties = puzzleAciliyor
+                    ? {
+                        gridColumnStart: (kart.gorselParca % 4) + 1,
+                        gridRowStart: Math.floor(kart.gorselParca / 4) + 1,
+                      }
+                    : {};
 
                   return (
                     <div
                       key={`${kart.kelime}-${kart.id}`}
+                      ref={(el) => {
+                        cardRefs.current[kart.id] = el;
+                      }}
                       onClick={() => !puzzleAciliyor && kartTikla(index)}
                       className="aspect-square relative cursor-pointer"
                       style={{
                         perspective: "1000px",
                         position: "relative",
-                        ...puzzleStyle,
+                        ...puzzlePlacement,
                       }}
                     >
                       <div
@@ -556,9 +565,11 @@ const WordMemoryGame = () => {
                       >
                         {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
-                          className="absolute inset-0 w-full h-full rounded-lg border border-white/20 overflow-hidden"
+                          className="absolute inset-0 w-full h-full border border-white/20 overflow-hidden"
                           style={{
                             backfaceVisibility: "hidden",
+                            borderRadius: puzzleAciliyor ? 0 : 8,
+                            transition: "border-radius 600ms ease",
                             ...imageSliceStyle,
                           }}
                         >
