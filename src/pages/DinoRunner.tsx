@@ -574,6 +574,7 @@ const DinoRunner = () => {
       if (reactorCenterX >= portalDoorCenterX) {
         const reachedLevel = portalRef.current.targetLevel;
         portalRef.current = null;
+        playPortalGecisSound();
         pendingLevelRef.current = reachedLevel;
         nextPortalScoreRef.current += 500;
         gameStateRef.current = "transition";
