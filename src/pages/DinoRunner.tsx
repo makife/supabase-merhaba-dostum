@@ -703,7 +703,13 @@ const DinoRunner = () => {
       const reactorCenterX = dinoXRef.current + DINO_WIDTH / 2;
       updateBgMultFromPortal(portalDoorCenterX, reactorCenterX);
 
-      // Reaktör portalın içinden tamamen geçtikten sonra level atlasın
+      // Reaktör portal kapısına yaklaştıkça yavaşça solar (fade-out)
+      const fadeStart = portalDoorCenterX - DINO_WIDTH / 2;
+      const fadeEnd = portalDoorCenterX + DINO_WIDTH;
+      const fadeRange = Math.max(1, fadeEnd - fadeStart);
+      exitFadeRef.current = Math.min(Math.max((reactorCenterX - fadeStart) / fadeRange, 0), 1);
+
+      // Reaktör tamamen solduktan sonra level atlasın
       if (reactorCenterX >= portalDoorCenterX + DINO_WIDTH) {
         const reachedLevel = portalRef.current.targetLevel;
         portalRef.current = null;
