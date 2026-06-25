@@ -64,6 +64,7 @@ const DinoRunner = () => {
     fetch(`/DinoRunnerArkaPlan2.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim2).catch(() => {});
     fetch(`/DinoRunnerArkaPlan3.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim3).catch(() => {});
     fetch(`/DinoRunnerArkaPlan4.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim4).catch(() => {});
+    fetch(`/DinoRunnerArkaPlan5.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setArkaPlanAnim5).catch(() => {});
     fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
   }, []);
 
