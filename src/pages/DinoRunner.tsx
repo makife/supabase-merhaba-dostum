@@ -241,6 +241,7 @@ const DinoRunner = () => {
   const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
   const entryPortalRef = useRef<{ x: number } | null>(null);
   const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; fromY: number; toY: number; duration: number } | null>(null);
+  const exitFadeRef = useRef(0); // 0 → 1, reaktör çıkış portalından geçerken artar
   const pendingLevelRef = useRef(2);
   const levelUpTimeoutRef = useRef<any>(null);
   const PORTAL_WIDTH = 300;
