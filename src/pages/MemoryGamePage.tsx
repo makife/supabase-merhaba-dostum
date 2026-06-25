@@ -320,41 +320,43 @@ const WordMemoryGame = () => {
 
   const kazandi = oyunBitti && kartlar.length > 0 && kartlar.every((k) => k.eslesti);
 
-  // Puzzle animasyonu için: kartları gorselParca sırasına göre yerleştir
-  // Animasyon aktifken her kartın transform'u hesaplanır
-  const getPuzzleTransform = (kartGridIndex: number, kart: Kart): React.CSSProperties => {
-    if (!puzzleAciliyor) return {};
+  // FLIP: puzzleAciliyor true olduğunda kartlar 4x6 grid'e geçer; ilk pozisyondan
+  // yeni hedef pozisyona doğru yumuşakça uçar
+  useLayoutEffect(() => {
+    if (!puzzleAciliyor) return;
+    const firstRects = firstRectsRef.current;
+    if (!firstRects || Object.keys(firstRects).length === 0) return;
 
-    // Kartın şu anki pozisyonu: kartGridIndex (0-23, soldan sağa, yukarıdan aşağıya)
-    // Kartın hedef pozisyonu: gorselParca (görselde olması gereken yer)
-    const hedefPos = kart.gorselParca;
-    const kaynakPos = kartGridIndex;
+    // Yeni (last) pozisyonları ölç ve invert uygula
+    Object.entries(cardRefs.current).forEach(([id, el]) => {
+      if (!el) return;
+      const first = firstRects[Number(id)];
+      if (!first) return;
+      const last = el.getBoundingClientRect();
+      const dx = first.left - last.left;
+      const dy = first.top - last.top;
+      const sx = first.width / Math.max(last.width, 1);
+      const sy = first.height / Math.max(last.height, 1);
 
-    if (hedefPos === kaynakPos) return { transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)" };
+      el.style.transition = "none";
+      el.style.transformOrigin = "top left";
+      el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    });
 
-    // 5 sütunlu grid'de piksel farkını hesapla
-    const kaynakCol = kaynakPos % COLS;
-    const kaynakRow = Math.floor(kaynakPos / COLS);
-    // Hedef: 4 sütun, 6 satır düzeninde (görsel parçaları)
-    // Ama grid yine 5 sütun, bu yüzden hedefi de 5 sütun üzerinden hesapla
-    const hedefCol = hedefPos % COLS;
-    const hedefRow = Math.floor(hedefPos / COLS);
+    // Sonraki frame'de hedefe doğru animasyon
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        Object.values(cardRefs.current).forEach((el) => {
+          if (!el) return;
+          // Her karta hafif farklı gecikme (dalga efekti)
+          const delay = Math.random() * 180;
+          el.style.transition = `transform 900ms cubic-bezier(0.34, 1.2, 0.4, 1) ${delay}ms`;
+          el.style.transform = "translate(0px, 0px) scale(1, 1)";
+        });
+      });
+    });
+  }, [puzzleAciliyor]);
 
-    const deltaCol = hedefCol - kaynakCol;
-    const deltaRow = hedefRow - kaynakRow;
-
-    // Kart boyutu + gap yaklaşık hesabı (gap-2 = 8px, kart ~%20 - 8px)
-    // CSS transform ile % bazlı taşıma: her hücre genişliği = 100% + gap
-    const cardSizePercent = 100;
-    const gapPx = 8;
-
-    return {
-      transform: `translate(calc(${deltaCol} * (${cardSizePercent}% + ${gapPx}px)), calc(${deltaRow} * (${cardSizePercent}% + ${gapPx}px)))`,
-      transition: "transform 0.9s cubic-bezier(0.4,0,0.2,1)",
-      transitionDelay: `${Math.abs(deltaCol + deltaRow) * 60}ms`,
-      zIndex: puzzleAciliyor ? 10 : 1,
-    };
-  };
 
   if (challengeLoading) {
     return (
