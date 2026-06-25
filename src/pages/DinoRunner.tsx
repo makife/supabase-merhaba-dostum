@@ -483,6 +483,7 @@ const DinoRunner = () => {
     sameKindStreakRef.current = 0;
     portalRef.current = null;
     portalTriggeredRef.current = false;
+    exitFadeRef.current = 0;
     entryPortalRef.current = { x: ENTRY_PORTAL_X };
     dinoXRef.current = ENTRY_DINO_START_X;
     // Portalın dikey ortasından çıksın: portal yukarı kaydırıldığı için dinoY de yukarı kayar
