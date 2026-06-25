@@ -218,7 +218,7 @@ const WordMemoryGame = () => {
     ilkKartAcildiRef.current = false;
     setPuzzleAciliyor(false);
     setShowCongratsDialog(false);
-    setKartHedefler({});
+    firstRectsRef.current = {};
     setGameLoading(true);
 
     const secilenKelimeler = rastgeleKelimeAl(GRID_PAIRS);
