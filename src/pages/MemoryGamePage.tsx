@@ -639,47 +639,13 @@ const WordMemoryGame = () => {
         )}
       </div>
 
-      {showCongratsDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Tebrikler görsel açılıyor"
-            className="w-full max-w-sm overflow-hidden rounded-2xl border border-white/20 bg-[#1e2d45] shadow-2xl shadow-purple-950/50"
-            style={{ animation: "dialogIn 500ms ease both" }}
-          >
-            <div className="px-5 py-4 text-center">
-              <div className="text-lg font-black text-white">Tebrikler!</div>
-              <div className="mt-1 text-sm font-semibold text-purple-200">Görsel açılıyor...</div>
-            </div>
-            <img
-              src={dailyImage}
-              alt="Açılan günlük özlü söz görseli"
-              className="w-full object-cover"
-              style={{ animation: "slowReveal 3.5s ease both" }}
-              onAnimationEnd={() => {
-                setTimeout(() => setShowCongratsDialog(false), 700);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
-        @keyframes dialogIn {
-          from { opacity: 0; transform: translateY(14px) scale(0.94); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes slowReveal {
-          0% { opacity: 0; filter: blur(18px) brightness(0.55); transform: scale(0.9); }
-          55% { opacity: 1; filter: blur(5px) brightness(0.9); transform: scale(1); }
-          100% { opacity: 1; filter: blur(0) brightness(1.08); transform: scale(1); }
-        }
       `}</style>
+
 
       {ExitConfirmDialog}
     </div>
