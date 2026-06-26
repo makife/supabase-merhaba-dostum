@@ -513,6 +513,8 @@ const DinoRunner = () => {
       entryPortal: entryPortalRef.current,
     }));
 
+    pickNewWord();
+
     gameStateRef.current = "playing";
     setGameState("playing");
   };
