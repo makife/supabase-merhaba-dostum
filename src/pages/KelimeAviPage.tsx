@@ -319,7 +319,7 @@ const KelimeAviPage = () => {
           <div className="flex flex-col items-center gap-5 pt-4 flex-1 min-h-0">
             <div className="shrink-0 flex justify-center">
               {surukleAnim ? (
-                <Lottie animationData={surukleAnim} loop autoplay style={{ width: 100, height: 100 }} />
+                <Lottie animationData={surukleAnim} loop autoplay style={{ width: 120, height: 120 }} />
               ) : (
                 <div className="text-6xl">🕸️</div>
               )}
