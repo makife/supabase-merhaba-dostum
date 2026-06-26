@@ -1266,7 +1266,6 @@ const DinoRunner = () => {
             bottom: 0;
             border-radius: 4px;
             border: 2px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 12px rgba(255, 255, 255, 0.35), inset 0 0 8px rgba(255, 255, 255, 0.15);
         }
         .obs-short {
             background: #5cb85c;
