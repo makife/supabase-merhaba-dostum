@@ -633,7 +633,7 @@ const DinoRunner = () => {
       sameKindStreakRef.current = last === kind ? streak + 1 : 1;
       lastObstacleKindRef.current = kind;
       if (isCeiling) {
-        const height = 30 + Math.floor(Math.random() * 91); // 30-120
+        const height = 20 + Math.floor(Math.random() * 111); // 20-130
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -643,8 +643,8 @@ const DinoRunner = () => {
           type: "ceiling",
         });
       } else {
-        const height = 30 + Math.floor(Math.random() * 91); // 30-120
-        const type = height <= 50 ? "short" : height >= 90 ? "tall" : "box";
+        const height = 20 + Math.floor(Math.random() * 111); // 20-130
+        const type = height <= 45 ? "short" : height >= 100 ? "tall" : "box";
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -1265,21 +1265,26 @@ const DinoRunner = () => {
             left: 0;
             bottom: 0;
             border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.35), inset 0 0 8px rgba(255, 255, 255, 0.15);
         }
         .obs-short {
-            background: #4a7c3f;
+            background: #5cb85c;
+            box-shadow: 0 0 14px rgba(92, 184, 92, 0.7), 0 0 6px rgba(255, 255, 255, 0.5), inset 0 0 8px rgba(255, 255, 255, 0.2);
         }
         .obs-tall {
-            background: #2d5a27;
+            background: #2e7d32;
+            box-shadow: 0 0 16px rgba(46, 125, 50, 0.8), 0 0 6px rgba(255, 255, 255, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2);
         }
         .obs-box {
-            background: #666;
+            background: #00d2d3;
             border-radius: 6px;
+            box-shadow: 0 0 18px rgba(0, 210, 211, 0.9), 0 0 8px rgba(255, 255, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
         }
         .obs-ceiling {
             background: linear-gradient(180deg, #ff4444 0%, #8b0000 100%);
             border-radius: 0 0 6px 6px;
-            box-shadow: 0 2px 8px rgba(255, 68, 68, 0.5);
+            box-shadow: 0 4px 12px rgba(255, 68, 68, 0.7), 0 0 14px rgba(255, 68, 68, 0.5);
         }
 
         .letter-box {
