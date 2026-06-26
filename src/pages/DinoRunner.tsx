@@ -633,7 +633,7 @@ const DinoRunner = () => {
       sameKindStreakRef.current = last === kind ? streak + 1 : 1;
       lastObstacleKindRef.current = kind;
       if (isCeiling) {
-        const height = 30 + Math.floor(Math.random() * 91); // 30-120
+        const height = 20 + Math.floor(Math.random() * 111); // 20-130
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
@@ -643,8 +643,8 @@ const DinoRunner = () => {
           type: "ceiling",
         });
       } else {
-        const height = 30 + Math.floor(Math.random() * 91); // 30-120
-        const type = height <= 50 ? "short" : height >= 90 ? "tall" : "box";
+        const height = 20 + Math.floor(Math.random() * 111); // 20-130
+        const type = height <= 45 ? "short" : height >= 100 ? "tall" : "box";
         obstaclesRef.current.push({
           id: Math.random(),
           x: GAME_WIDTH,
