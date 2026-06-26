@@ -37,11 +37,16 @@ const getDailySeed = (): number => {
   return hash;
 };
 
-// Günlük görsel: ozluSozler1.jpg ... ozluSozler34.jpeg (34 görsel, 34 günlük döngü)
+// Günlük görsel: 34 görsel, 34 günlük döngü. Her index'in extension'ı ayrı tanımlı.
+const OZLU_SOZLER_EXT: string[] = [
+  '.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg', // 1-10
+  '.jpeg','.jpeg','.jpg', '.jpg', '.jpg',  // 11-15
+  '.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg', // 16-25
+  '.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg','.jpeg', // 26-34
+];
 const getDailyImage = (): string => {
-  const imgIndex = (getDailySeed() % 34) + 1;
-  const ext = imgIndex <= 30 ? '.jpg' : '.jpeg';
-  return `/ozluSozler/ozluSozler${imgIndex}${ext}`;
+  const idx = getDailySeed() % 34;
+  return `/ozluSozler/ozluSozler${idx + 1}${OZLU_SOZLER_EXT[idx]}`;
 };
 
 // Görselin belirli parçasının background-position stilini hesapla
