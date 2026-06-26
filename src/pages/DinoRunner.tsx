@@ -791,18 +791,20 @@ const DinoRunner = () => {
         }
       }
 
-      if (!skipSpawn) lettersRef.current.push({
-        id: Math.random(),
-        x: spawnX,
-        y: randomY,
-        char: charToSpawn,
-        indexInWord: spawnIndexRef.current,
-        width: LETTER_SIZE,
-        height: LETTER_SIZE,
-        collected: false,
-      });
-      spawnIndexRef.current++;
-      nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
+      if (!skipSpawn) {
+        lettersRef.current.push({
+          id: Math.random(),
+          x: spawnX,
+          y: randomY,
+          char: charToSpawn,
+          indexInWord: spawnIndexRef.current,
+          width: LETTER_SIZE,
+          height: LETTER_SIZE,
+          collected: false,
+        });
+        spawnIndexRef.current++;
+        nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
+      }
     }
 
 
