@@ -455,7 +455,7 @@ const WordMemoryGame = () => {
                   <div className="text-center">
                     <div className="flex justify-center mb-3">
                       {beyinAnim ? (
-                        <Lottie animationData={beyinAnim} loop autoplay style={{ width: 80, height: 80 }} />
+                        <Lottie animationData={beyinAnim} loop autoplay style={{ width: 120, height: 120 }} />
                       ) : (
                         <div className="text-4xl">🧠</div>
                       )}
