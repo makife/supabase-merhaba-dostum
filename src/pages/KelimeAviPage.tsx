@@ -424,12 +424,12 @@ const KelimeAviPage = () => {
                   <div
                     key={i}
                     data-cell={i}
-                    className={`aspect-square rounded-xl flex items-center justify-center text-lg font-black border transition-colors ${
+                    className={`aspect-square rounded-xl flex items-center justify-center text-xl font-black border-2 transition-all ${
                       isLast
-                        ? "bg-fuchsia-400/80 border-fuchsia-200 text-white shadow-lg shadow-fuchsia-500/40"
+                        ? "bg-fuchsia-300 border-fuchsia-600 text-fuchsia-900 shadow-lg shadow-fuchsia-500/30 scale-105"
                         : selected
-                        ? "bg-fuchsia-500/40 border-fuchsia-300/60 text-white"
-                        : "bg-white/10 border-white/10 text-white"
+                        ? "bg-fuchsia-100 border-fuchsia-400 text-fuchsia-800"
+                        : "bg-gradient-to-br from-white to-emerald-50 border-emerald-400 text-emerald-900"
                     }`}
                   >
                     {letter}
