@@ -592,23 +592,23 @@ const WordMemoryGame = () => {
                       >
                         {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
-                          className="absolute inset-0 w-full h-full border border-white/20 overflow-hidden"
+                          className="absolute inset-0 w-full h-full border-2 border-white/50 overflow-hidden"
                           style={{
                             backfaceVisibility: "hidden",
-                            borderRadius: puzzleAciliyor ? 0 : 8,
+                            borderRadius: puzzleAciliyor ? 0 : 10,
                             transition: "border-radius 600ms ease",
                             ...imageSliceStyle,
                           }}
                         >
                           {/* Resim açılmadan önce overlay (gameplay ve slide sırasında) */}
                           {!flipRevealedIds.has(kart.id) && (
-                            <div className="absolute inset-0 bg-purple-900/40 backdrop-blur-[1px]" />
+                            <div className="absolute inset-0 bg-purple-950/70" />
                           )}
                           {/* Köşe dekorasyon (sadece oyun sırasında) */}
                           {!puzzleAciliyor && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                                <div className="w-2 h-2 rounded-full bg-purple-300/60" />
+                              <div className="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center">
+                                <div className="w-3 h-3 rounded-full bg-purple-300" />
                               </div>
                             </div>
                           )}
