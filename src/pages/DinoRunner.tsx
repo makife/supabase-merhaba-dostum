@@ -375,7 +375,7 @@ const DinoRunner = () => {
       setFeedback({ text: randomPraise, type: "success" });
       playSound(800, "square", 0.2);
     } else {
-      setFeedback({ text: "Tüh! Olmadı", type: "fail" });
+      setFeedback({ text: "Olmadı!", type: "fail" });
       playSound(150, "sawtooth", 0.3);
     }
     setTimeout(() => setFeedback(null), 1500);
@@ -720,7 +720,7 @@ const DinoRunner = () => {
         nextPortalScoreRef.current += 500;
         gameStateRef.current = "transition";
         setGameState("transition");
-        setLevelUpMessage(`🎉🎊 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
+        setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
         setShowLevelUpText(true);
         playSound(900, "sine", 0.3);
         levelUpTimeoutRef.current = setTimeout(() => {
