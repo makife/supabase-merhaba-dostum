@@ -37,10 +37,11 @@ const getDailySeed = (): number => {
   return hash;
 };
 
-// Günlük görsel: ozluSozler1.jpg ... ozluSozler30.jpg
+// Günlük görsel: ozluSozler1.jpg ... ozluSozler34.jpeg (34 görsel, 34 günlük döngü)
 const getDailyImage = (): string => {
-  const imgIndex = (getDailySeed() % 30) + 1;
-  return `/ozluSozler/ozluSozler${imgIndex}.jpg`;
+  const imgIndex = (getDailySeed() % 34) + 1;
+  const ext = imgIndex <= 30 ? '.jpg' : '.jpeg';
+  return `/ozluSozler/ozluSozler${imgIndex}${ext}`;
 };
 
 // Görselin belirli parçasının background-position stilini hesapla
