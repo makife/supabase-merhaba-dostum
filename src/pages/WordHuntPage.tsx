@@ -224,7 +224,7 @@ const WordHuntPage = () => {
             <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}>
               <div className="flex flex-wrap gap-2.5 justify-center">
                 {letters.map((letter, i) => (
-                  <button key={i} onClick={() => handleLetterClick(letter, i)} className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-black active:scale-90 transition-transform" style={{ background: "linear-gradient(160deg, #d1fae5 0%, #6ee7b7 100%)", color: "#064e3b", boxShadow: "0 2px 8px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.6)", border: "1px solid rgba(52,211,153,0.4)", letterSpacing: "0.05em" }}>
+                  <button key={i} onClick={() => handleLetterClick(letter, i)} className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-black active:scale-90 transition-transform" style={{ background: "linear-gradient(160deg, #ffffff 0%, #f0fdf4 100%)", color: "#064e3b", border: "2px solid #10b981", letterSpacing: "0.05em" }}>
                     {letter}
                   </button>
                 ))}
