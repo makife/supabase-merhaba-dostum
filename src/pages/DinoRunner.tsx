@@ -763,43 +763,48 @@ const DinoRunner = () => {
       // Yakında bir engel spawn olacaksa (aynı hız → sabit yakın mesafe oluşur)
       // harf spawnını biraz ertele ki engelle çakışmasın.
       const msUntilNextObstacle = nextObstacleTimeRef.current - Date.now();
+      let skipSpawn = false;
       if (msUntilNextObstacle >= 0 && msUntilNextObstacle < 350) {
         nextLetterTimeRef.current = Date.now() + 400;
-        return;
+        skipSpawn = true;
       }
 
-      const yMin = 30;
-      const yMax = 180;
-      let randomY = yMin + Math.random() * (yMax - yMin);
+      let randomY = 0;
       let foundClearY = false;
-      // En fazla 20 deneme yap; engelle çakışmayan Y bul
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const collides = dangerObstacles.some((o: any) => {
-          // [o.y, o.y + o.height] vs [randomY, randomY + LETTER_SIZE] (dikey çakışma)
-          return randomY < o.y + o.height + 6 && randomY + LETTER_SIZE + 6 > o.y;
-        });
-        if (!collides) { foundClearY = true; break; }
+      if (!skipSpawn) {
+        const yMin = 30;
+        const yMax = 180;
         randomY = yMin + Math.random() * (yMax - yMin);
+        // En fazla 20 deneme yap; engelle çakışmayan Y bul
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const collides = dangerObstacles.some((o: any) => {
+            return randomY < o.y + o.height + 6 && randomY + LETTER_SIZE + 6 > o.y;
+          });
+          if (!collides) { foundClearY = true; break; }
+          randomY = yMin + Math.random() * (yMax - yMin);
+        }
+
+        // Hiç temiz Y bulunamadıysa şu an spawn etme, kısa süre sonra tekrar dene
+        if (!foundClearY) {
+          nextLetterTimeRef.current = Date.now() + 300;
+          skipSpawn = true;
+        }
       }
 
-      // Hiç temiz Y bulunamadıysa şu an spawn etme, kısa süre sonra tekrar dene
-      if (!foundClearY) {
-        nextLetterTimeRef.current = Date.now() + 300;
-        return;
+      if (!skipSpawn) {
+        lettersRef.current.push({
+          id: Math.random(),
+          x: spawnX,
+          y: randomY,
+          char: charToSpawn,
+          indexInWord: spawnIndexRef.current,
+          width: LETTER_SIZE,
+          height: LETTER_SIZE,
+          collected: false,
+        });
+        spawnIndexRef.current++;
+        nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
       }
-
-      lettersRef.current.push({
-        id: Math.random(),
-        x: spawnX,
-        y: randomY,
-        char: charToSpawn,
-        indexInWord: spawnIndexRef.current,
-        width: LETTER_SIZE,
-        height: LETTER_SIZE,
-        collected: false,
-      });
-      spawnIndexRef.current++;
-      nextLetterTimeRef.current = Date.now() + 800 + Math.random() * 600;
     }
 
 
