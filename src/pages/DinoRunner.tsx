@@ -752,22 +752,40 @@ const DinoRunner = () => {
       // dikey çakışma kalıcı olur; o yüzden mevcut engellerin yakınında
       // (yatay olarak spawn noktasına yakın) olanların Y bandını dışla.
       const spawnX = GAME_WIDTH;
+      // Geniş yatay pencere: yakın zamanda spawn edilen engelleri de yakala
+      // (aynı hızda olduklarından yatay mesafe sabit kalır, kalıcı çakışma riski var)
+      const HORIZONTAL_SAFETY = 80;
       const dangerObstacles = obstaclesRef.current.filter((o: any) => {
-        // Yatayda kalıcı çakışma riski olanlar (hız eşit olduğu için sabit kalır)
-        return o.x + o.width > spawnX - LETTER_SIZE - 10 && o.x < spawnX + LETTER_SIZE + 10;
+        return o.x + o.width + HORIZONTAL_SAFETY > spawnX - LETTER_SIZE &&
+               o.x < spawnX + LETTER_SIZE + HORIZONTAL_SAFETY;
       });
+
+      // Yakında bir engel spawn olacaksa (aynı hız → sabit yakın mesafe oluşur)
+      // harf spawnını biraz ertele ki engelle çakışmasın.
+      const msUntilNextObstacle = nextObstacleTimeRef.current - Date.now();
+      if (msUntilNextObstacle >= 0 && msUntilNextObstacle < 350) {
+        nextLetterTimeRef.current = Date.now() + 400;
+        return;
+      }
 
       const yMin = 30;
       const yMax = 180;
-      let randomY = Math.max(yMin, Math.random() * yMax);
-      // En fazla 12 deneme yap; engelle çakışmayan Y bul
-      for (let attempt = 0; attempt < 12; attempt++) {
+      let randomY = yMin + Math.random() * (yMax - yMin);
+      let foundClearY = false;
+      // En fazla 20 deneme yap; engelle çakışmayan Y bul
+      for (let attempt = 0; attempt < 20; attempt++) {
         const collides = dangerObstacles.some((o: any) => {
-          // [o.y, o.y + o.height] vs [randomY, randomY + LETTER_SIZE]
-          return randomY < o.y + o.height && randomY + LETTER_SIZE > o.y;
+          // [o.y, o.y + o.height] vs [randomY, randomY + LETTER_SIZE] (dikey çakışma)
+          return randomY < o.y + o.height + 6 && randomY + LETTER_SIZE + 6 > o.y;
         });
-        if (!collides) break;
-        randomY = Math.max(yMin, Math.random() * yMax);
+        if (!collides) { foundClearY = true; break; }
+        randomY = yMin + Math.random() * (yMax - yMin);
+      }
+
+      // Hiç temiz Y bulunamadıysa şu an spawn etme, kısa süre sonra tekrar dene
+      if (!foundClearY) {
+        nextLetterTimeRef.current = Date.now() + 300;
+        return;
       }
 
       lettersRef.current.push({
