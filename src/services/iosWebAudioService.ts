@@ -96,7 +96,21 @@ const bindUnlockOnce = () => {
 // Modül yüklenir yüklenmez gesture dinleyicilerini bağla — init beklenmesin
 if (isIOSNative && typeof window !== "undefined") {
   bindUnlockOnce();
+
+  // 🔧 Foreground/background geçişlerinde AudioContext suspended kalabiliyor —
+  // bu da arka plan müziği / efekt seslerinin tutuk çalmasına yol açıyor.
+  // Görünürlük değiştiğinde context'i resume et.
+  const resumeOnForeground = () => {
+    if (document.visibilityState === "visible") {
+      unlockPromise = null;
+      tryUnlock();
+    }
+  };
+  document.addEventListener("visibilitychange", resumeOnForeground);
+  window.addEventListener("focus", resumeOnForeground);
+  window.addEventListener("pageshow", resumeOnForeground);
 }
+
 
 const loadBuffer = async (
   assetId: string,
