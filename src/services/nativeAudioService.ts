@@ -5,6 +5,12 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import {
+  initIOSWebAudio,
+  playIOSWebSound,
+  isIOSWebAudioTarget,
+} from './iosWebAudioService';
+
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
@@ -115,6 +121,27 @@ export const initNativeAudio = async (): Promise<void> => {
     try {
       console.log(`🔊 NativeAudio: Başlatılıyor... platform=${Capacitor.getPlatform()}`);
 
+      // 🔧 iOS: NativeAudio + AVAudioSession çakışmasını önlemek için
+      // tüm gameplay efektlerini Web Audio (ambient kategori) üzerinden çal.
+      // Bu sayede arka plan müziği kesilmez ve BoostArti gibi sesler düzgün çalar.
+      if (isIOSWebAudioTarget()) {
+        try {
+          await initIOSWebAudio(
+            SOUND_DEFINITIONS.map((s) => ({
+              assetId: s.assetId,
+              assetPath: s.assetPath,
+              volume: s.volume,
+            }))
+          );
+          SOUND_DEFINITIONS.forEach((s) => preloadedSounds.add(s.assetId));
+          initialized = true;
+          console.log('🔊 NativeAudio (iOS): WebAudio yolu hazır ✅');
+          return;
+        } catch (e) {
+          console.warn('⚠️ NativeAudio (iOS WebAudio) init başarısız, NativeAudio fallback:', e);
+        }
+      }
+
       try {
         // iOS'ta WebAudio sessiz anahtar / WKWebView kısıtına takılabiliyor.
         // Playback kategorisi efektlerin native IPA'da da duyulmasını garanti eder.
@@ -122,6 +149,7 @@ export const initNativeAudio = async (): Promise<void> => {
       } catch (e) {
         console.warn('⚠️ NativeAudio: configure başarısız:', e);
       }
+
       
       // Tüm sesleri paralel olarak preload et (daha hızlı)
       const preloadPromises = SOUND_DEFINITIONS.map(async (sound) => {
@@ -230,6 +258,20 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
       console.log(`⚠️ NativeAudio: Preload timeout - HTML5 fallback denenecek`);
     }
   }
+
+  // 🔧 iOS: WebAudio yolu üzerinden çal (AVAudioSession çakışmasını önler)
+  if (isIOSWebAudioTarget()) {
+    const soundDef = getSoundDefinition(assetId);
+    const v = volume ?? soundDef?.volume ?? 0.7;
+    const fallbackUrl = soundDef ? soundDef.assetPath.replace(/^public\//, '/') : undefined;
+    const ok = await playIOSWebSound(assetId, v, fallbackUrl);
+    if (ok) return true;
+    // WebAudio başarısızsa NativeAudio'ya düşmek yerine sessizce çık —
+    // NativeAudio iOS'ta müziği kesip oyundan atabiliyor.
+    return false;
+  }
+  
+
   
   // 🔧 AUDIO FAILSAFE: Ses preload edilmemişse HTML5 fallback
   if (!preloadedSounds.has(assetId)) {
