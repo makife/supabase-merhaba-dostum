@@ -5,6 +5,12 @@
 
 import { Capacitor } from '@capacitor/core';
 import { NativeAudio } from '@capacitor-community/native-audio';
+import {
+  initIOSWebAudio,
+  playIOSWebSound,
+  isIOSWebAudioTarget,
+} from './iosWebAudioService';
+
 
 // Platform kontrolü
 const isNative = Capacitor.isNativePlatform();
