@@ -258,6 +258,20 @@ export const playNativeSound = async (assetId: string, volume?: number): Promise
       console.log(`⚠️ NativeAudio: Preload timeout - HTML5 fallback denenecek`);
     }
   }
+
+  // 🔧 iOS: WebAudio yolu üzerinden çal (AVAudioSession çakışmasını önler)
+  if (isIOSWebAudioTarget()) {
+    const soundDef = getSoundDefinition(assetId);
+    const v = volume ?? soundDef?.volume ?? 0.7;
+    const fallbackUrl = soundDef ? soundDef.assetPath.replace(/^public\//, '/') : undefined;
+    const ok = await playIOSWebSound(assetId, v, fallbackUrl);
+    if (ok) return true;
+    // WebAudio başarısızsa NativeAudio'ya düşmek yerine sessizce çık —
+    // NativeAudio iOS'ta müziği kesip oyundan atabiliyor.
+    return false;
+  }
+  
+
   
   // 🔧 AUDIO FAILSAFE: Ses preload edilmemişse HTML5 fallback
   if (!preloadedSounds.has(assetId)) {
