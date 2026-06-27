@@ -121,6 +121,27 @@ export const initNativeAudio = async (): Promise<void> => {
     try {
       console.log(`🔊 NativeAudio: Başlatılıyor... platform=${Capacitor.getPlatform()}`);
 
+      // 🔧 iOS: NativeAudio + AVAudioSession çakışmasını önlemek için
+      // tüm gameplay efektlerini Web Audio (ambient kategori) üzerinden çal.
+      // Bu sayede arka plan müziği kesilmez ve BoostArti gibi sesler düzgün çalar.
+      if (isIOSWebAudioTarget()) {
+        try {
+          await initIOSWebAudio(
+            SOUND_DEFINITIONS.map((s) => ({
+              assetId: s.assetId,
+              assetPath: s.assetPath,
+              volume: s.volume,
+            }))
+          );
+          SOUND_DEFINITIONS.forEach((s) => preloadedSounds.add(s.assetId));
+          initialized = true;
+          console.log('🔊 NativeAudio (iOS): WebAudio yolu hazır ✅');
+          return;
+        } catch (e) {
+          console.warn('⚠️ NativeAudio (iOS WebAudio) init başarısız, NativeAudio fallback:', e);
+        }
+      }
+
       try {
         // iOS'ta WebAudio sessiz anahtar / WKWebView kısıtına takılabiliyor.
         // Playback kategorisi efektlerin native IPA'da da duyulmasını garanti eder.
@@ -128,6 +149,7 @@ export const initNativeAudio = async (): Promise<void> => {
       } catch (e) {
         console.warn('⚠️ NativeAudio: configure başarısız:', e);
       }
+
       
       // Tüm sesleri paralel olarak preload et (daha hızlı)
       const preloadPromises = SOUND_DEFINITIONS.map(async (sound) => {
