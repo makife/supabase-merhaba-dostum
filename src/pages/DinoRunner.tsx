@@ -55,12 +55,45 @@ const ParallaxBackground: React.FC<{
   speedRef: React.MutableRefObject<number>;
   multRef: React.MutableRefObject<number>;
 }> = ({ bg, speedRef, multRef }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const layersRef = useRef<(HTMLDivElement | null)[]>([]);
   const offsetsRef = useRef<number[]>([]);
+  const tileWidthsRef = useRef<number[]>([]); // her katmanın gerçek render genişliği
+  const naturalSizeRef = useRef<{ w: number; h: number }[]>([]);
   const config = PARALLAX_CONFIGS[bg];
 
+  // Görüntülerin doğal boyutlarını yükle
   useEffect(() => {
+    naturalSizeRef.current = config.map(() => ({ w: 0, h: 0 }));
+    tileWidthsRef.current = config.map(() => 0);
     offsetsRef.current = config.map(() => 0);
+
+    config.forEach((layer, i) => {
+      const img = new Image();
+      img.onload = () => {
+        naturalSizeRef.current[i] = { w: img.naturalWidth, h: img.naturalHeight };
+        recomputeTileWidths();
+      };
+      img.src = layer.src;
+    });
+
+    const recomputeTileWidths = () => {
+      const h = containerRef.current?.clientHeight || window.innerHeight;
+      for (let i = 0; i < config.length; i++) {
+        const nat = naturalSizeRef.current[i];
+        if (nat.h > 0) {
+          // backgroundSize: auto 100% => render width = naturalW * (containerH / naturalH)
+          tileWidthsRef.current[i] = (nat.w * h) / nat.h;
+        }
+      }
+    };
+
+    const onResize = () => recomputeTileWidths();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [bg, config]);
+
+  useEffect(() => {
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -68,19 +101,29 @@ const ParallaxBackground: React.FC<{
       last = now;
       const baseSpeed = speedRef.current * multRef.current;
       for (let i = 0; i < config.length; i++) {
-        offsetsRef.current[i] = (offsetsRef.current[i] + baseSpeed * config[i].speed * dt) % 4096;
+        const tileW = tileWidthsRef.current[i];
+        let next = offsetsRef.current[i] + baseSpeed * config[i].speed * dt;
+        // Tile genişliğine göre sarmala — kopukluk olmaz
+        if (tileW > 0) {
+          // negatif kalmasına gerek yok; sadece % al
+          next = next % tileW;
+          if (next < 0) next += tileW;
+        }
+        offsetsRef.current[i] = next;
         const el = layersRef.current[i];
-        if (el) el.style.backgroundPositionX = `${-offsetsRef.current[i]}px`;
+        if (el) {
+          // tam piksele yuvarla (sub-pixel titremesini engeller)
+          el.style.backgroundPositionX = `${-Math.round(next)}px`;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [bg, config, speedRef]);
-
+  }, [bg, config, speedRef, multRef]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
+    <div ref={containerRef} style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
       {config.map((layer, i) => (
         <div
           key={layer.src}
@@ -99,6 +142,7 @@ const ParallaxBackground: React.FC<{
     </div>
   );
 };
+
 
 const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
