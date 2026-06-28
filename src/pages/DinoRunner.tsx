@@ -1035,7 +1035,7 @@ const DinoRunner = () => {
                 transform: `translate3d(${l.x}px, ${-(l.y + GROUND_HEIGHT)}px, 0)`,
               }}
             >
-              <div className={`letter-inner ${level === 3 ? "neon-green" : ""}`}>{l.char}</div>
+              <div className={`letter-inner ${level === 2 ? "neon-pink" : level === 3 ? "neon-green" : level === 4 ? "neon-blue" : ""}`}>{l.char}</div>
             </div>
           ))}
 
@@ -1349,6 +1349,14 @@ const DinoRunner = () => {
         .letter-inner.neon-green {
             background: #39FF14;
             box-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+        }
+        .letter-inner.neon-pink {
+            background: #FF10F0;
+            box-shadow: 0 0 8px rgba(255, 16, 240, 0.7);
+        }
+        .letter-inner.neon-blue {
+            background: #00F0FF;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
         }
 
         .ground {
