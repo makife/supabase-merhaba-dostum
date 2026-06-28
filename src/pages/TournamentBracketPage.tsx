@@ -630,7 +630,7 @@ const TournamentBracketPage = () => {
       setCountdown(remaining);
 
       // Son 10 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
-      if (remaining >= 1 && remaining <= 10 && !playedCountdownSecondsRef.current.has(remaining)) {
+      if (remaining >= 1 && remaining <= 5 && !playedCountdownSecondsRef.current.has(remaining)) {
         playedCountdownSecondsRef.current.add(remaining);
         if (isSoundEffectsEnabled()) {
           const pitchRate = 1.0 + (10 - remaining) * 0.22;
