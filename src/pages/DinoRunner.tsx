@@ -281,7 +281,7 @@ const DinoRunner = () => {
   // Portal Ref'leri: her 500 puanda sağ portal, sonraki level başlangıcında sol portal
   const levelRef = useRef(1);
   const portalTriggeredRef = useRef(false); // Portal spawn gecikmesi sırasında tekrar kurulum olmasın
-  const nextPortalScoreRef = useRef(500);
+  const nextPortalScoreRef = useRef(750);
   const portalRef = useRef<{ x: number; targetLevel: number } | null>(null);
   const entryPortalRef = useRef<{ x: number } | null>(null);
   const entryAnimationRef = useRef<{ startTime: number; fromX: number; toX: number; fromY: number; toY: number; duration: number } | null>(null);
@@ -459,7 +459,7 @@ const DinoRunner = () => {
     // Level 2 Portal Sıfırlama
     setActiveBg("level1");
     portalTriggeredRef.current = false;
-    nextPortalScoreRef.current = 500;
+    nextPortalScoreRef.current = 750;
     portalRef.current = null;
     exitFadeRef.current = 0;
 
@@ -761,7 +761,7 @@ const DinoRunner = () => {
         portalRef.current = null;
         playPortalGecisSound();
         pendingLevelRef.current = reachedLevel;
-        nextPortalScoreRef.current += 500;
+        nextPortalScoreRef.current += 750;
         gameStateRef.current = "transition";
         setGameState("transition");
         setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
@@ -1035,7 +1035,7 @@ const DinoRunner = () => {
                 transform: `translate3d(${l.x}px, ${-(l.y + GROUND_HEIGHT)}px, 0)`,
               }}
             >
-              <div className="letter-inner">{l.char}</div>
+              <div className={`letter-inner ${level === 3 ? "neon-green" : ""}`}>{l.char}</div>
             </div>
           ))}
 
