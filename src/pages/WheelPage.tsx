@@ -160,10 +160,15 @@ const WheelPage = () => {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
-    // AudioContext'i lazy olarak oluştur (kullanıcı etkileşimi sonrası)
-    if (!isIOSNative && !audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // AudioContext'i tüm platformlarda oluştur — iOS'ta da oscillator tabanlı
+    // tick sesleri WebAudio "ambient" kategorisi ile çakışmadan çalar
+    // (memory: pitched-countdown-beep-synthesis).
+    if (!audioCtxRef.current) {
+      try {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.warn("[Wheel] AudioContext oluşturulamadı:", e);
+      }
     }
 
     soundsRef.current = {
