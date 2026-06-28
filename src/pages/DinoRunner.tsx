@@ -295,7 +295,7 @@ const DinoRunner = () => {
   const ENTRY_DINO_START_X = 4;
   // Üst leveldeki giriş portalı dikeyde yukarı kaydırılır;
   // reaktör portalın merkezinden görünmez başlayıp yere doğru fade-in ile düşer.
-  const ENTRY_PORTAL_Y_OFFSET = 130;
+  const ENTRY_PORTAL_Y_OFFSET = 180;
 
   const PRAISE_WORDS = [
     "🫵", "Süper", "Çok iyi!", "👏", 
