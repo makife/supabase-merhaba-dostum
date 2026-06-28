@@ -295,7 +295,7 @@ const DinoRunner = () => {
   const ENTRY_DINO_START_X = 4;
   // Üst leveldeki giriş portalı dikeyde yukarı kaydırılır;
   // reaktör portalın merkezinden görünmez başlayıp yere doğru fade-in ile düşer.
-  const ENTRY_PORTAL_Y_OFFSET = 130;
+  const ENTRY_PORTAL_Y_OFFSET = 180;
 
   const PRAISE_WORDS = [
     "🫵", "Süper", "Çok iyi!", "👏", 
@@ -356,10 +356,10 @@ const DinoRunner = () => {
         setWordList(
           t.split("\n")
            .map((w) => w.trim().toUpperCase())
-           .filter((w) => w.length > 0),
+           .filter((w) => w.length >= 6 && w.length <= 8),
         ),
       )
-      .catch(() => setWordList(["REAKTÖR", "ATOM", "ENERJİ", "FİSYON", "URANYUM"]));
+      .catch(() => setWordList(["REAKTÖR", "FİSYON", "URANYUM", "KARBON", "PLUTONYUM"]));
   }, []);
 
   useEffect(() => {
