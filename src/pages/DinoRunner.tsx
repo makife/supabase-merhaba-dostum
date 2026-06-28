@@ -1346,6 +1346,10 @@ const DinoRunner = () => {
             font-weight: 900;
             font-size: 18px; font-family: 'Arial Black', sans-serif;
         }
+        .letter-inner.neon-green {
+            background: #39FF14;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+        }
 
         .ground {
             position: absolute;
