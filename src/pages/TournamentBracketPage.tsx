@@ -258,15 +258,22 @@ const TournamentBracketPage = () => {
     const round = myLostEarlyMatch.round;
     const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
 
+    setEliminatedRound(round);
+
     fetch(lottieFile)
       .then((r) => r.json())
-      .then((data) => setEliminatedLottie(data))
-      .catch(() => {});
-
-    setEliminatedRound(round);
-    setShowEliminated(true);
-    playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+      .then((data) => {
+        setEliminatedLottie(data);
+        setShowEliminated(true);
+        playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+      })
+      .catch(() => {
+        // Lottie yüklenemezse yine de elendi ekranını göster
+        setShowEliminated(true);
+        playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+      });
   }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
+
 
 
   const REWARD_IMAGES = {
