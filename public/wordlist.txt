@@ -8166,6 +8166,7 @@ cüzzamlı
 çakmaksız
 çakozlama
 çakozlamak
+çakra
 çakşır
 çakşırlı
 çakşırsız
@@ -23485,6 +23486,7 @@ kaporta
 kaportacı
 kaportacılık
 kapriçyo
+kapri
 kapris
 kaprisli
 kaprissiz
@@ -41894,6 +41896,7 @@ süzüntü
 şansölyelik
 şanssız
 şanssızlık
+şant
 şantaj
 şantajcı
 şantajcılık
