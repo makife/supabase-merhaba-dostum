@@ -1034,7 +1034,13 @@ const TournamentBracketPage = () => {
         className="fixed inset-0 flex flex-col items-center justify-center gap-6"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        <div className="text-6xl">😢</div>
+        {eliminatedLottie && (eliminatedRound === 1 || eliminatedRound === 2) ? (
+          <div className="w-72 h-72">
+            <Lottie animationData={eliminatedLottie} loop autoplay />
+          </div>
+        ) : (
+          <div className="text-6xl">😢</div>
+        )}
         <div className="text-center">
           <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
           <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
