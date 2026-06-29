@@ -1036,35 +1036,51 @@ const TournamentBracketPage = () => {
   }
 
   if (showEliminated) {
+    const isEarlyRoundLottie = eliminatedLottie && (eliminatedRound === 1 || eliminatedRound === 2);
     return (
       <div
         className="fixed inset-0 flex flex-col items-center justify-center gap-6"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        {eliminatedLottie && (eliminatedRound === 1 || eliminatedRound === 2) ? (
-          <div className="w-72 h-72">
-            <Lottie animationData={eliminatedLottie} loop autoplay />
-          </div>
+        {isEarlyRoundLottie ? (
+          <>
+            <div className="w-full max-w-md px-6">
+              <Lottie animationData={eliminatedLottie} loop autoplay />
+            </div>
+            <div
+              onClick={() => navigate("/tournament")}
+              className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
+                <Trophy className="w-4 h-4" />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className="text-6xl">😢</div>
+          <>
+            <div className="text-6xl">😢</div>
+            <div className="text-center">
+              <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
+              <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
+            </div>
+            <div
+              onClick={() => navigate("/tournament")}
+              className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+              <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
+                <Trophy className="w-4 h-4" />
+              </div>
+            </div>
+          </>
         )}
-        <div className="text-center">
-          <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
-          <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
-        </div>
-        <div
-          onClick={() => navigate("/tournament")}
-          className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-          <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
-            <Trophy className="w-4 h-4" />
-          </div>
-        </div>
       </div>
     );
   }
+
 
   // ── Ana bracket ekranı ───────────────────────────────────────────────────
   return (
