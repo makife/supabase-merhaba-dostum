@@ -201,6 +201,8 @@ const TournamentBracketPage = () => {
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
+  const [eliminatedRound, setEliminatedRound] = useState<number | null>(null);
+  const [eliminatedLottie, setEliminatedLottie] = useState<any>(null);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
@@ -208,6 +210,7 @@ const TournamentBracketPage = () => {
   const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
   const [cupLottie, setCupLottie] = useState<any>(null);
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
+  const eliminatedSoundPlayedRef = useRef(false);
 
   useEffect(() => {
     if (!showChampion) return;
@@ -233,6 +236,38 @@ const TournamentBracketPage = () => {
       .then((data) => setCupLottie(data))
       .catch(() => {});
   }, []);
+
+  // Çeyrek/Yarı finalde elenme tespiti — Lottie + ses
+  useEffect(() => {
+    if (!user || !matches.length || !tournamentId) return;
+    if (showEliminated || showChampion) return;
+    if (eliminatedSoundPlayedRef.current) return;
+
+    const myLostEarlyMatch = matches.find(
+      (m) =>
+        (m.round === 1 || m.round === 2) &&
+        m.status === "completed" &&
+        (m.player1_id === user.id || m.player2_id === user.id) &&
+        m.winner_id &&
+        m.winner_id !== user.id,
+    );
+
+    if (!myLostEarlyMatch) return;
+
+    eliminatedSoundPlayedRef.current = true;
+    const round = myLostEarlyMatch.round;
+    const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
+
+    fetch(lottieFile)
+      .then((r) => r.json())
+      .then((data) => setEliminatedLottie(data))
+      .catch(() => {});
+
+    setEliminatedRound(round);
+    setShowEliminated(true);
+    playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+  }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
+
 
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
@@ -999,7 +1034,13 @@ const TournamentBracketPage = () => {
         className="fixed inset-0 flex flex-col items-center justify-center gap-6"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        <div className="text-6xl">😢</div>
+        {eliminatedLottie && (eliminatedRound === 1 || eliminatedRound === 2) ? (
+          <div className="w-72 h-72">
+            <Lottie animationData={eliminatedLottie} loop autoplay />
+          </div>
+        ) : (
+          <div className="text-6xl">😢</div>
+        )}
         <div className="text-center">
           <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
           <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
