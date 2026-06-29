@@ -6889,6 +6889,7 @@ burjuva
 burjuvaca
 burjuvalık
 burjuvazi
+burka
 burkma
 burkmak
 burkucu
@@ -27284,6 +27285,7 @@ köpürtmek
 köpürtüş
 köpürüş
 kör
+köri
 körcesine
 kördüğüm
 köre
