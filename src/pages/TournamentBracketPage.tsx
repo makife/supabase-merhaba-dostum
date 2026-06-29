@@ -201,6 +201,8 @@ const TournamentBracketPage = () => {
   const [countdown, setCountdown] = useState(10);
   const [showChampion, setShowChampion] = useState(false);
   const [showEliminated, setShowEliminated] = useState(false);
+  const [eliminatedRound, setEliminatedRound] = useState<number | null>(null);
+  const [eliminatedLottie, setEliminatedLottie] = useState<any>(null);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
@@ -208,6 +210,7 @@ const TournamentBracketPage = () => {
   const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
   const [cupLottie, setCupLottie] = useState<any>(null);
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
+  const eliminatedSoundPlayedRef = useRef(false);
 
   useEffect(() => {
     if (!showChampion) return;
