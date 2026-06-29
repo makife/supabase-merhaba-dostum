@@ -203,6 +203,7 @@ const TournamentBracketPage = () => {
   const [showEliminated, setShowEliminated] = useState(false);
   const [eliminatedRound, setEliminatedRound] = useState<number | null>(null);
   const [eliminatedLottie, setEliminatedLottie] = useState<any>(null);
+  const [eliminatedLottieLoadDone, setEliminatedLottieLoadDone] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
@@ -259,18 +260,19 @@ const TournamentBracketPage = () => {
     const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
 
     setEliminatedRound(round);
+    setEliminatedLottie(null);
+    setEliminatedLottieLoadDone(false);
+    setShowEliminated(true);
+    playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
 
     fetch(lottieFile)
       .then((r) => r.json())
       .then((data) => {
         setEliminatedLottie(data);
-        setShowEliminated(true);
-        playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+        setEliminatedLottieLoadDone(true);
       })
       .catch(() => {
-        // Lottie yüklenemezse yine de elendi ekranını göster
-        setShowEliminated(true);
-        playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+        setEliminatedLottieLoadDone(true);
       });
   }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
 
@@ -1036,47 +1038,50 @@ const TournamentBracketPage = () => {
   }
 
   if (showEliminated) {
-    const isEarlyRoundLottie = eliminatedLottie && (eliminatedRound === 1 || eliminatedRound === 2);
+    const detectedEarlyLostRound = matches.find(
+      (m) =>
+        user &&
+        (m.round === 1 || m.round === 2) &&
+        m.status === "completed" &&
+        (m.player1_id === user.id || m.player2_id === user.id) &&
+        m.winner_id &&
+        m.winner_id !== user.id,
+    )?.round;
+    const resolvedEliminatedRound = eliminatedRound ?? detectedEarlyLostRound ?? null;
+    const usesEliminationLottie = resolvedEliminatedRound === 1 || resolvedEliminatedRound === 2;
+
     return (
       <div
         className="fixed inset-0 flex flex-col items-center justify-center gap-6"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        {isEarlyRoundLottie ? (
-          <>
-            <div className="w-full max-w-md px-6">
-              <Lottie animationData={eliminatedLottie} loop autoplay />
-            </div>
-            <div
-              onClick={() => navigate("/tournament")}
-              className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-              <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
-                <Trophy className="w-4 h-4" />
-              </div>
-            </div>
-          </>
+        {usesEliminationLottie ? (
+          <div className="w-full max-w-md px-6 min-h-[260px] flex items-center justify-center">
+            {eliminatedLottie ? (
+              <Lottie animationData={eliminatedLottie} loop autoplay className="w-full h-full" />
+            ) : eliminatedLottieLoadDone ? (
+              <h1 className="text-2xl font-black text-white uppercase tracking-widest text-center">Elendiniz</h1>
+            ) : (
+              <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin" />
+            )}
+          </div>
         ) : (
-          <>
-            <div className="text-6xl">😢</div>
-            <div className="text-center">
-              <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
-              <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
-            </div>
-            <div
-              onClick={() => navigate("/tournament")}
-              className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-              <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
-                <Trophy className="w-4 h-4" />
-              </div>
-            </div>
-          </>
+          <div className="text-center">
+            <div className="text-6xl mb-4">😢</div>
+            <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
+            <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
+          </div>
         )}
+        <div
+          onClick={() => navigate("/tournament")}
+          className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+          <span className="text-sm font-semibold text-white/95">Turnuvalara Dön</span>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-amber-300">
+            <Trophy className="w-4 h-4" />
+          </div>
+        </div>
       </div>
     );
   }
