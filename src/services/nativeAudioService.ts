@@ -359,6 +359,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('didyouseethat.mp3')) assetId = 'didyouseethat';
   else if (soundFile.includes('geriSayimKlik.mp3')) assetId = 'final_countdown_click';
   else if (soundFile.includes('turKazanma.mp3')) assetId = 'tournament_win';
+  else if (soundFile.includes('turnuvaElenmeSes.mp3')) assetId = 'tournament_eliminated';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
