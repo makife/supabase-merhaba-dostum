@@ -237,6 +237,38 @@ const TournamentBracketPage = () => {
       .catch(() => {});
   }, []);
 
+  // Çeyrek/Yarı finalde elenme tespiti — Lottie + ses
+  useEffect(() => {
+    if (!user || !matches.length || !tournamentId) return;
+    if (showEliminated || showChampion) return;
+    if (eliminatedSoundPlayedRef.current) return;
+
+    const myLostEarlyMatch = matches.find(
+      (m) =>
+        (m.round === 1 || m.round === 2) &&
+        m.status === "completed" &&
+        (m.player1_id === user.id || m.player2_id === user.id) &&
+        m.winner_id &&
+        m.winner_id !== user.id,
+    );
+
+    if (!myLostEarlyMatch) return;
+
+    eliminatedSoundPlayedRef.current = true;
+    const round = myLostEarlyMatch.round;
+    const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
+
+    fetch(lottieFile)
+      .then((r) => r.json())
+      .then((data) => setEliminatedLottie(data))
+      .catch(() => {});
+
+    setEliminatedRound(round);
+    setShowEliminated(true);
+    playSpecialSound("/turnuvaElenmeSes.mp3", 0.8);
+  }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
+
+
   const REWARD_IMAGES = {
     ink: "/murekkepOdul.png",
     degistir: "/degistirOdul.png",
