@@ -2285,22 +2285,19 @@ const GamePage = ({
   const handleTournamentGameEnd = async (userScore: number, opponentScore: number) => {
     if (!user || !tournamentMatch) return;
 
-    // ✅ Önce oyun sonu state'lerini set et
-    setGameEnded(true);
-    setShowResults(true);
-    setButtonsEnabled(false); // Butonları devre dışı bırak
+    const activeTournamentMatch = tournamentMatch;
 
     try {
       // Kullanıcının hangi oyuncu olduğunu belirle
-      const isPlayer1 = String(tournamentMatch.player1_id) === String(user.id);
-      const opponentId = isPlayer1 ? tournamentMatch.player2_id : tournamentMatch.player1_id;
+      const isPlayer1 = String(activeTournamentMatch.player1_id) === String(user.id);
+      const opponentId = isPlayer1 ? activeTournamentMatch.player2_id : activeTournamentMatch.player1_id;
 
       // Skorları doğru oyunculara ata
       const player1Score = isPlayer1 ? userScore : opponentScore;
       const player2Score = isPlayer1 ? opponentScore : userScore;
 
       console.log("🏆 Tournament match completion:", {
-        matchId: tournamentMatch.id,
+        matchId: activeTournamentMatch.id,
         user: user.id,
         isPlayer1,
         player1Score,
@@ -2318,7 +2315,7 @@ const GamePage = ({
         // 0-0 beraberlik: Rastgele kazanan seç
         if (player1Score === 0 && player2Score === 0) {
           console.log("🎲 0-0 beraberlik - rastgele kazanan seçiliyor");
-          determinedWinnerId = Math.random() < 0.5 ? tournamentMatch.player1_id : tournamentMatch.player2_id;
+          determinedWinnerId = Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
           console.log("✅ Rastgele seçilen kazanan:", determinedWinnerId);
         } else {
           // 0'dan farklı beraberlik: Backend tie-breaker RPC çağır
@@ -2326,9 +2323,9 @@ const GamePage = ({
           const { data: tieResult, error: tieError } = await supabase.rpc(
             "determine_tournament_winner_with_tiebreaker",
             {
-              p_match_id: tournamentMatch.id,
-              p_player1_id: tournamentMatch.player1_id,
-              p_player2_id: tournamentMatch.player2_id,
+              p_match_id: activeTournamentMatch.id,
+              p_player1_id: activeTournamentMatch.player1_id,
+              p_player2_id: activeTournamentMatch.player2_id,
               p_player1_score: player1Score,
               p_player2_score: player2Score,
             },
@@ -2337,7 +2334,7 @@ const GamePage = ({
           if (tieError) {
             console.error("❌ Tie-breaker hatası:", tieError);
             // Fallback: Rastgele seç
-            determinedWinnerId = Math.random() < 0.5 ? tournamentMatch.player1_id : tournamentMatch.player2_id;
+            determinedWinnerId = Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
             console.log("⚠️ Tie-breaker hatası, rastgele seçildi:", determinedWinnerId);
           } else {
             determinedWinnerId = tieResult as string;
@@ -2346,14 +2343,24 @@ const GamePage = ({
         }
       } else {
         // Normal kazanan belirleme
-        determinedWinnerId = player1Score > player2Score ? tournamentMatch.player1_id : tournamentMatch.player2_id;
+        determinedWinnerId = player1Score > player2Score ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
       }
 
       // ✅ Winner'ı HEMEN belirle ve state'i güncelle
       const userIsWinner = determinedWinnerId === user.id;
-      setWinner(userIsWinner ? "player" : "opponent");
-      setButtonsEnabled(false);
-      setTimeout(() => setButtonsEnabled(true), 1000);
+      if (userIsWinner) {
+        setGameEnded(true);
+        setShowResults(true);
+        setWinner("player");
+        setButtonsEnabled(false);
+        setTimeout(() => setButtonsEnabled(true), 1000);
+      } else {
+        // Turnuva mağlubiyetinde eski "Elendiniz" maç sonu Lottie ekranını hiç gösterme.
+        setGameEnded(false);
+        setShowResults(false);
+        setWinner(null);
+        setButtonsEnabled(false);
+      }
 
       // 🔊 Ses: setWinner üstte tetiklendi → winner-effect (playEndResultSoundOnce)
       // celebration/gameLose sesini tek seferde çalacak. Burada tekrar çağırmıyoruz
@@ -2373,13 +2380,13 @@ const GamePage = ({
           player2_score: player2Score,
           winner_id: determinedWinnerId!, // Kesin winner_id
         })
-        .eq("id", tournamentMatch.id);
+        .eq("id", activeTournamentMatch.id);
 
       if (updateError) {
         console.error("❌ Maç tamamlama hatası:", updateError);
         // Hata olsa bile winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${activeTournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -2392,14 +2399,14 @@ const GamePage = ({
       const { data: updatedMatch, error: matchError } = await supabase
         .from("tournament_matches")
         .select("*")
-        .eq("id", tournamentMatch.id)
+        .eq("id", activeTournamentMatch.id)
         .single();
 
       if (matchError || !updatedMatch) {
         console.error("❌ Güncellenmiş maç bilgisi alınamadı:", matchError);
         // Winner zaten belirlendi, 3 saniye sonra yönlendir
         setTimeout(() => {
-          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
+          navigate(`/tournament/bracket/${activeTournamentMatch.tournament_id}`);
         }, 3000);
         return;
       }
@@ -2420,8 +2427,8 @@ const GamePage = ({
       nativeStorage.setItem(
         completedMatchKey,
         JSON.stringify({
-          matchId: tournamentMatch.id,
-          tournamentId: tournamentMatch.tournament_id,
+          matchId: activeTournamentMatch.id,
+          tournamentId: activeTournamentMatch.tournament_id,
           completedAt: new Date().toISOString(),
           winner: winnerId,
         }),
@@ -2465,12 +2472,12 @@ const GamePage = ({
 
         // 🎯 Kullanıcının turnuva yolculuğu bittiyse puanı oynanan aşama sayısına böl
         // - Maçı kaybettiyse (eliminated) veya finali oynadıysa (round 3) yolculuk biter
-        const userJourneyEnded = !userIsWinner || tournamentMatch.round >= 3;
-        if (userJourneyEnded && tournamentMatch.tournament_id) {
+        const userJourneyEnded = !userIsWinner || activeTournamentMatch.round >= 3;
+        if (userJourneyEnded && activeTournamentMatch.tournament_id) {
           try {
             const { data: finRes, error: finErr } = await (supabase.rpc as any)("finalize_tournament_score", {
               p_user_id: user.id,
-              p_tournament_id: tournamentMatch.tournament_id,
+              p_tournament_id: activeTournamentMatch.tournament_id,
             });
             if (finErr) console.error("❌ finalize_tournament_score:", finErr);
             else {
@@ -2487,10 +2494,10 @@ const GamePage = ({
       const { data: allRoundMatches } = await supabase
         .from("tournament_matches")
         .select("id, status")
-        .eq("tournament_id", tournamentMatch.tournament_id)
-        .eq("round", tournamentMatch.round);
+        .eq("tournament_id", activeTournamentMatch.tournament_id)
+        .eq("round", activeTournamentMatch.round);
 
-      console.log(`🔍 ${tournamentMatch.round}. turdaki toplam maç sayısı:`, allRoundMatches?.length);
+      console.log(`🔍 ${activeTournamentMatch.round}. turdaki toplam maç sayısı:`, allRoundMatches?.length);
 
       const allMatchesCompleted = allRoundMatches?.every((match) => match.status === "completed");
 
@@ -2524,7 +2531,7 @@ const GamePage = ({
       const { data: finalMatch } = await supabase
         .from("tournament_matches")
         .select("winner_id")
-        .eq("id", tournamentMatch.id)
+        .eq("id", activeTournamentMatch.id)
         .single();
 
       console.log("✅ Winner confirmed in DB:", finalMatch?.winner_id?.slice(-8));
@@ -2532,23 +2539,23 @@ const GamePage = ({
       // 🎯 MUTLAKA YÖNLENDİRME YAP (kazanan/kaybeden fark etmez)
       if (allMatchesCompleted) {
         console.log(
-          `🏆 Tüm ${tournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`,
+          `🏆 Tüm ${activeTournamentMatch.round}. tur maçları tamamlandı! Round advancement bracket sayfasında yapılacak.`,
         );
 
         // Bracket sayfasına yönlendir - advancement orada gerçekleşecek
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
         setTimeout(() => {
           console.log("🔄 Bracket sayfasına yönlendiriliyor...");
-          navigate(`/tournament/bracket/${tournamentMatch.tournament_id}`);
-        }, 1500);
+          navigate(`/tournament/bracket/${activeTournamentMatch.tournament_id}`);
+        }, userIsWinner ? 1500 : 0);
       } else {
         console.log(
           `⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter((m) => m.status === "completed").length}/${allRoundMatches?.length}`,
         );
 
         // Backend winner_id'ye göre yönlendirme (hızlandırıldı: 1.5 saniye)
-        const redirectDelay = 1500;
-        const redirectPath = `/tournament-bracket/${tournamentMatch.tournament_id}`;
+        const redirectDelay = userIsWinner ? 1500 : 0;
+        const redirectPath = `/tournament-bracket/${activeTournamentMatch.tournament_id}`;
 
         console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
         setTimeout(() => {
