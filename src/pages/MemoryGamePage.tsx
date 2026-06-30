@@ -629,12 +629,14 @@ const WordMemoryGame = () => {
                           style={{ backfaceVisibility: "hidden" }}
                         >
                           <div
-                            className={`text-white font-bold px-1 text-center break-all ${
-                              kart.kelime.length > 6
-                                ? "text-[8px]"
-                                : kart.kelime.length > 5
-                                ? "text-[9px]"
-                                : "text-[10px]"
+                            className={`text-white font-extrabold px-0.5 text-center leading-tight tracking-tight uppercase break-words [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] ${
+                              kart.kelime.length > 8
+                                ? "text-[11px]"
+                                : kart.kelime.length > 6
+                                ? "text-[13px]"
+                                : kart.kelime.length > 4
+                                ? "text-[15px]"
+                                : "text-[17px]"
                             }`}
                           >
                             {kart.kelime}
