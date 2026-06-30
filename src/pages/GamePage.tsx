@@ -2555,7 +2555,7 @@ const GamePage = ({
 
         // Backend winner_id'ye göre yönlendirme (hızlandırıldı: 1.5 saniye)
         const redirectDelay = userIsWinner ? 1500 : 0;
-        const redirectPath = `/tournament-bracket/${activeTournamentMatch.tournament_id}`;
+        const redirectPath = `/tournament/bracket/${activeTournamentMatch.tournament_id}`;
 
         console.log(`🔄 ${redirectDelay / 1000} saniye sonra ${redirectPath}'e yönlendirilecek`);
         setTimeout(() => {
@@ -2574,7 +2574,7 @@ const GamePage = ({
 
       // 3 saniye sonra yönlendir
       setTimeout(() => {
-        navigate(`/tournament-bracket/${tournamentMatch?.tournament_id}`);
+        navigate(`/tournament/bracket/${tournamentMatch?.tournament_id}`);
       }, 3000);
     }
   };
@@ -4036,7 +4036,7 @@ const GamePage = ({
                 description: "Bu maç zaten oynandı. Turnuva sayfasına yönlendiriliyorsunuz.",
               });
               // Bracket sayfasına zorla yönlendir
-              setTimeout(() => navigate(`/tournament-bracket/${tournamentId}`), 1000);
+              setTimeout(() => navigate(`/tournament/bracket/${tournamentId}`), 1000);
               return;
             }
 
