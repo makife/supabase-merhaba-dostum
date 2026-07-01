@@ -246,7 +246,7 @@ const TournamentBracketPage = () => {
 
     const myLostEarlyMatch = matches.find(
       (m) =>
-        (m.round === 1 || m.round === 2) &&
+        (m.round === 1 || m.round === 2 || m.round === 3) &&
         m.status === "completed" &&
         (m.player1_id === user.id || m.player2_id === user.id) &&
         m.winner_id &&
@@ -257,7 +257,12 @@ const TournamentBracketPage = () => {
 
     eliminatedSoundPlayedRef.current = true;
     const round = myLostEarlyMatch.round;
-    const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
+    const lottieFile =
+      round === 1
+        ? "/turnuvaElenme2.json"
+        : round === 2
+        ? "/turnuvaElenme1.json"
+        : "/turnuvaElenme3.json";
 
     setEliminatedRound(round);
     setEliminatedLottie(null);
@@ -275,6 +280,7 @@ const TournamentBracketPage = () => {
         setEliminatedLottieLoadDone(true);
       });
   }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
+
 
 
 
