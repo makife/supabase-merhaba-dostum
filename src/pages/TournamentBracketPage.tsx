@@ -246,7 +246,7 @@ const TournamentBracketPage = () => {
 
     const myLostEarlyMatch = matches.find(
       (m) =>
-        (m.round === 1 || m.round === 2) &&
+        (m.round === 1 || m.round === 2 || m.round === 3) &&
         m.status === "completed" &&
         (m.player1_id === user.id || m.player2_id === user.id) &&
         m.winner_id &&
@@ -257,7 +257,12 @@ const TournamentBracketPage = () => {
 
     eliminatedSoundPlayedRef.current = true;
     const round = myLostEarlyMatch.round;
-    const lottieFile = round === 1 ? "/turnuvaElenme2.json" : "/turnuvaElenme1.json";
+    const lottieFile =
+      round === 1
+        ? "/turnuvaElenme2.json"
+        : round === 2
+        ? "/turnuvaElenme1.json"
+        : "/turnuvaElenme3.json";
 
     setEliminatedRound(round);
     setEliminatedLottie(null);
@@ -275,6 +280,7 @@ const TournamentBracketPage = () => {
         setEliminatedLottieLoadDone(true);
       });
   }, [matches, user, tournamentId, showEliminated, showChampion, playSpecialSound]);
+
 
 
 
@@ -1041,37 +1047,40 @@ const TournamentBracketPage = () => {
     const detectedEarlyLostRound = matches.find(
       (m) =>
         user &&
-        (m.round === 1 || m.round === 2) &&
+        (m.round === 1 || m.round === 2 || m.round === 3) &&
         m.status === "completed" &&
         (m.player1_id === user.id || m.player2_id === user.id) &&
         m.winner_id &&
         m.winner_id !== user.id,
     )?.round;
     const resolvedEliminatedRound = eliminatedRound ?? detectedEarlyLostRound ?? null;
-    const usesEliminationLottie = resolvedEliminatedRound === 1 || resolvedEliminatedRound === 2;
 
     return (
       <div
         className="fixed inset-0 flex flex-col items-center justify-center gap-6"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        {usesEliminationLottie ? (
-          <div className="w-full max-w-md px-6 min-h-[260px] flex items-center justify-center">
-            {eliminatedLottie ? (
-              <Lottie animationData={eliminatedLottie} loop autoplay className="w-full h-full" />
-            ) : eliminatedLottieLoadDone ? (
-              <h1 className="text-2xl font-black text-white uppercase tracking-widest text-center">Elendiniz</h1>
-            ) : (
-              <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin" />
-            )}
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="text-6xl mb-4">😢</div>
-            <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Elendiniz</h1>
-            <p className="text-slate-400 text-sm">İyi oyun, bir sonraki turnuvada görüşürüz!</p>
-          </div>
-        )}
+        <div className="w-full max-w-md px-6 min-h-[260px] flex items-center justify-center">
+          {eliminatedLottie ? (
+            <Lottie animationData={eliminatedLottie} loop autoplay className="w-full h-full" />
+          ) : !eliminatedLottieLoadDone ? (
+            <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin" />
+          ) : null}
+        </div>
+
+        <h1
+          className="text-6xl sm:text-7xl font-black text-white text-center tracking-wider"
+          style={{
+            fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+            letterSpacing: "0.08em",
+            WebkitTextStroke: "2px rgba(0,0,0,0.55)",
+            textShadow:
+              "0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(239,68,68,0.35)",
+          }}
+        >
+          ELENDİN!
+        </h1>
+
         <div
           onClick={() => navigate("/tournament")}
           className="flex items-center gap-3 cursor-pointer rounded-2xl px-4 py-3 bg-white/8 ring-1 ring-white/10 hover:bg-white/12 active:scale-95 transition-all"
@@ -1085,6 +1094,7 @@ const TournamentBracketPage = () => {
       </div>
     );
   }
+
 
 
   // ── Ana bracket ekranı ───────────────────────────────────────────────────
