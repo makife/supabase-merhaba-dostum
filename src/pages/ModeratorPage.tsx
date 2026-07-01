@@ -391,24 +391,36 @@ const ModeratorPage = () => {
         </div>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isAdmin ? 'max-w-2xl grid-cols-4' : 'max-w-md grid-cols-2'}`}>
-            <TabsTrigger value="reports" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
+          <TabsList className="flex flex-wrap gap-2 w-full h-auto bg-transparent p-0">
+            <TabsTrigger
+              value="reports"
+              className="gap-1.5 px-3 py-2 rounded-xl border-2 border-amber-500/30 bg-amber-500/10 text-amber-400 data-[state=active]:bg-amber-500 data-[state=active]:text-black data-[state=active]:border-amber-500 shadow-sm text-xs font-bold uppercase tracking-wide"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
               Raporlar ({reports.filter(r => r.status === 'pending').length})
             </TabsTrigger>
-            <TabsTrigger value="bans" className="gap-2">
-              <Ban className="w-4 h-4" />
+            <TabsTrigger
+              value="bans"
+              className="gap-1.5 px-3 py-2 rounded-xl border-2 border-red-500/30 bg-red-500/10 text-red-400 data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=active]:border-red-500 shadow-sm text-xs font-bold uppercase tracking-wide"
+            >
+              <Ban className="w-3.5 h-3.5" />
               Yasaklar ({bans.length})
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="push" className="gap-2">
-                <Bell className="w-4 h-4" />
+              <TabsTrigger
+                value="push"
+                className="gap-1.5 px-3 py-2 rounded-xl border-2 border-sky-500/30 bg-sky-500/10 text-sky-400 data-[state=active]:bg-sky-500 data-[state=active]:text-white data-[state=active]:border-sky-500 shadow-sm text-xs font-bold uppercase tracking-wide"
+              >
+                <Bell className="w-3.5 h-3.5" />
                 Push Bildirim
               </TabsTrigger>
             )}
             {isAdmin && (
-              <TabsTrigger value="system" className="gap-2">
-                <Megaphone className="w-4 h-4" />
+              <TabsTrigger
+                value="system"
+                className="gap-1.5 px-3 py-2 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:border-emerald-500 shadow-sm text-xs font-bold uppercase tracking-wide"
+              >
+                <Megaphone className="w-3.5 h-3.5" />
                 Sistem Mesajları
               </TabsTrigger>
             )}
