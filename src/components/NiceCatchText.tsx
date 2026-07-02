@@ -3,7 +3,7 @@ import { memo, useEffect, useState } from "react";
 interface NiceCatchTextProps {
   /** Her arttığında yeni animasyon tetiklenir */
   eventId: number;
-  /** Kelime uzunluğu (6 => "İyi yakaladın!" beyaz, >=7 => "Muhteşem!" mavi) */
+  /** Kelime uzunluğu (5-8+ arası farklı mesajlar) */
   wordLength: number;
 }
 
@@ -12,7 +12,23 @@ const HOLD_MS = 300;            // ortada bekleme
 const LETTER_OUT_STEP_MS = 30;  // sağa akarken harfler arası
 const LETTER_ANIM_MS = 300;     // her harfin kayma süresi
 
+const POOL_5 = ["İyiydi!", "Güzel!", "Fena değil!", "Bravo!"];
+const POOL_6 = ["İyi yakaladın!", "Harika!", "Çok iyi", "Süper"];
+const POOL_7 = ["Muhteşem..!", "Fevkalade..!", "Mükemmel..!", "Şahane..!"];
+
 type Phase = "in" | "hold" | "out" | "done";
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getTextForLength(len: number): string {
+  if (len >= 8) return "EFSANEVİ!";
+  if (len === 7) return pickRandom(POOL_7);
+  if (len === 6) return pickRandom(POOL_6);
+  if (len === 5) return pickRandom(POOL_5);
+  return "";
+}
 
 const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
   const [state, setState] = useState<{
@@ -23,9 +39,9 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
   } | null>(null);
 
   useEffect(() => {
-    if (eventId === 0 || wordLength < 6) return;
-    const isXLong = wordLength >= 7;
-    const text = isXLong ? "Muhteşem!" : "İyi yakaladın!";
+    if (eventId === 0 || wordLength < 5) return;
+    const text = getTextForLength(wordLength);
+    if (!text) return;
     const color = "white" as const;
     setState({ id: eventId, text, color, phase: "in" });
 
