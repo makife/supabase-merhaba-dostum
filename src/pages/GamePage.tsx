@@ -8656,6 +8656,10 @@ const GamePage = ({
                         bonusAmount={bonusEvent.amount}
                         resetId={comboResetId}
                       />
+                      <NiceCatchText
+                        eventId={niceCatchEvent.id}
+                        wordLength={niceCatchEvent.length}
+                      />
                     </div>
                   )}
 
