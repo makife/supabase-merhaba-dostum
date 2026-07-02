@@ -26,7 +26,7 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
     if (eventId === 0 || wordLength < 6) return;
     const isXLong = wordLength >= 7;
     const text = isXLong ? "Muhteşem!" : "İyi yakaladın!";
-    const color: "white" | "blue" = isXLong ? "blue" : "white";
+    const color = "white" as const;
     setState({ id: eventId, text, color, phase: "in" });
 
     const inDuration = text.length * LETTER_IN_STEP_MS + LETTER_ANIM_MS;
@@ -52,9 +52,7 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
 
   if (!state) return null;
 
-  const isBlue = state.color === "blue";
-  const fill = isBlue ? "#3ba7ff" : "#ffffff";
-  const stroke = isBlue ? "#ffffff" : "#0b1a3a";
+  const fill = "#ffffff";
 
   return (
     <div
@@ -72,8 +70,6 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
         fontWeight: 900,
         fontSize: "1.75rem",
         color: fill,
-        WebkitTextStroke: `0.5px ${stroke}`,
-        textShadow: `0 2px 6px rgba(0,0,0,0.55)`,
         letterSpacing: "0.02em",
         zIndex: 30,
       }}
