@@ -72,7 +72,7 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
         fontWeight: 900,
         fontSize: "1.75rem",
         color: fill,
-        WebkitTextStroke: `1.5px ${stroke}`,
+        WebkitTextStroke: `0.5px ${stroke}`,
         textShadow: `0 2px 6px rgba(0,0,0,0.55)`,
         letterSpacing: "0.02em",
         zIndex: 30,
