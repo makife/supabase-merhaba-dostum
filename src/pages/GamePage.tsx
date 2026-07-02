@@ -37,6 +37,7 @@ import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/Server
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import ComboBoost from "@/components/ComboBoost";
+import NiceCatchText from "@/components/NiceCatchText";
 
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 const MAC_ARKA_PLANLAR: string[] = [
