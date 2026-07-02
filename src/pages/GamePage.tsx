@@ -7599,6 +7599,7 @@ const GamePage = ({
         // ve puan 2 katına çıkarılır
         if (isLong) {
           result.points = result.points * 2;
+          setNiceCatchEvent((prev) => ({ id: prev.id + 1, length: normalizedWord.length }));
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
