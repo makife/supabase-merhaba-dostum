@@ -37,6 +37,7 @@ import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/Server
 import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import ComboBoost from "@/components/ComboBoost";
+import NiceCatchText from "@/components/NiceCatchText";
 
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 const MAC_ARKA_PLANLAR: string[] = [
@@ -975,6 +976,7 @@ const GamePage = ({
   const comboCountRef = useRef<number>(0);
   const comboBreakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [comboEvent, setComboEvent] = useState<{ id: number; count: number }>({ id: 0, count: 0 });
+  const [niceCatchEvent, setNiceCatchEvent] = useState<{ id: number; length: number }>({ id: 0, length: 0 });
   const [bonusEvent, setBonusEvent] = useState<{ id: number; amount: 0 | 10 | 20 | 30 | 50 | 100 }>({
     id: 0,
     amount: 0,
@@ -7597,6 +7599,7 @@ const GamePage = ({
         // ve puan 2 katına çıkarılır
         if (isLong) {
           result.points = result.points * 2;
+          setNiceCatchEvent((prev) => ({ id: prev.id + 1, length: normalizedWord.length }));
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
@@ -8655,6 +8658,10 @@ const GamePage = ({
                         bonusEventId={bonusEvent.id}
                         bonusAmount={bonusEvent.amount}
                         resetId={comboResetId}
+                      />
+                      <NiceCatchText
+                        eventId={niceCatchEvent.id}
+                        wordLength={niceCatchEvent.length}
                       />
                     </div>
                   )}
