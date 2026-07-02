@@ -393,16 +393,10 @@ const SettingsPage = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
-      style={{
-        backgroundColor: "hsl(var(--app-shell))",
-        backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
+      style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
     >
       {/* Light Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#ff6b6b]/40 via-transparent to-transparent pointer-events-none opacity-30" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
       {/* Header */}
       <div className="flex-none z-30 bg-[#1e2d45] border-b border-indigo-500/20 shadow-2xl">

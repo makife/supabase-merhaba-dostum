@@ -975,16 +975,7 @@ const ProfilePage = () => {
   const isPremium = profileData.premiumUntil && new Date(profileData.premiumUntil) > new Date();
 
   return (
-    <div
-      className="min-h-screen overflow-hidden"
-      style={{
-        backgroundColor: "hsl(var(--app-shell))",
-        backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
       {/* HEADER */}
       <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20">
         <div className="px-5 py-4 flex items-center gap-4">
