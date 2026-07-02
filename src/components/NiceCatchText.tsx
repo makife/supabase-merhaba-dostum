@@ -8,12 +8,12 @@ interface NiceCatchTextProps {
 }
 
 const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
-const HOLD_MS = 300;            // ortada bekleme
+const HOLD_MS = 400;            // ortada bekleme
 const LETTER_OUT_STEP_MS = 30;  // sağa akarken harfler arası
 const LETTER_ANIM_MS = 300;     // her harfin kayma süresi
 
 const POOL_5 = ["İyiydi!", "Güzel!", "Fena değil!", "Bravo!"];
-const POOL_6 = ["İyi yakaladın!", "Harika!", "Çok iyi", "Süper"];
+const POOL_6 = ["İyi yakaladın!", "Harika!", "Çok iyi!", "Süper"];
 const POOL_7 = ["Muhteşem..!", "Fevkalade..!", "Mükemmel..!", "Şahane..!"];
 
 type Phase = "in" | "hold" | "out" | "done";
