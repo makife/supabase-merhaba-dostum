@@ -7595,11 +7595,14 @@ const GamePage = ({
         setTimeout(() => setInputFlash(null), 600);
         showCustomToast(normalizedWord, "", isXLong ? "blue" : isLong ? "white" : "green");
 
-        // 🎉 6+ harfli kelimede ızgaranın ortasında altiharf animasyonu (1 kerelik)
-        // ve puan 2 katına çıkarılır
+        // 🎉 5+ harfli kelimede ortada harf animasyonu (1 kerelik)
+        if (normalizedWord.length >= 5) {
+          setNiceCatchEvent((prev) => ({ id: prev.id + 1, length: normalizedWord.length }));
+        }
+
+        // 6+ harfli kelimede puan 2 katına çıkar ve ekstra animasyon göster
         if (isLong) {
           result.points = result.points * 2;
-          setNiceCatchEvent((prev) => ({ id: prev.id + 1, length: normalizedWord.length }));
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
