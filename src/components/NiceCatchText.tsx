@@ -8,7 +8,7 @@ interface NiceCatchTextProps {
 }
 
 const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
-const HOLD_MS = 60;             // ortada bekleme
+const HOLD_MS = 150;            // ortada bekleme
 const LETTER_OUT_STEP_MS = 30;  // sağa akarken harfler arası
 const LETTER_ANIM_MS = 300;     // her harfin kayma süresi
 
