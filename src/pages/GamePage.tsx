@@ -977,6 +977,8 @@ const GamePage = ({
   const comboBreakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [comboEvent, setComboEvent] = useState<{ id: number; count: number }>({ id: 0, count: 0 });
   const [niceCatchEvent, setNiceCatchEvent] = useState<{ id: number; length: number }>({ id: 0, length: 0 });
+  const [hintEvent, setHintEvent] = useState<{ id: number; text: string }>({ id: 0, text: "" });
+  const jokerUsedInMatchRef = useRef<boolean>(false);
   const [bonusEvent, setBonusEvent] = useState<{ id: number; amount: 0 | 10 | 20 | 30 | 50 | 100 }>({
     id: 0,
     amount: 0,
@@ -1550,6 +1552,41 @@ const GamePage = ({
   useEffect(() => {
     gameStartedRef.current = gameStarted;
   }, [gameStarted]);
+
+  // 💡 Maç içi ipucu yazıları (NiceCatchText ile aynı animasyon)
+  useEffect(() => {
+    if (!gameStarted || gameEnded) return;
+    const HINT_POOL_60 = [
+      "Değiştir jokeri 5 harf değiştirir",
+      "Fısılda jokeri yolu gösterir",
+      "SenYaz jokeri senin yerine yazar",
+    ];
+    const t15 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (playerScoreRef.current === 0) {
+        setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
+      }
+    }, 15000);
+    const t30 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (!jokerUsedInMatchRef.current && playerScoreRef.current < opponentScoreRef.current) {
+        setHintEvent((p) => ({ id: p.id + 1, text: "Joker avantaj sağlar. İyi kullan!" }));
+      }
+    }, 30000);
+    const t60 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (!jokerUsedInMatchRef.current) {
+        const txt = HINT_POOL_60[Math.floor(Math.random() * HINT_POOL_60.length)];
+        setHintEvent((p) => ({ id: p.id + 1, text: txt }));
+      }
+    }, 60000);
+    return () => {
+      clearTimeout(t15);
+      clearTimeout(t30);
+      clearTimeout(t60);
+    };
+  }, [gameStarted, gameEnded]);
+
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const winnerRef = useRef<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
@@ -3081,6 +3118,8 @@ const GamePage = ({
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
+    jokerUsedInMatchRef.current = false;
+    setHintEvent({ id: 0, text: "" });
     preLevelRef.current = 0;
     preScoreRef.current = null;
     levelUpCheckedRef.current = false;
@@ -4162,6 +4201,7 @@ const GamePage = ({
       setGridSyncPaused(false);
       return;
     }
+    jokerUsedInMatchRef.current = true;
 
     setTimeout(() => {
       setHighlightedLetters([]);
@@ -4346,6 +4386,7 @@ const GamePage = ({
         setSelectedJoker(null); // ✅ Hata durumunda da temizle
         return;
       }
+      jokerUsedInMatchRef.current = true;
     } else {
       // Kelime bulunamadı
       setIsJokerActive(false);
@@ -4592,6 +4633,7 @@ const GamePage = ({
       if (jokerSuccess) {
         const jokerUsed = await useJoker("senYaz");
         if (jokerUsed) {
+          jokerUsedInMatchRef.current = true;
           console.log("🎯 Sen Yaz Jokeri harcanı!");
         } else {
           console.error("❌ Sen Yaz joker kullanılamadı!");
@@ -8666,6 +8708,11 @@ const GamePage = ({
                         eventId={niceCatchEvent.id}
                         wordLength={niceCatchEvent.length}
                       />
+                      <NiceCatchText
+                        eventId={hintEvent.id}
+                        customText={hintEvent.text}
+                      />
+
                     </div>
                   )}
 

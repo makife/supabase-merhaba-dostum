@@ -3,8 +3,10 @@ import { memo, useEffect, useRef, useState } from "react";
 interface NiceCatchTextProps {
   /** Her arttığında yeni animasyon tetiklenir */
   eventId: number;
-  /** Kelime uzunluğu (5-8+ arası farklı mesajlar) */
-  wordLength: number;
+  /** Kelime uzunluğu (5-8+ arası farklı mesajlar). customText verilirse yoksayılır. */
+  wordLength?: number;
+  /** Verilirse wordLength yerine bu metin gösterilir */
+  customText?: string;
 }
 
 const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
@@ -30,7 +32,7 @@ function getTextForLength(len: number): string {
   return "";
 }
 
-const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
+const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTextProps) => {
   const [state, setState] = useState<{
     id: number;
     text: string;
@@ -42,9 +44,9 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
   const baselineIdRef = useRef<number>(eventId);
 
   useEffect(() => {
-    if (eventId === 0 || wordLength < 5) return;
+    if (eventId === 0) return;
     if (eventId <= baselineIdRef.current) return;
-    const text = getTextForLength(wordLength);
+    const text = customText ?? getTextForLength(wordLength);
     if (!text) return;
     const color = "white" as const;
     setState({ id: eventId, text, color, phase: "in" });
@@ -68,7 +70,7 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [eventId, wordLength]);
+  }, [eventId, wordLength, customText]);
 
   if (!state) return null;
 
