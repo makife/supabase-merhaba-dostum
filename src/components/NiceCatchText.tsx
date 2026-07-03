@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 interface NiceCatchTextProps {
   /** Her arttığında yeni animasyon tetiklenir */
