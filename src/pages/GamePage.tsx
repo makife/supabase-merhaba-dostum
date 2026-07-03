@@ -38,6 +38,7 @@ import GameCountdown from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import ComboBoost from "@/components/ComboBoost";
 import NiceCatchText from "@/components/NiceCatchText";
+import { playNativeSound } from "@/services/nativeAudioService";
 
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 const MAC_ARKA_PLANLAR: string[] = [
