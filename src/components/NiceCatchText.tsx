@@ -38,8 +38,12 @@ const NiceCatchText = memo(({ eventId, wordLength }: NiceCatchTextProps) => {
     phase: Phase;
   } | null>(null);
 
+  // İlk mount'taki eventId'yi baz al: rematch sonrası eski değerle tekrar tetiklenmesin
+  const baselineIdRef = useRef<number>(eventId);
+
   useEffect(() => {
     if (eventId === 0 || wordLength < 5) return;
+    if (eventId <= baselineIdRef.current) return;
     const text = getTextForLength(wordLength);
     if (!text) return;
     const color = "white" as const;
