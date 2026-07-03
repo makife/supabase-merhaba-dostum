@@ -3083,6 +3083,8 @@ const GamePage = ({
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
     setGameStarted(false);
     setGameEnded(false);
+    jokerUsedInMatchRef.current = false;
+    setHintEvent({ id: 0, text: "" });
     preLevelRef.current = 0;
     preScoreRef.current = null;
     levelUpCheckedRef.current = false;
