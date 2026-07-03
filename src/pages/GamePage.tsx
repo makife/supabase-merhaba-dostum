@@ -4598,6 +4598,7 @@ const GamePage = ({
       if (jokerSuccess) {
         const jokerUsed = await useJoker("senYaz");
         if (jokerUsed) {
+          jokerUsedInMatchRef.current = true;
           console.log("🎯 Sen Yaz Jokeri harcanı!");
         } else {
           console.error("❌ Sen Yaz joker kullanılamadı!");
