@@ -7,11 +7,19 @@ interface NiceCatchTextProps {
   wordLength?: number;
   /** Verilirse wordLength yerine bu metin gösterilir */
   customText?: string;
+  /** Ortada bekleme süresi (ms). Varsayılan 300 */
+  holdMs?: number;
+  /** Soldan gelirken harfler arası adım (ms). Varsayılan 30 */
+  letterInStepMs?: number;
+  /** Sağa akarken harfler arası adım (ms). Varsayılan 30 */
+  letterOutStepMs?: number;
+  /** Yazı boyutu. Varsayılan 1.75rem */
+  fontSize?: string;
 }
 
-const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
-const HOLD_MS = 15;             // ortada bekleme
-const LETTER_OUT_STEP_MS = 30;  // sağa akarken harfler arası
+const DEFAULT_LETTER_IN_STEP_MS = 30;
+const DEFAULT_HOLD_MS = 300;
+const DEFAULT_LETTER_OUT_STEP_MS = 30;
 const LETTER_ANIM_MS = 300;     // her harfin kayma süresi
 
 const POOL_5 = ["İyiydi!", "Güzel!", "Fena değil!", "Bravo!"];
