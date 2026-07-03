@@ -3,8 +3,10 @@ import { memo, useEffect, useRef, useState } from "react";
 interface NiceCatchTextProps {
   /** Her arttığında yeni animasyon tetiklenir */
   eventId: number;
-  /** Kelime uzunluğu (5-8+ arası farklı mesajlar) */
-  wordLength: number;
+  /** Kelime uzunluğu (5-8+ arası farklı mesajlar). customText verilirse yoksayılır. */
+  wordLength?: number;
+  /** Verilirse wordLength yerine bu metin gösterilir */
+  customText?: string;
 }
 
 const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
