@@ -4351,6 +4351,7 @@ const GamePage = ({
         setSelectedJoker(null); // ✅ Hata durumunda da temizle
         return;
       }
+      jokerUsedInMatchRef.current = true;
     } else {
       // Kelime bulunamadı
       setIsJokerActive(false);
