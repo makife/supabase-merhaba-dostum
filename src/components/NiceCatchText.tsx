@@ -106,15 +106,15 @@ const NiceCatchText = memo(({
         whiteSpace: "nowrap",
         fontStyle: "italic",
         fontWeight: 900,
-        fontSize: "0.875rem",
+        fontSize,
         color: fill,
         letterSpacing: "0.02em",
         zIndex: 30,
       }}
     >
       {state.text.split("").map((ch, i) => {
-        const inDelay = i * LETTER_IN_STEP_MS;
-        const outDelay = i * LETTER_OUT_STEP_MS;
+        const inDelay = i * letterInStepMs;
+        const outDelay = i * letterOutStepMs;
         let transform = "translateX(0)";
         let opacity = 1;
         let transition = `transform ${LETTER_ANIM_MS}ms cubic-bezier(0.22, 1, 0.36, 1) ${inDelay}ms, opacity ${LETTER_ANIM_MS}ms ease ${inDelay}ms`;
