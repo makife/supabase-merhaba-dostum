@@ -10,7 +10,7 @@ interface NiceCatchTextProps {
 }
 
 const LETTER_IN_STEP_MS = 30;   // soldan gelirken harfler arası
-const HOLD_MS = 400;            // ortada bekleme
+const HOLD_MS = 15;             // ortada bekleme
 const LETTER_OUT_STEP_MS = 30;  // sağa akarken harfler arası
 const LETTER_ANIM_MS = 300;     // her harfin kayma süresi
 
@@ -90,7 +90,7 @@ const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTe
         whiteSpace: "nowrap",
         fontStyle: "italic",
         fontWeight: 900,
-        fontSize: "1.75rem",
+        fontSize: "0.875rem",
         color: fill,
         letterSpacing: "0.02em",
         zIndex: 30,
