@@ -8718,7 +8718,7 @@ const GamePage = ({
                         holdMs={500}
                         letterInStepMs={15}
                         letterOutStepMs={15}
-                        fontSize="0.875rem"
+                        fontSize="1.09375rem"
                       />
 
                     </div>
