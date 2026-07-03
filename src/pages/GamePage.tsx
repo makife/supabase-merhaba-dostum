@@ -977,6 +977,8 @@ const GamePage = ({
   const comboBreakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [comboEvent, setComboEvent] = useState<{ id: number; count: number }>({ id: 0, count: 0 });
   const [niceCatchEvent, setNiceCatchEvent] = useState<{ id: number; length: number }>({ id: 0, length: 0 });
+  const [hintEvent, setHintEvent] = useState<{ id: number; text: string }>({ id: 0, text: "" });
+  const jokerUsedInMatchRef = useRef<boolean>(false);
   const [bonusEvent, setBonusEvent] = useState<{ id: number; amount: 0 | 10 | 20 | 30 | 50 | 100 }>({
     id: 0,
     amount: 0,
