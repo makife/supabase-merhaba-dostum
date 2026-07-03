@@ -48,6 +48,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'didyouseethat', assetPath: 'public/didyouseethat.mp3', volume: 0.7 },
   
   { assetId: 'cark', assetPath: 'public/carkSesi.mp3', volume: 0.6 }, // ✅ Gerçek dosya adı: carkSesi.mp3
+  { assetId: 'cark_tick', assetPath: 'public/carkDonmeSesi.mp3', volume: 0.6, channels: 4 },
   { assetId: 'cark_dolu', assetPath: 'public/carkDoluGeldi.mp3', volume: 0.7 },
   { assetId: 'cark_bos', assetPath: 'public/carkBosGeldi.mp3', volume: 0.7 },
   
@@ -362,6 +363,7 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('turnuvaElenmeSes.mp3')) assetId = 'tournament_eliminated';
   
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
+  else if (soundFile.includes('carkDonmeSesi.mp3')) assetId = 'cark_tick';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
   else if (soundFile.includes('carkBosGeldi.mp3')) assetId = 'cark_bos';
   else if (soundFile.includes('kutlama.mp3')) assetId = 'celebration';
