@@ -40,7 +40,15 @@ function getTextForLength(len: number): string {
   return "";
 }
 
-const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTextProps) => {
+const NiceCatchText = memo(({
+  eventId,
+  wordLength = 0,
+  customText,
+  holdMs = DEFAULT_HOLD_MS,
+  letterInStepMs = DEFAULT_LETTER_IN_STEP_MS,
+  letterOutStepMs = DEFAULT_LETTER_OUT_STEP_MS,
+  fontSize = "1.75rem",
+}: NiceCatchTextProps) => {
   const [state, setState] = useState<{
     id: number;
     text: string;
@@ -59,9 +67,9 @@ const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTe
     const color = "white" as const;
     setState({ id: eventId, text, color, phase: "in" });
 
-    const inDuration = text.length * LETTER_IN_STEP_MS + LETTER_ANIM_MS;
-    const outStart = inDuration + HOLD_MS;
-    const outDuration = text.length * LETTER_OUT_STEP_MS + LETTER_ANIM_MS;
+    const inDuration = text.length * letterInStepMs + LETTER_ANIM_MS;
+    const outStart = inDuration + holdMs;
+    const outDuration = text.length * letterOutStepMs + LETTER_ANIM_MS;
 
     const t1 = setTimeout(() => {
       setState((s) => (s && s.id === eventId ? { ...s, phase: "hold" } : s));
@@ -78,7 +86,7 @@ const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTe
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [eventId, wordLength, customText]);
+  }, [eventId, wordLength, customText, holdMs, letterInStepMs, letterOutStepMs]);
 
   if (!state) return null;
 
