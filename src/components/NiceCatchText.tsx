@@ -70,7 +70,7 @@ const NiceCatchText = memo(({ eventId, wordLength = 0, customText }: NiceCatchTe
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [eventId, wordLength]);
+  }, [eventId, wordLength, customText]);
 
   if (!state) return null;
 
