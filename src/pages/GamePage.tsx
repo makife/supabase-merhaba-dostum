@@ -4166,6 +4166,7 @@ const GamePage = ({
       setGridSyncPaused(false);
       return;
     }
+    jokerUsedInMatchRef.current = true;
 
     setTimeout(() => {
       setHighlightedLetters([]);
