@@ -1566,12 +1566,14 @@ const GamePage = ({
       if (gameEndedRef.current) return;
       if (playerScoreRef.current === 0) {
         setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
+        playNativeSound('beep', 0.5);
       }
     }, 15000);
     const t30 = setTimeout(() => {
       if (gameEndedRef.current) return;
       if (!jokerUsedInMatchRef.current && playerScoreRef.current < opponentScoreRef.current) {
         setHintEvent((p) => ({ id: p.id + 1, text: "Joker avantaj sağlar. İyi kullan!" }));
+        playNativeSound('beep', 0.5);
       }
     }, 30000);
     const t60 = setTimeout(() => {
@@ -1579,6 +1581,7 @@ const GamePage = ({
       if (!jokerUsedInMatchRef.current) {
         const txt = HINT_POOL_60[Math.floor(Math.random() * HINT_POOL_60.length)];
         setHintEvent((p) => ({ id: p.id + 1, text: txt }));
+        playNativeSound('beep', 0.5);
       }
     }, 60000);
     return () => {
