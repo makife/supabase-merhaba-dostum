@@ -8708,6 +8708,11 @@ const GamePage = ({
                         eventId={niceCatchEvent.id}
                         wordLength={niceCatchEvent.length}
                       />
+                      <NiceCatchText
+                        eventId={hintEvent.id}
+                        customText={hintEvent.text}
+                      />
+
                     </div>
                   )}
 
