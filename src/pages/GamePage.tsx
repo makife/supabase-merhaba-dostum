@@ -1552,6 +1552,41 @@ const GamePage = ({
   useEffect(() => {
     gameStartedRef.current = gameStarted;
   }, [gameStarted]);
+
+  // 💡 Maç içi ipucu yazıları (NiceCatchText ile aynı animasyon)
+  useEffect(() => {
+    if (!gameStarted || gameEnded) return;
+    const HINT_POOL_60 = [
+      "Değiştir jokeri 5 harf değiştirir",
+      "Fısılda jokeri yolu gösterir",
+      "SenYaz jokeri senin yerine yazar",
+    ];
+    const t15 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (playerScoreRef.current === 0) {
+        setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
+      }
+    }, 15000);
+    const t30 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (!jokerUsedInMatchRef.current && playerScoreRef.current < opponentScoreRef.current) {
+        setHintEvent((p) => ({ id: p.id + 1, text: "Joker avantaj sağlar. İyi kullan!" }));
+      }
+    }, 30000);
+    const t60 = setTimeout(() => {
+      if (gameEndedRef.current) return;
+      if (!jokerUsedInMatchRef.current) {
+        const txt = HINT_POOL_60[Math.floor(Math.random() * HINT_POOL_60.length)];
+        setHintEvent((p) => ({ id: p.id + 1, text: txt }));
+      }
+    }, 60000);
+    return () => {
+      clearTimeout(t15);
+      clearTimeout(t30);
+      clearTimeout(t60);
+    };
+  }, [gameStarted, gameEnded]);
+
   const [winner, setWinner] = useState<"player" | "opponent" | "tie" | null>(null);
   const winnerRef = useRef<"player" | "opponent" | "tie" | null>(null);
   const [disconnectWin, setDisconnectWin] = useState(false);
