@@ -8711,6 +8711,10 @@ const GamePage = ({
                       <NiceCatchText
                         eventId={hintEvent.id}
                         customText={hintEvent.text}
+                        holdMs={30}
+                        letterInStepMs={15}
+                        letterOutStepMs={15}
+                        fontSize="0.875rem"
                       />
 
                     </div>
