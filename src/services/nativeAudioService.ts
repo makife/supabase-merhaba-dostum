@@ -61,7 +61,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'game_lose', assetPath: 'public/sounds/default/kaybetme.mp3', volume: 0.6 },
   { assetId: 'tie', assetPath: 'public/sounds/default/beraberlik.mp3', volume: 0.6 },
   // 🔧 10 saniye geri sayım → onsaniyegerisayim.mp3
-  { assetId: 'beep', assetPath: 'public/onsaniyegerisayim.mp3', volume: 0.7, channels: 4 },
+  { assetId: 'beep', assetPath: 'public/beep.mp3', volume: 0.6, channels: 4 },
   // 🔧 Izgara harf butonları → butonsesi.mp3
   { assetId: 'letter_select', assetPath: 'public/butonsesi.mp3', volume: 0.5, channels: 4 },
   // 30 saniye uyarı sesi
