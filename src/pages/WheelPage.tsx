@@ -446,7 +446,7 @@ const WheelPage = () => {
       if (lastSegmentIndexRef.current !== -1 && currentSegIdx !== lastSegmentIndexRef.current) {
         const speed = 1 - t;
         const vol = 0.08 + speed * 0.25;
-        playGeneratedTick(vol);
+        playTick(vol);
       }
       lastSegmentIndexRef.current = currentSegIdx;
 
