@@ -10,7 +10,7 @@ import { toast } from "sonner";
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
-type LevelBg = LevelBg | "level5" | "level6" | "level7" | "level8";
+type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
 
 // 5 katmanlı (1..5.png) yeni pack'ler için ortak parallax hızları.
 // 1 = en uzak (gökyüzü), 5 = en yakın (zemin) varsayımı.
