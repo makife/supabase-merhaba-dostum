@@ -10,7 +10,18 @@ import { toast } from "sonner";
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
-const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src: string; speed: number }[]> = {
+type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
+
+// 5 katmanlı (1..5.png) yeni pack'ler için ortak parallax hızları.
+// 1 = en uzak (gökyüzü), 5 = en yakın (zemin) varsayımı.
+const FIVE_LAYER_SPEEDS = [0.03, 0.15, 0.35, 0.6, 1.0];
+const buildFiveLayerConfig = (folder: string) =>
+  FIVE_LAYER_SPEEDS.map((speed, i) => ({
+    src: `/DinoRunners/${folder}/${i + 1}.png`,
+    speed,
+  }));
+
+const PARALLAX_CONFIGS: Record<LevelBg, { src: string; speed: number }[]> = {
   level1: [
     { src: "/DinoRunners/DinoRunnerArkaPlan11/layer07_Sky.png", speed: 0.03 },
     { src: "/DinoRunners/DinoRunnerArkaPlan11/layer06_Rocks.png", speed: 0.08 },
@@ -48,10 +59,15 @@ const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src:
     { src: "/DinoRunners/DinoRunnerArkaPlan44/layer02_cake.png", speed: 0.65 },
     { src: "/DinoRunners/DinoRunnerArkaPlan44/layer01_ground.png", speed: 1.0 },
   ],
+  level5: buildFiveLayerConfig("DinoRunnerArkaPlan55"),
+  level6: buildFiveLayerConfig("DinoRunnerArkaPlan66"),
+  level7: buildFiveLayerConfig("DinoRunnerArkaPlan77"),
+  level8: buildFiveLayerConfig("DinoRunnerArkaPlan88"),
 };
 
+
 const ParallaxBackground: React.FC<{
-  bg: "level1" | "level2" | "level3" | "level4";
+  bg: LevelBg;
   speedRef: React.MutableRefObject<number>;
   multRef: React.MutableRefObject<number>;
 }> = ({ bg, speedRef, multRef }) => {
@@ -165,7 +181,7 @@ const DinoRunner = () => {
   const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [arkaPlanAnim5, setArkaPlanAnim5] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
-  const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
+  const [activeBg, setActiveBg] = useState<LevelBg>("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
@@ -185,13 +201,18 @@ const DinoRunner = () => {
 
   // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
   // bu yüzden diğer arka planlarla aynı çarpanı kullanıyor.
-  const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
+  const BG_BASE_SPEED: Record<LevelBg, number> = {
     level1: 1,
     level2: 1,
     level3: 1,
     level4: 1,
+    level5: 1,
+    level6: 1,
+    level7: 1,
+    level8: 1,
   };
-  const computeBgSpeed = (bg: "level1" | "level2" | "level3" | "level4", lvl: number) =>
+
+  const computeBgSpeed = (bg: LevelBg, lvl: number) =>
     Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
@@ -315,12 +336,17 @@ const DinoRunner = () => {
   const OBSTACLE_WIDTH = 30;
   const LETTER_SIZE = 35;
 
-  const getBgForLevel = (lvl: number): "level1" | "level2" | "level3" | "level4" => {
+  const getBgForLevel = (lvl: number): LevelBg => {
     if (lvl <= 1) return "level1";
     if (lvl === 2) return "level2";
     if (lvl === 3) return "level3";
-    return "level4";
+    if (lvl === 4) return "level4";
+    if (lvl === 5) return "level5";
+    if (lvl === 6) return "level6";
+    if (lvl === 7) return "level7";
+    return "level8";
   };
+
 
   const restoreBackgroundSpeed = (targetLevel = levelRef.current) => {
     const bg = getBgForLevel(targetLevel);
