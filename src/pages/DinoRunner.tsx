@@ -206,7 +206,12 @@ const DinoRunner = () => {
     level2: 1,
     level3: 1,
     level4: 1,
+    level5: 1,
+    level6: 1,
+    level7: 1,
+    level8: 1,
   };
+
   const computeBgSpeed = (bg: LevelBg, lvl: number) =>
     Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
