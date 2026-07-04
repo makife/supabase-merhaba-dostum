@@ -459,7 +459,7 @@ const DinoRunner = () => {
     // Level 2 Portal Sıfırlama
     setActiveBg("level1");
     portalTriggeredRef.current = false;
-    nextPortalScoreRef.current = 750;
+    nextPortalScoreRef.current = 100;
     portalRef.current = null;
     exitFadeRef.current = 0;
 
@@ -761,7 +761,7 @@ const DinoRunner = () => {
         portalRef.current = null;
         playPortalGecisSound();
         pendingLevelRef.current = reachedLevel;
-        nextPortalScoreRef.current += 750;
+        nextPortalScoreRef.current += 100;
         gameStateRef.current = "transition";
         setGameState("transition");
         setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
