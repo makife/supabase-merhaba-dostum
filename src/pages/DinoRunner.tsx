@@ -10,7 +10,7 @@ import { toast } from "sonner";
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
-type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
+type LevelBg = LevelBg | "level5" | "level6" | "level7" | "level8";
 
 // 5 katmanlı (1..5.png) yeni pack'ler için ortak parallax hızları.
 // 1 = en uzak (gökyüzü), 5 = en yakın (zemin) varsayımı.
@@ -67,7 +67,7 @@ const PARALLAX_CONFIGS: Record<LevelBg, { src: string; speed: number }[]> = {
 
 
 const ParallaxBackground: React.FC<{
-  bg: "level1" | "level2" | "level3" | "level4";
+  bg: LevelBg;
   speedRef: React.MutableRefObject<number>;
   multRef: React.MutableRefObject<number>;
 }> = ({ bg, speedRef, multRef }) => {
@@ -181,7 +181,7 @@ const DinoRunner = () => {
   const [arkaPlanAnim4, setArkaPlanAnim4] = useState<any>(null);
   const [arkaPlanAnim5, setArkaPlanAnim5] = useState<any>(null);
   const [portalAnim, setPortalAnim] = useState<any>(null);
-  const [activeBg, setActiveBg] = useState<"level1" | "level2" | "level3" | "level4">("level1");
+  const [activeBg, setActiveBg] = useState<LevelBg>("level1");
   const [showLevelUpText, setShowLevelUpText] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
   const arkaPlanLottieRef = useRef<any>(null);
@@ -201,13 +201,13 @@ const DinoRunner = () => {
 
   // Her bg lottie'sinin temel hız çarpanı. ArkaPlan2 JSON içinde yavaşlatıldı,
   // bu yüzden diğer arka planlarla aynı çarpanı kullanıyor.
-  const BG_BASE_SPEED: Record<"level1" | "level2" | "level3" | "level4", number> = {
+  const BG_BASE_SPEED: Record<LevelBg, number> = {
     level1: 1,
     level2: 1,
     level3: 1,
     level4: 1,
   };
-  const computeBgSpeed = (bg: "level1" | "level2" | "level3" | "level4", lvl: number) =>
+  const computeBgSpeed = (bg: LevelBg, lvl: number) =>
     Math.min((BG_BASE_SPEED[bg] ?? 1) * (1 + (lvl - 1) * 0.2), 4);
 
   useEffect(() => {
@@ -331,7 +331,7 @@ const DinoRunner = () => {
   const OBSTACLE_WIDTH = 30;
   const LETTER_SIZE = 35;
 
-  const getBgForLevel = (lvl: number): "level1" | "level2" | "level3" | "level4" => {
+  const getBgForLevel = (lvl: number): LevelBg => {
     if (lvl <= 1) return "level1";
     if (lvl === 2) return "level2";
     if (lvl === 3) return "level3";
