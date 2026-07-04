@@ -340,8 +340,13 @@ const DinoRunner = () => {
     if (lvl <= 1) return "level1";
     if (lvl === 2) return "level2";
     if (lvl === 3) return "level3";
-    return "level4";
+    if (lvl === 4) return "level4";
+    if (lvl === 5) return "level5";
+    if (lvl === 6) return "level6";
+    if (lvl === 7) return "level7";
+    return "level8";
   };
+
 
   const restoreBackgroundSpeed = (targetLevel = levelRef.current) => {
     const bg = getBgForLevel(targetLevel);
