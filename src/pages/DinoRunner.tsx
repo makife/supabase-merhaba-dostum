@@ -10,7 +10,18 @@ import { toast } from "sonner";
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
-const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src: string; speed: number }[]> = {
+type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
+
+// 5 katmanlı (1..5.png) yeni pack'ler için ortak parallax hızları.
+// 1 = en uzak (gökyüzü), 5 = en yakın (zemin) varsayımı.
+const FIVE_LAYER_SPEEDS = [0.03, 0.15, 0.35, 0.6, 1.0];
+const buildFiveLayerConfig = (folder: string) =>
+  FIVE_LAYER_SPEEDS.map((speed, i) => ({
+    src: `/DinoRunners/${folder}/${i + 1}.png`,
+    speed,
+  }));
+
+const PARALLAX_CONFIGS: Record<LevelBg, { src: string; speed: number }[]> = {
   level1: [
     { src: "/DinoRunners/DinoRunnerArkaPlan11/layer07_Sky.png", speed: 0.03 },
     { src: "/DinoRunners/DinoRunnerArkaPlan11/layer06_Rocks.png", speed: 0.08 },
@@ -48,7 +59,12 @@ const PARALLAX_CONFIGS: Record<"level1" | "level2" | "level3" | "level4", { src:
     { src: "/DinoRunners/DinoRunnerArkaPlan44/layer02_cake.png", speed: 0.65 },
     { src: "/DinoRunners/DinoRunnerArkaPlan44/layer01_ground.png", speed: 1.0 },
   ],
+  level5: buildFiveLayerConfig("DinoRunnerArkaPlan55"),
+  level6: buildFiveLayerConfig("DinoRunnerArkaPlan66"),
+  level7: buildFiveLayerConfig("DinoRunnerArkaPlan77"),
+  level8: buildFiveLayerConfig("DinoRunnerArkaPlan88"),
 };
+
 
 const ParallaxBackground: React.FC<{
   bg: "level1" | "level2" | "level3" | "level4";
