@@ -485,7 +485,7 @@ const DinoRunner = () => {
     // Level 2 Portal Sıfırlama
     setActiveBg("level1");
     portalTriggeredRef.current = false;
-    nextPortalScoreRef.current = 100;
+    nextPortalScoreRef.current = 750;
     portalRef.current = null;
     exitFadeRef.current = 0;
 
@@ -787,7 +787,7 @@ const DinoRunner = () => {
         portalRef.current = null;
         playPortalGecisSound();
         pendingLevelRef.current = reachedLevel;
-        nextPortalScoreRef.current += 100;
+        nextPortalScoreRef.current += 750;
         gameStateRef.current = "transition";
         setGameState("transition");
         setLevelUpMessage(`🎉 Tebrikler ${reachedLevel}. Levele geçtiniz!`);
@@ -1061,7 +1061,7 @@ const DinoRunner = () => {
                 transform: `translate3d(${l.x}px, ${-(l.y + GROUND_HEIGHT)}px, 0)`,
               }}
             >
-              <div className={`letter-inner ${level === 2 ? "neon-pink" : level === 3 ? "neon-green" : level === 4 ? "neon-blue" : ""}`}>{l.char}</div>
+              <div className={`letter-inner ${level === 2 ? "neon-pink" : level === 3 ? "neon-green" : level === 4 ? "neon-blue" : level === 5 ? "letter-black" : level === 6 ? "letter-purple" : level === 7 ? "letter-red" : level === 8 ? "letter-blue" : ""}`}>{l.char}</div>
             </div>
           ))}
 
@@ -1383,6 +1383,26 @@ const DinoRunner = () => {
         .letter-inner.neon-blue {
             background: #00F0FF;
             box-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
+        }
+        .letter-inner.letter-black {
+            background: #111;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+        }
+        .letter-inner.letter-purple {
+            background: #9D00FF;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(157, 0, 255, 0.7);
+        }
+        .letter-inner.letter-red {
+            background: #FF2222;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 34, 34, 0.7);
+        }
+        .letter-inner.letter-blue {
+            background: #0066FF;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(0, 102, 255, 0.7);
         }
 
         .ground {
