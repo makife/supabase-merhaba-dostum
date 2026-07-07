@@ -109,6 +109,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import { useAppReviewPrompt } from "@/hooks/useAppReviewPrompt";
+import SoundEffectsToggle from "@/components/SoundEffectsToggle";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
@@ -8425,6 +8426,8 @@ const GamePage = ({
 
   return (
     <>
+      {/* 🔊 Maç ekranı ses efekti aç/kapa (sağ üst köşe) */}
+      <SoundEffectsToggle />
       {/* 🎉 KELİMELE bonus animasyonu (1 kerelik, 3sn) */}
       {showKelimeleAnim && confettiAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9999]">
