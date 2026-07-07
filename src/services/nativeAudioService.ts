@@ -209,6 +209,8 @@ export const initNativeAudio = async (): Promise<void> => {
 /**
  * HTML5 Audio fallback - Native ses yüklenemediğinde
  */
+const activeHTML5Audios = new Set<HTMLAudioElement>();
+
 const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => {
   // 🔧 iOS crash guard: Native app içinde HTML5 Audio fallback yapma.
   // Özellikle harf seçimi/kelime gönderimi gibi yoğun aksiyonlarda WebView audio stack'i
@@ -220,8 +222,17 @@ const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => 
     const webPath = assetPath.replace('public/', '/');
     const audio = new Audio(webPath);
     audio.volume = volume;
+    activeHTML5Audios.add(audio);
+    const cleanup = () => {
+      activeHTML5Audios.delete(audio);
+      audio.removeEventListener('ended', cleanup);
+      audio.removeEventListener('error', cleanup);
+    };
+    audio.addEventListener('ended', cleanup);
+    audio.addEventListener('error', cleanup);
     audio.play().catch(e => {
       console.log(`⚠️ HTML5 Audio fallback başarısız (beklenen):`, e);
+      cleanup();
     });
     return true;
   } catch (e) {
@@ -229,6 +240,23 @@ const playHTML5Fallback = (assetPath: string, volume: number = 0.7): boolean => 
     return false;
   }
 };
+
+/**
+ * Web'deki tüm çalan HTML5 sesleri anında durdur (ses efekti kapatma toggle'ı için).
+ */
+export const stopAllHTML5Sounds = (): void => {
+  activeHTML5Audios.forEach((a) => {
+    try {
+      a.pause();
+      a.currentTime = 0;
+      a.src = '';
+    } catch {
+      // ignore
+    }
+  });
+  activeHTML5Audios.clear();
+};
+
 
 /**
  * Native ses çal - Preload tamamlanmamışsa bekle, hata durumunda HTML5 fallback
