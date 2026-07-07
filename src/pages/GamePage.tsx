@@ -8691,7 +8691,7 @@ const GamePage = ({
                   </div>
 
                   {/* Son 10 saniye geri sayım - kartların ortasında, ifadelerin üstünde */}
-                  {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 10 && (
+                  {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 11 && (
                     <div className="absolute left-1/2 top-1/2 z-[9999] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                       <FinalCountdown displayTime={displayTime} onCountdownTick={handleFinalCountdownTick} />
                     </div>
