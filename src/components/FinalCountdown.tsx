@@ -21,24 +21,24 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
   const showCountdown = displayTime >= 1 && displayTime <= 10;
 
   useEffect(() => {
-    if (showCountdown && displayTime !== lastTickRef.current) {
-      const prev = lastTickRef.current;
+    if (displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
 
-      // 10 saniyelik mp3'ü SADECE bir kez, geri sayımın başında çal.
-      // Böylece maç bittikten sonra devam etmez.
-      const isStart = prev === null || prev < displayTime || displayTime === 10;
-      if (isStart && isSoundEffectsEnabled()) {
+      // 10 saniyelik mp3'ü 1 saniye erken (displayTime === 11) başlat.
+      // Böylece maç bittiğinde ses de tamamlanır.
+      if (displayTime === 11 && isSoundEffectsEnabled()) {
         playNativeSound("son_on_saniye", 0.7).catch((err) =>
           console.error("son10saniye çalma hatası:", err)
         );
       }
 
       // Lottie'yi her saniye senkronize et: displayTime=10 → frame 0, =9 → 30, ...
-      const targetFrame = Math.min(TOTAL_FRAMES - 1, (10 - displayTime) * FPS);
-      try {
-        lottieRef.current?.goToAndPlay(targetFrame, true);
-      } catch {}
+      if (showCountdown) {
+        const targetFrame = Math.min(TOTAL_FRAMES - 1, (10 - displayTime) * FPS);
+        try {
+          lottieRef.current?.goToAndPlay(targetFrame, true);
+        } catch {}
+      }
     }
   }, [displayTime, showCountdown]);
 
