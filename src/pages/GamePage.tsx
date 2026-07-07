@@ -8425,6 +8425,8 @@ const GamePage = ({
 
   return (
     <>
+      {/* 🔊 Maç ekranı ses efekti aç/kapa (sağ üst köşe) */}
+      <SoundEffectsToggle />
       {/* 🎉 KELİMELE bonus animasyonu (1 kerelik, 3sn) */}
       {showKelimeleAnim && confettiAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9999]">
