@@ -67,6 +67,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   // 30 saniye uyarı sesi
   { assetId: 'time_warning', assetPath: 'public/sureAzaliyor.mp3', volume: 0.7 },
   { assetId: 'final_countdown_click', assetPath: 'public/geriSayimKlik.mp3', volume: 0.7, channels: 4 },
+  { assetId: 'son_on_saniye', assetPath: 'public/son10saniye.mp3', volume: 0.7, channels: 4 },
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
   { assetId: 'tournament_eliminated', assetPath: 'public/turnuvaElenmeSes.mp3', volume: 0.8 },
   { assetId: 'boost_arti_ses', assetPath: 'public/BoostArtiSes.mp3', volume: 0.8, channels: 3 },

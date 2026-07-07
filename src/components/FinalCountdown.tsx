@@ -1,7 +1,9 @@
 import { useEffect, useRef, memo } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
+import { Capacitor } from "@capacitor/core";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
+import { playNativeSound } from "@/services/nativeAudioService";
 import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
 interface FinalCountdownProps {
@@ -26,8 +28,16 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const playPitchSound = (secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
-    // Web Audio API hem iOS/Android native hem web'de playbackRate'i destekler.
-    // NativeAudio plugin'i pitch desteklemediği için tüm platformlarda burayı kullanıyoruz.
+
+    // Native iOS/Android: public/son10saniye.mp3 dosyasını NativeAudio ile çal
+    if (Capacitor.isNativePlatform()) {
+      playNativeSound("son_on_saniye", 0.7).catch((err) =>
+        console.error("Native son10saniye hatası:", err)
+      );
+      return;
+    }
+
+    // Web: sentetik pitched beep
     const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
     playPitchedBeep(BEEP_URL, pitchRate, 0.7).catch((err) =>
       console.error("Pitched beep hatası:", err)
