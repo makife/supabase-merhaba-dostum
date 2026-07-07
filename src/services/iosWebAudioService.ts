@@ -25,6 +25,8 @@ let unlockBound = false;
 let unlockPromise: Promise<void> | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer | null>>();
+const activeSources = new Set<AudioBufferSourceNode>();
+
 
 type WebAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
