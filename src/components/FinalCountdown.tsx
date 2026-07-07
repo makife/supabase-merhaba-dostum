@@ -20,21 +20,10 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const showCountdown = displayTime >= 1 && displayTime <= 10;
 
-  const playPitchSound = (secondsLeft: number) => {
+  const playPitchSound = (_secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
-
-    // Native iOS/Android: public/son10saniye.mp3 dosyasını NativeAudio ile çal
-    if (Capacitor.isNativePlatform()) {
-      playNativeSound("son_on_saniye", 0.7).catch((err) =>
-        console.error("Native son10saniye hatası:", err)
-      );
-      return;
-    }
-
-    // Web: sentetik pitched beep
-    const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
-    playPitchedBeep(BEEP_URL, pitchRate, 0.7).catch((err) =>
-      console.error("Pitched beep hatası:", err)
+    playNativeSound("son_on_saniye", 0.7).catch((err) =>
+      console.error("son10saniye çalma hatası:", err)
     );
   };
 
