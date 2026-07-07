@@ -20,17 +20,19 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const showCountdown = displayTime >= 1 && displayTime <= 10;
 
-  const playPitchSound = (_secondsLeft: number) => {
-    if (!isSoundEffectsEnabled()) return;
-    playNativeSound("son_on_saniye", 0.7).catch((err) =>
-      console.error("son10saniye çalma hatası:", err)
-    );
-  };
-
   useEffect(() => {
     if (showCountdown && displayTime !== lastTickRef.current) {
+      const prev = lastTickRef.current;
       lastTickRef.current = displayTime;
-      playPitchSound(displayTime);
+
+      // 10 saniyelik mp3'ü SADECE bir kez, geri sayımın başında çal.
+      // Böylece maç bittikten sonra devam etmez.
+      const isStart = prev === null || prev < displayTime || displayTime === 10;
+      if (isStart && isSoundEffectsEnabled()) {
+        playNativeSound("son_on_saniye", 0.7).catch((err) =>
+          console.error("son10saniye çalma hatası:", err)
+        );
+      }
 
       // Lottie'yi her saniye senkronize et: displayTime=10 → frame 0, =9 → 30, ...
       const targetFrame = Math.min(TOTAL_FRAMES - 1, (10 - displayTime) * FPS);
