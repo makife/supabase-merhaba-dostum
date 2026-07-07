@@ -1,7 +1,9 @@
 import { useEffect, useRef, memo } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
+import { Capacitor } from "@capacitor/core";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
+import { playNativeSound } from "@/services/nativeAudioService";
 import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
 interface FinalCountdownProps {
