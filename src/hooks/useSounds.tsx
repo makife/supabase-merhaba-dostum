@@ -186,11 +186,52 @@ export const useSounds = () => {
     // Listen for custom event when settings change
     window.addEventListener("settingsChanged", handleStorageChange);
 
+    // 🔧 Ses efekti aç/kapa toggle'ı: kapatıldığında havuzdaki tüm sesleri
+    // (joker, 30sn uyarısı vs.) anında sustur.
+    const handleToggle = (e: Event) => {
+      loadSettings();
+      const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
+      if (detail && detail.enabled === false) {
+        // Audio pool'daki tüm sesleri durdur
+        try {
+          audioCache.current.forEach((pool) => {
+            pool.forEach((a) => {
+              try {
+                a.pause();
+                a.currentTime = 0;
+              } catch {
+                /* ignore */
+              }
+            });
+          });
+        } catch {
+          /* ignore */
+        }
+        // 30sn uyarısı sesi + fade interval
+        try {
+          if (timeWarningFadeRef.current) {
+            clearInterval(timeWarningFadeRef.current);
+            timeWarningFadeRef.current = null;
+          }
+          if (timeWarningAudioRef.current) {
+            timeWarningAudioRef.current.pause();
+            timeWarningAudioRef.current.currentTime = 0;
+            timeWarningAudioRef.current = null;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    window.addEventListener("soundEffectsToggled", handleToggle as EventListener);
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("settingsChanged", handleStorageChange);
+      window.removeEventListener("soundEffectsToggled", handleToggle as EventListener);
     };
   }, [loadSettings]);
+
 
   // DÜZELTME: Audio utility fonksiyonlarını useCallback ile stabilize et
   const createAudioPool = useCallback((soundPath: string, poolSize: number = 3): HTMLAudioElement[] => {
