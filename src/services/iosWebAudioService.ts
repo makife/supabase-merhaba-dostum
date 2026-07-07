@@ -25,6 +25,8 @@ let unlockBound = false;
 let unlockPromise: Promise<void> | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const inflight = new Map<string, Promise<AudioBuffer | null>>();
+const activeSources = new Set<AudioBufferSourceNode>();
+
 
 type WebAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
@@ -216,6 +218,10 @@ export const playIOSWebSound = async (
     const gain = c.createGain();
     gain.gain.value = Math.max(0, Math.min(1, volume));
     src.connect(gain).connect(c.destination);
+    activeSources.add(src);
+    src.onended = () => {
+      activeSources.delete(src);
+    };
     src.start(0);
     return true;
   } catch (e) {
@@ -225,7 +231,14 @@ export const playIOSWebSound = async (
 };
 
 export const stopAllIOSWebSounds = (): void => {
-  if (!isIOSNative || !ctx) return;
-  // BufferSource'lar tek seferlik; aktif kaynak takibi yok.
-  // Acil kesme istenirse context.suspend() çağrılabilir ama oyun sırasında istemiyoruz.
+  if (!isIOSNative) return;
+  activeSources.forEach((src) => {
+    try {
+      src.stop(0);
+    } catch {
+      // ignore
+    }
+  });
+  activeSources.clear();
 };
+
