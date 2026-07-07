@@ -109,6 +109,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import { useAppReviewPrompt } from "@/hooks/useAppReviewPrompt";
+import SoundEffectsToggle from "@/components/SoundEffectsToggle";
 
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
