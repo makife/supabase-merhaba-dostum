@@ -1,8 +1,6 @@
 import { useEffect, useRef, memo } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
-import { Capacitor } from "@capacitor/core";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
-import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
 import { playNativeSound } from "@/services/nativeAudioService";
 import sonOnSaniyeAnim from "@/assets/sonOnSaniye.json";
 
@@ -15,10 +13,6 @@ interface FinalCountdownProps {
 // displayTime range we display: 9 → 1
 const FPS = 30;
 const TOTAL_FRAMES = 306;
-const BEEP_URL = "/onsaniyegerisayim.mp3";
-
-// Modül yüklendiğinde sesi preload et — ilk tıkın gecikmemesi için
-preloadPitchedBeep(BEEP_URL).catch(() => {});
 
 const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownProps) => {
   const lastTickRef = useRef<number | null>(null);
@@ -26,21 +20,10 @@ const FinalCountdown = memo(({ displayTime, onCountdownTick }: FinalCountdownPro
 
   const showCountdown = displayTime >= 1 && displayTime <= 10;
 
-  const playPitchSound = (secondsLeft: number) => {
+  const playPitchSound = (_secondsLeft: number) => {
     if (!isSoundEffectsEnabled()) return;
-
-    // Native iOS/Android: public/son10saniye.mp3 dosyasını NativeAudio ile çal
-    if (Capacitor.isNativePlatform()) {
-      playNativeSound("son_on_saniye", 0.7).catch((err) =>
-        console.error("Native son10saniye hatası:", err)
-      );
-      return;
-    }
-
-    // Web: sentetik pitched beep
-    const pitchRate = 1.0 + (10 - secondsLeft) * 0.22;
-    playPitchedBeep(BEEP_URL, pitchRate, 0.7).catch((err) =>
-      console.error("Pitched beep hatası:", err)
+    playNativeSound("son_on_saniye", 0.7).catch((err) =>
+      console.error("son10saniye çalma hatası:", err)
     );
   };
 
