@@ -8590,8 +8590,9 @@ const GamePage = ({
                     </div>
                   )}
 
-                  {/* Sağ taraf */}
-                  <div className="w-16 text-right">
+                  {/* Sağ taraf - Ses efekti aç/kapa + turnuva bilgisi */}
+                  <div className="w-16 flex flex-col items-end justify-center gap-1">
+                    <SoundEffectsToggle />
                     {gameMode === "tournament" && (
                       <div className="text-[10px] text-slate-400">vs {getOpponentDisplayName()}</div>
                     )}
