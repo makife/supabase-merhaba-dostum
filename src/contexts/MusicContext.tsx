@@ -176,16 +176,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Default pack playlist - Capacitor için relative path kullan
   const defaultPlaylist = [
-    "./sounds/default/backround-music.mp3",
-    "./sounds/default/backround-music1.mp3",
-    "./sounds/default/backround-music2.mp3",
-    "./sounds/default/backround-music3.mp3",
-    "./sounds/default/backround-music4.mp3",
-    "./sounds/default/backround-music5.mp3",
-    "./sounds/default/backround-music6.mp3",
-    "./sounds/default/backround-music7.mp3",
-    "./sounds/default/backround-music8.mp3",
-    "./sounds/default/backround-music9.mp3",
+    "./sounds/default/background-music.mp3",
+    "./sounds/default/background-music1.mp3",
+    "./sounds/default/background-music2.mp3",
+    "./sounds/default/background-music3.mp3",
+    "./sounds/default/background-music4.mp3",
+    "./sounds/default/background-music5.mp3",
+    "./sounds/default/background-music6.mp3",
+    "./sounds/default/background-music7.mp3",
   ];
 
   // Shuffle function
