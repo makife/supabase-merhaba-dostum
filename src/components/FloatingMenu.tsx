@@ -244,6 +244,27 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           </div>
         </div>
 
+        {/* ── 1b. RADYO ── */}
+        <div className={itemAnim()} style={slideStyle}>
+          <div
+            onClick={() => {
+              playSound("buttonClick");
+              setRadioOpen(true);
+              setIsOpen(false);
+              onOpenChange?.(false);
+            }}
+          >
+            {renderRow(
+              radioPlaying ? "bg-amber-400 animate-pulse" : "bg-amber-400",
+              "/icons/radyo-text.svg",
+              "Radyo",
+              "/icons/radyo-gorsel.svg",
+              "bg-amber-500/20"
+            )}
+          </div>
+        </div>
+
+
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item) => (
           <div key={item.route} className={itemAnim()} style={slideStyle}>
