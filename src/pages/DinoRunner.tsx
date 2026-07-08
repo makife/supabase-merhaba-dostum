@@ -1286,9 +1286,12 @@ const DinoRunner = () => {
                     if (!selectedCharacter) return;
                     playButtonSound("buttonClick");
                     setShowCharacterPicker(false);
+                    if (!hasPlayedTodayRef.current && !challengeLoadingRef.current && gameStateRef.current !== "playing") {
+                      startGame();
+                    }
                   }}
                 >
-                  ONAYLA
+                  BAŞLA
                 </button>
               </div>
             </div>
