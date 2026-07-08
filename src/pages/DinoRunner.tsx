@@ -283,6 +283,8 @@ const DinoRunner = () => {
   const navigate = () => requestExit(doNavigate, gameState !== "playing");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterId | null>(null);
+  const [showCharacterPicker, setShowCharacterPicker] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   // Level ve Görünüm State'leri
