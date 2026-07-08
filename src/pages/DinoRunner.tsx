@@ -1258,18 +1258,6 @@ const DinoRunner = () => {
                       : "TEKRAR DENE"}
                   </button>
                 )}
-                {gameState === "waiting" && selectedCharacter && (
-                  <button
-                    className="start-btn"
-                    style={{ marginTop: 8, background: "linear-gradient(180deg,#444,#222)", fontSize: 13, padding: "8px 14px" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowCharacterPicker(true);
-                    }}
-                  >
-                    Karakter Değiştir
-                  </button>
-                )}
               </div>
             </div>
           )}
