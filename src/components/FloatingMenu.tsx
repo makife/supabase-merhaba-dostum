@@ -153,7 +153,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
 
   // ─── Ortak satır stili ──────────────
   const rowBase =
-    "inline-flex w-fit min-h-[56px] items-center gap-3 cursor-pointer select-none " +
+    "inline-flex w-[240px] min-h-[56px] items-center justify-between gap-3 cursor-pointer select-none " +
     "rounded-2xl px-4 py-2 " +
     "border border-white/80 " +
     "active:opacity-80 " +
