@@ -84,6 +84,8 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
+  const { isPlaying: radioPlaying } = useRadio();
+  const [radioOpen, setRadioOpen] = useState(false);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   const fetchPendingFriends = useCallback(async () => {
