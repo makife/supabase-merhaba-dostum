@@ -11,11 +11,11 @@ const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
 // --- Karakter sprite tanımları ---
 type CharacterId = "adventure" | "dinosour" | "jack" | "robot";
-const CHARACTERS: Record<CharacterId, { folder: string; runFrames: number; jumpFrames: number; label: string }> = {
-  adventure: { folder: "adventureSprite", runFrames: 8, jumpFrames: 10, label: "Kaşif" },
-  dinosour:  { folder: "dinosourSprite",  runFrames: 8, jumpFrames: 12, label: "Dinozor" },
-  jack:      { folder: "jackSprite",      runFrames: 8, jumpFrames: 10, label: "Jack" },
-  robot:     { folder: "robotSprite",     runFrames: 8, jumpFrames: 10, label: "Robot" },
+const CHARACTERS: Record<CharacterId, { folder: string; runFrames: number; jumpFrames: number; label: string; previewSrc: string }> = {
+  adventure: { folder: "adventureSprite", runFrames: 8, jumpFrames: 10, label: "Kaşif", previewSrc: "/DinoRunners/previews/adventure.webp" },
+  dinosour:  { folder: "dinosourSprite",  runFrames: 8, jumpFrames: 12, label: "Dinozor", previewSrc: "/DinoRunners/previews/dinosour.webp" },
+  jack:      { folder: "jackSprite",      runFrames: 8, jumpFrames: 10, label: "Jack", previewSrc: "/DinoRunners/previews/jack.webp" },
+  robot:     { folder: "robotSprite",     runFrames: 8, jumpFrames: 10, label: "Robot", previewSrc: "/DinoRunners/previews/robot.webp" },
 };
 
 const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean; size: number }> = ({ character, isJumping, size }) => {
@@ -296,6 +296,10 @@ const DinoRunner = () => {
   useEffect(() => {
     fetch(`/reaktorKosma.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setReaktorAnim).catch(() => {});
     fetch(`/DinoRunnerArkaPlanPortal.json?v=${DINO_RUNNER_ASSET_VERSION}`).then(r => r.json()).then(setPortalAnim).catch(() => {});
+    (Object.keys(CHARACTERS) as CharacterId[]).forEach((id) => {
+      const img = new Image();
+      img.src = CHARACTERS[id].previewSrc;
+    });
   }, []);
 
   // --- RENK PALETLERİ ---
@@ -1264,10 +1268,10 @@ const DinoRunner = () => {
 
           {showCharacterPicker && (
             <div className="overlay" onClick={(e) => e.stopPropagation()}>
-              <div className="card" style={{ maxWidth: 420 }}>
-                <h2 style={{ marginBottom: 8 }}>KARAKTER SEÇ</h2>
-                <p style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>Bir karakter seç ve BAŞLA'ya bas</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="card character-picker-card">
+                <h2 style={{ marginBottom: 6 }}>KARAKTER SEÇ</h2>
+                <p style={{ fontSize: 12, color: "#aaa", marginBottom: 8 }}>Bir karakter seç ve BAŞLA'ya bas</p>
+                <div className="character-grid">
                   {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => {
                     const isSel = selectedCharacter === id;
                     return (
@@ -1281,7 +1285,7 @@ const DinoRunner = () => {
                           background: isSel ? "rgba(0,234,255,0.15)" : "rgba(255,255,255,0.05)",
                           border: isSel ? "2px solid #00eaff" : "2px solid rgba(255,255,255,0.1)",
                           borderRadius: 12,
-                          padding: 10,
+                          padding: 8,
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
@@ -1291,10 +1295,12 @@ const DinoRunner = () => {
                         }}
                       >
                         <img
-                          src={`/DinoRunners/${CHARACTERS[id].folder}/Run (1).png`}
+                          src={CHARACTERS[id].previewSrc}
                           alt={CHARACTERS[id].label}
                           draggable={false}
-                          style={{ width: 80, height: 80, objectFit: "contain" }}
+                          loading="eager"
+                          decoding="async"
+                          style={{ width: 58, height: 58, objectFit: "contain" }}
                         />
                         <span style={{ fontSize: 13, fontWeight: "bold" }}>{CHARACTERS[id].label}</span>
                       </button>
@@ -1303,7 +1309,7 @@ const DinoRunner = () => {
                 </div>
                 <button
                   className="start-btn"
-                  style={{ marginTop: 14, opacity: selectedCharacter ? 1 : 0.5 }}
+                  style={{ marginTop: 8, opacity: selectedCharacter ? 1 : 0.5 }}
                   disabled={!selectedCharacter}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1678,11 +1684,33 @@ const DinoRunner = () => {
             color: #fff; padding: 30px; border-radius: 20px;
             text-align: center; border: 1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.6);
         }
+        .character-picker-card {
+            width: min(420px, calc(100% - 18px));
+            max-height: calc(100% - 18px);
+            padding: 14px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .character-picker-card h2 {
+            font-size: 20px;
+            line-height: 1.1;
+        }
+        .character-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
         .start-btn {
             background: linear-gradient(45deg, #FFD700, #FF8C00);
             border: none; padding: 12px 30px; color: #000; font-weight: 900;
             font-size: 18px; border-radius: 30px; margin-top: 15px; cursor: pointer;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); transition: transform 0.1s;
+        }
+        .character-picker-card .start-btn {
+            width: 100%;
+            min-height: 40px;
+            padding: 9px 20px;
+            font-size: 16px;
         }
         .start-btn:active { transform: scale(0.95); }
       `}</style>
