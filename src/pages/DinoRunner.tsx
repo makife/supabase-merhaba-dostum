@@ -1226,7 +1226,7 @@ const DinoRunner = () => {
             )}
           </div>
 
-          {/* .ground bar hidden - parallax's own ground layer serves as the surface */}
+          <div className="ground" />
 
           <div className="hud">
             {wordNotification ? (
