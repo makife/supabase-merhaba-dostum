@@ -1175,15 +1175,15 @@ const DinoRunner = () => {
                   left: "50%",
                   bottom: 0,
                   transform: "translateX(-50%)",
-                  width: DINO_WIDTH * 3.0,
-                  height: DINO_WIDTH * 3.0,
+                  width: DINO_WIDTH * 2.5,
+                  height: DINO_WIDTH * 2.5,
                   pointerEvents: "none",
                 }}
               >
                 <DinoCharacterSprite
                   character={selectedCharacter}
                   isJumping={renderState.dinoY > 2}
-                  size={DINO_WIDTH * 3.0}
+                  size={DINO_WIDTH * 2.5}
                 />
               </div>
             ) : (
