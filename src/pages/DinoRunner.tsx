@@ -655,6 +655,8 @@ const DinoRunner = () => {
       // Do NOT auto-start if user already played today or data is still loading.
       // Otherwise pressing JUMP after game-over would re-launch the game.
       if (challengeLoadingRef.current || hasPlayedTodayRef.current) return;
+      // Karakter seçilmediyse jump ile oyunu başlatma
+      if (!selectedCharacter) { setShowCharacterPicker(true); return; }
       startGame();
       return;
     }
