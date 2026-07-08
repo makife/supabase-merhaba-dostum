@@ -570,6 +570,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeOutBackgroundMusic = async (duration: number = 2000) => {
     console.log(`🎵 [MusicContext] fadeOutBackgroundMusic çağrıldı: ${duration}ms`);
+    // 📻 Radyo da yavaşça sussun
+    try {
+      window.dispatchEvent(new CustomEvent("radio-fade-out", { detail: { duration } }));
+    } catch {}
+
 
     // 🔥 NATIVE PLATFORM İÇİN
     if (isNative) {
