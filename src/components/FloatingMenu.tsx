@@ -353,6 +353,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           )}
         </button>
       </div>
+
+      <RadioPicker open={radioOpen} onClose={() => setRadioOpen(false)} />
     </div>
   );
 }
+
