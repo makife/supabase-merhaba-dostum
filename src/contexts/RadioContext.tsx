@@ -60,6 +60,8 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const play = useCallback(async (station: RadioStation) => {
     clearFade();
     try {
+      // Arka plan müziği çalıyorsa durdur (karşılıklı dışlama)
+      try { window.dispatchEvent(new CustomEvent("radio-started")); } catch {}
       if (!audioRef.current) {
         audioRef.current = new Audio();
         audioRef.current.crossOrigin = "anonymous";
@@ -80,6 +82,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsPlaying(false);
     }
   }, []);
+
 
   const fadeOut = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
