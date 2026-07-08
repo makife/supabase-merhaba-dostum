@@ -1170,7 +1170,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Reaktör Koşusu</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
                   </p>
