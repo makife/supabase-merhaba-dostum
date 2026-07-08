@@ -9,6 +9,50 @@ import { toast } from "sonner";
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
+// --- Karakter sprite tanımları ---
+type CharacterId = "adventure" | "dinosour" | "jack" | "robot";
+const CHARACTERS: Record<CharacterId, { folder: string; runFrames: number; jumpFrames: number; label: string }> = {
+  adventure: { folder: "adventureSprite", runFrames: 8, jumpFrames: 10, label: "Kaşif" },
+  dinosour:  { folder: "dinosourSprite",  runFrames: 8, jumpFrames: 12, label: "Dinozor" },
+  jack:      { folder: "jackSprite",      runFrames: 8, jumpFrames: 10, label: "Jack" },
+  robot:     { folder: "robotSprite",     runFrames: 8, jumpFrames: 10, label: "Robot" },
+};
+
+const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean; size: number }> = ({ character, isJumping, size }) => {
+  const cfg = CHARACTERS[character];
+  const [frame, setFrame] = useState(1);
+  const frameRef = useRef(1);
+  const modeRef = useRef<boolean>(isJumping);
+
+  useEffect(() => {
+    // Mod değiştiğinde frame'i sıfırla
+    if (modeRef.current !== isJumping) {
+      modeRef.current = isJumping;
+      frameRef.current = 1;
+      setFrame(1);
+    }
+  }, [isJumping]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const total = modeRef.current ? cfg.jumpFrames : cfg.runFrames;
+      frameRef.current = frameRef.current >= total ? 1 : frameRef.current + 1;
+      setFrame(frameRef.current);
+    }, 65);
+    return () => clearInterval(id);
+  }, [character, cfg.jumpFrames, cfg.runFrames]);
+
+  const src = `/DinoRunners/${cfg.folder}/${isJumping ? "Jump" : "Run"} (${frame}).png`;
+  return (
+    <img
+      src={src}
+      alt=""
+      draggable={false}
+      style={{ width: size, height: size, objectFit: "contain", pointerEvents: "none", userSelect: "none" }}
+    />
+  );
+};
+
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
 type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
 
@@ -239,6 +283,8 @@ const DinoRunner = () => {
   const navigate = () => requestExit(doNavigate, gameState !== "playing");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterId | null>(null);
+  const [showCharacterPicker, setShowCharacterPicker] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [completedWords, setCompletedWords] = useState<string[]>([]);
   // Level ve Görünüm State'leri
@@ -609,6 +655,8 @@ const DinoRunner = () => {
       // Do NOT auto-start if user already played today or data is still loading.
       // Otherwise pressing JUMP after game-over would re-launch the game.
       if (challengeLoadingRef.current || hasPlayedTodayRef.current) return;
+      // Karakter seçilmediyse jump ile oyunu başlatma
+      if (!selectedCharacter) { setShowCharacterPicker(true); return; }
       startGame();
       return;
     }
@@ -1086,7 +1134,15 @@ const DinoRunner = () => {
               transform: `translate3d(${renderState.dinoX}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ☢️
+            {selectedCharacter ? (
+              <DinoCharacterSprite
+                character={selectedCharacter}
+                isJumping={renderState.dinoY > 2}
+                size={DINO_WIDTH * 1.6}
+              />
+            ) : (
+              "☢️"
+            )}
           </div>
 
           <div className="ground" />
@@ -1154,12 +1210,86 @@ const DinoRunner = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       playButtonSound("buttonClick");
-                      startGame();
+                      if (gameState === "waiting" && !selectedCharacter) {
+                        setShowCharacterPicker(true);
+                      } else {
+                        startGame();
+                      }
                     }}
                   >
-                    {gameState === "waiting" ? "BAŞLAT" : "TEKRAR DENE"}
+                    {gameState === "waiting"
+                      ? (selectedCharacter ? "BAŞLA" : "GİRİŞ")
+                      : "TEKRAR DENE"}
                   </button>
                 )}
+                {gameState === "waiting" && selectedCharacter && (
+                  <button
+                    className="start-btn"
+                    style={{ marginTop: 8, background: "linear-gradient(180deg,#444,#222)", fontSize: 13, padding: "8px 14px" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCharacterPicker(true);
+                    }}
+                  >
+                    Karakter Değiştir
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {showCharacterPicker && (
+            <div className="overlay" onClick={(e) => e.stopPropagation()}>
+              <div className="card" style={{ maxWidth: 420 }}>
+                <h2 style={{ marginBottom: 8 }}>KARAKTER SEÇ</h2>
+                <p style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>Bir karakter seç ve BAŞLA'ya bas</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => {
+                    const isSel = selectedCharacter === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCharacter(id);
+                        }}
+                        style={{
+                          background: isSel ? "rgba(0,234,255,0.15)" : "rgba(255,255,255,0.05)",
+                          border: isSel ? "2px solid #00eaff" : "2px solid rgba(255,255,255,0.1)",
+                          borderRadius: 12,
+                          padding: 10,
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 6,
+                          color: "#fff",
+                        }}
+                      >
+                        <img
+                          src={`/DinoRunners/${CHARACTERS[id].folder}/Run (1).png`}
+                          alt={CHARACTERS[id].label}
+                          draggable={false}
+                          style={{ width: 80, height: 80, objectFit: "contain" }}
+                        />
+                        <span style={{ fontSize: 13, fontWeight: "bold" }}>{CHARACTERS[id].label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  className="start-btn"
+                  style={{ marginTop: 14, opacity: selectedCharacter ? 1 : 0.5 }}
+                  disabled={!selectedCharacter}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!selectedCharacter) return;
+                    playButtonSound("buttonClick");
+                    setShowCharacterPicker(false);
+                  }}
+                >
+                  ONAYLA
+                </button>
               </div>
             </div>
           )}
