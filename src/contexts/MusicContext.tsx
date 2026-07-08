@@ -652,6 +652,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fadeInBackgroundMusic = async (duration: number = 2000) => {
     console.log(`🎵 [MusicContext] fadeInBackgroundMusic çağrıldı: ${duration}ms`);
 
+    // 📻 Maç öncesi radyo çalıyorduysa müzik yerine radyoyu geri başlat
+    if (preMatchAudioSourceRef.current === "radio") {
+      preMatchAudioSourceRef.current = "none";
+      try {
+        window.dispatchEvent(new CustomEvent("radio-resume"));
+      } catch {}
+      return;
+    }
+    preMatchAudioSourceRef.current = "none";
+
+
     // 🔥 NATIVE PLATFORM İÇİN
     if (isNative) {
       if (!musicEnabled) {
