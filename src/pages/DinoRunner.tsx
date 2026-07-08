@@ -1213,7 +1213,7 @@ const DinoRunner = () => {
                     <Lottie animationData={reaktorAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
                   </div>
                 )}
-                <h2>{gameState === "waiting" ? "REAKTÖR KOŞUSU" : "SİSTEM ÇÖKTÜ!"}</h2>
+                <h2>{gameState === "waiting" ? "HARF KOŞUSU" : "SİSTEM ÇÖKTÜ!"}</h2>
                 {gameState === "gameOver" ? (
                   <div>
                     <p>Mesafe Puanı: {Math.floor(scoreRef.current / 5)}</p>
@@ -1683,6 +1683,10 @@ const DinoRunner = () => {
             background: #222;
             color: #fff; padding: 30px; border-radius: 20px;
             text-align: center; border: 1px solid #444; box-shadow: 0 0 50px rgba(0,0,0,0.6);
+            max-width: calc(100% - 32px);
+            max-height: calc(100% - 32px);
+            overflow: auto;
+            box-sizing: border-box;
         }
         .character-picker-card {
             width: min(420px, calc(100% - 18px));
