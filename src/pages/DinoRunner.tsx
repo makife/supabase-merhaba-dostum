@@ -682,18 +682,8 @@ const DinoRunner = () => {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (gameStateRef.current !== "playing") {
-      // Geçiş ekranı veya 2. Level başlangıç kartı açıkken zıplama dokunuşu
-      // yeni bir oyun/challenge başlatmasın.
-      if (gameStateRef.current === "transition" || gameStateRef.current === "levelStart") return;
-      // Do NOT auto-start if user already played today or data is still loading.
-      // Otherwise pressing JUMP after game-over would re-launch the game.
-      if (challengeLoadingRef.current || hasPlayedTodayRef.current) return;
-      // Karakter seçilmediyse jump ile oyunu başlatma
-      if (!selectedCharacter) { setShowCharacterPicker(true); return; }
-      startGame();
-      return;
-    }
+    // Zıplama sadece aktif oyunda çalışsın; oyunu başlatma görevi BAŞLA butonlarına kalsın.
+    if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
   };
 
@@ -1266,18 +1256,6 @@ const DinoRunner = () => {
                     {gameState === "waiting"
                       ? (selectedCharacter ? "BAŞLA" : "GİRİŞ")
                       : "TEKRAR DENE"}
-                  </button>
-                )}
-                {gameState === "waiting" && selectedCharacter && (
-                  <button
-                    className="start-btn"
-                    style={{ marginTop: 8, background: "linear-gradient(180deg,#444,#222)", fontSize: 13, padding: "8px 14px" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowCharacterPicker(true);
-                    }}
-                  >
-                    Karakter Değiştir
                   </button>
                 )}
               </div>
