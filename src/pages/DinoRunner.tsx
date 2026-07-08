@@ -1226,7 +1226,7 @@ const DinoRunner = () => {
             )}
           </div>
 
-          <div className="ground" />
+          {/* .ground bar kaldırıldı — parallax'in kendi zemin katmanı GROUND_HEIGHT hizasına oturuyor */}
 
           <div className="hud">
             {wordNotification ? (
