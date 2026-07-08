@@ -573,10 +573,21 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeOutBackgroundMusic = async (duration: number = 2000) => {
     console.log(`🎵 [MusicContext] fadeOutBackgroundMusic çağrıldı: ${duration}ms`);
-    // 📻 Radyo da yavaşça sussun
+
+    // 📻 Maç öncesi hangi kaynak çalıyor onu kaydet
+    const radioOn = !!(window as any).__radioIsPlaying;
+    const musicOn = isNative
+      ? isPlaying
+      : !!(backgroundMusicRef.current && !backgroundMusicRef.current.paused);
+    if (radioOn) preMatchAudioSourceRef.current = "radio";
+    else if (musicOn) preMatchAudioSourceRef.current = "music";
+    else preMatchAudioSourceRef.current = "none";
+
+    // Radyoyu da yavaşça sustur
     try {
       window.dispatchEvent(new CustomEvent("radio-fade-out", { detail: { duration } }));
     } catch {}
+
 
 
     // 🔥 NATIVE PLATFORM İÇİN
