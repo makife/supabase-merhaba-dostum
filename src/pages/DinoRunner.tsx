@@ -217,7 +217,7 @@ const ParallaxBackground: React.FC<{
   }, [bg, config, speedRef, multRef]);
 
   return (
-    <div ref={containerRef} style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
+    <div ref={containerRef} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 30, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
       {config.map((layer, i) => (
         <div
           key={layer.src}
