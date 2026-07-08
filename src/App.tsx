@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
 import { MusicProvider } from "@/contexts/MusicContext";
+import { RadioProvider } from "@/contexts/RadioContext";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { MatchmakingProvider } from "@/contexts/NewMatchmakingContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
@@ -716,21 +717,23 @@ const AppProviders = () => {
           <ThemeProvider>
             <ServerTimeProvider>
               <MusicProvider>
-                <GameProvider>
-                  <TournamentProvider>
-                    <NotificationProvider>
-                      <MatchmakingWrapper>
-                        <RematchProvider>
-                          <Toaster />
-                          <Sonner />
-                          <OnboardingWrapper />
-                          <BackButtonDialog />
-                          <AppRoutes />
-                        </RematchProvider>
-                      </MatchmakingWrapper>
-                    </NotificationProvider>
-                  </TournamentProvider>
-                </GameProvider>
+                <RadioProvider>
+                  <GameProvider>
+                    <TournamentProvider>
+                      <NotificationProvider>
+                        <MatchmakingWrapper>
+                          <RematchProvider>
+                            <Toaster />
+                            <Sonner />
+                            <OnboardingWrapper />
+                            <BackButtonDialog />
+                            <AppRoutes />
+                          </RematchProvider>
+                        </MatchmakingWrapper>
+                      </NotificationProvider>
+                    </TournamentProvider>
+                  </GameProvider>
+                </RadioProvider>
               </MusicProvider>
             </ServerTimeProvider>
           </ThemeProvider>

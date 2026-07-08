@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Menu as MenuIcon, X } from "lucide-react";
 import { SvgAsset } from "@/components/ui/svg-asset";
+import { RadioPicker } from "@/components/RadioPicker";
+import { useRadio } from "@/contexts/RadioContext";
 
 // --- Yardımcı Fonksiyonlar ---
 const isUserBannedFromProfile = (profile: any): boolean => {
@@ -82,6 +84,8 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
+  const { isPlaying: radioPlaying } = useRadio();
+  const [radioOpen, setRadioOpen] = useState(false);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   const fetchPendingFriends = useCallback(async () => {
@@ -240,6 +244,27 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           </div>
         </div>
 
+        {/* ── 1b. RADYO ── */}
+        <div className={itemAnim()} style={slideStyle}>
+          <div
+            onClick={() => {
+              playSound("buttonClick");
+              setRadioOpen(true);
+              setIsOpen(false);
+              onOpenChange?.(false);
+            }}
+          >
+            {renderRow(
+              radioPlaying ? "bg-amber-400 animate-pulse" : "bg-amber-400",
+              "/icons/radyo-text.svg",
+              "Radyo",
+              "/icons/radyo-gorsel.svg",
+              "bg-amber-500/20"
+            )}
+          </div>
+        </div>
+
+
         {/* ── 2. MENU ITEMS ── */}
         {menuItems.map((item) => (
           <div key={item.route} className={itemAnim()} style={slideStyle}>
@@ -328,6 +353,9 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           )}
         </button>
       </div>
+
+      <RadioPicker open={radioOpen} onClose={() => setRadioOpen(false)} />
     </div>
   );
 }
+
