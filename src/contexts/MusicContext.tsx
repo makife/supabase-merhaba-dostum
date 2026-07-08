@@ -496,6 +496,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const startBackgroundMusic = async () => {
     if (!musicEnabled) return;
 
+    // Radyo çalıyorsa kapat (karşılıklı dışlama)
+    try { window.dispatchEvent(new CustomEvent("music-started")); } catch {}
+
+
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative) {
       try {
