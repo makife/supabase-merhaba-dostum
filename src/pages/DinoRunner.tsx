@@ -1208,12 +1208,86 @@ const DinoRunner = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       playButtonSound("buttonClick");
-                      startGame();
+                      if (gameState === "waiting" && !selectedCharacter) {
+                        setShowCharacterPicker(true);
+                      } else {
+                        startGame();
+                      }
                     }}
                   >
-                    {gameState === "waiting" ? "BAŞLAT" : "TEKRAR DENE"}
+                    {gameState === "waiting"
+                      ? (selectedCharacter ? "BAŞLA" : "GİRİŞ")
+                      : "TEKRAR DENE"}
                   </button>
                 )}
+                {gameState === "waiting" && selectedCharacter && (
+                  <button
+                    className="start-btn"
+                    style={{ marginTop: 8, background: "linear-gradient(180deg,#444,#222)", fontSize: 13, padding: "8px 14px" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCharacterPicker(true);
+                    }}
+                  >
+                    Karakter Değiştir
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {showCharacterPicker && (
+            <div className="overlay" onClick={(e) => e.stopPropagation()}>
+              <div className="card" style={{ maxWidth: 420 }}>
+                <h2 style={{ marginBottom: 8 }}>KARAKTER SEÇ</h2>
+                <p style={{ fontSize: 12, color: "#aaa", marginBottom: 12 }}>Bir karakter seç ve BAŞLA'ya bas</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => {
+                    const isSel = selectedCharacter === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCharacter(id);
+                        }}
+                        style={{
+                          background: isSel ? "rgba(0,234,255,0.15)" : "rgba(255,255,255,0.05)",
+                          border: isSel ? "2px solid #00eaff" : "2px solid rgba(255,255,255,0.1)",
+                          borderRadius: 12,
+                          padding: 10,
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 6,
+                          color: "#fff",
+                        }}
+                      >
+                        <img
+                          src={`/DinoRunners/${CHARACTERS[id].folder}/Run (1).png`}
+                          alt={CHARACTERS[id].label}
+                          draggable={false}
+                          style={{ width: 80, height: 80, objectFit: "contain" }}
+                        />
+                        <span style={{ fontSize: 13, fontWeight: "bold" }}>{CHARACTERS[id].label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  className="start-btn"
+                  style={{ marginTop: 14, opacity: selectedCharacter ? 1 : 0.5 }}
+                  disabled={!selectedCharacter}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!selectedCharacter) return;
+                    playButtonSound("buttonClick");
+                    setShowCharacterPicker(false);
+                  }}
+                >
+                  ONAYLA
+                </button>
               </div>
             </div>
           )}
