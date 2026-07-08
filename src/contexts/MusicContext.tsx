@@ -135,7 +135,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         try { backgroundMusicRef.current.pause(); } catch {}
       }
-      if (isNative && isPlaying) {
+      const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+      if (nativeAndroid) {
         (async () => {
           try {
             const { registerPlugin } = await import("@capacitor/core");
@@ -150,7 +151,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     window.addEventListener("radio-started", handleRadioStarted);
     return () => window.removeEventListener("radio-started", handleRadioStarted);
-  }, [isNative, isPlaying]);
+  }, []);
+
 
 
   // Native appStateChange için doğrudan dinleme
