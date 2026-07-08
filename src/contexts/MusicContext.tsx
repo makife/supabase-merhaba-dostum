@@ -129,6 +129,30 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [musicEnabled]);
 
+  // 📻 Radyo başladığında arka plan müziğini durdur
+  useEffect(() => {
+    const handleRadioStarted = () => {
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+        try { backgroundMusicRef.current.pause(); } catch {}
+      }
+      if (isNative && isPlaying) {
+        (async () => {
+          try {
+            const { registerPlugin } = await import("@capacitor/core");
+            const NativeMusic = registerPlugin<{
+              setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+            }>("NativeMusic");
+            await NativeMusic.setMusicEnabled({ enabled: false });
+            setIsPlaying(false);
+          } catch {}
+        })();
+      }
+    };
+    window.addEventListener("radio-started", handleRadioStarted);
+    return () => window.removeEventListener("radio-started", handleRadioStarted);
+  }, [isNative, isPlaying]);
+
+
   // Native appStateChange için doğrudan dinleme
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
