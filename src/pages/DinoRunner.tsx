@@ -1491,7 +1491,7 @@ const DinoRunner = () => {
             left: 0;
             bottom: 0;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
             font-size: 30px;
             z-index: 10;
