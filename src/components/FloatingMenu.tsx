@@ -196,7 +196,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       <SvgAsset
         src={textSrc}
         alt={textAlt}
-        className="h-5 w-28 flex-shrink-0 bg-left"
+        className={`${textSrc.includes("radyotext") ? "h-7 w-32" : "h-5 w-28"} flex-shrink-0 bg-left`}
       />
 
       {/* Görsel ikon */}

@@ -9,14 +9,14 @@ export interface RadioStation {
 
 // Türk internet radyo kanalları (public stream URL'leri)
 export const RADIO_STATIONS: RadioStation[] = [
-  { id: "kral-pop", name: "Kral Pop", url: "https://dygedge.radyotvonline.com/kralpop/playlist.m3u8" },
   { id: "power-turk", name: "PowerTürk", url: "https://listen.powerapp.com.tr/powerturk/mpeg/icecast.audio" },
   { id: "power-fm", name: "Power FM", url: "https://listen.powerapp.com.tr/powerfm/mpeg/icecast.audio" },
-  { id: "metro-fm", name: "Metro FM", url: "https://ceyefe.radyotvonline.net/metrofm/playlist.m3u8" },
-  { id: "virgin-radio", name: "Virgin Radio", url: "https://ne01.rcs.revma.com/em90fcs1uwzuv" },
-  { id: "slow-turk", name: "Slow Türk", url: "https://ne01.rcs.revma.com/1uy2t74s4k8uv" },
-  { id: "radyo-d", name: "Radyo D", url: "https://ne01.rcs.revma.com/an1ugyygvk8uv" },
-  { id: "best-fm", name: "Best FM", url: "https://ne01.rcs.revma.com/em90fcs1uwzuv" },
+  { id: "metro-fm", name: "Metro FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/METRO_FM_SC" },
+  { id: "virgin-radio", name: "Virgin Radio", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO_SC" },
+  { id: "super-fm", name: "Süper FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/SUPER_FM_SC" },
+  { id: "joy-turk", name: "JoyTürk", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/JOY_TURK_SC" },
+  { id: "slow-turk", name: "Slow Türk", url: "https://radyo.duhnet.tv/ak_dtvh_slowturk" },
+  { id: "radyo-d", name: "Radyo D", url: "https://radyo.duhnet.tv/radyod" },
 ];
 
 interface RadioContextValue {
