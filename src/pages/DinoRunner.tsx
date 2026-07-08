@@ -1183,7 +1183,7 @@ const DinoRunner = () => {
                 <DinoCharacterSprite
                   character={selectedCharacter}
                   isJumping={renderState.dinoY > 2}
-                  size={DINO_WIDTH * 3.0}
+                  size={DINO_WIDTH * 2.5}
                 />
               </div>
             ) : (
