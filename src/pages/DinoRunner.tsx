@@ -1132,7 +1132,15 @@ const DinoRunner = () => {
               transform: `translate3d(${renderState.dinoX}px, ${-(renderState.dinoY + GROUND_HEIGHT)}px, 0) rotate(${renderState.dinoRotation}deg)`,
             }}
           >
-            ☢️
+            {selectedCharacter ? (
+              <DinoCharacterSprite
+                character={selectedCharacter}
+                isJumping={renderState.dinoY > 2}
+                size={DINO_WIDTH * 1.6}
+              />
+            ) : (
+              "☢️"
+            )}
           </div>
 
           <div className="ground" />
