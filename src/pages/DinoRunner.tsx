@@ -61,6 +61,7 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
             width: "100%",
             height: "100%",
             objectFit: "contain",
+            objectPosition: "center bottom",
             userSelect: "none",
             visibility: !isJumping && frame === n ? "visible" : "hidden",
           }}
@@ -78,6 +79,7 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
             width: "100%",
             height: "100%",
             objectFit: "contain",
+            objectPosition: "center bottom",
             userSelect: "none",
             visibility: isJumping && frame === n ? "visible" : "hidden",
           }}
