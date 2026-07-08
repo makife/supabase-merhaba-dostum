@@ -9,6 +9,50 @@ import { toast } from "sonner";
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
+// --- Karakter sprite tanımları ---
+type CharacterId = "adventure" | "dinosour" | "jack" | "robot";
+const CHARACTERS: Record<CharacterId, { folder: string; runFrames: number; jumpFrames: number; label: string }> = {
+  adventure: { folder: "adventureSprite", runFrames: 8, jumpFrames: 10, label: "Kaşif" },
+  dinosour:  { folder: "dinosourSprite",  runFrames: 8, jumpFrames: 12, label: "Dinozor" },
+  jack:      { folder: "jackSprite",      runFrames: 8, jumpFrames: 10, label: "Jack" },
+  robot:     { folder: "robotSprite",     runFrames: 8, jumpFrames: 10, label: "Robot" },
+};
+
+const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean; size: number }> = ({ character, isJumping, size }) => {
+  const cfg = CHARACTERS[character];
+  const [frame, setFrame] = useState(1);
+  const frameRef = useRef(1);
+  const modeRef = useRef<boolean>(isJumping);
+
+  useEffect(() => {
+    // Mod değiştiğinde frame'i sıfırla
+    if (modeRef.current !== isJumping) {
+      modeRef.current = isJumping;
+      frameRef.current = 1;
+      setFrame(1);
+    }
+  }, [isJumping]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const total = modeRef.current ? cfg.jumpFrames : cfg.runFrames;
+      frameRef.current = frameRef.current >= total ? 1 : frameRef.current + 1;
+      setFrame(frameRef.current);
+    }, 65);
+    return () => clearInterval(id);
+  }, [character, cfg.jumpFrames, cfg.runFrames]);
+
+  const src = `/DinoRunners/${cfg.folder}/${isJumping ? "Jump" : "Run"} (${frame}).png`;
+  return (
+    <img
+      src={src}
+      alt=""
+      draggable={false}
+      style={{ width: size, height: size, objectFit: "contain", pointerEvents: "none", userSelect: "none" }}
+    />
+  );
+};
+
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
 type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
 
