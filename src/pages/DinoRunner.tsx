@@ -752,20 +752,11 @@ const DinoRunner = () => {
 
     groundOffsetRef.current = (groundOffsetRef.current + speedRef.current * dt) % 40;
 
-    // Görsel sprite 2.5x boyutunda ve tabana (ayakları) hizalı, yatayda
-    // taban kutunun merkezine yerleşiyor. Çarpışma kutusu da tüm karakter
-    // gövdesini (kafa dahil) kapsayacak şekilde sprite ile aynı olmalı.
-    const SPRITE_SCALE = 2.5;
-    const SPRITE_W = DINO_WIDTH * SPRITE_SCALE;
-    const SPRITE_H = DINO_HEIGHT * SPRITE_SCALE;
-    // Küçük iç padding ile "adil" çarpışma (piksel-mükemmel yerine biraz toleranslı)
-    const PAD_X = 6;
-    const PAD_Y = 4;
     const dinoRect = {
-      x: dinoXRef.current + DINO_WIDTH / 2 - SPRITE_W / 2 + PAD_X,
-      y: dinoYRef.current + DINO_HEIGHT - SPRITE_H + PAD_Y,
-      width: SPRITE_W - PAD_X * 2,
-      height: SPRITE_H - PAD_Y * 2,
+      x: dinoXRef.current + 5,
+      y: dinoYRef.current + 5,
+      width: DINO_WIDTH - 10,
+      height: DINO_HEIGHT - 10,
     };
 
     // Engeller (in-place update, düşük GC, delta-time normalized)
