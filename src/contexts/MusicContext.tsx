@@ -42,6 +42,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 📻 Maç öncesi hangi kaynak çalıyordu? (fadeOut → fadeIn arası)
+  const preMatchAudioSourceRef = useRef<"music" | "radio" | "none">("none");
+
   // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
   const getMusicVolume = (): number => {
     if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
@@ -125,6 +128,32 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener("app-foreground", handleForeground);
     };
   }, [musicEnabled]);
+
+  // 📻 Radyo başladığında arka plan müziğini durdur
+  useEffect(() => {
+    const handleRadioStarted = () => {
+      if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
+        try { backgroundMusicRef.current.pause(); } catch {}
+      }
+      const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+      if (nativeAndroid) {
+        (async () => {
+          try {
+            const { registerPlugin } = await import("@capacitor/core");
+            const NativeMusic = registerPlugin<{
+              setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
+            }>("NativeMusic");
+            await NativeMusic.setMusicEnabled({ enabled: false });
+            setIsPlaying(false);
+          } catch {}
+        })();
+      }
+    };
+    window.addEventListener("radio-started", handleRadioStarted);
+    return () => window.removeEventListener("radio-started", handleRadioStarted);
+  }, []);
+
+
 
   // Native appStateChange için doğrudan dinleme
   useEffect(() => {
@@ -493,6 +522,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const startBackgroundMusic = async () => {
     if (!musicEnabled) return;
 
+    // Radyo çalıyorsa kapat (karşılıklı dışlama)
+    try { window.dispatchEvent(new CustomEvent("music-started")); } catch {}
+
+
     // 🔥 Native platformda NativeMusicPlugin kullan
     if (isNative) {
       try {
@@ -570,10 +603,21 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeOutBackgroundMusic = async (duration: number = 2000) => {
     console.log(`🎵 [MusicContext] fadeOutBackgroundMusic çağrıldı: ${duration}ms`);
-    // 📻 Radyo da yavaşça sussun
+
+    // 📻 Maç öncesi hangi kaynak çalıyor onu kaydet
+    const radioOn = !!(window as any).__radioIsPlaying;
+    const musicOn = isNative
+      ? isPlaying
+      : !!(backgroundMusicRef.current && !backgroundMusicRef.current.paused);
+    if (radioOn) preMatchAudioSourceRef.current = "radio";
+    else if (musicOn) preMatchAudioSourceRef.current = "music";
+    else preMatchAudioSourceRef.current = "none";
+
+    // Radyoyu da yavaşça sustur
     try {
       window.dispatchEvent(new CustomEvent("radio-fade-out", { detail: { duration } }));
     } catch {}
+
 
 
     // 🔥 NATIVE PLATFORM İÇİN
@@ -637,6 +681,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fadeInBackgroundMusic = async (duration: number = 2000) => {
     console.log(`🎵 [MusicContext] fadeInBackgroundMusic çağrıldı: ${duration}ms`);
+
+    // 📻 Maç öncesi radyo çalıyorduysa müzik yerine radyoyu geri başlat
+    if (preMatchAudioSourceRef.current === "radio") {
+      preMatchAudioSourceRef.current = "none";
+      try {
+        window.dispatchEvent(new CustomEvent("radio-resume"));
+      } catch {}
+      return;
+    }
+    preMatchAudioSourceRef.current = "none";
+
 
     // 🔥 NATIVE PLATFORM İÇİN
     if (isNative) {

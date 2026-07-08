@@ -256,7 +256,7 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
           >
             {renderRow(
               radioPlaying ? "bg-amber-400 animate-pulse" : "bg-amber-400",
-              "/icons/radyo-text.svg",
+              "/icons/radyo-gorsel.svg",
               "Radyo",
               "/icons/radyo-gorsel.svg",
               "bg-amber-500/20"

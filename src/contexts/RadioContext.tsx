@@ -60,6 +60,8 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const play = useCallback(async (station: RadioStation) => {
     clearFade();
     try {
+      // Arka plan müziği çalıyorsa durdur (karşılıklı dışlama)
+      try { window.dispatchEvent(new CustomEvent("radio-started")); } catch {}
       if (!audioRef.current) {
         audioRef.current = new Audio();
         audioRef.current.crossOrigin = "anonymous";
@@ -80,6 +82,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsPlaying(false);
     }
   }, []);
+
 
   const fadeOut = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
@@ -135,12 +138,37 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     window.addEventListener("radio-fade-out", handleFade);
 
+    // Arka plan müziği açıldığında radyoyu kapat
+    const handleMusicStarted = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        stop();
+      }
+    };
+    window.addEventListener("music-started", handleMusicStarted);
+
+    // Maç bitişinde: eğer radyo maç öncesi çalıyorduysa geri başlat
+    const handleRadioResume = () => {
+      const st = currentStationRef.current;
+      if (st) {
+        play(st);
+      }
+    };
+    window.addEventListener("radio-resume", handleRadioResume);
+
     return () => {
       window.removeEventListener("app-background", handleBackground);
       window.removeEventListener("radio-fade-out", handleFade);
+      window.removeEventListener("music-started", handleMusicStarted);
+      window.removeEventListener("radio-resume", handleRadioResume);
       if (removeListener) removeListener();
     };
-  }, [stop, fadeOut]);
+  }, [stop, fadeOut, play]);
+
+  // Global bayrak: MusicContext maç öncesi kaynağı bilsin
+  useEffect(() => {
+    (window as any).__radioIsPlaying = isPlaying;
+  }, [isPlaying]);
+
 
   return (
     <RadioContext.Provider
