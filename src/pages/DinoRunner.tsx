@@ -144,8 +144,6 @@ const PARALLAX_CONFIGS: Record<LevelBg, { src: string; speed: number }[]> = {
 };
 
 
-const GROUND_ALIGN_TARGET = 30; // must match GROUND_HEIGHT — parallax ground top will land here
-
 const ParallaxBackground: React.FC<{
   bg: LevelBg;
   speedRef: React.MutableRefObject<number>;
@@ -157,46 +155,8 @@ const ParallaxBackground: React.FC<{
   const tileWidthsRef = useRef<number[]>([]); // her katmanın gerçek render genişliği
   const naturalSizeRef = useRef<{ w: number; h: number }[]>([]);
   const config = PARALLAX_CONFIGS[bg];
-  // Ground layer'ın (en son katman) resim üstündeki opak zemin oranı (0..1)
-  const [groundRatio, setGroundRatio] = useState(0);
-  // Bu offset kadar layer'lar container'ı taşacak; alt taraf parent tarafından kırpılır,
-  // böylece parallax'in üst yüzeyi tam olarak GROUND_ALIGN_TARGET yüksekliğine oturur.
-  const [alignOffset, setAlignOffset] = useState(0);
 
-  // Zemin katmanının opak üst kenarını canvas ile ölç → groundRatio hesapla
-  useEffect(() => {
-    setGroundRatio(0);
-    setAlignOffset(0);
-    const groundSrc = config[config.length - 1]?.src;
-    if (!groundSrc) return;
-    let cancelled = false;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (cancelled) return;
-      try {
-        const w = img.naturalWidth, h = img.naturalHeight;
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0);
-        const data = ctx.getImageData(0, 0, w, h).data;
-        let topY = h;
-        outer: for (let y = 0; y < h; y++) {
-          for (let x = 0; x < w; x += 20) {
-            const a = data[(y * w + x) * 4 + 3];
-            if (a > 10) { topY = y; break outer; }
-          }
-        }
-        setGroundRatio((h - topY) / h);
-      } catch { /* CORS vb. — sessizce geç */ }
-    };
-    img.src = groundSrc;
-    return () => { cancelled = true; };
-  }, [bg, config]);
-
-  // Görüntülerin doğal boyutlarını yükle + align offset hesapla
+  // Görüntülerin doğal boyutlarını yükle
   useEffect(() => {
     naturalSizeRef.current = config.map(() => ({ w: 0, h: 0 }));
     tileWidthsRef.current = config.map(() => 0);
@@ -212,29 +172,20 @@ const ParallaxBackground: React.FC<{
     });
 
     const recomputeTileWidths = () => {
-      const containerH = containerRef.current?.clientHeight || window.innerHeight;
-      // layerHeight = containerH + alignOffset (aşağıya doğru genişletildi)
-      const layerH = containerH + alignOffset;
+      const h = containerRef.current?.clientHeight || window.innerHeight;
       for (let i = 0; i < config.length; i++) {
         const nat = naturalSizeRef.current[i];
         if (nat.h > 0) {
-          tileWidthsRef.current[i] = (nat.w * layerH) / nat.h;
+          // backgroundSize: auto 100% => render width = naturalW * (containerH / naturalH)
+          tileWidthsRef.current[i] = (nat.w * h) / nat.h;
         }
       }
     };
 
-    // groundRatio hazırsa alignOffset'i güncelle
-    const containerH = containerRef.current?.clientHeight || window.innerHeight;
-    if (groundRatio > 0 && groundRatio < 1) {
-      const off = Math.max(0, (groundRatio * containerH - GROUND_ALIGN_TARGET) / (1 - groundRatio));
-      setAlignOffset(off);
-    }
-
     const onResize = () => recomputeTileWidths();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bg, config, groundRatio]);
+  }, [bg, config]);
 
   useEffect(() => {
     let raf = 0;
@@ -246,13 +197,16 @@ const ParallaxBackground: React.FC<{
       for (let i = 0; i < config.length; i++) {
         const tileW = tileWidthsRef.current[i];
         let next = offsetsRef.current[i] + baseSpeed * config[i].speed * dt;
+        // Tile genişliğine göre sarmala — kopukluk olmaz
         if (tileW > 0) {
+          // negatif kalmasına gerek yok; sadece % al
           next = next % tileW;
           if (next < 0) next += tileW;
         }
         offsetsRef.current[i] = next;
         const el = layersRef.current[i];
         if (el) {
+          // tam piksele yuvarla (sub-pixel titremesini engeller)
           el.style.backgroundPositionX = `${-Math.round(next)}px`;
         }
       }
@@ -263,7 +217,7 @@ const ParallaxBackground: React.FC<{
   }, [bg, config, speedRef, multRef]);
 
   return (
-    <div ref={containerRef} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: -alignOffset, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
+    <div ref={containerRef} style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: "#000" }}>
       {config.map((layer, i) => (
         <div
           key={layer.src}
@@ -282,7 +236,6 @@ const ParallaxBackground: React.FC<{
     </div>
   );
 };
-
 
 
 const DinoRunner = () => {
@@ -1226,7 +1179,7 @@ const DinoRunner = () => {
             )}
           </div>
 
-          {/* .ground bar kaldırıldı — parallax'in kendi zemin katmanı GROUND_HEIGHT hizasına oturuyor */}
+          <div className="ground" />
 
           <div className="hud">
             {wordNotification ? (
