@@ -24,8 +24,8 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
   const frameRef = useRef(1);
   const modeRef = useRef<boolean>(isJumping);
 
+  // Mod değişimini takip et — frame sıfırlansın
   useEffect(() => {
-    // Mod değiştiğinde frame'i sıfırla
     if (modeRef.current !== isJumping) {
       modeRef.current = isJumping;
       frameRef.current = 1;
@@ -33,23 +33,57 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
     }
   }, [isJumping]);
 
+  // Frame döngüsü
   useEffect(() => {
     const id = setInterval(() => {
       const total = modeRef.current ? cfg.jumpFrames : cfg.runFrames;
       frameRef.current = frameRef.current >= total ? 1 : frameRef.current + 1;
       setFrame(frameRef.current);
-    }, 65);
+    }, 70);
     return () => clearInterval(id);
   }, [character, cfg.jumpFrames, cfg.runFrames]);
 
-  const src = `/DinoRunners/${cfg.folder}/${isJumping ? "Jump" : "Run"} (${frame}).png`;
+  // Tüm frameleri baştan mount et; sadece görünürlüğü değiştir → flicker/yeniden yükleme yok
+  const runFrames = Array.from({ length: cfg.runFrames }, (_, i) => i + 1);
+  const jumpFrames = Array.from({ length: cfg.jumpFrames }, (_, i) => i + 1);
+
   return (
-    <img
-      src={src}
-      alt=""
-      draggable={false}
-      style={{ width: size, height: size, objectFit: "contain", pointerEvents: "none", userSelect: "none" }}
-    />
+    <div style={{ position: "relative", width: size, height: size, pointerEvents: "none" }}>
+      {runFrames.map((n) => (
+        <img
+          key={`r${n}`}
+          src={`/DinoRunners/${cfg.folder}/Run (${n}).png`}
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            userSelect: "none",
+            visibility: !isJumping && frame === n ? "visible" : "hidden",
+          }}
+        />
+      ))}
+      {jumpFrames.map((n) => (
+        <img
+          key={`j${n}`}
+          src={`/DinoRunners/${cfg.folder}/Jump (${n}).png`}
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            userSelect: "none",
+            visibility: isJumping && frame === n ? "visible" : "hidden",
+          }}
+        />
+      ))}
+    </div>
   );
 };
 
