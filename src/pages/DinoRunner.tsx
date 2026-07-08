@@ -1169,11 +1169,23 @@ const DinoRunner = () => {
             }}
           >
             {selectedCharacter ? (
-              <DinoCharacterSprite
-                character={selectedCharacter}
-                isJumping={renderState.dinoY > 2}
-                size={DINO_WIDTH * 1.6}
-              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: 0,
+                  transform: "translateX(-50%)",
+                  width: DINO_WIDTH * 4.8,
+                  height: DINO_WIDTH * 4.8,
+                  pointerEvents: "none",
+                }}
+              >
+                <DinoCharacterSprite
+                  character={selectedCharacter}
+                  isJumping={renderState.dinoY > 2}
+                  size={DINO_WIDTH * 4.8}
+                />
+              </div>
             ) : (
               "☢️"
             )}
