@@ -42,6 +42,9 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 📻 Maç öncesi hangi kaynak çalıyordu? (fadeOut → fadeIn arası)
+  const preMatchAudioSourceRef = useRef<"music" | "radio" | "none">("none");
+
   // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
   const getMusicVolume = (): number => {
     if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
