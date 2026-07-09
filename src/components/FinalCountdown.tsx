@@ -94,7 +94,7 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
     const handleToggle = (e: Event) => {
       const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
       const enabled = detail?.enabled ?? isSoundEffectsEnabled();
-      const inWindow = displayTime >= 1 && displayTime <= 11;
+      const inWindow = displayTime >= 1 && displayTime <= 10;
 
       if (!enabled) {
         // Kapatıldı → yerel audio'yu sustur
