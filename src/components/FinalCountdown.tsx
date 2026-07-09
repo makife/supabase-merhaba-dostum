@@ -40,7 +40,7 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
         const audio = new Audio("/son10saniye.mp3");
         audio.volume = 0.7;
         // displayTime === 11 → offset 0, 10 → 1, 9 → 2, ...
-        const offset = Math.max(0, Math.min(SOUND_TOTAL_SECONDS - 0.05, 11 - displayTime));
+        const offset = Math.max(0, Math.min(SOUND_TOTAL_SECONDS - 0.05, 10 - displayTime));
         const play = () => {
           try {
             audio.currentTime = offset;
@@ -72,8 +72,8 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
     if (displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
 
-      // 10 saniyelik mp3'ü 1 saniye erken (displayTime === 11) başlat
-      if (displayTime === 11) {
+      // 10 saniyelik mp3'ü 10 saniye kala başlat
+      if (displayTime === 10) {
         startSoundFromCurrent();
       }
 
@@ -94,7 +94,7 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
     const handleToggle = (e: Event) => {
       const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
       const enabled = detail?.enabled ?? isSoundEffectsEnabled();
-      const inWindow = displayTime >= 1 && displayTime <= 11;
+      const inWindow = displayTime >= 1 && displayTime <= 10;
 
       if (!enabled) {
         // Kapatıldı → yerel audio'yu sustur
