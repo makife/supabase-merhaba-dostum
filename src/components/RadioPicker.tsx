@@ -27,7 +27,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
             <img
               src="/icons/radyo-gorsel.svg"
               alt="Radyo"
-              className="w-6 h-6"
+              className="w-8 h-8"
             />
             <img
               src="/icons/radyotext.svg"
