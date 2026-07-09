@@ -40,7 +40,7 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
         const audio = new Audio("/son10saniye.mp3");
         audio.volume = 0.7;
         // displayTime === 11 → offset 0, 10 → 1, 9 → 2, ...
-        const offset = Math.max(0, Math.min(SOUND_TOTAL_SECONDS - 0.05, 11 - displayTime));
+        const offset = Math.max(0, Math.min(SOUND_TOTAL_SECONDS - 0.05, 10 - displayTime));
         const play = () => {
           try {
             audio.currentTime = offset;
