@@ -63,7 +63,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                     <img
                       src={s.icon}
                       alt={s.name}
-                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-white/10"
+                      className="w-8 h-8 object-cover flex-shrink-0"
                     />
                   )}
                   <span className="text-white font-medium text-sm truncate">{s.name}</span>
