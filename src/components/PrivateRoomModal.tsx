@@ -361,7 +361,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
                 playSound("buttonClick");
                 onClose();
               }}
-              className="w-full mt-2 text-[10px] font-bold text-zinc-500 hover:text-white transition-colors tracking-widest uppercase"
+              className="w-full mt-6 py-3 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors tracking-widest uppercase border border-red-500/50 rounded-xl bg-red-500/5 hover:bg-red-500/10"
             >
               İPTAL ET
             </button>
