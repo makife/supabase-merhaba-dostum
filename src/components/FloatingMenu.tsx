@@ -84,7 +84,8 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { totalNotifications } = useChatNotifications();
   const { isModerator, loading: roleLoading } = useUserRole();
-  const { isPlaying: radioPlaying } = useRadio();
+  const { isPlaying: radioPlaying, stop: stopRadio } = useRadio();
+  const soundOn = musicEnabled && !radioPlaying;
   const [radioOpen, setRadioOpen] = useState(false);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
@@ -230,16 +231,21 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
         <div className={itemAnim()} style={slideStyle}>
           <div
             onClick={() => {
-              setMusicEnabled(!musicEnabled);
               playSound("buttonClick");
+              if (radioPlaying) {
+                stopRadio();
+                if (!musicEnabled) setMusicEnabled(true);
+              } else {
+                setMusicEnabled(!musicEnabled);
+              }
             }}
           >
             {renderRow(
-              musicEnabled ? "bg-emerald-400" : "bg-gray-500",
-              musicEnabled ? "/icons/sesacik-text.svg" : "/icons/seskapali-text.svg",
-              musicEnabled ? "Ses Açık" : "Ses Kapalı",
-              musicEnabled ? "/icons/sesacik-gorsel.svg" : "/icons/seskapali-gorsel.svg",
-              musicEnabled ? "bg-emerald-500/20" : "bg-gray-500/20"
+              soundOn ? "bg-emerald-400" : "bg-gray-500",
+              soundOn ? "/icons/sesacik-text.svg" : "/icons/seskapali-text.svg",
+              soundOn ? "Ses Açık" : "Ses Kapalı",
+              soundOn ? "/icons/sesacik-gorsel.svg" : "/icons/seskapali-gorsel.svg",
+              soundOn ? "bg-emerald-500/20" : "bg-gray-500/20"
             )}
           </div>
         </div>
