@@ -1,5 +1,5 @@
 import { useRadio } from "@/contexts/RadioContext";
-import { X, Play, Pause, Loader2, Radio as RadioIcon } from "lucide-react";
+import { X, Play, Pause, Loader2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 
 interface RadioPickerProps {
@@ -24,8 +24,16 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <RadioIcon className="w-5 h-5 text-amber-400" />
-            <h3 className="text-white font-bold text-lg">Radyo</h3>
+            <img
+              src="/icons/radyo-gorsel.svg"
+              alt="Radyo"
+              className="w-6 h-6"
+            />
+            <img
+              src="/icons/radyotext.svg"
+              alt="Radyo"
+              className="h-5 w-auto"
+            />
           </div>
           <button
             onClick={() => { playSound("buttonClick"); onClose(); }}
