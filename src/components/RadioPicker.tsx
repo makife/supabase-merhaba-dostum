@@ -23,7 +23,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 h-8">
             <img
               src="/icons/radyo-gorsel.svg"
               alt="Radyo"
@@ -32,7 +32,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
             <img
               src="/icons/radyotext.svg"
               alt="Radyo"
-              className="h-5 w-auto"
+              className="h-full w-auto object-contain"
             />
           </div>
           <button
