@@ -72,8 +72,8 @@ const FinalCountdown = memo(({ displayTime }: FinalCountdownProps) => {
     if (displayTime !== lastTickRef.current) {
       lastTickRef.current = displayTime;
 
-      // 10 saniyelik mp3'ü 1 saniye erken (displayTime === 11) başlat
-      if (displayTime === 11) {
+      // 10 saniyelik mp3'ü 10 saniye kala başlat
+      if (displayTime === 10) {
         startSoundFromCurrent();
       }
 
