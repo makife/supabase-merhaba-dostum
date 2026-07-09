@@ -36,7 +36,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
         </div>
 
         <p className="text-white/60 text-xs mb-3">
-          Türkçe internet radyo kanalları. Uygulama arka plana geçince durur.
+          Türkçe internet radyo kanalları. Bu uygulama radyoların resmi public url adreslerini kullanır. Uygulama arka plana geçince durur. 
         </p>
 
         <div className="max-h-[55vh] overflow-y-auto flex flex-col gap-2 pr-1">
