@@ -5,18 +5,19 @@ export interface RadioStation {
   id: string;
   name: string;
   url: string;
+  icon?: string;
 }
 
 // Türk internet radyo kanalları (public stream URL'leri)
 export const RADIO_STATIONS: RadioStation[] = [
-  { id: "power-turk", name: "PowerTürk", url: "https://listen.powerapp.com.tr/powerturk/mpeg/icecast.audio" },
-  { id: "power-fm", name: "Power FM", url: "https://listen.powerapp.com.tr/powerfm/mpeg/icecast.audio" },
-  { id: "metro-fm", name: "Metro FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/METRO_FM_SC" },
-  { id: "virgin-radio", name: "Virgin Radio", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO_SC" },
-  { id: "super-fm", name: "Süper FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/SUPER_FM_SC" },
-  { id: "joy-turk", name: "JoyTürk", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/JOY_TURK_SC" },
-  { id: "slow-turk", name: "Slow Türk", url: "https://radyo.duhnet.tv/ak_dtvh_slowturk" },
-  { id: "radyo-d", name: "Radyo D", url: "https://radyo.duhnet.tv/radyod" },
+  { id: "power-turk", name: "PowerTürk", url: "https://listen.powerapp.com.tr/powerturk/mpeg/icecast.audio", icon: "/radyoIkon/powerTurk.png" },
+  { id: "power-fm", name: "Power FM", url: "https://listen.powerapp.com.tr/powerfm/mpeg/icecast.audio", icon: "/radyoIkon/powerFm.png" },
+  { id: "metro-fm", name: "Metro FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/METRO_FM_SC", icon: "/radyoIkon/metroFm.png" },
+  { id: "virgin-radio", name: "Virgin Radio", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO_SC", icon: "/radyoIkon/virginRadio.png" },
+  { id: "super-fm", name: "Süper FM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/SUPER_FM_SC", icon: "/radyoIkon/superFm.png" },
+  { id: "joy-turk", name: "JoyTürk", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/JOY_TURK_SC", icon: "/radyoIkon/joyTurk.png" },
+  { id: "slow-turk", name: "Slow Türk", url: "https://radyo.duhnet.tv/ak_dtvh_slowturk", icon: "/radyoIkon/slowTurk.png" },
+  { id: "radyo-d", name: "Radyo D", url: "https://radyo.duhnet.tv/radyod", icon: "/radyoIkon/radyoD.png" },
 ];
 
 interface RadioContextValue {

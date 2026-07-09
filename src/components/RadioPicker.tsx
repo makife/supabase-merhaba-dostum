@@ -58,8 +58,17 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                     : "bg-white/5 border-white/10 hover:bg-white/10"
                 }`}
               >
-                <span className="text-white font-medium text-sm">{s.name}</span>
-                <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  {s.icon && (
+                    <img
+                      src={s.icon}
+                      alt={s.name}
+                      className="w-8 h-8 rounded-lg object-cover flex-shrink-0 bg-white/10"
+                    />
+                  )}
+                  <span className="text-white font-medium text-sm truncate">{s.name}</span>
+                </div>
+                <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                   {loading ? (
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
                   ) : playing ? (
