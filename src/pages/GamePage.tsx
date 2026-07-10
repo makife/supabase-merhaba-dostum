@@ -1061,12 +1061,14 @@ const GamePage = ({
     };
   }, []);
 
-  // 🔵 in_game flag: kullanıcı aktif oyundayken profilinde mavi nokta için
+  // 🔵 in_game flag: sadece GERÇEK bir maç varken heartbeat at (mavi nokta = maçta)
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
+    const activityMatchId = currentRoom?.id || tournamentMatch?.id;
+    // Gerçek match yoksa heartbeat atma - aksi halde oyuncu maçta olmadan mavi nokta görünür
+    if (!activityMatchId) return;
     const sessionId = ++inGamePresenceSession;
-    const activityMatchId = currentRoom?.id || tournamentMatch?.id || uid;
 
     const markInGame = async () => {
       const now = new Date().toISOString();
@@ -1104,6 +1106,7 @@ const GamePage = ({
       }, 1500);
     };
   }, [user?.id, currentRoom?.id, tournamentMatch?.id]);
+
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
