@@ -605,13 +605,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     console.log(`🎵 [MusicContext] fadeOutBackgroundMusic çağrıldı: ${duration}ms`);
 
     // 📻 Maç öncesi hangi kaynak çalıyor onu kaydet
-    const radioOn = !!(window as any).__radioIsPlaying;
-    const musicOn = isNative
-      ? isPlaying
-      : !!(backgroundMusicRef.current && !backgroundMusicRef.current.paused);
-    if (radioOn) preMatchAudioSourceRef.current = "radio";
-    else if (musicOn) preMatchAudioSourceRef.current = "music";
-    else preMatchAudioSourceRef.current = "none";
+    // ⚠️ Sadece ilk fadeOut'ta belirle; sonraki tekrarlı fadeOut çağrıları
+    // (ör. GameCountdown + GamePage mount) radyo zaten susmuşken kaynağı
+    // "none"'a düşürerek maç sonu resume'u bozmasın.
+    if (preMatchAudioSourceRef.current === "none") {
+      const radioOn = !!(window as any).__radioIsPlaying;
+      const musicOn = isNative
+        ? isPlaying
+        : !!(backgroundMusicRef.current && !backgroundMusicRef.current.paused);
+      if (radioOn) preMatchAudioSourceRef.current = "radio";
+      else if (musicOn) preMatchAudioSourceRef.current = "music";
+    }
+
 
     // Radyoyu da yavaşça sustur
     try {
