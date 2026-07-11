@@ -1,17 +1,17 @@
 /**
- * iOS Web Audio Service
+ * iOS Web Audio Service (adı geriye dönük uyumluluk için korundu)
  *
- * iOS native (Capacitor WebView) üzerinde NativeAudio ve HTML5 Audio
- * AVAudioSession ile çakışıp uygulamayı oyundan atıyordu (memory:
- * ios-audio-session-conflict-fix).
+ * NOT: Önceden Web Audio API (AudioContext) kullanıyordu ama WKWebView'de
+ * WebAudio kendi "Ambient" ses oturumunu kullandığı için telefon sessiz
+ * moddayken veya oturum aktive olmadığında sesler duyulmuyordu.
  *
- * Bu servis Web Audio API (AudioContext + AudioBuffer) kullanır. WebKit'in
- * varsayılan WebAudio session kategorisi "ambient" olduğu için diğer sesleri
- * kesmez ve native session ile çakışmaz. Tüm ses dosyaları başlangıçta fetch
- * + decodeAudioData ile bellek içi AudioBuffer'lara çözülür; çalma anında
- * yeni bir BufferSource oluşturularak overlap'a izin verilir.
+ * Şimdi HTML5 Audio (havuzlu) kullanıyoruz. AppDelegate.swift
+ * AVAudioSession'ı `.playback + .mixWithOthers` olarak ayarladığı için:
+ *   - Sessiz moddayken bile efektler duyulur (playback kategorisi)
+ *   - Arka plan müziği kesilmez (mixWithOthers)
+ *   - NativeAudio ile AVAudioSession çakışması yaşanmaz
  *
- * İlk kullanıcı dokunuşunda AudioContext resume edilir (iOS gestür kuralı).
+ * API aynı: initIOSWebAudio / playIOSWebSound / stopAllIOSWebSounds.
  */
 
 import { Capacitor } from "@capacitor/core";
@@ -19,73 +19,95 @@ import { Capacitor } from "@capacitor/core";
 const isIOSNative =
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
-let ctx: AudioContext | null = null;
-let unlocked = false;
-let unlockBound = false;
-let unlockPromise: Promise<void> | null = null;
-const buffers = new Map<string, AudioBuffer>();
-const inflight = new Map<string, Promise<AudioBuffer | null>>();
-const activeSources = new Set<AudioBufferSourceNode>();
+// assetId -> HTMLAudioElement havuzu
+const pools = new Map<string, HTMLAudioElement[]>();
+// assetId -> url (fallback / lazy load için)
+const urls = new Map<string, string>();
+// assetId -> temel volume
+const volumes = new Map<string, number>();
 
+const activeAudios = new Set<HTMLAudioElement>();
 
-type WebAudioWindow = Window & typeof globalThis & {
-  webkitAudioContext?: typeof AudioContext;
-};
+const POOL_SIZE = 3;
 
 export const isIOSWebAudioTarget = (): boolean => isIOSNative;
 
-const getContext = (): AudioContext | null => {
-  if (!isIOSNative) return null;
-  if (ctx) return ctx;
-  try {
-    const Ctor = window.AudioContext || (window as WebAudioWindow).webkitAudioContext;
-    if (!Ctor) return null;
-    ctx = new Ctor();
-    return ctx;
-  } catch (e) {
-    console.warn("[iOSWebAudio] AudioContext oluşturulamadı:", e);
-    return null;
+const toUrl = (assetPath: string): string =>
+  assetPath.replace(/^public\//, "/");
+
+const createPool = (url: string, volume: number): HTMLAudioElement[] => {
+  const pool: HTMLAudioElement[] = [];
+  for (let i = 0; i < POOL_SIZE; i++) {
+    try {
+      const a = new Audio(url);
+      a.preload = "auto";
+      a.volume = Math.max(0, Math.min(1, volume));
+      // iOS WKWebView: inline oynat, tam ekran video moduna geçme
+      a.setAttribute("playsinline", "true");
+      // preload'u tetikle
+      try {
+        a.load();
+      } catch {
+        /* ignore */
+      }
+      pool.push(a);
+    } catch (e) {
+      console.warn("[iOSAudio] Audio element oluşturulamadı:", e);
+    }
   }
+  return pool;
 };
 
-const tryUnlock = (): Promise<void> => {
-  const c = getContext();
-  if (!c) return Promise.resolve();
-  if (c.state === "running") {
-    unlocked = true;
-    return Promise.resolve();
+const getAvailable = (pool: HTMLAudioElement[]): HTMLAudioElement | null => {
+  for (const a of pool) {
+    if (a.paused || a.ended) return a;
   }
-  if (unlockPromise) return unlockPromise;
-  unlockPromise = (async () => {
-    try {
-      // Sessiz buffer'ı resume'dan ÖNCE start et — Safari için kritik
+  return pool[0] || null;
+};
+
+// İlk kullanıcı etkileşiminde tüm havuzu "unlock" et.
+// iOS HTMLAudioElement.play() kullanıcı gestür'ü içinde çağrılırsa,
+// aynı elementin sonraki play() çağrıları gestür dışında da çalışır.
+let unlocked = false;
+let unlockBound = false;
+
+const unlockAll = () => {
+  if (unlocked) return;
+  unlocked = true;
+  pools.forEach((pool) => {
+    pool.forEach((a) => {
       try {
-        const buf = c.createBuffer(1, 1, 22050);
-        const src = c.createBufferSource();
-        src.buffer = buf;
-        src.connect(c.destination);
-        src.start(0);
+        const originalVolume = a.volume;
+        a.muted = true;
+        const p = a.play();
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            try {
+              a.pause();
+              a.currentTime = 0;
+              a.muted = false;
+              a.volume = originalVolume;
+            } catch {
+              /* ignore */
+            }
+          }).catch(() => {
+            a.muted = false;
+            a.volume = originalVolume;
+          });
+        }
       } catch {
-        // Safari unlock denemesi başarısız olursa resume yine denenir.
+        /* ignore */
       }
-      await c.resume();
-      unlocked = c.state === "running";
-      if (unlocked) console.log("🔓 [iOSWebAudio] AudioContext unlocked");
-    } catch (e) {
-      console.warn("[iOSWebAudio] unlock hatası:", e);
-    } finally {
-      // Bir sonraki gesture'da tekrar deneyebilmek için suspended kaldıysa sıfırla
-      if (c.state !== "running") unlockPromise = null;
-    }
-  })();
-  return unlockPromise;
+    });
+  });
+  console.log("🔓 [iOSAudio] Havuz unlock edildi");
 };
 
 const bindUnlockOnce = () => {
-  if (unlockBound) return;
+  if (unlockBound || !isIOSNative) return;
   unlockBound = true;
   const handler = () => {
-    tryUnlock();
+    unlockAll();
   };
   const opts: AddEventListenerOptions = { passive: true, capture: true };
   window.addEventListener("touchstart", handler, opts);
@@ -95,85 +117,27 @@ const bindUnlockOnce = () => {
   window.addEventListener("keydown", handler, opts);
 };
 
-// Modül yüklenir yüklenmez gesture dinleyicilerini bağla — init beklenmesin
 if (isIOSNative && typeof window !== "undefined") {
   bindUnlockOnce();
-
-  // 🔧 Foreground/background geçişlerinde AudioContext suspended kalabiliyor —
-  // bu da arka plan müziği / efekt seslerinin tutuk çalmasına yol açıyor.
-  // Görünürlük değiştiğinde context'i resume et.
-  const resumeOnForeground = () => {
-    if (document.visibilityState === "visible") {
-      unlockPromise = null;
-      tryUnlock();
-    }
-  };
-  document.addEventListener("visibilitychange", resumeOnForeground);
-  window.addEventListener("focus", resumeOnForeground);
-  window.addEventListener("pageshow", resumeOnForeground);
 }
-
-
-const loadBuffer = async (
-  assetId: string,
-  url: string
-): Promise<AudioBuffer | null> => {
-  if (buffers.has(assetId)) return buffers.get(assetId)!;
-  const existing = inflight.get(assetId);
-  if (existing) return existing;
-  const c = getContext();
-  if (!c) return null;
-
-  const p = (async () => {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`);
-      const arr = await res.arrayBuffer();
-      const buf = await new Promise<AudioBuffer>((resolve, reject) => {
-        // Eski WebKit callback API'sini de destekle
-        try {
-          const ret = c.decodeAudioData(
-            arr,
-            (b) => resolve(b),
-            (e) => reject(e)
-          );
-          if (ret && typeof (ret as Promise<AudioBuffer>).then === "function") {
-            (ret as Promise<AudioBuffer>).then(resolve, reject);
-          }
-        } catch (e) {
-          reject(e);
-        }
-      });
-      buffers.set(assetId, buf);
-      return buf;
-    } catch (e) {
-      console.warn(`[iOSWebAudio] ${assetId} decode hatası:`, e);
-      return null;
-    } finally {
-      inflight.delete(assetId);
-    }
-  })();
-
-  inflight.set(assetId, p);
-  return p;
-};
 
 export const initIOSWebAudio = async (
   sounds: { assetId: string; assetPath: string; volume?: number }[]
 ): Promise<void> => {
   if (!isIOSNative) return;
   bindUnlockOnce();
-  getContext();
-  // Tüm sesleri paralel decode et
-  await Promise.all(
-    sounds.map((s) => {
-      // assetPath formu: "public/foo.mp3" -> "/foo.mp3"
-      const url = s.assetPath.replace(/^public\//, "/");
-      return loadBuffer(s.assetId, url);
-    })
-  );
+
+  sounds.forEach((s) => {
+    if (pools.has(s.assetId)) return;
+    const url = toUrl(s.assetPath);
+    const vol = s.volume ?? 0.7;
+    urls.set(s.assetId, url);
+    volumes.set(s.assetId, vol);
+    pools.set(s.assetId, createPool(url, vol));
+  });
+
   console.log(
-    `🔊 [iOSWebAudio] ${buffers.size}/${sounds.length} ses hazır ✅`
+    `🔊 [iOSAudio] ${pools.size}/${sounds.length} ses havuzu hazır ✅`
   );
 };
 
@@ -183,62 +147,63 @@ export const playIOSWebSound = async (
   fallbackUrl?: string
 ): Promise<boolean> => {
   if (!isIOSNative) return false;
-  const c = getContext();
-  if (!c) return false;
 
-  // iOS context unlock değilse resume'u BEKLE (gesture ise resume olur)
-  if ((c.state as string) !== "running") {
-    try {
-      await tryUnlock();
-    } catch {
-      // Gesture dışı denemelerde iOS resume'u reddedebilir.
-    }
-    if ((c.state as string) !== "running") {
-      try {
-        await c.resume();
-      } catch {
-        // Hâlâ kilitliyse aşağıdaki state kontrolü false döndürür.
-      }
-    }
-    if ((c.state as string) !== "running") {
-      console.warn(`[iOSWebAudio] ${assetId} çalınamadı: ctx state=${c.state}`);
-      return false;
-    }
+  let pool = pools.get(assetId);
+  if (!pool || pool.length === 0) {
+    const url = fallbackUrl || urls.get(assetId);
+    if (!url) return false;
+    pool = createPool(url, volume);
+    pools.set(assetId, pool);
+    urls.set(assetId, url);
+    volumes.set(assetId, volume);
   }
 
-  let buf = buffers.get(assetId);
-  if (!buf && fallbackUrl) {
-    buf = (await loadBuffer(assetId, fallbackUrl)) || undefined;
-  }
-  if (!buf) return false;
+  const audio = getAvailable(pool);
+  if (!audio) return false;
 
   try {
-    const src = c.createBufferSource();
-    src.buffer = buf;
-    const gain = c.createGain();
-    gain.gain.value = Math.max(0, Math.min(1, volume));
-    src.connect(gain).connect(c.destination);
-    activeSources.add(src);
-    src.onended = () => {
-      activeSources.delete(src);
+    audio.volume = Math.max(0, Math.min(1, volume));
+    // Sesi baştan başlat
+    try {
+      audio.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+    activeAudios.add(audio);
+    const cleanup = () => {
+      activeAudios.delete(audio);
+      audio.removeEventListener("ended", cleanup);
+      audio.removeEventListener("error", cleanup);
     };
-    src.start(0);
+    audio.addEventListener("ended", cleanup);
+    audio.addEventListener("error", cleanup);
+
+    const p = audio.play();
+    if (p && typeof p.then === "function") {
+      await p.catch((e) => {
+        console.warn(`[iOSAudio] ${assetId} play hatası:`, e);
+        cleanup();
+        // Play başarısız olduysa unlock ihtimalini yeniden tetikle
+        unlocked = false;
+        return null;
+      });
+    }
     return true;
   } catch (e) {
-    console.warn(`[iOSWebAudio] ${assetId} play hatası:`, e);
+    console.warn(`[iOSAudio] ${assetId} play exception:`, e);
     return false;
   }
 };
 
 export const stopAllIOSWebSounds = (): void => {
   if (!isIOSNative) return;
-  activeSources.forEach((src) => {
+  activeAudios.forEach((a) => {
     try {
-      src.stop(0);
+      a.pause();
+      a.currentTime = 0;
     } catch {
-      // ignore
+      /* ignore */
     }
   });
-  activeSources.clear();
+  activeAudios.clear();
 };
-
