@@ -980,8 +980,6 @@ const ProfilePage = () => {
       <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20">
         <div className="px-5 py-4 flex items-center gap-4">
           <Button
-            variant="ghost"
-            size="icon"
             onClick={() => {
               playSound("buttonClick");
               const fromPage = location.state?.from;
@@ -993,10 +991,12 @@ const ProfilePage = () => {
                 navigate("/");
               }
             }}
-            className="text-white hover:bg-white/10 rounded-full"
+            className="bg-[#1e2d45] border border-indigo-500/20 text-white"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Geri
           </Button>
+
           <div className="flex-1 flex items-center gap-2">
   <img src="/icons/profil-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
   <div>
