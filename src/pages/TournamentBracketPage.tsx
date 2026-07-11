@@ -1077,18 +1077,29 @@ const TournamentBracketPage = () => {
           ) : null}
         </div>
 
-        <h1
-          className="text-6xl sm:text-7xl font-black text-white text-center tracking-wider"
-          style={{
-            fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
-            letterSpacing: "0.08em",
-            WebkitTextStroke: "2px rgba(0,0,0,0.55)",
-            textShadow:
-              "0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(239,68,68,0.35)",
-          }}
-        >
-          ELENDİN!
-        </h1>
+        <div className="w-full max-w-md px-6 flex items-center justify-center">
+          {elendinTextLottie ? (
+            <Lottie
+              animationData={elendinTextLottie}
+              loop
+              autoplay
+              className="w-full h-auto"
+            />
+          ) : (
+            <h1
+              className="text-6xl sm:text-7xl font-black text-white text-center tracking-wider"
+              style={{
+                fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
+                letterSpacing: "0.08em",
+                WebkitTextStroke: "2px rgba(0,0,0,0.55)",
+                textShadow:
+                  "0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(239,68,68,0.35)",
+              }}
+            >
+              ELENDİN!
+            </h1>
+          )}
+        </div>
 
         <div
           onClick={() => navigate("/tournament")}
