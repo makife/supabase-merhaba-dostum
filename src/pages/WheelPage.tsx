@@ -427,9 +427,43 @@ const WheelPage = () => {
     const segmentAngleSize = 360 / RAW_SEGMENTS.length;
     lastSegmentIndexRef.current = -1;
 
-    // 🎰 Çark dönüş sesi — her dilimde carkDonmeSesi.mp3 çal
+    // 🎰 Çark tick sesi — SENTETİK oscillator ile üretilir.
+    // MP3 çalmak her dilimde fetch/decode gerektirdiği için hızlı fazda
+    // yetişmiyordu ve iOS'ta üst üste binen Audio instance'ları bozuk
+    // ses veriyordu (memory: pitched-countdown-beep-synthesis).
     const playTick = (volume: number) => {
-      soundsRef.current?.playSpecialSound('/carkDonmeSesi.mp3', volume);
+      // Ses efektleri kapalıysa çalma
+      try {
+        const raw = localStorage.getItem("kelimeci-settings");
+        const settings = raw ? JSON.parse(raw) : {};
+        if (settings.sounds === false) return;
+      } catch { /* ignore */ }
+
+      const c = audioCtxRef.current;
+      if (!c) return;
+      if (c.state !== "running") {
+        try { c.resume(); } catch { /* ignore */ }
+      }
+      try {
+        const t0 = c.currentTime;
+        const osc = c.createOscillator();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(1400, t0);
+        const gain = c.createGain();
+        const vol = Math.max(0, Math.min(0.4, volume));
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(vol, t0 + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.06);
+        osc.onended = () => {
+          try { osc.disconnect(); } catch { /* ignore */ }
+          try { gain.disconnect(); } catch { /* ignore */ }
+        };
+      } catch (e) {
+        console.warn("[Wheel] tick oscillator error:", e);
+      }
     };
 
     const startTime = performance.now();
