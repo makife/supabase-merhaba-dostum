@@ -267,7 +267,7 @@ const FriendsPage = () => {
   const offlineFriends = friends.filter((f) => !f.is_online);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'auto' as any, touchAction: 'pan-y' }}>
+    <div className="h-screen overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'auto' as any, touchAction: 'pan-y' }}>
       {/* Header */}
       <div className="sticky top-0 z-40 bg-[#1e2d45] border-b border-indigo-500/20 px-4 py-3">
         <div className="flex items-center gap-3">
