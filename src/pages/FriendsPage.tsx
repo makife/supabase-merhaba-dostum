@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ interface FriendItem {
 }
 
 const FriendsPage = () => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { playSound } = useSounds();
@@ -37,6 +38,39 @@ const FriendsPage = () => {
   const [friendOnlineNotify, setFriendOnlineNotify] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { sendFriendAcceptedNotification } = useSmartNotifications();
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    let startY = 0;
+    const handleTouchStart = (event: TouchEvent) => {
+      startY = event.touches[0]?.clientY ?? 0;
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      const currentY = event.touches[0]?.clientY ?? startY;
+      const pullingPastTop = container.scrollTop <= 0 && currentY > startY;
+      const pullingPastBottom =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 1 && currentY < startY;
+
+      if (pullingPastTop || pullingPastBottom) event.preventDefault();
+    };
+
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, []);
 
   // Fetch friend online notify preference
   useEffect(() => {
@@ -267,7 +301,11 @@ const FriendsPage = () => {
   const offlineFriends = friends.filter((f) => !f.is_online);
 
   return (
-    <div className="h-screen overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'auto' as any, touchAction: 'pan-y' }}>
+    <div
+      ref={scrollContainerRef}
+      className="h-screen h-[100dvh] overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white"
+      style={{ overscrollBehavior: "none", WebkitOverflowScrolling: "auto", touchAction: "pan-y" }}
+    >
       {/* Header */}
       <div className="sticky top-0 z-40 bg-[#1e2d45] border-b border-indigo-500/20 px-4 py-3">
         <div className="flex items-center gap-3">
