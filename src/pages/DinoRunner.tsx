@@ -1078,9 +1078,12 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
-            <Trophy size={24} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <GameMuteButton gameId="reaktor" size={40} />
+            <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
+              <Trophy size={24} />
+            </button>
+          </div>
         </div>
 
         {/* OYUN ALANI */}
