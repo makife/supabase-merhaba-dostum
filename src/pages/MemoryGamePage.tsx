@@ -178,7 +178,7 @@ const WordMemoryGame = () => {
       const timeSpent = SURE - kalanSure;
       const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
       saveScore(rawScore, hamle);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
 
