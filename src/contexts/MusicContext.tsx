@@ -86,6 +86,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         setMusicVolume(0);
         audio.pause();
+        pausedAtRef.current = Date.now();
         if (backgroundFadeRef.current) {
           clearInterval(backgroundFadeRef.current);
           backgroundFadeRef.current = null;
