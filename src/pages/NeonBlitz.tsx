@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, RefreshCw, Trophy, LogOut, BookOpen } from "lucide-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
@@ -42,7 +43,7 @@ const generateColor = () => {
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("neon_blitz");
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
@@ -186,7 +187,7 @@ const NeonBlitz: React.FC = () => {
     if (gameState === "GAMEOVER") {
       const finalLevel = levelRef.current;
       const finalWords = completedWordsRef.current.length;
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       saveScore(finalLevel, finalWords).then((saved) => {
 
         if (saved) {
@@ -205,6 +206,7 @@ const NeonBlitz: React.FC = () => {
   const handleTileClick = useCallback(
     (id: number) => {
       if (!isPlayingRef.current) return;
+      playSound("buttonClick");
       if (id !== activeTileRef.current) {
         isPlayingRef.current = false;
         clearTimer();
@@ -245,7 +247,7 @@ const NeonBlitz: React.FC = () => {
       }
       beginTurn();
     },
-    [beginTurn],
+    [beginTurn, playSound],
   );
 
   const returnToMenu = () => {
@@ -275,6 +277,9 @@ const NeonBlitz: React.FC = () => {
       >
         <ArrowLeft size={22} color="#fff" />
       </button>
+      <div style={{ position: "absolute", top: 16, right: 16 }}>
+        <GameMuteButton gameId="neon_blitz" size={40} />
+      </div>
       {simsekAnim && (
         <div style={{ width: 100, height: 100, marginBottom: 8 }}>
           <Lottie animationData={simsekAnim} loop autoplay style={{ width: "100%", height: "100%" }} />

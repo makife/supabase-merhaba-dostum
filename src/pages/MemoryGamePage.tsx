@@ -5,7 +5,8 @@ import { Trophy, ArrowLeft, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
@@ -72,7 +73,7 @@ const getImageSliceStyle = (
 const WordMemoryGame = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("memory");
   const {
     hasPlayedToday,
     todayScore,
@@ -177,7 +178,7 @@ const WordMemoryGame = () => {
       const timeSpent = SURE - kalanSure;
       const rawScore = timeSpent > 0 ? parseFloat((10000 / (timeSpent * hamle)).toFixed(2)) : 0;
       saveScore(rawScore, hamle);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       markAsPlayed();
       toast.success("🎡 Tebrikler! Gün sonunda +1 çark çevirme hakkı kazanacaksın!", { duration: 5000 });
 
@@ -421,12 +422,15 @@ const WordMemoryGame = () => {
             <p className="text-[10px] text-purple-400/80">Kelimeleri karışık halleriyle eşleştir</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowLeaderboard(!showLeaderboard)}
-          className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <Trophy className="w-5 h-5 text-amber-400" />
-        </button>
+        <div className="flex items-center gap-2">
+          <GameMuteButton gameId="memory" size={40} />
+          <button
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">

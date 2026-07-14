@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { ArrowLeft, Clock, Send, Trophy, Link, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { TurkishKeyboard } from "@/components/TurkishKeyboard";
@@ -20,7 +21,7 @@ const GAME_DURATION = 90;
 const WordChainPage = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("word_chain");
   const inputRef = useRef<HTMLInputElement>(null);
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore } = useDailyChallenge("word_chain");
 
@@ -48,7 +49,7 @@ const WordChainPage = () => {
       scoreSavedRef.current = true;
       const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, chain.length);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
     }
   }, [gameState]);
 
@@ -183,12 +184,15 @@ const WordChainPage = () => {
             <p className="text-[10px] text-yellow-400">Son harfle yeni kelime</p>
           </div>
         </div>
-        {gameState === "playing" && (
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
-            <Clock className="w-4 h-4" />
-            <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {gameState === "playing" && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
+              <Clock className="w-4 h-4" />
+              <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
+            </div>
+          )}
+          <GameMuteButton gameId="word_chain" size={40} />
+        </div>
       </div>
 
       <div className={`flex-1 overflow-y-auto px-5 ${gameState === "playing" ? "pb-2" : "pb-8"}`}>

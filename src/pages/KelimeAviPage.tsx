@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { ArrowLeft, Clock, Trophy, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
@@ -74,7 +75,7 @@ const isAdjacent = (a: number, b: number) => {
 const KelimeAviPage = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("kelime_avi");
   const { profile, refreshProfile } = useUser();
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore, markAsPlayed } =
     useDailyChallenge("kelime_avi" as any);
@@ -196,7 +197,7 @@ const KelimeAviPage = () => {
     if (gameState !== "finished") return;
     if (score > 0) {
       saveScore(score, foundWords.length);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
@@ -298,20 +299,23 @@ const KelimeAviPage = () => {
             <p className="text-[10px] text-fuchsia-400/80">Komşu harfleri birleştir</p>
           </div>
         </div>
-        {gameState === "playing" ? (
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
-            <Clock className="w-4 h-4" />
-            <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
-          </div>
-        ) : (
-          <button
-            onClick={() => { playSound("buttonClick"); setShowLeaderboard(true); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 border border-white/10 active:scale-95 transition-transform"
-          >
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-white">Sıralama</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {gameState === "playing" ? (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
+              <Clock className="w-4 h-4" />
+              <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => { playSound("buttonClick"); setShowLeaderboard(true); }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 border border-white/10 active:scale-95 transition-transform"
+            >
+              <Trophy className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-bold text-white">Sıralama</span>
+            </button>
+          )}
+          <GameMuteButton gameId="kelime_avi" size={40} />
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-6">

@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 
@@ -67,7 +68,7 @@ const getDailyWord = (words: string[]): string => {
 const PuzzleGamePage: React.FC = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("puzzle");
   const {
     hasPlayedToday,
     todayScore,
@@ -197,7 +198,7 @@ const PuzzleGamePage: React.FC = () => {
         time_seconds: gameState.timeElapsed,
       });
       markAsPlayed();
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       setShowCongratsDialog(true);
     }
   }, [gameState.isCompleted, gameState.moves, gameState.timeElapsed]);
@@ -294,12 +295,15 @@ const PuzzleGamePage: React.FC = () => {
             <p className="text-[10px] text-purple-400/80">Harfleri doğru sıraya diz</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowLeaderboard(!showLeaderboard)}
-          className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <Trophy className="w-5 h-5 text-amber-400" />
-        </button>
+        <div className="flex items-center gap-2">
+          <GameMuteButton gameId="puzzle" size={40} />
+          <button
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">

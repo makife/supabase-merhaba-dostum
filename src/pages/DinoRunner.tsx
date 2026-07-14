@@ -3,7 +3,8 @@ import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { ArrowLeft, Trophy } from "lucide-react";
 import Lottie from "lottie-react";
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
@@ -250,7 +251,7 @@ const DinoRunner = () => {
   // navigate, gameState tanımından sonra aşağıda tanımlanıyor.
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
-  const { playSound: playButtonSound } = useSounds();
+  const { muted: gameMuted, playSound: playButtonSound } = useGameMute("reaktor");
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
@@ -480,6 +481,11 @@ const DinoRunner = () => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
+  // GameMuteButton toggle → local mute ile senkron (oyun içi jenerik sesler dahil)
+  useEffect(() => {
+    setIsMuted(gameMuted);
+  }, [gameMuted]);
+
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
@@ -689,6 +695,8 @@ const DinoRunner = () => {
     // Zıplama sadece aktif oyunda çalışsın; oyunu başlatma görevi BAŞLA butonlarına kalsın.
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
+    // Jenerik zıplama sesi
+    playButtonSound("buttonClick");
   };
 
   const checkCollision = (rect1, rect2) => {
@@ -815,7 +823,7 @@ const DinoRunner = () => {
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
-        playChallengeWinSound();
+        if (!gameMuted) playChallengeWinSound();
         saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
 
           if (saved) {
@@ -1070,9 +1078,12 @@ const DinoRunner = () => {
             </div>
           </div>
 
-          <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
-            <Trophy size={24} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <GameMuteButton gameId="reaktor" size={40} />
+            <button onClick={() => { playButtonSound("buttonClick"); setShowLeaderboard(true); }} className="icon-btn" title="Sıralamalar">
+              <Trophy size={24} />
+            </button>
+          </div>
         </div>
 
         {/* OYUN ALANI */}
