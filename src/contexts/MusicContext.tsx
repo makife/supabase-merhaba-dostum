@@ -517,7 +517,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         backgroundMusicRef.current.currentTime = 0;
       }
     };
-  }, [musicPack, currentTrackIndex, isNative, musicEnabled, settingsLoaded]); // 🔥 FIX: settingsLoaded eklendi
+  // musicEnabled burada dependency olmamalı: toggle zaten sesi doğrudan yönetiyor.
+  // Aksi halde false → true geçişi mevcut Audio elementini cleanup ile sıfırlayıp
+  // aynı kullanıcı dokunuşunda başlayan fade/play akışını bozuyor.
+  }, [musicPack, currentTrackIndex, isNative, settingsLoaded]);
 
   const startBackgroundMusic = async () => {
     if (!musicEnabled) return;
@@ -709,6 +712,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (forceMusic && !musicEnabledRef.current) {
       musicEnabledRef.current = true;
       setMusicEnabledState(true);
+      // Floating menü ve kalıcı ayarla senkron tut; settingsChanged yayınlamıyoruz,
+      // çünkü bu sırada Audio elementinin yeniden kurulması kullanıcı gesture'ını bozar.
+      try {
+        const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+        const settings = settingsStr ? JSON.parse(settingsStr) : {};
+        settings.music = true;
+        await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      } catch (e) {
+        console.warn("Failed to save forced music setting:", e);
+      }
     }
 
     // 🔥 NATIVE PLATFORM İÇİN
@@ -749,7 +762,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // 🔥 WEB PLATFORM İÇİN (mevcut kod)
-    if ((!musicEnabled && !forceMusic) || !backgroundMusicRef.current || isStartingRef.current) return;
+    if ((!musicEnabledRef.current && !forceMusic) || !backgroundMusicRef.current) return;
+
+    // Önceki başarısız/yarım kalmış başlatma kilidi bu açık kullanıcı
+    // etkileşimini engellememeli.
+    if (isStartingRef.current) isStartingRef.current = false;
 
 
     // Clear any existing fade
