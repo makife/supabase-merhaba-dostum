@@ -13,6 +13,8 @@ import {
 import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
  
 const GAME_DURATION = 120;
 const LETTER_COUNT = 14;
