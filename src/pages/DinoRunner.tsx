@@ -481,6 +481,11 @@ const DinoRunner = () => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
+  // GameMuteButton toggle → local mute ile senkron (oyun içi jenerik sesler dahil)
+  useEffect(() => {
+    setIsMuted(gameMuted);
+  }, [gameMuted]);
+
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
