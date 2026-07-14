@@ -100,9 +100,10 @@ const SoundEffectsToggle = ({ className = "" }: SoundEffectsToggleProps) => {
         if (!nextEffectsOn) stopEverySoundEffect();
       }
 
-      // Arka plan müziği / radyo
+      // Arka plan müziği (radyo değil — kullanıcı maç ekranı toggle'ıyla
+      // sadece arka plan müziğinin açılıp kapanmasını bekliyor).
       if (nextMusicOn && !prevMusicOn) {
-        try { fadeInBackgroundMusic(800); } catch {}
+        try { fadeInBackgroundMusic(800, { musicOnly: true }); } catch {}
       } else if (!nextMusicOn && prevMusicOn) {
         try { fadeOutBackgroundMusic(600); } catch {}
       }
