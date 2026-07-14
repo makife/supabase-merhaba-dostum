@@ -187,7 +187,7 @@ const NeonBlitz: React.FC = () => {
     if (gameState === "GAMEOVER") {
       const finalLevel = levelRef.current;
       const finalWords = completedWordsRef.current.length;
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       saveScore(finalLevel, finalWords).then((saved) => {
 
         if (saved) {
