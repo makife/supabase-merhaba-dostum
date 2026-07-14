@@ -45,6 +45,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 📻 Maç öncesi hangi kaynak çalıyordu? (fadeOut → fadeIn arası)
   const preMatchAudioSourceRef = useRef<"music" | "radio" | "none">("none");
 
+  // ⏱️ Akıllı resume: fadeOut zamanı. 30 sn'den fazla geçtiyse sıradaki şarkıya geç.
+  const pausedAtRef = useRef<number | null>(null);
+  const RESUME_THRESHOLD_MS = 30_000;
+
   // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
   const getMusicVolume = (): number => {
     if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
