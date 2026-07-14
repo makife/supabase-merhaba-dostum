@@ -695,6 +695,8 @@ const DinoRunner = () => {
     // Zıplama sadece aktif oyunda çalışsın; oyunu başlatma görevi BAŞLA butonlarına kalsın.
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
+    // Jenerik zıplama sesi
+    playButtonSound("buttonClick");
   };
 
   const checkCollision = (rect1, rect2) => {
