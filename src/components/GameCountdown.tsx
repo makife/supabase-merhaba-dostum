@@ -330,9 +330,12 @@ const GameCountdown = memo(
       const startCountdownAnchored = () => {
         console.log(`🔢 [${instanceId}] Server-anchored countdown başlıyor! startTime=${startTime}`);
 
-        // 🎵 Arka plan müziği artık maç boyunca çalmaya devam eder.
-        // Oyuncu maç ekranındaki ses düğmesiyle isterse müziği de kapatabilir.
-        // (SoundEffectsToggle bileşeni bunu yönetir.)
+        // 🎵 Maça başlarken arka plan müziği / radyo fade-out edilir.
+        // (Oyuncu maç ekranındaki 3 kademeli ses düğmesiyle geri açabilir.)
+        if (!musicFadedRef.current) {
+          musicFadedRef.current = true;
+          try { fadeOutBackgroundMusic(1800); } catch {}
+        }
 
         // 🔒 MUTLAKA 5'İ GÖSTER - geç mount olsa bile
         if (!hasShown5Ref.current) {
