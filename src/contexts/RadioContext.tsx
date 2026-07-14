@@ -85,20 +85,50 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
 
+  const savedVolumeRef = useRef<number>(0.7);
+
   const fadeOut = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
     if (!a || a.paused) return;
     clearFade();
     const steps = 20;
     const startVol = a.volume;
+    savedVolumeRef.current = startVol > 0 ? startVol : 0.7;
     const dec = startVol / steps;
     fadeTimerRef.current = setInterval(() => {
       const cur = a.volume;
       if (cur > dec) {
         try { a.volume = Math.max(0, cur - dec); } catch {}
       } else {
-        try { a.volume = 0; a.pause(); } catch {}
-        setIsPlaying(false);
+        try { a.volume = 0; } catch {}
+        // iOS native: pause etme! Aksi halde gesture kaybolur ve
+        // maç sonunda resume başarısız olur. Sadece muted-mute yapıyoruz.
+        try { a.muted = true; } catch {}
+        clearFade();
+      }
+    }, Math.max(20, durationMs / steps));
+  }, []);
+
+  const fadeIn = useCallback((durationMs = 1500) => {
+    const a = audioRef.current;
+    if (!a) return;
+    clearFade();
+    try { a.muted = false; } catch {}
+    // Eğer pause olduysa (arka plan vs.) tekrar başlat
+    if (a.paused) {
+      try { a.play().catch(() => {}); } catch {}
+    }
+    const target = savedVolumeRef.current || 0.7;
+    const steps = 20;
+    const inc = target / steps;
+    try { a.volume = 0; } catch {}
+    setIsPlaying(true);
+    fadeTimerRef.current = setInterval(() => {
+      const cur = a.volume;
+      if (cur + inc < target) {
+        try { a.volume = Math.min(target, cur + inc); } catch {}
+      } else {
+        try { a.volume = target; } catch {}
         clearFade();
       }
     }, Math.max(20, durationMs / steps));
@@ -149,10 +179,19 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Maç bitişinde: eğer radyo maç öncesi çalıyorduysa geri başlat
     const handleRadioResume = () => {
+      const a = audioRef.current;
       const st = currentStationRef.current;
-      if (st) {
-        play(st);
+      // Eğer audio hala mevcut ve muted-fade edilmişse, sadece fadeIn
+      if (a && a.src && !a.paused) {
+        fadeIn(1500);
+        return;
       }
+      if (a && a.src && a.paused) {
+        try { a.muted = false; } catch {}
+        try { a.play().then(() => fadeIn(1500)).catch(() => { if (st) play(st); }); } catch { if (st) play(st); }
+        return;
+      }
+      if (st) play(st);
     };
     window.addEventListener("radio-resume", handleRadioResume);
 
@@ -163,7 +202,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener("radio-resume", handleRadioResume);
       if (removeListener) removeListener();
     };
-  }, [stop, fadeOut, play]);
+  }, [stop, fadeOut, fadeIn, play]);
 
   // Global bayrak: MusicContext maç öncesi kaynağı bilsin
   useEffect(() => {
