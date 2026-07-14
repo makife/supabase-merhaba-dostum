@@ -4828,7 +4828,8 @@ const GamePage = ({
 
   useEffect(() => {
     const initializeGame = async () => {
-      fadeOutBackgroundMusic(1500);
+      // 🎵 Arka plan müziği artık maça başlarken kapatılmıyor.
+      // Oyuncu maç ekranındaki ses düğmesiyle isterse müziği de birlikte kapatabilir.
 
       console.log("GamePage isPremium:", isPremium, "gameMode:", gameMode);
 
