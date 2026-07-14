@@ -2,15 +2,29 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { stopAllSounds, stopAllHTML5Sounds } from "@/services/nativeAudioService";
 import { stopAllIOSWebSounds } from "@/services/iosWebAudioService";
 import { useMusic } from "@/contexts/MusicContext";
-import { useRadio } from "@/contexts/RadioContext";
 
 /**
- * Maç ekranı ses efekti aç/kapa düğmesi.
- * Ayarlar sayfası ile aynı `kelimeci-settings.sounds` bayrağını okur/yazar.
- * Kapatıldığında o an çalan tüm ses efektleri anında susturulur ve
- * arka plan müziği / radyo da birlikte fade-out edilir.
- * Tekrar açıldığında müzik / radyo tekrar fade-in ile geri getirilir.
+ * Maç ekranı 3 kademeli ses düğmesi.
+ *
+ * Maç ekranına girildiğinde arka plan müziği / radyo GameCountdown tarafından
+ * fade-out ile kapatılır. Başlangıç durumu bu yüzden "kis" (müzik kapalı,
+ * efektler açık) kabul edilir.
+ *
+ * Kademeler (döngü):
+ *   kis  → ac   → kis  → kapat → ac → kis → kapat ...
+ *
+ *  - ac    → hem arka plan müziği hem ses efektleri AÇIK
+ *  - kis   → sadece arka plan müziği KAPALI, ses efektleri AÇIK
+ *  - kapat → hem arka plan müziği hem ses efektleri KAPALI
+ *
+ * MusicContext.fadeInBackgroundMusic maç öncesi kaynağı (radyo/müzik)
+ * hatırladığı için doğru kaynağı geri getirir.
  */
+
+type ToggleState = "ac" | "kis" | "kapat";
+
+const CYCLE: ToggleState[] = ["ac", "kis", "kapat"];
+
 const readSoundsEnabled = (): boolean => {
   try {
     const raw = localStorage.getItem("kelimeci-settings");
@@ -21,21 +35,29 @@ const readSoundsEnabled = (): boolean => {
   }
 };
 
+const writeSoundsEnabled = (enabled: boolean) => {
+  try {
+    const raw = localStorage.getItem("kelimeci-settings");
+    const settings = raw ? JSON.parse(raw) : {};
+    settings.sounds = enabled;
+    localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
+    try {
+      window.dispatchEvent(new StorageEvent("storage", { key: "kelimeci-settings" }));
+    } catch {
+      window.dispatchEvent(new Event("storage"));
+    }
+    window.dispatchEvent(
+      new CustomEvent("soundEffectsToggled", { detail: { enabled } })
+    );
+  } catch (e) {
+    console.warn("Ses efekti toggle yazılamadı:", e);
+  }
+};
+
 const stopEverySoundEffect = () => {
-  try {
-    stopAllHTML5Sounds();
-  } catch {
-    /* ignore */
-  }
-  try {
-    stopAllIOSWebSounds();
-  } catch {
-    /* ignore */
-  }
-  // Native (Android/iOS Capacitor) preload edilmiş kanallar
-  stopAllSounds().catch(() => {
-    /* ignore */
-  });
+  try { stopAllHTML5Sounds(); } catch {}
+  try { stopAllIOSWebSounds(); } catch {}
+  stopAllSounds().catch(() => {});
 };
 
 interface SoundEffectsToggleProps {
@@ -43,90 +65,73 @@ interface SoundEffectsToggleProps {
 }
 
 const SoundEffectsToggle = ({ className = "" }: SoundEffectsToggleProps) => {
-  const [enabled, setEnabled] = useState<boolean>(() => readSoundsEnabled());
-  const { fadeOutBackgroundMusic, fadeInBackgroundMusic, isPlaying: musicIsPlaying } = useMusic();
-  const { fadeOut: fadeOutRadio, isPlaying: radioIsPlaying } = useRadio();
+  const { fadeOutBackgroundMusic, fadeInBackgroundMusic } = useMusic();
 
-  // Toggle KAPALI iken önceden ne çalıyordu — açılınca doğru kaynağı geri getir
-  const wasMusicPlayingRef = useRef(false);
-  const wasRadioPlayingRef = useRef(false);
+  // Başlangıç: efektler kapalıysa direkt "kapat", değilse "kis"
+  // (müzik maç başlangıcında fade-out edildiği için).
+  const [state, setState] = useState<ToggleState>(() =>
+    readSoundsEnabled() ? "kis" : "kapat"
+  );
 
+  // Ayarlar sayfasından/harici değişiklik ile senkron
   useEffect(() => {
-    const sync = () => setEnabled(readSoundsEnabled());
-    window.addEventListener("storage", sync);
-    window.addEventListener("soundEffectsToggled", sync as EventListener);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("soundEffectsToggled", sync as EventListener);
+    const sync = () => {
+      const on = readSoundsEnabled();
+      setState((cur) => {
+        if (!on && cur !== "kapat") return "kapat";
+        if (on && cur === "kapat") return "kis";
+        return cur;
+      });
     };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
   }, []);
 
-  const toggle = useCallback(() => {
-    try {
-      const raw = localStorage.getItem("kelimeci-settings");
-      const settings = raw ? JSON.parse(raw) : {};
-      const next = !(settings.sounds !== false);
-      settings.sounds = next;
-      localStorage.setItem("kelimeci-settings", JSON.stringify(settings));
-      setEnabled(next);
+  const applyTransition = useCallback(
+    (prev: ToggleState, next: ToggleState) => {
+      const prevMusicOn = prev === "ac";
+      const nextMusicOn = next === "ac";
+      const prevEffectsOn = prev !== "kapat";
+      const nextEffectsOn = next !== "kapat";
 
-      if (!next) {
-        // Kapatıldı → efektleri anında sustur + müzik/radyoyu fade-out
-        stopEverySoundEffect();
-        try {
-          wasMusicPlayingRef.current = !!musicIsPlaying;
-          wasRadioPlayingRef.current = !!radioIsPlaying;
-        } catch {
-          /* ignore */
-        }
-        try {
-          if (musicIsPlaying) fadeOutBackgroundMusic(600);
-        } catch {
-          /* ignore */
-        }
-        try {
-          if (radioIsPlaying) fadeOutRadio(600);
-        } catch {
-          /* ignore */
-        }
-      } else {
-        // Açıldı → maçtan önce çalan kaynağı geri getir
-        try {
-          if (wasRadioPlayingRef.current) {
-            window.dispatchEvent(new Event("radio-resume"));
-          } else if (wasMusicPlayingRef.current) {
-            fadeInBackgroundMusic(800);
-          } else {
-            // İlk kez maç ekranında açıldıysa (kapalıyken girdiyse)
-            // müziği yine de yumuşakça getirmeyi dene
-            fadeInBackgroundMusic(800);
-          }
-        } catch {
-          /* ignore */
-        }
+      // Efekt ayarını yaz
+      if (prevEffectsOn !== nextEffectsOn) {
+        writeSoundsEnabled(nextEffectsOn);
+        if (!nextEffectsOn) stopEverySoundEffect();
       }
 
-      // Aynı sekmedeki useSounds hook'u + diğer dinleyiciler
-      try {
-        window.dispatchEvent(new StorageEvent("storage", { key: "kelimeci-settings" }));
-      } catch {
-        window.dispatchEvent(new Event("storage"));
+      // Arka plan müziği / radyo
+      if (nextMusicOn && !prevMusicOn) {
+        try { fadeInBackgroundMusic(800); } catch {}
+      } else if (!nextMusicOn && prevMusicOn) {
+        try { fadeOutBackgroundMusic(600); } catch {}
       }
-      window.dispatchEvent(
-        new CustomEvent("soundEffectsToggled", { detail: { enabled: next } })
-      );
-    } catch (e) {
-      console.warn("Ses efekti toggle yazılamadı:", e);
-    }
-  }, [
-    fadeOutBackgroundMusic,
-    fadeInBackgroundMusic,
-    fadeOutRadio,
-    musicIsPlaying,
-    radioIsPlaying,
-  ]);
+    },
+    [fadeInBackgroundMusic, fadeOutBackgroundMusic]
+  );
 
-  const iconSrc = enabled ? "/macEkraniSesEfektiAc.svg" : "/macEkraniSesEfektiKapat.svg";
+  const onClick = useCallback(() => {
+    setState((cur) => {
+      const idx = CYCLE.indexOf(cur);
+      const next = CYCLE[(idx + 1) % CYCLE.length];
+      applyTransition(cur, next);
+      return next;
+    });
+  }, [applyTransition]);
+
+  const iconSrc =
+    state === "ac"
+      ? "/macEkraniSesEfektiAc.svg"
+      : state === "kis"
+      ? "/macEkraniSesEfektiKis.svg"
+      : "/macEkraniSesEfektiKapat.svg";
+
+  const label =
+    state === "ac"
+      ? "Ses efektleri ve müzik açık"
+      : state === "kis"
+      ? "Sadece ses efektleri açık"
+      : "Ses efektleri ve müzik kapalı";
 
   return (
     <button
@@ -134,10 +139,9 @@ const SoundEffectsToggle = ({ className = "" }: SoundEffectsToggleProps) => {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggle();
+        onClick();
       }}
-      aria-label={enabled ? "Ses efektlerini kapat" : "Ses efektlerini aç"}
-      aria-pressed={enabled}
+      aria-label={label}
       className={`inline-flex items-center justify-center h-8 w-8 rounded-md border border-white/10 hover:border-white/20 hover:bg-white/10 active:scale-95 transition ${className}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
