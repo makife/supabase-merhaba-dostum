@@ -104,6 +104,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wasPlayingBeforeBackgroundRef.current = true;
         // Native'de hemen durdur, fade yapma (performans)
         backgroundMusicRef.current.pause();
+        pausedAtRef.current = Date.now();
       }
     };
 
