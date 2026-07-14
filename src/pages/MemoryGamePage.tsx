@@ -73,7 +73,7 @@ const getImageSliceStyle = (
 const WordMemoryGame = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { playSound } = useSounds();
+  const { muted, playSound } = useGameMute("memory");
   const {
     hasPlayedToday,
     todayScore,
