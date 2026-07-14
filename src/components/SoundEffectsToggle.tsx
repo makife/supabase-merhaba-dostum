@@ -65,7 +65,7 @@ interface SoundEffectsToggleProps {
 }
 
 const SoundEffectsToggle = ({ className = "" }: SoundEffectsToggleProps) => {
-  const { fadeOutBackgroundMusic, fadeInBackgroundMusic, setMusicEnabled, musicEnabled } = useMusic();
+  const { fadeOutBackgroundMusic, fadeInBackgroundMusic, setMusicEnabled } = useMusic();
 
   // Başlangıç: efektler kapalıysa direkt "kapat", değilse "kis"
   // (müzik maç başlangıcında fade-out edildiği için).
@@ -103,24 +103,17 @@ const SoundEffectsToggle = ({ className = "" }: SoundEffectsToggleProps) => {
       // Arka plan müziği (radyo değil — kullanıcı maç ekranı toggle'ıyla
       // sadece arka plan müziğinin açılıp kapanmasını bekliyor).
       if (nextMusicOn && !prevMusicOn) {
-        // Floating menüden müzik kapatılmış olabilir → önce global ayarı aç,
-        // sonra fade-in ile başlat. Böylece iki toggle senkron çalışır.
-        try {
-          if (!musicEnabled) {
-            Promise.resolve(setMusicEnabled(true)).finally(() => {
-              try { fadeInBackgroundMusic(800, { musicOnly: true }); } catch {}
-            });
-          } else {
-            fadeInBackgroundMusic(800, { musicOnly: true });
-          }
-        } catch {}
+        // fadeInBackgroundMusic(musicOnly) global ayarı da atomik olarak açar.
+        // Önce setMusicEnabled çağırmak iki ayrı play() isteğini yarıştırıp
+        // fade-in'in isStartingRef tarafından atlanmasına neden oluyordu.
+        try { fadeInBackgroundMusic(800, { musicOnly: true }); } catch {}
       } else if (!nextMusicOn && prevMusicOn) {
         try { fadeOutBackgroundMusic(600); } catch {}
         // Floating menü ile senkron: global ayarı da kapat.
         try { setMusicEnabled(false); } catch {}
       }
     },
-    [fadeInBackgroundMusic, fadeOutBackgroundMusic, setMusicEnabled, musicEnabled]
+    [fadeInBackgroundMusic, fadeOutBackgroundMusic, setMusicEnabled]
   );
 
 
