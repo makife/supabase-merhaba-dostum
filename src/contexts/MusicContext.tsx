@@ -64,6 +64,23 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
+  // Default pack için shuffleIndex'i bir sonrakine ilerletir; diğer paketler tek şarkılı
+  // olduğu için sadece currentTime=0 yapar.
+  const shouldAdvanceTrack = (): boolean => {
+    if (pausedAtRef.current == null) return false;
+    return Date.now() - pausedAtRef.current > RESUME_THRESHOLD_MS;
+  };
+  const advanceToNextTrackSrc = () => {
+    if (musicPack !== "default") return null;
+    shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
+    if (shuffleIndexRef.current === 0) {
+      shuffledPlaylistRef.current = shuffleArray(Array.from({ length: defaultPlaylist.length }, (_, i) => i));
+    }
+    const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
+    return { src: defaultPlaylist[nextTrackIndex], index: nextTrackIndex };
+  };
+
   // Hızlı fade out fonksiyonu (arka plan için)
   const quickFadeOut = () => {
     if (!backgroundMusicRef.current || backgroundMusicRef.current.paused) return;
