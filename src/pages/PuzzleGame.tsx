@@ -198,7 +198,7 @@ const PuzzleGamePage: React.FC = () => {
         time_seconds: gameState.timeElapsed,
       });
       markAsPlayed();
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
       setShowCongratsDialog(true);
     }
   }, [gameState.isCompleted, gameState.moves, gameState.timeElapsed]);
