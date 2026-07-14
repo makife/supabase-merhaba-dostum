@@ -210,6 +210,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               console.log("🎵 Arka plan - müzik durduruluyor");
               wasPlayingBeforeBackgroundRef.current = true;
               backgroundMusicRef.current.pause();
+              pausedAtRef.current = Date.now();
             }
           } else {
             // Ön plana geldi - 🔥 FIX: musicEnabledRef kullan
@@ -217,6 +218,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               console.log("🎵 Ön plan - müzik devam ettiriliyor");
               wasPlayingBeforeBackgroundRef.current = false;
               setMusicVolume(originalVolumeRef.current);
+              if (shouldAdvanceTrack()) {
+                const next = advanceToNextTrackSrc();
+                if (next) {
+                  try {
+                    backgroundMusicRef.current.src = next.src;
+                    backgroundMusicRef.current.load();
+                    setCurrentTrackIndex(next.index);
+                  } catch (e) { console.warn("🎵 Sıradaki şarkıya geçilemedi:", e); }
+                } else {
+                  try { backgroundMusicRef.current.currentTime = 0; } catch {}
+                }
+              }
+              pausedAtRef.current = null;
               backgroundMusicRef.current.play().catch(console.warn);
             } else {
               wasPlayingBeforeBackgroundRef.current = false;
