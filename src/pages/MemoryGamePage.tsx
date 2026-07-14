@@ -422,12 +422,15 @@ const WordMemoryGame = () => {
             <p className="text-[10px] text-purple-400/80">Kelimeleri karışık halleriyle eşleştir</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowLeaderboard(!showLeaderboard)}
-          className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <Trophy className="w-5 h-5 text-amber-400" />
-        </button>
+        <div className="flex items-center gap-2">
+          <GameMuteButton gameId="memory" size={40} />
+          <button
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <Trophy className="w-5 h-5 text-amber-400" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-8">
