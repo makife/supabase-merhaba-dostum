@@ -251,7 +251,7 @@ const DinoRunner = () => {
   // navigate, gameState tanımından sonra aşağıda tanımlanıyor.
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
-  const { playSound: playButtonSound } = useSounds();
+  const { muted: gameMuted, playSound: playButtonSound } = useGameMute("reaktor");
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [reaktorAnim, setReaktorAnim] = useState<any>(null);
   const [arkaPlanAnim, setArkaPlanAnim] = useState<any>(null);
