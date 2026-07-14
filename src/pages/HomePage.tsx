@@ -77,6 +77,7 @@ const greetingMessages = [
   "Bugün kimse seni durduramaz! 🛑",
   "Zirve modu aktif! 🚨",
   "Hadi tarih yazalım! 📖",
+  "Seni enerjik gördüm 🔋",
 ];
 
 const getRandomGreeting = () =>
