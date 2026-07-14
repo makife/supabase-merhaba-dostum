@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
-import { useSounds } from "@/hooks/useSounds";
+import { useGameMute } from "@/hooks/useGameMute";
+import { GameMuteButton } from "@/components/GameMuteButton";
 import { ArrowLeft, Clock, Trophy, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { loadChallengeWordlist, isValidWord } from "@/utils/challengeWordlist";
