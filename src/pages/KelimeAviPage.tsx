@@ -197,7 +197,7 @@ const KelimeAviPage = () => {
     if (gameState !== "finished") return;
     if (score > 0) {
       saveScore(score, foundWords.length);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
