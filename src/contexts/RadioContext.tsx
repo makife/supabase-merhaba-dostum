@@ -85,20 +85,50 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
 
+  const savedVolumeRef = useRef<number>(0.7);
+
   const fadeOut = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
     if (!a || a.paused) return;
     clearFade();
     const steps = 20;
     const startVol = a.volume;
+    savedVolumeRef.current = startVol > 0 ? startVol : 0.7;
     const dec = startVol / steps;
     fadeTimerRef.current = setInterval(() => {
       const cur = a.volume;
       if (cur > dec) {
         try { a.volume = Math.max(0, cur - dec); } catch {}
       } else {
-        try { a.volume = 0; a.pause(); } catch {}
-        setIsPlaying(false);
+        try { a.volume = 0; } catch {}
+        // iOS native: pause etme! Aksi halde gesture kaybolur ve
+        // maç sonunda resume başarısız olur. Sadece muted-mute yapıyoruz.
+        try { a.muted = true; } catch {}
+        clearFade();
+      }
+    }, Math.max(20, durationMs / steps));
+  }, []);
+
+  const fadeIn = useCallback((durationMs = 1500) => {
+    const a = audioRef.current;
+    if (!a) return;
+    clearFade();
+    try { a.muted = false; } catch {}
+    // Eğer pause olduysa (arka plan vs.) tekrar başlat
+    if (a.paused) {
+      try { a.play().catch(() => {}); } catch {}
+    }
+    const target = savedVolumeRef.current || 0.7;
+    const steps = 20;
+    const inc = target / steps;
+    try { a.volume = 0; } catch {}
+    setIsPlaying(true);
+    fadeTimerRef.current = setInterval(() => {
+      const cur = a.volume;
+      if (cur + inc < target) {
+        try { a.volume = Math.min(target, cur + inc); } catch {}
+      } else {
+        try { a.volume = target; } catch {}
         clearFade();
       }
     }, Math.max(20, durationMs / steps));
