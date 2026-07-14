@@ -247,7 +247,7 @@ const NeonBlitz: React.FC = () => {
       }
       beginTurn();
     },
-    [beginTurn],
+    [beginTurn, playSound],
   );
 
   const returnToMenu = () => {
