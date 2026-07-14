@@ -126,7 +126,7 @@ const getVipType = (profile: any): "yearly" | "monthly" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = memo(({ svgIcon, value, label }: any) => (
-  <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+  <div className="flex-1 bg-[#0F3B36] border border-amber-400/25 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
     <img
       src={svgIcon}
       alt=""
@@ -263,7 +263,7 @@ const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCoun
     </div>
 
     <div className="relative z-10">
-      <h3 className="text-lg font-bold text-white leading-none mb-1" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>{mode.title}</h3>
+      <h3 className="text-lg font-bold text-white leading-none mb-1 font-serif" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>{mode.title}</h3>
       {mode.id === "tournament" ? (
         <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
           <span
@@ -651,7 +651,7 @@ const HomePage = () => {
         id: "random-match",
         title: "Rastgele Rakip",
         icon: RastgeleIcon,
-        gradient: "from-violet-500 via-purple-500 to-indigo-500",
+        gradient: "from-teal-500 via-cyan-600 to-emerald-600",
         glowColor: "violet",
         isLive: true,
       },
@@ -669,7 +669,7 @@ const HomePage = () => {
         title: "Yapay Zeka",
         description: "Pratik yap",
         icon: AiModIcon,
-        gradient: "from-cyan-400 via-sky-500 to-blue-500",
+        gradient: "from-indigo-600 via-blue-700 to-slate-800",
         glowColor: "cyan",
         isLive: false,
       },
@@ -678,7 +678,7 @@ const HomePage = () => {
         title: "Özel Oda",
         description: "Arkadaşınla oyna",
         icon: OzelOdaIcon,
-        gradient: "from-emerald-400 via-green-500 to-teal-500",
+        gradient: "from-rose-500 via-red-600 to-rose-700",
         glowColor: "emerald",
         isLive: false,
       },
@@ -693,9 +693,9 @@ const HomePage = () => {
   // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
     return {
-      bg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)", // index.html renkleri
-      gradient: "from-[#ff6b6b]/40", // Şeffaflığı %20'den %40'a çıkardık
-      headerBg: "#1a1a2e",
+      bg: "linear-gradient(135deg, #0B2027 0%, #123844 100%)", // yeni tema renkleri
+      gradient: "from-[#D4AF37]/30", // Altın parıltı
+      headerBg: "#0B2027",
     };
 
     /*
@@ -720,7 +720,7 @@ const HomePage = () => {
       <LeaderboardPrizeDialog />
       <ChallengePrizeDialog />
       <div
-        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
+        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-amber-400/30 overflow-hidden"
         style={{
           backgroundColor: "hsl(var(--app-shell))",
           backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
@@ -737,7 +737,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
-        <div className="flex-none z-30 pb-4 relative border-b border-white/5">
+        <div className="flex-none z-30 pb-4 relative border-b border-amber-400/10">
           {/* HEADER (Profil & Mürekkep) */}
           <div className="px-5 pt-6 pb-2 flex items-center justify-between">
             {/* Profil */}
@@ -754,9 +754,9 @@ const HomePage = () => {
                   </div>
                 )}
                 <div
-                  className={`relative z-10 w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                  className={`relative z-10 w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-teal-400 to-emerald-500"}`}
                 >
-                  <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
+                  <Avatar className="w-full h-full border-2 border-[#0B2027]">
                     <AvatarImage
                       src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                       className="object-cover"
@@ -766,7 +766,7 @@ const HomePage = () => {
                 </div>
               </div>
               <div>
-                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
+                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md font-serif">
                   {profile?.username || "Misafir"}
                 </h2>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
@@ -780,9 +780,9 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/market");
                 }}
-                className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
+                className="flex items-center gap-2 bg-[#0F3B36] border border-amber-400/25 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
               >
-                <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-amber-400/10 rounded-full flex items-center justify-center">
                   <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
                 </div>
                 <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
@@ -804,7 +804,7 @@ const HomePage = () => {
                   className="w-10 h-10 object-contain drop-shadow-md"
                 />
                 {systemUnread > 0 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0f1729]">
+                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0B2027]">
                     {systemUnread > 9 ? "9+" : systemUnread}
                   </span>
                 )}
@@ -825,18 +825,18 @@ const HomePage = () => {
                 starGradient = "from-slate-400 to-slate-600";
                 shadowColor = "shadow-slate-500/20";
               } else if (level >= 40) {
-                starGradient = "from-blue-400 to-blue-600";
-                shadowColor = "shadow-blue-500/20";
+                starGradient = "from-cyan-400 to-teal-600";
+                shadowColor = "shadow-teal-500/20";
               } else if (level >= 25) {
                 starGradient = "from-emerald-400 to-green-600";
                 shadowColor = "shadow-green-500/20";
               } else if (level >= 10) {
-                starGradient = "from-purple-500 to-indigo-600";
-                shadowColor = "shadow-purple-500/20";
+                starGradient = "from-rose-500 to-fuchsia-700";
+                shadowColor = "shadow-rose-500/20";
               }
 
               return (
-                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-white/30">
+                <div className="relative flex items-center justify-between px-8 py-4 bg-[#0F3B36] rounded-2xl border border-amber-400/30">
                   <div className="flex items-center gap-4">
                     <img
                       src={getLevelFruitIcon(level)}
@@ -845,7 +845,7 @@ const HomePage = () => {
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">Seviye {level}</span>
+                        <span className="text-sm font-bold text-white font-serif">Seviye {level}</span>
                         <span className="text-[10px] text-slate-500 font-mono">
                           {levelData.experience}/{levelData.nextLevelExp} XP
                         </span>
@@ -860,7 +860,7 @@ const HomePage = () => {
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-red-500">
+                    <span className="text-sm font-mono font-bold text-amber-400">
                       {(profile?.total_score || 0).toLocaleString()}
                     </span>
                   </div>
@@ -873,13 +873,13 @@ const HomePage = () => {
           <div className="px-5 mt-3">
             <div className="flex gap-2">
               {[
-                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-cyan-500" },
+                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-teal-500" },
                 { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", layer: "bg-yellow-500" },
-                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", layer: "bg-green-500" },
+                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", layer: "bg-rose-500" },
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 bg-[#1e2d45] rounded-2xl border border-white/30 flex flex-col items-center active:scale-90 transition-transform cursor-pointer overflow-hidden"
+                  className="flex-1 bg-[#0F3B36] rounded-2xl border border-amber-400/30 flex flex-col items-center active:scale-90 transition-transform cursor-pointer overflow-hidden"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
@@ -910,7 +910,7 @@ const HomePage = () => {
                   vipType === "yearly"
                     ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
                     : vipType === "monthly"
-                      ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                      ? "bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-600 border-teal-700"
                       : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
                 }`}
               >
@@ -959,8 +959,8 @@ const HomePage = () => {
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
-                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10"
-                    : "bg-[#1e2d45]"
+                      : "bg-gradient-to-r from-teal-500/10 to-cyan-500/10"
+                    : "bg-[#0F3B36]"
                 }`}
               >
                 <span
@@ -968,8 +968,8 @@ const HomePage = () => {
     isUnlimitedLivesActive(profile)
       ? getUnlimitedType(profile) === "maraton"
         ? "text-amber-400"
-        : "text-blue-400"
-      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-500"
+        : "text-teal-400"
+      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-teal-500"
   }`}
 >
   {isUnlimitedLivesActive(profile) ? (
@@ -988,17 +988,17 @@ const HomePage = () => {
                         className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
                           getUnlimitedType(profile) === "maraton"
                             ? "bg-amber-500/20 border-amber-500/30"
-                            : "bg-blue-500/20 border-blue-500/30"
+                            : "bg-teal-500/20 border-teal-500/30"
                         }`}
                       >
                         <Clock
                           className={`w-3 h-3 animate-pulse ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-teal-400"
                           }`}
                         />
                         <span
                           className={`text-xs font-mono font-bold tabular-nums ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-teal-300"
                           }`}
                         >
                           {unlimitedTimeLeft}
@@ -1011,7 +1011,7 @@ const HomePage = () => {
                       className={`text-[10px] px-2 py-0.5 border ${
                         getUnlimitedType(profile) === "maraton"
                           ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                          : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                          : "bg-teal-500/20 text-teal-300 border-teal-500/30"
                       }`}
                     >
                       Sınırsız
@@ -1030,7 +1030,7 @@ const HomePage = () => {
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span 
   className="absolute text-white text-[14px] font-bold"
-  style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
+  style={{ WebkitTextStroke: "0.3px #0B2027", textShadow: "0 0 2px #0B2027" }}
 >+{totalCredits - 5}</span>
                         </div>
                       </div>
@@ -1061,7 +1061,7 @@ const HomePage = () => {
           {/* HEDİYE BANNER */}
           {isPremium && isGiftPremium(profile) && (
             <div className="px-5 mt-4">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+              <div className="bg-gradient-to-r from-fuchsia-600 to-purple-700 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
                   <Gift className="w-5 h-5 text-white animate-bounce" />
@@ -1084,7 +1084,7 @@ const HomePage = () => {
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+              <div className="w-1 h-4 bg-amber-400 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1135,7 +1135,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
                   </p>
@@ -1170,7 +1170,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
                   </p>
@@ -1205,7 +1205,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Refleks</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Refleks</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
                   </p>
@@ -1240,7 +1240,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
                   </p>
@@ -1275,7 +1275,7 @@ const HomePage = () => {
                   </Badge>
                 </div>
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Komşu harfleri birleştir"}
                   </p>
@@ -1287,7 +1287,7 @@ const HomePage = () => {
           {/* GÜNLÜK ÇARK */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-red-500 rounded-full" />
+              <div className="w-1 h-4 bg-fuchsia-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Şans Çarkı</h3>
             </div>
             <div
@@ -1296,11 +1296,11 @@ const HomePage = () => {
                 navigate("/wheel");
               }}
               className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
-                wheelSpinsLeft === 0 ? "border-red-400/40 opacity-70" : "border-red-500/30"
+                wheelSpinsLeft === 0 ? "border-fuchsia-400/40 opacity-70" : "border-fuchsia-500/30"
               }`}
             >
               <div
-                className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
+                className={`absolute inset-0 bg-gradient-to-r from-fuchsia-600 via-purple-700 to-fuchsia-800 ${
                   wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
                 } rounded-2xl`}
               />
@@ -1314,8 +1314,8 @@ const HomePage = () => {
                 )}
               </div>
               <div className="relative z-10 flex-1">
-                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md"
-                  style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>
+                <h3 className="text-base font-bold text-white leading-none mb-1 font-serif drop-shadow-md"
+                  style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>
                   {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
                 </h3>
                 <p className="text-[10px] text-white/70 font-medium">
@@ -1369,7 +1369,7 @@ const HomePage = () => {
         ) : null}
 
         {showMatchmaking && (
-          <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
+          <div className="fixed inset-0 z-[9999] bg-[#0B2027]">
             {" "}
             {/* Flashbang etkisini önlemek için koyu arka plan */}
             <SlotMatchmaking
