@@ -702,9 +702,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     preMatchAudioSourceRef.current = "none";
 
 
+    // musicOnly=true iken kullanıcı maç ekranında AÇIKÇA arka plan müziğini
+    // istiyor → global "music enabled" ayarı kapalı olsa da (ör. maç öncesi
+    // radyo çalıyorsa music=false olabilir) zorla açıp başlat.
+    const forceMusic = !!opts?.musicOnly;
+    if (forceMusic && !musicEnabledRef.current) {
+      musicEnabledRef.current = true;
+      setMusicEnabledState(true);
+    }
+
     // 🔥 NATIVE PLATFORM İÇİN
     if (isNative) {
-      if (!musicEnabled) {
+      if (!musicEnabled && !forceMusic) {
         console.log("🎵 [MusicContext] Native müzik devre dışı");
         return;
       }
@@ -740,7 +749,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // 🔥 WEB PLATFORM İÇİN (mevcut kod)
-    if (!musicEnabled || !backgroundMusicRef.current || isStartingRef.current) return;
+    if ((!musicEnabled && !forceMusic) || !backgroundMusicRef.current || isStartingRef.current) return;
+
 
     // Clear any existing fade
     if (fadeIntervalRef.current) {
