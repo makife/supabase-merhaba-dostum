@@ -276,6 +276,9 @@ const NeonBlitz: React.FC = () => {
       >
         <ArrowLeft size={22} color="#fff" />
       </button>
+      <div style={{ position: "absolute", top: 16, right: 16 }}>
+        <GameMuteButton gameId="neon_blitz" size={40} />
+      </div>
       {simsekAnim && (
         <div style={{ width: 100, height: 100, marginBottom: 8 }}>
           <Lottie animationData={simsekAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
