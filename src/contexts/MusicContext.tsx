@@ -11,7 +11,7 @@ interface MusicContextType {
   startBackgroundMusic: () => void;
   stopBackgroundMusic: () => void;
   fadeOutBackgroundMusic: (duration?: number) => void;
-  fadeInBackgroundMusic: (duration?: number) => void;
+  fadeInBackgroundMusic: (duration?: number, opts?: { musicOnly?: boolean }) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -684,11 +684,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 50);
   };
 
-  const fadeInBackgroundMusic = async (duration: number = 2000) => {
-    console.log(`🎵 [MusicContext] fadeInBackgroundMusic çağrıldı: ${duration}ms`);
+  const fadeInBackgroundMusic = async (
+    duration: number = 2000,
+    opts?: { musicOnly?: boolean }
+  ) => {
+    console.log(`🎵 [MusicContext] fadeInBackgroundMusic çağrıldı: ${duration}ms`, opts);
 
     // 📻 Maç öncesi radyo çalıyorduysa müzik yerine radyoyu geri başlat
-    if (preMatchAudioSourceRef.current === "radio") {
+    // (musicOnly=true ise radyoyu görmezden gel, sadece arka plan müziğini aç)
+    if (!opts?.musicOnly && preMatchAudioSourceRef.current === "radio") {
       preMatchAudioSourceRef.current = "none";
       try {
         window.dispatchEvent(new CustomEvent("radio-resume"));
