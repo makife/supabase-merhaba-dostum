@@ -11,7 +11,7 @@ interface MusicContextType {
   startBackgroundMusic: () => void;
   stopBackgroundMusic: () => void;
   fadeOutBackgroundMusic: (duration?: number) => void;
-  fadeInBackgroundMusic: (duration?: number) => void;
+  fadeInBackgroundMusic: (duration?: number, opts?: { musicOnly?: boolean }) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
