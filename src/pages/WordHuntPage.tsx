@@ -74,7 +74,7 @@ const WordHuntPage = () => {
       // Score is already calculated per-word with time factor, save as-is
       const finalScore = parseFloat(score.toFixed(2));
       saveScore(finalScore, foundWords.length);
-      playChallengeWinSound();
+      if (!muted) playChallengeWinSound();
     }
   }, [gameState]);
  
