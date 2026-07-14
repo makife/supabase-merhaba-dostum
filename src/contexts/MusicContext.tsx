@@ -45,6 +45,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 📻 Maç öncesi hangi kaynak çalıyordu? (fadeOut → fadeIn arası)
   const preMatchAudioSourceRef = useRef<"music" | "radio" | "none">("none");
 
+  // ⏱️ Akıllı resume: fadeOut zamanı. 30 sn'den fazla geçtiyse sıradaki şarkıya geç.
+  const pausedAtRef = useRef<number | null>(null);
+  const RESUME_THRESHOLD_MS = 30_000;
+
   // 🔥 Platforma duyarlı volume getter/setter (iOS HTMLAudioElement.volume'u yok sayar)
   const getMusicVolume = (): number => {
     if (isIOSNative && iosGainRef.current) return iosGainRef.current.gain.value;
@@ -58,6 +62,23 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (backgroundMusicRef.current) {
       try { backgroundMusicRef.current.volume = clamped; } catch {}
     }
+  };
+
+  // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
+  // Default pack için shuffleIndex'i bir sonrakine ilerletir; diğer paketler tek şarkılı
+  // olduğu için sadece currentTime=0 yapar.
+  const shouldAdvanceTrack = (): boolean => {
+    if (pausedAtRef.current == null) return false;
+    return Date.now() - pausedAtRef.current > RESUME_THRESHOLD_MS;
+  };
+  const advanceToNextTrackSrc = () => {
+    if (musicPack !== "default") return null;
+    shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
+    if (shuffleIndexRef.current === 0) {
+      shuffledPlaylistRef.current = shuffleArray(Array.from({ length: defaultPlaylist.length }, (_, i) => i));
+    }
+    const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
+    return { src: defaultPlaylist[nextTrackIndex], index: nextTrackIndex };
   };
 
   // Hızlı fade out fonksiyonu (arka plan için)
@@ -82,6 +103,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         setMusicVolume(0);
         audio.pause();
+        pausedAtRef.current = Date.now();
         if (backgroundFadeRef.current) {
           clearInterval(backgroundFadeRef.current);
           backgroundFadeRef.current = null;
@@ -99,6 +121,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wasPlayingBeforeBackgroundRef.current = true;
         // Native'de hemen durdur, fade yapma (performans)
         backgroundMusicRef.current.pause();
+        pausedAtRef.current = Date.now();
       }
     };
 
@@ -113,6 +136,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log("🎵 Müzik ön plan için devam ettiriliyor");
         wasPlayingBeforeBackgroundRef.current = false;
         setMusicVolume(originalVolumeRef.current);
+        // ⏱️ 30 sn'den fazla arka planda kaldıysak sıradaki şarkıya geç
+        if (shouldAdvanceTrack()) {
+          const next = advanceToNextTrackSrc();
+          if (next) {
+            try {
+              backgroundMusicRef.current.src = next.src;
+              backgroundMusicRef.current.load();
+              setCurrentTrackIndex(next.index);
+            } catch (e) { console.warn("🎵 Sıradaki şarkıya geçilemedi:", e); }
+          } else {
+            try { backgroundMusicRef.current.currentTime = 0; } catch {}
+          }
+        }
+        pausedAtRef.current = null;
         backgroundMusicRef.current.play().catch(console.warn);
       } else {
         wasPlayingBeforeBackgroundRef.current = false;
@@ -173,6 +210,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               console.log("🎵 Arka plan - müzik durduruluyor");
               wasPlayingBeforeBackgroundRef.current = true;
               backgroundMusicRef.current.pause();
+              pausedAtRef.current = Date.now();
             }
           } else {
             // Ön plana geldi - 🔥 FIX: musicEnabledRef kullan
@@ -180,6 +218,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               console.log("🎵 Ön plan - müzik devam ettiriliyor");
               wasPlayingBeforeBackgroundRef.current = false;
               setMusicVolume(originalVolumeRef.current);
+              if (shouldAdvanceTrack()) {
+                const next = advanceToNextTrackSrc();
+                if (next) {
+                  try {
+                    backgroundMusicRef.current.src = next.src;
+                    backgroundMusicRef.current.load();
+                    setCurrentTrackIndex(next.index);
+                  } catch (e) { console.warn("🎵 Sıradaki şarkıya geçilemedi:", e); }
+                } else {
+                  try { backgroundMusicRef.current.currentTime = 0; } catch {}
+                }
+              }
+              pausedAtRef.current = null;
               backgroundMusicRef.current.play().catch(console.warn);
             } else {
               wasPlayingBeforeBackgroundRef.current = false;
@@ -677,6 +728,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         setMusicVolume(0);
         audio.pause();
+        pausedAtRef.current = Date.now();
         setMusicVolume(originalVolumeRef.current); // Reset for next time
         if (fadeIntervalRef.current) {
           clearInterval(fadeIntervalRef.current);
@@ -779,7 +831,24 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
     setMusicVolume(0);
-    audio.currentTime = 0;
+
+    // ⏱️ Akıllı resume: 30 sn'den fazla susmuşsak sıradaki şarkıya geç (default pack),
+    // aksi halde kaldığı yerden devam et.
+    if (shouldAdvanceTrack()) {
+      const next = advanceToNextTrackSrc();
+      if (next) {
+        try {
+          audio.src = next.src;
+          audio.load();
+          setCurrentTrackIndex(next.index);
+        } catch (e) {
+          console.warn("🎵 Sıradaki şarkıya geçilemedi:", e);
+        }
+      }
+      try { audio.currentTime = 0; } catch {}
+    }
+    // else: currentTime'a dokunma → kaldığı yerden devam
+    pausedAtRef.current = null;
 
     isStartingRef.current = true;
 
