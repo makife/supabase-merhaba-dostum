@@ -831,7 +831,24 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
     setMusicVolume(0);
-    audio.currentTime = 0;
+
+    // ⏱️ Akıllı resume: 30 sn'den fazla susmuşsak sıradaki şarkıya geç (default pack),
+    // aksi halde kaldığı yerden devam et.
+    if (shouldAdvanceTrack()) {
+      const next = advanceToNextTrackSrc();
+      if (next) {
+        try {
+          audio.src = next.src;
+          audio.load();
+          setCurrentTrackIndex(next.index);
+        } catch (e) {
+          console.warn("🎵 Sıradaki şarkıya geçilemedi:", e);
+        }
+      }
+      try { audio.currentTime = 0; } catch {}
+    }
+    // else: currentTime'a dokunma → kaldığı yerden devam
+    pausedAtRef.current = null;
 
     isStartingRef.current = true;
 
