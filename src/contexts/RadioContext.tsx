@@ -179,10 +179,19 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Maç bitişinde: eğer radyo maç öncesi çalıyorduysa geri başlat
     const handleRadioResume = () => {
+      const a = audioRef.current;
       const st = currentStationRef.current;
-      if (st) {
-        play(st);
+      // Eğer audio hala mevcut ve muted-fade edilmişse, sadece fadeIn
+      if (a && a.src && !a.paused) {
+        fadeIn(1500);
+        return;
       }
+      if (a && a.src && a.paused) {
+        try { a.muted = false; } catch {}
+        try { a.play().then(() => fadeIn(1500)).catch(() => { if (st) play(st); }); } catch { if (st) play(st); }
+        return;
+      }
+      if (st) play(st);
     };
     window.addEventListener("radio-resume", handleRadioResume);
 
@@ -193,7 +202,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       window.removeEventListener("radio-resume", handleRadioResume);
       if (removeListener) removeListener();
     };
-  }, [stop, fadeOut, play]);
+  }, [stop, fadeOut, fadeIn, play]);
 
   // Global bayrak: MusicContext maç öncesi kaynağı bilsin
   useEffect(() => {
