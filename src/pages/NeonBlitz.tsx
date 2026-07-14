@@ -206,6 +206,7 @@ const NeonBlitz: React.FC = () => {
   const handleTileClick = useCallback(
     (id: number) => {
       if (!isPlayingRef.current) return;
+      playSound("buttonClick");
       if (id !== activeTileRef.current) {
         isPlayingRef.current = false;
         clearTimer();
