@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
-import { useSounds } from "@/hooks/useSounds";
+
 import { ArrowLeft, Clock, Send, Trophy, RotateCcw, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
