@@ -823,7 +823,7 @@ const DinoRunner = () => {
         setScore(finalScore);
         if (finalScore > highScore) setHighScore(finalScore);
         // Save to daily challenge
-        playChallengeWinSound();
+        if (!gameMuted) playChallengeWinSound();
         saveChallengeScore(finalScore, completedWordsRef.current.length).then((saved) => {
 
           if (saved) {
