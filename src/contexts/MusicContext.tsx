@@ -714,14 +714,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setMusicEnabledState(true);
       // Floating menü ve kalıcı ayarla senkron tut; settingsChanged yayınlamıyoruz,
       // çünkü bu sırada Audio elementinin yeniden kurulması kullanıcı gesture'ını bozar.
-      try {
-        const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
-        const settings = settingsStr ? JSON.parse(settingsStr) : {};
-        settings.music = true;
-        await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-      } catch (e) {
-        console.warn("Failed to save forced music setting:", e);
-      }
+      void (async () => {
+        try {
+          const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+          const settings = settingsStr ? JSON.parse(settingsStr) : {};
+          settings.music = true;
+          await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+        } catch (e) {
+          console.warn("Failed to save forced music setting:", e);
+        }
+      })();
     }
 
     // 🔥 NATIVE PLATFORM İÇİN
