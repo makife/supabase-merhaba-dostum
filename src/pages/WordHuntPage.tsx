@@ -164,12 +164,15 @@ const WordHuntPage = () => {
             <p className="text-[10px] text-emerald-400/80">Harflerden kelime oluştur</p>
           </div>
         </div>
-        {gameState === "playing" && (
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
-            <Clock className="w-4 h-4" />
-            <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {gameState === "playing" && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${timeLeft <= 15 ? "bg-red-500/20 text-red-400" : "bg-white/10 text-white"}`}>
+              <Clock className="w-4 h-4" />
+              <span className="font-mono font-bold text-sm">{formatTime(timeLeft)}</span>
+            </div>
+          )}
+          <GameMuteButton gameId="word_hunt" size={40} />
+        </div>
       </div>
  
       {/* Game Content */}
