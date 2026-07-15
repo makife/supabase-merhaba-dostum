@@ -77,7 +77,6 @@ const greetingMessages = [
   "Bugün kimse seni durduramaz! 🛑",
   "Zirve modu aktif! 🚨",
   "Hadi tarih yazalım! 📖",
-  "Seni enerjik gördüm 🔋",
 ];
 
 const getRandomGreeting = () =>
@@ -127,16 +126,10 @@ const getVipType = (profile: any): "yearly" | "monthly" | null => {
 // --- BİLEŞENLER ---
 
 const StatWidget = memo(({ svgIcon, value, label }: any) => (
-  <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-    <img
-      src={svgIcon}
-      alt=""
-      className="absolute inset-0 w-full h-full object-cover opacity-10 select-none pointer-events-none"
-    />
-    <span className="relative z-10 text-lg font-bold text-white tracking-tight">{value}</span>
-    <span className="relative z-10 text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">
-      {label}
-    </span>
+  <div className="flex-1 py-3 flex flex-col items-center justify-center gap-0.5 relative">
+    <img src={svgIcon} alt="" className="w-4 h-4 object-contain opacity-70 mb-0.5 select-none pointer-events-none" />
+    <span className="text-lg font-serif font-bold text-white tracking-tight tabular-nums">{value}</span>
+    <span className="text-[9px] text-amber-200/50 font-medium uppercase tracking-[0.15em]">{label}</span>
   </div>
 ));
 StatWidget.displayName = "StatWidget";
@@ -243,49 +236,58 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/ozeloda.svg" className={className} alt="" />
 );
 
-const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => (
-  <div
-    onClick={onClick}
-    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
-    style={{ transform: "translateZ(0)" }}
-  >
+const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => {
+  const isHero = mode.isLive;
+  return (
     <div
-      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 rounded-3xl`}
-    />
-    <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+      onClick={onClick}
+      className={`relative group cursor-pointer rounded-[22px] flex flex-col justify-end transition-transform duration-200 active:scale-[0.97] ${isHero ? "col-span-2 h-36" : "h-32"}`}
+      style={{ transform: "translateZ(0)" }}
+    >
+      <div className={`absolute inset-0 rounded-[22px] bg-gradient-to-br ${mode.gradient}`} />
+      <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-black/10 rounded-full blur-2xl pointer-events-none" />
 
-    <div className="relative z-10 flex justify-between items-start">
-      <div className="p-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
-        <mode.icon className="w-6 h-6 text-white" />
-      </div>
       {mode.isLive && (
-        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-black/30 backdrop-blur-sm rounded-full pl-1.5 pr-2.5 py-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+          <span className="text-[9px] font-bold text-white uppercase tracking-wider">Canlı</span>
+        </div>
       )}
-    </div>
 
-    <div className="relative z-10">
-      <h3 className="text-lg font-bold text-white leading-none mb-1" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>{mode.title}</h3>
-      {mode.id === "tournament" ? (
-        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${(activeTournamentCount ?? 0) > 0 ? "bg-amber-400 animate-pulse" : "bg-slate-400"}`}
-          />
-          <span className="text-[10px] text-white font-medium">{activeTournamentCount ?? 0} aktif turnuva</span>
+      <div className="relative z-10 p-4 pt-7">
+        <div className="absolute -top-5 left-4 w-14 h-14 rounded-full bg-[#0F3B36] border-4 border-[#0B2027] flex items-center justify-center shadow-lg">
+          <mode.icon className="w-7 h-7 text-white" />
         </div>
-      ) : (
-        <p className="text-[11px] text-white font-medium line-clamp-1">{mode.description}</p>
-      )}
-      {mode.id === "random-match" && typeof searchingCount === "number" && (
-        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
-          />
-          <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
+        <div className="mt-6">
+          <h3
+            className="text-lg font-bold text-white leading-none mb-1 font-serif"
+            style={{ WebkitTextStroke: "2px #0B2027", paintOrder: "stroke fill" } as any}
+          >
+            {mode.title}
+          </h3>
+          {mode.id === "tournament" ? (
+            <div className="mt-1 inline-flex items-center gap-1 bg-black/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${(activeTournamentCount ?? 0) > 0 ? "bg-amber-300 animate-pulse" : "bg-slate-300"}`}
+              />
+              <span className="text-[10px] text-white font-medium">{activeTournamentCount ?? 0} aktif turnuva</span>
+            </div>
+          ) : (
+            <p className="text-[11px] text-white/85 font-medium line-clamp-1">{mode.description}</p>
+          )}
+          {mode.id === "random-match" && typeof searchingCount === "number" && (
+            <div className="mt-1 inline-flex items-center gap-1 bg-black/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-emerald-300 animate-pulse" : "bg-slate-300"}`}
+              />
+              <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
-  </div>
-));
+  );
+});
 GameModeCard.displayName = "GameModeCard";
 
 // --- ANA SAYFA ---
@@ -652,7 +654,7 @@ const HomePage = () => {
         id: "random-match",
         title: "Rastgele Rakip",
         icon: RastgeleIcon,
-        gradient: "from-violet-500 via-purple-500 to-indigo-500",
+        gradient: "from-teal-500 via-cyan-600 to-emerald-600",
         glowColor: "violet",
         isLive: true,
       },
@@ -670,7 +672,7 @@ const HomePage = () => {
         title: "Yapay Zeka",
         description: "Pratik yap",
         icon: AiModIcon,
-        gradient: "from-cyan-400 via-sky-500 to-blue-500",
+        gradient: "from-indigo-600 via-blue-700 to-slate-800",
         glowColor: "cyan",
         isLive: false,
       },
@@ -679,7 +681,7 @@ const HomePage = () => {
         title: "Özel Oda",
         description: "Arkadaşınla oyna",
         icon: OzelOdaIcon,
-        gradient: "from-emerald-400 via-green-500 to-teal-500",
+        gradient: "from-rose-500 via-red-600 to-rose-700",
         glowColor: "emerald",
         isLive: false,
       },
@@ -694,9 +696,9 @@ const HomePage = () => {
   // Seviyeye göre arka plan rengi (çift tonlu gradient)
   const getLevelBackgroundColor = () => {
     return {
-      bg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)", // index.html renkleri
-      gradient: "from-[#ff6b6b]/40", // Şeffaflığı %20'den %40'a çıkardık
-      headerBg: "#1a1a2e",
+      bg: "linear-gradient(135deg, #0B2027 0%, #123844 100%)", // yeni tema renkleri
+      gradient: "from-[#D4AF37]/30", // Altın parıltı
+      headerBg: "#0B2027",
     };
 
     /*
@@ -721,7 +723,7 @@ const HomePage = () => {
       <LeaderboardPrizeDialog />
       <ChallengePrizeDialog />
       <div
-        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
+        className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-amber-400/30 overflow-hidden"
         style={{
           backgroundColor: "hsl(var(--app-shell))",
           backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
@@ -738,165 +740,145 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         SABİT ÜST ALAN (FIXED HEADER AREA) 
       -------------------------------------------------------- */}
-        <div className="flex-none z-30 pb-4 relative border-b border-white/5">
-          {/* HEADER (Profil & Mürekkep) */}
-          <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-            {/* Profil */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
-              <div className="relative">
-                {boostActiveHome && boostProfilAnim && (
-                  <div className="absolute inset-0 -m-10 pointer-events-none z-0">
-                    <Lottie
-                      animationData={boostProfilAnim}
-                      loop
-                      autoplay
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </div>
-                )}
-                <div
-                  className={`relative z-10 w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
-                >
-                  <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
-                    <AvatarImage
-                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
-                  </Avatar>
-                </div>
-              </div>
-              <div>
-                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
-                  {profile?.username || "Misafir"}
-                </h2>
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
-              </div>
-            </div>
-
-            {/* Mürekkep + Bildirim */}
-            <div className="flex items-center gap-2">
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/market");
-                }}
-                className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
-                  <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
-                </div>
-                <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              </div>
-
-              {/* Sistem Mesajları Bildirim Görseli */}
-              <button
-                type="button"
-                onClick={() => {
-                  playSound("buttonClick");
-                  setShowSystemMessages(true);
-                }}
-                className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
-                aria-label="Sistem mesajları"
-              >
-                <img
-                  src="/bildirimGorsel.svg"
-                  alt="Bildirimler"
-                  className="w-10 h-10 object-contain drop-shadow-md"
-                />
-                {systemUnread > 0 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0f1729]">
-                    {systemUnread > 9 ? "9+" : systemUnread}
-                  </span>
-                )}
-              </button>
-            </div>
-
-          </div>
-
-
-          {/* --- LEVEL VE XP KARTI --- */}
-          <div className="px-5 mt-2">
+        <div className="flex-none z-30 pb-5 relative">
+          {/* HEADER: Kimlik + Seviye Halkası + Skor (tek mühür kartı) */}
+          <div className="px-5 pt-6">
             {(() => {
               const level = levelData.level;
-              let starGradient = "from-amber-400 to-orange-500";
-              let shadowColor = "shadow-orange-500/20";
+              let ringHex = "#F59E0B";
+              if (level >= 70) ringHex = "#94A3B8";
+              else if (level >= 40) ringHex = "#2DD4BF";
+              else if (level >= 25) ringHex = "#34D399";
+              else if (level >= 10) ringHex = "#FB7185";
 
-              if (level >= 70) {
-                starGradient = "from-slate-400 to-slate-600";
-                shadowColor = "shadow-slate-500/20";
-              } else if (level >= 40) {
-                starGradient = "from-blue-400 to-blue-600";
-                shadowColor = "shadow-blue-500/20";
-              } else if (level >= 25) {
-                starGradient = "from-emerald-400 to-green-600";
-                shadowColor = "shadow-green-500/20";
-              } else if (level >= 10) {
-                starGradient = "from-purple-500 to-indigo-600";
-                shadowColor = "shadow-purple-500/20";
-              }
+              const circumference = 2 * Math.PI * 33;
 
               return (
-                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-white/30">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={getLevelFruitIcon(level)}
-                      alt="level"
-                      className="w-11 h-11 object-contain drop-shadow-md"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">Seviye {level}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">
-                          {levelData.experience}/{levelData.nextLevelExp} XP
-                        </span>
-                      </div>
-                      <div className="h-4 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
-                        <div
-                          className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
-                          style={{ width: `${progressPercent}%` }}
+                <div className="relative flex items-center gap-4 bg-[#0F3B36]/80 border border-amber-400/20 rounded-[28px] pl-3 pr-4 py-3 overflow-hidden">
+                  <div className="absolute -left-8 -top-12 w-36 h-36 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+
+                  {/* Avatar + Seviye Halkası */}
+                  <div className="relative flex-shrink-0 cursor-pointer" onClick={() => setShowAvatarView(true)}>
+                    {boostActiveHome && boostProfilAnim && (
+                      <div className="absolute inset-0 -m-8 pointer-events-none z-0">
+                        <Lottie
+                          animationData={boostProfilAnim}
+                          loop
+                          autoplay
+                          style={{ width: "100%", height: "100%" }}
                         />
                       </div>
+                    )}
+                    <svg width="76" height="76" viewBox="0 0 76 76" className="-rotate-90 relative z-10">
+                      <circle cx="38" cy="38" r="33" fill="none" stroke="#06211D" strokeWidth="5" />
+                      <circle
+                        cx="38"
+                        cy="38"
+                        r="33"
+                        fill="none"
+                        stroke={ringHex}
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference * (1 - progressPercent / 100)}
+                        style={{ transition: "stroke-dashoffset 1s" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div
+                        className={`w-14 h-14 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-teal-400 to-emerald-500"}`}
+                      >
+                        <Avatar className="w-full h-full border-2 border-[#0B2027]">
+                          <AvatarImage
+                            src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                            className="object-cover"
+                          />
+                          <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-[#0B2027] border-2 border-amber-400 flex items-center justify-center">
+                      <span className="text-[9px] font-mono font-bold text-amber-300">{level}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-red-500">
+
+                  {/* İsim + XP */}
+                  <div className="flex-1 min-w-0 relative z-10">
+                    <h2 className="text-lg font-serif font-bold text-white truncate">
+                      {profile?.username || "Misafir"}
+                    </h2>
+                    <p className="text-[10px] text-amber-200/60 uppercase tracking-[0.15em] mb-1.5 truncate">
+                      {greeting}
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-[9px] font-mono text-slate-400">
+                      <img src={getLevelFruitIcon(level)} alt="" className="w-3.5 h-3.5 object-contain opacity-80" />
+                      {levelData.experience}/{levelData.nextLevelExp} XP
+                    </span>
+                  </div>
+
+                  {/* Puan + Mürekkep */}
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0 relative z-10">
+                    <span className="text-base font-mono font-bold text-amber-400 tabular-nums">
                       {(profile?.total_score || 0).toLocaleString()}
                     </span>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playSound("buttonClick");
+                        navigate("/market");
+                      }}
+                      className="flex items-center gap-1 bg-amber-400/10 border border-amber-400/25 rounded-full pl-1 pr-2 py-0.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <img src="/damlaMurekkep.png" alt="ink" className="w-5 h-5 object-contain brightness-110" />
+                      <span className="text-xs font-bold text-white">{profile?.ink_count || 0}</span>
+                    </div>
                   </div>
                 </div>
               );
             })()}
           </div>
 
-          {/* --- JOKERLER --- */}
-          <div className="px-5 mt-3">
-            <div className="flex gap-2">
+          {/* Bildirim - sağ üstte sabit rozet */}
+          <button
+            type="button"
+            onClick={() => {
+              playSound("buttonClick");
+              setShowSystemMessages(true);
+            }}
+            className="absolute top-6 right-4 z-20 w-9 h-9 flex items-center justify-center active:scale-90 transition-transform"
+            aria-label="Sistem mesajları"
+          >
+            <img src="/bildirimGorsel.svg" alt="Bildirimler" className="w-8 h-8 object-contain drop-shadow-md" />
+            {systemUnread > 0 && (
+              <span className="absolute -bottom-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 bg-fuchsia-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md ring-2 ring-[#0B2027]">
+                {systemUnread > 9 ? "9+" : systemUnread}
+              </span>
+            )}
+          </button>
+
+          {/* --- JOKERLER: dairesel rozetler --- */}
+          <div className="px-5 mt-4">
+            <div className="flex justify-around">
               {[
-                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-cyan-500" },
-                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", layer: "bg-yellow-500" },
-                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", layer: "bg-green-500" },
+                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", ring: "border-teal-400/50", glow: "bg-teal-500/10" },
+                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", ring: "border-yellow-400/50", glow: "bg-yellow-500/10" },
+                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", ring: "border-rose-400/50", glow: "bg-rose-500/10" },
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 bg-[#1e2d45] rounded-2xl border border-white/30 flex flex-col items-center active:scale-90 transition-transform cursor-pointer overflow-hidden"
+                  className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-90 transition-transform"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
                   }}
                 >
-                  <div className={`relative w-full ${j.layer} flex items-center justify-center py-0.5`}>
-                    <span className="relative z-10 text-[10px] font-bold text-white">{j.name}</span>
+                  <div className={`relative w-16 h-16 rounded-full border-2 ${j.ring} ${j.glow} flex items-center justify-center`}>
+                    <img src={j.img} className="w-8 h-8 object-contain drop-shadow-lg" alt={j.name} />
+                    <span className="absolute -bottom-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#0B2027] border border-amber-400/40 flex items-center justify-center text-[10px] font-mono font-bold text-amber-300">
+                      {j.count}
+                    </span>
                   </div>
-                  <div className="flex flex-col items-center gap-1 p-3">
-                    <img
-                      src={j.img}
-                      className="w-9 h-9 object-contain drop-shadow-lg"
-                      alt={j.name}
-                    />
-                    <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
-                  </div>
+                  <span className="text-[9px] font-medium text-slate-400 uppercase tracking-wide">{j.name}</span>
                 </div>
               ))}
             </div>
@@ -907,11 +889,11 @@ const HomePage = () => {
           <div className="px-5 mt-2 space-y-2">
             {isPremium && premiumTimeLeft && (
               <div
-                className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
+                className={`flex items-center justify-between rounded-2xl p-3 px-4 border-2 border-l-[6px] ${
                   vipType === "yearly"
                     ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
                     : vipType === "monthly"
-                      ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
+                      ? "bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-600 border-teal-700"
                       : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
                 }`}
               >
@@ -956,12 +938,12 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 ${
+                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-2xl p-2 px-3 ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
-                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10"
-                    : "bg-[#1e2d45]"
+                      : "bg-gradient-to-r from-teal-500/10 to-cyan-500/10"
+                    : "bg-[#0F3B36]"
                 }`}
               >
                 <span
@@ -969,8 +951,8 @@ const HomePage = () => {
     isUnlimitedLivesActive(profile)
       ? getUnlimitedType(profile) === "maraton"
         ? "text-amber-400"
-        : "text-blue-400"
-      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-500"
+        : "text-teal-400"
+      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-teal-500"
   }`}
 >
   {isUnlimitedLivesActive(profile) ? (
@@ -989,17 +971,17 @@ const HomePage = () => {
                         className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
                           getUnlimitedType(profile) === "maraton"
                             ? "bg-amber-500/20 border-amber-500/30"
-                            : "bg-blue-500/20 border-blue-500/30"
+                            : "bg-teal-500/20 border-teal-500/30"
                         }`}
                       >
                         <Clock
                           className={`w-3 h-3 animate-pulse ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-teal-400"
                           }`}
                         />
                         <span
                           className={`text-xs font-mono font-bold tabular-nums ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
+                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-teal-300"
                           }`}
                         >
                           {unlimitedTimeLeft}
@@ -1012,7 +994,7 @@ const HomePage = () => {
                       className={`text-[10px] px-2 py-0.5 border ${
                         getUnlimitedType(profile) === "maraton"
                           ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                          : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                          : "bg-teal-500/20 text-teal-300 border-teal-500/30"
                       }`}
                     >
                       Sınırsız
@@ -1031,7 +1013,7 @@ const HomePage = () => {
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span 
   className="absolute text-white text-[14px] font-bold"
-  style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
+  style={{ WebkitTextStroke: "0.3px #0B2027", textShadow: "0 0 2px #0B2027" }}
 >+{totalCredits - 5}</span>
                         </div>
                       </div>
@@ -1062,7 +1044,7 @@ const HomePage = () => {
           {/* HEDİYE BANNER */}
           {isPremium && isGiftPremium(profile) && (
             <div className="px-5 mt-4">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+              <div className="bg-gradient-to-r from-fuchsia-600 to-purple-700 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
                   <Gift className="w-5 h-5 text-white animate-bounce" />
@@ -1085,7 +1067,7 @@ const HomePage = () => {
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+              <div className="w-1 h-4 bg-amber-400 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1114,33 +1096,32 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-t-[28px] rounded-b-xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-t-[28px] rounded-b-xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimePuzzleIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.puzzle ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <KelimePuzzleIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
-                  >
-                    {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
-                  </Badge>
+                <div className="relative z-10 w-11 h-11 rounded-full bg-black/25 backdrop-blur-md border-2 border-white/25 flex items-center justify-center shadow-inner">
+                  {challengeStatus.puzzle ? (
+                    <Check className="w-6 h-6 text-amber-300" />
+                  ) : (
+                    <KelimePuzzleIcon className="w-8 h-8" />
+                  )}
                 </div>
+                <div className="relative z-10 border-t border-dashed border-white/25 my-2 mx-1" />
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
                   </p>
                 </div>
+                <Badge
+                  className={`absolute z-10 bottom-3 right-3 shrink-0 rounded-full text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                >
+                  {challengeStatus.puzzle ? "✓" : "Oyna"}
+                </Badge>
               </div>
 
               {/* Reaktör */}
@@ -1149,33 +1130,32 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-t-[28px] rounded-b-xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-t-[28px] rounded-b-xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <ReaktorIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.reaktor ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <ReaktorIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
-                  >
-                    {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
-                  </Badge>
+                <div className="relative z-10 w-11 h-11 rounded-full bg-black/25 backdrop-blur-md border-2 border-white/25 flex items-center justify-center shadow-inner">
+                  {challengeStatus.reaktor ? (
+                    <Check className="w-6 h-6 text-amber-300" />
+                  ) : (
+                    <ReaktorIcon className="w-8 h-8" />
+                  )}
                 </div>
+                <div className="relative z-10 border-t border-dashed border-white/25 my-2 mx-1" />
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
                   </p>
                 </div>
+                <Badge
+                  className={`absolute z-10 bottom-3 right-3 shrink-0 rounded-full text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                >
+                  {challengeStatus.reaktor ? "✓" : "Oyna"}
+                </Badge>
               </div>
 
               {/* Refleks (Neon Blitz) */}
@@ -1184,33 +1164,32 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-t-[28px] rounded-b-xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-t-[28px] rounded-b-xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <RefleksIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.neon_blitz ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <RefleksIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
-                  >
-                    {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
-                  </Badge>
+                <div className="relative z-10 w-11 h-11 rounded-full bg-black/25 backdrop-blur-md border-2 border-white/25 flex items-center justify-center shadow-inner">
+                  {challengeStatus.neon_blitz ? (
+                    <Check className="w-6 h-6 text-amber-300" />
+                  ) : (
+                    <RefleksIcon className="w-8 h-8" />
+                  )}
                 </div>
+                <div className="relative z-10 border-t border-dashed border-white/25 my-2 mx-1" />
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Refleks</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Refleks</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
                   </p>
                 </div>
+                <Badge
+                  className={`absolute z-10 bottom-3 right-3 shrink-0 rounded-full text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                >
+                  {challengeStatus.neon_blitz ? "✓" : "Oyna"}
+                </Badge>
               </div>
 
               {/* Hafıza Oyunu */}
@@ -1219,33 +1198,32 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-t-[28px] rounded-b-xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-t-[28px] rounded-b-xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <KelimeHafizaIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.memory ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <KelimeHafizaIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
-                  >
-                    {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
-                  </Badge>
+                <div className="relative z-10 w-11 h-11 rounded-full bg-black/25 backdrop-blur-md border-2 border-white/25 flex items-center justify-center shadow-inner">
+                  {challengeStatus.memory ? (
+                    <Check className="w-6 h-6 text-amber-300" />
+                  ) : (
+                    <KelimeHafizaIcon className="w-8 h-8" />
+                  )}
                 </div>
+                <div className="relative z-10 border-t border-dashed border-white/25 my-2 mx-1" />
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
                   </p>
                 </div>
+                <Badge
+                  className={`absolute z-10 bottom-3 right-3 shrink-0 rounded-full text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                >
+                  {challengeStatus.memory ? "✓" : "Oyna"}
+                </Badge>
               </div>
 
               {/* Kelime Avı (Boggle) */}
@@ -1254,33 +1232,32 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/kelime-avi");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.kelime_avi ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-56 rounded-t-[28px] rounded-b-xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.kelime_avi ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-t-[28px] rounded-b-xl`}
                 />
                 <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                 <img src="/surukle.svg" alt="" className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.kelime_avi ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <img src="/surukle.svg" alt="" className="w-8 h-8" />
-                    )}
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
-                  >
-                    {challengeStatus.kelime_avi ? "✓ Tamamlandı" : "Oyna"}
-                  </Badge>
+                <div className="relative z-10 w-11 h-11 rounded-full bg-black/25 backdrop-blur-md border-2 border-white/25 flex items-center justify-center shadow-inner">
+                  {challengeStatus.kelime_avi ? (
+                    <Check className="w-6 h-6 text-amber-300" />
+                  ) : (
+                    <img src="/surukle.svg" alt="" className="w-8 h-8" />
+                  )}
                 </div>
+                <div className="relative z-10 border-t border-dashed border-white/25 my-2 mx-1" />
                 <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
+                  <h3 className="text-sm font-bold text-white leading-none mb-1 font-serif drop-shadow-md" style={{ WebkitTextStroke: '2px #0B2027', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
                   <p className="text-[10px] text-white/70 font-medium">
                     {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Komşu harfleri birleştir"}
                   </p>
                 </div>
+                <Badge
+                  className={`absolute z-10 bottom-3 right-3 shrink-0 rounded-full text-[9px] px-2 py-0.5 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                >
+                  {challengeStatus.kelime_avi ? "✓" : "Oyna"}
+                </Badge>
               </div>
             </div>
           </div>
@@ -1288,7 +1265,7 @@ const HomePage = () => {
           {/* GÜNLÜK ÇARK */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-red-500 rounded-full" />
+              <div className="w-1 h-4 bg-fuchsia-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Şans Çarkı</h3>
             </div>
             <div
@@ -1296,46 +1273,52 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
-                wheelSpinsLeft === 0 ? "border-red-400/40 opacity-70" : "border-red-500/30"
+              className={`w-full rounded-[24px] p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
+                wheelSpinsLeft === 0 ? "border-fuchsia-400/40 opacity-70" : "border-fuchsia-500/30"
               }`}
             >
               <div
-                className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
+                className={`absolute inset-0 bg-gradient-to-r from-fuchsia-600 via-purple-700 to-fuchsia-800 ${
                   wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
-                } rounded-2xl`}
+                } rounded-[24px]`}
               />
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <WheelIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-              <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                {wheelSpinsLeft === 0 ? (
-                  <Check className="w-6 h-6 text-red-300" />
-                ) : (
-                  <WheelIcon className="w-10 h-10" />
-                )}
+
+              {/* Madalyon */}
+              <div className="relative z-10 flex-shrink-0 w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-black/25 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-inner">
+                  {wheelSpinsLeft === 0 ? (
+                    <Check className="w-6 h-6 text-fuchsia-200" />
+                  ) : (
+                    <WheelIcon className="w-8 h-8" />
+                  )}
+                </div>
               </div>
+
               <div className="relative z-10 flex-1">
-                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md"
-                  style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>
+                <h3
+                  className="text-base font-bold text-white leading-none mb-1 font-serif drop-shadow-md"
+                  style={{ WebkitTextStroke: "2px #0B2027", paintOrder: "stroke fill" } as any}
+                >
                   {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
                 </h3>
-                <p className="text-[10px] text-white/70 font-medium">
+                <p className="text-[10px] text-white/70 font-medium mb-1.5">
                   {wheelSpinsLeft === 0 ? "Yarın tekrar gel!" : "Çarkı çevir, ödüller kazan!"}
                 </p>
+                {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
+                  <Badge className="text-[9px] px-2 py-0.5 rounded-full bg-white/20 hover:bg-white/20 text-white border-white/30">
+                    x{wheelSpinsLeft} hak
+                  </Badge>
+                )}
               </div>
-              {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
-                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 hover:bg-white/20 text-white border-white/30">
-                  x{wheelSpinsLeft} hak
-                </Badge>
-              )}
             </div>
           </div>
 
-          {/* İSTATİSTİKLER */}
+          {/* İSTATİSTİKLER — fiş/makbuz şeridi */}
           <div className="px-5 mt-6 pb-12">
             {" "}
             {/* Alt boşluğu biraz artırdım, menüye girmesin */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="flex items-stretch bg-[#0F3B36]/60 border border-amber-400/20 rounded-2xl divide-x divide-dashed divide-amber-400/25 overflow-hidden">
               <StatWidget svgIcon="/icons/oyun.svg" value={profile?.daily_games || 0} label="Oyun" />
               <StatWidget svgIcon="/icons/seri.svg" value={profile?.win_streak || 0} label="Seri" />
               <StatWidget svgIcon="/icons/zafer.svg" value={profile?.wins || 0} label="Zafer" />
@@ -1370,7 +1353,7 @@ const HomePage = () => {
         ) : null}
 
         {showMatchmaking && (
-          <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
+          <div className="fixed inset-0 z-[9999] bg-[#0B2027]">
             {" "}
             {/* Flashbang etkisini önlemek için koyu arka plan */}
             <SlotMatchmaking
