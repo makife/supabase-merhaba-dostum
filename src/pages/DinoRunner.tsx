@@ -7,6 +7,8 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
+import { playDinoJump } from "@/utils/genericBeep";
+
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
