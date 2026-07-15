@@ -7,6 +7,8 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
+import { playDinoJump } from "@/utils/genericBeep";
+
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
 
@@ -696,7 +698,7 @@ const DinoRunner = () => {
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
     // Jenerik zıplama bip sesi (buton sesinden farklı)
-    if (!gameMuted) playSound(660, "triangle", 0.15);
+    if (!gameMuted) playDinoJump();
   };
 
   const checkCollision = (rect1, rect2) => {

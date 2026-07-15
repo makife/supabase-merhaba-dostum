@@ -207,7 +207,7 @@ const NeonBlitz: React.FC = () => {
   const handleTileClick = useCallback(
     (id: number) => {
       if (!isPlayingRef.current) return;
-      if (!muted) playTileBeep();
+      if (!muted) playTileBeep(letterIndexRef.current);
       if (id !== activeTileRef.current) {
         isPlayingRef.current = false;
         clearTimer();
