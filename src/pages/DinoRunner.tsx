@@ -698,7 +698,7 @@ const DinoRunner = () => {
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
     // Jenerik zıplama bip sesi (buton sesinden farklı)
-    if (!gameMuted) playSound(660, "triangle", 0.15);
+    if (!gameMuted) playDinoJump();
   };
 
   const checkCollision = (rect1, rect2) => {
