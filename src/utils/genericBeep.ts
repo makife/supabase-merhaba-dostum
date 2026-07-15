@@ -36,8 +36,14 @@ const beep = (freq: number, duration = 0.08, type: OscillatorType = "square", vo
   } catch {}
 };
 
-// Refleks kutuları için kısa, parlak bip
-export const playTileBeep = () => beep(880, 0.07, "square", 0.1);
+// Refleks kutuları için kısa, parlak bip.
+// step: mevcut kelime içindeki harf indeksi (0'dan başlar). Her harfte pitch yükselir.
+export const playTileBeep = (step = 0) => {
+  const base = 660;
+  const semitone = Math.pow(2, 1 / 12);
+  const freq = Math.min(2400, base * Math.pow(semitone, step * 2));
+  beep(freq, 0.07, "square", 0.1);
+};
 
 // Harf Koşusu zıplama için hafif "boop"
 export const playJumpBeep = () => {
@@ -59,3 +65,35 @@ export const playJumpBeep = () => {
     osc.stop(now + 0.14);
   } catch {}
 };
+
+// Dino Runner zıplama sesi — mp3 havuzu
+const DINO_JUMP_URL = "/DinoRunners/dinoRunnerZiplama.mp3";
+let dinoJumpPool: HTMLAudioElement[] | null = null;
+const DINO_POOL_SIZE = 4;
+
+const ensureDinoPool = (): HTMLAudioElement[] => {
+  if (dinoJumpPool) return dinoJumpPool;
+  try {
+    dinoJumpPool = Array.from({ length: DINO_POOL_SIZE }, () => {
+      const a = new Audio(DINO_JUMP_URL);
+      a.preload = "auto";
+      a.volume = 0.7;
+      a.setAttribute("playsinline", "true");
+      return a;
+    });
+  } catch {
+    dinoJumpPool = [];
+  }
+  return dinoJumpPool;
+};
+
+export const playDinoJump = () => {
+  const pool = ensureDinoPool();
+  if (pool.length === 0) return;
+  const a = pool.find((x) => x.paused || x.ended) ?? pool[0];
+  try {
+    a.currentTime = 0;
+    void a.play().catch(() => {});
+  } catch {}
+};
+
