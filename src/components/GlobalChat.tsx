@@ -1244,12 +1244,24 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </>
     );
 
+  const userActionMenu = (
+    <UserActionMenu
+      open={!!menuTarget}
+      onOpenChange={(o) => !o && setMenuTarget(null)}
+      userId={menuTarget?.id ?? null}
+      username={menuTarget?.username}
+      avatarUrl={menuTarget?.avatar_url ?? null}
+      fromRoute="/chat"
+    />
+  );
+
   if (isFullPage) {
     return (
       <>
         <div className="h-full w-full flex flex-col">{renderGlobalChat()}</div>
         {reportDialog}
         {deleteDialog}
+        {userActionMenu}
       </>
     );
   }
@@ -1263,6 +1275,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </div>
       {reportDialog}
       {deleteDialog}
+      {userActionMenu}
     </>
   );
 }
