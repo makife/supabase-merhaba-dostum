@@ -874,9 +874,27 @@ const HomePage = () => {
           <div className="px-5 mt-3">
             <div className="flex gap-4">
               {[
-                { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-cyan-500" },
-                { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", layer: "bg-yellow-500" },
-                { img: "/icons/senyaz.svg", count: jokers.senYaz, name: "Sen Yaz", layer: "bg-green-500" },
+                { 
+                  img: "/icons/degistir.svg", 
+                  count: jokers.degistir, 
+                  name: "Değiştir", 
+                  // Turkuaz / Neon Mavi Geçişli
+                  layer: "bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600" 
+                },
+                { 
+                  img: "/icons/fisilda.svg", 
+                  count: jokers.fisilida, 
+                  name: "Fısılda", 
+                  // Amber / Canlı Sarı Geçişli (Daily Challenge'lara çok yakın, çok şık)
+                  layer: "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500" 
+                },
+                { 
+                  img: "/icons/senyaz.svg", 
+                  count: jokers.senYaz, 
+                  name: "Sen Yaz", 
+                  // Fıstık Yeşili / Zümrüt Geçişli
+                  layer: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600" 
+                },
               ].map((j, i) => (
                 <div
                   key={i}
