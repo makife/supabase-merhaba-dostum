@@ -872,7 +872,7 @@ const HomePage = () => {
 
           {/* --- JOKERLER --- */}
           <div className="px-5 mt-3">
-            <div className="flex gap-2">
+            <div className="flex gap-4">
               {[
                 { img: "/icons/degistir.svg", count: jokers.degistir, name: "Değiştir", layer: "bg-cyan-500" },
                 { img: "/icons/fisilda.svg", count: jokers.fisilida, name: "Fısılda", layer: "bg-yellow-500" },
@@ -880,21 +880,27 @@ const HomePage = () => {
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 flex flex-col items-center gap-1.5 active:scale-90 transition-transform cursor-pointer"
+                  className="flex-1 flex flex-col items-center gap-2 active:scale-90 transition-transform cursor-pointer"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
                   }}
                 >
                   <div
-                    className={`relative w-16 h-16 rounded-full ${j.layer} border border-white/30 flex items-center justify-center shadow-lg`}
+                    className={`relative w-20 h-20 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
                   >
-                    <img src={j.img} className="w-8 h-8 object-contain drop-shadow-lg" alt={j.name} />
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border border-white/30 flex items-center justify-center text-[9px] font-bold text-white">
+                    <img 
+                      src={j.img} 
+                      className="w-14 h-14 object-contain drop-shadow-lg transition-transform group-hover:scale-105" 
+                      alt={j.name} 
+                    />
+                    <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-md">
                       {j.count}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-300 text-center leading-tight">{j.name}</span>
+                  <span className="text-[11px] font-black text-slate-200 text-center leading-tight uppercase tracking-wider">
+                    {j.name}
+                  </span>
                 </div>
               ))}
             </div>
