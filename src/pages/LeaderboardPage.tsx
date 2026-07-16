@@ -387,7 +387,7 @@ const LeaderboardPage = () => {
           <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
             <h3
               className="font-bold text-white text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
-              onClick={() => navigate(`/profile/${leader.user_id}`)}
+              onClick={(e) => openUserMenu(leader, e)}
             >
               {leader.username}
               {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
@@ -496,7 +496,7 @@ const LeaderboardPage = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <h3
                       className="font-bold text-white truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
-                      onClick={() => navigate(`/profile/${leader.user_id}`)}
+                      onClick={(e) => openUserMenu(leader, e)}
                     >
                       {leader.username}
                     </h3>
