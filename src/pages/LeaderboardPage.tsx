@@ -666,6 +666,15 @@ const LeaderboardPage = () => {
         {/* Bottom Spacer */}
         <div className="h-20" />
       </div>
+
+      <UserActionMenu
+        open={!!menuTarget}
+        onOpenChange={(o) => !o && setMenuTarget(null)}
+        userId={menuTarget?.user_id ?? null}
+        username={menuTarget?.username}
+        avatarUrl={menuTarget?.avatar_url ?? null}
+        fromRoute="/leaderboard"
+      />
     </div>
   );
 };
