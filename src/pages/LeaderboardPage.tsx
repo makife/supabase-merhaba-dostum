@@ -356,7 +356,7 @@ const LeaderboardPage = () => {
               <Avatar
                 className={`cursor-pointer hover:scale-110 transition-transform`}
                 style={{ width: avatarPx, height: avatarPx }}
-                onClick={() => navigate(`/profile/${leader.user_id}`)}
+                onClick={() => openUserMenu(leader)}
               >
                 <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                 <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
