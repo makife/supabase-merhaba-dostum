@@ -379,6 +379,15 @@ export function UserActionMenu({
     purple: "bg-purple-500/20 text-purple-300",
   };
 
+  const rowTintMap: Record<string, string> = {
+    indigo: "bg-indigo-500/10 hover:bg-indigo-500/15",
+    green: "bg-emerald-500/10 hover:bg-emerald-500/15",
+    amber: "bg-amber-500/10 hover:bg-amber-500/15",
+    emerald: "bg-emerald-500/10 hover:bg-emerald-500/15",
+    cyan: "bg-cyan-500/10 hover:bg-cyan-500/15",
+    purple: "bg-purple-500/10 hover:bg-purple-500/15",
+  };
+
   if (!open) return null;
 
   return createPortal(
@@ -425,6 +434,7 @@ export function UserActionMenu({
               dot="bg-indigo-400"
               icon={User}
               iconClass={toneMap.indigo}
+              tint={rowTintMap.indigo}
               label="Profili Görüntüle"
               sub="Kullanıcı profiline git"
               onClick={viewProfile}
@@ -435,6 +445,7 @@ export function UserActionMenu({
                 dot={friendLabel.tone === "amber" ? "bg-amber-400" : "bg-emerald-400"}
                 icon={friendLabel.icon}
                 iconClass={toneMap[friendLabel.tone]}
+                tint={rowTintMap[friendLabel.tone]}
                 label={friendLabel.label}
                 sub={
                   status === "accepted"
@@ -454,6 +465,7 @@ export function UserActionMenu({
               dot="bg-cyan-400"
               icon={MessageCircle}
               iconClass={toneMap.cyan}
+              tint={rowTintMap.cyan}
               label="Mesaj Gönder"
               sub="Özel sohbet aç"
               disabled={busy}
@@ -464,6 +476,7 @@ export function UserActionMenu({
               dot="bg-purple-400"
               icon={Gamepad2}
               iconClass={toneMap.purple}
+              tint={rowTintMap.purple}
               label="Oyuna Davet Et"
               sub={acceptsGameInvites ? "Özel odaya davet gönder" : "Oyun davetlerini kapattı"}
               disabled={busy || !acceptsGameInvites}
@@ -481,6 +494,7 @@ function ActionRow({
   dot,
   icon: Icon,
   iconClass,
+  tint,
   label,
   sub,
   onClick,
@@ -489,6 +503,7 @@ function ActionRow({
   dot: string;
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
+  tint: string;
   label: string;
   sub: string;
   onClick: () => void;
@@ -500,7 +515,7 @@ function ActionRow({
       className={`flex items-center gap-1.5 select-none rounded-lg px-1.5 py-1.5 ring-1 ring-white/10 shadow-[0_1px_6px_rgba(0,0,0,0.3)] transition-colors duration-150 ${
         disabled
           ? "bg-white/[0.04] opacity-60 cursor-not-allowed"
-          : "bg-white/8 hover:bg-white/12 hover:ring-white/20 cursor-pointer active:scale-95"
+          : `${tint} hover:ring-white/20 cursor-pointer active:scale-95`
       }`}
     >
       <span className={`w-1 h-1 rounded-full flex-shrink-0 ${dot}`} />
