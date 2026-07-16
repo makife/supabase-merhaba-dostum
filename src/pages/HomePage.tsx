@@ -891,7 +891,7 @@ const HomePage = () => {
                   >
                     <img 
                       src={j.img} 
-                      className="w-14 h-14 object-contain drop-shadow-lg transition-transform group-hover:scale-105" 
+                      className="w-12 h-12 object-contain drop-shadow-lg transition-transform group-hover:scale-105" 
                       alt={j.name} 
                     />
                     <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-md">
