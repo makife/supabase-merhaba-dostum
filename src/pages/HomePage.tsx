@@ -246,7 +246,7 @@ const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
 const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => (
   <div
     onClick={onClick}
-    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border border-slate-600`}
+    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
     style={{ transform: "translateZ(0)" }}
   >
     <div
@@ -1353,8 +1353,8 @@ const HomePage = () => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border ${
-                wheelSpinsLeft === 0 ? "border-red-400/40 opacity-70" : "border-red-500/30"
+              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] ${
+                wheelSpinsLeft === 0 ? "opacity-70" : ""
               }`}
             >
               <div
