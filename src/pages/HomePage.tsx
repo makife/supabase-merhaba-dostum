@@ -70,7 +70,7 @@ const greetingMessages = [
   "Mod: Kazanma 🔓",
   "Bugün MVP sensin! ⭐",
   "Hedef: Rekor! 🎯",
-  "Oyun seni bekliyordu! 👀",
+  "Oyun seni bekliyor! 👀",
   "Başarı senin ikinci adın! 🏅",
   "Bir efsane doğuyor... 🌌",
   "Tam isabet zamanı! 🎯",
