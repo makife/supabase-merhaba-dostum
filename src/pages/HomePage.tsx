@@ -987,23 +987,25 @@ const HomePage = () => {
                 }`}
               >
                 <span
-  className={`text-xs font-medium ${
-    isUnlimitedLivesActive(profile)
-      ? getUnlimitedType(profile) === "maraton"
-        ? "text-amber-400"
-        : "text-blue-400"
-      : "text-white self-stretch inline-flex items-center -ml-3 -my-2 pl-3 py-2 rounded-l-xl bg-green-500"
-  }`}
->
-  {isUnlimitedLivesActive(profile) ? (
-    <span className="flex items-center gap-1.5">
-      <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
-      {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
-    </span>
-  ) : (
-    "Kalan Sayfalarım"
-  )}
-</span>
+                  className={`text-xs font-black uppercase tracking-wider ${
+                    isUnlimitedLivesActive(profile)
+                      ? getUnlimitedType(profile) === "maraton"
+                        ? "text-amber-400"
+                        : "text-blue-400"
+                      // Yeşil yerine kırmızı tonlarında gradyan yapıldı, sola kayması için padding-left (pl-2) ayarlandı ve sola çekildi
+                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2.5 pr-3 py-2 rounded-l-xl bg-gradient-to-r from-red-600 via-rose-500 to-orange-500 shadow-inner"
+                  }`}
+                >
+                  {isUnlimitedLivesActive(profile) ? (
+                    <span className="flex items-center gap-1.5">
+                      <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
+                      {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
+                    </span>
+                  ) : (
+                    "Kalan Sayfalarım"
+                  )}
+                </span>
+                
                 {isUnlimitedLivesActive(profile) ? (
                   <div className="flex items-center gap-2">
                     {unlimitedTimeLeft ? (
@@ -1052,9 +1054,9 @@ const HomePage = () => {
                         <div className="relative inline-flex items-center justify-center w-9 h-9">
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span 
-  className="absolute text-white text-[14px] font-bold"
-  style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
->+{totalCredits - 5}</span>
+                            className="absolute text-white text-[14px] font-bold"
+                            style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
+                          >+{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
@@ -1079,7 +1081,6 @@ const HomePage = () => {
                 )}
               </div>
             )}
-          </div>
 
           {/* HEDİYE BANNER */}
           {isPremium && isGiftPremium(profile) && (
