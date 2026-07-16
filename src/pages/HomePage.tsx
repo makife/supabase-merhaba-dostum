@@ -1457,6 +1457,7 @@ const HomePage = () => {
           markAllRead={markSystemRead}
         />
       </div>
+      </div>
     </>
   );
 };
