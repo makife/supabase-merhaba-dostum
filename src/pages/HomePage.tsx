@@ -993,7 +993,7 @@ const HomePage = () => {
                         ? "text-amber-400"
                         : "text-blue-400"
                       // Yeşil yerine kırmızı tonlarında gradyan yapıldı, sola kayması için padding-left (pl-2) ayarlandı ve sola çekildi
-                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2.5 pr-3 py-2 rounded-l-xl bg-gradient-to-r from-red-600 via-rose-500 to-orange-500 shadow-inner"
+                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2.5 pr-3 py-2 rounded-l-xl bg-gradient-to-r from-red-700 via-rose-500 to-orange-500 shadow-inner"
                   }`}
                 >
                   {isUnlimitedLivesActive(profile) ? (
