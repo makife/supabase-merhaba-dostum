@@ -997,7 +997,7 @@ const HomePage = () => {
                   style={
                     !isUnlimitedLivesActive(profile)
                       ? {
-                          background: "linear-gradient(to right, #dc2626, #f43f5e, #f97316)",
+                          background: "linear-gradient(to bottom, #22c55e, #dc2626, #e11d48)",
                           transform: "translateX(-2px)"
                         }
                       : undefined
@@ -1009,7 +1009,10 @@ const HomePage = () => {
                       {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
                     </span>
                   ) : (
-                    "Kalan Sayfalarım"
+                    <span className="flex flex-col items-center leading-tight">
+                      <span>Kalan</span>
+                      <span>Sayfalarım</span>
+                    </span>
                   )}
                 </span>
                 
