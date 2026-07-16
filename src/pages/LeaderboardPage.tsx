@@ -468,7 +468,7 @@ const LeaderboardPage = () => {
                             ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
                             : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
                       }`}
-                      onClick={() => navigate(`/profile/${leader.user_id}`)}
+                      onClick={() => openUserMenu(leader)}
                     >
                       <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                       <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
