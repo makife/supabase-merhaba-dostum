@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   Music,
   Volume,
+  Gamepad2,
 } from "lucide-react";
 import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
@@ -81,6 +82,8 @@ const SettingsPage = () => {
   // Settings state
   const [notifications, setNotifications] = useState(false);
   const [language, setLanguage] = useState("tr");
+  const [gameInvitesEnabled, setGameInvitesEnabled] = useState(true);
+  const [gameInvitesLoading, setGameInvitesLoading] = useState(false);
 
   // Auto-save tracking
   const initialSettingsRef = useRef<any>(null);
@@ -141,6 +144,45 @@ const SettingsPage = () => {
 
     loadSettings();
   }, [soundsEnabled, musicEnabled, theme]);
+
+  // Oyun daveti ayarını Supabase'den yükle
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("accepts_game_invites")
+        .eq("id", user.id)
+        .single();
+      if (data && data.accepts_game_invites !== null && data.accepts_game_invites !== undefined) {
+        setGameInvitesEnabled(data.accepts_game_invites);
+      }
+    })();
+  }, [user]);
+
+  const handleGameInvitesChange = async (checked: boolean) => {
+    if (!user || gameInvitesLoading) return;
+    setGameInvitesEnabled(checked);
+    setGameInvitesLoading(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ accepts_game_invites: checked })
+        .eq("id", user.id);
+      if (error) throw error;
+      playSound("buttonClick");
+    } catch (error) {
+      console.error("Oyun daveti ayarı güncellenemedi:", error);
+      setGameInvitesEnabled(!checked);
+      toast({
+        title: "Hata",
+        description: "Ayar güncellenemedi. Lütfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    } finally {
+      setGameInvitesLoading(false);
+    }
+  };
 
   // Uygulama ön plana geldiğinde OS izin durumunu yeniden kontrol et
   useEffect(() => {
@@ -491,6 +533,25 @@ const SettingsPage = () => {
                   setMusicEnabled(checked);
                   if (checked) playSound("buttonClick");
                 }}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
+
+            {/* Game Invites */}
+            <div className="flex items-center justify-between p-3 bg-[#0f1829] rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 text-pink-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white">Oyun Davet İstekleri</p>
+                  <p className="text-xs text-slate-400">Diğer oyunculardan davet al</p>
+                </div>
+              </div>
+              <Switch
+                checked={gameInvitesEnabled}
+                onCheckedChange={handleGameInvitesChange}
+                disabled={gameInvitesLoading}
                 className="data-[state=checked]:bg-green-500"
               />
             </div>
