@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useSounds } from "@/hooks/useSounds";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -43,10 +44,13 @@ export function UserActionMenu({
 }: UserActionMenuProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile, isPremium } = useUser();
   const { playSound } = useSounds();
-  const { sendFriendRequestNotification, sendMessageNotification } = useSmartNotifications();
+  const { sendFriendRequestNotification, sendMessageNotification, sendGameInviteNotification } =
+    useSmartNotifications();
   const [status, setStatus] = useState<FriendshipStatus>("none");
   const [busy, setBusy] = useState(false);
+  const [acceptsGameInvites, setAcceptsGameInvites] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const [popStyle, setPopStyle] = useState<React.CSSProperties>({
     position: "fixed",
@@ -152,6 +156,23 @@ export function UserActionMenu({
     };
   }, [open, user, userId, isSelf]);
 
+  useEffect(() => {
+    if (!open || !userId || isSelf) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("accepts_game_invites")
+        .eq("id", userId)
+        .single();
+      if (cancelled) return;
+      setAcceptsGameInvites(data?.accepts_game_invites !== false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, userId, isSelf]);
+
   const close = () => onOpenChange(false);
 
   const viewProfile = () => {
@@ -220,14 +241,88 @@ export function UserActionMenu({
     setBusy(false);
   };
 
+  const generateRoomCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const inviteToGame = async () => {
-    if (!user || !userId || busy) return;
+    if (!user || !userId || busy || !acceptsGameInvites) return;
+
+    if (!isPremium && (profile?.game_credits || 0) + (profile?.bonus_credits || 0) <= 0) {
+      playSound("buttonClick");
+      toast.error("Oyun için sayfaların yetersiz!", {
+        description: "Özel oda oluşturmak için hak satın alın veya dolmasını bekleyin.",
+      });
+      return;
+    }
+
     playSound("buttonClick");
-    close();
-    toast("Oyuna davet için özel oda oluştur", {
-      description: "Ana sayfadan özel oda aç, arkadaşını oradan davet edebilirsin.",
-    });
-    navigate("/");
+    setBusy(true);
+    try {
+      const roomId = crypto.randomUUID();
+      const shortCode = generateRoomCode();
+
+      localStorage.setItem(`room_${shortCode}`, roomId);
+      localStorage.setItem(`room_type_${shortCode}`, "timed");
+
+      const letterPool = [
+        "A", "A", "E", "E", "İ", "İ", "I", "O", "U", "L", "L", "N", "R", "K", "M",
+        "T", "S", "D", "Y", "B", "C", "Ç", "F", "G", "Ğ", "H", "P", "Ş", "V", "Z",
+      ];
+      const grid: string[] = [];
+      for (let i = 0; i < 16; i++) {
+        grid.push(letterPool[Math.floor(Math.random() * letterPool.length)]);
+      }
+
+      const { error: roomError } = await supabase.from("game_rooms").insert({
+        id: roomId,
+        room_code: shortCode,
+        host_id: user.id,
+        game_mode: "private-room",
+        game_type_new: "timed",
+        status: "waiting",
+        max_players: 2,
+        time_limit: 120,
+        max_score: 0,
+        current_grid: grid,
+      });
+      if (roomError) throw roomError;
+
+      await supabase.from("game_participants").insert({
+        room_id: roomId,
+        user_id: user.id,
+      });
+
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+      const senderName = myProfile?.username || "Bir oyuncu";
+
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "room_invite",
+        message: `${senderName} seni özel odaya davet ediyor! Kod: ${shortCode}`,
+        related_id: shortCode,
+        is_read: false,
+      });
+      await sendGameInviteNotification(userId, senderName, shortCode);
+
+      toast.success("Oyun daveti gönderildi! 🎮");
+      close();
+      navigate(`/private-room/waiting/${shortCode}`);
+    } catch (error) {
+      console.error("Oyun daveti hatası:", error);
+      toast.error("Davet gönderilemedi");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const friendLabel =
@@ -260,37 +355,38 @@ export function UserActionMenu({
       <div
         ref={menuRef}
         style={popStyle}
-        className="relative z-[101] w-64 max-w-[calc(100vw-16px)] rounded-2xl border-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
+        className="relative z-[101] w-32 max-w-[calc(100vw-16px)] rounded-xl border-0 shadow-2xl bg-[#16213e] ring-2 ring-white/80"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Little caret pointing at the avatar that was clicked */}
         <div
-          className="absolute w-3 h-3 bg-[#16213e] ring-1 ring-white/10 rotate-45"
+          className="absolute w-1.5 h-1.5 bg-[#16213e] ring-2 ring-white/80 rotate-45"
           style={{
-            left: arrow.left - 6,
+            left: arrow.left - 3,
             ...(arrow.placement === "top"
-              ? { bottom: -6, clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }
-              : { top: -6, clipPath: "polygon(0 0, 100% 0, 0 100%)" }),
+              ? { bottom: -3, clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }
+              : { top: -3, clipPath: "polygon(0 0, 100% 0, 0 100%)" }),
           }}
         />
 
-        <div className="px-4 pt-4 pb-3 border-b border-white/5 flex items-center gap-3">
+        <div className="px-2 pt-2 pb-1.5 border-b border-white/5 flex items-center gap-1.5">
           <UserAvatar
             src={avatarUrl || undefined}
             alt={username || "Kullanıcı"}
             fallback={(username || "?").charAt(0).toUpperCase()}
             size="sm"
+            className="!w-5 !h-5"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white truncate">{username || "Kullanıcı"}</p>
-            <p className="text-[11px] text-slate-400">Ne yapmak istersin?</p>
+            <p className="text-[11px] font-black text-white truncate">{username || "Kullanıcı"}</p>
+            <p className="text-[7px] text-slate-400">Ne yapmak istersin?</p>
           </div>
         </div>
 
         {isSelf ? (
-          <div className="px-4 py-5 text-center text-slate-400 text-sm">Bu senin profilin</div>
+          <div className="px-2 py-2.5 text-center text-slate-400 text-[10px]">Bu senin profilin</div>
         ) : (
-          <div className="px-3 py-3 flex flex-col gap-2">
+          <div className="px-1.5 py-1.5 flex flex-col gap-1">
             <ActionRow
               dot="bg-indigo-400"
               icon={User}
@@ -335,7 +431,8 @@ export function UserActionMenu({
               icon={Gamepad2}
               iconClass={toneMap.purple}
               label="Oyuna Davet Et"
-              sub="Özel oda daveti gönder"
+              sub={acceptsGameInvites ? "Özel odaya davet gönder" : "Oyun davetlerini kapattı"}
+              disabled={busy || !acceptsGameInvites}
               onClick={inviteToGame}
             />
           </div>
@@ -366,19 +463,19 @@ function ActionRow({
   return (
     <div
       onClick={disabled ? undefined : onClick}
-      className={`flex items-center gap-3 select-none rounded-2xl px-3 py-3 ring-1 ring-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.3)] transition-colors duration-150 ${
+      className={`flex items-center gap-1.5 select-none rounded-lg px-1.5 py-1.5 ring-1 ring-white/10 shadow-[0_1px_6px_rgba(0,0,0,0.3)] transition-colors duration-150 ${
         disabled
           ? "bg-white/[0.04] opacity-60 cursor-not-allowed"
           : "bg-white/8 hover:bg-white/12 hover:ring-white/20 cursor-pointer active:scale-95"
       }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+      <span className={`w-1 h-1 rounded-full flex-shrink-0 ${dot}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white/95">{label}</p>
-        <p className="text-[11px] text-slate-400">{sub}</p>
+        <p className="text-[10px] font-semibold text-white/95 truncate">{label}</p>
+        <p className="text-[7px] text-slate-400 truncate">{sub}</p>
       </div>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconClass}`}>
-        <Icon className="w-4 h-4" />
+      <div className={`w-4 h-4 rounded-md flex items-center justify-center flex-shrink-0 ${iconClass}`}>
+        <Icon className="w-2 h-2" />
       </div>
     </div>
   );
