@@ -1110,6 +1110,7 @@ const HomePage = () => {
             </div>
           )}
         </div>
+        </div>
 
         {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
@@ -1456,7 +1457,6 @@ const HomePage = () => {
           readIds={systemReadIds}
           markAllRead={markSystemRead}
         />
-      </div>
       </div>
     </>
   );
