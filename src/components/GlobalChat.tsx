@@ -90,6 +90,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
+  const [menuTarget, setMenuTarget] = useState<{ id: string; username: string; avatar_url?: string | null } | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<{
     id: string;
