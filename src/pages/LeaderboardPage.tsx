@@ -71,6 +71,12 @@ const LeaderboardPage = () => {
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
+  const [menuTarget, setMenuTarget] = useState<LeaderboardEntry | null>(null);
+
+  const openUserMenu = (leader: LeaderboardEntry) => {
+    playSound("buttonClick");
+    setMenuTarget(leader);
+  };
 
   // Fetch premium status + in_game status for a list of user IDs
   const fetchPremiumStatus = async (userIds: string[]) => {
