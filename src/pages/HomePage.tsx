@@ -978,7 +978,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 ${
+                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 overflow-hidden ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
@@ -997,7 +997,7 @@ const HomePage = () => {
                   style={
                     !isUnlimitedLivesActive(profile)
                       ? {
-                          background: "linear-gradient(to bottom, #22c55e, #dc2626, #e11d48)",
+                          background: "linear-gradient(to bottom, #f87171, #dc2626, #7f1d1d)",
                           transform: "translateX(-2px)"
                         }
                       : undefined
@@ -1114,7 +1114,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
-        <div className="flex-1 flex flex-col overflow-y-auto relative z-10 pb-28">
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto relative z-10 pb-28">
           {/* OYUN MODLARI */}
           <div className="px-5 mt-6">
             <div className="flex items-center gap-2 mb-4">
