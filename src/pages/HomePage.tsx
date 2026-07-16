@@ -1104,40 +1104,42 @@ const HomePage = () => {
               <div className="w-1 h-4 bg-amber-500 rounded-full" />
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Düello & Görev</h3>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 pr-5 scrollbar-hide">
+            <div className="flex gap-4 overflow-x-auto pb-4 pr-5 scrollbar-hide items-center">
               {/* Kelime Puzzle */}
               <div
                 onClick={() => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-3 ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-4 ${challengeStatus.puzzle ? "border-white/40" : "border-white/20"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
                 <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner mb-0.5">
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.puzzle ? (
-                      <Check className="w-5 h-5 text-amber-300" />
+                      <Check className="w-6 h-6 text-amber-300" />
                     ) : (
-                      <KelimePuzzleIcon className="w-7 h-7" />
+                      <KelimePuzzleIcon className="w-8 h-8" />
                     )}
                   </div>
-                  <h3
-                    className="text-[10px] font-bold text-white leading-tight drop-shadow-md"
-                    style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                  >
-                    Kelime Puzzle
-                  </h3>
-                  <p className="text-[8px] text-white/70 font-medium leading-tight">
-                    {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
-                  </p>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Kelime Puzzle
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
+                    </p>
+                  </div>
                   <Badge
-                    className={`text-[8px] px-1.5 py-0 leading-4 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
                   >
-                    {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.puzzle ? "✓ Bitti" : "Oyna"}
                   </Badge>
                 </div>
               </div>
@@ -1148,32 +1150,36 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.reaktor ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-4 ${challengeStatus.reaktor ? "border-white/40" : "border-white/20"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
-                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <ReaktorIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.reaktor ? (
                       <Check className="w-6 h-6 text-amber-300" />
                     ) : (
                       <ReaktorIcon className="w-8 h-8" />
                     )}
                   </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Harf Koşusu
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Harfleri topla"}
+                    </p>
+                  </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
                   >
-                    {challengeStatus.reaktor ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.reaktor ? "✓ Bitti" : "Oyna"}
                   </Badge>
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Harf Koşusu</h3>
-                  <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Koş ve harfleri topla"}
-                  </p>
                 </div>
               </div>
 
@@ -1183,32 +1189,36 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.neon_blitz ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-4 ${challengeStatus.neon_blitz ? "border-white/40" : "border-white/20"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
-                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <RefleksIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.neon_blitz ? (
                       <Check className="w-6 h-6 text-amber-300" />
                     ) : (
                       <RefleksIcon className="w-8 h-8" />
                     )}
                   </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Refleks
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
+                    </p>
+                  </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
                   >
-                    {challengeStatus.neon_blitz ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.neon_blitz ? "✓ Bitti" : "Oyna"}
                   </Badge>
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Refleks</h3>
-                  <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
-                  </p>
                 </div>
               </div>
 
@@ -1218,32 +1228,36 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.memory ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-4 ${challengeStatus.memory ? "border-white/40" : "border-white/20"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
-                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <KelimeHafizaIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.memory ? (
                       <Check className="w-6 h-6 text-amber-300" />
                     ) : (
                       <KelimeHafizaIcon className="w-8 h-8" />
                     )}
                   </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Hafıza
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
+                    </p>
+                  </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
                   >
-                    {challengeStatus.memory ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.memory ? "✓ Bitti" : "Oyna"}
                   </Badge>
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Hafıza</h3>
-                  <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
-                  </p>
                 </div>
               </div>
 
@@ -1253,32 +1267,36 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/kelime-avi");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.kelime_avi ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-4 ${challengeStatus.kelime_avi ? "border-white/40" : "border-white/20"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
-                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <img src="/surukle.svg" alt="" className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
                     {challengeStatus.kelime_avi ? (
                       <Check className="w-6 h-6 text-amber-300" />
                     ) : (
                       <img src="/surukle.svg" alt="" className="w-8 h-8" />
                     )}
                   </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Kelime Avı
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Harfleri birleştir"}
+                    </p>
+                  </div>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
                   >
-                    {challengeStatus.kelime_avi ? "✓ Tamamlandı" : "Oyna"}
+                    {challengeStatus.kelime_avi ? "✓ Bitti" : "Oyna"}
                   </Badge>
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Avı</h3>
-                  <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Komşu harfleri birleştir"}
-                  </p>
                 </div>
               </div>
             </div>
