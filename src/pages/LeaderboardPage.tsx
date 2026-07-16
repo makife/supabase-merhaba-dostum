@@ -30,7 +30,7 @@ import {
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
-import { UserActionMenu } from "@/components/UserActionMenu";
+import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -72,9 +72,11 @@ const LeaderboardPage = () => {
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
   const [menuTarget, setMenuTarget] = useState<LeaderboardEntry | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<AnchorRect | null>(null);
 
-  const openUserMenu = (leader: LeaderboardEntry) => {
+  const openUserMenu = (leader: LeaderboardEntry, e: React.MouseEvent<HTMLElement>) => {
     playSound("buttonClick");
+    setMenuAnchorRect(e.currentTarget.getBoundingClientRect());
     setMenuTarget(leader);
   };
 
@@ -356,7 +358,7 @@ const LeaderboardPage = () => {
               <Avatar
                 className={`cursor-pointer hover:scale-110 transition-transform`}
                 style={{ width: avatarPx, height: avatarPx }}
-                onClick={() => openUserMenu(leader)}
+                onClick={(e) => openUserMenu(leader, e)}
               >
                 <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                 <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
@@ -468,7 +470,7 @@ const LeaderboardPage = () => {
                             ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
                             : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
                       }`}
-                      onClick={() => openUserMenu(leader)}
+                      onClick={(e) => openUserMenu(leader, e)}
                     >
                       <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                       <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
@@ -669,10 +671,16 @@ const LeaderboardPage = () => {
 
       <UserActionMenu
         open={!!menuTarget}
-        onOpenChange={(o) => !o && setMenuTarget(null)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setMenuTarget(null);
+            setMenuAnchorRect(null);
+          }
+        }}
         userId={menuTarget?.user_id ?? null}
         username={menuTarget?.username}
         avatarUrl={menuTarget?.avatar_url ?? null}
+        anchorRect={menuAnchorRect}
         fromRoute="/leaderboard"
       />
     </div>
