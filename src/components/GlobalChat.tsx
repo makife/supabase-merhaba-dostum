@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PrivateChat } from "@/components/PrivateChat";
+import { UserActionMenu } from "@/components/UserActionMenu";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import Lottie from "lottie-react";
