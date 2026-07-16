@@ -264,39 +264,58 @@ export function UserActionMenu({
     playSound("buttonClick");
     setBusy(true);
     try {
-      const roomId = crypto.randomUUID();
-      const shortCode = generateRoomCode();
+      // Zaten bekleyen (waiting) bir odan varsa yeni oda açmak yerine ona davet gönder,
+      // böylece art arda birden fazla kişiye davet gönderince sahipsiz odalar birikmez.
+      const { data: existingRoom } = await supabase
+        .from("game_rooms")
+        .select("id, room_code")
+        .eq("host_id", user.id)
+        .eq("status", "waiting")
+        .eq("game_mode", "private-room")
+        .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      localStorage.setItem(`room_${shortCode}`, roomId);
-      localStorage.setItem(`room_type_${shortCode}`, "timed");
+      let shortCode: string;
 
-      const letterPool = [
-        "A", "A", "E", "E", "İ", "İ", "I", "O", "U", "L", "L", "N", "R", "K", "M",
-        "T", "S", "D", "Y", "B", "C", "Ç", "F", "G", "Ğ", "H", "P", "Ş", "V", "Z",
-      ];
-      const grid: string[] = [];
-      for (let i = 0; i < 16; i++) {
-        grid.push(letterPool[Math.floor(Math.random() * letterPool.length)]);
+      if (existingRoom?.room_code) {
+        shortCode = existingRoom.room_code;
+      } else {
+        const roomId = crypto.randomUUID();
+        shortCode = generateRoomCode();
+
+        localStorage.setItem(`room_${shortCode}`, roomId);
+        localStorage.setItem(`room_type_${shortCode}`, "timed");
+
+        const letterPool = [
+          "A", "A", "E", "E", "İ", "İ", "I", "O", "U", "L", "L", "N", "R", "K", "M",
+          "T", "S", "D", "Y", "B", "C", "Ç", "F", "G", "Ğ", "H", "P", "Ş", "V", "Z",
+        ];
+        const grid: string[] = [];
+        for (let i = 0; i < 16; i++) {
+          grid.push(letterPool[Math.floor(Math.random() * letterPool.length)]);
+        }
+
+        const { error: roomError } = await supabase.from("game_rooms").insert({
+          id: roomId,
+          room_code: shortCode,
+          host_id: user.id,
+          game_mode: "private-room",
+          game_type_new: "timed",
+          status: "waiting",
+          max_players: 2,
+          time_limit: 120,
+          max_score: 0,
+          current_grid: grid,
+        });
+        if (roomError) throw roomError;
+
+        await supabase.from("game_participants").insert({
+          room_id: roomId,
+          user_id: user.id,
+        });
       }
-
-      const { error: roomError } = await supabase.from("game_rooms").insert({
-        id: roomId,
-        room_code: shortCode,
-        host_id: user.id,
-        game_mode: "private-room",
-        game_type_new: "timed",
-        status: "waiting",
-        max_players: 2,
-        time_limit: 120,
-        max_score: 0,
-        current_grid: grid,
-      });
-      if (roomError) throw roomError;
-
-      await supabase.from("game_participants").insert({
-        room_id: roomId,
-        user_id: user.id,
-      });
 
       const { data: myProfile } = await supabase
         .from("profiles")
@@ -305,14 +324,29 @@ export function UserActionMenu({
         .single();
       const senderName = myProfile?.username || "Bir oyuncu";
 
-      await supabase.from("notifications").insert({
+      const { error: notifError } = await supabase.from("notifications").insert({
         user_id: userId,
         type: "room_invite",
         message: `${senderName} seni özel odaya davet ediyor! Kod: ${shortCode}`,
         related_id: shortCode,
         is_read: false,
       });
-      await sendGameInviteNotification(userId, senderName, shortCode);
+      if (notifError) {
+        console.error("Bildirim kaydı oluşturulamadı:", notifError);
+        toast.error("Davet gönderilemedi", { description: notifError.message });
+        setBusy(false);
+        return;
+      }
+
+      try {
+        await sendGameInviteNotification(userId, senderName, shortCode);
+      } catch (pushErr) {
+        // In-app bildirim kaydı başarılı oldu (yukarıda), yalnızca push gönderimi
+        // başarısız oldu — kullanıcı çevrimiçiyse yine de görecek, o yüzden akışı
+        // burada durdurmuyoruz ama loglayıp haber veriyoruz.
+        console.error("Push bildirimi gönderilemedi:", pushErr);
+        toast.error("Davet gönderildi ama push bildirimi başarısız oldu");
+      }
 
       toast.success("Oyun daveti gönderildi! 🎮");
       close();
