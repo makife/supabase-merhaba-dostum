@@ -992,9 +992,17 @@ const HomePage = () => {
                       ? getUnlimitedType(profile) === "maraton"
                         ? "text-amber-400"
                         : "text-blue-400"
-                      // Yeşil yerine kırmızı tonlarında gradyan yapıldı, sola kayması için padding-left (pl-2) ayarlandı ve sola çekildi
-                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2.5 pr-3 py-2 rounded-l-xl bg-gradient-to-r from-red-700 via-rose-500 to-orange-500 shadow-inner"
+                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2 pr-3 py-2 rounded-l-xl shadow-inner"
                   }`}
+                  // Üst stillerin ezilmesini önlemek ve yeşili tamamen kapatmak için inline style ile kırmızı gradyanı çaktık:
+                  style={
+                    !isUnlimitedLivesActive(profile)
+                      ? {
+                          background: "linear-gradient(to right, #dc2626, #f43f5e, #f97316)",
+                          transform: "translateX(-2px)" // Çok az daha sola kaydırma
+                        }
+                      : undefined
+                  }
                 >
                   {isUnlimitedLivesActive(profile) ? (
                     <span className="flex items-center gap-1.5">
