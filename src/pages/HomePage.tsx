@@ -992,7 +992,7 @@ const HomePage = () => {
                       ? getUnlimitedType(profile) === "maraton"
                         ? "text-amber-400"
                         : "text-blue-400"
-                      : "text-white self-stretch inline-flex items-center -ml-4 -my-2 pl-2 pr-3 py-2 rounded-l-xl shadow-inner"
+                      : "text-white self-stretch inline-flex items-center justify-center -ml-4 -my-2 px-3 py-2 rounded-l-xl shadow-inner"
                   }`}
                   style={
                     !isUnlimitedLivesActive(profile)
@@ -1009,7 +1009,10 @@ const HomePage = () => {
                       {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
                     </span>
                   ) : (
-                    <span className="flex flex-col items-center leading-tight">
+                    <span
+                      className="flex flex-col items-center leading-tight"
+                      style={{ WebkitTextStroke: "0.5px #000", paintOrder: "stroke fill" } as any}
+                    >
                       <span>Kalan</span>
                       <span>Sayfalarım</span>
                     </span>
