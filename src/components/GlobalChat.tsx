@@ -1042,9 +1042,16 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                             ? "text-green-400"
                             : "text-gray-200"
                       }`}
-                      onClick={() =>
-                        message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
-                      }
+                      onClick={(e) => {
+                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuTarget({
+                          id: message.user_id,
+                          username: message.username,
+                          avatar_url: userAvatars[message.user_id] || null,
+                          anchorRect: rect,
+                        });
+                      }}
                     >
                       {message.username}
                       {message.username === "kelimeciBot" && " 🤖"}
