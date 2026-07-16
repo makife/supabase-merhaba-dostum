@@ -30,6 +30,7 @@ import {
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
+import { UserActionMenu } from "@/components/UserActionMenu";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -70,6 +71,12 @@ const LeaderboardPage = () => {
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
+  const [menuTarget, setMenuTarget] = useState<LeaderboardEntry | null>(null);
+
+  const openUserMenu = (leader: LeaderboardEntry) => {
+    playSound("buttonClick");
+    setMenuTarget(leader);
+  };
 
   // Fetch premium status + in_game status for a list of user IDs
   const fetchPremiumStatus = async (userIds: string[]) => {
@@ -349,7 +356,7 @@ const LeaderboardPage = () => {
               <Avatar
                 className={`cursor-pointer hover:scale-110 transition-transform`}
                 style={{ width: avatarPx, height: avatarPx }}
-                onClick={() => navigate(`/profile/${leader.user_id}`)}
+                onClick={() => openUserMenu(leader)}
               >
                 <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                 <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
@@ -461,7 +468,7 @@ const LeaderboardPage = () => {
                             ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
                             : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
                       }`}
-                      onClick={() => navigate(`/profile/${leader.user_id}`)}
+                      onClick={() => openUserMenu(leader)}
                     >
                       <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
                       <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
@@ -659,6 +666,15 @@ const LeaderboardPage = () => {
         {/* Bottom Spacer */}
         <div className="h-20" />
       </div>
+
+      <UserActionMenu
+        open={!!menuTarget}
+        onOpenChange={(o) => !o && setMenuTarget(null)}
+        userId={menuTarget?.user_id ?? null}
+        username={menuTarget?.username}
+        avatarUrl={menuTarget?.avatar_url ?? null}
+        fromRoute="/leaderboard"
+      />
     </div>
   );
 };

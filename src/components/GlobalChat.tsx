@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PrivateChat } from "@/components/PrivateChat";
+import { UserActionMenu } from "@/components/UserActionMenu";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import Lottie from "lottie-react";
@@ -89,6 +90,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
+  const [menuTarget, setMenuTarget] = useState<{ id: string; username: string; avatar_url?: string | null } | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<{
     id: string;
@@ -1006,9 +1008,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   <div className="flex items-center space-x-2">
                     <div
                       className="cursor-pointer"
-                      onClick={() =>
-                        message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
-                      }
+                      onClick={() => {
+                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        setMenuTarget({
+                          id: message.user_id,
+                          username: message.username,
+                          avatar_url: userAvatars[message.user_id] || null,
+                        });
+                      }}
                     >
                       <UserAvatar
                         src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"}
@@ -1237,12 +1244,24 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </>
     );
 
+  const userActionMenu = (
+    <UserActionMenu
+      open={!!menuTarget}
+      onOpenChange={(o) => !o && setMenuTarget(null)}
+      userId={menuTarget?.id ?? null}
+      username={menuTarget?.username}
+      avatarUrl={menuTarget?.avatar_url ?? null}
+      fromRoute="/chat"
+    />
+  );
+
   if (isFullPage) {
     return (
       <>
         <div className="h-full w-full flex flex-col">{renderGlobalChat()}</div>
         {reportDialog}
         {deleteDialog}
+        {userActionMenu}
       </>
     );
   }
@@ -1256,6 +1275,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       </div>
       {reportDialog}
       {deleteDialog}
+      {userActionMenu}
     </>
   );
 }
