@@ -1008,9 +1008,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   <div className="flex items-center space-x-2">
                     <div
                       className="cursor-pointer"
-                      onClick={() =>
-                        message.user_id && navigate(`/profile/${message.user_id}`, { state: { from: "/chat" } })
-                      }
+                      onClick={() => {
+                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        setMenuTarget({
+                          id: message.user_id,
+                          username: message.username,
+                          avatar_url: userAvatars[message.user_id] || null,
+                        });
+                      }}
                     >
                       <UserAvatar
                         src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"}
