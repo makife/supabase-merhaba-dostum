@@ -30,6 +30,7 @@ import {
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
+import { UserActionMenu } from "@/components/UserActionMenu";
 
 interface LeaderboardEntry {
   user_id: string;
