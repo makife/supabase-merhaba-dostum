@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
@@ -9,6 +9,15 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { User, UserPlus, MessageCircle, Gamepad2, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
+export interface AnchorRect {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
 interface UserActionMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -16,6 +25,9 @@ interface UserActionMenuProps {
   username?: string;
   avatarUrl?: string | null;
   fromRoute?: string;
+  /** Bounding rect (from e.currentTarget.getBoundingClientRect()) of the avatar that was clicked.
+   *  The menu anchors itself right next to this instead of centering on screen. */
+  anchorRect?: AnchorRect | null;
 }
 
 type FriendshipStatus = "none" | "pending_sent" | "pending_received" | "accepted" | "self";
@@ -27,6 +39,7 @@ export function UserActionMenu({
   username,
   avatarUrl,
   fromRoute,
+  anchorRect,
 }: UserActionMenuProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -34,8 +47,84 @@ export function UserActionMenu({
   const { sendFriendRequestNotification, sendMessageNotification } = useSmartNotifications();
   const [status, setStatus] = useState<FriendshipStatus>("none");
   const [busy, setBusy] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [popStyle, setPopStyle] = useState<React.CSSProperties>({
+    position: "fixed",
+    top: -9999,
+    left: -9999,
+    opacity: 0,
+  });
+  const [arrow, setArrow] = useState<{ left: number; placement: "top" | "bottom" }>({
+    left: 24,
+    placement: "top",
+  });
 
   const isSelf = !!user && !!userId && user.id === userId;
+
+  // Position the popover next to the clicked avatar (anchorRect), clamped to viewport.
+  useLayoutEffect(() => {
+    if (!open || !anchorRect || !menuRef.current) return;
+
+    const reposition = () => {
+      const menu = menuRef.current;
+      if (!menu) return;
+      const menuW = menu.offsetWidth;
+      const menuH = menu.offsetHeight;
+      const gap = 10;
+      const margin = 8;
+
+      let left = anchorRect.left + anchorRect.width / 2 - menuW / 2;
+      left = Math.min(Math.max(left, margin), window.innerWidth - menuW - margin);
+
+      let top = anchorRect.top - menuH - gap;
+      let placement: "top" | "bottom" = "top";
+      if (top < margin) {
+        top = anchorRect.bottom + gap;
+        placement = "bottom";
+      }
+      if (top + menuH > window.innerHeight - margin) {
+        top = Math.max(window.innerHeight - menuH - margin, margin);
+      }
+
+      setPopStyle({
+        position: "fixed",
+        top,
+        left,
+        opacity: 1,
+        transform: "translateY(0)",
+        transition: "opacity 120ms ease, transform 120ms ease",
+      });
+      setArrow({
+        left: Math.min(
+          Math.max(anchorRect.left + anchorRect.width / 2 - left, 16),
+          menuW - 16,
+        ),
+        placement,
+      });
+    };
+
+    // Start slightly offset + transparent, then snap into place (no visible centered flash).
+    setPopStyle((s) => ({ ...s, position: "fixed", top: anchorRect.top, left: anchorRect.left, opacity: 0 }));
+    const raf = requestAnimationFrame(reposition);
+
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [open, anchorRect]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open || !user || !userId) return;
@@ -161,15 +250,36 @@ export function UserActionMenu({
     purple: "bg-purple-500/20 text-purple-300",
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10">
-        <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center gap-3">
+  if (!open) return null;
+
+  return createPortal(
+    <>
+      {/* Invisible backdrop: click anywhere outside to close, no dark overlay */}
+      <div className="fixed inset-0 z-[100]" onClick={close} />
+
+      <div
+        ref={menuRef}
+        style={popStyle}
+        className="relative z-[101] w-64 max-w-[calc(100vw-16px)] rounded-2xl border-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Little caret pointing at the avatar that was clicked */}
+        <div
+          className="absolute w-3 h-3 bg-[#16213e] ring-1 ring-white/10 rotate-45"
+          style={{
+            left: arrow.left - 6,
+            ...(arrow.placement === "top"
+              ? { bottom: -6, clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }
+              : { top: -6, clipPath: "polygon(0 0, 100% 0, 0 100%)" }),
+          }}
+        />
+
+        <div className="px-4 pt-4 pb-3 border-b border-white/5 flex items-center gap-3">
           <UserAvatar
             src={avatarUrl || undefined}
             alt={username || "Kullanıcı"}
             fallback={(username || "?").charAt(0).toUpperCase()}
-            size="md"
+            size="sm"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black text-white truncate">{username || "Kullanıcı"}</p>
@@ -178,9 +288,9 @@ export function UserActionMenu({
         </div>
 
         {isSelf ? (
-          <div className="px-5 py-6 text-center text-slate-400 text-sm">Bu senin profilin</div>
+          <div className="px-4 py-5 text-center text-slate-400 text-sm">Bu senin profilin</div>
         ) : (
-          <div className="px-4 py-4 flex flex-col gap-2.5">
+          <div className="px-3 py-3 flex flex-col gap-2">
             <ActionRow
               dot="bg-indigo-400"
               icon={User}
@@ -230,10 +340,9 @@ export function UserActionMenu({
             />
           </div>
         )}
-
-        <div className="h-2" />
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>,
+    document.body,
   );
 }
 

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
 import { PrivateChat } from "@/components/PrivateChat";
-import { UserActionMenu } from "@/components/UserActionMenu";
+import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
 import { toast } from "sonner";
 import Lottie from "lottie-react";
@@ -90,7 +90,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<SelectedUser[]>([]);
-  const [menuTarget, setMenuTarget] = useState<{ id: string; username: string; avatar_url?: string | null } | null>(null);
+  const [menuTarget, setMenuTarget] = useState<{
+    id: string;
+    username: string;
+    avatar_url?: string | null;
+    anchorRect: AnchorRect;
+  } | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportingMessage, setReportingMessage] = useState<{
     id: string;
@@ -1008,12 +1013,14 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   <div className="flex items-center space-x-2">
                     <div
                       className="cursor-pointer"
-                      onClick={() => {
+                      onClick={(e) => {
                         if (!message.user_id || message.username === "kelimeciBot") return;
+                        const rect = e.currentTarget.getBoundingClientRect();
                         setMenuTarget({
                           id: message.user_id,
                           username: message.username,
                           avatar_url: userAvatars[message.user_id] || null,
+                          anchorRect: rect,
                         });
                       }}
                     >
@@ -1251,6 +1258,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       userId={menuTarget?.id ?? null}
       username={menuTarget?.username}
       avatarUrl={menuTarget?.avatar_url ?? null}
+      anchorRect={menuTarget?.anchorRect ?? null}
       fromRoute="/chat"
     />
   );
