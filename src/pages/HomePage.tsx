@@ -879,23 +879,21 @@ const HomePage = () => {
               ].map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 bg-[#1e2d45] rounded-2xl border border-white/30 flex flex-col items-center active:scale-90 transition-transform cursor-pointer overflow-hidden"
+                  className="flex-1 flex flex-col items-center gap-1.5 active:scale-90 transition-transform cursor-pointer"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
                   }}
                 >
-                  <div className={`relative w-full ${j.layer} flex items-center justify-center py-0.5`}>
-                    <span className="relative z-10 text-[10px] font-bold text-white">{j.name}</span>
+                  <div
+                    className={`relative w-16 h-16 rounded-full ${j.layer} border border-white/30 flex items-center justify-center shadow-lg`}
+                  >
+                    <img src={j.img} className="w-8 h-8 object-contain drop-shadow-lg" alt={j.name} />
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border border-white/30 flex items-center justify-center text-[9px] font-bold text-white">
+                      {j.count}
+                    </span>
                   </div>
-                  <div className="flex flex-col items-center gap-1 p-3">
-                    <img
-                      src={j.img}
-                      className="w-9 h-9 object-contain drop-shadow-lg"
-                      alt={j.name}
-                    />
-                    <span className="text-[10px] font-bold text-slate-400">x{j.count}</span>
-                  </div>
+                  <span className="text-[10px] font-bold text-slate-300 text-center leading-tight">{j.name}</span>
                 </div>
               ))}
             </div>
@@ -1113,32 +1111,34 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-56 rounded-3xl p-4 h-36 flex flex-col justify-between border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform p-3 ${challengeStatus.puzzle ? "border-amber-400/40 " : "border-white/10"}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-3xl`}
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
                 />
-                <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <KelimePuzzleIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-                <div className="relative z-10 flex justify-between items-start">
-                  <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner mb-0.5">
                     {challengeStatus.puzzle ? (
-                      <Check className="w-6 h-6 text-amber-300" />
+                      <Check className="w-5 h-5 text-amber-300" />
                     ) : (
-                      <KelimePuzzleIcon className="w-8 h-8" />
+                      <KelimePuzzleIcon className="w-7 h-7" />
                     )}
                   </div>
+                  <h3
+                    className="text-[10px] font-bold text-white leading-tight drop-shadow-md"
+                    style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                  >
+                    Kelime Puzzle
+                  </h3>
+                  <p className="text-[8px] text-white/70 font-medium leading-tight">
+                    {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
+                  </p>
                   <Badge
-                    className={`text-[9px] px-2 py-0.5 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
+                    className={`text-[8px] px-1.5 py-0 leading-4 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/20 hover:bg-amber-400/20 text-amber-200 border-amber-400/30"}`}
                   >
                     {challengeStatus.puzzle ? "✓ Tamamlandı" : "Oyna"}
                   </Badge>
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-sm font-bold text-white leading-none mb-1 drop-shadow-md" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>Kelime Puzzle</h3>
-                  <p className="text-[10px] text-white/70 font-medium">
-                    {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
-                  </p>
                 </div>
               </div>
 
