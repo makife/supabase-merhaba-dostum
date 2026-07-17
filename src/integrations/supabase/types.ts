@@ -998,6 +998,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accepts_game_invites: boolean
           active_chat_id: string | null
           avatar_url: string | null
           average_score: number | null
@@ -1058,6 +1059,7 @@ export type Database = {
           wins: number | null
         }
         Insert: {
+          accepts_game_invites?: boolean
           active_chat_id?: string | null
           avatar_url?: string | null
           average_score?: number | null
@@ -1118,6 +1120,7 @@ export type Database = {
           wins?: number | null
         }
         Update: {
+          accepts_game_invites?: boolean
           active_chat_id?: string | null
           avatar_url?: string | null
           average_score?: number | null
