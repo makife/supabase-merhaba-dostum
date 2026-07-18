@@ -1,17 +1,12 @@
 /**
  * iOS Web Audio Service (adı geriye dönük uyumluluk için korundu)
  *
- * NOT: Önceden Web Audio API (AudioContext) kullanıyordu ama WKWebView'de
- * WebAudio kendi "Ambient" ses oturumunu kullandığı için telefon sessiz
- * moddayken veya oturum aktive olmadığında sesler duyulmuyordu.
+ * NOT: WKWebView eş zamanlı çok sayıda <audio> element'ini kaldıramadığı için
+ * pool'lar artık LAZY oluşturuluyor — init sadece meta (url, volume) kaydeder,
+ * ilk `playIOSWebSound` çağrısında ilgili sesin havuzu yaratılır.
  *
- * Şimdi HTML5 Audio (havuzlu) kullanıyoruz. AppDelegate.swift
- * AVAudioSession'ı `.playback + .mixWithOthers` olarak ayarladığı için:
- *   - Sessiz moddayken bile efektler duyulur (playback kategorisi)
- *   - Arka plan müziği kesilmez (mixWithOthers)
- *   - NativeAudio ile AVAudioSession çakışması yaşanmaz
- *
- * API aynı: initIOSWebAudio / playIOSWebSound / stopAllIOSWebSounds.
+ * AppDelegate.swift AVAudioSession'ı `.playback + .mixWithOthers` yaptığı için
+ * HTML5 Audio sessiz modda bile çalar ve arka plan müziğini kesmez.
  */
 
 import { Capacitor } from "@capacitor/core";
@@ -19,42 +14,64 @@ import { Capacitor } from "@capacitor/core";
 const isIOSNative =
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
-// assetId -> HTMLAudioElement havuzu
-const pools = new Map<string, HTMLAudioElement[]>();
-// assetId -> url (fallback / lazy load için)
-const urls = new Map<string, string>();
-// assetId -> temel volume
-const volumes = new Map<string, number>();
+interface SoundMeta {
+  url: string;
+  volume: number;
+  poolSize: number;
+}
 
+const meta = new Map<string, SoundMeta>();
+const pools = new Map<string, HTMLAudioElement[]>();
 const activeAudios = new Set<HTMLAudioElement>();
 
-const POOL_SIZE = 3;
+// Sadece sık/overlap gereken kısa sesler için >1
+const MULTI_CHANNEL_IDS = new Set<string>([
+  "button_click",
+  "letter_select",
+  "cark_tick",
+  "beep",
+  "final_countdown_click",
+  "son_on_saniye",
+  "correct_word",
+  "wrong_word",
+  "boost_arti_ses",
+]);
+
+const DEFAULT_POOL = 1;
+const MULTI_POOL = 3;
 
 export const isIOSWebAudioTarget = (): boolean => isIOSNative;
 
 const toUrl = (assetPath: string): string =>
   assetPath.replace(/^public\//, "/");
 
-const createPool = (url: string, volume: number): HTMLAudioElement[] => {
-  const pool: HTMLAudioElement[] = [];
-  for (let i = 0; i < POOL_SIZE; i++) {
+const createAudio = (url: string, volume: number): HTMLAudioElement => {
+  const a = new Audio(url);
+  a.preload = "auto";
+  a.volume = Math.max(0, Math.min(1, volume));
+  a.setAttribute("playsinline", "true");
+  try {
+    a.load();
+  } catch {
+    /* ignore */
+  }
+  return a;
+};
+
+const ensurePool = (assetId: string): HTMLAudioElement[] | null => {
+  let pool = pools.get(assetId);
+  if (pool && pool.length > 0) return pool;
+  const m = meta.get(assetId);
+  if (!m) return null;
+  pool = [];
+  for (let i = 0; i < m.poolSize; i++) {
     try {
-      const a = new Audio(url);
-      a.preload = "auto";
-      a.volume = Math.max(0, Math.min(1, volume));
-      // iOS WKWebView: inline oynat, tam ekran video moduna geçme
-      a.setAttribute("playsinline", "true");
-      // preload'u tetikle
-      try {
-        a.load();
-      } catch {
-        /* ignore */
-      }
-      pool.push(a);
+      pool.push(createAudio(m.url, m.volume));
     } catch (e) {
-      console.warn("[iOSAudio] Audio element oluşturulamadı:", e);
+      console.warn(`[iOSAudio] ${assetId} audio create failed:`, e);
     }
   }
+  pools.set(assetId, pool);
   return pool;
 };
 
@@ -65,42 +82,34 @@ const getAvailable = (pool: HTMLAudioElement[]): HTMLAudioElement | null => {
   return pool[0] || null;
 };
 
-// İlk kullanıcı etkileşiminde tüm havuzu "unlock" et.
-// iOS HTMLAudioElement.play() kullanıcı gestür'ü içinde çağrılırsa,
-// aynı elementin sonraki play() çağrıları gestür dışında da çalışır.
+// Global unlock: ilk gesture'da AudioContext benzeri şekilde bir "primer" audio çal.
 let unlocked = false;
 let unlockBound = false;
+
+const primeSilentPlayback = () => {
+  // Boş data URI ile küçük bir wav çal — sadece output stream'i açar
+  try {
+    const silent = new Audio(
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+    );
+    silent.volume = 0;
+    silent.setAttribute("playsinline", "true");
+    const p = silent.play();
+    if (p && typeof p.then === "function") {
+      p.catch(() => {
+        /* ignore */
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+};
 
 const unlockAll = () => {
   if (unlocked) return;
   unlocked = true;
-  pools.forEach((pool) => {
-    pool.forEach((a) => {
-      try {
-        const originalVolume = a.volume;
-        a.muted = true;
-        const p = a.play();
-        if (p && typeof p.then === "function") {
-          p.then(() => {
-            try {
-              a.pause();
-              a.currentTime = 0;
-              a.muted = false;
-              a.volume = originalVolume;
-            } catch {
-              /* ignore */
-            }
-          }).catch(() => {
-            a.muted = false;
-            a.volume = originalVolume;
-          });
-        }
-      } catch {
-        /* ignore */
-      }
-    });
-  });
-  console.log("🔓 [iOSAudio] Havuz unlock edildi");
+  primeSilentPlayback();
+  console.log("🔓 [iOSAudio] Audio output primed");
 };
 
 const bindUnlockOnce = () => {
@@ -128,17 +137,15 @@ export const initIOSWebAudio = async (
   bindUnlockOnce();
 
   sounds.forEach((s) => {
-    if (pools.has(s.assetId)) return;
-    const url = toUrl(s.assetPath);
-    const vol = s.volume ?? 0.7;
-    urls.set(s.assetId, url);
-    volumes.set(s.assetId, vol);
-    pools.set(s.assetId, createPool(url, vol));
+    if (meta.has(s.assetId)) return;
+    meta.set(s.assetId, {
+      url: toUrl(s.assetPath),
+      volume: s.volume ?? 0.7,
+      poolSize: MULTI_CHANNEL_IDS.has(s.assetId) ? MULTI_POOL : DEFAULT_POOL,
+    });
   });
 
-  console.log(
-    `🔊 [iOSAudio] ${pools.size}/${sounds.length} ses havuzu hazır ✅`
-  );
+  console.log(`🔊 [iOSAudio] ${meta.size} ses meta kaydedildi (lazy) ✅`);
 };
 
 export const playIOSWebSound = async (
@@ -148,22 +155,24 @@ export const playIOSWebSound = async (
 ): Promise<boolean> => {
   if (!isIOSNative) return false;
 
-  let pool = pools.get(assetId);
-  if (!pool || pool.length === 0) {
-    const url = fallbackUrl || urls.get(assetId);
+  if (!meta.has(assetId)) {
+    const url = fallbackUrl;
     if (!url) return false;
-    pool = createPool(url, volume);
-    pools.set(assetId, pool);
-    urls.set(assetId, url);
-    volumes.set(assetId, volume);
+    meta.set(assetId, {
+      url,
+      volume,
+      poolSize: MULTI_CHANNEL_IDS.has(assetId) ? MULTI_POOL : DEFAULT_POOL,
+    });
   }
+
+  const pool = ensurePool(assetId);
+  if (!pool || pool.length === 0) return false;
 
   const audio = getAvailable(pool);
   if (!audio) return false;
 
   try {
     audio.volume = Math.max(0, Math.min(1, volume));
-    // Sesi baştan başlat
     try {
       audio.currentTime = 0;
     } catch {
@@ -183,7 +192,6 @@ export const playIOSWebSound = async (
       await p.catch((e) => {
         console.warn(`[iOSAudio] ${assetId} play hatası:`, e);
         cleanup();
-        // Play başarısız olduysa unlock ihtimalini yeniden tetikle
         unlocked = false;
         return null;
       });
