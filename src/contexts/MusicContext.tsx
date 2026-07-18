@@ -761,21 +761,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // istiyor → global "music enabled" ayarı kapalı olsa da (ör. maç öncesi
     // radyo çalıyorsa music=false olabilir) zorla açıp başlat.
     const forceMusic = !!opts?.musicOnly;
-    if (forceMusic && !musicEnabledRef.current) {
-      musicEnabledRef.current = true;
-      setMusicEnabledState(true);
-      // Floating menü ve kalıcı ayarla senkron tut; settingsChanged yayınlamıyoruz,
-      // çünkü bu sırada Audio elementinin yeniden kurulması kullanıcı gesture'ını bozar.
-      void (async () => {
-        try {
-          const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
-          const settings = settingsStr ? JSON.parse(settingsStr) : {};
+    if (forceMusic) {
+      // 🔥 FIX: Storage yazımını audio başlamadan ÖNCE await et.
+      // Aksi halde SoundEffectsToggle'ın writeSoundsEnabled'ından tetiklenen
+      // storage event → loadSettings, güncel olmayan music=false'ı okuyup
+      // musicEnabled state'ini geri kapatıyor (ses çalar ama UI kapalı görünür).
+      try {
+        const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+        const settings = settingsStr ? JSON.parse(settingsStr) : {};
+        if (settings.music !== true) {
           settings.music = true;
           await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-        } catch (e) {
-          console.warn("Failed to save forced music setting:", e);
         }
-      })();
+      } catch (e) {
+        console.warn("Failed to save forced music setting:", e);
+      }
+      if (!musicEnabledRef.current) {
+        musicEnabledRef.current = true;
+        setMusicEnabledState(true);
+      }
+      // settingsChanged dispatch etmiyoruz: loadSettings tekrar çalışırsa
+      // Audio elementi rebuild olur ve kullanıcı gesture'ı kaybolur.
     }
 
     // 🔥 NATIVE PLATFORM İÇİN
