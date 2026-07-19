@@ -419,6 +419,26 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error("❌ Turnuva başlatma hatası:", error);
+
+      // Son saniyede birden fazla istemci/geri sayım aynı anda başlatmayı
+      // deneyebilir. İlk istek başarılı olduysa sonraki RPC hata döndürse bile
+      // kullanıcıya yanlış bir hata göstermeyip başlamış turnuvayı başarılı say.
+      const { data: latestTournament } = await supabase
+        .from("tournaments")
+        .select("status")
+        .eq("id", tournamentId)
+        .maybeSingle();
+
+      if (latestTournament?.status === "in_progress" || latestTournament?.status === "completed") {
+        console.log("✅ Turnuva başka bir istek tarafından zaten başlatılmış");
+        try {
+          await fetchTournamentDetails(tournamentId);
+        } catch (fetchError) {
+          console.warn("⚠️ Başlatılmış turnuva detayları yenilenemedi:", fetchError);
+        }
+        return true;
+      }
+
       toast({ title: "Hata", description: "Turnuva başlatılamadı", variant: "destructive" });
       return false;
     } finally {
