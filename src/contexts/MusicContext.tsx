@@ -756,6 +756,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     preMatchAudioSourceRef.current = "none";
 
+    // 🎵 Arka plan müziği maç boyunca durdurulmadıysa (yeni davranış: maç
+    // başlarken sadece radyo fade-out olur), maç sonu fadeIn'i no-op olmalı.
+    // Aksi halde native'de setPack tekrar çağrılıp müzik baştan başlar.
+    if (!opts?.musicOnly) {
+      const musicStillPlaying = isNative
+        ? isPlaying
+        : !!(backgroundMusicRef.current && !backgroundMusicRef.current.paused);
+      if (musicStillPlaying) {
+        console.log("🎵 [MusicContext] Müzik zaten çalıyor, fadeIn atlanıyor");
+        return;
+      }
+    }
+
+
 
     // musicOnly=true iken kullanıcı maç ekranında AÇIKÇA arka plan müziğini
     // istiyor → global "music enabled" ayarı kapalı olsa da (ör. maç öncesi
