@@ -330,11 +330,15 @@ const GameCountdown = memo(
       const startCountdownAnchored = () => {
         console.log(`🔢 [${instanceId}] Server-anchored countdown başlıyor! startTime=${startTime}`);
 
-        // 🎵 Maça başlarken arka plan müziği / radyo fade-out edilir.
-        // (Oyuncu maç ekranındaki 3 kademeli ses düğmesiyle geri açabilir.)
+        // 🎵 Maça başlarken SADECE radyo fade-out edilir.
+        // Arka plan müziği (floating menüden açıksa) çalmaya devam eder.
+        // Oyuncu isterse maç ekranındaki 3 kademeli ses düğmesiyle kapatabilir.
         if (!musicFadedRef.current) {
           musicFadedRef.current = true;
-          try { fadeOutBackgroundMusic(1800); } catch {}
+          const radioOn = !!(window as any).__radioIsPlaying;
+          if (radioOn) {
+            try { fadeOutBackgroundMusic(1800); } catch {}
+          }
         }
 
         // 🔒 MUTLAKA 5'İ GÖSTER - geç mount olsa bile
