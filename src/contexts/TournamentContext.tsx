@@ -256,10 +256,19 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       console.log(result.replaced_bot ? "✅ Bot slotu gerçek oyuncuyla değiştirildi" : "✅ Turnuvaya katıldı");
 
-      await fetchTournamentDetails(tournamentId);
+      try {
+        await fetchTournamentDetails(tournamentId);
+      } catch (fetchErr) {
+        console.warn("⚠️ Katılım sonrası detay çekilemedi (turnuva başlamış olabilir):", fetchErr);
+      }
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Katılma hatası:", error);
+      const msg = String(error?.message || "").toLowerCase();
+      // Turnuva son saniyede başlamış/dolmuş olabilir - sessizce yut
+      if (msg.includes("started") || msg.includes("in_progress") || msg.includes("başla") || msg.includes("expired")) {
+        return false;
+      }
       toast({ title: "Hata", description: "Turnuvaya katılınamadı", variant: "destructive" });
       return false;
     } finally {
