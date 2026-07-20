@@ -238,6 +238,10 @@ const TournamentBracketPage = () => {
       .then((r) => r.json())
       .then((data) => setCupLottie(data))
       .catch(() => {});
+    fetch('/turnuvaBracket321.json')
+      .then((r) => r.json())
+      .then((data) => setBracket321Lottie(data))
+      .catch(() => {});
   }, []);
 
   // ELENDİN yazısı Lottie yükle (arka planı çıkarılmış versiyon)
