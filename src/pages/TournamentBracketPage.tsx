@@ -1131,6 +1131,21 @@ const TournamentBracketPage = () => {
       {/* Arka plan ışık efekti */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
 
+      {/* ── Ekran ortası 3-2-1 Lottie ── */}
+      {hasActiveCountdown && countdown <= 3 && bracket321Lottie && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+          <div style={{ width: "min(80vw, 420px)", height: "min(80vw, 420px)" }}>
+            <Lottie
+              animationData={bracket321Lottie}
+              loop={false}
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        </div>
+      )}
+
+
       {/* ── HEADER ── */}
       <div
         className="flex-none z-10 px-5 pt-6 pb-4 border-b border-white/5 shadow-xl"
