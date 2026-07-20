@@ -1134,7 +1134,7 @@ const TournamentBracketPage = () => {
       {/* ── Ekran ortası 3-2-1 Lottie ── */}
       {hasActiveCountdown && countdown <= 3 && bracket321Lottie && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-          <div style={{ width: "min(80vw, 420px)", height: "min(80vw, 420px)" }}>
+          <div style={{ width: "min(95vw, 600px)", height: "min(95vw, 600px)" }}>
             <Lottie
               animationData={bracket321Lottie}
               loop={false}

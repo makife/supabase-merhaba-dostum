@@ -1064,13 +1064,14 @@ const HomePage = () => {
                             <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={48} />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-9 h-9">
+                        <div className="relative inline-flex items-center justify-center w-9 h-9 -ml-1 -translate-x-2">
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span 
                             className="absolute text-white text-[14px] font-bold"
                             style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
                           >+{totalCredits - 5}</span>
                         </div>
+
                       </div>
                     ) : (
                       <div className="flex -space-x-2">
