@@ -211,6 +211,7 @@ const TournamentBracketPage = () => {
   const [championLottie, setChampionLottie] = useState<any>(null);
   const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
   const [cupLottie, setCupLottie] = useState<any>(null);
+  const [bracket321Lottie, setBracket321Lottie] = useState<any>(null);
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
   const eliminatedSoundPlayedRef = useRef(false);
 
