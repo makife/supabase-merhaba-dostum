@@ -9044,13 +9044,13 @@ const GamePage = ({
                         const highlightStyle =
                           isHighlighted && selectedJoker === "degistir"
                             ? {
-                                backgroundColor: "rgba(34,197,94,0.95)",
+                                background: "linear-gradient(135deg, #4ade80 0%, #16a34a 100%)",
                                 borderColor: "rgba(34,197,94,0.9)",
                                 boxShadow: "0 0 20px rgba(34,197,94,0.6)",
                               }
                             : isHighlighted && selectedJoker === "fisilida"
                               ? {
-                                  backgroundColor: "rgba(234,179,8,0.95)",
+                                  background: "linear-gradient(135deg, #fde047 0%, #d97706 100%)",
                                   borderColor: "rgba(234,179,8,0.9)",
                                   boxShadow: "0 0 20px rgba(234,179,8,0.6)",
                                 }
