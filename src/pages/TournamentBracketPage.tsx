@@ -1294,8 +1294,8 @@ const TournamentBracketPage = () => {
 
           {/* ── Aktif geri sayım ── */}
           {hasActiveCountdown && (
-            <div className="bg-[#16213e]/95 ring-1 ring-rose-400/30 rounded-3xl px-5 py-4 flex items-center gap-4 shadow-xl backdrop-blur-sm">
-              <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center relative" style={{ overflow: "visible" }}>
+            <div className="bg-[#16213e]/95 ring-1 ring-rose-400/30 rounded-3xl px-5 py-1.5 flex items-center gap-4 shadow-xl backdrop-blur-sm">
+              <div className="w-24 h-12 flex-shrink-0 flex items-center justify-center relative" style={{ overflow: "visible" }}>
                 {bracket10Lottie ? (
                   <div style={{ width: 160, height: 160, position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}>
                     <Lottie
@@ -1313,7 +1313,7 @@ const TournamentBracketPage = () => {
                   </div>
                 )}
               </div>
-              <div>
+              <div className="pl-4">
                 <p className="text-sm font-black text-white uppercase tracking-widest">
                   {currentRound === 1 ? "Çeyrek Final" : currentRound === 2 ? "Yarı Final" : "Final"} Başlıyor
                 </p>
