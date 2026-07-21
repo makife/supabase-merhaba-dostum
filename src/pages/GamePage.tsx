@@ -9098,6 +9098,8 @@ const GamePage = ({
                               boxShadow: "0 0 20px rgba(168,85,247,0.5)",
                             }
                           : undefined;
+                        const colorStyle = { ...selectedStyle, ...highlightStyle };
+                        const hasColor = Boolean(selectedStyle || highlightStyle);
                         const selectionOrder = selectedLetters.findIndex(
                           (s) => s.row === rowIndex && s.col === colIndex,
                         );
@@ -9105,11 +9107,7 @@ const GamePage = ({
                           <button
                             key={`${rowIndex}-${colIndex}`}
                             type="button"
-                            className={`letter-button h-[59px] text-xl font-black relative transition-colors duration-150 overflow-visible rounded-xl border focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                              isSelected
-                                ? "selected text-white"
-                                : "border-white/10 bg-white/5 text-white"
-                            } ${isHighlighted && !highlightStyle ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`letter-button h-[59px] text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
                             onMouseDown={(e) => {
                               e.preventDefault();
@@ -9136,13 +9134,19 @@ const GamePage = ({
                               WebkitUserSelect: "none",
                               userSelect: "none",
                               pointerEvents: !gameStarted ? "none" : "auto",
-                              transition: "background 150ms ease, box-shadow 150ms ease, border-color 150ms ease",
-                              ...selectedStyle,
-                              ...highlightStyle,
                             }}
                           >
                             <span
-                              className={`absolute inset-0 flex items-center justify-center ${isSelected ? "opacity-100 text-white font-black" : "opacity-0"}`}
+                              aria-hidden="true"
+                              className="absolute -inset-px rounded-xl border transition-opacity duration-150 pointer-events-none z-0"
+                              style={{
+                                opacity: hasColor ? 1 : 0,
+                                borderColor: "transparent",
+                                ...colorStyle,
+                              }}
+                            />
+                            <span
+                              className={`absolute inset-0 flex items-center justify-center z-10 ${isSelected ? "opacity-100 text-white font-black" : "opacity-0"}`}
                             >
                               {letter}
                             </span>
