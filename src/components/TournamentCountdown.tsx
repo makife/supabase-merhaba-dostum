@@ -67,7 +67,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
       <CardContent className="p-6 text-center">
         {baslamakUzereAnim ? (
-          <Lottie animationData={baslamakUzereAnim} loop autoplay style={{ width: 48, height: 48, margin: '0 auto 16px' }} />
+          <Lottie animationData={baslamakUzereAnim} loop autoplay style={{ width: 96, height: 96, margin: '0 auto -32px' }} />
         ) : (
           <div className="w-12 h-12 mx-auto mb-4" />
         )}
