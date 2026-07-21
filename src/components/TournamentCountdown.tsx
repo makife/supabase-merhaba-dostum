@@ -15,15 +15,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   isCreator,
   isBotTournament = false,
 }) => {
-  const [basliyorAnim, setBasliyorAnim] = useState<any>(null);
   const [baslamakUzereAnim, setBaslamakUzereAnim] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/turnuvaBasliyor.json")
-      .then((r) => r.json())
-      .then(setBasliyorAnim)
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     fetch("/turnuvaBaslamakUzere.json")
@@ -74,19 +66,14 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   return (
     <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
       <CardContent className="p-6 text-center">
-        {basliyorAnim ? (
-          <Lottie animationData={basliyorAnim} loop autoplay style={{ width: 48, height: 48, margin: '0 auto 16px' }} />
+        {baslamakUzereAnim ? (
+          <Lottie animationData={baslamakUzereAnim} loop autoplay style={{ width: 48, height: 48, margin: '0 auto 16px' }} />
         ) : (
           <div className="w-12 h-12 mx-auto mb-4" />
         )}
         <h2 className="text-2xl font-bold text-white mb-2">Turnuva Başlıyor!</h2>
 
-        <div className="flex items-center justify-center gap-3 mb-4">
-          {baslamakUzereAnim && (
-            <Lottie animationData={baslamakUzereAnim} loop autoplay style={{ width: 40, height: 40 }} />
-          )}
-          <div className="text-4xl font-bold text-yellow-400">{formatTime(timeLeft)}</div>
-        </div>
+        <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(timeLeft)}</div>
 
         <div className="space-y-3">
           {status.text && (
