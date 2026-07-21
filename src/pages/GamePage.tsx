@@ -205,6 +205,8 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
+  const [kelimeGondermedinAnim, setKelimeGondermedinAnim] = useState<any>(null);
+  const [showKelimeGondermedinAnim, setShowKelimeGondermedinAnim] = useState(false);
   const [matchBgAnim, setMatchBgAnim] = useState<string>(
     () => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)],
   );
@@ -218,14 +220,16 @@ const GamePage = ({
       fetch("/kazanmajson.json").then((r) => r.json()),
       fetch("/altiharf.json").then((r) => r.json()),
       fetch("/gunlukKonfeti.json").then((r) => r.json()),
+      fetch("/kelimeGondermedinGoz.json").then((r) => r.json()),
     ])
-      .then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
+      .then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti, kelimeGondermedin]) => {
         setWinAnim(win);
         setLoseAnim(lose);
         setTieAnim(tie);
         setConfettiAnim(confetti);
         setAltiHarfAnim(altiHarf);
         setGunlukKonfetiAnim(gunlukKonfeti);
+        setKelimeGondermedinAnim(kelimeGondermedin);
       })
       .catch(console.error);
   }, []);
@@ -1590,6 +1594,8 @@ const GamePage = ({
       if (playerScoreRef.current === 0) {
         setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
         playNativeSound("beep", 0.5);
+        setShowKelimeGondermedinAnim(true);
+        setTimeout(() => setShowKelimeGondermedinAnim(false), 2500);
       }
     }, 15000);
     const t30 = setTimeout(() => {
@@ -8998,6 +9004,25 @@ const GamePage = ({
                             >
                               {inputFeedback.text}
                             </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <AnimatePresence>
+                        {showKelimeGondermedinAnim && kelimeGondermedinAnim && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+                          >
+                            <Lottie
+                              animationData={kelimeGondermedinAnim}
+                              loop
+                              autoplay
+                              style={{ height: "100%", width: "auto" }}
+                            />
                           </motion.div>
                         )}
                       </AnimatePresence>
