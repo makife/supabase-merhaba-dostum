@@ -15,7 +15,11 @@ interface TournamentContextType {
   loading: boolean;
   leftTournaments: string[];
 
-  createTournament: (options?: { name?: string; avatarUrl?: string | null; isPrivate?: boolean }) => Promise<string | null>;
+  createTournament: (options?: {
+    name?: string;
+    avatarUrl?: string | null;
+    isPrivate?: boolean;
+  }) => Promise<string | null>;
   startPrivateCountdown: (tournamentId: string, seconds?: number) => Promise<boolean>;
   joinTournament: (tournamentId: string) => Promise<boolean>;
   leaveTournament: (tournamentId: string) => Promise<boolean>;
@@ -86,9 +90,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Create tournament
-  const createTournament = async (
-    options?: { name?: string; avatarUrl?: string | null; isPrivate?: boolean },
-  ): Promise<string | null> => {
+  const createTournament = async (options?: {
+    name?: string;
+    avatarUrl?: string | null;
+    isPrivate?: boolean;
+  }): Promise<string | null> => {
     if (!user) return null;
 
     try {
@@ -243,7 +249,12 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (error) throw error;
 
-      const result = joinResult as { success?: boolean; error?: string; already_joined?: boolean; replaced_bot?: boolean };
+      const result = joinResult as {
+        success?: boolean;
+        error?: string;
+        already_joined?: boolean;
+        replaced_bot?: boolean;
+      };
       if (!result?.success) {
         const isFull = result?.error === "Turnuva dolu";
         toast({
@@ -367,8 +378,6 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
           }
         }, 1500);
       }
-
-      toast({ title: "Başarılı", description: "Turnuvadan ayrıldınız" });
 
       setLeftTournaments((prev) => [...prev, tournamentId]);
 
