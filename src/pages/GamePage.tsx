@@ -6074,13 +6074,6 @@ const GamePage = ({
         console.log("✅ Tournament participant başarıyla silindi");
       }
 
-      toast({
-        title: "⚖️ Turnuva Cezası",
-        description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız. Rakibiniz hükmen galip ilan edildi.",
-        variant: "destructive",
-        duration: 6000,
-      });
-
       setShowTournamentExitDialog(false);
 
       // GameContext'i temizle
