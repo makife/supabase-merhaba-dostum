@@ -9066,6 +9066,13 @@ const GamePage = ({
                                     boxShadow: "0 0 20px rgba(59,130,246,0.6)",
                                   }
                                 : undefined;
+                        const selectedStyle = isSelected
+                          ? {
+                              background: "linear-gradient(135deg, #a855f7 0%, #6d28d9 100%)",
+                              borderColor: "rgba(168,85,247,0.9)",
+                              boxShadow: "0 0 20px rgba(168,85,247,0.5)",
+                            }
+                          : undefined;
                         const selectionOrder = selectedLetters.findIndex(
                           (s) => s.row === rowIndex && s.col === colIndex,
                         );
@@ -9075,7 +9082,7 @@ const GamePage = ({
                             type="button"
                             className={`letter-button h-[59px] text-xl font-black relative transition-colors duration-150 overflow-visible rounded-xl border focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${
                               isSelected
-                                ? "selected border-emerald-400/70 bg-emerald-900/50 text-emerald-100"
+                                ? "selected text-white"
                                 : "border-white/10 bg-white/5 text-white"
                             } ${isHighlighted && !highlightStyle ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
@@ -9104,6 +9111,7 @@ const GamePage = ({
                               WebkitUserSelect: "none",
                               userSelect: "none",
                               pointerEvents: !gameStarted ? "none" : "auto",
+                              ...selectedStyle,
                               ...highlightStyle,
                             }}
                           >
