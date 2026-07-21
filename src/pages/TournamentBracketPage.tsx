@@ -212,6 +212,7 @@ const TournamentBracketPage = () => {
   const [konfetiLottie, setKonfetiLottie] = useState<any>(null);
   const [cupLottie, setCupLottie] = useState<any>(null);
   const [bracket321Lottie, setBracket321Lottie] = useState<any>(null);
+  const [bracket10Lottie, setBracket10Lottie] = useState<any>(null);
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
   const eliminatedSoundPlayedRef = useRef(false);
 
@@ -241,6 +242,10 @@ const TournamentBracketPage = () => {
     fetch('/turnuvaBracket321.json')
       .then((r) => r.json())
       .then((data) => setBracket321Lottie(data))
+      .catch(() => {});
+    fetch('/turnuvaBracket10saniye.json')
+      .then((r) => r.json())
+      .then((data) => setBracket10Lottie(data))
       .catch(() => {});
   }, []);
 
@@ -694,7 +699,7 @@ const TournamentBracketPage = () => {
       setCountdown(remaining);
 
       // Son 10 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
-      if (remaining >= 1 && remaining <= 3 && !playedCountdownSecondsRef.current.has(remaining)) {
+      if (remaining >= 1 && remaining <= 10 && !playedCountdownSecondsRef.current.has(remaining)) {
         playedCountdownSecondsRef.current.add(remaining);
         if (isSoundEffectsEnabled()) {
           const pitchRate = 1.0 + (10 - remaining) * 0.22;
@@ -1287,11 +1292,22 @@ const TournamentBracketPage = () => {
           )}
 
           {/* ── Aktif geri sayım ── */}
-          {hasActiveCountdown && !(countdown <= 3 && bracket321Lottie) && (
+          {hasActiveCountdown && (
             <div className="bg-[#16213e]/95 ring-1 ring-rose-400/30 rounded-3xl px-5 py-4 flex items-center gap-4 shadow-xl backdrop-blur-sm">
-              <div className="w-14 h-14 rounded-2xl bg-red-500/20 ring-2 ring-red-500/40 flex flex-col items-center justify-center flex-shrink-0">
-                <span className="text-2xl font-black text-red-400 leading-none">{countdown}</span>
-                <span className="text-[9px] text-red-400/70 uppercase tracking-wider">sn</span>
+              <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center">
+                {bracket10Lottie ? (
+                  <Lottie
+                    animationData={bracket10Lottie}
+                    loop
+                    autoplay
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/20 ring-2 ring-red-500/40 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black text-red-400 leading-none">{countdown}</span>
+                    <span className="text-[9px] text-red-400/70 uppercase tracking-wider">sn</span>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-sm font-black text-white uppercase tracking-widest">
