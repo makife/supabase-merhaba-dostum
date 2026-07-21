@@ -1595,7 +1595,7 @@ const GamePage = ({
         setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
         playNativeSound("beep", 0.5);
         setShowKelimeGondermedinAnim(true);
-        setTimeout(() => setShowKelimeGondermedinAnim(false), 2500);
+        setTimeout(() => setShowKelimeGondermedinAnim(false), 4000);
       }
     }, 15000);
     const t30 = setTimeout(() => {
@@ -9021,13 +9021,13 @@ const GamePage = ({
                               animationData={kelimeGondermedinAnim}
                               loop
                               autoplay
-                              style={{ height: "100%", width: "auto" }}
+                              style={{ height: "100%", width: "auto", transform: "scale(1.6)" }}
                             />
                           </motion.div>
                         )}
                       </AnimatePresence>
 
-                      {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && (
+                      {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && !showKelimeGondermedinAnim && (
                         <span className="text-white/20 font-bold font-mono text-lg select-none tracking-widest uppercase">
                           K E L İ M E L E
                         </span>
