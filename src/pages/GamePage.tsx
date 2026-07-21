@@ -205,25 +205,29 @@ const GamePage = ({
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
-  const [matchBgAnim, setMatchBgAnim] = useState<string>(() => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)]);
+  const [matchBgAnim, setMatchBgAnim] = useState<string>(
+    () => MAC_ARKA_PLANLAR[Math.floor(Math.random() * MAC_ARKA_PLANLAR.length)],
+  );
   const matchBgLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch("/oyunkazanmajson.json").then(r => r.json()),
-      fetch("/oyunkatbetmejson.json").then(r => r.json()),
-      fetch("/beraberlikjson.json").then(r => r.json()),
-      fetch("/kazanmajson.json").then(r => r.json()),
-      fetch("/altiharf.json").then(r => r.json()),
-      fetch("/gunlukKonfeti.json").then(r => r.json()),
-    ]).then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
-      setWinAnim(win);
-      setLoseAnim(lose);
-      setTieAnim(tie);
-      setConfettiAnim(confetti);
-      setAltiHarfAnim(altiHarf);
-      setGunlukKonfetiAnim(gunlukKonfeti);
-    }).catch(console.error);
+      fetch("/oyunkazanmajson.json").then((r) => r.json()),
+      fetch("/oyunkatbetmejson.json").then((r) => r.json()),
+      fetch("/beraberlikjson.json").then((r) => r.json()),
+      fetch("/kazanmajson.json").then((r) => r.json()),
+      fetch("/altiharf.json").then((r) => r.json()),
+      fetch("/gunlukKonfeti.json").then((r) => r.json()),
+    ])
+      .then(([win, lose, tie, confetti, altiHarf, gunlukKonfeti]) => {
+        setWinAnim(win);
+        setLoseAnim(lose);
+        setTieAnim(tie);
+        setConfettiAnim(confetti);
+        setAltiHarfAnim(altiHarf);
+        setGunlukKonfetiAnim(gunlukKonfeti);
+      })
+      .catch(console.error);
   }, []);
   const {
     currentRoom,
@@ -374,7 +378,11 @@ const GamePage = ({
       try {
         const parsed = JSON.parse(storedMeta) as BotIdentity;
         if (typeof parsed?.seed === "number" && parsed.name) {
-          return { seed: parsed.seed, name: parsed.name, avatar: parsed.avatar || generateBotAvatar(parsed.seed, parsed.name) };
+          return {
+            seed: parsed.seed,
+            name: parsed.name,
+            avatar: parsed.avatar || generateBotAvatar(parsed.seed, parsed.name),
+          };
         }
       } catch {
         sessionStorage.removeItem(`${BOT_REMATCH_META_PREFIX}${currentRoom?.id}`);
@@ -949,9 +957,10 @@ const GamePage = ({
   // currentWord artık derived value - selectedLetters'dan otomatik hesaplanır
   const currentWord = useMemo(() => selectedLetters.map((s) => s.letter).join(""), [selectedLetters]);
   const [inputFlash, setInputFlash] = useState<"success" | "success-long" | "success-xlong" | "error" | null>(null);
-  const [inputFeedback, setInputFeedback] = useState<{ text: string; type: "success" | "success-long" | "success-xlong" | "error" | "bonus" } | null>(
-    null,
-  );
+  const [inputFeedback, setInputFeedback] = useState<{
+    text: string;
+    type: "success" | "success-long" | "success-xlong" | "error" | "bonus";
+  } | null>(null);
   const inputFeedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [playerWords, setPlayerWords] = useState<string[]>([]);
@@ -1027,7 +1036,6 @@ const GamePage = ({
       breakCombo();
     }, 2000);
   }, [breakCombo]);
-  
 
   useEffect(() => {
     return () => {
@@ -1093,9 +1101,13 @@ const GamePage = ({
     const heartbeat = window.setInterval(markInGame, 10_000);
 
     const clear = () => {
-      supabase.from("profiles").update({ in_game: false }).eq("id", uid).then(() => {
-        console.log("⚪ in_game = false");
-      });
+      supabase
+        .from("profiles")
+        .update({ in_game: false })
+        .eq("id", uid)
+        .then(() => {
+          console.log("⚪ in_game = false");
+        });
     };
     window.addEventListener("beforeunload", clear);
     return () => {
@@ -1106,7 +1118,6 @@ const GamePage = ({
       }, 1500);
     };
   }, [user?.id, currentRoom?.id, tournamentMatch?.id]);
-
 
   const [gameStarted, setGameStarted] = useState(false);
   const countdownCheckDoneRef = useRef(false);
@@ -1121,7 +1132,6 @@ const GamePage = ({
   // Arka plan artık statik görsel; Lottie efekti kaldırıldı.
 
   // 🎨 Arka plan mount'ta seçilir ve maç boyunca sabit kalır (geri sayımda değişmez)
-
 
   // 🌟 Maç bitiminde native review dialog tetikle (cooldown + min match guard'lı)
   useEffect(() => {
@@ -1188,14 +1198,16 @@ const GamePage = ({
     await initializeAdMob();
 
     let loaded: any = await loadRewardedAd();
-    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
+    if (!loaded || (typeof loaded === "object" && loaded !== null && !loaded.success)) {
       console.log("[GamePage] ⚠️ İlk reklam yükleme başarısız, retry...");
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 2000));
       loaded = await loadRewardedAd();
     }
-    if (!loaded || (typeof loaded === 'object' && loaded !== null && !loaded.success)) {
-      const errorDetail = (typeof loaded === 'object' && loaded !== null && loaded.error) 
-        ? String(loaded.error) : "Reklam sunucusuna ulaşılamadı";
+    if (!loaded || (typeof loaded === "object" && loaded !== null && !loaded.success)) {
+      const errorDetail =
+        typeof loaded === "object" && loaded !== null && loaded.error
+          ? String(loaded.error)
+          : "Reklam sunucusuna ulaşılamadı";
       toast({
         title: "Reklam Yüklenemedi",
         description: `Hata: ${errorDetail}`,
@@ -1511,7 +1523,14 @@ const GamePage = ({
       if (preScoreRef.current === null) {
         preScoreRef.current = profile.total_score;
         preLevelRef.current = calcLevelFromScore(profile.total_score || 0);
-        console.log("🏆 Pre-level captured:", preLevelRef.current, "score:", profile.total_score, "gameStarted:", gameStarted);
+        console.log(
+          "🏆 Pre-level captured:",
+          preLevelRef.current,
+          "score:",
+          profile.total_score,
+          "gameStarted:",
+          gameStarted,
+        );
       }
     }
   }, [profile?.total_score, gameStarted, gameEnded]);
@@ -1570,14 +1589,14 @@ const GamePage = ({
       if (gameEndedRef.current) return;
       if (playerScoreRef.current === 0) {
         setHintEvent((p) => ({ id: p.id + 1, text: "Henüz kelime göndermedin..." }));
-        playNativeSound('beep', 0.5);
+        playNativeSound("beep", 0.5);
       }
     }, 15000);
     const t30 = setTimeout(() => {
       if (gameEndedRef.current) return;
       if (!jokerUsedInMatchRef.current && playerScoreRef.current < opponentScoreRef.current) {
         setHintEvent((p) => ({ id: p.id + 1, text: "Joker avantaj sağlar. İyi kullan!" }));
-        playNativeSound('beep', 0.5);
+        playNativeSound("beep", 0.5);
       }
     }, 30000);
     const t60 = setTimeout(() => {
@@ -1585,7 +1604,7 @@ const GamePage = ({
       if (!jokerUsedInMatchRef.current) {
         const txt = HINT_POOL_60[Math.floor(Math.random() * HINT_POOL_60.length)];
         setHintEvent((p) => ({ id: p.id + 1, text: txt }));
-        playNativeSound('beep', 0.5);
+        playNativeSound("beep", 0.5);
       }
     }, 60000);
     return () => {
@@ -1604,26 +1623,29 @@ const GamePage = ({
   // checkWinnerWithScores'taki early-return ve native'de çift 'celebration' çağrısı
   // (playSound("gameWin") + playCelebrationSound) sesi susturuyordu.
   const endSoundPlayedRef = useRef(false);
-  const playEndResultSoundOnce = useCallback((result: "player" | "opponent" | "tie") => {
-    if (endSoundPlayedRef.current) return;
-    endSoundPlayedRef.current = true;
-    if (gameMode === "tournament" && result === "player") {
-      console.log("🔇 [GamePage] Turnuva galibiyet sesi bracket sayfasına bırakıldı");
-      return;
-    }
-    console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", result);
-    try {
-      if (result === "player") {
-        playCelebrationSound();
-      } else if (result === "opponent") {
-        playGameLoseSound();
-      } else {
-        playTieSound();
+  const playEndResultSoundOnce = useCallback(
+    (result: "player" | "opponent" | "tie") => {
+      if (endSoundPlayedRef.current) return;
+      endSoundPlayedRef.current = true;
+      if (gameMode === "tournament" && result === "player") {
+        console.log("🔇 [GamePage] Turnuva galibiyet sesi bracket sayfasına bırakıldı");
+        return;
       }
-    } catch (err) {
-      console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
-    }
-  }, [gameMode, playCelebrationSound, playGameLoseSound, playTieSound]);
+      console.log("🔊 [GamePage] Maç sonu sesi tetikleniyor, winner:", result);
+      try {
+        if (result === "player") {
+          playCelebrationSound();
+        } else if (result === "opponent") {
+          playGameLoseSound();
+        } else {
+          playTieSound();
+        }
+      } catch (err) {
+        console.warn("⚠️ Maç sonu sesi oynatılamadı:", err);
+      }
+    },
+    [gameMode, playCelebrationSound, playGameLoseSound, playTieSound],
+  );
 
   useEffect(() => {
     winnerRef.current = winner;
@@ -1960,7 +1982,12 @@ const GamePage = ({
         }
 
         // Rank puanı güncelle - rastgele eşleşme ve özel oda
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
+        if (
+          gameMode === "random-match" ||
+          (gameMode as string) === "random-match-timed" ||
+          (gameMode as string) === "random-match-score" ||
+          gameMode === "private-room"
+        ) {
           try {
             const rpChange = 50; // Disconnect win = galibiyet
             const { data: currentProfile } = await supabase
@@ -1977,7 +2004,7 @@ const GamePage = ({
               .update({ rank_points: newRP } as any)
               .eq("id", user.id);
             console.log(`🏅 Disconnect win - Rank: ${currentRP} → ${newRP} (+${rpChange} RP)`);
-            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== "cirak") {
               setRankUpTier(newTier);
               setTimeout(() => setShowRankUp(true), 2000);
             }
@@ -2362,7 +2389,8 @@ const GamePage = ({
         // 0-0 beraberlik: Rastgele kazanan seç
         if (player1Score === 0 && player2Score === 0) {
           console.log("🎲 0-0 beraberlik - rastgele kazanan seçiliyor");
-          determinedWinnerId = Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
+          determinedWinnerId =
+            Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
           console.log("✅ Rastgele seçilen kazanan:", determinedWinnerId);
         } else {
           // 0'dan farklı beraberlik: Backend tie-breaker RPC çağır
@@ -2381,7 +2409,8 @@ const GamePage = ({
           if (tieError) {
             console.error("❌ Tie-breaker hatası:", tieError);
             // Fallback: Rastgele seç
-            determinedWinnerId = Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
+            determinedWinnerId =
+              Math.random() < 0.5 ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
             console.log("⚠️ Tie-breaker hatası, rastgele seçildi:", determinedWinnerId);
           } else {
             determinedWinnerId = tieResult as string;
@@ -2390,7 +2419,8 @@ const GamePage = ({
         }
       } else {
         // Normal kazanan belirleme
-        determinedWinnerId = player1Score > player2Score ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
+        determinedWinnerId =
+          player1Score > player2Score ? activeTournamentMatch.player1_id : activeTournamentMatch.player2_id;
       }
 
       // ✅ Winner'ı HEMEN belirle ve state'i güncelle
@@ -2591,10 +2621,13 @@ const GamePage = ({
 
         // Bracket sayfasına yönlendir - advancement orada gerçekleşecek
         console.log("🔄 1.5 saniye sonra bracket sayfasına yönlendirilecek");
-        setTimeout(() => {
-          console.log("🔄 Bracket sayfasına yönlendiriliyor...");
-          navigate(`/tournament/bracket/${activeTournamentMatch.tournament_id}`);
-        }, userIsWinner ? 1500 : 0);
+        setTimeout(
+          () => {
+            console.log("🔄 Bracket sayfasına yönlendiriliyor...");
+            navigate(`/tournament/bracket/${activeTournamentMatch.tournament_id}`);
+          },
+          userIsWinner ? 1500 : 0,
+        );
       } else {
         console.log(
           `⏳ Diğer maçlar devam ediyor. Tamamlanan: ${allRoundMatches?.filter((m) => m.status === "completed").length}/${allRoundMatches?.length}`,
@@ -2670,11 +2703,13 @@ const GamePage = ({
         }
 
         const currentGameType: "timed" | "score" = gameType;
-        const botIdentity = currentBotIdentity || (() => {
-          const fallbackSeed = seedFromText(`${currentRoom?.id || "bot-room"}:rematch`);
-          const fallbackName = generateBotName(fallbackSeed);
-          return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
-        })();
+        const botIdentity =
+          currentBotIdentity ||
+          (() => {
+            const fallbackSeed = seedFromText(`${currentRoom?.id || "bot-room"}:rematch`);
+            const fallbackName = generateBotName(fallbackSeed);
+            return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
+          })();
 
         roomSessionRef.current += 1;
         if (pendingEndGameTimeoutRef.current) {
@@ -2748,7 +2783,6 @@ const GamePage = ({
 
       return;
     }
-
 
     if (!opponentId) {
       console.error("❌ Rematch: Opponent yok");
@@ -2976,7 +3010,7 @@ const GamePage = ({
         // 🔧 FIX: Buffer geçmiş - minimum buffer göster ama countdown'da SUNUCU ZAMANI kullan
         // Her cihaz aynı actualCountdownStart'ı kullanarak senkronize kalır
         // GameCountdown'ın MIN_DISPLAY_MS mekanizması geç mount'ları ele alır
-        
+
         console.log("🎯 Buffer süresi geçmiş ama MİNİMUM buffer gösteriliyor:", {
           msUntilCountdown,
           actualCountdownStart: new Date(actualCountdownStart).toISOString(),
@@ -3494,7 +3528,12 @@ const GamePage = ({
         console.log("✅ Oyun istatistikleri güncellendi");
 
         // Rank puanı güncelle - rastgele eşleşme ve özel oda
-        if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
+        if (
+          gameMode === "random-match" ||
+          (gameMode as string) === "random-match-timed" ||
+          (gameMode as string) === "random-match-score" ||
+          gameMode === "private-room"
+        ) {
           const rpChange = isWinner ? 50 : isTie ? 10 : -30;
           const { data: currentProfile } = await supabase
             .from("profiles")
@@ -3509,9 +3548,9 @@ const GamePage = ({
             .from("profiles")
             .update({ rank_points: newRP } as any)
             .eq("id", userId);
-          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
+          console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? "+" : ""}${rpChange} RP)`);
           // Rank tier değişimi kontrolü (yükselme)
-          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+          if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== "cirak") {
             setRankUpTier(newTier);
             setTimeout(() => setShowRankUp(true), 2000);
           }
@@ -3602,7 +3641,12 @@ const GamePage = ({
           }
 
           // Rank puanı güncelle - rastgele eşleşme ve özel oda
-          if (gameMode === "random-match" || (gameMode as string) === "random-match-timed" || (gameMode as string) === "random-match-score" || gameMode === "private-room") {
+          if (
+            gameMode === "random-match" ||
+            (gameMode as string) === "random-match-timed" ||
+            (gameMode as string) === "random-match-score" ||
+            gameMode === "private-room"
+          ) {
             const rpChange = isWinner ? 50 : isTie ? 10 : -30;
             const { data: currentProfile } = await supabase
               .from("profiles")
@@ -3617,8 +3661,10 @@ const GamePage = ({
               .from("profiles")
               .update({ rank_points: newRP } as any)
               .eq("id", user.id);
-            console.log(`🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? '+' : ''}${rpChange} RP)`);
-            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== 'cirak') {
+            console.log(
+              `🏅 Rank puanı güncellendi: ${currentRP} → ${newRP} (${rpChange > 0 ? "+" : ""}${rpChange} RP)`,
+            );
+            if (newTier.id !== oldTier.id && newRP > currentRP && newTier.id !== "cirak") {
               setRankUpTier(newTier);
               setTimeout(() => setShowRankUp(true), 2000);
             }
@@ -3626,7 +3672,6 @@ const GamePage = ({
         }
       }
     }
-
 
     // Normal oyun sonu
     setGameEnded(true);
@@ -3714,7 +3759,10 @@ const GamePage = ({
       case "random-match":
         const botParticipant = participants.find((p) => p.is_bot === true);
         if (botParticipant) {
-          return currentBotIdentity?.name || generateBotName(seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`));
+          return (
+            currentBotIdentity?.name ||
+            generateBotName(seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`))
+          );
         }
         if (opponentName && opponentName !== "Rakip Aranıyor...") {
           return opponentName;
@@ -3738,10 +3786,7 @@ const GamePage = ({
     const hasRealOpponent = participants.some((p) => !p.is_bot && p.user_id !== user?.id);
     const hasBotOpponent = hasMultiplayerBotOpponent || searchParams.get("botRematch") === "1";
     const isRealActiveGame =
-      gameStarted &&
-      !gameEnded &&
-      (participants.length >= 2 || hasBotOpponent) &&
-      (hasRealOpponent || hasBotOpponent);
+      gameStarted && !gameEnded && (participants.length >= 2 || hasBotOpponent) && (hasRealOpponent || hasBotOpponent);
 
     if (isRealActiveGame) {
       setShowExitDialog(true);
@@ -4218,7 +4263,6 @@ const GamePage = ({
 
     setSelectedLetters([]);
     // currentWord artık derived value, manuel set'e gerek yok
-
   };
 
   // 2. Fısılda Jokeri - Sözlükteki orijinal haliyle göster (çevirme yapma!)
@@ -4572,7 +4616,7 @@ const GamePage = ({
 
     // Harfleri sırayla ızgarada yak (highlight)
     // Tüm harfleri aynı anda yak
-    const allPositions = wordPositions.map(p => ({ row: p.row, col: p.col }));
+    const allPositions = wordPositions.map((p) => ({ row: p.row, col: p.col }));
     setHighlightedLetters(allPositions);
     playSound("letterSelect");
 
@@ -4877,7 +4921,6 @@ const GamePage = ({
       fadeInBackgroundMusic(1000);
     };
   }, []);
-
 
   // Load tournament match data from URL parameters
   useEffect(() => {
@@ -5367,7 +5410,8 @@ const GamePage = ({
 
       // Skor çarpanı bilgisi toast
       if (user) {
-        const baseLabel = gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
+        const baseLabel =
+          gameResult === "player" ? "Kazanma (x5)" : gameResult === "tie" ? "Beraberlik (x2)" : "Mağlubiyet (x1)";
         const extras: string[] = [];
         if (isPremium) extras.push("VIP x2");
         if (hasScoreBoost) extras.push("Liderlik x2");
@@ -5398,7 +5442,11 @@ const GamePage = ({
         const endGameSession = roomSessionRef.current;
         pendingEndGameTimeoutRef.current = setTimeout(async () => {
           pendingEndGameTimeoutRef.current = null;
-          if (!isMountedRef.current || roomSessionRef.current !== endGameSession || currentRoomIdRef.current !== endGameRoomId) {
+          if (
+            !isMountedRef.current ||
+            roomSessionRef.current !== endGameSession ||
+            currentRoomIdRef.current !== endGameRoomId
+          ) {
             console.log("🚫 Eski maç endGame callback'i iptal edildi", {
               endGameRoomId: endGameRoomId?.slice(-8),
               currentRoomId: currentRoomIdRef.current?.slice(-8),
@@ -5796,11 +5844,7 @@ const GamePage = ({
     // (rematch sonrası GamePage açılır açılmaz kapanma / saat ilerlemiş gibi görünme bug'ı).
     if (gameMode === "private-room" || gameMode === "random-match") {
       const urlRoomParam = searchParams.get("room");
-      if (
-        urlRoomParam &&
-        currentRoom.id !== urlRoomParam &&
-        (currentRoom as any).room_code !== urlRoomParam
-      ) {
+      if (urlRoomParam && currentRoom.id !== urlRoomParam && (currentRoom as any).room_code !== urlRoomParam) {
         console.log("⏳ currentRoom henüz URL room'una eşleşmedi, countdown bekleniyor", {
           urlRoomParam,
           currentRoomId: currentRoom.id?.slice(-8),
@@ -5843,14 +5887,11 @@ const GamePage = ({
       // Buffer geçmişse geç katılan cihazı aktif countdown fazına doğrudan kilitle
       if (msElapsed >= 0) {
         const shouldSkipBuffer = msElapsed >= BUFFER_MS;
-        console.log(
-          "🎮 Countdown başlatılıyor, initiateCountdown kendi zamanlamasını yapacak:",
-          {
-            msElapsed,
-            shouldSkipBuffer,
-            countdownStartedAt: currentRoom.countdown_started_at,
-          },
-        );
+        console.log("🎮 Countdown başlatılıyor, initiateCountdown kendi zamanlamasını yapacak:", {
+          msElapsed,
+          shouldSkipBuffer,
+          countdownStartedAt: currentRoom.countdown_started_at,
+        });
         initiateCountdown(currentRoom.countdown_started_at, shouldSkipBuffer);
         return;
       }
@@ -6069,11 +6110,7 @@ const GamePage = ({
     // 🔧 FIX (timer freeze): gameStarted=true ise (countdown bitmiş) timer'ı her durumda başlat.
     // Önceki katı koşul (roomActive + haveTwoRealPlayers) realtime gecikmesinde
     // timer'ın hiç başlamamasına ve süre 2:00'da donmasına yol açıyordu.
-    const canStart =
-      gameType === "timed" &&
-      gameStarted &&
-      !gameEnded &&
-      !timerRef.current;
+    const canStart = gameType === "timed" && gameStarted && !gameEnded && !timerRef.current;
 
     if (!canStart) return;
 
@@ -6450,7 +6487,10 @@ const GamePage = ({
           let lastSec = timeLeftRef.current;
           timerRef.current = setInterval(() => {
             if (!endsAtTimestampRef.current || !isMountedRef.current || gameEndedRef.current) {
-              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
               return;
             }
             const now = Date.now() + serverTimeOffset;
@@ -6462,7 +6502,10 @@ const GamePage = ({
             }
             if (sec <= 0 && !gameEndedRef.current) {
               gameEndedRef.current = true;
-              if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
               handleGameEnd();
               setTimeout(() => {
                 setGameEnded(true);
@@ -7087,9 +7130,11 @@ const GamePage = ({
               // Uzun kelimelere bonus
               const lengthBonus =
                 word.length >= 8
-                  ? Math.floor(Math.random() * (gameMode === "random-match" ? 13 : 15)) + (gameMode === "random-match" ? 10 : 10)
+                  ? Math.floor(Math.random() * (gameMode === "random-match" ? 13 : 15)) +
+                    (gameMode === "random-match" ? 10 : 10)
                   : word.length >= 6
-                    ? Math.floor(Math.random() * (gameMode === "random-match" ? 7 : 8)) + (gameMode === "random-match" ? 5 : 5)
+                    ? Math.floor(Math.random() * (gameMode === "random-match" ? 7 : 8)) +
+                      (gameMode === "random-match" ? 5 : 5)
                     : 0;
               const points = basePoints + lengthBonus;
 
@@ -7130,7 +7175,6 @@ const GamePage = ({
                 } catch (error) {
                   console.error("❌ Bot tournament score update error:", error);
                 }
-
               }
 
               wordUsed = true;
@@ -7167,7 +7211,6 @@ const GamePage = ({
               } catch (error) {
                 console.error("❌ Bot fallback score update error:", error);
               }
-
             }
           }
         } catch (error) {
@@ -7500,14 +7543,26 @@ const GamePage = ({
   };
 
   // Input field içinde feedback gösterme fonksiyonu
-  const showCustomToast = (title: string, _description: string, color: "red" | "green" | "white" | "blue" | "bonus" = "red") => {
+  const showCustomToast = (
+    title: string,
+    _description: string,
+    color: "red" | "green" | "white" | "blue" | "bonus" = "red",
+  ) => {
     // Önceki timer'ı temizle
     if (inputFeedbackTimerRef.current) {
       clearTimeout(inputFeedbackTimerRef.current);
     }
 
     const feedbackType =
-      color === "green" ? "success" : color === "white" ? "success-long" : color === "blue" ? "success-xlong" : color === "bonus" ? "bonus" : "error";
+      color === "green"
+        ? "success"
+        : color === "white"
+          ? "success-long"
+          : color === "blue"
+            ? "success-xlong"
+            : color === "bonus"
+              ? "bonus"
+              : "error";
     setInputFeedback({ text: title, type: feedbackType });
 
     // bonus için daha uzun süre göster
@@ -7559,7 +7614,6 @@ const GamePage = ({
         return;
       }
 
-
       // LOCAL WORDLIST VALIDATION (CLIENT-SIDE, HIZLI)
       const result = validateWordLocal(currentWord);
 
@@ -7572,7 +7626,6 @@ const GamePage = ({
         clearWord();
         return;
       }
-
 
       console.log("✅ Word accepted:", currentWord, "Points:", result.points);
 
@@ -7676,7 +7729,6 @@ const GamePage = ({
 
       // 🔥 Combo boost tick (başarılı kelime)
       tickCombo();
-
 
       // Calculate first word time (in seconds)
       const wordTimestamp = Date.now();
@@ -8024,11 +8076,13 @@ const GamePage = ({
         if (gameMode === "random-match" || gameMode === "private-room") {
           const botParticipant = participants.find((p) => p.is_bot === true);
           if (botParticipant) {
-            const bot = currentBotIdentity || (() => {
-              const seed = seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`);
-              const name = generateBotName(seed);
-              return { seed, name, avatar: generateBotAvatar(seed, name) };
-            })();
+            const bot =
+              currentBotIdentity ||
+              (() => {
+                const seed = seedFromText(`${currentRoom?.id || ""}${botParticipant.id || ""}`);
+                const name = generateBotName(seed);
+                return { seed, name, avatar: generateBotAvatar(seed, name) };
+              })();
             return { name: bot.name, icon: User, avatar: bot.avatar, isPremium: false };
           }
         }
@@ -8077,8 +8131,7 @@ const GamePage = ({
   // Emoji reactions hook - sadece multiplayer modlarda
   const isMultiplayerMode = gameMode === "random-match" || gameMode === "private-room";
   const emojiRoomId = isMultiplayerMode ? currentRoom?.id || "" : "";
-  const opponentIsBotForEmoji =
-    gameMode === "random-match" && participants.some((p) => p.is_bot === true);
+  const opponentIsBotForEmoji = gameMode === "random-match" && participants.some((p) => p.is_bot === true);
   const emojiReactions = GameEmojiReactions({
     roomId: emojiRoomId,
     userId: user?.id || "",
@@ -8095,8 +8148,6 @@ const GamePage = ({
         }
       : undefined,
   });
-
-
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 
@@ -8116,8 +8167,12 @@ const GamePage = ({
         <Card className="w-full max-w-md text-center relative z-10 bg-[#16213e]/80 backdrop-blur-md border border-white/10 shadow-2xl">
           <CardContent className="p-6">
             <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-              {winner === "player" && winAnim && <Lottie animationData={winAnim} loop autoplay style={{ width: 80, height: 80 }} />}
-              {winner === "opponent" && loseAnim && <Lottie animationData={loseAnim} loop autoplay style={{ width: 80, height: 80 }} />}
+              {winner === "player" && winAnim && (
+                <Lottie animationData={winAnim} loop autoplay style={{ width: 80, height: 80 }} />
+              )}
+              {winner === "opponent" && loseAnim && (
+                <Lottie animationData={loseAnim} loop autoplay style={{ width: 80, height: 80 }} />
+              )}
               {winner === "tie" && gameMode !== "tournament" && tieAnim && (
                 <Lottie animationData={tieAnim} loop autoplay style={{ width: 80, height: 80 }} />
               )}
@@ -8346,24 +8401,25 @@ const GamePage = ({
                       variant="outline"
                       disabled={!buttonsEnabled}
                       onClick={async () => {
-  playSound("buttonClick");
-  setButtonsEnabled(false);
+                        playSound("buttonClick");
+                        setButtonsEnabled(false);
 
-  if (!isPremium && (gameMode as string) !== "tournament") {
-    const creditConsumed = await consumeCredit();
-    if (!creditConsumed) {
-      toast({
-        title: "Sayfaların tükendi",
-        description: "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
-        variant: "destructive",
-      });
-      navigate("/market");
-      return;
-    }
-  }
+                        if (!isPremium && (gameMode as string) !== "tournament") {
+                          const creditConsumed = await consumeCredit();
+                          if (!creditConsumed) {
+                            toast({
+                              title: "Sayfaların tükendi",
+                              description:
+                                "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
+                              variant: "destructive",
+                            });
+                            navigate("/market");
+                            return;
+                          }
+                        }
 
-  resetGameForRematch();
-}}
+                        resetGameForRematch();
+                      }}
                       className="w-full"
                     >
                       <img src="/tekrarsvg.svg" alt="Tekrar" className="w-5 h-5 shrink-0 mr-2" />
@@ -8433,42 +8489,40 @@ const GamePage = ({
       {/* 🎉 KELİMELE bonus animasyonu (1 kerelik, 3sn) */}
       {showKelimeleAnim && confettiAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9999]">
-          <Lottie
-            animationData={confettiAnim}
-            loop={false}
-            autoplay
-            style={{ width: "100%", height: "100%" }}
-          />
+          <Lottie animationData={confettiAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
         </div>
       )}
       {/* ✨ 6+ harfli kelime animasyonu (ızgaranın ortasında, 1 kerelik) */}
       {showAltiHarfAnim && altiHarfAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center overflow-visible">
-          <div style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)", transform: "scale(2)", transformOrigin: "center center" }}>
-            <Lottie
-              animationData={altiHarfAnim}
-              loop={false}
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
+          <div
+            style={{
+              width: "min(80vw, 360px)",
+              height: "min(80vw, 360px)",
+              transform: "scale(2)",
+              transformOrigin: "center center",
+            }}
+          >
+            <Lottie animationData={altiHarfAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
           </div>
         </div>
       )}
       {/* 🎉 7+ harfli kelime animasyonu (gunlukKonfeti) */}
       {showGunlukKonfetiAnim && gunlukKonfetiAnim && (
         <div className="fixed inset-0 pointer-events-none z-[9998] flex items-center justify-center overflow-visible">
-          <div style={{ width: "min(80vw, 360px)", height: "min(80vw, 360px)", transform: "scale(2)", transformOrigin: "center center" }}>
-            <Lottie
-              animationData={gunlukKonfetiAnim}
-              loop={false}
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
+          <div
+            style={{
+              width: "min(80vw, 360px)",
+              height: "min(80vw, 360px)",
+              transform: "scale(2)",
+              transformOrigin: "center center",
+            }}
+          >
+            <Lottie animationData={gunlukKonfetiAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
           </div>
         </div>
       )}
       <>
-
         {/* ⚠️ KRİTİK GUARD: Maç bitişi sırasında render'ı engelle */}
         {isMatchFinishing && gameMode === "tournament" && (
           <div className="min-h-screen flex items-center justify-center" style={{ background: "#1a1a2e" }}>
@@ -8503,19 +8557,19 @@ const GamePage = ({
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
-              >
-                {matchBgAnim && (
-                  <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                    <img
-                      src={matchBgAnim}
-                      alt=""
-                      aria-hidden="true"
-                      decoding="async"
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    />
-                  </div>
-                )}
-               <div className="h-full flex flex-col px-2 relative z-15">
+            >
+              {matchBgAnim && (
+                <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                  <img
+                    src={matchBgAnim}
+                    alt=""
+                    aria-hidden="true"
+                    decoding="async"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                </div>
+              )}
+              <div className="h-full flex flex-col px-2 relative z-15">
                 {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
@@ -8547,32 +8601,32 @@ const GamePage = ({
                         </div>
                       )}
                       <div className="relative">
-                      <div
-                        className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
-                          displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
-                        } ${
-                          displayTime <= 30
-                            ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                            : "bg-slate-900/70 border border-white/10"
-                        }`}
-                        style={{ minWidth: "110px" }}
-                      >
-                        <span
-                          className={`font-mono text-lg font-black tracking-wider ${
-                            displayTime <= 30 ? "text-red-400" : "text-cyan-300"
+                        <div
+                          className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
+                            displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
+                          } ${
+                            displayTime <= 30
+                              ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                              : "bg-slate-900/70 border border-white/10"
                           }`}
-                          style={{
-                            fontFamily: "'Orbitron', 'Courier New', monospace",
-                            textShadow:
-                              displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
-                            fontVariantNumeric: "tabular-nums",
-                            letterSpacing: "0.1em",
-                          }}
+                          style={{ minWidth: "110px" }}
                         >
-                        {formatTime(displayTime)}
-                        </span>
-                      </div>
-                      {/* Süre Azalıyor - moved to avatar cards overlay below */}
+                          <span
+                            className={`font-mono text-lg font-black tracking-wider ${
+                              displayTime <= 30 ? "text-red-400" : "text-cyan-300"
+                            }`}
+                            style={{
+                              fontFamily: "'Orbitron', 'Courier New', monospace",
+                              textShadow:
+                                displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "0.1em",
+                            }}
+                          >
+                            {formatTime(displayTime)}
+                          </span>
+                        </div>
+                        {/* Süre Azalıyor - moved to avatar cards overlay below */}
                       </div>
                     </div>
                   ) : (
@@ -8714,10 +8768,7 @@ const GamePage = ({
                         bonusAmount={bonusEvent.amount}
                         resetId={comboResetId}
                       />
-                      <NiceCatchText
-                        eventId={niceCatchEvent.id}
-                        wordLength={niceCatchEvent.length}
-                      />
+                      <NiceCatchText eventId={niceCatchEvent.id} wordLength={niceCatchEvent.length} />
                       <NiceCatchText
                         eventId={hintEvent.id}
                         customText={hintEvent.text}
@@ -8726,10 +8777,8 @@ const GamePage = ({
                         letterOutStepMs={15}
                         fontSize="1.09375rem"
                       />
-
                     </div>
                   )}
-
 
                   {/* Rakip kartı */}
                   <div
@@ -8834,10 +8883,12 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span 
-  className="absolute text-[10px] font-bold text-white"
-  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
->{jokers.degistir}</span>
+                        <span
+                          className="absolute text-[10px] font-bold text-white"
+                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+                        >
+                          {jokers.degistir}
+                        </span>
                       </div>
                     </button>
                     {/* Fısılda */}
@@ -8866,10 +8917,12 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span 
-  className="absolute text-[10px] font-bold text-white"
-  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
->{jokers.fisilida}</span>
+                        <span
+                          className="absolute text-[10px] font-bold text-white"
+                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+                        >
+                          {jokers.fisilida}
+                        </span>
                       </div>
                     </button>
                     {/* Sen Yaz */}
@@ -8898,10 +8951,12 @@ const GamePage = ({
                       <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
                       <div className="absolute -top-2 -right-2 flex items-center justify-center">
                         <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span 
-  className="absolute text-[10px] font-bold text-white"
-  style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
->{jokers.senYaz}</span>
+                        <span
+                          className="absolute text-[10px] font-bold text-white"
+                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
+                        >
+                          {jokers.senYaz}
+                        </span>
                       </div>
                     </button>
                   </div>
@@ -9166,38 +9221,20 @@ const GamePage = ({
             {/* Tournament Exit Dialog */}
             <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
               <AlertDialogContent
-                className="max-w-sm mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]"
+                className="max-w-xs mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]"
                 style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
               >
                 <AlertDialogHeader className="items-center text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
-                    <span className="text-2xl">⚠️</span>
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+                    <span className="text-xl">⚠️</span>
                   </div>
-                  <AlertDialogTitle className="text-lg font-bold text-white">Turnuva Maçı Uyarısı</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
-                      <p className="text-gray-300">Turnuva maçından ayrılırsan:</p>
-                      <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
-                        <p>
-                          ❌ <span className="font-semibold text-red-400">Maçı kaybedersin</span>
-                        </p>
-                        <p>
-                          🏆 <span className="font-semibold text-amber-400">Rakip kazanır</span>
-                        </p>
-                        <p>
-                          🚫 <span className="font-semibold text-sky-400">Turnuvadan elenirsin</span>
-                        </p>
-                        <p>
-                          ⚖️ <span className="font-semibold text-orange-400">-500 puan cezası alırsın</span>
-                        </p>
-                      </div>
-                      <p className="text-gray-500 text-xs">Bu işlem geri alınamaz!</p>
-                    </div>
-                  </AlertDialogDescription>
+                  <AlertDialogTitle className="text-base font-bold text-white">
+                    Turnuvayı kaybetmiş olacaksın!
+                  </AlertDialogTitle>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0 mt-2">
                   <AlertDialogCancel className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white border-0 font-semibold">
-                    🏆 Hayır, Maça Devam Et
+                    Hayır Devam Et
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
@@ -9206,7 +9243,7 @@ const GamePage = ({
                     }}
                     className="w-full bg-white/5 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 font-medium"
                   >
-                    Evet, Ayrıl
+                    Evet Çık
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
