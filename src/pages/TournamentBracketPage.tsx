@@ -1141,6 +1141,7 @@ const TournamentBracketPage = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
           <div style={{ width: "min(95vw, 600px)", height: "min(95vw, 600px)" }}>
             <Lottie
+              key={`321-${currentTournament?.next_round_starts_at || "cd"}`}
               animationData={bracket321Lottie}
               loop={false}
               autoplay
