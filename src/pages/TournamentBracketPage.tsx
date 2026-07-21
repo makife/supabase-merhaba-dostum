@@ -698,11 +698,11 @@ const TournamentBracketPage = () => {
       const remaining = Math.max(0, Math.ceil((target - serverNow()) / 1000));
       setCountdown(remaining);
 
-      // Son 10 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
-      if (remaining >= 1 && remaining <= 10 && !playedCountdownSecondsRef.current.has(remaining)) {
+      // Son 5 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
+      if (remaining >= 1 && remaining <= 5 && !playedCountdownSecondsRef.current.has(remaining)) {
         playedCountdownSecondsRef.current.add(remaining);
         if (isSoundEffectsEnabled()) {
-          const pitchRate = 1.0 + (10 - remaining) * 0.22;
+          const pitchRate = 1.0 + (5 - remaining) * 0.22;
           playPitchedBeep(BRACKET_BEEP_URL, pitchRate, 0.7).catch(() => {});
         }
       }
