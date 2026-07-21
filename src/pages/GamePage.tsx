@@ -9225,9 +9225,7 @@ const GamePage = ({
                 style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
               >
                 <AlertDialogHeader className="items-center text-center">
-                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
-                    <span className="text-xl">⚠️</span>
-                  </div>
+                  <span className="text-4xl mb-2">⚠️</span>
                   <AlertDialogTitle className="text-base font-bold text-white">
                     Turnuvayı kaybetmiş olacaksın!
                   </AlertDialogTitle>
