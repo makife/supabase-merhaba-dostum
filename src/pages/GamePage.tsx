@@ -9136,6 +9136,7 @@ const GamePage = ({
                               WebkitUserSelect: "none",
                               userSelect: "none",
                               pointerEvents: !gameStarted ? "none" : "auto",
+                              transition: "background 150ms ease, box-shadow 150ms ease, border-color 150ms ease",
                               ...selectedStyle,
                               ...highlightStyle,
                             }}
