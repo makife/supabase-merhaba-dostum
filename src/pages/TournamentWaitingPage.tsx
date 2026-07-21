@@ -177,7 +177,7 @@ const TournamentWaitingPage = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl p-5 shadow-xl">
+          <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl p-3 shadow-xl">
             <TournamentCountdown
               timeLeft={timeLeft}
               realPlayerCount={realPlayerCount}
@@ -223,11 +223,11 @@ const TournamentWaitingPage = () => {
             {displayParticipants.map((participant) => (
               <div
                 key={participant.id}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl ${participant.is_bot ? "bg-white/4 ring-1 ring-white/8" : "bg-emerald-500/8 ring-1 ring-emerald-500/15"}`}
+                className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl ring-1 ring-white/25 ${participant.is_bot ? "bg-white/6" : "bg-emerald-500/10"}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${participant.is_bot ? "bg-slate-500" : "bg-emerald-400"}`} />
                 {participant.is_bot ? (
-                  <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-500/20 ring-1 ring-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-500/20 ring-1 ring-white/20 flex items-center justify-center flex-shrink-0">
                     {participant.profiles?.avatar_url ? (
                       <img src={participant.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -235,16 +235,16 @@ const TournamentWaitingPage = () => {
                     )}
                   </div>
                 ) : (
-                  <Avatar className="w-9 h-9 flex-shrink-0" showFrame={true}>
+                  <Avatar className="w-10 h-10 flex-shrink-0" showFrame={true}>
                     <AvatarImage src={participant.profiles?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                    <AvatarFallback className="bg-emerald-500/20 text-emerald-300 text-sm font-bold">
                       {participant.profiles?.username?.charAt(0)?.toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm truncate ${participant.is_bot ? "font-medium text-slate-400" : "font-semibold text-white/95"}`}>
+                    <span className={`text-base truncate ${participant.is_bot ? "font-semibold text-slate-300" : "font-bold text-white"}`}>
                       {participant.profiles?.username || (participant.is_bot ? "Bot" : "Oyuncu")}
                     </span>
                   </div>
