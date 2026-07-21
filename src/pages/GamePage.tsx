@@ -9044,13 +9044,15 @@ const GamePage = ({
                         const highlightStyle =
                           isHighlighted && selectedJoker === "degistir"
                             ? {
-                                boxShadow: "0 0 20px rgba(34,197,94,0.8), 0 0 40px rgba(34,197,94,0.4)",
-                                borderColor: "rgba(34,197,94,0.7)",
+                                backgroundColor: "rgba(34,197,94,0.95)",
+                                borderColor: "rgba(34,197,94,0.9)",
+                                boxShadow: "0 0 20px rgba(34,197,94,0.6)",
                               }
                             : isHighlighted && selectedJoker === "fisilida"
                               ? {
-                                  boxShadow: "0 0 20px rgba(234,179,8,0.8), 0 0 40px rgba(234,179,8,0.4)",
-                                  borderColor: "rgba(234,179,8,0.7)",
+                                  backgroundColor: "rgba(234,179,8,0.95)",
+                                  borderColor: "rgba(234,179,8,0.9)",
+                                  boxShadow: "0 0 20px rgba(234,179,8,0.6)",
                                 }
                               : undefined;
                         const selectionOrder = selectedLetters.findIndex(
