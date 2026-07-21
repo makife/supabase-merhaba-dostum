@@ -4464,6 +4464,7 @@ const GamePage = ({
     playSpecialSound("/senyaz.mp3");
 
     setIsJokerActive(true);
+    setSelectedJoker("senYaz");
 
     const possibleWords = [
       "KEDİ",
@@ -4550,6 +4551,7 @@ const GamePage = ({
     if (validWords.length === 0) {
       // Kelime bulunamadı - joker sayısını AZALTMA!
       setIsJokerActive(false);
+      setSelectedJoker(null);
 
       toast({
         title: "✍️ Sen Yaz Jokeri",
@@ -4568,6 +4570,7 @@ const GamePage = ({
     if (usedWords.has(normalizedSelectedWord)) {
       console.log("⚠️ Sen Yaz Jokeri: Seçilen kelime zaten kullanılmış:", selectedWord);
       setIsJokerActive(false);
+      setSelectedJoker(null);
 
       toast({
         title: "✍️ Sen Yaz Jokeri",
@@ -4607,6 +4610,7 @@ const GamePage = ({
     if (!canFormWord || wordPositions.length !== selectedWord.length) {
       console.log("⚠️ Sen Yaz Jokeri: Kelime ızgarada oluşturulamıyor:", selectedWord);
       setIsJokerActive(false);
+      setSelectedJoker(null);
 
       toast({
         title: "✍️ Sen Yaz Jokeri",
@@ -4683,6 +4687,7 @@ const GamePage = ({
       // currentWord artık derived value, manuel set'e gerek yok
       setSelectedLetters([]);
       setIsJokerActive(false);
+      setSelectedJoker(null);
 
       // SADECE GERÇEKTEN BAŞARILI OLDUĞUNDA JOKER SAYISINI AZALT
       if (jokerSuccess) {
@@ -9054,7 +9059,13 @@ const GamePage = ({
                                   borderColor: "rgba(234,179,8,0.9)",
                                   boxShadow: "0 0 20px rgba(234,179,8,0.6)",
                                 }
-                              : undefined;
+                              : isHighlighted && selectedJoker === "senYaz"
+                                ? {
+                                    background: "linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)",
+                                    borderColor: "rgba(59,130,246,0.9)",
+                                    boxShadow: "0 0 20px rgba(59,130,246,0.6)",
+                                  }
+                                : undefined;
                         const selectionOrder = selectedLetters.findIndex(
                           (s) => s.row === rowIndex && s.col === colIndex,
                         );
