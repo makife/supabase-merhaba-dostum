@@ -8963,7 +8963,7 @@ const GamePage = ({
                     <div
                       className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
                         inputFlash === "success-xlong"
-                          ? "border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] bg-blue-950/40"
+                          ? "border-2 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)] bg-cyan-950/40"
                           : inputFlash === "success-long"
                             ? "border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-white/15"
                             : inputFlash === "success"
@@ -8985,7 +8985,7 @@ const GamePage = ({
                               inputFeedback.type === "bonus"
                                 ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
                                 : inputFeedback.type === "success-xlong"
-                                  ? "bg-blue-500/90 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+                                  ? "bg-cyan-500/90 shadow-[0_0_20px_rgba(34,211,238,0.6)]"
                                   : inputFeedback.type === "success-long"
                                     ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)] text-slate-900"
                                     : inputFeedback.type === "success"
