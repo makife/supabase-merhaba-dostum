@@ -4997,12 +4997,6 @@ const GamePage = ({
                   // supabase.removeChannel(statusChannel);
                   console.log("⚠️ [GamePage] Status channel cleanup ATLANYOR (bağlantı koruması)");
 
-                  // Toast göster
-                  toast({
-                    title: "Maç Tamamlandı",
-                    description: "Turnuva sayfasına yönlendiriliyorsunuz.",
-                  });
-
                   // HEMEN yönlendir - local state dinleme
                   setTimeout(() => {
                     navigate(`/tournament/bracket/${finalTournamentId}`, {
