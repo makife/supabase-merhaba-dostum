@@ -16,11 +16,19 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   isBotTournament = false,
 }) => {
   const [basliyorAnim, setBasliyorAnim] = useState<any>(null);
+  const [baslamakUzereAnim, setBaslamakUzereAnim] = useState<any>(null);
 
   useEffect(() => {
     fetch("/turnuvaBasliyor.json")
       .then((r) => r.json())
       .then(setBasliyorAnim)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetch("/turnuvaBaslamakUzere.json")
+      .then((r) => r.json())
+      .then(setBaslamakUzereAnim)
       .catch(console.error);
   }, []);
   const formatTime = (seconds: number) => {
@@ -32,7 +40,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
   const getStatusMessage = () => {
     if (realPlayerCount < 2) {
       return {
-        text: isBotTournament ? "Turnuva başlamak üzere" : "Oyuncular bekleniyor",
+        text: isBotTournament ? null : "Oyuncular bekleniyor",
         color: isBotTournament ? "text-blue-400" : "text-red-400",
         emoji: isBotTournament ? "⏳" : "⚠️",
       };
@@ -55,7 +63,7 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
     }
 
     return {
-      text: "Turnuva başlamak üzere",
+      text: null,
       color: "text-blue-400",
       emoji: "⏳",
     };
@@ -73,12 +81,19 @@ export const TournamentCountdown: React.FC<TournamentCountdownProps> = ({
         )}
         <h2 className="text-2xl font-bold text-white mb-2">Turnuva Başlıyor!</h2>
 
-        <div className="text-4xl font-bold text-yellow-400 mb-4">{formatTime(timeLeft)}</div>
+        <div className="flex items-center justify-center gap-3 mb-4">
+          {baslamakUzereAnim && (
+            <Lottie animationData={baslamakUzereAnim} loop autoplay style={{ width: 40, height: 40 }} />
+          )}
+          <div className="text-4xl font-bold text-yellow-400">{formatTime(timeLeft)}</div>
+        </div>
 
         <div className="space-y-3">
-          <p className={`text-sm font-medium ${status.color}`}>
-            {status.emoji} {status.text}
-          </p>
+          {status.text && (
+            <p className={`text-sm font-medium ${status.color}`}>
+              {status.emoji} {status.text}
+            </p>
+          )}
 
           {!isCreator && <p className="text-blue-300 text-sm">Turnuvanın başlaması bekleniyor...</p>}
 
