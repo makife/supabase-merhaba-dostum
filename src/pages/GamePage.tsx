@@ -4187,6 +4187,7 @@ const GamePage = ({
     playSpecialSound("/degistir.mp3");
 
     setIsJokerActive(true);
+    setSelectedJoker("degistir");
     setGridSyncPaused(true);
 
     const vowels = ["A", "E", "İ", "I", "O", "U", "Ü", "Ö"];
@@ -4251,6 +4252,7 @@ const GamePage = ({
     if (!jokerUsed) {
       console.error("❌ Değiştir joker kullanılamadı!");
       setIsJokerActive(false);
+      setSelectedJoker(null);
       setGridSyncPaused(false);
       return;
     }
@@ -4259,6 +4261,7 @@ const GamePage = ({
     setTimeout(() => {
       setHighlightedLetters([]);
       setIsJokerActive(false);
+      setSelectedJoker(null);
     }, 500);
 
     setSelectedLetters([]);
@@ -9038,6 +9041,18 @@ const GamePage = ({
                       row.map((letter, colIndex) => {
                         const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
                         const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
+                        const highlightStyle =
+                          isHighlighted && selectedJoker === "degistir"
+                            ? {
+                                boxShadow: "0 0 20px rgba(34,197,94,0.8), 0 0 40px rgba(34,197,94,0.4)",
+                                borderColor: "rgba(34,197,94,0.7)",
+                              }
+                            : isHighlighted && selectedJoker === "fisilida"
+                              ? {
+                                  boxShadow: "0 0 20px rgba(234,179,8,0.8), 0 0 40px rgba(234,179,8,0.4)",
+                                  borderColor: "rgba(234,179,8,0.7)",
+                                }
+                              : undefined;
                         const selectionOrder = selectedLetters.findIndex(
                           (s) => s.row === rowIndex && s.col === colIndex,
                         );
@@ -9049,7 +9064,7 @@ const GamePage = ({
                               isSelected
                                 ? "selected border-emerald-400/70 bg-emerald-900/50 text-emerald-100"
                                 : "border-white/10 bg-white/5 text-white"
-                            } ${isHighlighted ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            } ${isHighlighted && !highlightStyle ? "letter-glow-highlight" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
                             onMouseDown={(e) => {
                               e.preventDefault();
@@ -9076,6 +9091,7 @@ const GamePage = ({
                               WebkitUserSelect: "none",
                               userSelect: "none",
                               pointerEvents: !gameStarted ? "none" : "auto",
+                              ...highlightStyle,
                             }}
                           >
                             <span
