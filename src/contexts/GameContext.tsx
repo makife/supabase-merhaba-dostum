@@ -197,7 +197,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     if (!isSystemConnected || !user) return;
 
     const path = window.location.pathname;
-    const isActiveRoomRoute = path.includes('/game/') || path.startsWith('/private-room/waiting');
+    const isActiveRoomRoute = path.includes("/game/") || path.startsWith("/private-room/waiting");
     if (isActiveRoomRoute) {
       console.log("[GameContext] 🚫 Aktif oda rotasında eski room restore atlandı");
       return;
@@ -205,7 +205,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     const restoreRoom = async () => {
       console.log("[GameContext] 🔄 isSystemConnected true, room restore kontrolü...");
-      
+
       // Eğer zaten aktif bir room varsa tekrar yükleme
       if (currentRoom) {
         console.log("[GameContext] ✓ Zaten aktif room var, skip");
@@ -230,11 +230,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         console.log("[GameContext] 📖 Cached room ID bulundu:", lastRoomId.slice(-8));
 
         // Room'u DB'den çek
-        const { data: room, error } = await supabase
-          .from("game_rooms")
-          .select("*")
-          .eq("id", lastRoomId)
-          .single();
+        const { data: room, error } = await supabase.from("game_rooms").select("*").eq("id", lastRoomId).single();
 
         if (error || !room) {
           console.log("[GameContext] ⚠️ Room artık yok veya hata:", error?.message);
@@ -597,80 +593,74 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   }, []);
 
   // Fetch participants - OPTIMIZED: basic info first, profiles async
-  const fetchParticipants = useCallback(
-    async (roomId: string) => {
-      try {
-        console.log("📥 Fetching participants for room:", String(roomId).slice(-8));
+  const fetchParticipants = useCallback(async (roomId: string) => {
+    try {
+      console.log("📥 Fetching participants for room:", String(roomId).slice(-8));
 
-        // STEP 1: Fetch basic participant info immediately (no profiles)
-        const { data: basicData, error } = await supabase
-          .from("game_participants")
-          .select("*")
-          .eq("room_id", roomId);
+      // STEP 1: Fetch basic participant info immediately (no profiles)
+      const { data: basicData, error } = await supabase.from("game_participants").select("*").eq("room_id", roomId);
 
-        if (error) {
-          console.error("❌ Participant fetch error:", error);
-          return;
-        }
-
-        if (!basicData || basicData.length === 0) {
-          console.log("⚠️ No participants found");
-          return;
-        }
-
-        // Get game mode for deduplication
-        const { data: roomData } = await supabase.from("game_rooms").select("game_mode").eq("id", roomId).single();
-        const gameMode = roomData?.game_mode || "unknown";
-
-        // STEP 2: Immediately set participants with basic info (enables countdown to start)
-        const dedupedBasic = dedupeParticipants(basicData as GameParticipant[], gameMode);
-        setParticipants(dedupedBasic);
-        
-        console.log("✅ Basic participants loaded:", {
-          count: dedupedBasic.length,
-          gameMode: gameMode,
-        });
-
-        // STEP 3: Async load profiles without blocking
-        const userIds = basicData.map(p => p.user_id).filter(Boolean);
-        if (userIds.length > 0) {
-          (async () => {
-            try {
-              const { data: profiles } = await supabase
-                .from("profiles")
-                .select("id, username, avatar_url")
-                .in("id", userIds);
-              
-              if (profiles) {
-                setParticipants(prev => {
-                  const updated = prev.map(p => ({
-                    ...p,
-                    profiles: profiles.find(prof => prof.id === p.user_id) || (p as any).profiles || null
-                  }));
-                  const dedupedUpdated = dedupeParticipants(updated as GameParticipant[], gameMode);
-                  
-                  console.log("✅ Profiles loaded:", {
-                    details: dedupedUpdated.map((p) => ({
-                      id: p.user_id?.slice(-8) || "null",
-                      isBot: p.is_bot,
-                      username: (p as any).profiles?.username || "No name",
-                    })),
-                  });
-                  
-                  return dedupedUpdated;
-                });
-              }
-            } catch (err) {
-              console.error("⚠️ Profile fetch error (non-critical):", err);
-            }
-          })();
-        }
-      } catch (error) {
-        console.error("❌ fetchParticipants error:", error);
+      if (error) {
+        console.error("❌ Participant fetch error:", error);
+        return;
       }
-    },
-    [],
-  );
+
+      if (!basicData || basicData.length === 0) {
+        console.log("⚠️ No participants found");
+        return;
+      }
+
+      // Get game mode for deduplication
+      const { data: roomData } = await supabase.from("game_rooms").select("game_mode").eq("id", roomId).single();
+      const gameMode = roomData?.game_mode || "unknown";
+
+      // STEP 2: Immediately set participants with basic info (enables countdown to start)
+      const dedupedBasic = dedupeParticipants(basicData as GameParticipant[], gameMode);
+      setParticipants(dedupedBasic);
+
+      console.log("✅ Basic participants loaded:", {
+        count: dedupedBasic.length,
+        gameMode: gameMode,
+      });
+
+      // STEP 3: Async load profiles without blocking
+      const userIds = basicData.map((p) => p.user_id).filter(Boolean);
+      if (userIds.length > 0) {
+        (async () => {
+          try {
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, username, avatar_url")
+              .in("id", userIds);
+
+            if (profiles) {
+              setParticipants((prev) => {
+                const updated = prev.map((p) => ({
+                  ...p,
+                  profiles: profiles.find((prof) => prof.id === p.user_id) || (p as any).profiles || null,
+                }));
+                const dedupedUpdated = dedupeParticipants(updated as GameParticipant[], gameMode);
+
+                console.log("✅ Profiles loaded:", {
+                  details: dedupedUpdated.map((p) => ({
+                    id: p.user_id?.slice(-8) || "null",
+                    isBot: p.is_bot,
+                    username: (p as any).profiles?.username || "No name",
+                  })),
+                });
+
+                return dedupedUpdated;
+              });
+            }
+          } catch (err) {
+            console.error("⚠️ Profile fetch error (non-critical):", err);
+          }
+        })();
+      }
+    } catch (error) {
+      console.error("❌ fetchParticipants error:", error);
+    }
+  }, []);
 
   // Create room
   const createRoom = useCallback(
@@ -1151,13 +1141,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             finished_at: new Date().toISOString(),
           })
           .eq("id", currentRoom.id);
-
-        toast({
-          title: "🏆 Turnuva Cezası",
-          description: "Turnuva maçından ayrıldığınız için -500 puan cezası aldınız.",
-          variant: "destructive",
-          duration: 4000,
-        });
       }
 
       // 🔧 SAFE ROOM EXIT: room_id kontrolü
@@ -1217,7 +1200,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       setCurrentRoom(null);
       setParticipants([]);
       setLastOpponent(null);
-      
+
       toast({
         title: "Hata",
         description: "Oyundan çıkış sırasında bir hata oluştu",
@@ -1233,22 +1216,29 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
       try {
         // Skoru tek RPC ile yaz: server odadaki gerçek oyuncuyu bulur ve sadece kendi kolonunu günceller.
-        const { data: updatedRoom, error } = await supabase.rpc("submit_room_score" as never, {
-          p_room_id: currentRoom.id,
-          p_score: score,
-        } as never);
+        const { data: updatedRoom, error } = await supabase.rpc(
+          "submit_room_score" as never,
+          {
+            p_room_id: currentRoom.id,
+            p_score: score,
+          } as never,
+        );
 
         if (error) {
           console.error("❌ submit_room_score hatası:", error);
           // Fallback: RPC hata verirse en azından kendi participant skorunu güncelle.
-          await supabase.from("game_participants").update({ score }).eq("room_id", currentRoom.id).eq("user_id", user.id);
+          await supabase
+            .from("game_participants")
+            .update({ score })
+            .eq("room_id", currentRoom.id)
+            .eq("user_id", user.id);
         } else if (updatedRoom) {
           setCurrentRoom(updatedRoom as GameRoom);
         }
 
         // Local state'i de güncelle - FUNCTIONAL UPDATE (race condition fix)
-        setParticipants((prevParticipants) => 
-          prevParticipants.map((p) => (p.user_id === user.id ? { ...p, score: Math.max(p.score || 0, score) } : p))
+        setParticipants((prevParticipants) =>
+          prevParticipants.map((p) => (p.user_id === user.id ? { ...p, score: Math.max(p.score || 0, score) } : p)),
         );
 
         console.log("🔄 Skor RPC ile güncellendi:", score);
@@ -1550,7 +1540,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     console.log("🔗 Setting up optimized real-time for room:", String(currentRoom.id).slice(-8));
     setIsConnected(true);
     const pendingTimers: NodeJS.Timeout[] = [];
-    
+
     // 🔒 Subscription için room ID'yi capture et (rematch sonrası değişebilir)
     const subscriptionRoomId = currentRoom.id;
 
@@ -1590,12 +1580,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     const presenceGraceUntil = Date.now() + 2000;
 
     // ✅ PRESENCE CHANNEL (RealtimeManager ile merkezi yönetim)
-    const presenceChannel = realtimeManager.createPresenceChannel(
-      subscriptionRoomId,
-      user.id,
-      user.id
-    )!;
-    
+    const presenceChannel = realtimeManager.createPresenceChannel(subscriptionRoomId, user.id, user.id)!;
+
     presenceChannel
       .on("presence", { event: "sync" }, () => {
         const state = presenceChannel.presenceState();
@@ -1612,7 +1598,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         const currentRoomId = freshRoom?.id;
         const currentRoomStatus = freshRoom?.status;
         const currentUserId = user?.id;
-        
+
         // 🔒 REMATCH GUARD: Bu subscription farklı bir room için mi?
         if (currentRoomId !== subscriptionRoomId) {
           console.log("🔄 Room değişti (rematch?), eski subscription'dan leave event ignore ediliyor", {
@@ -1649,7 +1635,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                 });
                 return;
               }
-              
+
               // ⚠️ ÖNEMLİ: Oda state'ini DB'den TEKRAR kontrol et
               const { data: freshRoomData, error: roomError } = await supabase
                 .from("game_rooms")
@@ -1697,10 +1683,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               });
 
               // ⚠️ KRİTİK KOŞUL: Rakip gerçekten gitti mi?
-              // NOT: realPlayerCount kontrolü kaldırıldı çünkü DB'de participant silinmiyor, 
+              // NOT: realPlayerCount kontrolü kaldırıldı çünkü DB'de participant silinmiyor,
               // sadece presence kanalından ayrılıyor. isOpponentStillGone yeterli.
-              const shouldTriggerDisconnect =
-                freshRoomData.status === "active" && isOpponentStillGone;
+              const shouldTriggerDisconnect = freshRoomData.status === "active" && isOpponentStillGone;
 
               if (shouldTriggerDisconnect) {
                 console.log("🏆 Rakip gerçekten gitti - kazandınız!");
@@ -1844,11 +1829,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
                 if (profile) {
                   setParticipants((prev) =>
-                    prev.map((p) =>
-                      p.user_id === newParticipant.user_id
-                        ? { ...p, profiles: profile }
-                        : p
-                    )
+                    prev.map((p) => (p.user_id === newParticipant.user_id ? { ...p, profiles: profile } : p)),
                   );
                   console.log("✅ Participant profil bilgisi güncellendi:", profile.username);
                 }
@@ -1880,7 +1861,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           await fetchParticipantsLocal(subscriptionRoomId);
 
           const oldParticipant = payload.old as GameParticipantPayload;
-          
+
           // 🔒 REMATCH GUARD: Güncel room'u ref'ten al
           const latestRoom = currentRoomRef.current;
           const latestGameMode = latestRoom ? getGameModeFromRoom(latestRoom) : null;
@@ -1906,7 +1887,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                   console.log("🔄 Room değişti (rematch?), DELETE disconnect kontrolü iptal");
                   return;
                 }
-                
+
                 const { data: roomState } = await supabase
                   .from("game_rooms")
                   .select("status")
@@ -1947,7 +1928,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
                 // 🔒 Güncel room bilgisini ref'ten al
                 const activeRoom = currentRoomRef.current;
                 const gameMode = activeRoom ? getGameModeFromRoom(activeRoom) : null;
-                
+
                 if (gameMode?.includes("tournament")) {
                   // Turnuva maçında rakip ayrılırsa oyuncuya +500 bonus puan ver ve devam etmesine izin ver
                   const bonusScore = 500;
@@ -2120,16 +2101,12 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   useEffect(() => {
     if (!isSystemConnected || !currentRoom?.id || !user?.id) return;
 
-    console.log('🔄 [GameContext] isSystemConnected true - oda ve katılımcılar yeniden yükleniyor...');
+    console.log("🔄 [GameContext] isSystemConnected true - oda ve katılımcılar yeniden yükleniyor...");
 
     // Mevcut odayı yeniden fetch et
     (async () => {
       try {
-        const { data: roomData } = await supabase
-          .from("game_rooms")
-          .select("*")
-          .eq("id", currentRoom.id)
-          .maybeSingle();
+        const { data: roomData } = await supabase.from("game_rooms").select("*").eq("id", currentRoom.id).maybeSingle();
 
         if (roomData) {
           setCurrentRoom(roomData as GameRoom);
@@ -2146,9 +2123,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           setParticipants(deduped);
         }
 
-        console.log('✅ [GameContext] Oda ve katılımcılar yenilendi');
+        console.log("✅ [GameContext] Oda ve katılımcılar yenilendi");
       } catch (error) {
-        console.error('❌ [GameContext] Yenileme hatası:', error);
+        console.error("❌ [GameContext] Yenileme hatası:", error);
       }
     })();
   }, [isSystemConnected, currentRoom?.id, user?.id]);
