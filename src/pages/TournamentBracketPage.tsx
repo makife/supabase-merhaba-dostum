@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
-import Lottie from "lottie-react";
+import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 
@@ -323,6 +323,8 @@ const TournamentBracketPage = () => {
   const roundWinSoundPlayedRef = useRef<Set<number>>(new Set());
   const championSoundPlayedRef = useRef(false);
   const playedCountdownSecondsRef = useRef<Set<number>>(new Set());
+  const bracket10LottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const bracket321LottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   // Component içine ekle (useRef'ler yanına)
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -694,11 +696,43 @@ const TournamentBracketPage = () => {
 
     const target = new Date(currentTournament.next_round_starts_at).getTime();
     playedCountdownSecondsRef.current.clear();
+
+    // Lottie süreleri (ms) — animasyonlar toplam 10s ve 3s'ye normalize edilir.
+    const LOTTIE_10_MS = 10000;
+    const LOTTIE_321_MS = 3000;
+
     const tick = () => {
-      const remaining = Math.max(0, Math.ceil((target - serverNow()) / 1000));
+      const nowMs = serverNow();
+      const remainingMs = Math.max(0, target - nowMs);
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
       setCountdown(remaining);
 
-      // Son 5 saniyede maç sonu geri sayım sesi (her saniye artan pitch)
+      // ── 10s Lottie'yi gerçek kalan süreye göre frame'e kilitle ──
+      const l10 = bracket10LottieRef.current;
+      if (l10) {
+        const total = l10.getDuration(true) as number | undefined;
+        if (total && isFinite(total) && total > 0) {
+          const elapsed = Math.min(LOTTIE_10_MS, LOTTIE_10_MS - Math.min(remainingMs, LOTTIE_10_MS));
+          const frame = (elapsed / LOTTIE_10_MS) * total;
+          try { l10.goToAndStop(frame, true); } catch {}
+        }
+      }
+
+      // ── 3-2-1 Lottie'yi gerçek kalan süreye göre frame'e kilitle ──
+      if (remainingMs <= LOTTIE_321_MS) {
+        const l321 = bracket321LottieRef.current;
+        if (l321) {
+          const total = l321.getDuration(true) as number | undefined;
+          if (total && isFinite(total) && total > 0) {
+            const elapsed = Math.min(LOTTIE_321_MS, LOTTIE_321_MS - remainingMs);
+            const frame = (elapsed / LOTTIE_321_MS) * total;
+            try { l321.goToAndStop(frame, true); } catch {}
+          }
+        }
+      }
+
+      // ── Son 5 saniyede beep (her saniye artan pitch) — gerçek saniye sınırında tetiklenir ──
+      // 100ms tick ile Math.ceil, tam saniye sınırında düşer; erken/ geç tetikleme olmaz.
       if (remaining >= 1 && remaining <= 5 && !playedCountdownSecondsRef.current.has(remaining)) {
         playedCountdownSecondsRef.current.add(remaining);
         if (isSoundEffectsEnabled()) {
@@ -707,7 +741,7 @@ const TournamentBracketPage = () => {
         }
       }
 
-      if (remaining === 0) {
+      if (remainingMs <= 0) {
         if (countdownRef.current) {
           clearInterval(countdownRef.current);
           countdownRef.current = null;
@@ -716,7 +750,8 @@ const TournamentBracketPage = () => {
       }
     };
     tick();
-    countdownRef.current = setInterval(tick, 1000);
+    // 100ms tick: gerçek saniye sınırına ~100ms hassasiyet, Lottie'ler frame bazında senkron.
+    countdownRef.current = setInterval(tick, 100);
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
@@ -1142,9 +1177,10 @@ const TournamentBracketPage = () => {
           <div style={{ width: "min(95vw, 600px)", height: "min(95vw, 600px)" }}>
             <Lottie
               key={`321-${currentTournament?.next_round_starts_at || "cd"}`}
+              lottieRef={bracket321LottieRef}
               animationData={bracket321Lottie}
               loop={false}
-              autoplay
+              autoplay={false}
               style={{ width: "100%", height: "100%" }}
             />
           </div>
@@ -1300,9 +1336,10 @@ const TournamentBracketPage = () => {
                   <div style={{ width: 160, height: 160, position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}>
                     <Lottie
                       key={currentTournament?.next_round_starts_at || "cd"}
+                      lottieRef={bracket10LottieRef}
                       animationData={bracket10Lottie}
                       loop={false}
-                      autoplay
+                      autoplay={false}
                       style={{ width: "100%", height: "100%" }}
                     />
                   </div>
