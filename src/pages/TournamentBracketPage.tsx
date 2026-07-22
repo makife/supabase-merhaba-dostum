@@ -1177,9 +1177,10 @@ const TournamentBracketPage = () => {
           <div style={{ width: "min(95vw, 600px)", height: "min(95vw, 600px)" }}>
             <Lottie
               key={`321-${currentTournament?.next_round_starts_at || "cd"}`}
+              lottieRef={bracket321LottieRef}
               animationData={bracket321Lottie}
               loop={false}
-              autoplay
+              autoplay={false}
               style={{ width: "100%", height: "100%" }}
             />
           </div>
