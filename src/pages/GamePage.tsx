@@ -9144,7 +9144,7 @@ const GamePage = ({
                           >
                             <span
                               aria-hidden="true"
-                              className="absolute -inset-px rounded-xl border transition-opacity duration-150 pointer-events-none z-0"
+                              className="absolute -inset-px rounded-xl border pointer-events-none z-0"
                               style={{
                                 opacity: hasColor ? 1 : 0,
                                 borderColor: "transparent",
