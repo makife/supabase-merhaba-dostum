@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useServerTimeContext } from "@/contexts/ServerTimeContext";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
-import Lottie from "lottie-react";
+import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 
