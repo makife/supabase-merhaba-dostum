@@ -9015,8 +9015,14 @@ const GamePage = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+                            className="absolute inset-0 flex items-center justify-center gap-1 z-30 pointer-events-none"
                           >
+                            <Lottie
+                              animationData={kelimeGondermedinAnim}
+                              loop
+                              autoplay
+                              style={{ height: "100%", width: "auto", transform: "scale(1.6)" }}
+                            />
                             <Lottie
                               animationData={kelimeGondermedinAnim}
                               loop
@@ -9138,7 +9144,7 @@ const GamePage = ({
                           >
                             <span
                               aria-hidden="true"
-                              className="absolute -inset-px rounded-xl border transition-opacity duration-150 pointer-events-none z-0"
+                              className="absolute -inset-px rounded-xl border pointer-events-none z-0"
                               style={{
                                 opacity: hasColor ? 1 : 0,
                                 borderColor: "transparent",
