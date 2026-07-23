@@ -152,18 +152,18 @@ const TournamentWaitingPage = () => {
       </div>
 
       {/* ── SCROLLABLE İÇERİK ── */}
-      <div className="flex-1 overflow-y-auto px-5 pt-2 pb-8 space-y-3 relative z-10">
+      <div className="flex-1 overflow-hidden px-5 pt-2 pb-8 space-y-3 relative z-10 flex flex-col">
         {/* Turnuva Avatarı */}
         {tournamentAvatar && (
-          <div className="relative -mx-5 h-10 flex items-center overflow-hidden">
+          <div className="relative h-10 flex items-center overflow-hidden rounded-2xl ring-1 ring-white/10">
             <div className="absolute inset-0 bg-white/5" />
-            <div className="relative flex items-center justify-between w-full px-2">
-              {Array.from({ length: 10 }).map((_, i) => (
+            <div className="relative flex items-center justify-evenly w-full">
+              {Array.from({ length: 7 }).map((_, i) => (
                 <img
                   key={i}
                   src={tournamentAvatar}
                   alt=""
-                  className="w-10 h-10 object-contain flex-shrink-0"
+                  className="w-8 h-8 object-contain flex-shrink-0"
                 />
               ))}
             </div>
@@ -218,9 +218,9 @@ const TournamentWaitingPage = () => {
         )}
 
         {/* Katılımcılar */}
-        <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl overflow-hidden shadow-xl">
+        <div className="bg-[#16213e]/80 ring-1 ring-white/10 rounded-3xl overflow-hidden shadow-xl flex-1 min-h-0 flex flex-col">
           {/* Başlık */}
-          <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between">
+          <div className="px-5 pt-5 pb-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-1 h-5 bg-indigo-400 rounded-full" />
               <h3 className="text-sm font-black text-white uppercase tracking-widest">Katılımcılar</h3>
@@ -228,7 +228,7 @@ const TournamentWaitingPage = () => {
           </div>
 
           {/* Liste */}
-          <div className="px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
+          <div className="px-4 py-3 space-y-2 flex-1 overflow-y-auto">
             {displayParticipants.map((participant) => (
               <div
                 key={participant.id}
