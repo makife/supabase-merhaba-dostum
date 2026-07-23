@@ -152,15 +152,14 @@ const TournamentWaitingPage = () => {
       </div>
 
       {/* ── SCROLLABLE İÇERİK ── */}
-      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 pb-8 relative z-10">
+      <div className="flex-1 overflow-y-auto px-5 pt-2 pb-8 space-y-3 relative z-10">
         {/* Turnuva Avatarı */}
         {tournamentAvatar && (
           <div className="flex justify-center">
-            <div className="w-24 h-24 rounded-3xl bg-[#16213e]/80 ring-1 ring-white/10 flex items-center justify-center shadow-xl">
-              <img src={tournamentAvatar} alt="" className="w-16 h-16 object-contain" />
-            </div>
+            <img src={tournamentAvatar} alt="" className="w-20 h-20 object-contain" />
           </div>
         )}
+
 
         {/* Countdown / Özel Kontrol */}
         {countdownPending ? (
