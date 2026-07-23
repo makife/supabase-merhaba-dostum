@@ -251,7 +251,7 @@ const TournamentBracketPage = () => {
 
   // ELENDİN yazısı Lottie yükle (arka planı çıkarılmış versiyon)
   useEffect(() => {
-    fetch('/elendinAlpha.json')
+    fetch('/elendin.json')
       .then((r) => r.json())
       .then((data) => setElendinTextLottie(data))
       .catch(() => {});
