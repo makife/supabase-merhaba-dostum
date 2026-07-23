@@ -750,9 +750,15 @@ const TournamentBracketPage = () => {
       }
     };
     tick();
-    // 100ms tick: gerçek saniye sınırına ~100ms hassasiyet, Lottie'ler frame bazında senkron.
-    countdownRef.current = setInterval(tick, 100);
+    // rAF ile ~60fps Lottie frame güncellemesi (akıcı animasyon).
+    let rafId = 0;
+    const loop = () => {
+      tick();
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, [currentTournament?.next_round_starts_at, currentTournament?.status, startAllMatches, serverNow, offset]);
