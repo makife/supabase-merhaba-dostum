@@ -7510,6 +7510,9 @@ const GamePage = ({
     (letter: string, row: number, col: number) => {
       if (gameEnded || (waitingForPlayer && !gameStarted) || (isJokerActive && !isFisildaAnimating)) return;
 
+      // Kullanıcı harfe dokunduğunda "kelime göndermedin" göz animasyonunu kapat
+      if (showKelimeGondermedinAnim) setShowKelimeGondermedinAnim(false);
+
       const now = Date.now();
       // 150ms debounce (mobil için daha uzun)
       if (now - lastClickTime < 150) return;
