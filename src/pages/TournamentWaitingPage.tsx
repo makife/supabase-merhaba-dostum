@@ -155,8 +155,18 @@ const TournamentWaitingPage = () => {
       <div className="flex-1 overflow-y-auto px-5 pt-2 pb-8 space-y-3 relative z-10">
         {/* Turnuva Avatarı */}
         {tournamentAvatar && (
-          <div className="flex justify-center">
-            <img src={tournamentAvatar} alt="" className="w-20 h-20 object-contain" />
+          <div className="relative -mx-5 h-10 flex items-center overflow-hidden">
+            <div className="absolute inset-0 bg-white/5" />
+            <div className="relative flex items-center justify-between w-full px-2">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <img
+                  key={i}
+                  src={tournamentAvatar}
+                  alt=""
+                  className="w-10 h-10 object-contain flex-shrink-0"
+                />
+              ))}
+            </div>
           </div>
         )}
 
