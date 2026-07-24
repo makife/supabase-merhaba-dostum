@@ -459,9 +459,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   }, 500);
                 })
                 .catch((e) => console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e));
-              // currentTrackIndex state'i sadece UI için güncelle, effect re-run'ı tetiklememesi için
-              // sırayla setTimeout'la yapılır (effect yine çalışsa bile aynı src ile init eder).
-              setCurrentTrackIndex(nextTrackIndex);
+              // 🔥 iOS FIX: setCurrentTrackIndex ÇAĞIRMA! currentTrackIndex effect
+              // dependency'sinde olduğu için re-run tetikler, cleanup az önce
+              // başlattığımız audio'yu pause eder ve yeni Audio elementi autoplay
+              // izniyle bloklanır. Bu yüzden ilk şarkıdan sonra loop kırılıyordu.
+              // UI için gerekirse ref üzerinden takip edilebilir.
             } catch (e) {
               console.warn("🎵 [iOS] src değiştirme hatası, fallback:", e);
               setCurrentTrackIndex(nextTrackIndex);
