@@ -9018,20 +9018,25 @@ const GamePage = ({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="absolute inset-0 flex items-center justify-center gap-4 z-30 pointer-events-none"
+                            className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+                            style={{ gap: "16px" }}
                           >
-                            <Lottie
-                              animationData={kelimeGondermedinAnim}
-                              loop
-                              autoplay
-                              style={{ height: "100%", width: "auto", transform: "scale(1.6) translateX(-6px)" }}
-                            />
-                            <Lottie
-                              animationData={kelimeGondermedinAnim}
-                              loop
-                              autoplay
-                              style={{ height: "100%", width: "auto", transform: "scale(1.6) translateX(6px)" }}
-                            />
+                            <div style={{ height: "100%", aspectRatio: "1 / 1", transform: "scale(1.6) translateX(-6px)", transformOrigin: "center" }}>
+                              <Lottie
+                                animationData={kelimeGondermedinAnim}
+                                loop
+                                autoplay
+                                style={{ height: "100%", width: "100%" }}
+                              />
+                            </div>
+                            <div style={{ height: "100%", aspectRatio: "1 / 1", transform: "scale(1.6) translateX(6px)", transformOrigin: "center" }}>
+                              <Lottie
+                                animationData={kelimeGondermedinAnim}
+                                loop
+                                autoplay
+                                style={{ height: "100%", width: "100%" }}
+                              />
+                            </div>
 
                           </motion.div>
                         )}

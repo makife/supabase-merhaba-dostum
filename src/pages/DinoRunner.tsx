@@ -7,7 +7,9 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
-import { playDinoJump } from "@/utils/genericBeep";
+import { playDinoJump, playJumpBeep } from "@/utils/genericBeep";
+import { Capacitor } from "@capacitor/core";
+const IS_IOS_NATIVE = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
 
 const DINO_RUNNER_ASSET_VERSION = "20260625-portal-center-entry-fix";
@@ -698,7 +700,12 @@ const DinoRunner = () => {
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
     // Jenerik zıplama bip sesi (buton sesinden farklı)
-    if (!gameMuted) playDinoJump();
+    // iOS nativde mp3 pool HTMLAudio play() ana thread'de hitch yaratıyor;
+    // WebAudio oscillator (playJumpBeep) donma yaşatmadan zıplama sesi verir.
+    if (!gameMuted) {
+      if (IS_IOS_NATIVE) playJumpBeep();
+      else playDinoJump();
+    }
   };
 
   const checkCollision = (rect1, rect2) => {
