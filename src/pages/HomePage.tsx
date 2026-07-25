@@ -1056,22 +1056,21 @@ const HomePage = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
                     {totalCredits > 5 ? (
-                      <div className="flex items-center gap-2 -translate-x-2">
+                      <div className="flex items-center gap-1 min-w-0">
                         <div className="flex -space-x-2">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={48} />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={40} />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-9 h-9 -ml-1 -translate-x-2">
-                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
-                          <span 
-                            className="absolute text-white text-[14px] font-bold"
+                        <div className="relative inline-flex items-center justify-center w-8 h-8 flex-shrink-0">
+                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-8 h-8 object-contain" />
+                          <span
+                            className="absolute text-white text-[12px] font-bold"
                             style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
                           >+{totalCredits - 5}</span>
                         </div>
-
                       </div>
                     ) : (
                       <div className="flex -space-x-2">
@@ -1080,14 +1079,14 @@ const HomePage = () => {
                             key={i}
                             animData={sayfaHakAnim}
                             filled={i < totalCredits}
-                            size={44}
+                            size={40}
                           />
                         ))}
                       </div>
                     )}
 
                     {timeUntilNextCredit && totalCredits < 5 && (
-                      <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded">
+                      <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded flex-shrink-0">
                         {timeUntilNextCredit}
                       </span>
                     )}
