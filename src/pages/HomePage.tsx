@@ -1152,7 +1152,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/puzzle");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 shadow-[0_0_12px_rgba(255,255,255,0.15)] ${challengeStatus.puzzle ? "border-white/60" : "border-white"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.puzzle ? "border-white/60" : "border-white"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
@@ -1191,7 +1191,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/reaktor");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 shadow-[0_0_12px_rgba(255,255,255,0.15)] ${challengeStatus.reaktor ? "border-white/60" : "border-white"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.reaktor ? "border-white/60" : "border-white"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
@@ -1230,7 +1230,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/neon-blitz");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 shadow-[0_0_12px_rgba(255,255,255,0.15)] ${challengeStatus.neon_blitz ? "border-white/60" : "border-white"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.neon_blitz ? "border-white/60" : "border-white"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
@@ -1269,7 +1269,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/memory");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 shadow-[0_0_12px_rgba(255,255,255,0.15)] ${challengeStatus.memory ? "border-white/60" : "border-white"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.memory ? "border-white/60" : "border-white"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
@@ -1308,7 +1308,7 @@ const HomePage = () => {
                   playSound("buttonClick");
                   navigate("/challenge/kelime-avi");
                 }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 shadow-[0_0_12px_rgba(255,255,255,0.15)] ${challengeStatus.kelime_avi ? "border-white/60" : "border-white"}`}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.kelime_avi ? "border-white/60" : "border-white"}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
