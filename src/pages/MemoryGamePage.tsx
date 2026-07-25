@@ -607,7 +607,11 @@ const WordMemoryGame = () => {
                             ? "[transform:rotateY(180deg)]"
                             : ""
                         }`}
-                        style={{ transformStyle: "preserve-3d" }}
+                        style={{
+                          transformStyle: "preserve-3d",
+                          WebkitTransformStyle: "preserve-3d" as any,
+                          willChange: "transform",
+                        }}
                       >
                         {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
