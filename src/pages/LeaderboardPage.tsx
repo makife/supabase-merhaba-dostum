@@ -335,6 +335,14 @@ const LeaderboardPage = () => {
     ]).then(([first, second, third, monthlyThird]) => setLottieData({ first, second, third, monthlyThird }));
   }, []);
 
+  // aylikUcuncu.json 512x576 (kare değil) kanvasta ve halka deliği kanvasa oranla
+  // diğer lottielerden daha küçük tasarlanmış. Kare kutuya sığdırılınca delik
+  // avatardan küçük kalıp avatarın çerçevenin üstüne taşmasına sebep oluyor.
+  // Bu yüzden bu asset için kutuyu, deliğin avatarı tam çerçeveleyecek şekilde
+  // orijinal en-boy oranını koruyarak büyütüyoruz.
+  const MONTHLY_THIRD_ASPECT = 512 / 576; // width / height
+  const MONTHLY_THIRD_HOLE_RATIO = 0.365; // delik çapı / kanvas yüksekliği (ölçüldü)
+
   const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
     const avatarPx = size === "lg" ? 72 : 52;
@@ -348,16 +356,24 @@ const LeaderboardPage = () => {
       ? lottieData.second
       : lottieData.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
+
+    // Normal kare frame için kutu boyutu; aylikUcuncu için özel (dikdörtgen) boyut
+    const targetHole = avatarPx * 1.08; // avatarın etrafında ince bir boşluk kalsın
+    const monthlyThirdBoxH = targetHole / MONTHLY_THIRD_HOLE_RATIO;
+    const monthlyThirdBoxW = monthlyThirdBoxH * MONTHLY_THIRD_ASPECT;
+    const boxW = isMonthlyThird ? monthlyThirdBoxW : lottiePx;
+    const boxH = isMonthlyThird ? monthlyThirdBoxH : lottiePx;
+
     return (
       <div className="flex flex-col items-center gap-0">
-        <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
+        <div className="relative" style={{ width: boxW, height: boxH }}>
           {/* Lottie animation frame */}
           {animData && (
             <Lottie
               animationData={animData}
               loop
               autoplay
-              style={{ position: 'absolute', inset: 0, width: lottiePx, height: lottiePx, pointerEvents: 'none' }}
+              style={{ position: 'absolute', inset: 0, width: boxW, height: boxH, pointerEvents: 'none' }}
             />
           )}
           {/* Avatar centered inside lottie */}
