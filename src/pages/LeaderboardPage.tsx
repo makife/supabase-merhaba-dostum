@@ -340,14 +340,30 @@ const LeaderboardPage = () => {
       sm: { avatarPx: 47, lottieH: 90 },
     },
     monthly: {
-      lg: { avatarPx: 46, lottieH: 120 },
-      sm: { avatarPx: 34, lottieH: 90 },
+      // Kanka isteği: aylık avatar boyutu sezon ile aynı olsun (çerçeveye tam oturuyor)
+      lg: { avatarPx: 62, lottieH: 120 },
+      sm: { avatarPx: 47, lottieH: 90 },
     },
     weekly: {
       // Mevcut (haftalık) çerçeve - değişmedi
       lg: { avatarPx: 72, lottieH: 120 },
       sm: { avatarPx: 52, lottieH: 90 },
     },
+  };
+
+  // Haftalık sekmede 2. ve 3.'nün arasındaki boşluk Tailwind "gap-20" (80px) ile ayarlanıyordu.
+  // Sezon/aylık çerçeveler artık kare değil (daha geniş kutu), bu yüzden aynı 80px flex-gap kullanılırsa
+  // aradaki GÖRSEL boşluk haftalıktan çok daha büyük görünür. Burada, kutu genişliği ne olursa olsun
+  // avatarlar arasındaki gerçek görsel mesafe haftalıktakiyle birebir aynı olacak şekilde gap'i hesaplıyoruz.
+  const WEEKLY_FLEX_GAP_PX = 80; // Tailwind gap-20
+  const getPodiumGapPx = (tab: LeaderboardTab): number => {
+    const weeklyBox = FRAME_CONFIG.weekly.sm.lottieH; // haftalık kare kutu
+    const weeklyAvatar = FRAME_CONFIG.weekly.sm.avatarPx;
+    const targetAvatarDistance = WEEKLY_FLEX_GAP_PX + (weeklyBox - weeklyAvatar);
+
+    const box = tab === "weekly" ? FRAME_CONFIG.weekly.sm.lottieH : Math.round(FRAME_CONFIG[tab].sm.lottieH * FRAME_ASPECT);
+    const avatar = FRAME_CONFIG[tab].sm.avatarPx;
+    return Math.max(0, Math.round(targetAvatarDistance - (box - avatar)));
   };
 
   const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
@@ -480,7 +496,7 @@ const LeaderboardPage = () => {
             )}
             {/* 2nd & 3rd side by side */}
             {(second || third) && (
-              <div className="flex justify-center gap-20">
+              <div className="flex justify-center" style={{ gap: getPodiumGapPx(tab) }}>
                 {second && renderPodiumItem(second, 2, "sm", tab)}
                 {third && renderPodiumItem(third, 3, "sm", tab)}
               </div>
