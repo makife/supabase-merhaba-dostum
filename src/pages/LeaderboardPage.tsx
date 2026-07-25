@@ -362,9 +362,9 @@ useEffect(() => {
     // 2. Genel ve Aylık sekmelerinde, o 120px ve 90px olan şu anki boyutları hafifçe büyütüyoruz:
     if (activeTab === "all-time" || activeTab === "monthly") {
       if (size === "lg") {
-        lottiePx = 132; // Şu anki 120px değerini 132px'e çıkardık
+        lottiePx = 148; // Şu anki 120px değerini 132px'e çıkardık
       } else {
-        lottiePx = 100; // Şu anki 90px değerini 100px'e çıkardık
+        lottiePx = 112; // Şu anki 90px değerini 100px'e çıkardık
       }
     }
 
