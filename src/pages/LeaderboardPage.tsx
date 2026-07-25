@@ -324,21 +324,29 @@ const LeaderboardPage = () => {
     return null;
   };
 
-  const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any }>({ first: null, second: null, third: null });
+  const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any; monthlyThird: any }>({ first: null, second: null, third: null, monthlyThird: null });
 
   useEffect(() => {
     Promise.all([
       fetch("/birincijson.json").then(r => r.json()),
       fetch("/ikincijson.json").then(r => r.json()),
       fetch("/ucuncujson.json").then(r => r.json()),
-    ]).then(([first, second, third]) => setLottieData({ first, second, third }));
+      fetch("/aylikUcuncu.json").then(r => r.json()),
+    ]).then(([first, second, third, monthlyThird]) => setLottieData({ first, second, third, monthlyThird }));
   }, []);
 
   const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
     const avatarPx = size === "lg" ? 72 : 52;
     const lottiePx = size === "lg" ? 120 : 90;
-    const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
+    const isMonthlyThird = activeTab === "monthly" && rank === 3;
+    const animData = isMonthlyThird
+      ? lottieData.monthlyThird
+      : rank === 1
+      ? lottieData.first
+      : rank === 2
+      ? lottieData.second
+      : lottieData.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
     return (
       <div className="flex flex-col items-center gap-0">
