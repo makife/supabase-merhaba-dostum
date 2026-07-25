@@ -202,12 +202,27 @@ const KelimeAviPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
-  // Pointer drag selection
-  const cellFromPoint = (x: number, y: number): number => {
-    const el = document.elementFromPoint(x, y) as HTMLElement | null;
-    if (!el) return -1;
-    const idxAttr = el.closest("[data-cell]")?.getAttribute("data-cell");
-    return idxAttr ? parseInt(idxAttr, 10) : -1;
+  // Pointer drag selection — iOS-safe geometrik hit-test (elementFromPoint yerine)
+  const cellFromPoint = (clientX: number, clientY: number): number => {
+    const grid = gridRef.current;
+    if (!grid) return -1;
+    const rect = grid.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return -1;
+    const cell = (rect.width - GAP * (GRID - 1)) / GRID;
+    const step = cell + GAP;
+    const col = Math.floor(x / step);
+    const row = Math.floor(y / step);
+    if (col < 0 || col >= GRID || row < 0 || row >= GRID) return -1;
+    // İç tolerans: hücrenin sadece merkez %72'lik alanı hit sayılır
+    // → komşu harfleri yanlışlıkla algılamayı engeller (iOS'ta kritik)
+    const localX = x - col * step;
+    const localY = y - row * step;
+    const margin = cell * 0.14;
+    if (localX < margin || localX > cell - margin) return -1;
+    if (localY < margin || localY > cell - margin) return -1;
+    return row * GRID + col;
   };
 
   const tryAddCell = (idx: number) => {
@@ -228,6 +243,8 @@ const KelimeAviPage = () => {
   const onPointerDown = (e: React.PointerEvent) => {
     if (gameState !== "playing") return;
     isDraggingRef.current = true;
+    // iOS: gesture boyunca event akışını grid'e sabitle
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch {}
     setPath([]);
     const idx = cellFromPoint(e.clientX, e.clientY);
     if (idx >= 0) setPath([idx]);
@@ -237,11 +254,15 @@ const KelimeAviPage = () => {
     const idx = cellFromPoint(e.clientX, e.clientY);
     tryAddCell(idx);
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    try {
+      if (e) (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    } catch {}
     submitPath();
   };
+
 
   const submitPath = () => {
     const word = currentWord.toLocaleUpperCase("tr-TR");
