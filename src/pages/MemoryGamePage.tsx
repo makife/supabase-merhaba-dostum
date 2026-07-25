@@ -644,7 +644,7 @@ const WordMemoryGame = () => {
                           className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
                             kart.eslesti && !puzzleAciliyor ? "opacity-20 scale-95" : ""
                           } transition-all duration-300 [transform:rotateY(180deg)]`}
-                          style={{ backfaceVisibility: "hidden" }}
+                          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" as any }}
                         >
                           <div
                             className={`text-white font-extrabold px-0.5 text-center leading-tight tracking-tight uppercase break-words [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] ${
