@@ -326,13 +326,31 @@ const LeaderboardPage = () => {
 
   const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any }>({ first: null, second: null, third: null });
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/birincijson.json").then(r => r.json()),
-      fetch("/ikincijson.json").then(r => r.json()),
-      fetch("/ucuncujson.json").then(r => r.json()),
-    ]).then(([first, second, third]) => setLottieData({ first, second, third }));
-  }, []);
+useEffect(() => {
+  let firstUrl = "/birincijson.json";
+  let secondUrl = "/ikincijson.json";
+  let thirdUrl = "/ucuncujson.json";
+
+  // activeTab'e göre dosya yollarını belirliyoruz
+  if (activeTab === "all-time") { // Genel (Sezon) sıralaması
+    firstUrl = "/sezonBirinci.json";
+    secondUrl = "/sezonIkinci.json";
+    thirdUrl = "/sezonUcuncu.json";
+  } else if (activeTab === "monthly") { // Aylık sıralama
+    firstUrl = "/aylikBirinci.json";
+    secondUrl = "/aylikIkinci.json";
+    thirdUrl = "/aylikUcuncu.json";
+  }
+  // Haftalık sıralamada koşula girmeyeceği için başlangıçta tanımladığımız (şimdiki) dosyalar kalacak.
+
+  Promise.all([
+    fetch(firstUrl).then(r => r.json()),
+    fetch(secondUrl).then(r => r.json()),
+    fetch(thirdUrl).then(r => r.json()),
+  ])
+    .then(([first, second, third]) => setLottieData({ first, second, third }))
+    .catch(console.error);
+}, [activeTab]); // activeTab her değiştiğinde çerçeveler yeniden yüklenecek
 
   const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
