@@ -512,9 +512,18 @@ const WordMemoryGame = () => {
             {oyunBasladi && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-white/80">
+                  <div className={`flex items-center gap-1.5 text-white/80 ${kalanSure <= 10 ? "animate-pulse" : ""}`}>
                     <Clock size={14} />
-                    <span className={`text-sm font-mono ${kalanSure <= 10 ? "text-red-400 animate-pulse" : ""}`}>
+                    <span
+                      className={`text-sm font-mono tabular-nums tracking-tight ${kalanSure <= 10 ? "text-red-400" : ""}`}
+                      style={{
+                        fontVariantNumeric: "tabular-nums",
+                        minWidth: "3ch",
+                        display: "inline-block",
+                        WebkitTransform: "translateZ(0)",
+                        transform: "translateZ(0)",
+                      }}
+                    >
                       {Math.floor(kalanSure / 60)}:{(kalanSure % 60).toString().padStart(2, "0")}
                     </span>
                   </div>
@@ -598,13 +607,18 @@ const WordMemoryGame = () => {
                             ? "[transform:rotateY(180deg)]"
                             : ""
                         }`}
-                        style={{ transformStyle: "preserve-3d" }}
+                        style={{
+                          transformStyle: "preserve-3d",
+                          WebkitTransformStyle: "preserve-3d" as any,
+                          willChange: "transform",
+                        }}
                       >
                         {/* ===== KART ARKASI: Görselin parçası ===== */}
                         <div
                           className="absolute inset-0 w-full h-full border-2 border-white/50 overflow-hidden"
                           style={{
                             backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden" as any,
                             borderRadius: puzzleAciliyor ? 0 : 10,
                             transition: "border-radius 600ms ease",
                             ...imageSliceStyle,
@@ -630,7 +644,7 @@ const WordMemoryGame = () => {
                           className={`absolute inset-0 w-full h-full rounded-lg border border-white/20 flex items-center justify-center bg-gradient-to-br ${kart.renk} ${
                             kart.eslesti && !puzzleAciliyor ? "opacity-20 scale-95" : ""
                           } transition-all duration-300 [transform:rotateY(180deg)]`}
-                          style={{ backfaceVisibility: "hidden" }}
+                          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" as any }}
                         >
                           <div
                             className={`text-white font-extrabold px-0.5 text-center leading-tight tracking-tight uppercase break-words [text-shadow:0_1px_2px_rgba(0,0,0,0.6)] ${
