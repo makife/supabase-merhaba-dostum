@@ -324,63 +324,78 @@ const LeaderboardPage = () => {
     return null;
   };
 
-  const [lottieData, setLottieData] = useState<{ first: any; second: any; third: any }>({ first: null, second: null, third: null });
+  type LeaderboardTab = "season" | "monthly" | "weekly";
 
-useEffect(() => {
-  let firstUrl = "/birincijson.json";
-  let secondUrl = "/ikincijson.json";
-  let thirdUrl = "/ucuncujson.json";
+  // sezon* ve aylik* çerçeve JSON'larının hepsi 1000x591 (KARE DEĞİL, ~1.69:1 en-boy oranında).
+  // Bu yüzden kutuyu kare değil, bu orana göre dikdörtgen render ediyoruz - yoksa çerçeve görseli düşey eksende sıkışıp bozulur.
+  const FRAME_ASPECT = 1000 / 591;
 
-  // activeTab'e göre dosya yollarını belirliyoruz
-  if (activeTab === "all-time") { // Genel (Sezon) sıralaması
-    firstUrl = "/sezonBirinci.json";
-    secondUrl = "/sezonIkinci.json";
-    thirdUrl = "/sezonUcuncu.json";
-  } else if (activeTab === "monthly") { // Aylık sıralama
-    firstUrl = "/aylikBirinci.json";
-    secondUrl = "/aylikIkinci.json";
-    thirdUrl = "/aylikUcuncu.json";
-  }
-  // Haftalık sıralamada koşula girmeyeceği için başlangıçta tanımladığımız (şimdiki) dosyalar kalacak.
+  // avatarPx: her çerçevenin GERÇEK iç boşluğuna göre ölçüldü (görselleri açıp piksel piksel kontrol ettim).
+  //  - season (sezonBirinci/Ikinci/Ucuncu): temiz, dairesel "delik" olan altın/gümüş/bronz halka - delik canvas yüksekliğinin ~%52'si
+  //  - monthly (aylikBirinci/Ikinci/Ucuncu): defne yaprağı (çelenk) tasarımı, keskin bir delik yok - iç boşluk canvas yüksekliğinin ~%38'i (tahmini, yapraklar organik olduğu için kesin sınır yok)
+  // weekly: mevcut haftalık çerçeve - dokunmadım, eskisi gibi kare kutu.
+  const FRAME_CONFIG: Record<LeaderboardTab, { lg: { avatarPx: number; lottieH: number }; sm: { avatarPx: number; lottieH: number } }> = {
+    season: {
+      lg: { avatarPx: 62, lottieH: 120 },
+      sm: { avatarPx: 47, lottieH: 90 },
+    },
+    monthly: {
+      lg: { avatarPx: 46, lottieH: 120 },
+      sm: { avatarPx: 34, lottieH: 90 },
+    },
+    weekly: {
+      // Mevcut (haftalık) çerçeve - değişmedi
+      lg: { avatarPx: 72, lottieH: 120 },
+      sm: { avatarPx: 52, lottieH: 90 },
+    },
+  };
 
-  Promise.all([
-    fetch(firstUrl).then(r => r.json()),
-    fetch(secondUrl).then(r => r.json()),
-    fetch(thirdUrl).then(r => r.json()),
-  ])
-    .then(([first, second, third]) => setLottieData({ first, second, third }))
-    .catch(console.error);
-}, [activeTab]); // activeTab her değiştiğinde çerçeveler yeniden yüklenecek
+  const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
+    season: { first: null, second: null, third: null },
+    monthly: { first: null, second: null, third: null },
+    weekly: { first: null, second: null, third: null },
+  });
 
-      const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
+  useEffect(() => {
+    Promise.all([
+      fetch("/sezonBirinci.json").then(r => r.json()),
+      fetch("/sezonIkinci.json").then(r => r.json()),
+      fetch("/sezonUcuncu.json").then(r => r.json()),
+      fetch("/aylikBirinci.json").then(r => r.json()),
+      fetch("/aylikIkinci.json").then(r => r.json()),
+      fetch("/aylikUcuncu.json").then(r => r.json()),
+      fetch("/birincijson.json").then(r => r.json()),
+      fetch("/ikincijson.json").then(r => r.json()),
+      fetch("/ucuncujson.json").then(r => r.json()),
+    ])
+      .then(([sezonB, sezonI, sezonU, aylikB, aylikI, aylikU, haftaB, haftaI, haftaU]) => {
+        setFrameData({
+          season: { first: sezonB, second: sezonI, third: sezonU },
+          monthly: { first: aylikB, second: aylikI, third: aylikU },
+          weekly: { first: haftaB, second: haftaI, third: haftaU },
+        });
+      })
+      .catch(console.error);
+  }, []);
+
+  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
     const isCurrentUser = leader.user_id === user?.id;
-
-    // 1. Senin kodundaki şu anki orijinal boyutlar (Haftalık sekmesinde aynen bu kalacak)
-    const avatarPx = size === "lg" ? 72 : 52;
-    let lottiePx = size === "lg" ? 120 : 90;
-
-    // 2. Genel ve Aylık sekmelerinde, o 120px ve 90px olan şu anki boyutları hafifçe büyütüyoruz:
-    if (activeTab === "all-time" || activeTab === "monthly") {
-      if (size === "lg") {
-        lottiePx = 188; // Şu anki 120px değerini 132px'e çıkardık
-      } else {
-        lottiePx = 156; // Şu anki 90px değerini 100px'e çıkardık
-      }
-    }
-
-    const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
-
+    const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
+    // weekly kare kutuda kalıyor (mevcut davranış); season & monthly gerçek 1000x591 oranında render ediliyor
+    const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
+    const tabFrames = frameData[tab];
+    const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
     return (
       <div className="flex flex-col items-center gap-0">
-        <div className="relative" style={{ width: lottiePx, height: lottiePx }}>
+        <div className="relative" style={{ width: lottieW, height: lottieH }}>
           {/* Lottie animation frame */}
           {animData && (
             <Lottie
               animationData={animData}
               loop
               autoplay
-              style={{ position: 'absolute', inset: 0, width: lottiePx, height: lottiePx, pointerEvents: 'none' }}
+              style={{ position: 'absolute', inset: 0, width: lottieW, height: lottieH, pointerEvents: 'none' }}
             />
           )}
           {/* Avatar centered inside lottie */}
@@ -433,7 +448,7 @@ useEffect(() => {
     );
   };
 
-  const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean = false) => {
+  const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
     if (leaders.length === 0) {
       return (
         <div className="text-center py-12">
@@ -460,14 +475,14 @@ useEffect(() => {
             {/* 1st place centered */}
             {first && (
               <div className="flex justify-center mb-1">
-                {renderPodiumItem(first, 1, "lg")}
+                {renderPodiumItem(first, 1, "lg", tab)}
               </div>
             )}
             {/* 2nd & 3rd side by side */}
             {(second || third) && (
               <div className="flex justify-center gap-20">
-                {second && renderPodiumItem(second, 2, "sm")}
-                {third && renderPodiumItem(third, 3, "sm")}
+                {second && renderPodiumItem(second, 2, "sm", tab)}
+                {third && renderPodiumItem(third, 3, "sm", tab)}
               </div>
             )}
           </div>
@@ -692,9 +707,9 @@ useEffect(() => {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 relative z-10">
-        {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false)}
-        {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true)}
-        {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true)}
+        {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
+        {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true, "weekly")}
+        {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true, "monthly")}
 
         {/* Bottom Spacer */}
         <div className="h-20" />
