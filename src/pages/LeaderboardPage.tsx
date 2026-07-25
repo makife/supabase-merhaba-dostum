@@ -352,21 +352,19 @@ useEffect(() => {
     .catch(console.error);
 }, [activeTab]); // activeTab her değiştiğinde çerçeveler yeniden yüklenecek
 
-    const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
+      const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
 
-    // 1. Önce değişkenleri 'let' yapıyoruz ki tab durumuna göre değiştirebilelim
-    let avatarPx = size === "lg" ? 72 : 52;
+    // 1. Senin kodundaki şu anki orijinal boyutlar (Haftalık sekmesinde aynen bu kalacak)
+    const avatarPx = size === "lg" ? 72 : 52;
     let lottiePx = size === "lg" ? 120 : 90;
 
-    // 2. Genel (all-time) ve Aylık (monthly) sekmelerinde Lottie'leri avatara göre büyütüyoruz
+    // 2. Genel ve Aylık sekmelerinde, o 120px ve 90px olan şu anki boyutları hafifçe büyütüyoruz:
     if (activeTab === "all-time" || activeTab === "monthly") {
       if (size === "lg") {
-        lottiePx = 145; // Lottie'yi dıştan büyüttük (Eski: 120)
-        avatarPx = 72;  // Avatar boyutunu koruduk veya iç halkaya göre 68-72 arası oynayabilirsin
+        lottiePx = 132; // Şu anki 120px değerini 132px'e çıkardık
       } else {
-        lottiePx = 110; // Lottie'yi dıştan büyüttük (Eski: 90)
-        avatarPx = 52;  // Avatar boyutunu koruduk
+        lottiePx = 100; // Şu anki 90px değerini 100px'e çıkardık
       }
     }
 
