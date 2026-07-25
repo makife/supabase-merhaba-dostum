@@ -352,11 +352,26 @@ useEffect(() => {
     .catch(console.error);
 }, [activeTab]); // activeTab her değiştiğinde çerçeveler yeniden yüklenecek
 
-  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
+    const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm") => {
     const isCurrentUser = leader.user_id === user?.id;
-    const avatarPx = size === "lg" ? 72 : 52;
-    const lottiePx = size === "lg" ? 120 : 90;
+
+    // 1. Önce değişkenleri 'let' yapıyoruz ki tab durumuna göre değiştirebilelim
+    let avatarPx = size === "lg" ? 72 : 52;
+    let lottiePx = size === "lg" ? 120 : 90;
+
+    // 2. Genel (all-time) ve Aylık (monthly) sekmelerinde Lottie'leri avatara göre büyütüyoruz
+    if (activeTab === "all-time" || activeTab === "monthly") {
+      if (size === "lg") {
+        lottiePx = 145; // Lottie'yi dıştan büyüttük (Eski: 120)
+        avatarPx = 72;  // Avatar boyutunu koruduk veya iç halkaya göre 68-72 arası oynayabilirsin
+      } else {
+        lottiePx = 110; // Lottie'yi dıştan büyüttük (Eski: 90)
+        avatarPx = 52;  // Avatar boyutunu koruduk
+      }
+    }
+
     const animData = rank === 1 ? lottieData.first : rank === 2 ? lottieData.second : lottieData.third;
+
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
     return (
       <div className="flex flex-col items-center gap-0">
