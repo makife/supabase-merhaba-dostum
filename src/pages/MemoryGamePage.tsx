@@ -512,9 +512,18 @@ const WordMemoryGame = () => {
             {oyunBasladi && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-white/80">
+                  <div className={`flex items-center gap-1.5 text-white/80 ${kalanSure <= 10 ? "animate-pulse" : ""}`}>
                     <Clock size={14} />
-                    <span className={`text-sm font-mono ${kalanSure <= 10 ? "text-red-400 animate-pulse" : ""}`}>
+                    <span
+                      className={`text-sm font-mono tabular-nums tracking-tight ${kalanSure <= 10 ? "text-red-400" : ""}`}
+                      style={{
+                        fontVariantNumeric: "tabular-nums",
+                        minWidth: "3ch",
+                        display: "inline-block",
+                        WebkitTransform: "translateZ(0)",
+                        transform: "translateZ(0)",
+                      }}
+                    >
                       {Math.floor(kalanSure / 60)}:{(kalanSure % 60).toString().padStart(2, "0")}
                     </span>
                   </div>
