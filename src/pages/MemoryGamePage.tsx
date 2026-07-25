@@ -618,6 +618,7 @@ const WordMemoryGame = () => {
                           className="absolute inset-0 w-full h-full border-2 border-white/50 overflow-hidden"
                           style={{
                             backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden" as any,
                             borderRadius: puzzleAciliyor ? 0 : 10,
                             transition: "border-radius 600ms ease",
                             ...imageSliceStyle,
