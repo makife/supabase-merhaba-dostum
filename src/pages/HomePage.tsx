@@ -1008,6 +1008,13 @@ const HomePage = () => {
                       <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
                       {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
                     </span>
+                  ) : timeUntilNextCredit && totalCredits < 5 ? (
+                    <span
+                      className="text-[15px] font-mono font-black tabular-nums leading-none whitespace-nowrap"
+                      style={{ WebkitTextStroke: "0.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      {timeUntilNextCredit}
+                    </span>
                   ) : (
                     <span
                       className="flex flex-col items-center leading-tight"
@@ -1056,39 +1063,33 @@ const HomePage = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 min-w-0 flex-1 justify-start -ml-2 -my-2">
+                  <div className="flex items-center gap-1 min-w-0 flex-1 justify-end -my-2 pr-1 overflow-hidden">
                     {totalCredits > 5 ? (
-                      <div className="flex items-center gap-1 min-w-0">
-                        <div className="flex -space-x-3">
+                      <div className="flex items-center min-w-0">
+                        <div className="flex -space-x-3 flex-shrink-0">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={50} />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={44} />
                           ))}
                         </div>
-                        <div className="relative inline-flex items-center justify-center w-10 h-10 flex-shrink-0 -ml-1">
-                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-10 h-10 object-contain" />
+                        <div className="relative inline-flex items-center justify-center w-9 h-9 flex-shrink-0 -ml-1">
+                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span
-                            className="absolute text-white text-[13px] font-bold"
+                            className="absolute text-white text-[12px] font-bold"
                             style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
                           >+{totalCredits - 5}</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex -space-x-3">
+                      <div className="flex -space-x-3 flex-shrink-0">
                         {Array.from({ length: 5 }, (_, i) => (
                           <HakIcon
                             key={i}
                             animData={sayfaHakAnim}
                             filled={i < totalCredits}
-                            size={56}
+                            size={50}
                           />
                         ))}
                       </div>
-                    )}
-
-                    {timeUntilNextCredit && totalCredits < 5 && (
-                      <span className="ml-auto text-[10px] text-slate-400 font-mono bg-slate-50 px-1 rounded flex-shrink-0">
-                        {timeUntilNextCredit}
-                      </span>
                     )}
                   </div>
                 )}
