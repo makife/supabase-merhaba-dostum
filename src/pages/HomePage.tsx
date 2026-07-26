@@ -978,7 +978,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center gap-3 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 overflow-hidden ${
+                className={`flex items-center gap-0 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 overflow-hidden ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
