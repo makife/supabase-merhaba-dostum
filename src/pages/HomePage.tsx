@@ -978,7 +978,7 @@ const HomePage = () => {
 
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div
-                className={`flex items-center gap-0 backdrop-blur-md border border-white/30 rounded-xl p-2 px-3 overflow-hidden ${
+                className={`flex items-center gap-2 backdrop-blur-md border border-white/30 rounded-xl p-2 pl-0 pr-2 overflow-hidden ${
                   isUnlimitedLivesActive(profile)
                     ? getUnlimitedType(profile) === "maraton"
                       ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
@@ -986,19 +986,19 @@ const HomePage = () => {
                     : "bg-[#1e2d45]"
                 }`}
               >
+                {/* Sabit "Kalan Sayfalarım" etiketi — boyutu asla değişmez */}
                 <span
-                  className={`text-xs font-black uppercase tracking-wider ${
+                  className={`text-xs font-black uppercase tracking-wider flex-shrink-0 ${
                     isUnlimitedLivesActive(profile)
                       ? getUnlimitedType(profile) === "maraton"
-                        ? "text-amber-400"
-                        : "text-blue-400"
-                      : "text-white self-stretch inline-flex items-center justify-center -ml-4 -my-2 px-3 py-2 rounded-l-xl shadow-inner"
+                        ? "text-amber-400 px-2"
+                        : "text-blue-400 px-2"
+                      : "text-white self-stretch inline-flex items-center justify-center -my-2 px-3 py-2 rounded-l-xl shadow-inner"
                   }`}
                   style={
                     !isUnlimitedLivesActive(profile)
                       ? {
                           background: "linear-gradient(to bottom, #f87171, #dc2626, #7f1d1d)",
-                          transform: "translateX(-2px)"
                         }
                       : undefined
                   }
@@ -1007,13 +1007,6 @@ const HomePage = () => {
                     <span className="flex items-center gap-1.5">
                       <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
                       {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
-                    </span>
-                  ) : timeUntilNextCredit && totalCredits < 5 ? (
-                    <span
-                      className="text-[15px] font-mono font-black tabular-nums leading-none whitespace-nowrap"
-                      style={{ WebkitTextStroke: "0.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      {timeUntilNextCredit}
                     </span>
                   ) : (
                     <span
@@ -1025,9 +1018,9 @@ const HomePage = () => {
                     </span>
                   )}
                 </span>
-                
+
                 {isUnlimitedLivesActive(profile) ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-auto">
                     {unlimitedTimeLeft ? (
                       <div
                         className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
@@ -1063,35 +1056,42 @@ const HomePage = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 min-w-0 flex-1 justify-end -my-2 pr-1 overflow-hidden">
-                    {totalCredits > 5 ? (
-                      <div className="flex items-center min-w-0">
-                        <div className="flex -space-x-3 flex-shrink-0">
-                          {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={44} />
-                          ))}
-                        </div>
-                        <div className="relative inline-flex items-center justify-center w-9 h-9 flex-shrink-0 -ml-1">
+                  <>
+                    {/* Hak ikonları — kırmızı bandın hemen bitiminden başlar, sabit alan */}
+                    <div className="flex -space-x-3 flex-shrink-0">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <HakIcon
+                          key={i}
+                          animData={sayfaHakAnim}
+                          filled={i < Math.min(totalCredits, 5)}
+                          size={44}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Sağ uç: +N badge (kartın ucuna değer) veya çerçeveli sayaç */}
+                    <div className="ml-auto flex items-center justify-end flex-shrink-0">
+                      {totalCredits > 5 ? (
+                        <div className="relative inline-flex items-center justify-center w-9 h-9 -mr-1">
                           <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
                           <span
                             className="absolute text-white text-[12px] font-bold"
                             style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
                           >+{totalCredits - 5}</span>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex -space-x-3 flex-shrink-0">
-                        {Array.from({ length: 5 }, (_, i) => (
-                          <HakIcon
-                            key={i}
-                            animData={sayfaHakAnim}
-                            filled={i < totalCredits}
-                            size={50}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                      ) : timeUntilNextCredit ? (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-white/30 bg-black/30">
+                          <Clock className="w-3 h-3 text-white/80" />
+                          <span
+                            className="text-[11px] font-mono font-bold tabular-nums text-white whitespace-nowrap"
+                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                          >
+                            {timeUntilNextCredit}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
                 )}
               </div>
             )}
