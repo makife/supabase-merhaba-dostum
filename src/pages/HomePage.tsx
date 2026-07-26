@@ -1061,7 +1061,7 @@ const HomePage = () => {
                       <div className="flex items-center gap-1 min-w-0">
                         <div className="flex -space-x-3">
                           {Array.from({ length: 5 }, (_, i) => (
-                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={56} />
+                            <HakIcon key={i} animData={sayfaHakAnim} filled={true} size={50} />
                           ))}
                         </div>
                         <div className="relative inline-flex items-center justify-center w-10 h-10 flex-shrink-0 -ml-1">
