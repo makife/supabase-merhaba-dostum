@@ -334,20 +334,20 @@ const LeaderboardPage = () => {
   //  - season (sezonBirinci/Ikinci/Ucuncu): temiz, dairesel "delik" olan altın/gümüş/bronz halka - delik canvas yüksekliğinin ~%52'si
   //  - monthly (aylikBirinci/Ikinci/Ucuncu): defne yaprağı (çelenk) tasarımı, keskin bir delik yok - iç boşluk canvas yüksekliğinin ~%38'i (tahmini, yapraklar organik olduğu için kesin sınır yok)
   // weekly: mevcut haftalık çerçeve - dokunmadım, eskisi gibi kare kutu.
+  // Kanka: 3 sekmede de podyumdaki 1./2./3. avatar boyutları ve aralarındaki mesafe birebir aynı olsun.
+  // Bu yüzden avatarPx tüm sekmelerde eşit; lottieH ise çerçeve tasarımına göre değişiyor (görsel çerçeve boyutu).
   const FRAME_CONFIG: Record<LeaderboardTab, { lg: { avatarPx: number; lottieH: number }; sm: { avatarPx: number; lottieH: number } }> = {
     season: {
-      lg: { avatarPx: 62, lottieH: 120 },
-      sm: { avatarPx: 47, lottieH: 90 },
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
     },
     monthly: {
-      // Kanka isteği: aylık avatar boyutu sezon ile aynı olsun (çerçeveye tam oturuyor)
-      lg: { avatarPx: 62, lottieH: 120 },
-      sm: { avatarPx: 47, lottieH: 90 },
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
     },
     weekly: {
-      // Mevcut (haftalık) çerçeve - değişmedi
-      lg: { avatarPx: 72, lottieH: 120 },
-      sm: { avatarPx: 52, lottieH: 90 },
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
     },
   };
 
