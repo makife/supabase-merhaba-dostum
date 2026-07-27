@@ -459,6 +459,20 @@ const LeaderboardPage = () => {
             <Target className="w-3 h-3" />
             <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
           </div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+            {leader.games_played > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Users className="w-3 h-3" />
+                {leader.games_played}
+              </span>
+            )}
+            {leader.wins > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Trophy className="w-3 h-3" />
+                {leader.wins}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );

@@ -205,8 +205,9 @@ const LoadingScreen = ({ onLoadingComplete }) => {
                 className="progress-bar"
                 style={{
                   position: "absolute",
-                  left: 0,
+                  left: "50%",
                   top: 0,
+                  transform: "translateX(-50%)",
                   width: `${progress}%`,
                   height: "100%",
                   transition: "width 0.5s ease-out",
