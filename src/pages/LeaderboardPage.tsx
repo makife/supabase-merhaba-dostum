@@ -554,13 +554,6 @@ const LeaderboardPage = () => {
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  {(isUserOnline(leader.user_id) || inGameUsers.has(leader.user_id)) && (
-                    <span className={`absolute bottom-0 right-0 w-6 h-6 border-2 border-[#1a1a2e] rounded-full ${
-                      inGameUsers.has(leader.user_id)
-                        ? "bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.9)]"
-                        : "bg-green-500"
-                    }`} />
-                  )}
                   {premiumUsers.has(leader.user_id) && (
                     <div className="absolute -top-1 -right-1 z-20">
                       <VipBadge size="xs" />
