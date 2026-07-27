@@ -564,7 +564,14 @@ const LeaderboardPage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3
-                      className="font-bold text-white truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
+                      className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
+                      style={
+                        inGameUsers.has(leader.user_id)
+                          ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                          : isUserOnline(leader.user_id)
+                            ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
+                            : { color: "#ffffff" }
+                      }
                       onClick={(e) => openUserMenu(leader, e)}
                     >
                       {leader.username}
