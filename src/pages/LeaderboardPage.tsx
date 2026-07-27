@@ -101,10 +101,16 @@ const LeaderboardPage = () => {
 
       if (data) {
         const premSet = new Set<string>();
-        const gameSet = new Set<string>((activePlayers || []).map((p: any) => p.player_id));
+        const gameSet = new Set<string>();
+        
         data.forEach((p: any) => {
+          // Premium kullanıcıları ekle
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
+          
+          // in_game flag'i true ise oyuncu maç oynuyor → neon mavi yap
+          if (p.in_game) gameSet.add(p.id);
         });
+        
         setPremiumUsers(premSet);
         setInGameUsers(gameSet);
       }
