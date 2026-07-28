@@ -104,7 +104,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   alt="Tebrikler"
                   onAnimationEnd={handleTextGrowEnd}
                   style={{
-                    animation: 'growFromDot 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    animation: 'growFromDot 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                     transformOrigin: 'center center',
                   }}
                 />
