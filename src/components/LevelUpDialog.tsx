@@ -122,21 +122,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                 </div>
               </div>
             )}
-
-            {/* Tebrikler Metni */}
-            {showNumbers && (
-              <p
-                className="text-white font-bold text-lg mt-4"
-                style={{
-                  animation: 'fadeIn 0.6s ease-in-out forwards',
-                  animationDelay: '0.4s',
-                  opacity: 0,
-                }}
-              >
-                Tebrikler! 🎉
-              </p>
-            )}
-
+            
             {/* CSS Animasyonları */}
             <style>{`
               @keyframes slideInFromLeft {
