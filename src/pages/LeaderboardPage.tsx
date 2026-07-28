@@ -103,13 +103,18 @@ const LeaderboardPage = () => {
         const premSet = new Set<string>();
         const gameSet = new Set<string>();
         
+        // Premium kullanıcıları ekle
         data.forEach((p: any) => {
-          // Premium kullanıcıları ekle
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
-          
-          // in_game flag'i true ise oyuncu maç oynuyor → neon mavi yap
-          if (p.in_game) gameSet.add(p.id);
         });
+        
+        // ÖNEMLİ: player_activities'den gelen aktif oyuncuları kullan
+        // (in_game flag'i yanlış pozitif verebilir, son aktiviteyi kontrol et)
+        if (activePlayers && Array.isArray(activePlayers)) {
+          activePlayers.forEach((activity: any) => {
+            gameSet.add(activity.player_id);
+          });
+        }
         
         setPremiumUsers(premSet);
         setInGameUsers(gameSet);
