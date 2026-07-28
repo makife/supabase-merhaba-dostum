@@ -14,6 +14,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lottieRef = useRef<any>(null);
   const [showText, setShowText] = useState(false);
+  const [textAnimating, setTextAnimating] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
   // Seviyeyi iki rakama ayır (örn: 12 → ['1', '2'])
@@ -23,8 +24,20 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
   useEffect(() => {
     setShowText(false);
+    setTextAnimating(false);
     setShowNumbers(false);
   }, [open]);
+
+  // showText true olduktan bir frame sonra textAnimating'i tetikle.
+  // Aynı anda mount + animasyon stilini uygularsak bazı WebView'ler (iOS)
+  // animasyonu atlayıp direkt son haline zıplıyor; bu yüzden bir rAF ile
+  // tarayıcının "from" halini render etmesine izin veriyoruz.
+  useEffect(() => {
+    if (showText) {
+      const raf = requestAnimationFrame(() => setTextAnimating(true));
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [showText]);
 
   useEffect(() => {
     if (open && isSoundEffectsEnabled()) {
@@ -89,7 +102,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                 <Lottie
                   ref={lottieRef}
                   animationData={congratsAnimation}
-                  loop={false}
+                  loop={true}
                   autoplay={true}
                   onComplete={handleAnimationComplete}
                 />
@@ -98,14 +111,18 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
             {/* Tebrikler Text SVG - Küçük Nokta Halinde Başlayıp Büyüyerek Ortaya Gelir */}
             {showText && (
-              <div className="w-full flex justify-center">
+              <div className="w-full flex justify-center" style={{ marginTop: -32 }}>
                 <img
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
-                  onAnimationEnd={handleTextGrowEnd}
+                  onTransitionEnd={(e) => {
+                    if (e.propertyName === 'transform') handleTextGrowEnd();
+                  }}
                   style={{
-                    animation: 'growFromDot 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    opacity: textAnimating ? 1 : 0,
+                    transform: textAnimating ? 'scale(1)' : 'scale(0.02)',
                     transformOrigin: 'center center',
+                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
                 />
               </div>
@@ -119,7 +136,6 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   className="animate-slideInFromLeft"
                   style={{
                     animation: 'slideInFromLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                    animationDelay: '0.5s',
                   }}
                 >
                   <img
@@ -134,7 +150,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   className="animate-slideInFromRight"
                   style={{
                     animation: 'slideInFromRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                    animationDelay: '0.8s',
+                    animationDelay: '0.5s',
                   }}
                 >
                   <img
@@ -167,17 +183,6 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                 to {
                   opacity: 1;
                   transform: translateX(0);
-                }
-              }
-
-              @keyframes growFromDot {
-                from {
-                  opacity: 0;
-                  transform: scale(0.02);
-                }
-                to {
-                  opacity: 1;
-                  transform: scale(1);
                 }
               }
 
