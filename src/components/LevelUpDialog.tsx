@@ -134,7 +134,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   className="animate-slideInFromRight"
                   style={{
                     animation: 'slideInFromRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                    animationDelay: '0.5s',
+                    animationDelay: '0.8s',
                   }}
                 >
                   <img
