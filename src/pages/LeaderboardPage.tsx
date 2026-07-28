@@ -99,19 +99,16 @@ const LeaderboardPage = () => {
           .gte("last_action_time", activeSince),
       ]);
 
-      if (data && activePlayers) {
+      if (data) {
         const premSet = new Set<string>();
         const gameSet = new Set<string>();
-        
-        // player_activities'teki aktif oyuncuları bir set'e al
-        const activePlayerIds = new Set(activePlayers.map((p: any) => p.player_id));
         
         data.forEach((p: any) => {
           // Premium kullanıcıları ekle
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
           
-          // in_game flag'i true VEYA player_activities'te aktif olan oyuncu → neon mavi yap
-          if (p.in_game || activePlayerIds.has(p.id)) gameSet.add(p.id);
+          // in_game flag'i true ise oyuncu maç oynuyor → neon mavi yap
+          if (p.in_game) gameSet.add(p.id);
         });
         
         setPremiumUsers(premSet);
@@ -242,195 +239,375 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Initial data fetch + polling setup
+
+  const handleLeaderboardResync = useCallback(async () => {
+    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+  }, []);
+
+  // Fetch premium status whenever leaders change + poll every 15s for in_game updates
+  useEffect(() => {
+    const allUserIds = [
+      ...allTimeLeaders.map(l => l.user_id),
+      ...weeklyLeaders.map(l => l.user_id),
+      ...monthlyLeaders.map(l => l.user_id),
+    ];
+    const uniqueIds = [...new Set(allUserIds)];
+    if (uniqueIds.length === 0) return;
+    fetchPremiumStatus(uniqueIds);
+    const interval = setInterval(() => fetchPremiumStatus(uniqueIds), IN_GAME_STATUS_POLL_MS);
+    return () => clearInterval(interval);
+  }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
+
+  usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
+
+  useEffect(() => {
+    fetch("/liderArmaLoading.json")
+      .then((r) => r.json())
+      .then(setLiderLoadingAnim)
+      .catch(console.error);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchAllTimeLeaders(),
-        fetchWeeklyLeaders(),
-        fetchMonthlyLeaders(),
-      ]);
+      await handleLeaderboardResync();
       setLoading(false);
     };
-
     loadData();
-
-    // Polling interval setup
-    const interval = setInterval(() => {
-      Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
-    }, 30000); // Her 30 saniyede bir yenile
-
-    return () => clearInterval(interval);
   }, [user]);
 
-  // Premium ve in_game status güncellemesi
   useEffect(() => {
-    const allLeaders = [...allTimeLeaders, ...weeklyLeaders, ...monthlyLeaders];
-    const uniqueUserIds = Array.from(new Set(allLeaders.map((l) => l.user_id)));
+    const refetchActive = async () => {
+      if (activeTab === "all-time") await fetchAllTimeLeaders();
+      if (activeTab === "weekly") await fetchWeeklyLeaders();
+      if (activeTab === "monthly") await fetchMonthlyLeaders();
+    };
+    refetchActive();
+  }, [activeTab]);
 
-    if (uniqueUserIds.length > 0) {
-      fetchPremiumStatus(uniqueUserIds);
+  useEffect(() => {
+    const onVisible = async () => {
+      if (document.visibilityState === "visible") {
+        await handleLeaderboardResync();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [handleLeaderboardResync]);
 
-      const statusInterval = setInterval(() => {
-        fetchPremiumStatus(uniqueUserIds);
-      }, IN_GAME_STATUS_POLL_MS);
-
-      return () => clearInterval(statusInterval);
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="w-6 h-6 text-amber-400 fill-amber-400 drop-shadow-lg" />;
+      case 2:
+        return <Medal className="w-6 h-6 text-slate-300 fill-slate-300 drop-shadow-lg" />;
+      case 3:
+        return <Medal className="w-6 h-6 text-orange-600 fill-orange-600 drop-shadow-lg" />;
+      default:
+        return (
+          <span className="w-6 h-6 flex items-center justify-center text-xs font-bold text-slate-400">#{rank}</span>
+        );
     }
-  }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
+  };
 
   const getRankChangeIcon = (change?: number) => {
-    if (!change || change === 0) return <span className="text-slate-500">−</span>;
+    if (!change || change === 0) return null;
     if (change > 0) {
       return (
-        <div className="flex items-center gap-1 text-red-400">
+        <div className="flex items-center gap-1 bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs font-bold border border-green-500/30">
+          <TrendingUp className="w-3 h-3" />
+          <span>+{change}</span>
+        </div>
+      );
+    } else if (change < 0) {
+      return (
+        <div className="flex items-center gap-1 bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs font-bold border border-red-500/30">
           <TrendingDown className="w-3 h-3" />
-          <span className="text-xs font-semibold">{change}</span>
+          <span>{change}</span>
         </div>
       );
     }
+    return null;
+  };
+
+  type LeaderboardTab = "season" | "monthly" | "weekly";
+
+  // sezon* ve aylik* çerçeve JSON'larının hepsi 1000x591 (KARE DEĞİL, ~1.69:1 en-boy oranında).
+  // Bu yüzden kutuyu kare değil, bu orana göre dikdörtgen render ediyoruz - yoksa çerçeve görseli düşey eksende sıkışıp bozulur.
+  const FRAME_ASPECT = 1000 / 591;
+
+  // avatarPx: her çerçevenin GERÇEK iç boşluğuna göre ölçüldü (görselleri açıp piksel piksel kontrol ettim).
+  //  - season (sezonBirinci/Ikinci/Ucuncu): temiz, dairesel "delik" olan altın/gümüş/bronz halka - delik canvas yüksekliğinin ~%52'si
+  //  - monthly (aylikBirinci/Ikinci/Ucuncu): defne yaprağı (çelenk) tasarımı, keskin bir delik yok - iç boşluk canvas yüksekliğinin ~%38'i (tahmini, yapraklar organik olduğu için kesin sınır yok)
+  // weekly: mevcut haftalık çerçeve - dokunmadım, eskisi gibi kare kutu.
+  // Kanka: 3 sekmede de podyumdaki 1./2./3. avatar boyutları ve aralarındaki mesafe birebir aynı olsun.
+  // Bu yüzden avatarPx tüm sekmelerde eşit; lottieH ise çerçeve tasarımına göre değişiyor (görsel çerçeve boyutu).
+  const FRAME_CONFIG: Record<LeaderboardTab, { lg: { avatarPx: number; lottieH: number }; sm: { avatarPx: number; lottieH: number } }> = {
+    season: {
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
+    },
+    monthly: {
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
+    },
+    weekly: {
+      lg: { avatarPx: 68, lottieH: 120 },
+      sm: { avatarPx: 50, lottieH: 90 },
+    },
+  };
+
+  // Haftalık sekmede 2. ve 3.'nün arasındaki boşluk Tailwind "gap-20" (80px) ile ayarlanıyordu.
+  // Sezon/aylık çerçeveler artık kare değil (daha geniş kutu), bu yüzden aynı 80px flex-gap kullanılırsa
+  // aradaki GÖRSEL boşluk haftalıktan çok daha büyük görünür. Burada, kutu genişliği ne olursa olsun
+  // avatarlar arasındaki gerçek görsel mesafe haftalıktakiyle birebir aynı olacak şekilde gap'i hesaplıyoruz.
+  const WEEKLY_FLEX_GAP_PX = 80; // Tailwind gap-20
+  const getPodiumGapPx = (tab: LeaderboardTab): number => {
+    const weeklyBox = FRAME_CONFIG.weekly.sm.lottieH; // haftalık kare kutu
+    const weeklyAvatar = FRAME_CONFIG.weekly.sm.avatarPx;
+    const targetAvatarDistance = WEEKLY_FLEX_GAP_PX + (weeklyBox - weeklyAvatar);
+
+    const box = tab === "weekly" ? FRAME_CONFIG.weekly.sm.lottieH : Math.round(FRAME_CONFIG[tab].sm.lottieH * FRAME_ASPECT);
+    const avatar = FRAME_CONFIG[tab].sm.avatarPx;
+    return Math.max(0, Math.round(targetAvatarDistance - (box - avatar)));
+  };
+
+  const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
+    season: { first: null, second: null, third: null },
+    monthly: { first: null, second: null, third: null },
+    weekly: { first: null, second: null, third: null },
+  });
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/sezonBirinci.json").then(r => r.json()),
+      fetch("/sezonIkinci.json").then(r => r.json()),
+      fetch("/sezonUcuncu.json").then(r => r.json()),
+      fetch("/aylikBirinci.json").then(r => r.json()),
+      fetch("/aylikIkinci.json").then(r => r.json()),
+      fetch("/aylikUcuncu.json").then(r => r.json()),
+      fetch("/birincijson.json").then(r => r.json()),
+      fetch("/ikincijson.json").then(r => r.json()),
+      fetch("/ucuncujson.json").then(r => r.json()),
+    ])
+      .then(([sezonB, sezonI, sezonU, aylikB, aylikI, aylikU, haftaB, haftaI, haftaU]) => {
+        setFrameData({
+          season: { first: sezonB, second: sezonI, third: sezonU },
+          monthly: { first: aylikB, second: aylikI, third: aylikU },
+          weekly: { first: haftaB, second: haftaI, third: haftaU },
+        });
+      })
+      .catch(console.error);
+  }, []);
+
+  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
+    const isCurrentUser = leader.user_id === user?.id;
+    const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
+    // weekly kare kutuda kalıyor (mevcut davranış); season & monthly gerçek 1000x591 oranında render ediliyor
+    const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
+    const tabFrames = frameData[tab];
+    const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
+    const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
     return (
-      <div className="flex items-center gap-1 text-green-400">
-        <TrendingUp className="w-3 h-3" />
-        <span className="text-xs font-semibold">{Math.abs(change)}</span>
+      <div className="flex flex-col items-center gap-0">
+        <div className="relative" style={{ width: lottieW, height: lottieH }}>
+          {/* Lottie animation frame */}
+          {animData && (
+            <Lottie
+              animationData={animData}
+              loop
+              autoplay
+              style={{ position: 'absolute', inset: 0, width: lottieW, height: lottieH, pointerEvents: 'none' }}
+            />
+          )}
+          {/* Avatar centered inside lottie */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative">
+              <Avatar
+                className={`cursor-pointer hover:scale-110 transition-transform`}
+                style={{ width: avatarPx, height: avatarPx }}
+                onClick={(e) => openUserMenu(leader, e)}
+              >
+                <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
+                  {leader.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {premiumUsers.has(leader.user_id) && (
+                <div className="absolute -top-1 -right-1 z-20">
+                  <VipBadge size="xs" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div
+          className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
+          style={{ borderColor: frameColor }}
+        >
+          <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
+            <h3
+              className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
+              style={
+                inGameUsers.has(leader.user_id)
+                  ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                  : isUserOnline(leader.user_id)
+                    ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
+                    : { color: "#ffffff" }
+              }
+              onClick={(e) => openUserMenu(leader, e)}
+            >
+              {leader.username}
+              {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <Target className="w-3 h-3" />
+            <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+            {leader.games_played > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Users className="w-3 h-3" />
+                {leader.games_played}
+              </span>
+            )}
+            {leader.wins > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Trophy className="w-3 h-3" />
+                {leader.wins}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
 
-  const renderLeaderboard = (
-    leaders: LeaderboardEntry[],
-    showChange: boolean,
-    type: "season" | "weekly" | "monthly"
-  ) => {
+  const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
     if (leaders.length === 0) {
       return (
-        <div className="flex items-center justify-center min-h-96">
-          <p className="text-slate-400 text-center">
-            {type === "season"
-              ? "Henüz sezon sıralaması yok"
-              : type === "weekly"
-                ? "Henüz haftalık sıralama yok"
-                : "Henüz aylık sıralama yok"}
-          </p>
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-[#1e2d45] rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-10 h-10 text-slate-500" />
+          </div>
+          <p className="text-slate-400 font-medium">Henüz oyun oynayan yok</p>
+          <p className="text-sm text-slate-500 mt-1">İlk sen ol!</p>
         </div>
       );
     }
 
+    const top3 = leaders.slice(0, 3);
+    const rest = leaders.slice(3);
+    const first = top3[0];
+    const second = top3[1];
+    const third = top3[2];
+
     return (
       <div className="space-y-3">
-        {leaders.map((leader, index) => {
-          const isCurrentUser = user && user.id === leader.user_id;
-          const isPremium = premiumUsers.has(leader.user_id);
+        {/* Podium - Top 3 */}
+        {top3.length > 0 && (
+          <div className="mb-4">
+            {/* 1st place centered */}
+            {first && (
+              <div className="flex justify-center mb-1">
+                {renderPodiumItem(first, 1, "lg", tab)}
+              </div>
+            )}
+            {/* 2nd & 3rd side by side */}
+            {(second || third) && (
+              <div className="flex justify-center" style={{ gap: getPodiumGapPx(tab) }}>
+                {second && renderPodiumItem(second, 2, "sm", tab)}
+                {third && renderPodiumItem(third, 3, "sm", tab)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rest of leaderboard */}
+        {rest.map((leader) => {
+          const isCurrentUser = leader.user_id === user?.id;
 
           return (
             <div
-              key={`${leader.user_id}-${type}`}
-              className={`group relative rounded-2xl border backdrop-blur-sm transition-all ${
-                inGameUsers.has(leader.user_id)
-                  ? "border-cyan-500/50 bg-[#0f1829]/60 shadow-lg shadow-cyan-500/20 hover:border-cyan-400 hover:shadow-cyan-500/30"
-                  : isCurrentUser
-                    ? "border-indigo-500/50 bg-[#0f1829]/60 shadow-lg shadow-indigo-500/20 hover:border-indigo-400 hover:shadow-indigo-500/30"
-                    : "border-white/5 bg-[#1e2d45]/40 hover:border-white/10 hover:bg-[#1e2d45]/60"
+              key={leader.user_id}
+              className={`relative group rounded-2xl p-4 transition-all duration-300 border ${
+                isCurrentUser
+                  ? "bg-[#1e2d45] border-indigo-400/30 shadow-lg shadow-indigo-500/10"
+                  : "bg-[#1e2d45] border-indigo-500/20"
               }`}
             >
-              {/* Background Glow Effect (only for in-game users) */}
-              {inGameUsers.has(leader.user_id) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-              )}
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
 
-              <div className="relative z-10 p-4">
-                <div className="flex items-center gap-3">
-                  {/* Rank Badge */}
-                  <div className="flex-shrink-0">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${
-                        index === 0
-                          ? "bg-gradient-to-br from-yellow-500 to-amber-600 text-white"
-                          : index === 1
-                            ? "bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900"
-                            : index === 2
-                              ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white"
-                              : "bg-[#0f1829] text-slate-400 border border-white/10"
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
+
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-indigo-400 to-purple-500">
+                    <Avatar
+                      className={`w-full h-full cursor-pointer hover:scale-110 transition-transform ${
+                        activeTab === "all-time"
+                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-slate-900"
+                          : activeTab === "monthly"
+                            ? "ring-2 ring-green-500 ring-offset-1 ring-offset-slate-900"
+                            : "ring-2 ring-blue-500 ring-offset-1 ring-offset-slate-900"
                       }`}
+                      onClick={(e) => openUserMenu(leader, e)}
                     >
-                      {leader.rank > 0 ? `#${leader.rank}` : `#${index + 1}`}
-                    </div>
+                      <AvatarImage src={leader.avatar_url || undefined} alt={leader.username} />
+                      <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">
+                        {leader.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
-
-                  {/* Avatar + Username */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex-shrink-0 relative">
-                        <Avatar className="w-10 h-10 border border-white/10">
-                          <AvatarImage src={leader.avatar_url || ""} alt={leader.username} />
-                          <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-bold">
-                            {leader.username.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        {/* Premium Badge */}
-                        {isPremium && (
-                          <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 shadow-lg">
-                            <Star className="w-3 h-3 text-white fill-white" />
-                          </div>
-                        )}
-
-                        {/* In-Game Indicator */}
-                        {inGameUsers.has(leader.user_id) && (
-                          <div className="absolute -bottom-1 -right-1 bg-cyan-500 rounded-full p-1 shadow-lg shadow-cyan-500/50">
-                            <Flame className="w-3 h-3 text-white fill-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3
-                            className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
-                            style={
-                              inGameUsers.has(leader.user_id)
-                                ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
-                                : isCurrentUser
-                                  ? { color: "#ffffff" }
-                                  : { color: "#ffffff" }
-                            }
-                            onClick={(e) => openUserMenu(leader, e)}
-                          >
-                            {leader.username}
-                          </h3>
-                          {isCurrentUser && (
-                            <Badge className="text-xs px-2 py-0 h-5 bg-indigo-500 text-white border-0">Sen</Badge>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Target className="w-3 h-3" />
-                            {leader.score.toLocaleString()}
-                          </span>
-                          {leader.games_played > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />
-                              {leader.games_played}
-                            </span>
-                          )}
-                          {leader.wins > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Trophy className="w-3 h-3" />
-                              {leader.wins}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                  {premiumUsers.has(leader.user_id) && (
+                    <div className="absolute -top-1 -right-1 z-20">
+                      <VipBadge size="xs" />
                     </div>
-                  </div>
-
-                  {/* Flex spacer for layout */}
-                  <div className="hidden sm:block flex-1" />
-
-                  {showChange && <div className="flex-shrink-0">{getRankChangeIcon(leader.change)}</div>}
+                  )}
                 </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3
+                      className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
+                      style={
+                        inGameUsers.has(leader.user_id)
+                          ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                          : isUserOnline(leader.user_id)
+                            ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
+                            : { color: "#ffffff" }
+                      }
+                      onClick={(e) => openUserMenu(leader, e)}
+                    >
+                      {leader.username}
+                    </h3>
+                    {isCurrentUser && (
+                      <Badge className="text-xs px-2 py-0 h-5 bg-indigo-500 text-white border-0">Sen</Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      {leader.score.toLocaleString()}
+                    </span>
+                    {leader.games_played > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {leader.games_played}
+                      </span>
+                    )}
+                    {leader.wins > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
+                        {leader.wins}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {showChange && <div className="flex-shrink-0">{getRankChangeIcon(leader.change)}</div>}
               </div>
             </div>
           );
@@ -487,9 +664,9 @@ const LeaderboardPage = () => {
             </Button>
 
             <div className="flex items-center gap-2">
-              <img src="/icons/liderlik-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
-              <img src="/icons/liderlik-text.svg" alt="Liderlik" className="h-7 object-contain" />
-            </div>
+  <img src="/icons/liderlik-gorsel.svg" alt="" className="w-9 h-9 object-contain drop-shadow-md" />
+  <img src="/icons/liderlik-text.svg" alt="Liderlik" className="h-7 object-contain" />
+</div>
 
             <div className="w-20" />
           </div>
