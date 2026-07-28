@@ -104,7 +104,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   animationData={congratsAnimation}
                   loop={true}
                   autoplay={true}
-                  onComplete={handleAnimationComplete}
+                  onLoopComplete={handleAnimationComplete}
                 />
               </div>
             </div>
