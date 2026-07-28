@@ -13,6 +13,7 @@ interface LevelUpDialogProps {
 export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, newLevel }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lottieRef = useRef<any>(null);
+  const [showText, setShowText] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
   // Seviyeyi iki rakama ayır (örn: 12 → ['1', '2'])
@@ -21,6 +22,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const secondDigit = digits[1];
 
   useEffect(() => {
+    setShowText(false);
     setShowNumbers(false);
   }, [open]);
 
@@ -41,8 +43,13 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
     };
   }, [open]);
 
-  // Lottie animasyonu bittiğinde rakamları göster
+  // Lottie animasyonu bittiğinde tebriklerText.svg'yi göster (nokta→büyüme)
   const handleAnimationComplete = () => {
+    setShowText(true);
+  };
+
+  // tebriklerText.svg büyüme animasyonu bittiğinde rakamları göster
+  const handleTextGrowEnd = () => {
     setShowNumbers(true);
   };
 
@@ -89,9 +96,24 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
               </div>
             </div>
 
+            {/* Tebrikler Text SVG - Küçük Nokta Halinde Başlayıp Büyüyerek Ortaya Gelir */}
+            {showText && (
+              <div className="w-full flex justify-center">
+                <img
+                  src="/tebriklerText.svg"
+                  alt="Tebrikler"
+                  onAnimationEnd={handleTextGrowEnd}
+                  style={{
+                    animation: 'growFromDot 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    transformOrigin: 'center center',
+                  }}
+                />
+              </div>
+            )}
+
             {/* Level Rakamları - Slide-in Animasyonu */}
             {showNumbers && (
-              <div className="flex items-center justify-center gap-4 mt-4">
+              <div className="flex items-center justify-center gap-1">
                 {/* İlk Rakam - Soldan Kayarak Gelecek */}
                 <div
                   className="animate-slideInFromLeft"
@@ -144,6 +166,17 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                 to {
                   opacity: 1;
                   transform: translateX(0);
+                }
+              }
+
+              @keyframes growFromDot {
+                from {
+                  opacity: 0;
+                  transform: scale(0.02);
+                }
+                to {
+                  opacity: 1;
+                  transform: scale(1);
                 }
               }
 
