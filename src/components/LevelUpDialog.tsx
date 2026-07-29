@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import Lottie from "lottie-react";
-import { isSoundEffectsEnabled } from "@/utils/soundSettings";
-import congratsAnimation from "@/assets/Congrats.json";
-import seviyeDumanAnimation from "@/assets/seviyeDuman.json";
+import React, { useEffect, useRef, useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import Lottie from 'lottie-react';
+import { isSoundEffectsEnabled } from '@/utils/soundSettings';
+import congratsAnimation from '@/assets/Congrats.json';
+import seviyeDumanAnimation from '@/assets/seviyeDuman.json';
 
 interface LevelUpDialogProps {
   open: boolean;
@@ -24,9 +24,9 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const [showSeviyeDuman, setShowSeviyeDuman] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  const digitNames = ["sifir", "bir", "iki", "uc", "dort", "bes", "alti", "yedi", "sekiz", "dokuz"];
-  const digitsRaw = String(newLevel).split("");
-  const digitFiles = digitsRaw.map((d) => `/${digitNames[parseInt(d, 10)]}Level.png`);
+  const digitNames = ['sifir', 'bir', 'iki', 'uc', 'dort', 'bes', 'alti', 'yedi', 'sekiz', 'dokuz'];
+  const digitsRaw = String(newLevel).split('');
+  const digitFiles = digitsRaw.map(d => `/${digitNames[parseInt(d, 10)]}Level.png`);
 
   useEffect(() => {
     setShowTebrikler(false);
@@ -59,6 +59,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       // bunun %60'ı tamamlanınca (0.36s) duman patlamaya başlasın
       dumanTimeoutRef.current = setTimeout(() => {
         setShowSeviyeDuman(true);
+        playDumanSes();
       }, 0.2 * 600);
       return () => {
         cancelAnimationFrame(raf);
@@ -75,7 +76,16 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
     try {
       // Her çağrıda yeni bir Audio örneği: üst üste/ardışık digit'lerde
       // önceki sesin kesilmeden yenisiyle çakışabilmesi için audioRef'e dokunmuyoruz.
-      const audio = new Audio("/levelKayma.mp3");
+      const audio = new Audio('/levelKayma.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    } catch {}
+  };
+
+  const playDumanSes = () => {
+    if (!isSoundEffectsEnabled()) return;
+    try {
+      const audio = new Audio('/dumanSes.mp3');
       audio.volume = 0.6;
       audio.play().catch(() => {});
     } catch {}
@@ -84,7 +94,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   useEffect(() => {
     if (open && isSoundEffectsEnabled()) {
       try {
-        const audio = new Audio("/seviyeAtlama.mp3");
+        const audio = new Audio('/seviyeAtlama.mp3');
         audio.volume = 0.7;
         audio.play().catch(() => {});
         audioRef.current = audio;
@@ -101,7 +111,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const handleCongratsDomLoaded = () => {
     // Lottie'nin toplam süresini saniye cinsinden al (getDuration(false))
     const duration =
-      lottieRef.current && typeof lottieRef.current.getDuration === "function"
+      lottieRef.current && typeof lottieRef.current.getDuration === 'function'
         ? lottieRef.current.getDuration(false)
         : undefined;
     // Süre alınamazsa makul bir fallback kullan
@@ -123,15 +133,31 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden"
-        onClick={(e) => {
-          if (showNumbers) {
-            e.preventDefault();
-            onClose();
-          }
-        }}
       >
         {open && (
-          <div className="flex flex-col items-center justify-start gap-0 py-8">
+          <div className="flex flex-col items-center justify-start gap-0 py-8 relative">
+            {/* Sağ üst X kapatma butonu - animasyon başlar başlamaz belirir */}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Kapat"
+              className="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
             {/* Congrats Lottie - sabit konum, kaymıyor */}
             <div className="w-full flex justify-center">
               <div style={{ width: 260, height: 260 }}>
@@ -152,14 +178,13 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
                   onTransitionEnd={(e) => {
-                    if (e.propertyName === "transform") handleTebriklerGrowEnd();
+                    if (e.propertyName === 'transform') handleTebriklerGrowEnd();
                   }}
                   style={{
                     opacity: tebriklerAnimating ? 1 : 0,
-                    transform: tebriklerAnimating ? "scale(1)" : "scale(0.02)",
-                    transformOrigin: "center center",
-                    transition:
-                      "opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transform: tebriklerAnimating ? 'scale(1)' : 'scale(0.02)',
+                    transformOrigin: 'center center',
+                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
                 />
               )}
@@ -170,14 +195,14 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
               {showSeviyeDuman && (
                 <div
                   style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, calc(-50% + 4px))",
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, calc(-50% + 4px))',
                     width: 320,
                     height: 320,
                     zIndex: 0,
-                    pointerEvents: "none",
+                    pointerEvents: 'none',
                   }}
                 >
                   <Lottie
@@ -190,8 +215,8 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                       // güvence olarak son kareye sabitliyoruz, replay olmasın
                       if (
                         dumanLottieRef.current &&
-                        typeof dumanLottieRef.current.goToAndStop === "function" &&
-                        typeof dumanLottieRef.current.getDuration === "function"
+                        typeof dumanLottieRef.current.goToAndStop === 'function' &&
+                        typeof dumanLottieRef.current.getDuration === 'function'
                       ) {
                         const totalFrames = dumanLottieRef.current.getDuration(true);
                         if (totalFrames) {
@@ -207,16 +232,15 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   src="/seviyeAtladinText.svg"
                   alt="Seviye Atladın"
                   onTransitionEnd={(e) => {
-                    if (e.propertyName === "transform") handleSeviyeGrowEnd();
+                    if (e.propertyName === 'transform') handleSeviyeGrowEnd();
                   }}
                   style={{
-                    position: "relative",
+                    position: 'relative',
                     zIndex: 1,
                     opacity: seviyeAnimating ? 1 : 0,
-                    transform: seviyeAnimating ? "scale(1)" : "scale(0.02)",
-                    transformOrigin: "center center",
-                    transition:
-                      "opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transform: seviyeAnimating ? 'scale(1)' : 'scale(0.02)',
+                    transformOrigin: 'center center',
+                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
                 />
               )}
@@ -224,23 +248,26 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
             {/* Level rakamları */}
             <div className="flex items-center justify-center gap-1 -mt-2" style={{ minHeight: 128 }}>
-              {showNumbers &&
-                digitFiles.map((src, idx) => {
-                  const fromLeft = idx % 2 === 0;
-                  return (
-                    <div
-                      key={`${src}-${idx}`}
-                      onAnimationStart={playLevelKayma}
-                      style={{
-                        animation: `${fromLeft ? "slideInFromLeft" : "slideInFromRight"} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-                        animationDelay: `${idx * 0.25}s`,
-                        opacity: 0,
-                      }}
-                    >
-                      <img src={src} alt={digitsRaw[idx]} className="h-32 w-auto drop-shadow-2xl" />
-                    </div>
-                  );
-                })}
+              {showNumbers && digitFiles.map((src, idx) => {
+                const fromLeft = idx % 2 === 0;
+                return (
+                  <div
+                    key={`${src}-${idx}`}
+                    onAnimationStart={playLevelKayma}
+                    style={{
+                      animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                      animationDelay: `${idx * 0.25}s`,
+                      opacity: 0,
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={digitsRaw[idx]}
+                      className="h-32 w-auto drop-shadow-2xl"
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             <style>{`
