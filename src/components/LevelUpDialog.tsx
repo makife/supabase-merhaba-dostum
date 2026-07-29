@@ -48,10 +48,11 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const playLevelKayma = () => {
     if (!isSoundEffectsEnabled()) return;
     try {
+      // Her çağrıda yeni bir Audio örneği: üst üste/ardışık digit'lerde
+      // önceki sesin kesilmeden yenisiyle çakışabilmesi için audioRef'e dokunmuyoruz.
       const audio = new Audio('/levelKayma.mp3');
       audio.volume = 0.6;
       audio.play().catch(() => {});
-      audioRef.current = audio;
     } catch {}
   };
 
@@ -80,7 +81,6 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
   const handleSeviyeGrowEnd = () => {
     setShowNumbers(true);
-    playLevelKayma();
   };
 
   return (
@@ -110,7 +110,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* tebriklerText.svg */}
-            <div className="w-full flex justify-center -mt-8" style={{ minHeight: 60 }}>
+            <div className="w-full flex justify-center -mt-14" style={{ minHeight: 60 }}>
               {showTebrikler && (
                 <img
                   src="/tebriklerText.svg"
@@ -154,6 +154,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                 return (
                   <div
                     key={`${src}-${idx}`}
+                    onAnimationStart={playLevelKayma}
                     style={{
                       animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
                       animationDelay: `${idx * 0.25}s`,
