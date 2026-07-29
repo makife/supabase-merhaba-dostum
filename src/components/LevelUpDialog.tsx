@@ -17,10 +17,10 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const [textAnimating, setTextAnimating] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  // Seviyeyi iki rakama ayır (örn: 12 → ['1', '2'])
-  const digits = String(newLevel).padStart(2, '0').split('');
-  const firstDigit = digits[0];
-  const secondDigit = digits[1];
+  // Seviye rakamlarını Türkçe isim eşleştirmesi ile PNG'ye çevir
+  const digitNames = ['sifir', 'bir', 'iki', 'uc', 'dort', 'bes', 'alti', 'yedi', 'sekiz', 'dokuz'];
+  const digitsRaw = String(newLevel).split('');
+  const digitFiles = digitsRaw.map(d => `/${digitNames[parseInt(d, 10)]}Level.png`);
 
   useEffect(() => {
     setShowText(false);
