@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import Lottie from 'lottie-react';
-import { isSoundEffectsEnabled } from '@/utils/soundSettings';
-import congratsAnimation from '@/assets/Congrats.json';
-import seviyeDumanAnimation from '@/assets/seviyeDuman.json';
+import React, { useEffect, useRef, useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import Lottie from "lottie-react";
+import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+import congratsAnimation from "@/assets/Congrats.json";
+import seviyeDumanAnimation from "@/assets/seviyeDuman.json";
 
 interface LevelUpDialogProps {
   open: boolean;
@@ -24,9 +24,9 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const [showSeviyeDuman, setShowSeviyeDuman] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  const digitNames = ['sifir', 'bir', 'iki', 'uc', 'dort', 'bes', 'alti', 'yedi', 'sekiz', 'dokuz'];
-  const digitsRaw = String(newLevel).split('');
-  const digitFiles = digitsRaw.map(d => `/${digitNames[parseInt(d, 10)]}Level.png`);
+  const digitNames = ["sifir", "bir", "iki", "uc", "dort", "bes", "alti", "yedi", "sekiz", "dokuz"];
+  const digitsRaw = String(newLevel).split("");
+  const digitFiles = digitsRaw.map((d) => `/${digitNames[parseInt(d, 10)]}Level.png`);
 
   useEffect(() => {
     setShowTebrikler(false);
@@ -60,7 +60,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       dumanTimeoutRef.current = setTimeout(() => {
         setShowSeviyeDuman(true);
         playDumanSes();
-      }, 0.2 * 600);
+      }, 0.1 * 600);
       return () => {
         cancelAnimationFrame(raf);
         if (dumanTimeoutRef.current) {
@@ -76,7 +76,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
     try {
       // Her çağrıda yeni bir Audio örneği: üst üste/ardışık digit'lerde
       // önceki sesin kesilmeden yenisiyle çakışabilmesi için audioRef'e dokunmuyoruz.
-      const audio = new Audio('/levelKayma.mp3');
+      const audio = new Audio("/levelKayma.mp3");
       audio.volume = 0.6;
       audio.play().catch(() => {});
     } catch {}
@@ -85,7 +85,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const playDumanSes = () => {
     if (!isSoundEffectsEnabled()) return;
     try {
-      const audio = new Audio('/dumanSes.mp3');
+      const audio = new Audio("/dumanSes.mp3");
       audio.volume = 0.6;
       audio.play().catch(() => {});
     } catch {}
@@ -94,7 +94,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   useEffect(() => {
     if (open && isSoundEffectsEnabled()) {
       try {
-        const audio = new Audio('/seviyeAtlama.mp3');
+        const audio = new Audio("/seviyeAtlama.mp3");
         audio.volume = 0.7;
         audio.play().catch(() => {});
         audioRef.current = audio;
@@ -111,7 +111,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const handleCongratsDomLoaded = () => {
     // Lottie'nin toplam süresini saniye cinsinden al (getDuration(false))
     const duration =
-      lottieRef.current && typeof lottieRef.current.getDuration === 'function'
+      lottieRef.current && typeof lottieRef.current.getDuration === "function"
         ? lottieRef.current.getDuration(false)
         : undefined;
     // Süre alınamazsa makul bir fallback kullan
@@ -131,9 +131,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent
-        className="max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden"
-      >
+      <DialogContent className="max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden">
         {open && (
           <div className="flex flex-col items-center justify-start gap-0 py-8 relative">
             {/* Sağ üst X kapatma butonu - animasyon başlar başlamaz belirir */}
@@ -178,13 +176,14 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
                   onTransitionEnd={(e) => {
-                    if (e.propertyName === 'transform') handleTebriklerGrowEnd();
+                    if (e.propertyName === "transform") handleTebriklerGrowEnd();
                   }}
                   style={{
                     opacity: tebriklerAnimating ? 1 : 0,
-                    transform: tebriklerAnimating ? 'scale(1)' : 'scale(0.02)',
-                    transformOrigin: 'center center',
-                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transform: tebriklerAnimating ? "scale(1)" : "scale(0.02)",
+                    transformOrigin: "center center",
+                    transition:
+                      "opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }}
                 />
               )}
@@ -195,14 +194,14 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
               {showSeviyeDuman && (
                 <div
                   style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, calc(-50% + 4px))',
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, calc(-50% + 4px))",
                     width: 320,
                     height: 320,
                     zIndex: 0,
-                    pointerEvents: 'none',
+                    pointerEvents: "none",
                   }}
                 >
                   <Lottie
@@ -215,8 +214,8 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                       // güvence olarak son kareye sabitliyoruz, replay olmasın
                       if (
                         dumanLottieRef.current &&
-                        typeof dumanLottieRef.current.goToAndStop === 'function' &&
-                        typeof dumanLottieRef.current.getDuration === 'function'
+                        typeof dumanLottieRef.current.goToAndStop === "function" &&
+                        typeof dumanLottieRef.current.getDuration === "function"
                       ) {
                         const totalFrames = dumanLottieRef.current.getDuration(true);
                         if (totalFrames) {
@@ -232,15 +231,16 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   src="/seviyeAtladinText.svg"
                   alt="Seviye Atladın"
                   onTransitionEnd={(e) => {
-                    if (e.propertyName === 'transform') handleSeviyeGrowEnd();
+                    if (e.propertyName === "transform") handleSeviyeGrowEnd();
                   }}
                   style={{
-                    position: 'relative',
+                    position: "relative",
                     zIndex: 1,
                     opacity: seviyeAnimating ? 1 : 0,
-                    transform: seviyeAnimating ? 'scale(1)' : 'scale(0.02)',
-                    transformOrigin: 'center center',
-                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transform: seviyeAnimating ? "scale(1)" : "scale(0.02)",
+                    transformOrigin: "center center",
+                    transition:
+                      "opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }}
                 />
               )}
@@ -248,26 +248,23 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
             {/* Level rakamları */}
             <div className="flex items-center justify-center gap-1 -mt-2" style={{ minHeight: 128 }}>
-              {showNumbers && digitFiles.map((src, idx) => {
-                const fromLeft = idx % 2 === 0;
-                return (
-                  <div
-                    key={`${src}-${idx}`}
-                    onAnimationStart={playLevelKayma}
-                    style={{
-                      animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-                      animationDelay: `${idx * 0.25}s`,
-                      opacity: 0,
-                    }}
-                  >
-                    <img
-                      src={src}
-                      alt={digitsRaw[idx]}
-                      className="h-32 w-auto drop-shadow-2xl"
-                    />
-                  </div>
-                );
-              })}
+              {showNumbers &&
+                digitFiles.map((src, idx) => {
+                  const fromLeft = idx % 2 === 0;
+                  return (
+                    <div
+                      key={`${src}-${idx}`}
+                      onAnimationStart={playLevelKayma}
+                      style={{
+                        animation: `${fromLeft ? "slideInFromLeft" : "slideInFromRight"} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                        animationDelay: `${idx * 0.25}s`,
+                        opacity: 0,
+                      }}
+                    >
+                      <img src={src} alt={digitsRaw[idx]} className="h-32 w-auto drop-shadow-2xl" />
+                    </div>
+                  );
+                })}
             </div>
 
             <style>{`
