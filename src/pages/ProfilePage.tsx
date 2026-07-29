@@ -1325,7 +1325,6 @@ const ProfilePage = () => {
         />
 
 
-        </div>
 
         {/* STATS GRID */}
         <div className="px-5 mb-6">
