@@ -96,22 +96,22 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       >
         {open && (
           <div className="flex flex-col items-center justify-center gap-8 py-12">
-            {/* Congrats Lottie Animasyonu */}
+            {/* Congrats Lottie Animasyonu - tek sefer oynat, sonra dur */}
             <div className="w-full flex justify-center">
               <div style={{ width: 280, height: 280 }}>
                 <Lottie
                   ref={lottieRef}
                   animationData={congratsAnimation}
-                  loop={true}
+                  loop={false}
                   autoplay={true}
-                  onLoopComplete={handleAnimationComplete}
+                  onComplete={handleAnimationComplete}
                 />
               </div>
             </div>
 
             {/* Tebrikler Text SVG - Küçük Nokta Halinde Başlayıp Büyüyerek Ortaya Gelir */}
             {showText && (
-              <div className="w-full flex justify-center" style={{ marginTop: -32 }}>
+              <div className="w-full flex justify-center">
                 <img
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
