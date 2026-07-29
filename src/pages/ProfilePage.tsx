@@ -1286,6 +1286,8 @@ const ProfilePage = () => {
                   : "bg-gray-500/20 text-gray-400 border-gray-500/20"
               }`}>
                 {boostInfo ? "Aktif" : "Pasif"}
+              </div>
+            </div>
           </div>
         </div>
 
