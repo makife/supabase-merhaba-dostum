@@ -13,31 +13,47 @@ interface LevelUpDialogProps {
 export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, newLevel }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lottieRef = useRef<any>(null);
-  const [showText, setShowText] = useState(false);
-  const [textAnimating, setTextAnimating] = useState(false);
+  const [showTebrikler, setShowTebrikler] = useState(false);
+  const [tebriklerAnimating, setTebriklerAnimating] = useState(false);
+  const [showSeviye, setShowSeviye] = useState(false);
+  const [seviyeAnimating, setSeviyeAnimating] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  // Seviye rakamlarını Türkçe isim eşleştirmesi ile PNG'ye çevir
   const digitNames = ['sifir', 'bir', 'iki', 'uc', 'dort', 'bes', 'alti', 'yedi', 'sekiz', 'dokuz'];
   const digitsRaw = String(newLevel).split('');
   const digitFiles = digitsRaw.map(d => `/${digitNames[parseInt(d, 10)]}Level.png`);
 
   useEffect(() => {
-    setShowText(false);
-    setTextAnimating(false);
+    setShowTebrikler(false);
+    setTebriklerAnimating(false);
+    setShowSeviye(false);
+    setSeviyeAnimating(false);
     setShowNumbers(false);
   }, [open]);
 
-  // showText true olduktan bir frame sonra textAnimating'i tetikle.
-  // Aynı anda mount + animasyon stilini uygularsak bazı WebView'ler (iOS)
-  // animasyonu atlayıp direkt son haline zıplıyor; bu yüzden bir rAF ile
-  // tarayıcının "from" halini render etmesine izin veriyoruz.
   useEffect(() => {
-    if (showText) {
-      const raf = requestAnimationFrame(() => setTextAnimating(true));
+    if (showTebrikler) {
+      const raf = requestAnimationFrame(() => setTebriklerAnimating(true));
       return () => cancelAnimationFrame(raf);
     }
-  }, [showText]);
+  }, [showTebrikler]);
+
+  useEffect(() => {
+    if (showSeviye) {
+      const raf = requestAnimationFrame(() => setSeviyeAnimating(true));
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [showSeviye]);
+
+  const playLevelKayma = () => {
+    if (!isSoundEffectsEnabled()) return;
+    try {
+      const audio = new Audio('/levelKayma.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+      audioRef.current = audio;
+    } catch {}
+  };
 
   useEffect(() => {
     if (open && isSoundEffectsEnabled()) {
@@ -56,38 +72,23 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
     };
   }, [open]);
 
-  // Lottie animasyonu bittiğinde tebriklerText.svg'yi göster (nokta→büyüme)
-  const handleAnimationComplete = () => {
-    setShowText(true);
+  const handleCongratsComplete = () => setShowTebrikler(true);
+
+  const handleTebriklerGrowEnd = () => {
+    setShowSeviye(true);
+    playLevelKayma();
   };
 
-  // tebriklerText.svg büyüme animasyonu bittiğinde rakamları göster
-  const handleTextGrowEnd = () => {
+  const handleSeviyeGrowEnd = () => {
     setShowNumbers(true);
+    playLevelKayma();
   };
-
-  // Rakamlar kayarken ses çal
-  useEffect(() => {
-    if (showNumbers && isSoundEffectsEnabled()) {
-      try {
-        const audio = new Audio('/levelKayma.mp3');
-        audio.volume = 0.6;
-        // Rakamlar 0.8s'de kayıyor, ses de aynı hızda çalmalı
-        // Eğer ses 400ms ise playbackRate = 0.5 yap (2x yavaşlat)
-        // Eğer ses 800ms ise playbackRate = 1 bırak
-        audio.playbackRate = 1;
-        audio.play().catch(() => {});
-        audioRef.current = audio;
-      } catch {}
-    }
-  }, [showNumbers]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent 
+      <DialogContent
         className="max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden"
         onClick={(e) => {
-          // Sayı animasyonları biterse kapatılabilsin
           if (showNumbers) {
             e.preventDefault();
             onClose();
@@ -95,95 +96,89 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
         }}
       >
         {open && (
-          <div className="flex flex-col items-center justify-center gap-8 py-12">
-            {/* Congrats Lottie Animasyonu - tek sefer oynat, sonra dur */}
+          <div className="flex flex-col items-center justify-start gap-6 py-8">
+            {/* Congrats Lottie - sabit konum, kaymıyor */}
             <div className="w-full flex justify-center">
-              <div style={{ width: 280, height: 280 }}>
+              <div style={{ width: 260, height: 260 }}>
                 <Lottie
                   ref={lottieRef}
                   animationData={congratsAnimation}
                   loop={false}
                   autoplay={true}
-                  onComplete={handleAnimationComplete}
+                  onComplete={handleCongratsComplete}
                 />
               </div>
             </div>
 
-            {/* Tebrikler Text SVG - Küçük Nokta Halinde Başlayıp Büyüyerek Ortaya Gelir */}
-            {showText && (
-              <div className="w-full flex justify-center">
+            {/* tebriklerText.svg */}
+            <div className="w-full flex justify-center" style={{ minHeight: 60 }}>
+              {showTebrikler && (
                 <img
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
                   onTransitionEnd={(e) => {
-                    if (e.propertyName === 'transform') handleTextGrowEnd();
+                    if (e.propertyName === 'transform') handleTebriklerGrowEnd();
                   }}
                   style={{
-                    opacity: textAnimating ? 1 : 0,
-                    transform: textAnimating ? 'scale(1)' : 'scale(0.02)',
+                    opacity: tebriklerAnimating ? 1 : 0,
+                    transform: tebriklerAnimating ? 'scale(1)' : 'scale(0.02)',
                     transformOrigin: 'center center',
                     transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
                 />
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Level Rakamları - Slide-in Animasyonu (tüm basamaklar) */}
-            {showNumbers && (
-              <div className="flex items-center justify-center gap-1">
-                {digitFiles.map((src, idx) => {
-                  const fromLeft = idx % 2 === 0;
-                  return (
-                    <div
-                      key={`${src}-${idx}`}
-                      style={{
-                        animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-                        animationDelay: `${idx * 0.25}s`,
-                        opacity: 0,
-                      }}
-                    >
-                      <img
-                        src={src}
-                        alt={digitsRaw[idx]}
-                        className="h-32 w-auto drop-shadow-2xl"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* CSS Animasyonları */}
+            {/* seviyeAtladinText.svg */}
+            <div className="w-full flex justify-center" style={{ minHeight: 60 }}>
+              {showSeviye && (
+                <img
+                  src="/seviyeAtladinText.svg"
+                  alt="Seviye Atladın"
+                  onTransitionEnd={(e) => {
+                    if (e.propertyName === 'transform') handleSeviyeGrowEnd();
+                  }}
+                  style={{
+                    opacity: seviyeAnimating ? 1 : 0,
+                    transform: seviyeAnimating ? 'scale(1)' : 'scale(0.02)',
+                    transformOrigin: 'center center',
+                    transition: 'opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Level rakamları */}
+            <div className="flex items-center justify-center gap-1" style={{ minHeight: 128 }}>
+              {showNumbers && digitFiles.map((src, idx) => {
+                const fromLeft = idx % 2 === 0;
+                return (
+                  <div
+                    key={`${src}-${idx}`}
+                    style={{
+                      animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                      animationDelay: `${idx * 0.25}s`,
+                      opacity: 0,
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={digitsRaw[idx]}
+                      className="h-32 w-auto drop-shadow-2xl"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
             <style>{`
               @keyframes slideInFromLeft {
-                from {
-                  opacity: 0;
-                  transform: translateX(-100px);
-                }
-                to {
-                  opacity: 1;
-                  transform: translateX(0);
-                }
+                from { opacity: 0; transform: translateX(-100px); }
+                to { opacity: 1; transform: translateX(0); }
               }
-
               @keyframes slideInFromRight {
-                from {
-                  opacity: 0;
-                  transform: translateX(100px);
-                }
-                to {
-                  opacity: 1;
-                  transform: translateX(0);
-                }
-              }
-
-              @keyframes fadeIn {
-                from {
-                  opacity: 0;
-                }
-                to {
-                  opacity: 1;
-                }
+                from { opacity: 0; transform: translateX(100px); }
+                to { opacity: 1; transform: translateX(0); }
               }
             `}</style>
           </div>
