@@ -76,7 +76,6 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
   const handleTebriklerGrowEnd = () => {
     setShowSeviye(true);
-    playLevelKayma();
   };
 
   const handleSeviyeGrowEnd = () => {
@@ -96,7 +95,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
         }}
       >
         {open && (
-          <div className="flex flex-col items-center justify-start gap-6 py-8">
+          <div className="flex flex-col items-center justify-start gap-0 py-8">
             {/* Congrats Lottie - sabit konum, kaymıyor */}
             <div className="w-full flex justify-center">
               <div style={{ width: 260, height: 260 }}>
@@ -111,7 +110,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* tebriklerText.svg */}
-            <div className="w-full flex justify-center" style={{ minHeight: 60 }}>
+            <div className="w-full flex justify-center -mt-8" style={{ minHeight: 60 }}>
               {showTebrikler && (
                 <img
                   src="/tebriklerText.svg"
@@ -130,7 +129,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* seviyeAtladinText.svg */}
-            <div className="w-full flex justify-center" style={{ minHeight: 60 }}>
+            <div className="w-full flex justify-center -mt-4" style={{ minHeight: 60 }}>
               {showSeviye && (
                 <img
                   src="/seviyeAtladinText.svg"
@@ -149,7 +148,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* Level rakamları */}
-            <div className="flex items-center justify-center gap-1" style={{ minHeight: 128 }}>
+            <div className="flex items-center justify-center gap-1 -mt-2" style={{ minHeight: 128 }}>
               {showNumbers && digitFiles.map((src, idx) => {
                 const fromLeft = idx % 2 === 0;
                 return (
