@@ -20,6 +20,7 @@ import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/play
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { VipBadge } from "@/components/VipBadge";
 import { BadgesDialog } from "@/components/BadgesDialog";
+import { LevelUpDialog } from "@/components/LevelUpDialog";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeClient } from "@supabase/supabase-js";
