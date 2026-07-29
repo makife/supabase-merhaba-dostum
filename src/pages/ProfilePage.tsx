@@ -53,6 +53,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [jokers, setJokers] = useState({ degistir: 0, fisilida: 0, senYaz: 0 });
+  const [testLevelUpOpen, setTestLevelUpOpen] = useState(false);
+  const [testLevelUpValue, setTestLevelUpValue] = useState(1);
   const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
     useAvatarUpload();
   const { id: routeId } = useParams();
