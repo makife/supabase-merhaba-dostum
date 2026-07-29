@@ -17,10 +17,10 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   const [textAnimating, setTextAnimating] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  // Seviyeyi iki rakama ayır (örn: 12 → ['1', '2'])
-  const digits = String(newLevel).padStart(2, '0').split('');
-  const firstDigit = digits[0];
-  const secondDigit = digits[1];
+  // Seviye rakamlarını Türkçe isim eşleştirmesi ile PNG'ye çevir
+  const digitNames = ['sifir', 'bir', 'iki', 'uc', 'dort', 'bes', 'alti', 'yedi', 'sekiz', 'dokuz'];
+  const digitsRaw = String(newLevel).split('');
+  const digitFiles = digitsRaw.map(d => `/${digitNames[parseInt(d, 10)]}Level.png`);
 
   useEffect(() => {
     setShowText(false);
@@ -96,22 +96,22 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       >
         {open && (
           <div className="flex flex-col items-center justify-center gap-8 py-12">
-            {/* Congrats Lottie Animasyonu */}
+            {/* Congrats Lottie Animasyonu - tek sefer oynat, sonra dur */}
             <div className="w-full flex justify-center">
               <div style={{ width: 280, height: 280 }}>
                 <Lottie
                   ref={lottieRef}
                   animationData={congratsAnimation}
-                  loop={true}
+                  loop={false}
                   autoplay={true}
-                  onLoopComplete={handleAnimationComplete}
+                  onComplete={handleAnimationComplete}
                 />
               </div>
             </div>
 
             {/* Tebrikler Text SVG - Küçük Nokta Halinde Başlayıp Büyüyerek Ortaya Gelir */}
             {showText && (
-              <div className="w-full flex justify-center" style={{ marginTop: -32 }}>
+              <div className="w-full flex justify-center">
                 <img
                   src="/tebriklerText.svg"
                   alt="Tebrikler"
@@ -128,37 +128,28 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
               </div>
             )}
 
-            {/* Level Rakamları - Slide-in Animasyonu */}
+            {/* Level Rakamları - Slide-in Animasyonu (tüm basamaklar) */}
             {showNumbers && (
               <div className="flex items-center justify-center gap-1">
-                {/* İlk Rakam - Soldan Kayarak Gelecek */}
-                <div
-                  className="animate-slideInFromLeft"
-                  style={{
-                    animation: 'slideInFromLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                  }}
-                >
-                  <img
-                    src={`/${firstDigit}Level.png`}
-                    alt={firstDigit}
-                    className="h-32 w-auto drop-shadow-2xl"
-                  />
-                </div>
-
-                {/* İkinci Rakam - Sağdan Kayarak Gelecek */}
-                <div
-                  className="animate-slideInFromRight"
-                  style={{
-                    animation: 'slideInFromRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                    animationDelay: '0.5s',
-                  }}
-                >
-                  <img
-                    src={`/${secondDigit}Level.png`}
-                    alt={secondDigit}
-                    className="h-32 w-auto drop-shadow-2xl"
-                  />
-                </div>
+                {digitFiles.map((src, idx) => {
+                  const fromLeft = idx % 2 === 0;
+                  return (
+                    <div
+                      key={`${src}-${idx}`}
+                      style={{
+                        animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                        animationDelay: `${idx * 0.25}s`,
+                        opacity: 0,
+                      }}
+                    >
+                      <img
+                        src={src}
+                        alt={digitsRaw[idx]}
+                        className="h-32 w-auto drop-shadow-2xl"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
             
