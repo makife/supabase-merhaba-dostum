@@ -59,7 +59,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       // bunun %60'ı tamamlanınca (0.36s) duman patlamaya başlasın
       dumanTimeoutRef.current = setTimeout(() => {
         setShowSeviyeDuman(true);
-      }, 0.6 * 600);
+      }, 0.4 * 600);
       return () => {
         cancelAnimationFrame(raf);
         if (dumanTimeoutRef.current) {
