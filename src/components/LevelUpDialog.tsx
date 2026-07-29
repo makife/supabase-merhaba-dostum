@@ -14,7 +14,9 @@ interface LevelUpDialogProps {
 export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, newLevel }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lottieRef = useRef<any>(null);
+  const dumanLottieRef = useRef<any>(null);
   const tebriklerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dumanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showTebrikler, setShowTebrikler] = useState(false);
   const [tebriklerAnimating, setTebriklerAnimating] = useState(false);
   const [showSeviye, setShowSeviye] = useState(false);
@@ -37,6 +39,10 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
       clearTimeout(tebriklerTimeoutRef.current);
       tebriklerTimeoutRef.current = null;
     }
+    if (dumanTimeoutRef.current) {
+      clearTimeout(dumanTimeoutRef.current);
+      dumanTimeoutRef.current = null;
+    }
   }, [open]);
 
   useEffect(() => {
@@ -49,7 +55,18 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   useEffect(() => {
     if (showSeviye) {
       const raf = requestAnimationFrame(() => setSeviyeAnimating(true));
-      return () => cancelAnimationFrame(raf);
+      // seviyeAtladinText'in scale/opacity transition'ı 0.6s sürüyor;
+      // bunun %60'ı tamamlanınca (0.36s) duman patlamaya başlasın
+      dumanTimeoutRef.current = setTimeout(() => {
+        setShowSeviyeDuman(true);
+      }, 0.6 * 600);
+      return () => {
+        cancelAnimationFrame(raf);
+        if (dumanTimeoutRef.current) {
+          clearTimeout(dumanTimeoutRef.current);
+          dumanTimeoutRef.current = null;
+        }
+      };
     }
   }, [showSeviye]);
 
@@ -99,7 +116,6 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
   };
 
   const handleSeviyeGrowEnd = () => {
-    setShowSeviyeDuman(true);
     setShowNumbers(true);
   };
 
@@ -149,14 +165,14 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* seviyeAtladinText.svg */}
-            <div className="w-full flex justify-center mt-4 relative" style={{ minHeight: 60 }}>
+            <div className="w-full flex justify-center -mt-4 relative" style={{ minHeight: 60 }}>
               {showSeviyeDuman && (
                 <div
                   style={{
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
-                    transform: 'translate(-50%, -50%)',
+                    transform: 'translate(-50%, calc(-50% + 4px))',
                     width: 320,
                     height: 320,
                     zIndex: 0,
@@ -164,9 +180,24 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
                   }}
                 >
                   <Lottie
+                    ref={dumanLottieRef}
                     animationData={seviyeDumanAnimation}
                     loop={false}
                     autoplay={true}
+                    onComplete={() => {
+                      // loop=false zaten son karede durdurur; burada ekstra
+                      // güvence olarak son kareye sabitliyoruz, replay olmasın
+                      if (
+                        dumanLottieRef.current &&
+                        typeof dumanLottieRef.current.goToAndStop === 'function' &&
+                        typeof dumanLottieRef.current.getDuration === 'function'
+                      ) {
+                        const totalFrames = dumanLottieRef.current.getDuration(true);
+                        if (totalFrames) {
+                          dumanLottieRef.current.goToAndStop(totalFrames - 1, true);
+                        }
+                      }
+                    }}
                   />
                 </div>
               )}
