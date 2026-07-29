@@ -166,7 +166,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
             </div>
 
             {/* seviyeAtladinText.svg */}
-            <div className="w-full flex justify-center mt-4 relative" style={{ minHeight: 30 }}>
+            <div className="w-full flex justify-center mt-4 relative" style={{ minHeight: 60 }}>
               {showSeviyeDuman && (
                 <div
                   style={{
