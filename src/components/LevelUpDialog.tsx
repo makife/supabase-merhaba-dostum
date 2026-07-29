@@ -128,37 +128,28 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
               </div>
             )}
 
-            {/* Level Rakamları - Slide-in Animasyonu */}
+            {/* Level Rakamları - Slide-in Animasyonu (tüm basamaklar) */}
             {showNumbers && (
               <div className="flex items-center justify-center gap-1">
-                {/* İlk Rakam - Soldan Kayarak Gelecek */}
-                <div
-                  className="animate-slideInFromLeft"
-                  style={{
-                    animation: 'slideInFromLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                  }}
-                >
-                  <img
-                    src={`/${firstDigit}Level.png`}
-                    alt={firstDigit}
-                    className="h-32 w-auto drop-shadow-2xl"
-                  />
-                </div>
-
-                {/* İkinci Rakam - Sağdan Kayarak Gelecek */}
-                <div
-                  className="animate-slideInFromRight"
-                  style={{
-                    animation: 'slideInFromRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-                    animationDelay: '0.5s',
-                  }}
-                >
-                  <img
-                    src={`/${secondDigit}Level.png`}
-                    alt={secondDigit}
-                    className="h-32 w-auto drop-shadow-2xl"
-                  />
-                </div>
+                {digitFiles.map((src, idx) => {
+                  const fromLeft = idx % 2 === 0;
+                  return (
+                    <div
+                      key={`${src}-${idx}`}
+                      style={{
+                        animation: `${fromLeft ? 'slideInFromLeft' : 'slideInFromRight'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                        animationDelay: `${idx * 0.25}s`,
+                        opacity: 0,
+                      }}
+                    >
+                      <img
+                        src={src}
+                        alt={digitsRaw[idx]}
+                        className="h-32 w-auto drop-shadow-2xl"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
             
