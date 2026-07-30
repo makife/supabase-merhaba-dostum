@@ -1030,86 +1030,66 @@ const ProfilePage = () => {
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl" />
             <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
 
-            {/* Avatar + Rank Section */}
+            {/* Resmi Değiştir (kartın sağ üstü) */}
+            {isOwnProfile && (
+              <Button
+                size="sm"
+                onClick={() => setShowAvatarOptions(true)}
+                disabled={uploading}
+                className="absolute top-3 right-3 z-30 h-8 px-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-lg border border-white/20"
+              >
+                <Edit className="w-3.5 h-3.5 mr-1" />
+                Resmi Değiştir
+              </Button>
+            )}
+
+            {/* Avatar Section */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Avatar (sol taraf) */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse" />
+              <div className="flex items-center justify-center mb-4">
+                {/* Avatar + rank çerçevesi */}
+                <div className="relative w-36 h-36 flex items-center justify-center">
                   <Avatar
                     key={avatarKey}
-                    className="w-28 h-28 border-4 border-white/20 shadow-2xl relative z-10 rounded-2xl"
-                    onClick={isOwnProfile ? () => setShowAvatarOptions(true) : undefined}
+                    className="w-24 h-24 relative z-10 rounded-full"
                     showFrame={false}
                   >
                     <AvatarImage
                       src={effectiveAvatarUrl}
                       alt={profileData.username}
                       key={`avatar-${avatarKey}-${effectiveAvatarUrl}`}
-                      className="rounded-2xl"
-                      onLoadingStatusChange={(status) => {
-                        console.log(
-                          "[ProfilePage] 🖼️ Avatar loading status:",
-                          status,
-                          effectiveAvatarUrl?.substring(0, 60),
-                        );
-                      }}
+                      className="rounded-full object-cover"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-3xl font-bold rounded-2xl">
+                    <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-3xl font-bold rounded-full">
                       {profileData.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+
+                  {/* Rank çerçeve görseli */}
+                  <img
+                    src={getRankFrame(profileData.rankPoints)}
+                    alt={getRankTier(profileData.rankPoints).name}
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20"
+                  />
+
                   {uploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
+                    <div className="absolute inset-0 flex items-center justify-center z-30">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
-                  {isOwnProfile && (
-                    <Button
-                      size="icon"
-                      onClick={() => setShowAvatarOptions(true)}
-                      className="
-                        absolute bottom-0 left-0
-                        -translate-x-1/4 translate-y-1/4
-                        w-8 h-8
-                        rounded-full
-                        bg-gradient-to-r from-indigo-500 to-purple-600
-                        hover:from-indigo-600 hover:to-purple-700
-                        border-2 border-white
-                        shadow-xl
-                        z-30
-                        transition-transform
-                        hover:scale-110
-                      "
-                      disabled={uploading}
-                    >
-                      <Edit className="w-4 h-4 text-white" />
-                    </Button>
-                  )}
                   {isPremium && (
-                    <div className="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 z-20">
+                    <div className="absolute bottom-2 right-2 z-30">
                       <VipBadge size="lg" />
                     </div>
                   )}
                   {profileInGame && !isOwnProfile && (
                     <span
-                      className="absolute bottom-1 left-1 w-5 h-5 rounded-full bg-blue-400 border-2 border-[#1a1a2e] z-30 shadow-[0_0_8px_rgba(96,165,250,0.9)]"
+                      className="absolute bottom-3 left-3 w-5 h-5 rounded-full bg-blue-400 border-2 border-[#1a1a2e] z-30 shadow-[0_0_8px_rgba(96,165,250,0.9)]"
                       aria-label="Maçta"
                     />
                   )}
                 </div>
-
-                {/* Rank Badge (sağ taraf, çerçevesiz) */}
-                <div className="relative z-10">
-                  <RankBadge 
-                    rankPoints={profileData.rankPoints} 
-                    size="md" 
-                    showLabel={false} 
-                    showProgress={false}
-                    rounded={false}
-                  />
-                </div>
               </div>
+
 
               {/* Username */}
               {isEditing ? (
