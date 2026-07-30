@@ -394,43 +394,45 @@ const LeaderboardPage = () => {
       .catch(console.error);
   }, []);
 
-      const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
+        const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
     const isCurrentUser = leader.user_id === user?.id;
     const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
-    const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
-    const tabFrames = frameData[tab];
-    const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
+    
+    // ARTIK TÜM SEKMELER PNG OLDUĞU İÇİN: 
+    // Hepsini genişlik/yükseklik oranına (FRAME_ASPECT) göre dikdörtgen kutuda render ediyoruz.
+    const lottieW = Math.round(lottieH * FRAME_ASPECT);
+    
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
 
-    // Genel Sıralama (season) için PNG çerçeve yolları
+    // Genel Sıralama (season) için PNG yolları
     const seasonFrames: Record<number, string> = {
       1: "/Liderlik/genelBirinci.png",
       2: "/Liderlik/genelIkinci.png",
       3: "/Liderlik/genelUcuncu.png"
     };
 
-    // YENİ: Aylık Sıralama (monthly) için PNG çerçeve yolları
+    // Aylık Sıralama (monthly) için PNG yolları
     const monthlyFrames: Record<number, string> = {
       1: "/Liderlik/aylikBirinci.png",
       2: "/Liderlik/aylikIkinci.png",
       3: "/Liderlik/aylikUcuncu.png"
     };
 
+    // YENİ - Haftalık Sıralama (weekly) için PNG yolları
+    const weeklyFrames: Record<number, string> = {
+      1: "/Liderlik/haftalikBirinci.png",
+      2: "/Liderlik/haftalikIkinci.png",
+      3: "/Liderlik/haftalikUcuncu.png"
+    };
+
     return (
       <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
           
-          {/* YALNIZCA HAFTALIKTA: Eski Lottie Animasyon Çerçevesini Kullan */}
-          {tab === "weekly" && animData && (
-            <PodiumFrameLottie
-              animationData={animData}
-              width={lottieW}
-              height={lottieH}
-              mountDelay={80 + (rank - 1) * 120}
-            />
-          )}
+          {/* ARTIK LOTTIE RENDERING KISMINI TAMAMEN SİLEBİLİR VEYA YORUMA ALABİLİRSİN */}
+          {/* {tab === "weekly" && animData && ( ... )} */}
 
-          {/* GENEL SIRALAMA İSE: Genel PNG Çerçevelerini Bas */}
+          {/* GENEL SIRALAMA İSE */}
           {tab === "season" && (
             <img 
               src={seasonFrames[rank]} 
@@ -439,7 +441,7 @@ const LeaderboardPage = () => {
             />
           )}
 
-          {/* YENİ - AYLIK SIRALAMA İSE: Aylık PNG Çerçevelerini Bas */}
+          {/* AYLIK SIRALAMA İSE */}
           {tab === "monthly" && (
             <img 
               src={monthlyFrames[rank]} 
@@ -448,7 +450,16 @@ const LeaderboardPage = () => {
             />
           )}
 
-          {/* Avatar centered inside lottie/frame */}
+          {/* YENİ - HAFTALIK SIRALAMA İSE */}
+          {tab === "weekly" && (
+            <img 
+              src={weeklyFrames[rank]} 
+              alt={`Haftalık Sıra ${rank} Çerçeve`}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+            />
+          )}
+
+          {/* Avatar centered inside frame */}
           <div className="absolute inset-0 flex items-center justify-center z-0">
             <div className="relative">
               <Avatar
@@ -470,50 +481,17 @@ const LeaderboardPage = () => {
           </div>
         </div>
         
-        {/* Alt taraftaki isim ve puan bilgileri alanı (Değişmedi) */}
+        {/* Alt taraftaki isim/skor kartı (Değişmedi) */}
         <div
           className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
           style={{ borderColor: frameColor }}
         >
-          {/* ... mevcut alt kod bloğun ... */}
-          <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
-            <h3
-              className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
-              style={
-                inGameUsers.has(leader.user_id)
-                  ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
-                  : isUserOnline(leader.user_id)
-                    ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
-                    : { color: "#ffffff" }
-              }
-              onClick={(e) => openUserMenu(leader, e)}
-            >
-              {leader.username}
-              {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
-            </h3>
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-slate-400">
-            <Target className="w-3 h-3" />
-            <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-            {leader.games_played > 0 && (
-              <span className="flex items-center gap-0.5">
-                <Users className="w-3 h-3" />
-                {leader.games_played}
-              </span>
-            )}
-            {leader.wins > 0 && (
-              <span className="flex items-center gap-0.5">
-                <Trophy className="w-3 h-3" />
-                {leader.wins}
-              </span>
-            )}
-          </div>
+          {/* ... alt taraf kodları ... */}
         </div>
       </div>
     );
   };
+
 
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
