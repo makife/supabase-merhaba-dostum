@@ -1035,21 +1035,21 @@ const ProfilePage = () => {
                 size="sm"
                 onClick={() => setShowAvatarOptions(true)}
                 disabled={uploading}
-                className="absolute top-3 right-3 z-30 h-8 px-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold shadow-lg border border-white/20"
+                className="absolute top-2 right-1.5 z-30 h-6 px-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-[10px] font-bold shadow-lg border border-white/20"
               >
-                <Edit className="w-3.5 h-3.5 mr-1" />
+                <Edit className="w-3 h-3 mr-0.5" />
                 Resmi Değiştir
               </Button>
             )}
 
             {/* Avatar Section */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center justify-center mb-4 -my-2">
                 {/* Avatar + rank çerçevesi */}
-                <div className="relative w-36 h-36 flex items-center justify-center">
+                <div className="relative w-44 h-44 flex items-center justify-center">
                   <Avatar
                     key={avatarKey}
-                    className="w-24 h-24 relative z-10 rounded-full"
+                    className="w-[7.5rem] h-[7.5rem] relative z-10 rounded-full"
                     showFrame={false}
                   >
                     <AvatarImage
