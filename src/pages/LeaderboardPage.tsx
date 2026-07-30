@@ -394,19 +394,27 @@ const LeaderboardPage = () => {
       .catch(console.error);
   }, []);
 
-  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
+    const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
     const isCurrentUser = leader.user_id === user?.id;
     const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
-    // weekly kare kutuda kalıyor (mevcut davranış); season & monthly gerçek 1000x591 oranında render ediliyor
     const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
     const tabFrames = frameData[tab];
     const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
+
+    // Genel sıralama (season) için PNG çerçeve yolları
+    const seasonFrames: Record<number, string> = {
+      1: "/Liderlik/genelBirinci.png",
+      2: "/Liderlik/genelIkinci.png",
+      3: "/Liderlik/genelUcuncu.png"
+    };
+
     return (
       <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
-          {/* Lottie animation frame (canvas renderer - performans) */}
-          {animData && (
+          
+          {/* GENEL SIRALAMA DEĞİLSE: Eski Lottie Animasyon Çerçevesi */}
+          {tab !== "season" && animData && (
             <PodiumFrameLottie
               animationData={animData}
               width={lottieW}
@@ -415,11 +423,22 @@ const LeaderboardPage = () => {
             />
           )}
 
-          {/* Avatar centered inside lottie */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          {/* GENEL SIRALAMA İSE: Senin Yeni Özel PNG Çerçevelerin */}
+          {tab === "season" && (
+            <img 
+              src={seasonFrames[rank]} 
+              alt={`Sıra ${rank} Çerçeve`}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+            />
+          )}
+
+          {/* Avatar centered inside lottie/frame */}
+          <div className="absolute inset-0 flex items-center justify-center z-0">
             <div className="relative">
               <Avatar
-                className={`cursor-pointer hover:scale-110 transition-transform`}
+                className="cursor-pointer hover:scale-110 transition-transform"
+                // PNG görsellerinin iç halka boşluklarına tam oturması için gerekirse 
+                // tab === "season" durumunda genişliği ince ayar (örn: avatarPx - 4) yapabilirsin.
                 style={{ width: avatarPx, height: avatarPx }}
                 onClick={(e) => openUserMenu(leader, e)}
               >
@@ -436,10 +455,13 @@ const LeaderboardPage = () => {
             </div>
           </div>
         </div>
+        
+        {/* İsmin ve skorun yer aldığı alt kart alanı (Mevcut kodun aynen devam ediyor) */}
         <div
           className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
           style={{ borderColor: frameColor }}
         >
+          {/* ... mevcut alt taraftaki kullanıcı adı ve puan kodları ... */}
           <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
             <h3
               className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
