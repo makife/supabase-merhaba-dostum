@@ -86,6 +86,14 @@ export function getNextRankTier(rankPoints: number): RankTier | null {
   return null;
 }
 
+// Rank çerçevesi: her iki rankta bir değişir (rank1 → rank11)
+export function getRankFrame(rankPoints: number): string {
+  const tier = getRankTier(rankPoints);
+  const idx = RANK_TIERS.findIndex(t => t.id === tier.id);
+  const frameNo = Math.min(11, Math.floor(idx / 2) + 1);
+  return `/rankCerceve/${frameNo}rank.png`;
+}
+
 // Aynı gruptaki tüm sub-tier'ları döndürür (progress bar için)
 export function getGroupTiers(group: string): RankTier[] {
   return RANK_TIERS.filter(t => t.group === group);
