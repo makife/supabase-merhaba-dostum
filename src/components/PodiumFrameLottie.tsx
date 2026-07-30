@@ -47,8 +47,8 @@ const PodiumFrameLottieBase = ({ animationData, width, height, mountDelay = 0 }:
     }, mountDelay);
 
     const onVisibility = () => {
-      if (document.hidden) anim.pause();
-      else anim.play();
+      if (document.hidden) animRef.current?.pause();
+      else animRef.current?.play();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
