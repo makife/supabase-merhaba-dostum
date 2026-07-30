@@ -394,7 +394,7 @@ const LeaderboardPage = () => {
       .catch(console.error);
   }, []);
 
-    const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
+      const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
     const isCurrentUser = leader.user_id === user?.id;
     const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
     const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
@@ -402,19 +402,26 @@ const LeaderboardPage = () => {
     const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
 
-    // Genel sıralama (season) için PNG çerçeve yolları
+    // Genel Sıralama (season) için PNG çerçeve yolları
     const seasonFrames: Record<number, string> = {
       1: "/Liderlik/genelBirinci.png",
       2: "/Liderlik/genelIkinci.png",
       3: "/Liderlik/genelUcuncu.png"
     };
 
+    // YENİ: Aylık Sıralama (monthly) için PNG çerçeve yolları
+    const monthlyFrames: Record<number, string> = {
+      1: "/Liderlik/aylikBirinci.png",
+      2: "/Liderlik/aylikIkinci.png",
+      3: "/Liderlik/aylikUcuncu.png"
+    };
+
     return (
       <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
           
-          {/* GENEL SIRALAMA DEĞİLSE: Eski Lottie Animasyon Çerçevesi */}
-          {tab !== "season" && animData && (
+          {/* YALNIZCA HAFTALIKTA: Eski Lottie Animasyon Çerçevesini Kullan */}
+          {tab === "weekly" && animData && (
             <PodiumFrameLottie
               animationData={animData}
               width={lottieW}
@@ -423,11 +430,20 @@ const LeaderboardPage = () => {
             />
           )}
 
-          {/* GENEL SIRALAMA İSE: Senin Yeni Özel PNG Çerçevelerin */}
+          {/* GENEL SIRALAMA İSE: Genel PNG Çerçevelerini Bas */}
           {tab === "season" && (
             <img 
               src={seasonFrames[rank]} 
-              alt={`Sıra ${rank} Çerçeve`}
+              alt={`Genel Sıra ${rank} Çerçeve`}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+            />
+          )}
+
+          {/* YENİ - AYLIK SIRALAMA İSE: Aylık PNG Çerçevelerini Bas */}
+          {tab === "monthly" && (
+            <img 
+              src={monthlyFrames[rank]} 
+              alt={`Aylık Sıra ${rank} Çerçeve`}
               className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
             />
           )}
@@ -437,8 +453,6 @@ const LeaderboardPage = () => {
             <div className="relative">
               <Avatar
                 className="cursor-pointer hover:scale-110 transition-transform"
-                // PNG görsellerinin iç halka boşluklarına tam oturması için gerekirse 
-                // tab === "season" durumunda genişliği ince ayar (örn: avatarPx - 4) yapabilirsin.
                 style={{ width: avatarPx, height: avatarPx }}
                 onClick={(e) => openUserMenu(leader, e)}
               >
@@ -456,12 +470,12 @@ const LeaderboardPage = () => {
           </div>
         </div>
         
-        {/* İsmin ve skorun yer aldığı alt kart alanı (Mevcut kodun aynen devam ediyor) */}
+        {/* Alt taraftaki isim ve puan bilgileri alanı (Değişmedi) */}
         <div
           className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
           style={{ borderColor: frameColor }}
         >
-          {/* ... mevcut alt taraftaki kullanıcı adı ve puan kodları ... */}
+          {/* ... mevcut alt kod bloğun ... */}
           <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
             <h3
               className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
@@ -500,6 +514,7 @@ const LeaderboardPage = () => {
       </div>
     );
   };
+
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
     if (leaders.length === 0) {
