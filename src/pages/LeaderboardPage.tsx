@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { startTransition, useState, useEffect, useCallback } from "react";
 import Lottie from "lottie-react";
 import { PodiumFrameLottie } from "@/components/PodiumFrameLottie";
 import { Button } from "@/components/ui/button";
@@ -280,15 +280,6 @@ const LeaderboardPage = () => {
   }, [user]);
 
   useEffect(() => {
-    const refetchActive = async () => {
-      if (activeTab === "all-time") await fetchAllTimeLeaders();
-      if (activeTab === "weekly") await fetchWeeklyLeaders();
-      if (activeTab === "monthly") await fetchMonthlyLeaders();
-    };
-    refetchActive();
-  }, [activeTab]);
-
-  useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
         await handleLeaderboardResync();
@@ -416,7 +407,12 @@ const LeaderboardPage = () => {
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
           {/* Lottie animation frame (canvas renderer - performans) */}
           {animData && (
-            <PodiumFrameLottie animationData={animData} width={lottieW} height={lottieH} />
+            <PodiumFrameLottie
+              animationData={animData}
+              width={lottieW}
+              height={lottieH}
+              mountDelay={80 + (rank - 1) * 120}
+            />
           )}
 
           {/* Avatar centered inside lottie */}
@@ -711,7 +707,14 @@ const LeaderboardPage = () => {
 
           {/* Tabs */}
           <div className="mt-3">
-            <Tabs value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => {
+                playSound("buttonClick");
+                startTransition(() => setActiveTab(val));
+              }}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
                 <TabsTrigger
                   value="all-time"
