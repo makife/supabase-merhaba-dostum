@@ -413,15 +413,11 @@ const LeaderboardPage = () => {
     return (
       <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
-          {/* Lottie animation frame */}
+          {/* Lottie animation frame (canvas renderer - performans) */}
           {animData && (
-            <Lottie
-              animationData={animData}
-              loop
-              autoplay
-              style={{ position: 'absolute', inset: 0, width: lottieW, height: lottieH, pointerEvents: 'none' }}
-            />
+            <PodiumFrameLottie animationData={animData} width={lottieW} height={lottieH} />
           )}
+
           {/* Avatar centered inside lottie */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
