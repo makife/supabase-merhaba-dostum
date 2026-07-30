@@ -1,4 +1,4 @@
-import { getRankTier, getRankProgress } from "@/utils/rankSystem";
+import { getRankTier, getRankProgress, getRankFrame } from "@/utils/rankSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { RankBadge } from "@/components/RankBadge";
 import { useUser } from "@/contexts/UserContext";
