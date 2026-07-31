@@ -422,8 +422,9 @@ const LeaderboardPage = () => {
               style={{ position: 'absolute', inset: 0, width: lottieW, height: lottieH, pointerEvents: 'none' }}
             />
           )}
-          {/* Avatar centered inside lottie */}
-          <div className="absolute inset-0 flex items-center justify-center">
+                    {/* Avatar centered inside lottie */}
+          {/* Kapsayıcıya z-10 vererek lottie animasyonunun (z belirtilmemişse 0 sayılır) üzerine çıkartıyoruz */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="relative">
               <Avatar
                 className={`cursor-pointer hover:scale-110 transition-transform`}
@@ -435,8 +436,10 @@ const LeaderboardPage = () => {
                   {leader.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
+              
               {premiumUsers.has(leader.user_id) && (
-                <div className="absolute -top-1 -right-1 z-20">
+                // z-30 vererek hem avatarın hem de Lottie'nin en tepesinde kalmasını garanti ediyoruz
+                <div className="absolute -top-1 -right-1 z-30">
                   <VipBadge size="xs" />
                 </div>
               )}
