@@ -1,6 +1,5 @@
-import { startTransition, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Lottie from "lottie-react";
-import { PodiumFrameLottie } from "@/components/PodiumFrameLottie";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { useSounds } from "@/hooks/useSounds";
-import { IN_GAME_STATUS_POLL_MS } from "@/utils/playerActivityStatus";
+import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import {
   ArrowLeft,
   Trophy,
@@ -86,34 +85,37 @@ const LeaderboardPage = () => {
     if (userIds.length === 0) return;
     try {
       const now = new Date();
+      const activeSince = getInGameActivityThreshold();
 
-      // useActivityTracker maçtayken heartbeat'i profiles.last_seen'e yazıyor
-      // (player_activities'e DEĞİL — o tablo bu akışla ilgisiz, bu yüzden eski
-      // kontrol gerçek maçtaki oyuncuları da "stale" sayıyordu).
-      // Heartbeat aralığı maçta 15sn, bu yüzden eşik onun biraz üstünde olmalı
-      // (tam 12sn gibi dar bir eşik, iki heartbeat arası her an stale görünmesine yol açıyordu).
-      const IN_GAME_LAST_SEEN_STALE_MS = 25_000;
-      const staleThreshold = now.getTime() - IN_GAME_LAST_SEEN_STALE_MS;
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, premium_until, in_game, last_seen")
-        .in("id", userIds);
+      const [{ data }, { data: activePlayers }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, premium_until, in_game")
+          .in("id", userIds),
+        supabase
+          .from("player_activities")
+          .select("player_id")
+          .in("player_id", userIds)
+          .gte("last_action_time", activeSince),
+      ]);
 
       if (data) {
         const premSet = new Set<string>();
         const gameSet = new Set<string>();
-
+        
+        // Premium kullanıcıları ekle
         data.forEach((p: any) => {
-          // Premium kullanıcıları ekle
           if (p.premium_until && new Date(p.premium_until) > now) premSet.add(p.id);
-
-          // in_game flag'i true VE last_seen yakın zamanda güncellenmişse neon mavi yap.
-          // Sadece in_game'e bakmak, takılı kalmış (stale) flag'leri de maçtaymış gibi gösterir.
-          const lastSeenMs = p.last_seen ? new Date(p.last_seen).getTime() : 0;
-          if (p.in_game && lastSeenMs > staleThreshold) gameSet.add(p.id);
         });
-
+        
+        // ÖNEMLİ: player_activities'den gelen aktif oyuncuları kullan
+        // (in_game flag'i yanlış pozitif verebilir, son aktiviteyi kontrol et)
+        if (activePlayers && Array.isArray(activePlayers)) {
+          activePlayers.forEach((activity: any) => {
+            gameSet.add(activity.player_id);
+          });
+        }
+        
         setPremiumUsers(premSet);
         setInGameUsers(gameSet);
       }
@@ -280,6 +282,15 @@ const LeaderboardPage = () => {
   }, [user]);
 
   useEffect(() => {
+    const refetchActive = async () => {
+      if (activeTab === "all-time") await fetchAllTimeLeaders();
+      if (activeTab === "weekly") await fetchWeeklyLeaders();
+      if (activeTab === "monthly") await fetchMonthlyLeaders();
+    };
+    refetchActive();
+  }, [activeTab]);
+
+  useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
         await handleLeaderboardResync();
@@ -394,76 +405,31 @@ const LeaderboardPage = () => {
       .catch(console.error);
   }, []);
 
-        const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
+  const renderPodiumItem = (leader: LeaderboardEntry, rank: number, size: "lg" | "sm", tab: LeaderboardTab) => {
     const isCurrentUser = leader.user_id === user?.id;
     const { avatarPx, lottieH } = FRAME_CONFIG[tab][size];
-    
-    // ARTIK TÜM SEKMELER PNG OLDUĞU İÇİN: 
-    // Hepsini genişlik/yükseklik oranına (FRAME_ASPECT) göre dikdörtgen kutuda render ediyoruz.
-    const lottieW = Math.round(lottieH * FRAME_ASPECT);
-    
+    // weekly kare kutuda kalıyor (mevcut davranış); season & monthly gerçek 1000x591 oranında render ediliyor
+    const lottieW = tab === "weekly" ? lottieH : Math.round(lottieH * FRAME_ASPECT);
+    const tabFrames = frameData[tab];
+    const animData = rank === 1 ? tabFrames.first : rank === 2 ? tabFrames.second : tabFrames.third;
     const frameColor = rank === 1 ? "#d4af37" : rank === 2 ? "#c0c0c0" : "#cd7f32";
-
-    // Genel Sıralama (season) için PNG yolları
-    const seasonFrames: Record<number, string> = {
-      1: "/Liderlik/genelBirinci.png",
-      2: "/Liderlik/genelIkinci.png",
-      3: "/Liderlik/genelUcuncu.png"
-    };
-
-    // Aylık Sıralama (monthly) için PNG yolları
-    const monthlyFrames: Record<number, string> = {
-      1: "/Liderlik/aylikBirinci.png",
-      2: "/Liderlik/aylikIkinci.png",
-      3: "/Liderlik/aylikUcuncu.png"
-    };
-
-    // YENİ - Haftalık Sıralama (weekly) için PNG yolları
-    const weeklyFrames: Record<number, string> = {
-      1: "/Liderlik/haftalikBirinci.png",
-      2: "/Liderlik/haftalikIkinci.png",
-      3: "/Liderlik/haftalikUcuncu.png"
-    };
-
     return (
       <div className="flex flex-col items-center gap-0">
         <div className="relative" style={{ width: lottieW, height: lottieH }}>
-          
-          {/* ARTIK LOTTIE RENDERING KISMINI TAMAMEN SİLEBİLİR VEYA YORUMA ALABİLİRSİN */}
-          {/* {tab === "weekly" && animData && ( ... )} */}
-
-          {/* GENEL SIRALAMA İSE */}
-          {tab === "season" && (
-            <img 
-              src={seasonFrames[rank]} 
-              alt={`Genel Sıra ${rank} Çerçeve`}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+          {/* Lottie animation frame */}
+          {animData && (
+            <Lottie
+              animationData={animData}
+              loop
+              autoplay
+              style={{ position: 'absolute', inset: 0, width: lottieW, height: lottieH, pointerEvents: 'none' }}
             />
           )}
-
-          {/* AYLIK SIRALAMA İSE */}
-          {tab === "monthly" && (
-            <img 
-              src={monthlyFrames[rank]} 
-              alt={`Aylık Sıra ${rank} Çerçeve`}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-            />
-          )}
-
-          {/* YENİ - HAFTALIK SIRALAMA İSE */}
-          {tab === "weekly" && (
-            <img 
-              src={weeklyFrames[rank]} 
-              alt={`Haftalık Sıra ${rank} Çerçeve`}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
-            />
-          )}
-
-          {/* Avatar centered inside frame */}
-          <div className="absolute inset-0 flex items-center justify-center z-0">
+          {/* Avatar centered inside lottie */}
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
               <Avatar
-                className="cursor-pointer hover:scale-110 transition-transform"
+                className={`cursor-pointer hover:scale-110 transition-transform`}
                 style={{ width: avatarPx, height: avatarPx }}
                 onClick={(e) => openUserMenu(leader, e)}
               >
@@ -480,19 +446,48 @@ const LeaderboardPage = () => {
             </div>
           </div>
         </div>
-        
-        {/* Alt taraftaki isim/skor kartı (Değişmedi) */}
         <div
           className="flex flex-col items-center rounded-lg border-2 px-2 py-1 mt-[-8px] bg-transparent"
           style={{ borderColor: frameColor }}
         >
-          {/* ... alt taraf kodları ... */}
+          <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
+            <h3
+              className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
+              style={
+                inGameUsers.has(leader.user_id)
+                  ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                  : isUserOnline(leader.user_id)
+                    ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
+                    : { color: "#ffffff" }
+              }
+              onClick={(e) => openUserMenu(leader, e)}
+            >
+              {leader.username}
+              {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <Target className="w-3 h-3" />
+            <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+            {leader.games_played > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Users className="w-3 h-3" />
+                {leader.games_played}
+              </span>
+            )}
+            {leader.wins > 0 && (
+              <span className="flex items-center gap-0.5">
+                <Trophy className="w-3 h-3" />
+                {leader.wins}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
   };
-
-
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
     if (leaders.length === 0) {
@@ -722,14 +717,7 @@ const LeaderboardPage = () => {
 
           {/* Tabs */}
           <div className="mt-3">
-            <Tabs
-              value={activeTab}
-              onValueChange={(val) => {
-                playSound("buttonClick");
-                startTransition(() => setActiveTab(val));
-              }}
-              className="w-full"
-            >
+            <Tabs value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
                 <TabsTrigger
                   value="all-time"
