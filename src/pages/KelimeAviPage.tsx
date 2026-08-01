@@ -87,6 +87,11 @@ const KelimeAviPage = () => {
   const [foundWords, setFoundWords] = useState<{ w: string; p: number }[]>([]);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
+  const [boostButtonAnim, setBoostButtonAnim] = useState<any>(null);
+const [boostEnergyAnim, setBoostEnergyAnim] = useState<any>(null);
+const [playButtonAnim, setPlayButtonAnim] = useState(false);
+const [playEnergyAnim, setPlayEnergyAnim] = useState(false);
+  
   const [rocketAnim, setRocketAnim] = useState<any>(null);
   const [surukleAnim, setSurukleAnim] = useState<any>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -143,26 +148,47 @@ const KelimeAviPage = () => {
   };
 
   useEffect(() => {
-    loadChallengeWordlist().then(() => setLoading(false));
-    fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
-    fetch("/kelimeAviSurukle.json").then(r => r.json()).then(setSurukleAnim).catch(() => {});
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  loadChallengeWordlist().then(() => setLoading(false));
+  fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
+  fetch("/kelimeAviSurukle.json").then(r => r.json()).then(setSurukleAnim).catch(() => {});
+  
+  // EKLENEN KISIM: Yeni animasyonların yüklenmesi
+  fetch("/boostButonBasildi.json").then(r => r.json()).then(setBoostButtonAnim).catch(() => {});
+  fetch("/boostButonBasildiEnerji.json").then(r => r.json()).then(setBoostEnergyAnim).catch(() => {});
+
+  return () => { if (timerRef.current) clearInterval(timerRef.current); };
+}, []);
 
   const handleClaimBoost = async () => {
-    if (claiming || pendingMin <= 0) return;
-    setClaiming(true);
-    playSound("buttonClick");
-    const { data, error } = await supabase.rpc("claim_score_boost" as any);
-    if (error || !(data as any)?.success) {
-      toast.error("Boost aktif edilemedi");
-    } else {
-      setNowTs(Date.now());
+  if (claiming || pendingMin <= 0) return;
+  setClaiming(true);
+  playSound("buttonClick");
+  const { data, error } = await supabase.rpc("claim_score_boost" as any);
+  if (error || !(data as any)?.success) {
+    toast.error("Boost aktif edilemedi");
+    setClaiming(false);
+  } else {
+    setNowTs(Date.now());
+    
+    // 1. ADIM: Buton içi animasyonu başlat
+    setPlayButtonAnim(true);
+    
+    // 2. ADIM: Hemen peşinden (örn: 300ms sonra) tam ekran enerji animasyonunu başlat
+    setTimeout(() => {
+      setPlayEnergyAnim(true);
+    }, 300);
+
+    // 3. ADIM: Animasyonlar bittikten sonra arayüzü güncelle ve temizle (örn: 2.5 saniye sonra)
+    setTimeout(async () => {
       toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
       await refreshProfile(true);
-    }
-    setClaiming(false);
-  };
+      setPlayButtonAnim(false);
+      setPlayEnergyAnim(false);
+      setClaiming(false); // İşlemi burada bitiriyoruz ki animasyon esnasında buton kilitli kalsın
+    }, 2500);
+  }
+};
+
 
   const currentWord = useMemo(() => path.map(i => letters[i] || "").join(""), [path, letters]);
 
@@ -400,15 +426,20 @@ const KelimeAviPage = () => {
                     : "Boost yok"}
                 </button>
                 <div className="w-14 h-14 shrink-0">
-                  {rocketAnim && (
-                    <Lottie
-                      animationData={rocketAnim}
-                      loop={kelimeAviBoostActivated}
-                      autoplay={kelimeAviBoostActivated}
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  )}
-                </div>
+  {playButtonAnim && boostButtonAnim ? (
+    // Butona basıldıysa tıklandı animasyonu oynasın
+    <Lottie animationData={boostButtonAnim} loop={false} autoplay={true} style={{ width: "100%", height: "100%" }} />
+  ) : rocketAnim ? (
+    // Normal şartlarda roket dönsün
+    <Lottie
+      animationData={rocketAnim}
+      loop={kelimeAviBoostActivated}
+      autoplay={kelimeAviBoostActivated}
+      style={{ width: "100%", height: "100%" }}
+    />
+  ) : null}
+</div>
+
               </div>
             )}
 
@@ -557,9 +588,16 @@ const KelimeAviPage = () => {
                 ✕
               </button>
             </div>
-            <div className="flex-1 min-h-0 flex flex-col">
-              <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
-            </div>
+                  {/* Sayfayı komple kaplayan Enerji Animasyonu Katmanı */}
+      {playEnergyAnim && boostEnergyAnim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 pointer-events-none animate-fade-in">
+          <div className="w-full h-full">
+            <Lottie 
+              animationData={boostEnergyAnim} 
+              loop={false} 
+              autoplay={true} 
+              style={{ width: "100%", h: "100%", objectFit: "cover" }} 
+            />
           </div>
         </div>
       )}
@@ -567,5 +605,6 @@ const KelimeAviPage = () => {
     </div>
   );
 };
+
 
 export default KelimeAviPage;
