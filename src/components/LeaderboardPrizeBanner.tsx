@@ -14,17 +14,31 @@ interface LeaderboardPrizeBannerProps {
   tab: "all-time" | "weekly" | "monthly";
 }
 
-const PRIZE_CONFIG: Record<string, { prizes: PrizeInfo }> = {
+const PRIZE_CONFIG: Record<string, { prizes: PrizeInfo[] }> = {
   "all-time": {
-    prizes: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, boostLabel: "1 ay boyunca maç sonu puanı x2" },
+    prizes: [
+      { degistir: 30, fisilida: 30, senyaz: 30, oyunHakki: 20, boostLabel: "5 gün puan x2" },
+      { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 10, boostLabel: "3 gün puan x2" },
+      { degistir: 10, fisilida: 10, senyaz: 10, oyunHakki: 5, boostLabel: "1 gün puan x2" },
+    ],
   },
   weekly: {
-    prizes: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostLabel: "1 gün boyunca maç sonu puanı x2" },
+    prizes: [
+      { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostLabel: "2 saat puan x2" },
+      { degistir: 2, fisilida: 2, senyaz: 2, oyunHakki: 2, boostLabel: "1 saat puan x2" },
+      { degistir: 1, fisilida: 1, senyaz: 1, oyunHakki: 1, boostLabel: "30 dakika puan x2" },
+    ],
   },
   monthly: {
-    prizes: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, boostLabel: "1 hafta boyunca maç sonu puanı x2" },
+    prizes: [
+      { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 6, boostLabel: "2 gün puan x2" },
+      { degistir: 6, fisilida: 6, senyaz: 6, oyunHakki: 4, boostLabel: "12 saat puan x2" },
+      { degistir: 4, fisilida: 4, senyaz: 4, oyunHakki: 2, boostLabel: "3 saat puan x2" },
+    ],
   },
 };
+
+const RANK_MEDALS = ["🥇", "🥈", "🥉"];
 
 // 4-month seasons: Jan-Apr, May-Aug, Sep-Dec
 function getSeasonEnd(): Date {
@@ -137,34 +151,39 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
             <span className={`text-xs font-bold ${timerColor}`}>Ödül için: {remaining}</span>
           </div>
 
-          {/* Prize items */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-300">
-            <span className="flex items-center gap-1">
-              <img src="/icons/degistir.svg" alt="" className="w-4 h-4" />
-              {prizes.degistir} Değiştir
-            </span>
-            <span className="flex items-center gap-1">
-              <img src="/icons/fisilda.svg" alt="" className="w-4 h-4" />
-              {prizes.fisilida} Fısılda
-            </span>
-            <span className="flex items-center gap-1">
-              <img src="/icons/senyaz.svg" alt="" className="w-4 h-4" />
-              {prizes.senyaz} Senyaz
-            </span>
-            {prizes.oyunHakki && (
-              <span className="flex items-center gap-1">
-                <Gift className="w-3.5 h-3.5 text-amber-400" />+{prizes.oyunHakki} Oyun Sayfası
-              </span>
-            )}
+          {/* Prize rows: 1., 2., 3. */}
+          <div className="space-y-1.5">
+            {prizes.map((prize, i) => (
+              <div key={i} className="rounded-lg bg-black/20 px-2 py-1">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-300">
+                  <span className="text-[12px] font-bold">{RANK_MEDALS[i]}</span>
+                  <span className="flex items-center gap-1">
+                    <img src="/icons/degistir.svg" alt="" className="w-4 h-4" />
+                    {prize.degistir}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <img src="/icons/fisilda.svg" alt="" className="w-4 h-4" />
+                    {prize.fisilida}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <img src="/icons/senyaz.svg" alt="" className="w-4 h-4" />
+                    {prize.senyaz}
+                  </span>
+                  {prize.oyunHakki && (
+                    <span className="flex items-center gap-1">
+                      <Gift className="w-3.5 h-3.5 text-amber-400" />+{prize.oyunHakki}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30">
+                    <Zap className="w-3 h-3 text-amber-400" />
+                    <span className="text-[10px] font-semibold text-amber-300">{prize.boostLabel}</span>
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Boost rozeti */}
-          <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 w-fit">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] font-semibold text-amber-300">{prizes.boostLabel}</span>
-          </div>
-
-          <p className="text-[10px] text-slate-500 mt-1">🏆 1. sıradaki oyuncuya verilecek</p>
+          <p className="text-[10px] text-slate-500 mt-1">🏆 İlk 3 oyuncuya verilecek</p>
         </div>
       </div>
     </div>
