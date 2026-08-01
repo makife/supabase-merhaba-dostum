@@ -5,22 +5,59 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface PrizeConfig {
+interface PrizeTier {
   degistir: number;
   fisilida: number;
   senyaz: number;
   oyunHakki?: number;
-  boostDays: number; // Maç sonu puan x2 boost süresi (gün)
+  boostHours: number; // Maç sonu puan x2 boost süresi (saat)
+}
+
+interface PrizeConfig {
   label: string;
   badgeId: string;
   countColumn: string;
+  tiers: PrizeTier[]; // [1., 2., 3.]
 }
 
 const PRIZES: Record<string, PrizeConfig> = {
-  weekly: { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostDays: 1, label: "Haftalık", badgeId: "b1000001-0000-0000-0000-000000000002", countColumn: "weekly_first_count" },
-  monthly: { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 10, boostDays: 7, label: "Aylık", badgeId: "b1000001-0000-0000-0000-000000000003", countColumn: "monthly_first_count" },
-  season: { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 25, boostDays: 30, label: "Sezon", badgeId: "b1000001-0000-0000-0000-000000000001", countColumn: "season_first_count" },
+  weekly: {
+    label: "Haftalık",
+    badgeId: "b1000001-0000-0000-0000-000000000002",
+    countColumn: "weekly_first_count",
+    tiers: [
+      { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostHours: 2 },
+      { degistir: 2, fisilida: 2, senyaz: 2, oyunHakki: 2, boostHours: 1 },
+      { degistir: 1, fisilida: 1, senyaz: 1, oyunHakki: 1, boostHours: 0.5 },
+    ],
+  },
+  monthly: {
+    label: "Aylık",
+    badgeId: "b1000001-0000-0000-0000-000000000003",
+    countColumn: "monthly_first_count",
+    tiers: [
+      { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 6, boostHours: 48 },
+      { degistir: 6, fisilida: 6, senyaz: 6, oyunHakki: 4, boostHours: 12 },
+      { degistir: 4, fisilida: 4, senyaz: 4, oyunHakki: 2, boostHours: 3 },
+    ],
+  },
+  season: {
+    label: "Sezon",
+    badgeId: "b1000001-0000-0000-0000-000000000001",
+    countColumn: "season_first_count",
+    tiers: [
+      { degistir: 30, fisilida: 30, senyaz: 30, oyunHakki: 20, boostHours: 120 },
+      { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 10, boostHours: 72 },
+      { degistir: 10, fisilida: 10, senyaz: 10, oyunHakki: 5, boostHours: 24 },
+    ],
+  },
 };
+
+function formatBoost(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)} dakika`;
+  if (hours < 24) return `${hours} saat`;
+  return `${hours / 24} gün`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -100,6 +137,13 @@ Deno.serve(async (req) => {
       return found;
     };
 
+    // İlk 3'e sırayla ödül ver
+    const awardTop3 = async (winners: string[], config: PrizeConfig) => {
+      for (let i = 0; i < winners.length && i < config.tiers.length; i++) {
+        await awardPrize(supabase, winners[i], config, i + 1);
+      }
+    };
+
     // ===== WEEKLY =====
     const shouldDoWeekly = forceType === "weekly" || (dayOfWeek === 1 && hour < 1);
     if (shouldDoWeekly) {
@@ -107,10 +151,10 @@ Deno.serve(async (req) => {
       if (await alreadyAwarded("weekly")) {
         results.push("Weekly prize already awarded, skipping");
       } else {
-        const winner = await findPreviousWeekWinner(supabase, turkeyNow);
-        if (winner) {
-          await awardPrize(supabase, winner, PRIZES.weekly);
-          results.push(`Weekly winner: ${winner}`);
+        const winners = await findPreviousWeekWinners(supabase, turkeyNow);
+        if (winners.length > 0) {
+          await awardTop3(winners, PRIZES.weekly);
+          results.push(`Weekly winners: ${winners.join(", ")}`);
         } else {
           results.push("No weekly winner found");
         }
@@ -124,10 +168,10 @@ Deno.serve(async (req) => {
       if (await alreadyAwarded("monthly")) {
         results.push("Monthly prize already awarded, skipping");
       } else {
-        const winner = await findPreviousMonthWinner(supabase, turkeyNow);
-        if (winner) {
-          await awardPrize(supabase, winner, PRIZES.monthly);
-          results.push(`Monthly winner: ${winner}`);
+        const winners = await findPreviousMonthWinners(supabase, turkeyNow);
+        if (winners.length > 0) {
+          await awardTop3(winners, PRIZES.monthly);
+          results.push(`Monthly winners: ${winners.join(", ")}`);
         } else {
           results.push("No monthly winner found");
         }
@@ -142,10 +186,10 @@ Deno.serve(async (req) => {
       if (await alreadyAwarded("season")) {
         results.push("Season prize already awarded, skipping");
       } else {
-        const winner = await findSeasonWinner(supabase, turkeyNow);
-        if (winner) {
-          await awardPrize(supabase, winner, PRIZES.season);
-          results.push(`Season winner: ${winner}`);
+        const winners = await findSeasonWinners(supabase, turkeyNow);
+        if (winners.length > 0) {
+          await awardTop3(winners, PRIZES.season);
+          results.push(`Season winners: ${winners.join(", ")}`);
         } else {
           results.push("No season winner found");
         }
@@ -179,13 +223,13 @@ Deno.serve(async (req) => {
   }
 });
 
-// ===== ÖNCEKİ HAFTA kazananını doğrudan weekly_stats tablosundan bul =====
-async function findPreviousWeekWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
+// ===== ÖNCEKİ HAFTA ilk 3'ünü doğrudan weekly_stats tablosundan bul =====
+async function findPreviousWeekWinners(supabase: any, turkeyNow: Date): Promise<string[]> {
   const prevMonday = new Date(turkeyNow);
   prevMonday.setUTCDate(prevMonday.getUTCDate() - ((turkeyNow.getUTCDay() + 6) % 7) - 7);
   const prevWeekStart = prevMonday.toISOString().split('T')[0];
   
-  console.log(`📊 Looking for previous week winner (week_start: ${prevWeekStart})`);
+  console.log(`📊 Looking for previous week winners (week_start: ${prevWeekStart})`);
   
   const { data, error } = await supabase
     .from("weekly_stats")
@@ -193,27 +237,26 @@ async function findPreviousWeekWinner(supabase: any, turkeyNow: Date): Promise<s
     .eq("week_start", prevWeekStart)
     .gt("total_score", 0)
     .order("total_score", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(3);
   
-  if (error) { console.error("❌ Previous week winner error:", error); return null; }
-  if (!data) {
+  if (error) { console.error("❌ Previous week winners error:", error); return []; }
+  if (!data || data.length === 0) {
     console.log(`📊 No data found for week_start: ${prevWeekStart}`);
-    return null;
+    return [];
   }
   
-  console.log(`📊 Previous week winner: ${data.user_id} with score ${data.total_score}`);
-  return data.user_id;
+  console.log(`📊 Previous week top3: ${JSON.stringify(data)}`);
+  return data.map((d: any) => d.user_id);
 }
 
-// ===== ÖNCEKİ AY kazananını doğrudan monthly_stats tablosundan bul =====
-async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
+// ===== ÖNCEKİ AY ilk 3'ünü doğrudan monthly_stats tablosundan bul =====
+async function findPreviousMonthWinners(supabase: any, turkeyNow: Date): Promise<string[]> {
   const prevMonth = new Date(turkeyNow);
   prevMonth.setUTCMonth(prevMonth.getUTCMonth() - 1);
   prevMonth.setUTCDate(1);
   const prevMonthStart = prevMonth.toISOString().split('T')[0];
   
-  console.log(`📊 Looking for previous month winner (month_start: ${prevMonthStart})`);
+  console.log(`📊 Looking for previous month winners (month_start: ${prevMonthStart})`);
   
   const { data, error } = await supabase
     .from("monthly_stats")
@@ -221,47 +264,46 @@ async function findPreviousMonthWinner(supabase: any, turkeyNow: Date): Promise<
     .eq("month_start", prevMonthStart)
     .gt("total_score", 0)
     .order("total_score", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(3);
   
-  if (error) { console.error("❌ Previous month winner error:", error); return null; }
-  if (!data) {
+  if (error) { console.error("❌ Previous month winners error:", error); return []; }
+  if (!data || data.length === 0) {
     console.log(`📊 No data found for month_start: ${prevMonthStart}`);
-    return null;
+    return [];
   }
   
-  console.log(`📊 Previous month winner: ${data.user_id} with score ${data.total_score}`);
-  return data.user_id;
+  console.log(`📊 Previous month top3: ${JSON.stringify(data)}`);
+  return data.map((d: any) => d.user_id);
 }
 
-// ===== ÖNCEKİ SEZON kazananı =====
+// ===== ÖNCEKİ SEZON ilk 3'ü =====
 // Cron 1 Ocak/Mayıs/Eylül 00:00 TR'de çalıştığı için yeni sezona geçilmiş olur.
 // Önceki sezonun başlangıç tarihini hesaplayıp RPC'ye parametre olarak veriyoruz.
-async function findSeasonWinner(supabase: any, turkeyNow: Date): Promise<string | null> {
-  // Mevcut sezon başlangıcı: Ocak/Mayıs/Eylül ayının 1'i (Türkiye saatine göre)
+async function findSeasonWinners(supabase: any, turkeyNow: Date): Promise<string[]> {
   const curMonth = turkeyNow.getUTCMonth();
   const curYear = turkeyNow.getUTCFullYear();
   // Önceki sezon başlangıcı = mevcut başlangıçtan 4 ay öncesi
   const prevSeasonDate = new Date(Date.UTC(curYear, curMonth - 4, 1));
   const prevSeasonStart = prevSeasonDate.toISOString().split("T")[0];
 
-  console.log(`📊 Looking for previous season winner (season_start: ${prevSeasonStart})`);
+  console.log(`📊 Looking for previous season winners (season_start: ${prevSeasonStart})`);
 
   const { data, error } = await supabase.rpc("get_season_leaderboard", {
-    limit_count: 1,
+    limit_count: 3,
     season_start_date: prevSeasonStart,
   });
-  if (error) { console.error("❌ Season leaderboard error:", error); return null; }
+  if (error) { console.error("❌ Season leaderboard error:", error); return []; }
   if (!data || data.length === 0) {
     console.log(`📊 No data found for season starting ${prevSeasonStart}`);
-    return null;
+    return [];
   }
-  console.log(`📊 Previous season winner: ${data[0].user_id} with score ${data[0].season_score}`);
-  return data[0].user_id;
+  console.log(`📊 Previous season top3: ${JSON.stringify(data.map((d: any) => ({ u: d.user_id, s: d.season_score })))}`);
+  return data.map((d: any) => d.user_id);
 }
 
-async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
-  console.log(`🎁 Awarding ${prize.label} prize to ${userId}...`);
+async function awardPrize(supabase: any, userId: string, config: PrizeConfig, rank: number) {
+  const prize = config.tiers[rank - 1];
+  console.log(`🎁 Awarding ${config.label} prize (rank ${rank}) to ${userId}...`);
   
   const jokerTypes = [
     { type: "joker_degistir", amount: prize.degistir },
@@ -320,36 +362,37 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     }
   }
 
-  // Şampiyonluk sayacını artır
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select(prize.countColumn)
-    .eq("id", userId)
-    .single();
-
-  if (currentProfile) {
-    const currentCount = currentProfile[prize.countColumn] || 0;
-    const { error } = await supabase
+  // Şampiyonluk sayacı ve rozet sadece 1. olan için
+  if (rank === 1) {
+    const { data: currentProfile } = await supabase
       .from("profiles")
-      .update({
-        [prize.countColumn]: currentCount + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
-    if (error) console.error(`❌ Count update error:`, error);
-    else console.log(`✅ ${prize.countColumn}: ${currentCount} -> ${currentCount + 1}`);
+      .select(config.countColumn)
+      .eq("id", userId)
+      .single();
+
+    if (currentProfile) {
+      const currentCount = currentProfile[config.countColumn] || 0;
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          [config.countColumn]: currentCount + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      if (error) console.error(`❌ Count update error:`, error);
+      else console.log(`✅ ${config.countColumn}: ${currentCount} -> ${currentCount + 1}`);
+    }
   }
 
   // 🚀 Maç sonu puan x2 boost süresini uzat (en uzun olan etkili — mevcutla karşılaştır)
-  if (prize.boostDays > 0) {
+  if (prize.boostHours > 0) {
     const { data: boostProfile } = await supabase
       .from("profiles")
       .select("score_boost_until")
       .eq("id", userId)
       .single();
 
-    const newBoostEnd = new Date();
-    newBoostEnd.setDate(newBoostEnd.getDate() + prize.boostDays);
+    const newBoostEnd = new Date(Date.now() + prize.boostHours * 60 * 60 * 1000);
 
     const currentBoost = boostProfile?.score_boost_until ? new Date(boostProfile.score_boost_until) : null;
     const finalBoostEnd = currentBoost && currentBoost > newBoostEnd ? currentBoost : newBoostEnd;
@@ -359,29 +402,30 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
       .update({ score_boost_until: finalBoostEnd.toISOString(), score_boost_source: "leaderboard", updated_at: new Date().toISOString() })
       .eq("id", userId);
     if (boostErr) console.error(`❌ Boost update error:`, boostErr);
-    else console.log(`🚀 score_boost_until -> ${finalBoostEnd.toISOString()} (+${prize.boostDays}g)`);
+    else console.log(`🚀 score_boost_until -> ${finalBoostEnd.toISOString()} (+${prize.boostHours}h)`);
   }
 
-  // Rozet ver (sadece ilk kez)
-  const { data: existingBadge } = await supabase
-    .from("user_badges")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("badge_id", prize.badgeId)
-    .maybeSingle();
+  if (rank === 1) {
+    const { data: existingBadge } = await supabase
+      .from("user_badges")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("badge_id", config.badgeId)
+      .maybeSingle();
 
-  if (!existingBadge) {
-    const { error } = await supabase.from("user_badges").insert({
-      user_id: userId,
-      badge_id: prize.badgeId,
-    });
-    if (error) console.error(`❌ Badge insert error:`, error);
-    else console.log(`🏅 Badge ${prize.badgeId} awarded to ${userId}`);
+    if (!existingBadge) {
+      const { error } = await supabase.from("user_badges").insert({
+        user_id: userId,
+        badge_id: config.badgeId,
+      });
+      if (error) console.error(`❌ Badge insert error:`, error);
+      else console.log(`🏅 Badge ${config.badgeId} awarded to ${userId}`);
+    }
   }
 
   // Bildirim gönder — type: "leaderboard_prize"
-  const boostText = prize.boostDays === 1 ? "1 gün" : prize.boostDays === 7 ? "1 hafta" : "1 ay";
-  const notifMessage = `🎉 Tebrikler! ${prize.label} liderlik tablosunda 1. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} ve ${boostText} boyunca maç sonu puanlarınız x2! 🚀`;
+  const boostText = formatBoost(prize.boostHours);
+  const notifMessage = `🎉 Tebrikler! ${config.label} liderlik tablosunda ${rank}. oldun! Ödüllerin: ${prize.degistir} Değiştir, ${prize.fisilida} Fısılda, ${prize.senyaz} Senyaz${prize.oyunHakki ? `, +${prize.oyunHakki} Oyun Sayfası` : ""} ve ${boostText} boyunca maç sonu puanlarınız x2! 🚀`;
   
   const { error: notifError } = await supabase.from("notifications").insert({
     user_id: userId,
@@ -396,7 +440,7 @@ async function awardPrize(supabase: any, userId: string, prize: PrizeConfig) {
     console.log(`✅ Notification sent: ${notifMessage.substring(0, 50)}...`);
   }
 
-  console.log(`🎁 Prize awarded successfully to ${userId}: ${prize.label}`);
+  console.log(`🎁 Prize awarded successfully to ${userId}: ${config.label} #${rank}`);
 }
 
 async function cleanupOldStats(supabase: any, table: string, dateColumn: string, daysOld: number) {
