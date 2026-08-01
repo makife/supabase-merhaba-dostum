@@ -32,6 +32,14 @@ import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
 import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
 
+const formatCompactNumber = (value: number | null | undefined) => {
+  const n = Number(value) || 0;
+  if (Math.abs(n) >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace(/\.0$/, "")}Mr`;
+  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (Math.abs(n) >= 100_000) return `${(n / 1_000).toFixed(0)}B`;
+  return n.toLocaleString("tr-TR");
+};
+
 interface LeaderboardEntry {
   user_id: string;
   username: string;
