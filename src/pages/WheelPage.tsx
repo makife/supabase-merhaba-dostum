@@ -371,6 +371,8 @@ const WheelPage = () => {
           reward.type === "empty" ? "/carkBosGeldi.mp3" : "/carkDoluGeldi.mp3",
           0.7
         );
+        setCenterEmotion(reward.type === "empty" ? "uzulme" : "sevinme");
+        setTimeout(() => setCenterEmotion("merak"), 4000);
         if (reward.type !== "empty") {
           setShowKonfeti(true);
           setTimeout(() => setShowKonfeti(false), 4000);
