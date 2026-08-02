@@ -46,7 +46,9 @@ export function ChatMiniMenu({
       dotColor: "bg-emerald-400",
       isActive: currentView === "users",
       alt: "Özel Sohbetlerim",
+      badge: privateUnreadCount,
     },
+
     {
       textIcon: "/icons/yasakli-text.svg",
       gorselIcon: "/icons/engellediklerim-gorsel.svg",
