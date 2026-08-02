@@ -134,10 +134,11 @@ export function ChatMiniMenu({
           {menuItems.map((item) => (
             <div key={item.alt} className={itemAnim()} style={slideStyle}>
               <div onClick={() => handleMenuClick(item.action)}>
-                {renderRow(item.dotColor, item.textIcon, item.alt, item.gorselIcon, item.isActive)}
+                {renderRow(item.dotColor, item.textIcon, item.alt, item.gorselIcon, item.isActive, (item as any).badge)}
               </div>
             </div>
           ))}
+
         </div>
 
         {/* Toggle butonu */}
