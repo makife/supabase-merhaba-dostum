@@ -15,6 +15,9 @@ import { Capacitor } from "@capacitor/core";
 import { playSpecialNativeSound } from "@/services/nativeAudioService";
 import Lottie from "lottie-react";
 import cicekCarkLoadingAnim from "@/assets/cicekCarkLoading.json";
+import merakEmojiCarkAnim from "@/assets/merakEmojiCark.json";
+import sevinmeEmojiCarkAnim from "@/assets/sevinmeEmojiCark.json";
+import uzulmeEmojiCarkAnim from "@/assets/uzulmeEmojiCark.json";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
