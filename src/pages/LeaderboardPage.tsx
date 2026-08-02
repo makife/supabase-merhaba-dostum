@@ -76,6 +76,7 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
