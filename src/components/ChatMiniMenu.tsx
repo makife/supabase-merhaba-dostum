@@ -10,11 +10,19 @@ interface ChatMiniMenuProps {
   onGoHome: () => void;
   currentView: ViewMode;
   onOpenChange?: (isOpen: boolean) => void;
+  privateUnreadCount?: number;
 }
 
-export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange }: ChatMiniMenuProps) {
+export function ChatMiniMenu({
+  onViewChange,
+  onGoHome,
+  currentView,
+  onOpenChange,
+  privateUnreadCount = 0,
+}: ChatMiniMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { playSound } = useSounds();
+
 
   const handleToggle = () => {
     playSound("buttonClick");
@@ -38,7 +46,9 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
       dotColor: "bg-emerald-400",
       isActive: currentView === "users",
       alt: "Özel Sohbetlerim",
+      badge: privateUnreadCount,
     },
+
     {
       textIcon: "/icons/yasakli-text.svg",
       gorselIcon: "/icons/engellediklerim-gorsel.svg",
@@ -79,7 +89,14 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
 
   const itemAnim = () => (!isOpen ? "pointer-events-none" : "");
 
-  const renderRow = (dot: string, textSrc: string, textAlt: string, gorselSrc: string, isActive?: boolean) => (
+  const renderRow = (
+    dot: string,
+    textSrc: string,
+    textAlt: string,
+    gorselSrc: string,
+    isActive?: boolean,
+    badge?: number,
+  ) => (
     <div className={rowBase}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
       <SvgAsset src={textSrc} alt={textAlt} className="h-5 w-28 flex-shrink-0 bg-left" />
@@ -87,9 +104,15 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
         className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}
       >
         <SvgAsset src={gorselSrc} className="h-10 w-10" />
+        {!!badge && badge > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border border-white/80 flex items-center justify-center text-[10px] font-bold text-white leading-none">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
       </div>
     </div>
   );
+
 
   return (
     <>
@@ -111,10 +134,11 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
           {menuItems.map((item) => (
             <div key={item.alt} className={itemAnim()} style={slideStyle}>
               <div onClick={() => handleMenuClick(item.action)}>
-                {renderRow(item.dotColor, item.textIcon, item.alt, item.gorselIcon, item.isActive)}
+                {renderRow(item.dotColor, item.textIcon, item.alt, item.gorselIcon, item.isActive, (item as any).badge)}
               </div>
             </div>
           ))}
+
         </div>
 
         {/* Toggle butonu */}
@@ -130,7 +154,13 @@ export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange
           `}
         >
           {isOpen ? <X className="w-5 h-5 text-gray-900" /> : <Menu className="w-5 h-5 text-gray-900" />}
+          {!isOpen && privateUnreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[11px] font-bold text-white leading-none">
+              {privateUnreadCount > 9 ? "9+" : privateUnreadCount}
+            </span>
+          )}
         </button>
+
       </div>
     </>
   );
