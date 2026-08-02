@@ -603,7 +603,19 @@ const WheelPage = () => {
             </div>
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full shadow-lg border-4 border-slate-900 flex items-center justify-center z-20">
-              <img src="/carkMerak.svg" alt="Çark" className="w-14 h-14 object-contain drop-shadow-md" />
+              <Lottie
+                key={centerEmotion}
+                animationData={
+                  centerEmotion === "sevinme"
+                    ? sevinmeEmojiCarkAnim
+                    : centerEmotion === "uzulme"
+                      ? uzulmeEmojiCarkAnim
+                      : merakEmojiCarkAnim
+                }
+                loop
+                autoplay
+                style={{ width: 56, height: 56 }}
+              />
             </div>
           </div>
 
