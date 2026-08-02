@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, startTransition } from "react";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +76,7 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
@@ -756,7 +757,27 @@ const LeaderboardPage = () => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 relative z-10">
+      <div
+        className="flex-1 overflow-y-auto px-5 py-4 relative z-10"
+        onTouchStart={(e) => {
+          swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }}
+        onTouchEnd={(e) => {
+          const start = swipeRef.current;
+          swipeRef.current = null;
+          if (!start) return;
+          const dx = e.changedTouches[0].clientX - start.x;
+          const dy = e.changedTouches[0].clientY - start.y;
+          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+          const order = ["all-time", "monthly", "weekly"];
+          const idx = order.indexOf(activeTab);
+          const next = dx < 0 ? idx + 1 : idx - 1;
+          if (next < 0 || next >= order.length) return;
+          playSound("buttonClick");
+          startTransition(() => setActiveTab(order[next]));
+        }}
+      >
+
         {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
         {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true, "weekly")}
         {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true, "monthly")}
