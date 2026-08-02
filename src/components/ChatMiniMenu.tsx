@@ -10,11 +10,19 @@ interface ChatMiniMenuProps {
   onGoHome: () => void;
   currentView: ViewMode;
   onOpenChange?: (isOpen: boolean) => void;
+  privateUnreadCount?: number;
 }
 
-export function ChatMiniMenu({ onViewChange, onGoHome, currentView, onOpenChange }: ChatMiniMenuProps) {
+export function ChatMiniMenu({
+  onViewChange,
+  onGoHome,
+  currentView,
+  onOpenChange,
+  privateUnreadCount = 0,
+}: ChatMiniMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { playSound } = useSounds();
+
 
   const handleToggle = () => {
     playSound("buttonClick");
