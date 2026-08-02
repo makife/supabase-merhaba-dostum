@@ -154,7 +154,13 @@ export function ChatMiniMenu({
           `}
         >
           {isOpen ? <X className="w-5 h-5 text-gray-900" /> : <Menu className="w-5 h-5 text-gray-900" />}
+          {!isOpen && privateUnreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[11px] font-bold text-white leading-none">
+              {privateUnreadCount > 9 ? "9+" : privateUnreadCount}
+            </span>
+          )}
         </button>
+
       </div>
     </>
   );
