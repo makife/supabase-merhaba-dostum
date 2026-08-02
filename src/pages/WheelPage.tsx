@@ -79,6 +79,7 @@ const WheelPage = () => {
   const [totalSpins, setTotalSpins] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [showKonfeti, setShowKonfeti] = useState(false);
+  const [centerEmotion, setCenterEmotion] = useState<"merak" | "sevinme" | "uzulme">("merak");
   const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
