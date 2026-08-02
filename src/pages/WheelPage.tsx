@@ -15,6 +15,9 @@ import { Capacitor } from "@capacitor/core";
 import { playSpecialNativeSound } from "@/services/nativeAudioService";
 import Lottie from "lottie-react";
 import cicekCarkLoadingAnim from "@/assets/cicekCarkLoading.json";
+import merakEmojiCarkAnim from "@/assets/merakEmojiCark.json";
+import sevinmeEmojiCarkAnim from "@/assets/sevinmeEmojiCark.json";
+import uzulmeEmojiCarkAnim from "@/assets/uzulmeEmojiCark.json";
 
 interface WheelReward {
   type: "credits" | "joker" | "empty" | "ink";
@@ -76,6 +79,7 @@ const WheelPage = () => {
   const [totalSpins, setTotalSpins] = useState(0);
   const [lastReward, setLastReward] = useState<WheelReward | null>(null);
   const [showKonfeti, setShowKonfeti] = useState(false);
+  const [centerEmotion, setCenterEmotion] = useState<"merak" | "sevinme" | "uzulme">("merak");
   const [karKonfettiAnim, setCarkKonfettiAnim] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -367,6 +371,8 @@ const WheelPage = () => {
           reward.type === "empty" ? "/carkBosGeldi.mp3" : "/carkDoluGeldi.mp3",
           0.7
         );
+        setCenterEmotion(reward.type === "empty" ? "uzulme" : "sevinme");
+        setTimeout(() => setCenterEmotion("merak"), 4000);
         if (reward.type !== "empty") {
           setShowKonfeti(true);
           setTimeout(() => setShowKonfeti(false), 4000);
@@ -597,7 +603,19 @@ const WheelPage = () => {
             </div>
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full shadow-lg border-4 border-slate-900 flex items-center justify-center z-20">
-              <img src="/carkMerak.svg" alt="Çark" className="w-14 h-14 object-contain drop-shadow-md" />
+              <Lottie
+                key={centerEmotion}
+                animationData={
+                  centerEmotion === "sevinme"
+                    ? sevinmeEmojiCarkAnim
+                    : centerEmotion === "uzulme"
+                      ? uzulmeEmojiCarkAnim
+                      : merakEmojiCarkAnim
+                }
+                loop
+                autoplay
+                style={{ width: 56, height: 56 }}
+              />
             </div>
           </div>
 
