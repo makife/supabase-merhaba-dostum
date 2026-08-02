@@ -428,7 +428,9 @@ export default function ChatPage() {
               onGoHome={handleBackToMenu}
               currentView={viewMode}
               onOpenChange={setIsMiniMenuOpen}
+              privateUnreadCount={unreadCount}
             />
+
           )}
 
           {/* Diğer view'larda sadece Ana Sayfa butonu */}
