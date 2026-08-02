@@ -89,7 +89,14 @@ export function ChatMiniMenu({
 
   const itemAnim = () => (!isOpen ? "pointer-events-none" : "");
 
-  const renderRow = (dot: string, textSrc: string, textAlt: string, gorselSrc: string, isActive?: boolean) => (
+  const renderRow = (
+    dot: string,
+    textSrc: string,
+    textAlt: string,
+    gorselSrc: string,
+    isActive?: boolean,
+    badge?: number,
+  ) => (
     <div className={rowBase}>
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot} ${isActive ? "opacity-100" : "opacity-60"}`} />
       <SvgAsset src={textSrc} alt={textAlt} className="h-5 w-28 flex-shrink-0 bg-left" />
@@ -97,9 +104,15 @@ export function ChatMiniMenu({
         className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center ${isActive ? "ring-1 ring-white/30 rounded-xl" : ""}`}
       >
         <SvgAsset src={gorselSrc} className="h-10 w-10" />
+        {!!badge && badge > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border border-white/80 flex items-center justify-center text-[10px] font-bold text-white leading-none">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
       </div>
     </div>
   );
+
 
   return (
     <>
