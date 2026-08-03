@@ -904,11 +904,11 @@ const HomePage = () => {
         <HomeClouds />
 
         {/* --------------------------------------------------------
-        SABİT ÜST ALAN
+        ÜST ALAN — harita katmanının üzerinde yüzer (sabit header yok)
       -------------------------------------------------------- */}
-        <div className="flex-none z-30 px-4 pt-5 relative">
+        <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-5 pointer-events-none">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0 flex flex-col">
+            <div className="flex-1 min-w-0 flex flex-col pointer-events-auto">
             {/* Profil + Seviye */}
 
             <div className="flex items-center gap-3 cursor-pointer min-w-0" onClick={() => setShowAvatarView(true)}>
