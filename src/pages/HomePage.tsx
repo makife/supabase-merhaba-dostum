@@ -15,7 +15,11 @@ import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
-import { FloatingMenu } from "@/components/FloatingMenu";
+import { RadioPicker } from "@/components/RadioPicker";
+import HomeClouds from "@/components/home/HomeClouds";
+import HomeMapPoint from "@/components/home/HomeMapPoint";
+import HomeBottomNav from "@/components/home/HomeBottomNav";
+import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
@@ -329,7 +333,32 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
+  const [showRadio, setShowRadio] = useState(false);
+  const [showChallengePanel, setShowChallengePanel] = useState(false);
+  const [showModePanel, setShowModePanel] = useState(false);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const fetchPending = async () => {
+      try {
+        const { count } = await supabase
+          .from("friendships")
+          .select("id", { count: "exact", head: true })
+          .eq("friend_id", user.id)
+          .eq("status", "pending");
+        if (!cancelled) setPendingFriendRequests(count || 0);
+      } catch {}
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user?.id]);
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
@@ -716,6 +745,135 @@ const HomePage = () => {
 
   const levelBgColors = getLevelBackgroundColor();
 
+  const level = levelData.level;
+  const levelStarGradient =
+    level >= 70
+      ? "from-slate-400 to-slate-600"
+      : level >= 40
+        ? "from-blue-400 to-blue-600"
+        : level >= 25
+          ? "from-emerald-400 to-green-600"
+          : level >= 10
+            ? "from-purple-500 to-indigo-600"
+            : "from-amber-400 to-orange-500";
+
+  const jokerList = [
+    {
+      img: "/icons/degistir.svg",
+      count: jokers.degistir,
+      name: "Değiştir",
+      layer: "bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600",
+    },
+    {
+      img: "/icons/fisilda.svg",
+      count: jokers.fisilida,
+      name: "Fısılda",
+      layer: "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500",
+    },
+    {
+      img: "/icons/senyaz.svg",
+      count: jokers.senYaz,
+      name: "Sen Yaz",
+      layer: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
+    },
+  ];
+
+  const challengePanelItems: SlidePanelItem[] = [
+    {
+      id: "puzzle",
+      title: "Kelime Puzzle",
+      subtitle: challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz",
+      icon: <KelimePuzzleIcon className="w-9 h-9" />,
+      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      dimmed: challengeStatus.puzzle,
+      badge: challengeStatus.puzzle ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      onClick: () => {
+        playSound("buttonClick");
+        setShowChallengePanel(false);
+        navigate("/challenge/puzzle");
+      },
+    },
+    {
+      id: "reaktor",
+      title: "Harf Koşusu",
+      subtitle: challengeStatus.reaktor ? "Yarın tekrar gel!" : "Harfleri topla",
+      icon: <ReaktorIcon className="w-9 h-9" />,
+      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      dimmed: challengeStatus.reaktor,
+      badge: challengeStatus.reaktor ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      onClick: () => {
+        playSound("buttonClick");
+        setShowChallengePanel(false);
+        navigate("/challenge/reaktor");
+      },
+    },
+    {
+      id: "neon-blitz",
+      title: "Refleks",
+      subtitle: challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et",
+      icon: <RefleksIcon className="w-9 h-9" />,
+      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      dimmed: challengeStatus.neon_blitz,
+      badge: challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      onClick: () => {
+        playSound("buttonClick");
+        setShowChallengePanel(false);
+        navigate("/challenge/neon-blitz");
+      },
+    },
+    {
+      id: "memory",
+      title: "Hafıza",
+      subtitle: challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir",
+      icon: <KelimeHafizaIcon className="w-9 h-9" />,
+      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      dimmed: challengeStatus.memory,
+      badge: challengeStatus.memory ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      onClick: () => {
+        playSound("buttonClick");
+        setShowChallengePanel(false);
+        navigate("/challenge/memory");
+      },
+    },
+    {
+      id: "kelime-avi",
+      title: "Kelime Avı",
+      subtitle: challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Harfleri birleştir",
+      icon: <img src="/surukle.svg" alt="" className="w-9 h-9" />,
+      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      dimmed: challengeStatus.kelime_avi,
+      badge: challengeStatus.kelime_avi ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      onClick: () => {
+        playSound("buttonClick");
+        setShowChallengePanel(false);
+        navigate("/challenge/kelime-avi");
+      },
+    },
+  ];
+
+  const gameModePanelItems: SlidePanelItem[] = gameModesConfig.map((mode) => {
+    const Icon = mode.icon;
+    return {
+      id: mode.id,
+      title: mode.title,
+      subtitle:
+        mode.id === "tournament"
+          ? `${activeTournamentCount ?? 0} aktif turnuva`
+          : mode.id === "random-match"
+            ? `${searchingPlayersCount ?? 0} kişi arıyor`
+            : mode.description,
+      icon: <Icon className="w-9 h-9" />,
+      gradient: mode.gradient,
+      badge: mode.isLive ? (
+        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
+      ) : undefined,
+      onClick: () => {
+        setShowModePanel(false);
+        handleGameModeClick(mode.id);
+      },
+    };
+  });
+
   return (
     <>
       <LeaderboardPrizeDialog />
@@ -730,22 +888,31 @@ const HomePage = () => {
           backgroundRepeat: "no-repeat",
         }}
       >
+        <style>{`
+          @keyframes homeIslandFloat {
+            0%, 100% { transform: translate3d(0, -8px, 0); }
+            50%      { transform: translate3d(0, 10px, 0); }
+          }
+        `}</style>
+
         {/* Light Effects */}
         <div
           className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none opacity-30`}
         />
 
+        {/* Bulutlar */}
+        <HomeClouds />
+
         {/* --------------------------------------------------------
-        SABİT ÜST ALAN (FIXED HEADER AREA) 
+        SABİT ÜST ALAN
       -------------------------------------------------------- */}
-        <div className="flex-none z-30 pb-4 relative border-b border-white/5">
-          {/* HEADER (Profil & Mürekkep) */}
-          <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-            {/* Profil */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowAvatarView(true)}>
-              <div className="relative">
+        <div className="flex-none z-30 px-4 pt-5 relative">
+          <div className="flex items-start justify-between gap-3">
+            {/* Profil + Seviye */}
+            <div className="flex items-center gap-3 cursor-pointer min-w-0" onClick={() => setShowAvatarView(true)}>
+              <div className="relative flex-none">
                 {boostActiveHome && boostProfilAnim && (
-                  <div className="absolute inset-0 -m-10 pointer-events-none z-0">
+                  <div className="absolute inset-0 -m-14 pointer-events-none z-0">
                     <Lottie
                       animationData={boostProfilAnim}
                       loop
@@ -755,41 +922,46 @@ const HomePage = () => {
                   </div>
                 )}
                 <div
-                  className={`relative z-10 w-12 h-12 rounded-full p-[2px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
+                  className={`relative z-10 w-24 h-24 rounded-full p-[3px] ${vipType ? "bg-gradient-to-tr from-amber-300 to-orange-500" : "bg-gradient-to-tr from-indigo-400 to-purple-500"}`}
                 >
                   <Avatar className="w-full h-full border-2 border-[#1a1a2e]">
                     <AvatarImage
                       src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                       className="object-cover"
                     />
-                    <AvatarFallback className="bg-slate-800 text-slate-400 text-xs">U</AvatarFallback>
+                    <AvatarFallback className="bg-slate-800 text-slate-400 text-sm">U</AvatarFallback>
                   </Avatar>
                 </div>
               </div>
-              <div>
-                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md">
+
+              <div className="min-w-0">
+                <h2 className="text-base font-bold leading-tight text-white drop-shadow-md truncate">
                   {profile?.username || "Misafir"}
                 </h2>
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{greeting}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <img src={getLevelFruitIcon(level)} alt="" className="w-6 h-6 object-contain drop-shadow" />
+                  <span className="text-xs font-bold text-white">Seviye {level}</span>
+                  <span className="text-[9px] text-slate-400 font-mono">
+                    {levelData.experience}/{levelData.nextLevelExp}
+                  </span>
+                </div>
+                <div className="h-3 w-32 bg-slate-800 rounded-full mt-1.5 overflow-hidden border border-white/10">
+                  <div
+                    className={`h-full bg-gradient-to-r ${levelStarGradient} transition-all duration-1000`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-[0.1em]">Puan</span>
+                  <span className="text-xs font-mono font-bold text-red-500">
+                    {(profile?.total_score || 0).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Mürekkep + Bildirim */}
-            <div className="flex items-center gap-2">
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/market");
-                }}
-                className="flex items-center gap-2 bg-[#1e2d45] border border-indigo-500/20 rounded-full pl-1 pr-4 py-1.5 active:scale-95 transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
-                  <img src="/damlaMurekkep.png" alt="ink" className="w-7 h-7 object-contain brightness-110" />
-                </div>
-                <span className="text-base font-bold text-white">{profile?.ink_count || 0}</span>
-              </div>
-
-              {/* Sistem Mesajları Bildirim Görseli */}
+            {/* Sağ kolon: bildirim + jokerler */}
+            <div className="flex flex-col items-center gap-2 flex-none">
               <button
                 type="button"
                 onClick={() => {
@@ -810,123 +982,31 @@ const HomePage = () => {
                   </span>
                 )}
               </button>
-            </div>
 
-          </div>
-
-
-          {/* --- LEVEL VE XP KARTI --- */}
-          <div className="px-5 mt-2">
-            {(() => {
-              const level = levelData.level;
-              let starGradient = "from-amber-400 to-orange-500";
-              let shadowColor = "shadow-orange-500/20";
-
-              if (level >= 70) {
-                starGradient = "from-slate-400 to-slate-600";
-                shadowColor = "shadow-slate-500/20";
-              } else if (level >= 40) {
-                starGradient = "from-blue-400 to-blue-600";
-                shadowColor = "shadow-blue-500/20";
-              } else if (level >= 25) {
-                starGradient = "from-emerald-400 to-green-600";
-                shadowColor = "shadow-green-500/20";
-              } else if (level >= 10) {
-                starGradient = "from-purple-500 to-indigo-600";
-                shadowColor = "shadow-purple-500/20";
-              }
-
-              return (
-                <div className="relative flex items-center justify-between px-8 py-4 bg-[#1e2d45] rounded-2xl border border-white/30">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={getLevelFruitIcon(level)}
-                      alt="level"
-                      className="w-11 h-11 object-contain drop-shadow-md"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">Seviye {level}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">
-                          {levelData.experience}/{levelData.nextLevelExp} XP
-                        </span>
-                      </div>
-                      <div className="h-4 w-32 bg-slate-800 rounded-full mt-2 overflow-hidden border border-white/5">
-                        <div
-                          className={`h-full bg-gradient-to-r ${starGradient} transition-all duration-1000`}
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase tracking-[0.1em] mb-1">Puan</span>
-                    <span className="text-sm font-mono font-bold text-red-500">
-                      {(profile?.total_score || 0).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* --- JOKERLER --- */}
-          <div className="px-5 mt-3">
-            <div className="flex gap-4">
-              {[
-                { 
-                  img: "/icons/degistir.svg", 
-                  count: jokers.degistir, 
-                  name: "Değiştir", 
-                  // Turkuaz / Neon Mavi Geçişli
-                  layer: "bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600" 
-                },
-                { 
-                  img: "/icons/fisilda.svg", 
-                  count: jokers.fisilida, 
-                  name: "Fısılda", 
-                  // Amber / Canlı Sarı Geçişli (Daily Challenge'lara çok yakın, çok şık)
-                  layer: "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500" 
-                },
-                { 
-                  img: "/icons/senyaz.svg", 
-                  count: jokers.senYaz, 
-                  name: "Sen Yaz", 
-                  // Fıstık Yeşili / Zümrüt Geçişli
-                  layer: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600" 
-                },
-              ].map((j, i) => (
+              {jokerList.map((j, i) => (
                 <div
                   key={i}
-                  className="flex-1 flex flex-col items-center gap-2 active:scale-90 transition-transform cursor-pointer"
+                  className="active:scale-90 transition-transform cursor-pointer"
                   onClick={() => {
                     playSound("buttonClick");
                     navigate("/market");
                   }}
                 >
                   <div
-                    className={`relative w-20 h-20 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
+                    className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
                   >
-                    <img 
-                      src={j.img} 
-                      className="w-10 h-10 object-contain drop-shadow-lg transition-transform group-hover:scale-105" 
-                      alt={j.name} 
-                    />
-                    <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-md">
+                    <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
                       {j.count}
                     </span>
                   </div>
-                  <span className="text-[11px] font-black text-slate-200 text-center leading-tight uppercase tracking-wider">
-                    {j.name}
-                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-
-          {/* INFO PANELS (SÜRE & HAK) */}
-          <div className="px-5 mt-2 space-y-2">
+          {/* KALAN SAYFALARIM / VIP */}
+          <div className="mt-3 space-y-2">
             {isPremium && premiumTimeLeft && (
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
@@ -986,7 +1066,6 @@ const HomePage = () => {
                     : "bg-[#1e2d45]"
                 }`}
               >
-                {/* Sabit "Kalan Sayfalarım" etiketi — boyutu asla değişmez */}
                 <span
                   className={`text-xs font-black uppercase tracking-wider flex-shrink-0 ${
                     isUnlimitedLivesActive(profile)
@@ -1057,19 +1136,12 @@ const HomePage = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Hak ikonları — kırmızı bandın hemen bitiminden başlar, sabit alan */}
                     <div className="flex -space-x-3 flex-shrink-0">
                       {Array.from({ length: 5 }, (_, i) => (
-                        <HakIcon
-                          key={i}
-                          animData={sayfaHakAnim}
-                          filled={i < Math.min(totalCredits, 5)}
-                          size={44}
-                        />
+                        <HakIcon key={i} animData={sayfaHakAnim} filled={i < Math.min(totalCredits, 5)} size={44} />
                       ))}
                     </div>
 
-                    {/* Sağ uç: +N badge (kartın ucuna değer) veya çerçeveli sayaç */}
                     <div className="ml-auto flex items-center justify-end flex-shrink-0">
                       {totalCredits > 5 ? (
                         <div className="relative inline-flex items-center justify-center w-9 h-9 -mr-1">
@@ -1077,7 +1149,9 @@ const HomePage = () => {
                           <span
                             className="absolute text-white text-[12px] font-bold"
                             style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
-                          >+{totalCredits - 5}</span>
+                          >
+                            +{totalCredits - 5}
+                          </span>
                         </div>
                       ) : timeUntilNextCredit ? (
                         <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-white/30 bg-black/30">
@@ -1095,311 +1169,109 @@ const HomePage = () => {
                 )}
               </div>
             )}
-
-          {/* HEDİYE BANNER */}
-          {isPremium && isGiftPremium(profile) && (
-            <div className="px-5 mt-4">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md z-10">
-                  <Gift className="w-5 h-5 text-white animate-bounce" />
-                </div>
-                <div className="flex-1 z-10">
-                  <h3 className="text-sm font-bold text-white">Hediye Premium!</h3>
-                  <p className="text-[10px] text-white/90">
-                    Kalan: {new Date(profile.premium_until).toLocaleDateString("tr-TR")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
         </div>
 
         {/* --------------------------------------------------------
-        KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
+        ORTA ALAN — ADA HARİTASI
       -------------------------------------------------------- */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto relative z-10 pb-28">
-          {/* OYUN MODLARI */}
-          <div className="px-5 mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {gameModesConfig.map((mode) => (
-                <GameModeCard
-                  key={mode.id}
-                  mode={mode}
-                  onClick={() => handleGameModeClick(mode.id)}
-                  searchingCount={searchingPlayersCount}
-                  activeTournamentCount={activeTournamentCount}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="flex-1 min-h-0 relative z-10 flex items-center justify-center overflow-hidden py-2">
+          <div
+            className="relative h-full"
+            style={{ aspectRatio: "784 / 1400", animation: "homeIslandFloat 6s ease-in-out infinite" }}
+          >
+            <img
+              src="/anaSayfa/anasayfaGorsel.png"
+              alt="Kelime adası haritası"
+              className="w-full h-full object-contain select-none pointer-events-none"
+              draggable={false}
+            />
 
-          {/* GÜNLÜK CHALLENGE'LAR */}
-          <div className="mt-6 pl-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-amber-500 rounded-full" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Düello & Görev</h3>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 pr-5 scrollbar-hide items-center">
-              {/* Kelime Puzzle */}
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/challenge/puzzle");
-                }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.puzzle ? "border-white/60" : "border-white"}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
-                />
-                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
-                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.puzzle ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <KelimePuzzleIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <h3
-                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
-                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      Kelime Puzzle
-                    </h3>
-                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
-                      {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
-                  >
-                    {challengeStatus.puzzle ? "✓ Bitti" : "Oyna"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Reaktör */}
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/challenge/reaktor");
-                }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.reaktor ? "border-white/60" : "border-white"}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
-                />
-                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
-                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.reaktor ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <ReaktorIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <h3
-                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
-                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      Harf Koşusu
-                    </h3>
-                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
-                      {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Harfleri topla"}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
-                  >
-                    {challengeStatus.reaktor ? "✓ Bitti" : "Oyna"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Refleks (Neon Blitz) */}
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/challenge/neon-blitz");
-                }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.neon_blitz ? "border-white/60" : "border-white"}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
-                />
-                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
-                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.neon_blitz ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <RefleksIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <h3
-                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
-                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      Refleks
-                    </h3>
-                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
-                      {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
-                  >
-                    {challengeStatus.neon_blitz ? "✓ Bitti" : "Oyna"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Hafıza Oyunu */}
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/challenge/memory");
-                }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.memory ? "border-white/60" : "border-white"}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
-                />
-                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
-                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.memory ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <KelimeHafizaIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <h3
-                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
-                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      Hafıza
-                    </h3>
-                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
-                      {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
-                  >
-                    {challengeStatus.memory ? "✓ Bitti" : "Oyna"}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Kelime Avı (Boggle) */}
-              <div
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/challenge/kelime-avi");
-                }}
-                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.kelime_avi ? "border-white/60" : "border-white"}`}
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
-                />
-                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
-                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                    {challengeStatus.kelime_avi ? (
-                      <Check className="w-6 h-6 text-amber-300" />
-                    ) : (
-                      <img src="/surukle.svg" alt="" className="w-8 h-8" />
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <h3
-                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
-                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      Kelime Avı
-                    </h3>
-                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
-                      {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Harfleri birleştir"}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
-                  >
-                    {challengeStatus.kelime_avi ? "✓ Bitti" : "Oyna"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* GÜNLÜK ÇARK */}
-          <div className="px-5 mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-4 bg-red-500 rounded-full" />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">Şans Çarkı</h3>
-            </div>
-            <div
+            {/* MÜZİK (Radyo) */}
+            <HomeMapPoint
+              x={50.5}
+              y={9}
+              size={38}
+              label="Müzik / Radyo"
+              onClick={() => {
+                playSound("buttonClick");
+                setShowRadio(true);
+              }}
+            />
+            {/* DÜELLO & CHALLENGE */}
+            <HomeMapPoint
+              x={68}
+              y={23}
+              size={38}
+              label="Düello & Challenge"
+              onClick={() => {
+                playSound("buttonClick");
+                setShowChallengePanel(true);
+              }}
+            />
+            {/* ARKADAŞLIK */}
+            <HomeMapPoint
+              x={23}
+              y={39}
+              size={38}
+              label="Arkadaşlık"
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/friends");
+              }}
+            />
+            {/* ŞANS ÇARKI */}
+            <HomeMapPoint
+              x={56}
+              y={53}
+              size={38}
+              label="Şans Çarkı"
               onClick={() => {
                 playSound("buttonClick");
                 navigate("/wheel");
               }}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] ${
-                wheelSpinsLeft === 0 ? "opacity-70" : ""
-              }`}
-            >
-              <div
-                className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
-                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
-                } rounded-2xl`}
-              />
-              <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-              <WheelIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
-              <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-                {wheelSpinsLeft === 0 ? (
-                  <Check className="w-6 h-6 text-red-300" />
-                ) : (
-                  <WheelIcon className="w-10 h-10" />
-                )}
-              </div>
-              <div className="relative z-10 flex-1">
-                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md"
-                  style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>
-                  {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
-                </h3>
-                <p className="text-[10px] text-white/70 font-medium">
-                  {wheelSpinsLeft === 0 ? "Yarın tekrar gel!" : "Çarkı çevir, ödüller kazan!"}
-                </p>
-              </div>
-              {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
-                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 hover:bg-white/20 text-white border-white/30">
-                  x{wheelSpinsLeft} hak
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* İSTATİSTİKLER */}
-          <div className="px-5 mt-6 pb-12">
-            {" "}
-            {/* Alt boşluğu biraz artırdım, menüye girmesin */}
-            <div className="grid grid-cols-3 gap-3">
-              <StatWidget svgIcon="/icons/oyun.svg" value={profile?.daily_games || 0} label="Oyun" />
-              <StatWidget svgIcon="/icons/seri.svg" value={profile?.win_streak || 0} label="Seri" />
-              <StatWidget svgIcon="/icons/zafer.svg" value={profile?.wins || 0} label="Zafer" />
-            </div>
+            />
+            {/* SOHBET */}
+            <HomeMapPoint
+              x={27}
+              y={70}
+              size={38}
+              label="Sohbet"
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/chat");
+              }}
+            />
+            {/* OYUN MODLARI */}
+            <HomeMapPoint
+              x={60}
+              y={79}
+              size={38}
+              label="Oyun Modları"
+              onClick={() => {
+                playSound("buttonClick");
+                setShowModePanel(true);
+              }}
+            />
           </div>
         </div>
+
+        {/* ALT MENÜ BAR */}
+        <HomeBottomNav pendingFriendRequests={pendingFriendRequests} />
+
+        {/* --- PANELLER --- */}
+        <HomeSlidePanel
+          open={showChallengePanel}
+          onClose={() => setShowChallengePanel(false)}
+          title="Düello & Challenge"
+          items={challengePanelItems}
+        />
+        <HomeSlidePanel
+          open={showModePanel}
+          onClose={() => setShowModePanel(false)}
+          title="Oyun Modları"
+          items={gameModePanelItems}
+        />
 
         {/* --- MODALLAR --- */}
         {selectedMode && selectedMode === "private-room" ? (
@@ -1429,8 +1301,6 @@ const HomePage = () => {
 
         {showMatchmaking && (
           <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
-            {" "}
-            {/* Flashbang etkisini önlemek için koyu arka plan */}
             <SlotMatchmaking
               key={`matchmaking-${matchmakingKey}`}
               onCancel={() => {
@@ -1442,9 +1312,7 @@ const HomePage = () => {
           </div>
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 z-50">
-          <FloatingMenu />
-        </div>
+        <RadioPicker open={showRadio} onClose={() => setShowRadio(false)} />
 
         <AvatarViewDialog
           open={showAvatarView}
