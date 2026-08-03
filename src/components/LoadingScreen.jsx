@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ensureImagesLoaded } from "./GameCountdown";
+import { preloadHomeIslands } from "@/lib/homeIslandAssets";
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(["Oyun yükleniyor..."]);
@@ -28,6 +29,13 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       const ASSET_TIMEOUT = 5000;
 
       try {
+        // Ana sayfa yüzen ada görselleri: açılışta hazırlanır, sonraki
+        // ana sayfa dönüşlerinde bekleme olmaz.
+        const islandsPromise = Promise.race([
+          preloadHomeIslands(),
+          new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT)),
+        ]);
+
         const countdownPromise = Promise.race([
           ensureImagesLoaded(),
           new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT)),
@@ -50,7 +58,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT)),
         ]);
 
-        await Promise.all([countdownPromise, tipsPromise]);
+        await Promise.all([countdownPromise, tipsPromise, islandsPromise]);
         console.log("✅ LoadingScreen: All assets preloaded");
       } catch (error) {
         console.warn("Asset yükleme hatası:", error);
