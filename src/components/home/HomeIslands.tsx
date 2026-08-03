@@ -81,8 +81,9 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
   // Maskeleri erken hazırla
   useMemo(() => ISLANDS.forEach((i) => getMask(i.src)), [getMask]);
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
       // Üstteki adalar önce denenir (son render edilen en üstte)
       for (let i = ISLANDS.length - 1; i >= 0; i--) {
         const el = islandRefs.current[i];
@@ -136,7 +137,7 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
         ref={wrapRef}
         className="absolute inset-0 z-10"
         style={{ WebkitTapHighlightColor: "transparent" }}
-        onPointerDown={handlePointerDown}
+        onClick={handleClick}
       />
 
       {ISLANDS.map((island, i) => (
