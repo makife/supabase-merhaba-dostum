@@ -1091,7 +1091,7 @@ const HomePage = () => {
           style={{ bottom: islandBounds.bottom }}
         >
           {/* Jokerler */}
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col items-center gap-2">
             {jokerList.map((j, i) => (
               <div
                 key={i}
