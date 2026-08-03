@@ -18,6 +18,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { RadioPicker } from "@/components/RadioPicker";
 import HomeClouds from "@/components/home/HomeClouds";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
+import levelBarImg from "@/assets/levelBar.png";
 import HomeIslands from "@/components/home/HomeIslands";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
