@@ -1186,7 +1186,7 @@ const HomePage = () => {
             style={{
               aspectRatio: "784 / 1400",
               animation: "homeIslandFloat 6s ease-in-out infinite",
-              scale: "2.5",
+              scale: "1.7",
             }}
           >
             <img
