@@ -41,6 +41,7 @@ import {
   Music,
   Volume,
   Gamepad2,
+  LogOut,
 } from "lucide-react";
 import { triggerGlobalStorageClear } from "@/hooks/useLocalStorageClear";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
@@ -65,7 +66,7 @@ const openAppSettings = async () => {
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
@@ -637,6 +638,35 @@ const SettingsPage = () => {
             </Button>
           </div>
         )}
+
+        {/* Çıkış Yap */}
+        <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-indigo-500/30 rounded-lg flex items-center justify-center">
+              <LogOut className="w-5 h-5 text-indigo-300" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Hesap</h2>
+          </div>
+
+          <p className="text-xs text-slate-400 mb-3">
+            Hesabından çıkış yaparak giriş ekranına dönebilirsin.
+          </p>
+
+          <Button
+            onClick={async () => {
+              try {
+                await signOut();
+                navigate("/auth");
+              } catch (e) {
+                toast({ title: "Hata", description: "Çıkış yapılamadı.", variant: "destructive" });
+              }
+            }}
+            className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Çıkış Yap
+          </Button>
+        </div>
 
         {/* Delete Account */}
         <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-400/20 rounded-2xl p-4 shadow-xl">
