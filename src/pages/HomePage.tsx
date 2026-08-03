@@ -956,8 +956,10 @@ const HomePage = () => {
           className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none opacity-30`}
         />
 
-        {/* Bulutlar */}
-        <HomeClouds />
+        {/* Bulutlar - arka katman */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <HomeClouds layer="back" />
+        </div>
 
         {/* --------------------------------------------------------
         ÜST ALAN — harita katmanının üzerinde yüzer (sabit header yok)
@@ -1165,9 +1167,14 @@ const HomePage = () => {
 
         </div>
 
+        {/* Bulutlar - ön katman */}
+        <div className="absolute inset-0 z-[35] pointer-events-none">
+          <HomeClouds layer="front" />
+        </div>
+
         {/* ALT MENÜ BAR — harita katmanının üzerinde yüzer */}
         <div ref={navRef} className="absolute bottom-0 left-0 right-0 z-40">
-          <HomeBottomNav pendingFriendRequests={pendingFriendRequests} />
+          <HomeBottomNav pendingFriendRequests={pendingFriendRequests} onRadio={() => setShowRadio(true)} />
         </div>
 
         {/* --- PANELLER --- */}

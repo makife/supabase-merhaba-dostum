@@ -41,9 +41,9 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
   const motion = useMemo(
     () =>
       ISLANDS.map(() => ({
-        duration: 4.5 + Math.random() * 4,
+        duration: 6 + Math.random() * 4,
         delay: -(Math.random() * 5),
-        distance: 8 + Math.random() * 12,
+        distance: 3 + Math.random() * 3.5,
       })),
     [],
   );

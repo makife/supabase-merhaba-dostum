@@ -10,15 +10,16 @@ interface NavItem {
 
 interface HomeBottomNavProps {
   pendingFriendRequests?: number;
+  onRadio?: () => void;
 }
 
-export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps) => {
+export const HomeBottomNav = ({ pendingFriendRequests = 0, onRadio }: HomeBottomNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { playSound } = useSounds();
 
   const items: NavItem[] = [
-    { route: "/friends", label: "Arkadaşlar", icon: "/icons/arkadaslar-gorsel.svg", badge: pendingFriendRequests },
+    { route: "radio", label: "Radyo", icon: "/icons/radyo-gorsel.svg" },
     { route: "/leaderboard", label: "Liderlik", icon: "/icons/liderlik-gorsel.svg" },
     { route: "/profile", label: "Profil", icon: "/icons/profil-gorsel.svg" },
     { route: "/market", label: "Market", icon: "/icons/kirtasiye-gorsel.svg" },
@@ -42,7 +43,8 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
               type="button"
               onClick={() => {
                 playSound("buttonClick");
-                navigate(item.route);
+                if (item.route === "radio") onRadio?.();
+                else navigate(item.route);
               }}
               className="relative flex flex-col items-center justify-end gap-1 flex-1 active:scale-90 transition-transform"
               style={{ WebkitTapHighlightColor: "transparent" }}
