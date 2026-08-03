@@ -1,7 +1,8 @@
 import { Component, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import * as THREE from "three";
+
 
 /** 3D model yüklenemezse uygulamayı çökertmemesi için hata sınırı */
 class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -19,8 +20,9 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 }
 
 
-// Model Vite tarafından paketlenir (public'ten .obj mime sorununu aşmak için)
-import ISLAND_MODEL_URL from "@/assets/models/3dLakeLowPoly.obj?url";
+// Model Vite tarafından paketlenir (public'ten mime sorununu aşmak için)
+import ISLAND_MODEL_URL from "@/assets/models/3dLakeLowPoly.fbx?url";
+
 const LEFT_ARROW_URL = "/anaSayfa/anasayfaSolaOk.svg";
 const RIGHT_ARROW_URL = "/anaSayfa/anasayfaSagOk.svg";
 
@@ -33,23 +35,25 @@ const HOLD_DURATION = 5000;
 
 /** Yavaşça yukarı-aşağı salınan yüzen ada modeli */
 function FloatingIsland() {
-  const obj = useLoader(OBJLoader, ISLAND_MODEL_URL) as THREE.Group;
+  const obj = useLoader(FBXLoader, ISLAND_MODEL_URL) as unknown as THREE.Group;
   const groupRef = useRef<THREE.Group>(null);
 
   // Modeli ortala ve kameraya sığacak şekilde ölçekle
   const model = useMemo(() => {
     const clone = obj.clone(true);
+    // FBX'in kendi materyalleri/textureları korunur; sadece renk uzayı düzeltilir
     clone.traverse((child) => {
       const mesh = child as THREE.Mesh;
-      if (mesh.isMesh) {
-        mesh.material = new THREE.MeshStandardMaterial({
-          color: "#7ec850",
-          roughness: 0.8,
-          metalness: 0.05,
-          flatShading: true,
-        });
-      }
+      if (!mesh.isMesh) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach((mat) => {
+        const m = mat as THREE.MeshPhongMaterial;
+        if (m?.map) m.map.colorSpace = THREE.SRGBColorSpace;
+        if (m) m.side = THREE.DoubleSide;
+        m?.needsUpdate && (m.needsUpdate = true);
+      });
     });
+
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
