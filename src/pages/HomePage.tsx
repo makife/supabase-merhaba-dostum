@@ -1116,7 +1116,7 @@ const HomePage = () => {
 
           {/* Kalan sayfa hakkı (fısılda hizası) + mürekkep (senyaz hizası) */}
           <div
-            className="grid justify-items-center items-center"
+            className="grid justify-items-center items-center pointer-events-auto"
             style={{ gridTemplateRows: "48px 48px 48px", rowGap: "8px" }}
           >
             {/* 1. sıra (değiştir jokeri hizası) boş */}
