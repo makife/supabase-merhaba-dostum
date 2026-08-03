@@ -1080,85 +1080,91 @@ const HomePage = () => {
                 )}
               </button>
 
-              {/* KALAN SAYFA HAKKI — çıplak lottie + badge */}
-              {(!isPremium || isUnlimitedLivesActive(profile)) && (
-                <div className="flex flex-col items-center gap-0.5 mt-4">
-                  <div className="relative w-12 h-12">
-                    {kalanSayfaAnim ? (
-                      <Lottie
-                        animationData={kalanSayfaAnim}
-                        loop
-                        autoplay
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : null}
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                      {isUnlimitedLivesActive(profile) ? "∞" : totalCredits}
-                    </span>
-                  </div>
-                  {isUnlimitedLivesActive(profile)
-                    ? unlimitedTimeLeft && (
-                        <span
-                          className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
-                          style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
-                        >
-                          {unlimitedTimeLeft}
-                        </span>
-                      )
-                    : timeUntilNextCredit && (
-                        <span
-                          className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
-                          style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
-                        >
-                          {timeUntilNextCredit}
-                        </span>
-                      )}
-                </div>
-              )}
+            </div>
+          </div>
 
-              {/* MÜREKKEP — çıplak lottie + badge */}
+        </div>
+
+        {/* ALT ŞERİT: jokerler (sol) + kalan sayfa & mürekkep (sağ) — menü barın hemen üstü */}
+        <div
+          className="absolute left-3 right-3 z-30 flex items-end justify-between pointer-events-auto"
+          style={{ bottom: islandBounds.bottom }}
+        >
+          {/* Jokerler */}
+          <div className="flex items-end gap-2">
+            {jokerList.map((j, i) => (
               <div
-                className="relative w-[76px] h-[76px] -mt-2 active:scale-90 transition-transform cursor-pointer"
+                key={i}
+                className="active:scale-90 transition-transform cursor-pointer"
                 onClick={() => {
                   playSound("buttonClick");
                   navigate("/market");
                 }}
               >
-                <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
-                <span className="absolute top-1 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                  {profile?.ink_count ?? 0}
-                </span>
+                <div
+                  className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                >
+                  <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                    {j.count}
+                  </span>
+                </div>
               </div>
+            ))}
+          </div>
 
+          {/* Kalan sayfa hakkı + mürekkep */}
+          <div className="flex items-end gap-1">
+            {(!isPremium || isUnlimitedLivesActive(profile)) && (
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="relative w-12 h-12">
+                  {kalanSayfaAnim ? (
+                    <Lottie
+                      animationData={kalanSayfaAnim}
+                      loop
+                      autoplay
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  ) : null}
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                    {isUnlimitedLivesActive(profile) ? "∞" : totalCredits}
+                  </span>
+                </div>
+                {isUnlimitedLivesActive(profile)
+                  ? unlimitedTimeLeft && (
+                      <span
+                        className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                        style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                      >
+                        {unlimitedTimeLeft}
+                      </span>
+                    )
+                  : timeUntilNextCredit && (
+                      <span
+                        className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                        style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                      >
+                        {timeUntilNextCredit}
+                      </span>
+                    )}
+              </div>
+            )}
+
+            <div
+              className="relative w-[76px] h-[76px] active:scale-90 transition-transform cursor-pointer"
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/market");
+              }}
+            >
+              <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+              <span className="absolute top-1 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                {profile?.ink_count ?? 0}
+              </span>
             </div>
           </div>
-
-          {/* SOL KOLON: jokerler + kalan sayfa + mürekkep */}
-          <div className="absolute left-4 top-[130px] z-30 flex flex-col items-start gap-2 pointer-events-auto">
-
-                {jokerList.map((j, i) => (
-                  <div
-                    key={i}
-                    className="active:scale-90 transition-transform cursor-pointer"
-                    onClick={() => {
-                      playSound("buttonClick");
-                      navigate("/market");
-                    }}
-                  >
-                    <div
-                      className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
-                    >
-                      <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                        {j.count}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-          </div>
-
         </div>
+
 
 
         {/* --------------------------------------------------------
