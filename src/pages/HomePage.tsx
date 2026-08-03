@@ -1124,13 +1124,20 @@ const HomePage = () => {
         >
 
           <div
-            className="relative h-full"
+            className="relative"
             style={{
               aspectRatio: "784 / 1400",
+              // Hem yükseklik hem genişlik sınırlanıyor: cihaz/ekran ne olursa olsun
+              // (APK/IPA'da header ve menü bar yükseklikleri değişse de) görsel
+              // oranını koruyarak mevcut boşluğa göre büyüyüp küçülüyor.
+              height: "100%",
+              maxHeight: "100%",
+              maxWidth: "100%",
               animation: "homeIslandFloat 6s ease-in-out infinite",
               scale: "1.08",
             }}
           >
+
 
             <img
               src="/anaSayfa/anasayfaGorsel.png"
