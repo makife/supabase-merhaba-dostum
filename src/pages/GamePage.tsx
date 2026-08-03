@@ -101,7 +101,7 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import { LevelUpDialog } from "@/components/LevelUpDialog";
-import { RankUpDialog } from "@/components/RankUpDialog";
+// RankUpDialog kaldırıldı: seviye/rank yükselişinde sadece LevelUpDialog animasyonu gösteriliyor
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
 import { VipBadge } from "@/components/VipBadge";
@@ -8437,7 +8437,6 @@ const GamePage = ({
         </Card>
         {/* Level Up Dialog - gameEnded bloğu içinde */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
-        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </div>
     );
   }
@@ -9310,7 +9309,7 @@ const GamePage = ({
 
         {/* Level Up Dialog */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
-        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
+        
       </>
     </>
   );
