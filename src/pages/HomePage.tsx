@@ -908,7 +908,9 @@ const HomePage = () => {
       -------------------------------------------------------- */}
         <div className="flex-none z-30 px-4 pt-5 relative">
           <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0 flex flex-col">
             {/* Profil + Seviye */}
+
             <div className="flex items-center gap-3 cursor-pointer min-w-0" onClick={() => setShowAvatarView(true)}>
               <div className="relative flex-none">
                 {boostActiveHome && boostProfilAnim && (
@@ -960,53 +962,9 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Sağ kolon: bildirim + jokerler */}
-            <div className="flex flex-col items-center gap-2 flex-none">
-              <button
-                type="button"
-                onClick={() => {
-                  playSound("buttonClick");
-                  setShowSystemMessages(true);
-                }}
-                className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
-                aria-label="Sistem mesajları"
-              >
-                <img
-                  src="/bildirimGorsel.svg"
-                  alt="Bildirimler"
-                  className="w-10 h-10 object-contain drop-shadow-md"
-                />
-                {systemUnread > 0 && (
-                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0f1729]">
-                    {systemUnread > 9 ? "9+" : systemUnread}
-                  </span>
-                )}
-              </button>
-
-              {jokerList.map((j, i) => (
-                <div
-                  key={i}
-                  className="active:scale-90 transition-transform cursor-pointer"
-                  onClick={() => {
-                    playSound("buttonClick");
-                    navigate("/market");
-                  }}
-                >
-                  <div
-                    className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
-                  >
-                    <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                      {j.count}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* KALAN SAYFALARIM / VIP */}
           <div className="mt-3 space-y-2">
+
             {isPremium && premiumTimeLeft && (
               <div
                 className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
@@ -1170,7 +1128,54 @@ const HomePage = () => {
               </div>
             )}
           </div>
+            </div>
+
+            {/* Sağ kolon: bildirim + jokerler */}
+            <div className="flex flex-col items-center gap-2 flex-none">
+              <button
+                type="button"
+                onClick={() => {
+                  playSound("buttonClick");
+                  setShowSystemMessages(true);
+                }}
+                className="relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform"
+                aria-label="Sistem mesajları"
+              >
+                <img
+                  src="/bildirimGorsel.svg"
+                  alt="Bildirimler"
+                  className="w-10 h-10 object-contain drop-shadow-md"
+                />
+                {systemUnread > 0 && (
+                  <span className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md ring-2 ring-[#0f1729]">
+                    {systemUnread > 9 ? "9+" : systemUnread}
+                  </span>
+                )}
+              </button>
+
+              {jokerList.map((j, i) => (
+                <div
+                  key={i}
+                  className="active:scale-90 transition-transform cursor-pointer"
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/market");
+                  }}
+                >
+                  <div
+                    className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                  >
+                    <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                      {j.count}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+
 
         {/* --------------------------------------------------------
         ORTA ALAN — ADA HARİTASI
@@ -1178,7 +1183,11 @@ const HomePage = () => {
         <div className="flex-1 min-h-0 relative z-10 flex items-center justify-center overflow-hidden py-2">
           <div
             className="relative h-full"
-            style={{ aspectRatio: "784 / 1400", animation: "homeIslandFloat 6s ease-in-out infinite" }}
+            style={{
+              aspectRatio: "784 / 1400",
+              animation: "homeIslandFloat 6s ease-in-out infinite",
+              scale: "2.5",
+            }}
           >
             <img
               src="/anaSayfa/anasayfaGorsel.png"
