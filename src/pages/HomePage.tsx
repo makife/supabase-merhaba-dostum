@@ -1151,10 +1151,8 @@ const HomePage = () => {
                   </span>
                 </div>
 
-              </div>
-
-            </div>
           </div>
+
         </div>
 
 
