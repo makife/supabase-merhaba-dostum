@@ -1087,11 +1087,12 @@ const HomePage = () => {
 
         {/* ALT ŞERİT: jokerler (sol) + kalan sayfa & mürekkep (sağ) — menü barın hemen üstü */}
         <div
-          className="absolute left-3 right-3 z-30 flex items-end justify-between pointer-events-auto"
+          className="absolute left-3 right-3 z-30 flex items-end justify-between pointer-events-none"
           style={{ bottom: islandBounds.bottom }}
         >
           {/* Jokerler (dikey) */}
-          <div className="flex items-center gap-2" style={{ flexDirection: "column" }}>
+          <div className="flex items-center gap-2 pointer-events-auto" style={{ flexDirection: "column" }}>
+
             {jokerList.map((j, i) => (
               <div
                 key={i}
