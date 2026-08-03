@@ -33,8 +33,34 @@ const HOLD_DURATION = 5000;
 
 /** Yavaşça yukarı-aşağı salınan yüzen ada modeli */
 function FloatingIsland() {
-  const obj = useLoader(OBJLoader, ISLAND_MODEL_URL);
+  const obj = useLoader(OBJLoader, ISLAND_MODEL_URL) as THREE.Group;
   const groupRef = useRef<THREE.Group>(null);
+
+  // Modeli ortala ve kameraya sığacak şekilde ölçekle
+  const model = useMemo(() => {
+    const clone = obj.clone(true);
+    clone.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.material = new THREE.MeshStandardMaterial({
+          color: "#7ec850",
+          roughness: 0.8,
+          metalness: 0.05,
+          flatShading: true,
+        });
+      }
+    });
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 4.5 / maxDim;
+    clone.position.set(-center.x, -center.y, -center.z);
+    const wrapper = new THREE.Group();
+    wrapper.add(clone);
+    wrapper.scale.setScalar(scale);
+    return wrapper;
+  }, [obj]);
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
@@ -45,10 +71,11 @@ function FloatingIsland() {
 
   return (
     <group ref={groupRef}>
-      <primitive object={obj} scale={1} />
+      <primitive object={model} />
     </group>
   );
 }
+
 
 /** Kamerayı adanın etrafında yumuşakça döndürüp geri getiren rig */
 function CameraRig({ phase, direction }: { phase: RotationPhase; direction: 1 | -1 }) {
