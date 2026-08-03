@@ -1208,6 +1208,8 @@ const HomePage = () => {
               y={70}
               size={38}
               label="Sohbet"
+              alert={unreadChatCount > 0}
+
               onClick={() => {
                 playSound("buttonClick");
                 navigate("/chat");
