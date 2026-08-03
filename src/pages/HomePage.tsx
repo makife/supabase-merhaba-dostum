@@ -1118,7 +1118,7 @@ const HomePage = () => {
 
               {/* MÜREKKEP — çıplak lottie + badge */}
               <div
-                className="relative w-[68px] h-[68px] mt-1 active:scale-90 transition-transform cursor-pointer"
+                className="relative w-[76px] h-[76px] -mt-2 active:scale-90 transition-transform cursor-pointer"
                 onClick={() => {
                   playSound("buttonClick");
                   navigate("/market");
