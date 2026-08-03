@@ -339,6 +339,7 @@ const HomePage = () => {
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
   const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
+  const [kalanSayfaAnim, setKalanSayfaAnim] = useState<any>(null);
   const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
 
   const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
