@@ -376,6 +376,7 @@ const HomePage = () => {
   const [showChallengePanel, setShowChallengePanel] = useState(false);
   const [showModePanel, setShowModePanel] = useState(false);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
 
   useEffect(() => {
@@ -390,6 +391,14 @@ const HomePage = () => {
           .eq("status", "pending");
         if (!cancelled) setPendingFriendRequests(count || 0);
       } catch {}
+      try {
+        const { count: msgCount } = await supabase
+          .from("private_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_id", user.id)
+          .eq("is_read", false);
+        if (!cancelled) setUnreadChatCount(msgCount || 0);
+      } catch {}
     };
     fetchPending();
     const interval = setInterval(fetchPending, 30000);
@@ -398,6 +407,7 @@ const HomePage = () => {
       clearInterval(interval);
     };
   }, [user?.id]);
+
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
@@ -1174,11 +1184,13 @@ const HomePage = () => {
               y={39}
               size={38}
               label="Arkadaşlık"
+              alert={pendingFriendRequests > 0}
               onClick={() => {
                 playSound("buttonClick");
                 navigate("/friends");
               }}
             />
+
             {/* ŞANS ÇARKI */}
             <HomeMapPoint
               x={56}
@@ -1196,6 +1208,8 @@ const HomePage = () => {
               y={70}
               size={38}
               label="Sohbet"
+              alert={unreadChatCount > 0}
+
               onClick={() => {
                 playSound("buttonClick");
                 navigate("/chat");
