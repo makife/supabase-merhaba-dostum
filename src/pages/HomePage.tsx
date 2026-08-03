@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -307,7 +307,30 @@ const HomePage = () => {
 
   usePremiumDailyRewards();
 
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
+
+  useEffect(() => {
+    const measure = () => {
+      setIslandBounds({
+        top: headerRef.current?.getBoundingClientRect().height ?? 0,
+        bottom: navRef.current?.getBoundingClientRect().height ?? 0,
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (navRef.current) ro.observe(navRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
@@ -906,7 +929,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         ÜST ALAN — harita katmanının üzerinde yüzer (sabit header yok)
       -------------------------------------------------------- */}
-        <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-5 pointer-events-none">
+        <div ref={headerRef} className="absolute top-0 left-0 right-0 z-30 px-4 pt-5 pointer-events-none">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 flex flex-col pointer-events-auto">
             {/* Profil + Seviye */}
@@ -1180,16 +1203,19 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         ADA HARİTASI — tam ekran katman
       -------------------------------------------------------- */}
-        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
+        <div
+          className="absolute left-0 right-0 z-10 flex items-center justify-center overflow-hidden"
+          style={{ top: islandBounds.top, bottom: islandBounds.bottom }}
+        >
 
           <div
             className="relative h-full"
             style={{
               aspectRatio: "784 / 1400",
               animation: "homeIslandFloat 6s ease-in-out infinite",
-              scale: "1.7",
             }}
           >
+
             <img
               src="/anaSayfa/anasayfaGorsel.png"
               alt="Kelime adası haritası"
@@ -1267,7 +1293,7 @@ const HomePage = () => {
         </div>
 
         {/* ALT MENÜ BAR — harita katmanının üzerinde yüzer */}
-        <div className="absolute bottom-0 left-0 right-0 z-40">
+        <div ref={navRef} className="absolute bottom-0 left-0 right-0 z-40">
           <HomeBottomNav pendingFriendRequests={pendingFriendRequests} />
         </div>
 
