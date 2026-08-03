@@ -1126,17 +1126,17 @@ const HomePage = () => {
           <div
             className="relative"
             style={{
+              // Görselin genişliği daima yükseklikten oranla türetiliyor:
+              // header/menü bar yükseklikleri cihazdan cihaza (APK/IPA) değişse de
+              // ada görseli aynı oranı koruyup boşluğa göre büyüyüp küçülüyor.
               aspectRatio: "784 / 1400",
-              // Hem yükseklik hem genişlik sınırlanıyor: cihaz/ekran ne olursa olsun
-              // (APK/IPA'da header ve menü bar yükseklikleri değişse de) görsel
-              // oranını koruyarak mevcut boşluğa göre büyüyüp küçülüyor.
               height: "100%",
-              maxHeight: "100%",
-              maxWidth: "100%",
+              width: "auto",
               animation: "homeIslandFloat 6s ease-in-out infinite",
               scale: "1.08",
             }}
           >
+
 
 
             <img
