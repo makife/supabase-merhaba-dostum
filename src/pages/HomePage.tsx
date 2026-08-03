@@ -1114,7 +1114,7 @@ const HomePage = () => {
           </div>
 
           {/* Kalan sayfa hakkı + mürekkep */}
-          <div className="flex items-end gap-1">
+          <div className="flex flex-col items-center gap-1">
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="relative w-12 h-12">
