@@ -1184,11 +1184,13 @@ const HomePage = () => {
               y={39}
               size={38}
               label="Arkadaşlık"
+              alert={pendingFriendRequests > 0}
               onClick={() => {
                 playSound("buttonClick");
                 navigate("/friends");
               }}
             />
+
             {/* ŞANS ÇARKI */}
             <HomeMapPoint
               x={56}
