@@ -1183,12 +1183,16 @@ const HomePage = () => {
         <div className="flex-1 min-h-0 relative z-10 flex items-center justify-center overflow-hidden py-2">
           <div
             className="relative h-full"
-            style={{ aspectRatio: "784 / 1400", animation: "homeIslandFloat 6s ease-in-out infinite" }}
+            style={{
+              aspectRatio: "784 / 1400",
+              animation: "homeIslandFloat 6s ease-in-out infinite",
+              scale: "2.5",
+            }}
           >
             <img
               src="/anaSayfa/anasayfaGorsel.png"
               alt="Kelime adası haritası"
-              className="w-full h-full object-contain select-none pointer-events-none scale-[2.5]"
+              className="w-full h-full object-contain select-none pointer-events-none"
               draggable={false}
             />
 
