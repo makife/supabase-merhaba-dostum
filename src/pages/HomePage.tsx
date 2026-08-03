@@ -1178,9 +1178,10 @@ const HomePage = () => {
 
 
         {/* --------------------------------------------------------
-        ORTA ALAN — ADA HARİTASI
+        ADA HARİTASI — tam ekran katman
       -------------------------------------------------------- */}
-        <div className="flex-1 min-h-0 relative z-10 flex items-center justify-center overflow-hidden py-2">
+        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
+
           <div
             className="relative h-full"
             style={{
