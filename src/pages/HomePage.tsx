@@ -1113,8 +1113,8 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* Kalan sayfa hakkı + mürekkep */}
-          <div className="flex flex-col items-center gap-1">
+          {/* Kalan sayfa hakkı + mürekkep (dikey) */}
+          <div className="flex items-center gap-1" style={{ flexDirection: "column" }}>
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="relative w-12 h-12">
