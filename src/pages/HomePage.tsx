@@ -944,7 +944,7 @@ const HomePage = () => {
             <div
               className={`flex items-center gap-3 cursor-pointer min-w-0 ${
                 vipType === "yearly"
-                  ? "rounded-2xl p-2 pr-3 bg-gradient-to-r from-amber-400/90 via-yellow-300/80 to-amber-500/90 border-2 border-amber-500/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
+                  ? "w-full rounded-2xl p-2 pr-3 bg-gradient-to-r from-amber-400/90 via-yellow-300/80 to-amber-500/90 border-2 border-amber-500/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
                   : vipType === "monthly"
                     ? "rounded-2xl p-2 pr-3 bg-gradient-to-r from-blue-500/90 via-cyan-400/80 to-blue-600/90 border-2 border-blue-400/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
                     : ""
