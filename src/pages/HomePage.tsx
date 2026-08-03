@@ -1025,10 +1025,20 @@ const HomePage = () => {
                     {levelData.experience}/{levelData.nextLevelExp}
                   </span>
                 </div>
-                <div className="h-3 w-32 bg-slate-800 rounded-full mt-1.5 overflow-hidden border border-white/10">
+                <div className="relative w-36 mt-1.5 select-none pointer-events-none">
+                  <img
+                    src={levelBarImg}
+                    alt="Seviye barı"
+                    className="w-full h-auto block"
+                    draggable={false}
+                  />
+                  {/* Dolmayan kısmı karart (bar iç alanı ~%15 - %86) */}
                   <div
-                    className={`h-full bg-gradient-to-r ${levelStarGradient} transition-all duration-1000`}
-                    style={{ width: `${progressPercent}%` }}
+                    className="absolute top-[22%] bottom-[22%] rounded-[2px] bg-black/65 transition-all duration-1000"
+                    style={{
+                      right: "14.5%",
+                      width: `${(1 - Math.min(1, Math.max(0, progressPercent / 100))) * 70.5}%`,
+                    }}
                   />
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
