@@ -1131,7 +1131,7 @@ const HomePage = () => {
             </div>
 
             {/* Sağ kolon: bildirim + jokerler */}
-            <div className="flex flex-col items-center gap-2 flex-none">
+            <div className="flex flex-col items-center gap-2 flex-none pointer-events-auto">
               <button
                 type="button"
                 onClick={() => {
