@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
+
 
 /**
  * Yeni anasayfaGorsel.png içindeki 5 ada, ayrı PNG'lere bölündü.
