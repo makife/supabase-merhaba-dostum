@@ -308,19 +308,26 @@ const HomePage = () => {
   usePremiumDailyRewards();
 
   const headerRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
   const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
 
   useEffect(() => {
     const measure = () => {
+      const headerTop = headerRef.current?.getBoundingClientRect().top ?? 0;
+      const profileBottom = profileRef.current?.getBoundingClientRect().bottom;
       setIslandBounds({
-        top: headerRef.current?.getBoundingClientRect().height ?? 0,
+        top:
+          profileBottom != null
+            ? Math.max(0, profileBottom - headerTop + 4)
+            : (headerRef.current?.getBoundingClientRect().height ?? 0),
         bottom: navRef.current?.getBoundingClientRect().height ?? 0,
       });
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (headerRef.current) ro.observe(headerRef.current);
+    if (profileRef.current) ro.observe(profileRef.current);
     if (navRef.current) ro.observe(navRef.current);
     window.addEventListener("resize", measure);
     return () => {
@@ -328,6 +335,7 @@ const HomePage = () => {
       window.removeEventListener("resize", measure);
     };
   }, []);
+
 
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
 
