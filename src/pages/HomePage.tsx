@@ -307,7 +307,30 @@ const HomePage = () => {
 
   usePremiumDailyRewards();
 
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
+
+  useEffect(() => {
+    const measure = () => {
+      setIslandBounds({
+        top: headerRef.current?.getBoundingClientRect().height ?? 0,
+        bottom: navRef.current?.getBoundingClientRect().height ?? 0,
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (navRef.current) ro.observe(navRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
+
   const [showMatchmaking, setShowMatchmaking] = useState(false);
   const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
   const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
