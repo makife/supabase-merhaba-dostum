@@ -1203,16 +1203,19 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         ADA HARİTASI — tam ekran katman
       -------------------------------------------------------- */}
-        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden">
+        <div
+          className="absolute left-0 right-0 z-10 flex items-center justify-center overflow-hidden"
+          style={{ top: islandBounds.top, bottom: islandBounds.bottom }}
+        >
 
           <div
             className="relative h-full"
             style={{
               aspectRatio: "784 / 1400",
               animation: "homeIslandFloat 6s ease-in-out infinite",
-              scale: "1.7",
             }}
           >
+
             <img
               src="/anaSayfa/anasayfaGorsel.png"
               alt="Kelime adası haritası"
