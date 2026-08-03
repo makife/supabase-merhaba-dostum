@@ -8437,7 +8437,6 @@ const GamePage = ({
         </Card>
         {/* Level Up Dialog - gameEnded bloğu içinde */}
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
-        <RankUpDialog open={showRankUp} onClose={() => setShowRankUp(false)} tier={rankUpTier} />
       </div>
     );
   }
