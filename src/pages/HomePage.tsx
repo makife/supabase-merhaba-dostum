@@ -1080,7 +1080,7 @@ const HomePage = () => {
                 )}
               </button>
 
-              <div className="flex flex-col items-center gap-2 mt-6">
+              <div className="flex flex-col items-start gap-2 mt-6 self-start">
                 {jokerList.map((j, i) => (
                   <div
                     key={i}
