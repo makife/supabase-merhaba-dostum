@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, memo, useCallback, useMemo } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -6,18 +6,40 @@ import { useSounds } from "@/hooks/useSounds";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import PrivateRoomModal from "@/components/PrivateRoomModal";
+import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { useJokerInventory } from "@/hooks/useJokerInventory";
 import { usePremiumDailyRewards } from "@/hooks/usePremiumDailyRewards";
+import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { AvatarViewDialog } from "@/components/AvatarViewDialog";
+import GameModeSelector from "@/components/GameModeSelector";
 import { FloatingMenu } from "@/components/FloatingMenu";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
+import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
+import { useActiveTournamentDisplayCount } from "@/hooks/useActiveTournamentDisplayCount";
 import Lottie from "lottie-react";
 import { useSystemMessages } from "@/hooks/useSystemMessages";
 import { SystemMessagesDialog } from "@/components/SystemMessagesDialog";
-import { HomeIslandScene } from "@/components/HomeIslandScene";
 
-import { Clock, Gift } from "lucide-react";
+import {
+  Bot,
+  Users,
+  Trophy,
+  Clock,
+  Target,
+  Crown,
+  Zap,
+  Gift,
+  Star,
+  Flame,
+  Gamepad2,
+  Sparkles,
+  Check,
+} from "lucide-react";
+import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChallenge";
 
 // --- YARDIMCI SABİTLER ---
 
@@ -104,6 +126,21 @@ const getVipType = (profile: any): "yearly" | "monthly" | null => {
 
 // --- BİLEŞENLER ---
 
+const StatWidget = memo(({ svgIcon, value, label }: any) => (
+  <div className="flex-1 bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+    <img
+      src={svgIcon}
+      alt=""
+      className="absolute inset-0 w-full h-full object-cover opacity-10 select-none pointer-events-none"
+    />
+    <span className="relative z-10 text-lg font-bold text-white tracking-tight">{value}</span>
+    <span className="relative z-10 text-[10px] text-slate-400 font-medium uppercase tracking-wide opacity-80">
+      {label}
+    </span>
+  </div>
+));
+StatWidget.displayName = "StatWidget";
+
 const HakIcon = memo(({ animData, filled, size = 24 }: { animData: any; filled: boolean; size?: number }) => (
   <div
     className={`transition-all duration-300 ${filled ? "opacity-100" : "opacity-10"}`}
@@ -166,9 +203,90 @@ const getLevelFruitIcon = (level: number): string => {
   return "/icons/meyvetabagi.svg";
 };
 
+const KelimePuzzleIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/kelimepuzzle.svg" className={className} alt="" />
+);
+
+const ReaktorIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/reaktor.svg" className={className} alt="" />
+);
+
+const RefleksIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/refleks.svg" className={className} alt="" />
+);
+
+const KelimeHafizaIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/kelimehafiza.svg" className={className} alt="" />
+);
+
+const WheelIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/cark.svg" className={className} alt="" />
+);
+
 const UnlimitedIcon = ({ className = "" }: { className?: string }) => (
   <img src="/icons/unlimited.svg" className={className} alt="" />
 );
+
+const RastgeleIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/rastgele.svg" className={className} alt="" />
+);
+
+const TurnuvaIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/turnuva.svg" className={className} alt="" />
+);
+
+const AiModIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/aimod.svg" className={className} alt="" />
+);
+
+const OzelOdaIcon = ({ className = "" }: { className?: string }) => (
+  <img src="/icons/ozeloda.svg" className={className} alt="" />
+);
+
+const GameModeCard = memo(({ mode, onClick, searchingCount, activeTournamentCount }: any) => (
+  <div
+    onClick={onClick}
+    className={`relative group cursor-pointer rounded-3xl p-4 h-32 flex flex-col justify-between transition-transform duration-200 active:scale-[0.97] border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
+    style={{ transform: "translateZ(0)" }}
+  >
+    <div
+      className={`absolute inset-0 bg-gradient-to-br ${mode.gradient} opacity-90 rounded-3xl`}
+    />
+    <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+
+    <div className="relative z-10 flex justify-between items-start">
+      <div className="p-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+        <mode.icon className="w-6 h-6 text-white" />
+      </div>
+      {mode.isLive && (
+        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
+      )}
+    </div>
+
+    <div className="relative z-10">
+      <h3 className="text-lg font-bold text-white leading-none mb-1" style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>{mode.title}</h3>
+      {mode.id === "tournament" ? (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${(activeTournamentCount ?? 0) > 0 ? "bg-amber-400 animate-pulse" : "bg-slate-400"}`}
+          />
+          <span className="text-[10px] text-white font-medium">{activeTournamentCount ?? 0} aktif turnuva</span>
+        </div>
+      ) : (
+        <p className="text-[11px] text-white font-medium line-clamp-1">{mode.description}</p>
+      )}
+      {mode.id === "random-match" && typeof searchingCount === "number" && (
+        <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${searchingCount > 0 ? "bg-green-400 animate-pulse" : "bg-slate-400"}`}
+          />
+          <span className="text-[10px] text-white font-medium">{searchingCount} kişi arıyor</span>
+        </div>
+      )}
+    </div>
+  </div>
+));
+GameModeCard.displayName = "GameModeCard";
 
 // --- ANA SAYFA ---
 
@@ -179,7 +297,16 @@ const HomePage = () => {
   const { playSound } = useSounds();
   // 🔥 DÜZELTME: startBackgroundMusic ARTIK YOK. Native otomatik hallediyor.
   // const { startBackgroundMusic } = useMusic(); <-- SİLİNDİ
+  const { jokers, loadJokers } = useJokerInventory();
+  const searchingPlayersCount = useSearchingPlayersCount();
+  const activeTournamentCount = useActiveTournamentDisplayCount();
+
   usePremiumDailyRewards();
+
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [showMatchmaking, setShowMatchmaking] = useState(false);
+  const [matchmakingGameType, setMatchmakingGameType] = useState<"timed" | "score">("timed");
+  const [matchmakingKey, setMatchmakingKey] = useState<number>(0);
 
   const [timeUntilNextCredit, setTimeUntilNextCredit] = useState<string>("");
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
@@ -198,6 +325,8 @@ const HomePage = () => {
     }
   }, [boostActiveHome, boostProfilAnim]);
 
+  // useMemoryGame taşındı
+  const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
   const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
@@ -213,14 +342,89 @@ const HomePage = () => {
   }, []);
 
 
-  // Sayfa hak animasyonunu yükle
+  const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
+    try {
+      const cached = sessionStorage.getItem("challengeStatus");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed._date === new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" })) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return {
+      word_hunt: false,
+      anagram: false,
+      word_chain: false,
+      puzzle: false,
+      reaktor: false,
+      neon_blitz: false,
+      memory: false,
+      kelime_avi: false,
+    };
+  });
+  const [wheelSpinsLeft, setWheelSpinsLeft] = useState<number | null>(() => {
+    try {
+      const cached = sessionStorage.getItem("wheelSpinsLeft");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed._date === new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" })) {
+          return parsed.spins;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  // Fetch daily challenge completion status & wheel spin availability
   useEffect(() => {
     if (!user?.id) return;
+
+    // Bot turnuvaları artık useActiveTournamentDisplayCount hook'u tarafından
+    // her 30s'de bir tetikleniyor — burada ekstra çağrıya gerek yok.
+
+
+    const fetchChallengeStatus = () => {
+      sessionStorage.removeItem("challengeStatus");
+      getDailyChallengeStatus(user.id).then((status) => {
+        const withDate = { ...status, _date: new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) };
+        sessionStorage.setItem("challengeStatus", JSON.stringify(withDate));
+        setChallengeStatus(status);
+      });
+    };
+    fetchChallengeStatus();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchChallengeStatus();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Check wheel spins
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+    supabase
+      .from("wheel_spins")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle()
+      .then(({ data: spinData }) => {
+        const dailyAvailable = !spinData ? 1 : 0;
+        const bonus = profile?.bonus_spins || 0;
+        const total = dailyAvailable + bonus;
+        setWheelSpinsLeft(total);
+        sessionStorage.setItem("wheelSpinsLeft", JSON.stringify({ spins: total, _date: today }));
+      });
+
+    // Load sayfa hak animation
     fetch("/sayfaHak.json")
       .then((r) => r.json())
       .then(setSayfaHakAnim)
       .catch(() => {});
-  }, [user?.id]);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [user?.id, profile?.bonus_spins]);
 
   const [greeting] = useState(() => {
     const sessionGreeting = sessionStorage.getItem("sessionGreeting");
@@ -398,18 +602,92 @@ const HomePage = () => {
   useEffect(() => {
     console.log("🏠 [HomePage] Mount - ilk veri yüklemesi...");
     refreshProfile(true);
+    // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
-  // Sağ/sol ok tıklamalarında ilgili sayfaya git (dönüş animasyonu bittikten sonra)
-  const goToProfile = useCallback(() => {
-    playSound("buttonClick");
-    navigate("/profile");
-  }, [playSound, navigate]);
+  const handleGameModeClick = useCallback(
+    async (modeId: string) => {
+      playSound("buttonClick");
+      const hasUsableCredit = async () => {
+        if (isPremium || isUnlimitedLivesActive(profile)) return true;
+        if ((profile?.game_credits || 0) + (profile?.bonus_credits || 0) > 0) return true;
+        if (!user?.id) return false;
 
-  const goToLeaderboard = useCallback(() => {
-    playSound("buttonClick");
-    navigate("/leaderboard");
-  }, [playSound, navigate]);
+        const { data } = await supabase
+          .from("profiles")
+          .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+          .eq("id", user.id)
+          .maybeSingle();
+        const now = new Date();
+        return Boolean(
+          ((data?.game_credits || 0) + (data?.bonus_credits || 0) > 0) ||
+          (data?.premium_until && new Date(data.premium_until) > now) ||
+          (data?.unlimited_lives_until && new Date(data.unlimited_lives_until) > now)
+        );
+      };
+
+      if (
+        !(await hasUsableCredit())
+      ) {
+        toast.error("Oyun için yeterli sayfan yok!", { description: "Oyun oynamak için sayfa satın alın." });
+        navigate("/market");
+        return;
+      }
+      if (modeId === "tournament") navigate("/tournament");
+      else setSelectedMode(modeId);
+    },
+    [playSound, isPremium, profile, user?.id, navigate],
+  );
+
+  const handleMatchFound = (roomId: string) => {
+    setShowMatchmaking(false);
+    if (roomId === "ai-game") navigate(`/game/vs-computer?type=${matchmakingGameType}`);
+    else navigate(`/game/random-match?room=${roomId}&type=${matchmakingGameType}`);
+  };
+
+  // --- CONFIG ---
+  const gameModesConfig = useMemo(
+    () => [
+      {
+        id: "random-match",
+        title: "Rastgele Rakip",
+        icon: RastgeleIcon,
+        gradient: "from-violet-500 via-purple-500 to-indigo-500",
+        glowColor: "violet",
+        isLive: true,
+      },
+      {
+        id: "tournament",
+        title: "Turnuva",
+        description: "Büyük ödüller",
+        icon: TurnuvaIcon,
+        gradient: "from-amber-400 via-orange-500 to-red-500",
+        glowColor: "amber",
+        isLive: false,
+      },
+      {
+        id: "vs-computer",
+        title: "Yapay Zeka",
+        description: "Pratik yap",
+        icon: AiModIcon,
+        gradient: "from-cyan-400 via-sky-500 to-blue-500",
+        glowColor: "cyan",
+        isLive: false,
+      },
+      {
+        id: "private-room",
+        title: "Özel Oda",
+        description: "Arkadaşınla oyna",
+        icon: OzelOdaIcon,
+        gradient: "from-emerald-400 via-green-500 to-teal-500",
+        glowColor: "emerald",
+        isLive: false,
+      },
+    ],
+    [],
+  );
+
+  // miniGamesConfig artık MiniGamesPage'e taşındı
 
   const totalCredits = getTotalCredits();
 
@@ -591,6 +869,61 @@ const HomePage = () => {
               );
             })()}
           </div>
+
+          {/* --- JOKERLER --- */}
+          <div className="px-5 mt-3">
+            <div className="flex gap-4">
+              {[
+                { 
+                  img: "/icons/degistir.svg", 
+                  count: jokers.degistir, 
+                  name: "Değiştir", 
+                  // Turkuaz / Neon Mavi Geçişli
+                  layer: "bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600" 
+                },
+                { 
+                  img: "/icons/fisilda.svg", 
+                  count: jokers.fisilida, 
+                  name: "Fısılda", 
+                  // Amber / Canlı Sarı Geçişli (Daily Challenge'lara çok yakın, çok şık)
+                  layer: "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500" 
+                },
+                { 
+                  img: "/icons/senyaz.svg", 
+                  count: jokers.senYaz, 
+                  name: "Sen Yaz", 
+                  // Fıstık Yeşili / Zümrüt Geçişli
+                  layer: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600" 
+                },
+              ].map((j, i) => (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center gap-2 active:scale-90 transition-transform cursor-pointer"
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/market");
+                  }}
+                >
+                  <div
+                    className={`relative w-20 h-20 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_12px_rgba(255,255,255,0.2)]`}
+                  >
+                    <img 
+                      src={j.img} 
+                      className="w-10 h-10 object-contain drop-shadow-lg transition-transform group-hover:scale-105" 
+                      alt={j.name} 
+                    />
+                    <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-md">
+                      {j.count}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-black text-slate-200 text-center leading-tight uppercase tracking-wider">
+                    {j.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
 
           {/* INFO PANELS (SÜRE & HAK) */}
           <div className="px-5 mt-2 space-y-2">
@@ -784,12 +1117,330 @@ const HomePage = () => {
         </div>
 
         {/* --------------------------------------------------------
-        3D SAHNE ALANI (YÜZEN ADA) 
+        KAYDIRILABİLİR ALAN (SCROLLABLE CONTENT) 
       -------------------------------------------------------- */}
-        <div className="flex-1 min-h-0 relative z-10">
-          <HomeIslandScene onFinishLeft={goToProfile} onFinishRight={goToLeaderboard} />
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto relative z-10 pb-28">
+          {/* OYUN MODLARI */}
+          <div className="px-5 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-indigo-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Oyun Modları</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {gameModesConfig.map((mode) => (
+                <GameModeCard
+                  key={mode.id}
+                  mode={mode}
+                  onClick={() => handleGameModeClick(mode.id)}
+                  searchingCount={searchingPlayersCount}
+                  activeTournamentCount={activeTournamentCount}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* GÜNLÜK CHALLENGE'LAR */}
+          <div className="mt-6 pl-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-amber-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Düello & Görev</h3>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 pr-5 scrollbar-hide items-center">
+              {/* Kelime Puzzle */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/puzzle");
+                }}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.puzzle ? "border-white/60" : "border-white"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.puzzle ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
+                />
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                    {challengeStatus.puzzle ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <KelimePuzzleIcon className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Kelime Puzzle
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.puzzle ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
+                  >
+                    {challengeStatus.puzzle ? "✓ Bitti" : "Oyna"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Reaktör */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/reaktor");
+                }}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.reaktor ? "border-white/60" : "border-white"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.reaktor ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
+                />
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                    {challengeStatus.reaktor ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <ReaktorIcon className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Harf Koşusu
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.reaktor ? "Yarın tekrar gel!" : "Harfleri topla"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.reaktor ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
+                  >
+                    {challengeStatus.reaktor ? "✓ Bitti" : "Oyna"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Refleks (Neon Blitz) */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/neon-blitz");
+                }}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.neon_blitz ? "border-white/60" : "border-white"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.neon_blitz ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
+                />
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                    {challengeStatus.neon_blitz ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <RefleksIcon className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Refleks
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.neon_blitz ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
+                  >
+                    {challengeStatus.neon_blitz ? "✓ Bitti" : "Oyna"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Hafıza Oyunu */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/memory");
+                }}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.memory ? "border-white/60" : "border-white"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.memory ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
+                />
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                    {challengeStatus.memory ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <KelimeHafizaIcon className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Hafıza
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.memory ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
+                  >
+                    {challengeStatus.memory ? "✓ Bitti" : "Oyna"}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Kelime Avı (Boggle) */}
+              <div
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/challenge/kelime-avi");
+                }}
+                className={`flex-shrink-0 w-40 h-40 rounded-full flex flex-col items-center justify-center text-center border-2 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-all p-4 [filter:drop-shadow(0_0_10px_rgba(255,255,255,0.18))] ${challengeStatus.kelime_avi ? "border-white/60" : "border-white"}`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br from-yellow-600 via-amber-500 to-yellow-700 ${challengeStatus.kelime_avi ? "opacity-50 grayscale-[30%]" : "opacity-100"} rounded-full`}
+                />
+                <div className="absolute -right-3 -top-3 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center justify-between h-full w-full py-1">
+                  <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                    {challengeStatus.kelime_avi ? (
+                      <Check className="w-6 h-6 text-amber-300" />
+                    ) : (
+                      <img src="/surukle.svg" alt="" className="w-8 h-8" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <h3
+                      className="text-xs font-black text-white leading-tight drop-shadow-md uppercase tracking-wider"
+                      style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
+                    >
+                      Kelime Avı
+                    </h3>
+                    <p className="text-[9px] text-white/90 font-semibold leading-tight mt-0.5">
+                      {challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Harfleri birleştir"}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-[9px] px-2.5 py-0.5 font-bold uppercase tracking-wide leading-4 ${challengeStatus.kelime_avi ? "bg-amber-400/30 hover:bg-amber-400/30 text-amber-200 border-amber-400/40" : "bg-amber-400/25 hover:bg-amber-400/25 text-amber-100 border-white/30"}`}
+                  >
+                    {challengeStatus.kelime_avi ? "✓ Bitti" : "Oyna"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* GÜNLÜK ÇARK */}
+          <div className="px-5 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1 h-4 bg-red-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Şans Çarkı</h3>
+            </div>
+            <div
+              onClick={() => {
+                playSound("buttonClick");
+                navigate("/wheel");
+              }}
+              className={`w-full rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden cursor-pointer group active:scale-[0.97] transition-transform border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] ${
+                wheelSpinsLeft === 0 ? "opacity-70" : ""
+              }`}
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 ${
+                  wheelSpinsLeft === 0 ? "opacity-50 grayscale-[30%]" : "opacity-90"
+                } rounded-2xl`}
+              />
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <WheelIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-20 h-20 opacity-10 select-none pointer-events-none z-[1]" />
+              <div className="relative z-10 w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
+                {wheelSpinsLeft === 0 ? (
+                  <Check className="w-6 h-6 text-red-300" />
+                ) : (
+                  <WheelIcon className="w-10 h-10" />
+                )}
+              </div>
+              <div className="relative z-10 flex-1">
+                <h3 className="text-base font-bold text-white leading-none mb-1 drop-shadow-md"
+                  style={{ WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' } as any}>
+                  {wheelSpinsLeft === 0 ? "Çark Çevrildi" : "Şansını Dene!"}
+                </h3>
+                <p className="text-[10px] text-white/70 font-medium">
+                  {wheelSpinsLeft === 0 ? "Yarın tekrar gel!" : "Çarkı çevir, ödüller kazan!"}
+                </p>
+              </div>
+              {wheelSpinsLeft !== null && wheelSpinsLeft > 0 && (
+                <Badge className="relative z-10 text-[9px] px-2 py-0.5 bg-white/20 hover:bg-white/20 text-white border-white/30">
+                  x{wheelSpinsLeft} hak
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* İSTATİSTİKLER */}
+          <div className="px-5 mt-6 pb-12">
+            {" "}
+            {/* Alt boşluğu biraz artırdım, menüye girmesin */}
+            <div className="grid grid-cols-3 gap-3">
+              <StatWidget svgIcon="/icons/oyun.svg" value={profile?.daily_games || 0} label="Oyun" />
+              <StatWidget svgIcon="/icons/seri.svg" value={profile?.win_streak || 0} label="Seri" />
+              <StatWidget svgIcon="/icons/zafer.svg" value={profile?.wins || 0} label="Zafer" />
+            </div>
+          </div>
         </div>
 
+        {/* --- MODALLAR --- */}
+        {selectedMode && selectedMode === "private-room" ? (
+          <PrivateRoomModal
+            onClose={() => setSelectedMode(null)}
+            onStartGame={(matchId, type) => {
+              setSelectedMode(null);
+              navigate(`/game/random-match?room=${matchId}&type=${type}`);
+            }}
+          />
+        ) : selectedMode ? (
+          <GameModeSelector
+            mode={selectedMode}
+            onStart={(type) => {
+              if (selectedMode === "tournament") navigate("/tournament", { state: { gameType: type } });
+              else if (selectedMode === "random-match") {
+                setMatchmakingGameType(type);
+                setMatchmakingKey(Date.now());
+                setShowMatchmaking(true);
+                setTimeout(() => startSearch(type), 100);
+              } else navigate(`/game/${selectedMode}?type=${type}`);
+              setSelectedMode(null);
+            }}
+            onClose={() => setSelectedMode(null)}
+          />
+        ) : null}
+
+        {showMatchmaking && (
+          <div className="fixed inset-0 z-[9999] bg-[#1a1a2e]">
+            {" "}
+            {/* Flashbang etkisini önlemek için koyu arka plan */}
+            <SlotMatchmaking
+              key={`matchmaking-${matchmakingKey}`}
+              onCancel={() => {
+                cancelSearch();
+                setShowMatchmaking(false);
+              }}
+              searchProgress={searchProgress}
+            />
+          </div>
+        )}
 
         <div className="fixed bottom-0 left-0 right-0 z-50">
           <FloatingMenu />
