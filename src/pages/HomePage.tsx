@@ -1034,12 +1034,15 @@ const HomePage = () => {
                   />
                   {/* Dolmayan kısmı karart (bar iç alanı ~%15 - %86) */}
                   <div
-                    className="absolute top-[22%] bottom-[22%] rounded-[2px] bg-black/65 transition-all duration-1000"
+                    className="absolute top-[22%] bottom-[22%] rounded-[2px] bg-black/90 transition-all duration-1000"
                     style={{
                       right: "14.5%",
                       width: `${(1 - Math.min(1, Math.max(0, progressPercent / 100))) * 70.5}%`,
+                      boxShadow: "inset 0 0 6px rgba(0,0,0,0.95)",
+                      filter: "saturate(0.2)",
                     }}
                   />
+
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
                   <span className={`text-[9px] uppercase tracking-[0.1em] ${vipType ? "text-white/80" : "text-slate-400"}`}>Puan</span>
