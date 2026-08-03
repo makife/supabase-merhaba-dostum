@@ -1,7 +1,8 @@
 import { Component, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import * as THREE from "three";
+
 
 /** 3D model yüklenemezse uygulamayı çökertmemesi için hata sınırı */
 class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
