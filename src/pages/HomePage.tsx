@@ -474,6 +474,12 @@ const HomePage = () => {
       .then(setSayfaHakAnim)
       .catch(() => {});
 
+    fetch("/anaSayfa/kalanSayfalarim.json")
+      .then((r) => r.json())
+      .then(setKalanSayfaAnim)
+      .catch(() => {});
+
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
