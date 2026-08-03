@@ -1124,13 +1124,20 @@ const HomePage = () => {
         >
 
           <div
-            className="relative h-full"
+            className="relative"
             style={{
+              // Görselin genişliği daima yükseklikten oranla türetiliyor:
+              // header/menü bar yükseklikleri cihazdan cihaza (APK/IPA) değişse de
+              // ada görseli aynı oranı koruyup boşluğa göre büyüyüp küçülüyor.
               aspectRatio: "784 / 1400",
+              height: "100%",
+              width: "auto",
               animation: "homeIslandFloat 6s ease-in-out infinite",
               scale: "1.08",
             }}
           >
+
+
 
             <img
               src="/anaSayfa/anasayfaGorsel.png"
