@@ -18,10 +18,11 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
   const { playSound } = useSounds();
 
   const items: NavItem[] = [
-    { route: "/friends", label: "Arkadaşlar", icon: "/anaSayfa/arkadaslikAnasayfa.png", badge: pendingFriendRequests },
-    { route: "/leaderboard", label: "Liderlik", icon: "/anaSayfa/liderlikAnasayfa.png" },
+    { route: "/friends", label: "Arkadaşlar", icon: "/icons/arkadaslar-gorsel.svg", badge: pendingFriendRequests },
+    { route: "/leaderboard", label: "Liderlik", icon: "/icons/liderlik-gorsel.svg" },
     { route: "/profile", label: "Profil", icon: "/icons/profil-gorsel.svg" },
-    { route: "/settings", label: "Ayarlar", icon: "/anaSayfa/ayarlarAnasayfa.png" },
+    { route: "/market", label: "Market", icon: "/icons/kirtasiye-gorsel.svg" },
+    { route: "/settings", label: "Ayarlar", icon: "/icons/ayarlar-gorsel.svg" },
   ];
 
   return (
@@ -29,7 +30,10 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
       className="flex-none z-40 px-3 pt-2"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
     >
-      <div className="relative flex items-end justify-around rounded-3xl bg-[#1e2d45]/95 border border-white/25 shadow-[0_-4px_18px_rgba(0,0,0,0.35)] px-2 py-2">
+      <div
+        className="relative flex items-end justify-around rounded-3xl bg-white/10 border border-white/25 shadow-[0_-4px_18px_rgba(0,0,0,0.25)] px-2 py-2"
+        style={{ backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
+      >
         {items.map((item) => {
           const active = location.pathname === item.route;
           return (
@@ -44,16 +48,14 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
               <div
-                className={`relative flex items-center justify-center rounded-2xl transition-all duration-200 ${
-                  active
-                    ? "w-16 h-16 -mt-6 bg-gradient-to-br from-indigo-400 to-purple-600 border-2 border-white shadow-[0_6px_18px_rgba(255,255,255,0.25)]"
-                    : "w-12 h-12 bg-white/5 border border-white/10"
+                className={`relative flex items-center justify-center transition-all duration-200 ${
+                  active ? "w-14 h-14 -mt-5" : "w-10 h-10"
                 }`}
               >
                 <img
                   src={item.icon}
                   alt={item.label}
-                  className={`object-contain ${active ? "w-11 h-11" : "w-9 h-9"}`}
+                  className={`object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)] ${active ? "w-14 h-14" : "w-10 h-10"}`}
                 />
                 {!!item.badge && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#1e2d45]">
@@ -62,7 +64,7 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
                 )}
               </div>
               <span
-                className={`text-[10px] font-black uppercase tracking-wide ${active ? "text-white" : "text-slate-400"}`}
+                className={`text-[9px] font-black uppercase tracking-wide ${active ? "text-white" : "text-slate-300"}`}
               >
                 {item.label}
               </span>
@@ -70,6 +72,7 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
           );
         })}
       </div>
+
     </nav>
   );
 };

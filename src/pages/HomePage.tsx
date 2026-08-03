@@ -941,7 +941,16 @@ const HomePage = () => {
             <div className="flex-1 min-w-0 flex flex-col pointer-events-auto">
             {/* Profil + Seviye */}
 
-            <div className="flex items-center gap-3 cursor-pointer min-w-0" onClick={() => setShowAvatarView(true)}>
+            <div
+              className={`flex items-center gap-3 cursor-pointer min-w-0 ${
+                vipType === "yearly"
+                  ? "w-full rounded-2xl p-2 pr-3 bg-gradient-to-r from-amber-400/90 via-yellow-300/80 to-amber-500/90 border-2 border-amber-500/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
+                  : vipType === "monthly"
+                    ? "w-full rounded-2xl p-2 pr-3 bg-gradient-to-r from-blue-500/90 via-cyan-400/80 to-blue-600/90 border-2 border-blue-400/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
+                    : ""
+              }`}
+              onClick={() => setShowAvatarView(true)}
+            >
               <div className="relative flex-none">
                 {boostActiveHome && boostProfilAnim && (
                   <div className="absolute inset-0 -m-14 pointer-events-none z-0">
@@ -971,9 +980,8 @@ const HomePage = () => {
                   {profile?.username || "Misafir"}
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <img src={getLevelFruitIcon(level)} alt="" className="w-6 h-6 object-contain drop-shadow" />
                   <span className="text-xs font-bold text-white">Seviye {level}</span>
-                  <span className="text-[9px] text-slate-400 font-mono">
+                  <span className={`text-[9px] font-mono ${vipType ? "text-white/80" : "text-slate-400"}`}>
                     {levelData.experience}/{levelData.nextLevelExp}
                   </span>
                 </div>
@@ -984,13 +992,14 @@ const HomePage = () => {
                   />
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-[9px] text-slate-400 uppercase tracking-[0.1em]">Puan</span>
-                  <span className="text-xs font-mono font-bold text-red-500">
+                  <span className={`text-[9px] uppercase tracking-[0.1em] ${vipType ? "text-white/80" : "text-slate-400"}`}>Puan</span>
+                  <span className={`text-xs font-mono font-bold ${vipType ? "text-white" : "text-red-500"}`}>
                     {(profile?.total_score || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
+
 
           {/* KALAN SAYFALARIM / VIP */}
           <div className="mt-3 space-y-2">
