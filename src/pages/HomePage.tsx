@@ -1103,7 +1103,7 @@ const HomePage = () => {
 
                 {/* KALAN SAYFA HAKKI — çıplak lottie + badge */}
                 {(!isPremium || isUnlimitedLivesActive(profile)) && (
-                  <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex flex-col items-center gap-0.5 -mt-3">
                     <div className="relative w-12 h-12">
                       {kalanSayfaAnim ? (
                         <Lottie
@@ -1136,6 +1136,21 @@ const HomePage = () => {
                         )}
                   </div>
                 )}
+
+                {/* MÜREKKEP — çıplak lottie + badge */}
+                <div
+                  className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/market");
+                  }}
+                >
+                  <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                    {profile?.ink_count ?? 0}
+                  </span>
+                </div>
+
               </div>
 
             </div>
