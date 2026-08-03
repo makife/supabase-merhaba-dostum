@@ -64,7 +64,7 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0 }: HomeBottomNavProps)
                 )}
               </div>
               <span
-                className={`text-[9px] font-black uppercase tracking-wide ${active ? "text-white" : "text-slate-300"}`}
+                className={`text-[9px] font-black uppercase tracking-wide text-white`}
               >
                 {item.label}
               </span>

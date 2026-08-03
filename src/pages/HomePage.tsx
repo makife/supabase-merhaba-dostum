@@ -950,6 +950,7 @@ const HomePage = () => {
             {/* Profil + Seviye */}
 
             <div
+              ref={profileRef}
               className={`flex items-center gap-3 cursor-pointer min-w-0 ${
                 vipType === "yearly"
                   ? "w-full rounded-2xl p-2 pr-3 bg-gradient-to-r from-amber-400/90 via-yellow-300/80 to-amber-500/90 border-2 border-amber-500/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
