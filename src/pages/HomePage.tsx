@@ -349,6 +349,7 @@ const HomePage = () => {
   const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
   const [kalanSayfaAnim, setKalanSayfaAnim] = useState<any>(null);
   const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
+  const [premiumBadgeAnim, setPremiumBadgeAnim] = useState<any>(null);
 
   const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
   const boostSourceHome = (profile as any)?.score_boost_source;
@@ -360,6 +361,12 @@ const HomePage = () => {
       fetch("/boostProfil.json").then(r => r.json()).then(setBoostProfilAnim).catch(() => {});
     }
   }, [boostActiveHome, boostProfilAnim]);
+
+  useEffect(() => {
+    if (isPremium && !premiumBadgeAnim) {
+      fetch("/premiumLottie.json").then(r => r.json()).then(setPremiumBadgeAnim).catch(() => {});
+    }
+  }, [isPremium, premiumBadgeAnim]);
 
   // useMemoryGame taşındı
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
@@ -982,6 +989,16 @@ const HomePage = () => {
                     <AvatarFallback className="bg-slate-800 text-slate-400 text-sm">U</AvatarFallback>
                   </Avatar>
                 </div>
+                {isPremium && premiumBadgeAnim && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-14 h-14 pointer-events-none">
+                    <Lottie
+                      animationData={premiumBadgeAnim}
+                      loop
+                      autoplay
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0">
@@ -1010,61 +1027,6 @@ const HomePage = () => {
             </div>
 
 
-          {/* KALAN SAYFALARIM / VIP */}
-          <div className="mt-3 space-y-2">
-
-            {isPremium && premiumTimeLeft && (
-              <div
-                className={`flex items-center justify-between rounded-xl p-3 px-4 border-2 ${
-                  vipType === "yearly"
-                    ? "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 border-amber-600"
-                    : vipType === "monthly"
-                      ? "bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 border-blue-600"
-                      : "bg-gradient-to-r from-amber-50 to-orange-50 border-slate-600"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <VipCrownIcon className="w-10 h-10" />
-                  <div className="flex flex-col">
-                    <span
-                      className={`text-sm font-bold ${
-                        vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-800"
-                      }`}
-                    >
-                      {vipType === "yearly"
-                        ? "⭐ VIP Yazar (Yıllık)"
-                        : vipType === "monthly"
-                          ? "💎 VIP Yazar (Aylık)"
-                          : "VIP Yazar"}
-                    </span>
-                    <span
-                      className={`text-[10px] ${
-                        vipType === "yearly" || vipType === "monthly" ? "text-white/80" : "text-amber-600"
-                      }`}
-                    >
-                      Sınırsız hak • Günlük joker • 2x XP
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className={`px-2 py-1 rounded-lg ${
-                    vipType === "yearly" || vipType === "monthly" ? "bg-white/20" : "bg-amber-100"
-                  }`}
-                >
-                  <span
-                    className={`text-xs font-mono font-bold ${
-                      vipType === "yearly" || vipType === "monthly" ? "text-white" : "text-amber-600"
-                    }`}
-                  >
-                    {premiumTimeLeft}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {null}
-
-          </div>
             </div>
 
             {/* Sağ kolon: bildirim + jokerler */}
