@@ -339,6 +339,7 @@ const HomePage = () => {
   const [unlimitedTimeLeft, setUnlimitedTimeLeft] = useState<string>("");
   const [premiumTimeLeft, setPremiumTimeLeft] = useState<string>("");
   const [sayfaHakAnim, setSayfaHakAnim] = useState<any>(null);
+  const [kalanSayfaAnim, setKalanSayfaAnim] = useState<any>(null);
   const [boostProfilAnim, setBoostProfilAnim] = useState<any>(null);
 
   const boostUntilHome = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
@@ -472,6 +473,12 @@ const HomePage = () => {
       .then((r) => r.json())
       .then(setSayfaHakAnim)
       .catch(() => {});
+
+    fetch("/anaSayfa/kalanSayfalarim.json")
+      .then((r) => r.json())
+      .then(setKalanSayfaAnim)
+      .catch(() => {});
+
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
@@ -1037,119 +1044,8 @@ const HomePage = () => {
               </div>
             )}
 
-            {(!isPremium || isUnlimitedLivesActive(profile)) && (
-              <div
-                className={`flex items-center gap-2 backdrop-blur-md border border-white/30 rounded-xl p-2 pl-0 pr-2 overflow-hidden ${
-                  isUnlimitedLivesActive(profile)
-                    ? getUnlimitedType(profile) === "maraton"
-                      ? "bg-gradient-to-r from-amber-500/10 to-orange-500/10"
-                      : "bg-gradient-to-r from-blue-500/10 to-cyan-500/10"
-                    : "bg-[#1e2d45]"
-                }`}
-              >
-                <span
-                  className={`text-xs font-black uppercase tracking-wider flex-shrink-0 ${
-                    isUnlimitedLivesActive(profile)
-                      ? getUnlimitedType(profile) === "maraton"
-                        ? "text-amber-400 px-2"
-                        : "text-blue-400 px-2"
-                      : "text-white self-stretch inline-flex items-center justify-center -my-2 px-3 py-2 rounded-l-xl shadow-inner"
-                  }`}
-                  style={
-                    !isUnlimitedLivesActive(profile)
-                      ? {
-                          background: "linear-gradient(to bottom, #f87171, #dc2626, #7f1d1d)",
-                        }
-                      : undefined
-                  }
-                >
-                  {isUnlimitedLivesActive(profile) ? (
-                    <span className="flex items-center gap-1.5">
-                      <UnlimitedIcon className="w-12 h-12 flex-shrink-0 -my-2" />
-                      {getUnlimitedType(profile) === "maraton" ? "Maraton Modu" : "Sınırsız Akış"}
-                    </span>
-                  ) : (
-                    <span
-                      className="flex flex-col items-center leading-tight"
-                      style={{ WebkitTextStroke: "0.5px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      <span>Kalan</span>
-                      <span>Sayfalarım</span>
-                    </span>
-                  )}
-                </span>
+            {null}
 
-                {isUnlimitedLivesActive(profile) ? (
-                  <div className="flex items-center gap-2 ml-auto">
-                    {unlimitedTimeLeft ? (
-                      <div
-                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border ${
-                          getUnlimitedType(profile) === "maraton"
-                            ? "bg-amber-500/20 border-amber-500/30"
-                            : "bg-blue-500/20 border-blue-500/30"
-                        }`}
-                      >
-                        <Clock
-                          className={`w-3 h-3 animate-pulse ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-400" : "text-blue-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-xs font-mono font-bold tabular-nums ${
-                            getUnlimitedType(profile) === "maraton" ? "text-amber-300" : "text-blue-300"
-                          }`}
-                        >
-                          {unlimitedTimeLeft}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="w-16 h-5 bg-slate-700 rounded animate-pulse" />
-                    )}
-                    <Badge
-                      className={`text-[10px] px-2 py-0.5 border ${
-                        getUnlimitedType(profile) === "maraton"
-                          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                          : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                      }`}
-                    >
-                      Sınırsız
-                    </Badge>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex -space-x-3 flex-shrink-0">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <HakIcon key={i} animData={sayfaHakAnim} filled={i < Math.min(totalCredits, 5)} size={44} />
-                      ))}
-                    </div>
-
-                    <div className="ml-auto flex items-center justify-end flex-shrink-0">
-                      {totalCredits > 5 ? (
-                        <div className="relative inline-flex items-center justify-center w-9 h-9 -mr-1">
-                          <img src="/icons/kredifazlasi-badge.svg" alt="" className="w-9 h-9 object-contain" />
-                          <span
-                            className="absolute text-white text-[12px] font-bold"
-                            style={{ WebkitTextStroke: "0.3px black", textShadow: "0 0 2px black" }}
-                          >
-                            +{totalCredits - 5}
-                          </span>
-                        </div>
-                      ) : timeUntilNextCredit ? (
-                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-white/30 bg-black/30">
-                          <Clock className="w-3 h-3 text-white/80" />
-                          <span
-                            className="text-[11px] font-mono font-bold tabular-nums text-white whitespace-nowrap"
-                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
-                          >
-                            {timeUntilNextCredit}
-                          </span>
-                        </div>
-                      ) : null}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
             </div>
 
@@ -1176,25 +1072,64 @@ const HomePage = () => {
                 )}
               </button>
 
-              {jokerList.map((j, i) => (
-                <div
-                  key={i}
-                  className="active:scale-90 transition-transform cursor-pointer"
-                  onClick={() => {
-                    playSound("buttonClick");
-                    navigate("/market");
-                  }}
-                >
+              <div className="flex flex-col items-center gap-2 mt-6">
+                {jokerList.map((j, i) => (
                   <div
-                    className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                    key={i}
+                    className="active:scale-90 transition-transform cursor-pointer"
+                    onClick={() => {
+                      playSound("buttonClick");
+                      navigate("/market");
+                    }}
                   >
-                    <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                      {j.count}
-                    </span>
+                    <div
+                      className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                    >
+                      <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                        {j.count}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+
+                {/* KALAN SAYFA HAKKI — çıplak lottie + badge */}
+                {(!isPremium || isUnlimitedLivesActive(profile)) && (
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="relative w-12 h-12">
+                      {kalanSayfaAnim ? (
+                        <Lottie
+                          animationData={kalanSayfaAnim}
+                          loop
+                          autoplay
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      ) : null}
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                        {isUnlimitedLivesActive(profile) ? "∞" : totalCredits}
+                      </span>
+                    </div>
+                    {isUnlimitedLivesActive(profile)
+                      ? unlimitedTimeLeft && (
+                          <span
+                            className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                          >
+                            {unlimitedTimeLeft}
+                          </span>
+                        )
+                      : timeUntilNextCredit && (
+                          <span
+                            className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                          >
+                            {timeUntilNextCredit}
+                          </span>
+                        )}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         </div>
