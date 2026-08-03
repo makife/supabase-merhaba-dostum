@@ -1080,7 +1080,12 @@ const HomePage = () => {
                 )}
               </button>
 
-              <div className="flex flex-col items-start gap-2 mt-6 self-start">
+            </div>
+          </div>
+
+          {/* SOL KOLON: jokerler + kalan sayfa + mürekkep */}
+          <div className="absolute left-4 top-[130px] z-30 flex flex-col items-start gap-2 pointer-events-auto">
+
                 {jokerList.map((j, i) => (
                   <div
                     key={i}
