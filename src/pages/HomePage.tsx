@@ -1090,8 +1090,8 @@ const HomePage = () => {
           className="absolute left-3 right-3 z-30 flex items-end justify-between pointer-events-auto"
           style={{ bottom: islandBounds.bottom }}
         >
-          {/* Jokerler */}
-          <div className="flex flex-col items-center gap-2">
+          {/* Jokerler (dikey) */}
+          <div className="flex items-center gap-2" style={{ flexDirection: "column" }}>
             {jokerList.map((j, i) => (
               <div
                 key={i}
@@ -1113,8 +1113,8 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* Kalan sayfa hakkı + mürekkep */}
-          <div className="flex flex-col items-center gap-1">
+          {/* Kalan sayfa hakkı + mürekkep (dikey) */}
+          <div className="flex items-center gap-1" style={{ flexDirection: "column" }}>
             {(!isPremium || isUnlimitedLivesActive(profile)) && (
               <div className="flex flex-col items-center gap-0.5">
                 <div className="relative w-12 h-12">
