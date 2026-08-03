@@ -1,5 +1,6 @@
 import Lottie from "lottie-react";
 import mapPointAnim from "@/assets/mapPoint.json";
+import mapPointAlertAnim from "@/assets/mapPoint1.json";
 
 interface HomeMapPointProps {
   /** yatay konum, görsel genişliğinin yüzdesi */
@@ -8,10 +9,12 @@ interface HomeMapPointProps {
   y: number;
   size?: number;
   label: string;
+  /** bildirim varsa mapPoint1 animasyonu oynar */
+  alert?: boolean;
   onClick: () => void;
 }
 
-export const HomeMapPoint = ({ x, y, size = 46, label, onClick }: HomeMapPointProps) => (
+export const HomeMapPoint = ({ x, y, size = 46, label, alert = false, onClick }: HomeMapPointProps) => (
   <button
     type="button"
     aria-label={label}
@@ -27,7 +30,8 @@ export const HomeMapPoint = ({ x, y, size = 46, label, onClick }: HomeMapPointPr
     }}
   >
     <Lottie
-      animationData={mapPointAnim}
+      key={alert ? "alert" : "idle"}
+      animationData={alert ? mapPointAlertAnim : mapPointAnim}
       loop
       autoplay
       style={{ width: "100%", height: "100%", pointerEvents: "none" }}
