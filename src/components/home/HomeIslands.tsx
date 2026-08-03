@@ -49,6 +49,79 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
     [],
   );
 
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const islandRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Ada PNG'lerinin alfa maskeleri (şeffaf alanlara tıklama sayılmasın)
+  const maskCache = useRef<Record<string, ImageData | null>>({});
+
+  const getMask = useCallback((src: string) => {
+    if (src in maskCache.current) return maskCache.current[src];
+    maskCache.current[src] = null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = src;
+    img.onload = () => {
+      try {
+        const w = 160;
+        const h = Math.max(1, Math.round((img.naturalHeight / img.naturalWidth) * w));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, w, h);
+        maskCache.current[src] = ctx.getImageData(0, 0, w, h);
+      } catch {
+        maskCache.current[src] = null;
+      }
+    };
+    return null;
+  }, []);
+
+  // Maskeleri erken hazırla
+  useMemo(() => ISLANDS.forEach((i) => getMask(i.src)), [getMask]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      // Üstteki adalar önce denenir (son render edilen en üstte)
+      for (let i = ISLANDS.length - 1; i >= 0; i--) {
+        const el = islandRefs.current[i];
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (
+          e.clientX < rect.left ||
+          e.clientX > rect.right ||
+          e.clientY < rect.top ||
+          e.clientY > rect.bottom
+        )
+          continue;
+
+        const island = ISLANDS[i];
+        const mask = maskCache.current[island.src];
+        if (mask) {
+          // object-contain: görselin rect içindeki gerçek alanını hesapla
+          const imgRatio = mask.width / mask.height;
+          const boxRatio = rect.width / rect.height;
+          let dw = rect.width;
+          let dh = rect.height;
+          if (imgRatio > boxRatio) dh = rect.width / imgRatio;
+          else dw = rect.height * imgRatio;
+          const ox = rect.left + (rect.width - dw) / 2;
+          const oy = rect.top + (rect.height - dh) / 2;
+          const mx = Math.floor(((e.clientX - ox) / dw) * mask.width);
+          const my = Math.floor(((e.clientY - oy) / dh) * mask.height);
+          if (mx < 0 || my < 0 || mx >= mask.width || my >= mask.height) continue;
+          const alpha = mask.data[(my * mask.width + mx) * 4 + 3];
+          if (alpha < 24) continue;
+        }
+
+        onSelect(island.key);
+        return;
+      }
+    },
+    [onSelect],
+  );
+
   return (
     <>
       <style>{`
@@ -58,10 +131,21 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
         }
       `}</style>
 
+      {/* Tüm ada alanını kapsayan tıklama katmanı: alfa testiyle doğru adayı seçer */}
+      <div
+        ref={wrapRef}
+        className="absolute inset-0 z-10"
+        style={{ WebkitTapHighlightColor: "transparent" }}
+        onPointerDown={handlePointerDown}
+      />
+
       {ISLANDS.map((island, i) => (
         <div
           key={island.key}
-          className="absolute"
+          ref={(el) => {
+            islandRefs.current[i] = el;
+          }}
+          className="absolute pointer-events-none"
           style={{
             left: `${island.left}%`,
             top: `${island.top}%`,
@@ -78,18 +162,21 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
             className="w-full h-full object-contain select-none pointer-events-none"
             draggable={false}
           />
-          <HomeMapPoint
-            x={island.px}
-            y={island.py}
-            size={pointSize}
-            label={island.label}
-            alert={alerts?.[island.key] ?? false}
-            onClick={() => onSelect(island.key)}
-          />
+          <div className="pointer-events-auto">
+            <HomeMapPoint
+              x={island.px}
+              y={island.py}
+              size={pointSize}
+              label={island.label}
+              alert={alerts?.[island.key] ?? false}
+              onClick={() => onSelect(island.key)}
+            />
+          </div>
         </div>
       ))}
     </>
   );
 };
+
 
 export default HomeIslands;
