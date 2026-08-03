@@ -990,7 +990,7 @@ const HomePage = () => {
                   </Avatar>
                 </div>
                 {isPremium && premiumBadgeAnim && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-14 h-14 pointer-events-none">
+                  <div className="absolute -top-1 -right-1 z-20 w-7 h-7 pointer-events-none">
                     <Lottie
                       animationData={premiumBadgeAnim}
                       loop
