@@ -929,7 +929,7 @@ const HomePage = () => {
         {/* --------------------------------------------------------
         ÜST ALAN — harita katmanının üzerinde yüzer (sabit header yok)
       -------------------------------------------------------- */}
-        <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-5 pointer-events-none">
+        <div ref={headerRef} className="absolute top-0 left-0 right-0 z-30 px-4 pt-5 pointer-events-none">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 flex flex-col pointer-events-auto">
             {/* Profil + Seviye */}
