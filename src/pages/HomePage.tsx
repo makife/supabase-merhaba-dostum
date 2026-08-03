@@ -308,19 +308,26 @@ const HomePage = () => {
   usePremiumDailyRewards();
 
   const headerRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
   const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
 
   useEffect(() => {
     const measure = () => {
+      const headerTop = headerRef.current?.getBoundingClientRect().top ?? 0;
+      const profileBottom = profileRef.current?.getBoundingClientRect().bottom;
       setIslandBounds({
-        top: headerRef.current?.getBoundingClientRect().height ?? 0,
+        top:
+          profileBottom != null
+            ? Math.max(0, profileBottom - headerTop + 4)
+            : (headerRef.current?.getBoundingClientRect().height ?? 0),
         bottom: navRef.current?.getBoundingClientRect().height ?? 0,
       });
     };
     measure();
     const ro = new ResizeObserver(measure);
     if (headerRef.current) ro.observe(headerRef.current);
+    if (profileRef.current) ro.observe(profileRef.current);
     if (navRef.current) ro.observe(navRef.current);
     window.addEventListener("resize", measure);
     return () => {
@@ -328,6 +335,7 @@ const HomePage = () => {
       window.removeEventListener("resize", measure);
     };
   }, []);
+
 
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
 
@@ -942,6 +950,7 @@ const HomePage = () => {
             {/* Profil + Seviye */}
 
             <div
+              ref={profileRef}
               className={`flex items-center gap-3 cursor-pointer min-w-0 ${
                 vipType === "yearly"
                   ? "w-full rounded-2xl p-2 pr-3 bg-gradient-to-r from-amber-400/90 via-yellow-300/80 to-amber-500/90 border-2 border-amber-500/70 shadow-[0_6px_18px_rgba(0,0,0,0.3)]"
