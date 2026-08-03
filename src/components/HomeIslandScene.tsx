@@ -20,8 +20,9 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 }
 
 
-// Model Vite tarafından paketlenir (public'ten .obj mime sorununu aşmak için)
-import ISLAND_MODEL_URL from "@/assets/models/3dLakeLowPoly.obj?url";
+// Model Vite tarafından paketlenir (public'ten mime sorununu aşmak için)
+import ISLAND_MODEL_URL from "@/assets/models/3dLakeLowPoly.fbx?url";
+
 const LEFT_ARROW_URL = "/anaSayfa/anasayfaSolaOk.svg";
 const RIGHT_ARROW_URL = "/anaSayfa/anasayfaSagOk.svg";
 
