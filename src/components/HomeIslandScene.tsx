@@ -1,7 +1,23 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Component, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as THREE from "three";
+
+/** 3D model yüklenemezse uygulamayı çökertmemesi için hata sınırı */
+class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.warn("[HomeIslandScene] 3D sahne yüklenemedi:", error);
+  }
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
+
 
 // public/anaSayfa klasöründeki dosyalar
 const ISLAND_MODEL_URL = "/anaSayfa/3dLakeLowPoly.obj";
