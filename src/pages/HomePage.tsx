@@ -1266,8 +1266,10 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* ALT MENÜ BAR */}
-        <HomeBottomNav pendingFriendRequests={pendingFriendRequests} />
+        {/* ALT MENÜ BAR — harita katmanının üzerinde yüzer */}
+        <div className="absolute bottom-0 left-0 right-0 z-40">
+          <HomeBottomNav pendingFriendRequests={pendingFriendRequests} />
+        </div>
 
         {/* --- PANELLER --- */}
         <HomeSlidePanel
