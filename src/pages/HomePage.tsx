@@ -1065,25 +1065,64 @@ const HomePage = () => {
                 )}
               </button>
 
-              {jokerList.map((j, i) => (
-                <div
-                  key={i}
-                  className="active:scale-90 transition-transform cursor-pointer"
-                  onClick={() => {
-                    playSound("buttonClick");
-                    navigate("/market");
-                  }}
-                >
+              <div className="flex flex-col items-center gap-2 mt-6">
+                {jokerList.map((j, i) => (
                   <div
-                    className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                    key={i}
+                    className="active:scale-90 transition-transform cursor-pointer"
+                    onClick={() => {
+                      playSound("buttonClick");
+                      navigate("/market");
+                    }}
                   >
-                    <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                      {j.count}
-                    </span>
+                    <div
+                      className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
+                    >
+                      <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                        {j.count}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+
+                {/* KALAN SAYFA HAKKI — çıplak lottie + badge */}
+                {(!isPremium || isUnlimitedLivesActive(profile)) && (
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="relative w-12 h-12">
+                      {kalanSayfaAnim ? (
+                        <Lottie
+                          animationData={kalanSayfaAnim}
+                          loop
+                          autoplay
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      ) : null}
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                        {isUnlimitedLivesActive(profile) ? "∞" : totalCredits}
+                      </span>
+                    </div>
+                    {isUnlimitedLivesActive(profile)
+                      ? unlimitedTimeLeft && (
+                          <span
+                            className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                          >
+                            {unlimitedTimeLeft}
+                          </span>
+                        )
+                      : timeUntilNextCredit && (
+                          <span
+                            className="text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+                            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+                          >
+                            {timeUntilNextCredit}
+                          </span>
+                        )}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         </div>
