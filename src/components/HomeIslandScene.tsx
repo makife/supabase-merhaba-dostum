@@ -1,4 +1,4 @@
-import { Component, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Component, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as THREE from "three";
