@@ -1,4 +1,4 @@
-import { Component, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Component, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as THREE from "three";
@@ -19,10 +19,11 @@ class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: bo
 }
 
 
-// public/anaSayfa klasöründeki dosyalar
-const ISLAND_MODEL_URL = "/anaSayfa/3dLakeLowPoly.obj";
+// Model Vite tarafından paketlenir (public'ten .obj mime sorununu aşmak için)
+import ISLAND_MODEL_URL from "@/assets/models/3dLakeLowPoly.obj?url";
 const LEFT_ARROW_URL = "/anaSayfa/anasayfaSolaOk.svg";
 const RIGHT_ARROW_URL = "/anaSayfa/anasayfaSagOk.svg";
+
 
 type RotationPhase = "idle" | "toBack" | "holding" | "toFront";
 
@@ -32,8 +33,34 @@ const HOLD_DURATION = 5000;
 
 /** Yavaşça yukarı-aşağı salınan yüzen ada modeli */
 function FloatingIsland() {
-  const obj = useLoader(OBJLoader, ISLAND_MODEL_URL);
+  const obj = useLoader(OBJLoader, ISLAND_MODEL_URL) as THREE.Group;
   const groupRef = useRef<THREE.Group>(null);
+
+  // Modeli ortala ve kameraya sığacak şekilde ölçekle
+  const model = useMemo(() => {
+    const clone = obj.clone(true);
+    clone.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.material = new THREE.MeshStandardMaterial({
+          color: "#7ec850",
+          roughness: 0.8,
+          metalness: 0.05,
+          flatShading: true,
+        });
+      }
+    });
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 4.5 / maxDim;
+    clone.position.set(-center.x, -center.y, -center.z);
+    const wrapper = new THREE.Group();
+    wrapper.add(clone);
+    wrapper.scale.setScalar(scale);
+    return wrapper;
+  }, [obj]);
 
   useFrame(({ clock }) => {
     if (groupRef.current) {
@@ -44,10 +71,11 @@ function FloatingIsland() {
 
   return (
     <group ref={groupRef}>
-      <primitive object={obj} scale={1} />
+      <primitive object={model} />
     </group>
   );
 }
+
 
 /** Kamerayı adanın etrafında yumuşakça döndürüp geri getiren rig */
 function CameraRig({ phase, direction }: { phase: RotationPhase; direction: 1 | -1 }) {
