@@ -333,7 +333,32 @@ const HomePage = () => {
   const { startSearch, searchProgress, cancelSearch } = useMatchmaking();
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
+  const [showRadio, setShowRadio] = useState(false);
+  const [showChallengePanel, setShowChallengePanel] = useState(false);
+  const [showModePanel, setShowModePanel] = useState(false);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const { messages: systemMessages, unreadCount: systemUnread, loading: systemLoading, markAllRead: markSystemRead, readIds: systemReadIds } = useSystemMessages();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const fetchPending = async () => {
+      try {
+        const { count } = await supabase
+          .from("friendships")
+          .select("id", { count: "exact", head: true })
+          .eq("friend_id", user.id)
+          .eq("status", "pending");
+        if (!cancelled) setPendingFriendRequests(count || 0);
+      } catch {}
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user?.id]);
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
