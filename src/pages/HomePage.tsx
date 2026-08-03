@@ -18,6 +18,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { RadioPicker } from "@/components/RadioPicker";
 import HomeClouds from "@/components/home/HomeClouds";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
+import HomeIslands from "@/components/home/HomeIslands";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
@@ -1139,94 +1140,29 @@ const HomePage = () => {
               // Görselin genişliği daima yükseklikten oranla türetiliyor:
               // header/menü bar yükseklikleri cihazdan cihaza (APK/IPA) değişse de
               // ada görseli aynı oranı koruyup boşluğa göre büyüyüp küçülüyor.
-              aspectRatio: "784 / 1400",
+              aspectRatio: "768 / 1152",
               height: "100%",
               width: "auto",
-              animation: "homeIslandFloat 6s ease-in-out infinite",
               scale: "1.08",
             }}
           >
-
-
-
-            <img
-              src="/anaSayfa/anasayfaGorsel.png"
-              alt="Kelime adası haritası"
-              className="w-full h-full object-contain select-none pointer-events-none"
-              draggable={false}
-            />
-
-            {/* MÜZİK (Radyo) */}
-            <HomeMapPoint
-              x={50.5}
-              y={9}
-              size={38}
-              label="Müzik / Radyo"
-              onClick={() => {
-                playSound("buttonClick");
-                setShowRadio(true);
+            <HomeIslands
+              pointSize={38}
+              alerts={{
+                sohbet: unreadChatCount > 0,
+                arkadaslik: pendingFriendRequests > 0,
               }}
-            />
-            {/* DÜELLO & CHALLENGE */}
-            <HomeMapPoint
-              x={68}
-              y={23}
-              size={38}
-              label="Düello & Challenge"
-              onClick={() => {
+              onSelect={(key) => {
                 playSound("buttonClick");
-                setShowChallengePanel(true);
-              }}
-            />
-            {/* ARKADAŞLIK */}
-            <HomeMapPoint
-              x={23}
-              y={39}
-              size={38}
-              label="Arkadaşlık"
-              alert={pendingFriendRequests > 0}
-              onClick={() => {
-                playSound("buttonClick");
-                navigate("/friends");
-              }}
-            />
-
-            {/* ŞANS ÇARKI */}
-            <HomeMapPoint
-              x={56}
-              y={53}
-              size={38}
-              label="Şans Çarkı"
-              onClick={() => {
-                playSound("buttonClick");
-                navigate("/wheel");
-              }}
-            />
-            {/* SOHBET */}
-            <HomeMapPoint
-              x={27}
-              y={70}
-              size={38}
-              label="Sohbet"
-              alert={unreadChatCount > 0}
-
-              onClick={() => {
-                playSound("buttonClick");
-                navigate("/chat");
-              }}
-            />
-            {/* OYUN MODLARI */}
-            <HomeMapPoint
-              x={60}
-              y={79}
-              size={38}
-              label="Oyun Modları"
-              onClick={() => {
-                playSound("buttonClick");
-                setShowModePanel(true);
+                if (key === "oyunModlari") setShowModePanel(true);
+                else if (key === "duello") setShowChallengePanel(true);
+                else if (key === "carki") navigate("/wheel");
+                else if (key === "sohbet") navigate("/chat");
+                else if (key === "arkadaslik") navigate("/friends");
               }}
             />
           </div>
+
         </div>
 
         {/* ALT MENÜ BAR — harita katmanının üzerinde yüzer */}
