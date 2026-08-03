@@ -1,7 +1,23 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Component, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as THREE from "three";
+
+/** 3D model yüklenemezse uygulamayı çökertmemesi için hata sınırı */
+class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.warn("[HomeIslandScene] 3D sahne yüklenemedi:", error);
+  }
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
+
 
 // public/anaSayfa klasöründeki dosyalar
 const ISLAND_MODEL_URL = "/anaSayfa/3dLakeLowPoly.obj";
@@ -109,9 +125,12 @@ export function HomeIslandScene({ onFinishLeft, onFinishRight }: HomeIslandScene
         <directionalLight position={[5, 8, 5]} intensity={1.1} />
         <directionalLight position={[-5, 4, -4]} intensity={0.35} />
 
-        <Suspense fallback={null}>
-          <FloatingIsland />
-        </Suspense>
+        <SceneErrorBoundary>
+          <Suspense fallback={null}>
+            <FloatingIsland />
+          </Suspense>
+        </SceneErrorBoundary>
+
 
         <CameraRig phase={phase} direction={direction} />
       </Canvas>
