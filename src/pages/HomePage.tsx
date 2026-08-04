@@ -844,9 +844,9 @@ const HomePage = () => {
     {
       id: "puzzle",
       title: "Kelime Puzzle",
-      subtitle: challengeStatus.puzzle ? "Yarın tekrar gel!" : "Harfleri sıraya diz",
       icon: <KelimePuzzleIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      imageSrc: "/gunlukModu/puzzle.png",
       dimmed: challengeStatus.puzzle,
       badge: challengeStatus.puzzle ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
       onClick: () => {
@@ -858,9 +858,9 @@ const HomePage = () => {
     {
       id: "reaktor",
       title: "Harf Koşusu",
-      subtitle: challengeStatus.reaktor ? "Yarın tekrar gel!" : "Harfleri topla",
       icon: <ReaktorIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      imageSrc: "/gunlukModu/reaktor.png",
       dimmed: challengeStatus.reaktor,
       badge: challengeStatus.reaktor ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
       onClick: () => {
@@ -872,9 +872,9 @@ const HomePage = () => {
     {
       id: "neon-blitz",
       title: "Refleks",
-      subtitle: challengeStatus.neon_blitz ? "Yarın tekrar gel!" : "Hızını test et",
       icon: <RefleksIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      imageSrc: "/gunlukModu/neon-blitz.png",
       dimmed: challengeStatus.neon_blitz,
       badge: challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
       onClick: () => {
@@ -886,9 +886,9 @@ const HomePage = () => {
     {
       id: "memory",
       title: "Hafıza",
-      subtitle: challengeStatus.memory ? "Yarın tekrar gel!" : "Kelimeleri eşleştir",
       icon: <KelimeHafizaIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      imageSrc: "/gunlukModu/memory.png",
       dimmed: challengeStatus.memory,
       badge: challengeStatus.memory ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
       onClick: () => {
@@ -900,9 +900,9 @@ const HomePage = () => {
     {
       id: "kelime-avi",
       title: "Kelime Avı",
-      subtitle: challengeStatus.kelime_avi ? "Yarın tekrar gel!" : "Harfleri birleştir",
       icon: <img src="/surukle.svg" alt="" className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
+      imageSrc: "/gunlukModu/kelime-avi.png",
       dimmed: challengeStatus.kelime_avi,
       badge: challengeStatus.kelime_avi ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
       onClick: () => {
