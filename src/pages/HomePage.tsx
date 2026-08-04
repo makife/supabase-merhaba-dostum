@@ -1080,6 +1080,10 @@ const HomePage = () => {
                 )}
               </button>
 
+              <HomeSoundToggle />
+
+
+
             </div>
           </div>
 
