@@ -24,9 +24,11 @@ interface FriendInviteDialogProps {
   onOpenChange: (open: boolean) => void;
   roomCode: string;
   gameType: string | null;
+  variant?: "dialog" | "card";
 }
 
-const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendInviteDialogProps) => {
+const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = "dialog" }: FriendInviteDialogProps) => {
+
   const { user } = useAuth();
   const { sendGameInviteNotification } = useSmartNotifications();
   const [friends, setFriends] = useState<Friend[]>([]);
