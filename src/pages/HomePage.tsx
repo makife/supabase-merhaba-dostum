@@ -22,7 +22,7 @@ import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslands from "@/components/home/HomeIslands";
 import HomeStars from "@/components/home/HomeStars";
-import { useNightMode } from "@/hooks/useNightMode";
+import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
@@ -1094,6 +1094,18 @@ const HomePage = () => {
               </button>
 
               <HomeSoundToggle />
+
+              {/* Gece modu test butonu */}
+              <button
+                onClick={() =>
+                  setNightOverride(isNight ? "day" : "night")
+                }
+                className="w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-[12px] shadow-md active:scale-95 transition-transform"
+                aria-label="Gece modu testi"
+              >
+                {isNight ? "🌙" : "☀️"}
+              </button>
+
 
 
 
