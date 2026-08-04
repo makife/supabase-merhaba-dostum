@@ -7,6 +7,8 @@ export interface SlidePanelItem {
   subtitle?: string;
   icon: React.ReactNode;
   gradient: string;
+  /** hazır kart görseli (varsa kart yerine bu görsel kullanılır) */
+  imageSrc?: string;
   badge?: React.ReactNode;
   dimmed?: boolean;
   onClick: () => void;
@@ -58,7 +60,44 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-3">
-          {items.map((item, i) => (
+          {items.map((item, i) => {
+            const anim = {
+              transform: mounted ? "translate3d(0,0,0)" : "translate3d(-120%,0,0)",
+              opacity: mounted ? 1 : 0,
+              transition: `transform 380ms cubic-bezier(0.16, 1, 0.3, 1) ${i * 80}ms, opacity 300ms ease-out ${i * 80}ms`,
+              willChange: "transform, opacity",
+            } as React.CSSProperties;
+
+            if (item.imageSrc) {
+              return (
+                <div
+                  key={item.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    item.onClick();
+                  }}
+                  className={`relative w-[92%] cursor-pointer active:scale-[0.97] transition-transform flex-shrink-0 ${
+                    item.dimmed ? "opacity-70 grayscale-[30%]" : ""
+                  }`}
+                  style={anim}
+                >
+                  <img
+                    src={item.imageSrc}
+                    alt={item.title}
+                    className="w-full h-auto select-none pointer-events-none"
+                    draggable={false}
+                  />
+                  {item.subtitle && (
+                    <p className="absolute left-[46%] right-[4%] top-[62%] text-center text-[11px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                      {item.subtitle}
+                    </p>
+                  )}
+                  {item.badge && <div className="absolute top-2 right-3 z-10">{item.badge}</div>}
+                </div>
+              );
+            }
+
+            return (
             <div
               key={item.id}
               onClick={(e) => {
@@ -68,12 +107,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
               className={`relative w-[86%] rounded-3xl p-4 flex items-center gap-4 overflow-hidden cursor-pointer border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] active:scale-[0.97] transition-transform ${
                 item.dimmed ? "opacity-70" : ""
               }`}
-              style={{
-                transform: mounted ? "translate3d(0,0,0)" : "translate3d(-120%,0,0)",
-                opacity: mounted ? 1 : 0,
-                transition: `transform 380ms cubic-bezier(0.16, 1, 0.3, 1) ${i * 80}ms, opacity 300ms ease-out ${i * 80}ms`,
-                willChange: "transform, opacity",
-              }}
+              style={anim}
             >
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${item.gradient} ${item.dimmed ? "opacity-50 grayscale-[30%]" : "opacity-95"} rounded-3xl`}
@@ -96,7 +130,8 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
               </div>
               {item.badge && <div className="relative z-10 flex-shrink-0">{item.badge}</div>}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
