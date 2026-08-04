@@ -390,7 +390,6 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
       ) : (
         <div className="relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-300">
 
-        <div className="relative w-full max-w-[420px]">
           <img src={odaBeklemeKart} alt="Oda Bekleniyor" className="w-full h-auto select-none pointer-events-none" />
 
           {/* Oda kodu */}
