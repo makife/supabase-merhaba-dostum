@@ -926,6 +926,7 @@ const HomePage = () => {
             : mode.description,
       icon: <Icon className="w-9 h-9" />,
       gradient: mode.gradient,
+      imageSrc: `/oyunModu/${mode.id}.png`,
       badge: mode.isLive ? (
         <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       ) : undefined,
