@@ -78,6 +78,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
   const [loading, setLoading] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [pendingRoom, setPendingRoom] = useState<{ id: string; room_code: string } | null>(null);
+  const [checkingPending, setCheckingPending] = useState(true);
 
   // waiting state
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -89,8 +90,12 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
   // --- Bekleyen oda kontrolü ---
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setCheckingPending(false);
+      return;
+    }
     let cancelled = false;
+    setCheckingPending(true);
     (async () => {
       const { data } = await supabase
         .from("game_rooms")
