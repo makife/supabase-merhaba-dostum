@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Circle, Loader2, Users, Check } from "lucide-react";
 import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { toast } from "sonner";
+import arkadasDavetKart from "@/assets/arkadasDavetKart.png";
+
 
 interface Friend {
   id: string;
@@ -22,9 +24,11 @@ interface FriendInviteDialogProps {
   onOpenChange: (open: boolean) => void;
   roomCode: string;
   gameType: string | null;
+  variant?: "dialog" | "card";
 }
 
-const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendInviteDialogProps) => {
+const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = "dialog" }: FriendInviteDialogProps) => {
+
   const { user } = useAuth();
   const { sendGameInviteNotification } = useSmartNotifications();
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -156,17 +160,11 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md max-h-[70vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Users className="w-5 h-5 text-cyan-400" />
-            Arkadaşını Davet Et
-          </DialogTitle>
-        </DialogHeader>
+  const isCard = variant === "card";
 
-        <div className="overflow-y-auto flex-1 space-y-2 pr-1">
+  const list = (
+    <div className={`overflow-y-auto space-y-2 pr-1 ${isCard ? "h-full" : "flex-1"}`}>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
@@ -182,8 +180,11 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
               return (
                 <div
                   key={friend.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
+                  className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
+                    isCard ? "bg-black/[0.04] border-black/10" : "bg-white/5 border-white/10 hover:bg-white/[0.07]"
+                  }`}
                 >
+
                   <div className="relative">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={friend.avatar_url || ""} />
@@ -204,7 +205,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{friend.username}</p>
-                    <p className={`text-[10px] ${friend.in_game ? "text-blue-400" : friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
+                    <p className={`text-[10px] ${friend.in_game ? (isCard ? "text-blue-600" : "text-blue-400") : friend.is_online ? (isCard ? "text-green-600" : "text-green-400") : isCard ? "text-black/50" : "text-zinc-500"}`}>
                       {friend.in_game ? "Maçta" : friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
                     </p>
                   </div>
@@ -235,10 +236,49 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
               );
             })
           )}
+    </div>
+  );
+
+  if (isCard) {
+    if (!open) return null;
+    return (
+      <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
+        <div className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300">
+          <img src={arkadasDavetKart} alt="Arkadaşını Davet Et" className="w-full h-auto select-none pointer-events-none" />
+          {/* Beyaz alan: kaydırmalı arkadaş listesi */}
+          <div
+            className="absolute overflow-hidden"
+            style={{ left: "15.5%", width: "70%", top: "21.4%", height: "58.5%" }}
+          >
+            <div className="w-full h-full overflow-y-auto pr-1 text-[#12241f]">{list}</div>
+          </div>
+          {/* KAPAT */}
+          <button
+            type="button"
+            aria-label="Kapat"
+            onClick={() => onOpenChange(false)}
+            className="absolute bg-transparent border-0 outline-none active:opacity-60"
+            style={{ left: "26%", width: "48%", top: "79.5%", height: "9.5%" }}
+          />
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Users className="w-5 h-5 text-cyan-400" />
+            Arkadaşını Davet Et
+          </DialogTitle>
+        </DialogHeader>
+        {list}
       </DialogContent>
     </Dialog>
   );
 };
+
 
 export default FriendInviteDialog;
