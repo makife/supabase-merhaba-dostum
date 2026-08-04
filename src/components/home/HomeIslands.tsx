@@ -107,7 +107,7 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
           }}
           className="absolute pointer-events-none"
           style={{
-            left: `${island.left + (isNight ? island.nightDx ?? 0 : 0)}%`,
+            left: `${island.left}%`,
             top: `${island.top}%`,
             width: `${island.width}%`,
             height: `${island.height}%`,
