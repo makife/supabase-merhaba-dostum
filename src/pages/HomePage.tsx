@@ -725,9 +725,16 @@ const HomePage = () => {
         return;
       }
       if (modeId === "tournament") navigate("/tournament");
-      else setSelectedMode(modeId);
+      else if (modeId === "random-match") {
+        setMatchmakingGameType("timed");
+        setMatchmakingKey(Date.now());
+        setShowMatchmaking(true);
+        setTimeout(() => startSearch("timed"), 100);
+      } else if (modeId === "vs-computer") {
+        navigate("/game/vs-computer?type=timed");
+      } else setSelectedMode(modeId);
     },
-    [playSound, isPremium, profile, user?.id, navigate],
+    [playSound, isPremium, profile, user?.id, navigate, startSearch],
   );
 
   const handleMatchFound = (roomId: string) => {
