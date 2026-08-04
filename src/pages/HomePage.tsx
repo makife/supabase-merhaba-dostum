@@ -22,7 +22,7 @@ import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslands from "@/components/home/HomeIslands";
 import HomeStars from "@/components/home/HomeStars";
-import { useNightMode } from "@/hooks/useNightMode";
+import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
