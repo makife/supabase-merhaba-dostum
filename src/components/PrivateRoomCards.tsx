@@ -409,7 +409,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
           </div>
         )
       ) : (
-        <div className="relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-300">
+        <div className="pr-card relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-300">
 
           <img src={odaBeklemeKart} alt="Oda Bekleniyor" className="w-full h-auto select-none pointer-events-none" />
 
@@ -418,10 +418,11 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
             className="absolute flex items-center"
             style={{ left: "49%", right: "12%", top: "27.3%", height: "7.9%" }}
           >
-            <span className="font-black tracking-[0.28em] text-[#0f2a22] text-[clamp(13px,4.6vw,24px)]">
+            <span className="pr-code-lg font-black tracking-[0.28em] text-[#0f2a22] leading-none whitespace-nowrap">
               {roomCode}
             </span>
           </div>
+
 
           {/* Arkadaşını davet et */}
           <Hot
