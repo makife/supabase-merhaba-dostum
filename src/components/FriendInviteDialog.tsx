@@ -205,7 +205,7 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = 
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{friend.username}</p>
-                    <p className={`text-[10px] ${friend.in_game ? "text-blue-400" : friend.is_online ? "text-green-400" : "text-zinc-500"}`}>
+                    <p className={`text-[10px] ${friend.in_game ? (isCard ? "text-blue-600" : "text-blue-400") : friend.is_online ? (isCard ? "text-green-600" : "text-green-400") : isCard ? "text-black/50" : "text-zinc-500"}`}>
                       {friend.in_game ? "Maçta" : friend.is_online ? "Çevrimiçi" : "Çevrimdışı"}
                     </p>
                   </div>
