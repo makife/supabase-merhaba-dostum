@@ -21,6 +21,8 @@ import HomeMapPoint from "@/components/home/HomeMapPoint";
 import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslands from "@/components/home/HomeIslands";
+import HomeStars from "@/components/home/HomeStars";
+import { useNightMode } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
@@ -315,6 +317,7 @@ const HomePage = () => {
   const profileRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
   const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
+  const isNight = useNightMode();
 
   useEffect(() => {
     const measure = () => {
@@ -941,7 +944,9 @@ const HomePage = () => {
         className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
         style={{
           backgroundColor: "hsl(var(--app-shell))",
-          backgroundImage: "url('/alttaban/kompleyesilarkaplan.svg')",
+          backgroundImage: isNight
+            ? "url('/alttaban/kompleyesilarkaplangece.svg')"
+            : "url('/alttaban/kompleyesilarkaplan.svg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -958,6 +963,13 @@ const HomePage = () => {
         <div
           className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] ${levelBgColors.gradient} via-transparent to-transparent pointer-events-none opacity-30`}
         />
+
+        {/* Gece: parlayıp sönen yıldızlar */}
+        {isNight && (
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <HomeStars />
+          </div>
+        )}
 
         {/* Bulutlar - arka katman */}
         <div className="absolute inset-0 z-0 pointer-events-none">
