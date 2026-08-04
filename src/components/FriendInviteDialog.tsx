@@ -229,10 +229,49 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
               );
             })
           )}
+    </div>
+  );
+
+  if (isCard) {
+    if (!open) return null;
+    return (
+      <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
+        <div className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300">
+          <img src={arkadasDavetKart} alt="Arkadaşını Davet Et" className="w-full h-auto select-none pointer-events-none" />
+          {/* Beyaz alan: kaydırmalı arkadaş listesi */}
+          <div
+            className="absolute overflow-hidden"
+            style={{ left: "15.5%", width: "70%", top: "21.4%", height: "58.5%" }}
+          >
+            <div className="w-full h-full overflow-y-auto pr-1 text-[#12241f]">{list}</div>
+          </div>
+          {/* KAPAT */}
+          <button
+            type="button"
+            aria-label="Kapat"
+            onClick={() => onOpenChange(false)}
+            className="absolute bg-transparent border-0 outline-none active:opacity-60"
+            style={{ left: "26%", width: "48%", top: "79.5%", height: "9.5%" }}
+          />
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md max-h-[70vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Users className="w-5 h-5 text-cyan-400" />
+            Arkadaşını Davet Et
+          </DialogTitle>
+        </DialogHeader>
+        {list}
       </DialogContent>
     </Dialog>
   );
 };
+
 
 export default FriendInviteDialog;
