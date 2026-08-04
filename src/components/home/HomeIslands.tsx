@@ -117,7 +117,8 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
           }}
         >
           <img
-            src={isNight ? island.nightSrc : island.src}
+            src={island.src}
+
             alt={island.label}
             loading="eager"
             decoding="async"
