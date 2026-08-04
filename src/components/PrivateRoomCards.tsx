@@ -328,67 +328,68 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
       {step === "choose" ? (
-        <div className="w-full max-w-[980px] flex items-center justify-center gap-2 sm:gap-4">
-          {/* ODA KUR */}
-          <div className="relative flex-1 max-w-[300px]">
-            <img src={odaKurKart} alt="Oda Kur" className="w-full h-auto select-none pointer-events-none" />
-            <Hot l={0.104} r={0.489} t={0.822} b={0.916} label="Odayı Oluştur" onClick={handleCreate} disabled={loading} />
-            <Hot
-              l={0.524}
-              r={0.899}
-              t={0.824}
-              b={0.918}
-              label="İptal"
-              onClick={() => {
-                playSound("buttonClick");
-                onClose();
-              }}
-            />
-          </div>
-
-          {/* ODAYA KATIL */}
-          <div className="relative flex-1 max-w-[300px]">
-            <img src={odayaKatilKart} alt="Odaya Katıl" className="w-full h-auto select-none pointer-events-none" />
-            <Hot l={0.152} r={0.846} t={0.682} b={0.771}>
-              <input
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-                maxLength={6}
-                autoCapitalize="characters"
-                aria-label="Oda kodu"
-                className="w-full h-full bg-transparent border-0 outline-none text-center text-[#0f2a22] font-black tracking-[0.25em] text-[clamp(12px,4vw,22px)]"
-              />
+        pendingRoom ? (
+          /* SADECE BEKLEYEN ODA */
+          <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
+            <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
+            <Hot l={0.128} r={0.364} t={0.328} b={0.383}>
+              <span className="font-black tracking-[0.12em] text-[#0f2a22] text-[clamp(10px,3.4vw,18px)] text-center w-full">
+                {pendingRoom.room_code}
+              </span>
             </Hot>
-            <Hot l={0.101} r={0.486} t={0.822} b={0.916} label="Odaya Katıl" onClick={handleJoin} disabled={loading} />
-            <Hot
-              l={0.522}
-              r={0.896}
-              t={0.824}
-              b={0.918}
-              label="İptal"
-              onClick={() => {
-                playSound("buttonClick");
-                onClose();
-              }}
-            />
+            <Hot l={0.092} r={0.494} t={0.801} b={0.91} label="Odama Dön" onClick={resumeRoom} />
+            <Hot l={0.511} r={0.927} t={0.801} b={0.91} label="Odayı İptal Et" onClick={cancelPendingRoom} />
           </div>
-
-          {/* BEKLEYEN ODA */}
-          {pendingRoom && (
+        ) : (
+          <div className="w-full max-w-[980px] flex items-center justify-center gap-2 sm:gap-4 animate-in fade-in zoom-in-95 duration-300">
+            {/* ODA KUR */}
             <div className="relative flex-1 max-w-[300px]">
-              <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
-              <Hot l={0.13} r={0.369} t={0.33} b={0.399}>
-                <span className="font-black tracking-[0.15em] text-[#0f2a22] text-[clamp(10px,3vw,18px)]">
-                  {pendingRoom.room_code}
-                </span>
-              </Hot>
-              <Hot l={0.092} r={0.494} t={0.801} b={0.91} label="Odama Dön" onClick={resumeRoom} />
-              <Hot l={0.511} r={0.927} t={0.801} b={0.91} label="Odayı İptal Et" onClick={cancelPendingRoom} />
+              <img src={odaKurKart} alt="Oda Kur" className="w-full h-auto select-none pointer-events-none" />
+              <Hot l={0.104} r={0.489} t={0.822} b={0.916} label="Odayı Oluştur" onClick={handleCreate} disabled={loading} />
+              <Hot
+                l={0.524}
+                r={0.899}
+                t={0.824}
+                b={0.918}
+                label="İptal"
+                onClick={() => {
+                  playSound("buttonClick");
+                  onClose();
+                }}
+              />
             </div>
-          )}
-        </div>
+
+            {/* ODAYA KATIL */}
+            <div className="relative flex-1 max-w-[300px]">
+              <img src={odayaKatilKart} alt="Odaya Katıl" className="w-full h-auto select-none pointer-events-none" />
+              <Hot l={0.152} r={0.846} t={0.682} b={0.771}>
+                <input
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  aria-label="Oda kodu"
+                  className="w-full h-full bg-transparent border-0 outline-none text-center text-[#0f2a22] font-black tracking-[0.25em] text-[clamp(12px,4vw,22px)]"
+                />
+              </Hot>
+              <Hot l={0.101} r={0.486} t={0.822} b={0.916} label="Odaya Katıl" onClick={handleJoin} disabled={loading} />
+              <Hot
+                l={0.522}
+                r={0.896}
+                t={0.824}
+                b={0.918}
+                label="İptal"
+                onClick={() => {
+                  playSound("buttonClick");
+                  onClose();
+                }}
+              />
+            </div>
+          </div>
+        )
       ) : (
-        <div className="relative w-full max-w-[420px]">
+        <div className="relative w-full max-w-[420px] animate-in fade-in zoom-in-95 duration-300">
+
           <img src={odaBeklemeKart} alt="Oda Bekleniyor" className="w-full h-auto select-none pointer-events-none" />
 
           {/* Oda kodu */}
