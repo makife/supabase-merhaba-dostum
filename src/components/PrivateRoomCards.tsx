@@ -107,7 +107,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!cancelled && data?.room_code) setPendingRoom({ id: data.id, room_code: data.room_code });
+      if (cancelled) return;
+      if (data?.room_code) setPendingRoom({ id: data.id, room_code: data.room_code });
+      setCheckingPending(false);
     })();
     return () => {
       cancelled = true;
