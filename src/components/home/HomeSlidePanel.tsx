@@ -88,7 +88,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                     draggable={false}
                   />
                   {item.subtitle && (
-                    <p className="absolute left-[46%] bottom-[16%] text-[11px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                    <p className="absolute left-[46%] right-[4%] top-[62%] text-center text-[11px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                       {item.subtitle}
                     </p>
                   )}
