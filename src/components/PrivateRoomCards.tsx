@@ -380,7 +380,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
             </div>
 
             {/* ODAYA KATIL */}
-            <div className="relative flex-1 max-w-[300px]">
+            <div className="pr-card relative flex-1 max-w-[300px]">
               <img src={odayaKatilKart} alt="Odaya Katıl" className="w-full h-auto select-none pointer-events-none" />
               <Hot l={0.152} r={0.846} t={0.682} b={0.771}>
                 <input
@@ -389,9 +389,10 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
                   maxLength={6}
                   autoCapitalize="characters"
                   aria-label="Oda kodu"
-                  className="w-full h-full bg-transparent border-0 outline-none text-center text-[#0f2a22] font-black tracking-[0.25em] text-[clamp(12px,4vw,22px)]"
+                  className="pr-code-input w-full h-full bg-transparent border-0 outline-none text-center text-[#0f2a22] font-black tracking-[0.25em] leading-none"
                 />
               </Hot>
+
               <Hot l={0.101} r={0.486} t={0.822} b={0.916} label="Odaya Katıl" onClick={handleJoin} disabled={loading} />
               <Hot
                 l={0.522}
