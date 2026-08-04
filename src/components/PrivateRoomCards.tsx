@@ -411,14 +411,30 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
           {/* Katılımcı durum kutuları */}
           <Hot l={0.141} r={0.491} t={0.489} b={0.661}>
-            <span className="text-center font-black leading-tight text-[clamp(9px,2.6vw,13px)] text-white drop-shadow">
-              {isReady ? "HAZIR" : "BEKLENİYOR"}
-            </span>
+            {isReady ? (
+              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            ) : (
+              <Lottie
+                animationData={beklemeAramaAnim}
+                loop
+                autoplay
+                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+                style={{ width: "78%", height: "78%" }}
+              />
+            )}
           </Hot>
           <Hot l={0.52} r={0.874} t={0.489} b={0.661}>
-            <span className="text-center font-black leading-tight text-[clamp(9px,2.6vw,13px)] text-white drop-shadow">
-              {!opponentJoined ? "BEKLENİYOR" : opponentReady ? "HAZIR" : "KATILDI"}
-            </span>
+            {opponentReady ? (
+              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            ) : (
+              <Lottie
+                animationData={beklemeAramaAnim}
+                loop
+                autoplay
+                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+                style={{ width: "78%", height: "78%" }}
+              />
+            )}
           </Hot>
 
           {/* HAZIRIM / ÇIK */}
