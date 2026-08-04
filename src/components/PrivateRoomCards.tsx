@@ -12,6 +12,7 @@ import odayaKatilKart from "@/assets/odayaKatilKart.png";
 import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
 import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
 import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
+import yukleniyorAnim from "@/assets/ozelOdaYukleniyor.json";
 import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
 
 interface PrivateRoomCardsProps {
@@ -346,7 +347,10 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
       `}</style>
       {step === "choose" ? (
         checkingPending ? (
-          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+          <div className="flex flex-col items-center justify-center gap-1 animate-in fade-in duration-200">
+            <Lottie animationData={yukleniyorAnim} loop autoplay style={{ width: 120, height: 120 }} />
+            <span className="text-white/80 text-sm font-semibold tracking-wide">Yükleniyor</span>
+          </div>
         ) : pendingRoom ? (
           /* SADECE BEKLEYEN ODA */
           <div className="pr-card relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
