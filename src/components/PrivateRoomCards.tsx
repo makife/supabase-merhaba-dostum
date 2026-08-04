@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Lottie from "lottie-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -10,6 +11,8 @@ import odaKurKart from "@/assets/odaKurKart.png";
 import odayaKatilKart from "@/assets/odayaKatilKart.png";
 import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
 import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
+import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
+import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
