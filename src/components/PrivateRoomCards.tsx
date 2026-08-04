@@ -393,19 +393,16 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
           {/* Oda kodu */}
           <Hot l={0.144} r={0.863} t={0.281} b={0.352}>
-  {/* İlk eleman */}
-  <span className="font-black tracking-[0.3em] text-red-600 text-[clamp(14px,5vw,26px)]">
-    {roomCode}
-  </span>
+            <span className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]">{roomCode}</span>
+            <span
+              className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]"
+              style={{ transform: "translate(52px, 4px)" }}
+            >
+              {roomCode}
+            </span>
+          </Hot>
 
-  {/* İkinci eleman */}
-  <span
-    className="font-black tracking-[0.3em] text-red-600 text-[clamp(14px,5vw,26px)]"
-    style={{ transform: "translate(52px, 4px)" }}
-  >
-    {roomCode}
-  </span>
-</Hot>
+Kanka bu kodlara göre hangi değer sağ kaydırır
 
 
           {/* Arkadaşını davet et */}
