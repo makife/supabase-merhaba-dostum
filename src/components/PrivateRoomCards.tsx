@@ -392,22 +392,21 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
           <img src={odaBeklemeKart} alt="Oda Bekleniyor" className="w-full h-auto select-none pointer-events-none" />
 
           {/* Oda kodu */}
-          <Hot l={0.144} r={0.863} t={0.281} b={0.352}>
-            <span className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]">{roomCode}</span>
-            <span
-              className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]"
-              style={{ transform: "translate(56px, 3.5px)" }}
-            >
+          <div
+            className="absolute flex items-center"
+            style={{ left: "49%", right: "12%", top: "27.3%", height: "7.9%" }}
+          >
+            <span className="font-black tracking-[0.28em] text-[#0f2a22] text-[clamp(13px,4.6vw,24px)]">
               {roomCode}
             </span>
-          </Hot>
+          </div>
 
           {/* Arkadaşını davet et */}
           <Hot
-            l={0.247}
-            r={0.759}
-            t={0.386}
-            b={0.451}
+            l={0.241}
+            r={0.765}
+            t={0.39}
+            b={0.443}
             label="Arkadaşını Davet Et"
             onClick={() => {
               playSound("buttonClick");
@@ -416,7 +415,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
           />
 
           {/* Katılımcı durum kutuları */}
-          <Hot l={0.141} r={0.491} t={0.489} b={0.661}>
+          <Hot l={0.123} r={0.509} t={0.486} b={0.7}>
             {isReady ? (
               <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
             ) : (
@@ -429,7 +428,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
               />
             )}
           </Hot>
-          <Hot l={0.52} r={0.874} t={0.489} b={0.661}>
+          <Hot l={0.531} r={0.91} t={0.486} b={0.7}>
             {opponentReady ? (
               <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
             ) : (
@@ -444,8 +443,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
           </Hot>
 
           {/* HAZIRIM / ÇIK */}
-          <Hot l={0.114} r={0.486} t={0.793} b={0.893} label="Hazırım" onClick={handleReady} disabled={isReady} />
-          <Hot l={0.52} r={0.893} t={0.793} b={0.911} label="Çık" onClick={handleLeave} />
+          <Hot l={0.102} r={0.494} t={0.8} b={0.906} label="Hazırım" onClick={handleReady} disabled={isReady} />
+          <Hot l={0.519} r={0.91} t={0.8} b={0.906} label="Çık" onClick={handleLeave} />
+
 
           {roomCode && (
             <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType="timed" />
