@@ -1122,7 +1122,23 @@ const HomePage = () => {
             {/* 1. sıra (değiştir jokeri hizası) boş */}
             <div />
 
-            {/* 2. sıra: kalan sayfa hakkı — fısılda jokeri ile aynı hizada */}
+            {/* 2. sıra: mürekkep — fısılda jokeri ile aynı hizada */}
+            <div className="relative flex items-center justify-center">
+              <div
+                className="relative w-[76px] h-[76px] active:scale-90 transition-transform cursor-pointer"
+                onClick={() => {
+                  playSound("buttonClick");
+                  navigate("/market");
+                }}
+              >
+                <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+                <span className="absolute top-[10px] right-[10px] min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+                  {profile?.ink_count ?? 0}
+                </span>
+              </div>
+            </div>
+
+            {/* 3. sıra: kalan sayfa hakkı — senyaz jokeri ile aynı hizada */}
             <div className="relative flex items-center justify-center">
               {(!isPremium || isUnlimitedLivesActive(profile)) && (
                 <>
@@ -1151,21 +1167,6 @@ const HomePage = () => {
               )}
             </div>
 
-            {/* 3. sıra: mürekkep — senyaz jokeri ile aynı hizada */}
-            <div className="relative flex items-center justify-center">
-              <div
-                className="relative w-[76px] h-[76px] active:scale-90 transition-transform cursor-pointer"
-                onClick={() => {
-                  playSound("buttonClick");
-                  navigate("/market");
-                }}
-              >
-                <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
-                <span className="absolute top-1 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                  {profile?.ink_count ?? 0}
-                </span>
-              </div>
-            </div>
           </div>
 
         </div>
