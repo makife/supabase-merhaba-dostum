@@ -156,17 +156,11 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType }: FriendIn
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md max-h-[70vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Users className="w-5 h-5 text-cyan-400" />
-            Arkadaşını Davet Et
-          </DialogTitle>
-        </DialogHeader>
+  const isCard = variant === "card";
 
-        <div className="overflow-y-auto flex-1 space-y-2 pr-1">
+  const list = (
+    <div className={`overflow-y-auto space-y-2 pr-1 ${isCard ? "h-full" : "flex-1"}`}>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
