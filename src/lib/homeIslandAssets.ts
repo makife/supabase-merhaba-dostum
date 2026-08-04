@@ -22,11 +22,11 @@ export interface IslandDef {
 }
 
 export const ISLANDS: IslandDef[] = [
-  { key: "oyunModlari", src: "/anaSayfa/adalar/oyunModlari.png", nightSrc: "/anaSayfa/adalar/gece/oyunModlari.png", left: 8.85, top: 3.47, width: 43.62, height: 21.88, px: 47.3, py: 31.7, label: "Oyun Modları" },
-  { key: "duello", src: "/anaSayfa/adalar/duello.png", nightSrc: "/anaSayfa/adalar/gece/duello.png", left: 42.84, top: 10.94, width: 54.56, height: 30.38, px: 42.5, py: 29.3, label: "Düello & Challenge" },
-  { key: "carki", src: "/anaSayfa/adalar/carki.png", nightSrc: "/anaSayfa/adalar/gece/carki.png", left: 3.65, top: 26.91, width: 50.39, height: 31.68, px: 43.3, py: 26.4, label: "Şans Çarkı" },
-  { key: "sohbet", src: "/anaSayfa/adalar/sohbet.png", nightSrc: "/anaSayfa/adalar/gece/sohbet.png", left: 46.88, top: 41.41, width: 50.13, height: 30.64, px: 47.0, py: 33.0, label: "Sohbet" },
-  { key: "arkadaslik", src: "/anaSayfa/adalar/arkadaslik.png", nightSrc: "/anaSayfa/adalar/gece/arkadaslik.png", left: 12.11, top: 57.99, width: 64.58, height: 39.24, px: 48.5, py: 40.4, label: "Arkadaşlık" },
+  { key: "oyunModlari", src: "/anaSayfa/adalar/oyunModlari.png", nightSrc: "/anaSayfa/adalar/gece/oyunModlari.png", left: 10.16, top: 4.34, width: 41.15, height: 20.23, px: 47, py: 30, label: "Oyun Modları" },
+  { key: "duello", src: "/anaSayfa/adalar/duello.png", nightSrc: "/anaSayfa/adalar/gece/duello.png", left: 42.64, top: 11.81, width: 51.95, height: 28.73, px: 45, py: 28, label: "Düello & Challenge" },
+  { key: "carki", src: "/anaSayfa/adalar/carki.png", nightSrc: "/anaSayfa/adalar/gece/carki.png", left: 6.32, top: 27.78, width: 47.92, height: 29.95, px: 40, py: 25, label: "Şans Çarkı" },
+  { key: "sohbet", src: "/anaSayfa/adalar/sohbet.png", nightSrc: "/anaSayfa/adalar/gece/sohbet.png", left: 46.68, top: 42.27, width: 47.53, height: 28.91, px: 50, py: 32, label: "Sohbet" },
+  { key: "arkadaslik", src: "/anaSayfa/adalar/arkadaslik.png", nightSrc: "/anaSayfa/adalar/gece/arkadaslik.png", left: 14.91, top: 58.85, width: 61.98, height: 37.5, px: 46, py: 40, label: "Arkadaşlık" },
 ];
 
 /** Görsel elemanlarını canlı tutar (tarayıcı belleğinden düşürmesin) */
