@@ -395,7 +395,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
           <Hot l={0.144} r={0.863} t={0.281} b={0.352}>
             <span
               className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]"
-              style={{ transform: "translate(38px, 5px)" }}
+              style={{ transform: "translate(42px, 4.5px)" }}
             >
               {roomCode}
             </span>
