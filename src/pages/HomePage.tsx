@@ -1095,6 +1095,18 @@ const HomePage = () => {
 
               <HomeSoundToggle />
 
+              {/* Gece modu test butonu */}
+              <button
+                onClick={() =>
+                  setNightOverride(isNight ? "day" : "night")
+                }
+                className="w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-[12px] shadow-md active:scale-95 transition-transform"
+                aria-label="Gece modu testi"
+              >
+                {isNight ? "🌙" : "☀️"}
+              </button>
+
+
 
 
             </div>
