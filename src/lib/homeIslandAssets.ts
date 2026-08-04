@@ -21,10 +21,10 @@ export interface IslandDef {
 
 export const ISLANDS: IslandDef[] = [
   { key: "oyunModlari", src: "/anaSayfa/adalar/oyunModlari.png", left: 10.16, top: 4.34, width: 41.15, height: 20.23, px: 47, py: 30, label: "Oyun Modları" },
-  { key: "duello", src: "/anaSayfa/adalar/duello.png", left: 44.14, top: 11.81, width: 51.95, height: 28.73, px: 45, py: 28, label: "Düello & Challenge" },
-  { key: "carki", src: "/anaSayfa/adalar/carki.png", left: 4.82, top: 27.78, width: 47.92, height: 29.95, px: 40, py: 25, label: "Şans Çarkı" },
-  { key: "sohbet", src: "/anaSayfa/adalar/sohbet.png", left: 48.18, top: 42.27, width: 47.53, height: 28.91, px: 50, py: 32, label: "Sohbet" },
-  { key: "arkadaslik", src: "/anaSayfa/adalar/arkadaslik.png", left: 13.41, top: 58.85, width: 61.98, height: 37.5, px: 46, py: 40, label: "Arkadaşlık" },
+  { key: "duello", src: "/anaSayfa/adalar/duello.png", left: 42.64, top: 11.81, width: 51.95, height: 28.73, px: 45, py: 28, label: "Düello & Challenge" },
+  { key: "carki", src: "/anaSayfa/adalar/carki.png", left: 6.32, top: 27.78, width: 47.92, height: 29.95, px: 40, py: 25, label: "Şans Çarkı" },
+  { key: "sohbet", src: "/anaSayfa/adalar/sohbet.png", left: 46.68, top: 42.27, width: 47.53, height: 28.91, px: 50, py: 32, label: "Sohbet" },
+  { key: "arkadaslik", src: "/anaSayfa/adalar/arkadaslik.png", left: 14.91, top: 58.85, width: 61.98, height: 37.5, px: 46, py: 40, label: "Arkadaşlık" },
 ];
 
 /** Görsel elemanlarını canlı tutar (tarayıcı belleğinden düşürmesin) */
