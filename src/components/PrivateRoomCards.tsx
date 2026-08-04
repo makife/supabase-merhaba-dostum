@@ -334,18 +334,29 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
+      {/* Kart genişliğine bağlı (container) yazı ölçekleme: her telefonda konum sabit */}
+      <style>{`
+        .pr-card { container-type: inline-size; }
+        .pr-code { font-size: clamp(10px, 3.4vw, 18px); }
+        @supports (font-size: 1cqw) { .pr-code { font-size: 5.4cqw; } }
+        .pr-code-lg { font-size: clamp(13px, 4.6vw, 24px); }
+        @supports (font-size: 1cqw) { .pr-code-lg { font-size: 5.8cqw; } }
+        .pr-code-input { font-size: clamp(12px, 4vw, 22px); }
+        @supports (font-size: 1cqw) { .pr-code-input { font-size: 7cqw; } }
+      `}</style>
       {step === "choose" ? (
         checkingPending ? (
           <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
         ) : pendingRoom ? (
           /* SADECE BEKLEYEN ODA */
-          <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
+          <div className="pr-card relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
             <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
             <Hot l={0.128} r={0.364} t={0.328} b={0.383}>
-              <span className="font-black tracking-[0.12em] text-[#0f2a22] text-[clamp(10px,3.4vw,18px)] text-center w-full">
+              <span className="pr-code font-black tracking-[0.12em] text-[#0f2a22] text-center w-full leading-none whitespace-nowrap">
                 {pendingRoom.room_code}
               </span>
             </Hot>
+
             <Hot l={0.092} r={0.494} t={0.801} b={0.91} label="Odama Dön" onClick={resumeRoom} />
             <Hot l={0.511} r={0.927} t={0.801} b={0.91} label="Odayı İptal Et" onClick={cancelPendingRoom} />
           </div>
