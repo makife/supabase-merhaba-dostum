@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Lottie from "lottie-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
@@ -10,6 +11,8 @@ import odaKurKart from "@/assets/odaKurKart.png";
 import odayaKatilKart from "@/assets/odayaKatilKart.png";
 import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
 import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
+import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
+import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
@@ -390,7 +393,12 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
           {/* Oda kodu */}
           <Hot l={0.144} r={0.863} t={0.281} b={0.352}>
-            <span className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]">{roomCode}</span>
+            <span
+              className="font-black tracking-[0.3em] text-[#0f2a22] text-[clamp(14px,5vw,26px)]"
+              style={{ transform: "translate(38px, 5px)" }}
+            >
+              {roomCode}
+            </span>
           </Hot>
 
           {/* Arkadaşını davet et */}
@@ -408,14 +416,30 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
           {/* Katılımcı durum kutuları */}
           <Hot l={0.141} r={0.491} t={0.489} b={0.661}>
-            <span className="text-center font-black leading-tight text-[clamp(9px,2.6vw,13px)] text-white drop-shadow">
-              {isReady ? "HAZIR" : "BEKLENİYOR"}
-            </span>
+            {isReady ? (
+              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            ) : (
+              <Lottie
+                animationData={beklemeAramaAnim}
+                loop
+                autoplay
+                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+                style={{ width: "78%", height: "78%" }}
+              />
+            )}
           </Hot>
           <Hot l={0.52} r={0.874} t={0.489} b={0.661}>
-            <span className="text-center font-black leading-tight text-[clamp(9px,2.6vw,13px)] text-white drop-shadow">
-              {!opponentJoined ? "BEKLENİYOR" : opponentReady ? "HAZIR" : "KATILDI"}
-            </span>
+            {opponentReady ? (
+              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            ) : (
+              <Lottie
+                animationData={beklemeAramaAnim}
+                loop
+                autoplay
+                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+                style={{ width: "78%", height: "78%" }}
+              />
+            )}
           </Hot>
 
           {/* HAZIRIM / ÇIK */}
