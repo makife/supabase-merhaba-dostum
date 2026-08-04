@@ -6,7 +6,7 @@ import { useSounds } from "@/hooks/useSounds";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import PrivateRoomModal from "@/components/PrivateRoomModal";
+import PrivateRoomCards from "@/components/PrivateRoomCards";
 import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -1271,14 +1271,9 @@ const HomePage = () => {
 
         {/* --- MODALLAR --- */}
         {selectedMode && selectedMode === "private-room" ? (
-          <PrivateRoomModal
-            onClose={() => setSelectedMode(null)}
-            onStartGame={(matchId, type) => {
-              setSelectedMode(null);
-              navigate(`/game/random-match?room=${matchId}&type=${type}`);
-            }}
-          />
+          <PrivateRoomCards onClose={() => setSelectedMode(null)} />
         ) : selectedMode ? (
+
           <GameModeSelector
             mode={selectedMode}
             onStart={(type) => {
