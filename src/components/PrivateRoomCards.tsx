@@ -458,8 +458,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
 
           {roomCode && (
-            <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType="timed" />
+            <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType="timed" variant="card" />
           )}
+
         </div>
       )}
     </div>
