@@ -1271,14 +1271,9 @@ const HomePage = () => {
 
         {/* --- MODALLAR --- */}
         {selectedMode && selectedMode === "private-room" ? (
-          <PrivateRoomModal
-            onClose={() => setSelectedMode(null)}
-            onStartGame={(matchId, type) => {
-              setSelectedMode(null);
-              navigate(`/game/random-match?room=${matchId}&type=${type}`);
-            }}
-          />
+          <PrivateRoomCards onClose={() => setSelectedMode(null)} />
         ) : selectedMode ? (
+
           <GameModeSelector
             mode={selectedMode}
             onStart={(type) => {
