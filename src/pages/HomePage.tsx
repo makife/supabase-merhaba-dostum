@@ -30,6 +30,7 @@ import { useActiveTournamentDisplayCount } from "@/hooks/useActiveTournamentDisp
 import Lottie from "lottie-react";
 import { useSystemMessages } from "@/hooks/useSystemMessages";
 import { SystemMessagesDialog } from "@/components/SystemMessagesDialog";
+import { HomeSoundToggle } from "@/components/home/HomeSoundToggle";
 
 import {
   Bot,
@@ -1079,6 +1080,10 @@ const HomePage = () => {
                   </span>
                 )}
               </button>
+
+              <HomeSoundToggle />
+
+
 
             </div>
           </div>
