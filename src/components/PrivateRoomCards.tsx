@@ -335,7 +335,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
       {step === "choose" ? (
-        pendingRoom ? (
+        checkingPending ? (
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+        ) : pendingRoom ? (
           /* SADECE BEKLEYEN ODA */
           <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
             <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
