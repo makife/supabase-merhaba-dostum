@@ -6,7 +6,6 @@ import {
   preloadHomeIslands,
   type IslandKey,
 } from "@/lib/homeIslandAssets";
-import { useNightMode } from "@/hooks/useNightMode";
 
 /**
  * anasayfaGorsel.png içindeki 5 ada, ayrı PNG'lere bölündü.
@@ -22,7 +21,6 @@ interface HomeIslandsProps {
 }
 
 export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsProps) => {
-  const isNight = useNightMode();
   // Her ada için rastgele süzülme parametreleri (mount başına sabit)
   const motion = useMemo(
     () =>
@@ -107,7 +105,7 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
           }}
           className="absolute pointer-events-none"
           style={{
-            left: `${island.left + (isNight ? island.nightDx ?? 0 : 0)}%`,
+            left: `${island.left}%`,
             top: `${island.top}%`,
             width: `${island.width}%`,
             height: `${island.height}%`,
@@ -117,7 +115,8 @@ export const HomeIslands = ({ pointSize = 38, alerts, onSelect }: HomeIslandsPro
           }}
         >
           <img
-            src={isNight ? island.nightSrc : island.src}
+            src={island.src}
+
             alt={island.label}
             loading="eager"
             decoding="async"

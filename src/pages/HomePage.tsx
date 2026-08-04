@@ -918,12 +918,8 @@ const HomePage = () => {
     return {
       id: mode.id,
       title: mode.title,
-      subtitle:
-        mode.id === "tournament"
-          ? `${activeTournamentCount ?? 0} aktif turnuva`
-          : mode.id === "random-match"
-            ? `${searchingPlayersCount ?? 0} kişi arıyor`
-            : mode.description,
+      subtitle: undefined,
+
       icon: <Icon className="w-9 h-9" />,
       gradient: mode.gradient,
       imageSrc: `/oyunModu/${mode.id}.png`,
