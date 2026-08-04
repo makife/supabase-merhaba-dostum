@@ -180,8 +180,11 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = 
               return (
                 <div
                   key={friend.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
+                  className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
+                    isCard ? "bg-black/[0.04] border-black/10" : "bg-white/5 border-white/10 hover:bg-white/[0.07]"
+                  }`}
                 >
+
                   <div className="relative">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={friend.avatar_url || ""} />
