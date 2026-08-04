@@ -78,6 +78,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
   const [loading, setLoading] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [pendingRoom, setPendingRoom] = useState<{ id: string; room_code: string } | null>(null);
+  const [checkingPending, setCheckingPending] = useState(true);
 
   // waiting state
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -89,8 +90,12 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
   // --- Bekleyen oda kontrolü ---
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setCheckingPending(false);
+      return;
+    }
     let cancelled = false;
+    setCheckingPending(true);
     (async () => {
       const { data } = await supabase
         .from("game_rooms")
@@ -102,7 +107,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!cancelled && data?.room_code) setPendingRoom({ id: data.id, room_code: data.room_code });
+      if (cancelled) return;
+      if (data?.room_code) setPendingRoom({ id: data.id, room_code: data.room_code });
+      setCheckingPending(false);
     })();
     return () => {
       cancelled = true;
@@ -328,7 +335,9 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
       {step === "choose" ? (
-        pendingRoom ? (
+        checkingPending ? (
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+        ) : pendingRoom ? (
           /* SADECE BEKLEYEN ODA */
           <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
             <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
