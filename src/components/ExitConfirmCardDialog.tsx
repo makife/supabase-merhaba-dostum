@@ -45,7 +45,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMax meet" }}
-            style={{ width: "128%", height: "128%", marginBottom: "-2%" }}
+            style={{ width: "128%", height: "128%", marginBottom: "1.5%" }}
           />
         </div>
 
