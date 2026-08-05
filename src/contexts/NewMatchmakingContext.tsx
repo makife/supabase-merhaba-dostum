@@ -646,5 +646,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     onMatchFound,
   };
 
-  return <MatchmakingContext.Provider value={value}>{children}</MatchmakingContext.Provider>;
+  return (
+    <MatchmakingContext.Provider value={value}>
+      {children}
+      <SearchCancelledCard open={showCancelledCard} onClose={() => setShowCancelledCard(false)} />
+    </MatchmakingContext.Provider>
+  );
 };
