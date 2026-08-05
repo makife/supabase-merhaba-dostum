@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, memo, useCallback, useMemo } from "react";
 import { useMusic } from "@/contexts/MusicContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
