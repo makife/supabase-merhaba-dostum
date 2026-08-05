@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 import { useNavigate, useSearchParams, useLocation, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/contexts/GameContext";
