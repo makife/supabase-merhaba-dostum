@@ -1270,33 +1270,6 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* LEVEL UP TEST BUTTON */}
-        {isOwnProfile && (
-          <div className="px-5 mb-6">
-            <button
-              onClick={() => {
-                const currentLevel = (() => {
-                  const totalScore = profile?.total_score || 0;
-                  let level = 1;
-                  let totalExpNeeded = 0;
-                  let currentLevelExp = 1000;
-                  while (totalScore >= totalExpNeeded + currentLevelExp) {
-                    totalExpNeeded += currentLevelExp;
-                    level++;
-                    currentLevelExp = level * 1000;
-                  }
-                  return level;
-                })();
-                setTestLevelUpValue(currentLevel + 1);
-                setTestLevelUpOpen(true);
-              }}
-              className="w-full rounded-2xl py-3 px-5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-bold shadow-lg active:scale-[0.98] transition-transform"
-            >
-              🎉 Level Up Animasyonunu Test Et
-            </button>
-          </div>
-        )}
-
         <LevelUpDialog
           open={testLevelUpOpen}
           onClose={() => setTestLevelUpOpen(false)}
