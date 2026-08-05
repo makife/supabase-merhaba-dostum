@@ -274,6 +274,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           }
         }
 
+        if (isStale()) {
+          console.log("🛑 Arama iptal edildi (katılım sonrası) - odadan çıkılıyor");
+          if (joinSuccess && targetRoom) {
+            await supabase
+              .from("game_participants")
+              .delete()
+              .eq("room_id", targetRoom.id)
+              .eq("user_id", user.id);
+          }
+          return;
+        }
+
         if (joinSuccess && targetRoom) {
           console.log("✅ Odaya başarıyla katıldı! Countdown başlatılıyor...");
 
@@ -288,7 +300,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
           }
 
+          if (isStale()) {
+            console.log("🛑 Arama iptal edildi (countdown sonrası) - navigate edilmiyor");
+            return;
+          }
+
           setCurrentRoom({
+
             id: targetRoom.id,
             game_type: gameType,
             status: "waiting",
