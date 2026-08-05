@@ -440,6 +440,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         return grid;
       };
 
+      if (isStale()) {
+        console.log("🛑 Arama iptal edildi (oda oluşturma öncesi) - çıkılıyor");
+        return;
+      }
+
       const gridArray = generateRandomGrid();
       const newRoomId = crypto.randomUUID();
 
@@ -463,6 +468,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       console.log("✅ Yeni oda oluşturuldu:", newRoomId.slice(-8));
 
+      const abandonRoom = async () => {
+        await supabase.from("game_participants").delete().eq("room_id", newRoomId);
+        await supabase.from("game_rooms").delete().eq("id", newRoomId).eq("host_id", user.id);
+        console.log("🗑️ İptal sonrası oluşturulan oda silindi");
+      };
+
+      if (isStale()) {
+        await abandonRoom();
+        return;
+      }
+
       // Kendini katılımcı olarak ekle
       const { error: participantError } = await supabase.from("game_participants").insert({
         room_id: newRoomId,
@@ -475,7 +491,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         console.error("❌ Katılımcı ekleme hatası:", participantError);
       }
 
+      if (isStale()) {
+        await abandonRoom();
+        return;
+      }
+
       setCurrentRoom({
+
         id: newRoomId,
         game_type: gameType,
         status: "waiting",
