@@ -155,8 +155,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
 
+    const mySearchId = ++searchIdRef.current;
+    const isStale = () => searchIdRef.current !== mySearchId;
+
     try {
       setIsSearching(true);
+
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
