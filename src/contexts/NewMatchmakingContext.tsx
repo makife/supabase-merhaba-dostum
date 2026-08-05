@@ -56,6 +56,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [searchTimeout, setSearchTimeout] = useState(false);
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
+  const [showCancelledCard, setShowCancelledCard] = useState(false);
   const progressIntervalRef = React.useRef<number | null>(null);
   const botFallbackTimerRef = React.useRef<number | null>(null);
 
