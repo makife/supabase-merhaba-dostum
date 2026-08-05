@@ -862,7 +862,7 @@ const HomePage = () => {
   ];
 
   const playedBadge = (
-    <img src={oynandiIcon} alt="Oynandı" className="w-12 h-12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]" />
+    <img src={oynandiIcon} alt="Oynandı" className="w-16 h-16 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]" />
   );
 
   const challengePanelItems: SlidePanelItem[] = [
