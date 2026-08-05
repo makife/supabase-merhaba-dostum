@@ -300,6 +300,10 @@ GameModeCard.displayName = "GameModeCard";
 
 // --- ANA SAYFA ---
 
+// Ada katmanı sınırları: sayfa değişimlerinde korunur (ilk kare doğru boyutta çizilir)
+let cachedIslandBounds = { top: 0, bottom: 0, measured: false };
+
+
 const HomePage = () => {
   const { user } = useAuth();
   const { profile, isPremium, refreshProfile, getTotalCredits } = useUser();
