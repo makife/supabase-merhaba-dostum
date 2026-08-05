@@ -17,6 +17,7 @@ import { AvatarViewDialog } from "@/components/AvatarViewDialog";
 import GameModeSelector from "@/components/GameModeSelector";
 import { RadioPicker } from "@/components/RadioPicker";
 import HomeClouds from "@/components/home/HomeClouds";
+import oynandiIcon from "@/assets/oynandi.svg";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
 import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
@@ -860,6 +861,10 @@ const HomePage = () => {
     },
   ];
 
+  const playedBadge = (
+    <img src={oynandiIcon} alt="Oynandı" className="w-7 h-7 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+  );
+
   const challengePanelItems: SlidePanelItem[] = [
     {
       id: "puzzle",
@@ -868,7 +873,7 @@ const HomePage = () => {
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: "/gunlukModu/puzzle.png",
       dimmed: challengeStatus.puzzle,
-      badge: challengeStatus.puzzle ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      badge: challengeStatus.puzzle ? playedBadge : undefined,
       onClick: () => {
         playSound("buttonClick");
         setShowChallengePanel(false);
@@ -882,7 +887,7 @@ const HomePage = () => {
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: "/gunlukModu/reaktor.png",
       dimmed: challengeStatus.reaktor,
-      badge: challengeStatus.reaktor ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      badge: challengeStatus.reaktor ? playedBadge : undefined,
       onClick: () => {
         playSound("buttonClick");
         setShowChallengePanel(false);
@@ -896,7 +901,7 @@ const HomePage = () => {
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: "/gunlukModu/neon-blitz.png",
       dimmed: challengeStatus.neon_blitz,
-      badge: challengeStatus.neon_blitz ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      badge: challengeStatus.neon_blitz ? playedBadge : undefined,
       onClick: () => {
         playSound("buttonClick");
         setShowChallengePanel(false);
@@ -910,7 +915,7 @@ const HomePage = () => {
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: "/gunlukModu/memory.png",
       dimmed: challengeStatus.memory,
-      badge: challengeStatus.memory ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      badge: challengeStatus.memory ? playedBadge : undefined,
       onClick: () => {
         playSound("buttonClick");
         setShowChallengePanel(false);
@@ -924,7 +929,7 @@ const HomePage = () => {
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: "/gunlukModu/kelime-avi.png",
       dimmed: challengeStatus.kelime_avi,
-      badge: challengeStatus.kelime_avi ? <Check className="w-6 h-6 text-amber-200" /> : undefined,
+      badge: challengeStatus.kelime_avi ? playedBadge : undefined,
       onClick: () => {
         playSound("buttonClick");
         setShowChallengePanel(false);
