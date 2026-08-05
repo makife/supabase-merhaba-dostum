@@ -7,6 +7,7 @@ import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 import { getGlobalServerNow } from "./ServerTimeContext";
 import { matchmakingMode } from "@/utils/matchmakingMode";
+import SearchCancelledCard from "@/components/SearchCancelledCard";
 
 interface MatchmakingRoom {
   id: string;
