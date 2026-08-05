@@ -37,15 +37,15 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
 
         {/* Açık mor alan: köpek animasyonu alt kenara hizalı */}
         <div
-          className="absolute pointer-events-none flex items-end justify-center overflow-hidden"
-          style={{ left: "9.5%", right: "10%", top: "36.8%", bottom: "21.4%" }}
+          className="absolute pointer-events-none flex items-end justify-center"
+          style={{ left: "11%", right: "11%", top: "38.5%", bottom: "30.1%" }}
         >
           <Lottie
             animationData={merakliKopek}
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMax meet" }}
-            style={{ width: "88%", height: "96%" }}
+            style={{ width: "128%", height: "128%", marginBottom: "-2%" }}
           />
         </div>
 
@@ -54,8 +54,8 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
           type="button"
           onClick={onContinue}
           aria-label="Devam Et"
-          className="absolute active:scale-95 transition-transform"
-          style={{ left: "9%", width: "39.8%", top: "83.3%", height: "10.2%" }}
+          className="absolute z-10 active:scale-95 transition-transform bg-transparent"
+          style={{ left: "13.8%", width: "34.5%", top: "72.9%", height: "7.5%" }}
         />
 
         {/* Çıkış Yap */}
@@ -63,9 +63,10 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
           type="button"
           onClick={onExit}
           aria-label="Çıkış Yap"
-          className="absolute active:scale-95 transition-transform"
-          style={{ left: "51.6%", width: "38.5%", top: "83.3%", height: "10.2%" }}
+          className="absolute z-10 active:scale-95 transition-transform bg-transparent"
+          style={{ left: "51.6%", width: "34.6%", top: "72.9%", height: "7.7%" }}
         />
+
       </div>
     </div>
   );
