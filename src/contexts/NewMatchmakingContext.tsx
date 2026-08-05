@@ -560,7 +560,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `id=eq.${newRoomId}`,
             },
             async (payload) => {
+              if (isStale()) {
+                autoReconnect.unregisterChannel(channelName);
+                return;
+              }
               console.log("📡 Room update tespit edildi:", payload);
+
 
               // countdown_started_at set edildiyse navigate yap
               if (payload.new.countdown_started_at) {
