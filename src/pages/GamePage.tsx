@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 import { useNavigate, useSearchParams, useLocation, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/contexts/GameContext";
@@ -9229,50 +9230,18 @@ const GamePage = ({
             </div>
 
             {/* Exit Confirmation Dialog */}
-            <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-              <AlertDialogContent
-                className="max-w-sm mx-auto rounded-2xl border border-amber-500/20 shadow-[0_0_40px_rgba(245,158,11,0.15)]"
-                style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
-              >
-                <AlertDialogHeader className="items-center text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
-                    <span className="text-2xl">⚠️</span>
-                  </div>
-                  <AlertDialogTitle className="text-lg font-bold text-white">Aktif Oyun Uyarısı</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="text-center text-sm text-gray-400 space-y-3 mt-2">
-                      <p className="text-gray-300">Şu an aktif bir oyun oynuyorsun!</p>
-                      <div className="space-y-2 text-left bg-white/5 rounded-xl p-3 border border-white/10">
-                        <p>
-                          ⚖️ <span className="font-semibold text-red-400">Ceza alacaksın</span>
-                        </p>
-                        <p>
-                          🏆 <span className="font-semibold text-amber-400">Rakibin kazanacak</span>
-                        </p>
-                      </div>
-                      <p className="text-gray-500 text-xs">Emin misin?</p>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0 mt-2">
-                  <AlertDialogCancel className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white border-0 font-semibold">
-                    🎮 Hayır, Oyuna Devam Et
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      setShowExitDialog(false);
-                      if (currentRoom) {
-                        await leaveRoom();
-                      }
-                      navigate("/");
-                    }}
-                    className="w-full bg-white/5 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 font-medium"
-                  >
-                    🚪 Evet, Çıkış Yap
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ExitConfirmCardDialog
+              open={showExitDialog}
+              onContinue={() => setShowExitDialog(false)}
+              onExit={async () => {
+                setShowExitDialog(false);
+                if (currentRoom) {
+                  await leaveRoom();
+                }
+                navigate("/");
+              }}
+            />
+
 
             {/* Tournament Exit Dialog */}
             <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
