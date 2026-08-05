@@ -21,7 +21,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onContinue}
@@ -45,7 +45,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMax meet" }}
-            style={{ width: "128%", height: "128%", marginBottom: "-2%" }}
+            style={{ width: "128%", height: "128%", marginBottom: "1.5%" }}
           />
         </div>
 
