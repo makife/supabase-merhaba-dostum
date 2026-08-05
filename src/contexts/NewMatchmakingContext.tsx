@@ -589,7 +589,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           .subscribe(),
       );
 
+      if (isStale()) {
+        autoReconnect.unregisterChannel(channelName);
+        await abandonRoom();
+        return;
+      }
+
       setSearchChannel(channelName);
+      searchChannelRef.current = channelName;
       console.log("📡 Realtime subscription aktif (participants + room updates) - auto-reconnect destekli");
 
       // 4️⃣ BOT FALLBACK: 5-12 saniye içinde gerçek oyuncu bulunamazsa bot ekle
@@ -599,7 +606,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       const botDelay = instantBot ? 300 : (5000 + Math.floor(Math.random() * 7001));
       clearBotFallbackTimer();
       botFallbackTimerRef.current = window.setTimeout(async () => {
+        if (isStale()) return;
         console.log(`🤖 ${instantBot ? "Instant" : `${botDelay}ms`} bot fallback tetiklendi`);
+
         try {
           const { data: countdownTs, error: botErr } = await supabase.rpc("add_random_match_bot" as any, {
             p_room_id: newRoomId,
