@@ -190,6 +190,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .order("created_at", { ascending: true })
         .limit(10);
 
+      if (isStale()) {
+        console.log("🛑 Arama iptal edildi (oda arama sonrası) - çıkılıyor");
+        return;
+      }
+
+
+
       if (searchError) {
         console.error("❌ Oda arama hatası:", searchError);
       }
