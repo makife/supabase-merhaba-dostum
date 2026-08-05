@@ -60,6 +60,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [showCancelledCard, setShowCancelledCard] = useState(false);
   const progressIntervalRef = React.useRef<number | null>(null);
   const botFallbackTimerRef = React.useRef<number | null>(null);
+  // 🔒 İptal koruması: her arama kendi id'sine sahip, iptalde id artar
+  const searchIdRef = React.useRef(0);
+  const currentRoomRef = React.useRef<MatchmakingRoom | null>(null);
+  const searchChannelRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
 
   const clearBotFallbackTimer = () => {
     if (botFallbackTimerRef.current) {
@@ -67,6 +75,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       botFallbackTimerRef.current = null;
     }
   };
+
 
 
 
