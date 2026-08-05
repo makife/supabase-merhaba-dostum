@@ -523,10 +523,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `room_id=eq.${newRoomId}`,
             },
             async (payload) => {
+              if (isStale()) return;
               console.log("📡 Yeni katılımcı tespit edildi:", payload);
 
               // Farklı oyuncu ve bot değilse
               if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
+
                 console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
 
                 // Bot fallback'i iptal et - gerçek oyuncu geldi
