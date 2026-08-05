@@ -1224,8 +1224,13 @@ const HomePage = () => {
       -------------------------------------------------------- */}
         <div
           className="absolute left-0 right-0 z-10 flex items-center justify-center overflow-hidden"
-          style={{ top: islandBounds.top, bottom: islandBounds.bottom }}
+          style={{
+            top: islandBounds.top,
+            bottom: islandBounds.bottom,
+            visibility: boundsReady ? "visible" : "hidden",
+          }}
         >
+
 
           <div
             className="relative"
