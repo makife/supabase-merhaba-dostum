@@ -623,6 +623,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         }
       }, botDelay);
     } catch (error) {
+      if (isStale()) {
+        console.log("🛑 Arama iptal edilmişti, hata yoksayıldı:", error);
+        return;
+      }
 
       console.error("❌ Matchmaking hatası:", error);
       setIsSearching(false);
@@ -639,28 +643,39 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arama iptal et
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
+    // 🔒 Devam eden async arama akışını geçersiz kıl
+    searchIdRef.current++;
     clearProgressTimer();
     clearBotFallbackTimer();
 
-
-    if (searchChannel) {
-      autoReconnect.unregisterChannel(searchChannel);
+    const activeChannel = searchChannelRef.current || searchChannel;
+    if (activeChannel) {
+      autoReconnect.unregisterChannel(activeChannel);
       setSearchChannel(null);
+      searchChannelRef.current = null;
       console.log("📡 Real-time channel kapatıldı");
     }
 
+    const roomToDelete = currentRoomRef.current || currentRoom;
+
+    setIsSearching(false);
+    setCurrentRoom(null);
+    currentRoomRef.current = null;
+    matchmakingMode.deactivate();
+    setShowCancelledCard(true);
+
     // Veritabanından odayı sil (eğer bekleyen oda varsa)
-    if (currentRoom && user) {
-      console.log("🗑️ Bekleyen oda veritabanından siliniyor:", currentRoom.id.slice(-8));
+    if (roomToDelete && user) {
+      console.log("🗑️ Bekleyen oda veritabanından siliniyor:", roomToDelete.id.slice(-8));
 
       // Önce katılımcıları sil
-      await supabase.from("game_participants").delete().eq("room_id", currentRoom.id);
+      await supabase.from("game_participants").delete().eq("room_id", roomToDelete.id);
 
       // Sonra odayı sil
       const { error } = await supabase
         .from("game_rooms")
         .delete()
-        .eq("id", currentRoom.id)
+        .eq("id", roomToDelete.id)
         .eq("host_id", user.id)
         .eq("status", "waiting");
 
@@ -670,13 +685,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         console.log("✅ Bekleyen oda veritabanından silindi");
       }
     }
-
-    setIsSearching(false);
-    setCurrentRoom(null);
-    matchmakingMode.deactivate();
-
-    setShowCancelledCard(true);
   };
+
 
   // Aramayı yeniden başlat
   const restartSearch = async (gameType: "timed" | "score") => {
