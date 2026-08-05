@@ -7,6 +7,7 @@ import { useAppState } from "@/hooks/useAppState";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 import { getGlobalServerNow } from "./ServerTimeContext";
 import { matchmakingMode } from "@/utils/matchmakingMode";
+import SearchCancelledCard from "@/components/SearchCancelledCard";
 
 interface MatchmakingRoom {
   id: string;
@@ -56,6 +57,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [searchTimeout, setSearchTimeout] = useState(false);
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
+  const [showCancelledCard, setShowCancelledCard] = useState(false);
   const progressIntervalRef = React.useRef<number | null>(null);
   const botFallbackTimerRef = React.useRef<number | null>(null);
 
@@ -597,10 +599,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setCurrentRoom(null);
     matchmakingMode.deactivate();
 
-    toast({
-      title: "Arama İptal Edildi",
-      description: "Eşleşme araması durduruldu",
-    });
+    setShowCancelledCard(true);
   };
 
   // Aramayı yeniden başlat
@@ -648,5 +647,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     onMatchFound,
   };
 
-  return <MatchmakingContext.Provider value={value}>{children}</MatchmakingContext.Provider>;
+  return (
+    <MatchmakingContext.Provider value={value}>
+      {children}
+      <SearchCancelledCard open={showCancelledCard} onClose={() => setShowCancelledCard(false)} />
+    </MatchmakingContext.Provider>
+  );
 };
