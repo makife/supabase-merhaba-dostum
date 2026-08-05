@@ -316,20 +316,28 @@ const HomePage = () => {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
-  const [islandBounds, setIslandBounds] = useState({ top: 0, bottom: 0 });
+  // Son ölçülen sınırlar modül seviyesinde saklanır: başka sayfadan ana sayfaya
+  // dönüldüğünde ilk kare zaten doğru boyutla çizilir (adalar büyük görünüp küçülmez).
+  const [islandBounds, setIslandBounds] = useState(cachedIslandBounds);
+  const [boundsReady, setBoundsReady] = useState(cachedIslandBounds.measured);
   const isNight = useNightMode();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const measure = () => {
       const headerTop = headerRef.current?.getBoundingClientRect().top ?? 0;
       const profileBottom = profileRef.current?.getBoundingClientRect().bottom;
-      setIslandBounds({
+      const next = {
         top:
           profileBottom != null
             ? Math.max(0, profileBottom - headerTop + 4)
             : (headerRef.current?.getBoundingClientRect().height ?? 0),
         bottom: navRef.current?.getBoundingClientRect().height ?? 0,
-      });
+        measured: true,
+      };
+      if (!next.top && !next.bottom) return;
+      cachedIslandBounds = next;
+      setIslandBounds(next);
+      setBoundsReady(true);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -342,6 +350,7 @@ const HomePage = () => {
       window.removeEventListener("resize", measure);
     };
   }, []);
+
 
 
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
