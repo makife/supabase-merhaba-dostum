@@ -77,7 +77,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                     item.onClick();
                   }}
                   className={`relative w-[92%] cursor-pointer active:scale-[0.97] transition-transform flex-shrink-0 ${
-                    item.dimmed ? "opacity-70 grayscale-[30%]" : ""
+                    item.dimmed ? "opacity-60 grayscale-[35%]" : ""
                   }`}
                   style={anim}
                 >
@@ -92,7 +92,12 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                       {item.subtitle}
                     </p>
                   )}
-                  {item.badge && <div className="absolute top-2 right-3 z-10">{item.badge}</div>}
+                  {item.badge && (
+                    <div className="absolute right-[7%] top-[18%] z-10 flex items-center justify-center">
+                      {item.badge}
+                    </div>
+                  )}
+
                 </div>
               );
             }
