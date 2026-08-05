@@ -597,10 +597,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     setCurrentRoom(null);
     matchmakingMode.deactivate();
 
-    toast({
-      title: "Arama İptal Edildi",
-      description: "Eşleşme araması durduruldu",
-    });
+    setShowCancelledCard(true);
   };
 
   // Aramayı yeniden başlat
