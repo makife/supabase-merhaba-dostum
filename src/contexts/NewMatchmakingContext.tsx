@@ -60,6 +60,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [showCancelledCard, setShowCancelledCard] = useState(false);
   const progressIntervalRef = React.useRef<number | null>(null);
   const botFallbackTimerRef = React.useRef<number | null>(null);
+  // 🔒 İptal koruması: her arama kendi id'sine sahip, iptalde id artar
+  const searchIdRef = React.useRef(0);
+  const currentRoomRef = React.useRef<MatchmakingRoom | null>(null);
+  const searchChannelRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
 
   const clearBotFallbackTimer = () => {
     if (botFallbackTimerRef.current) {
@@ -67,6 +75,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       botFallbackTimerRef.current = null;
     }
   };
+
 
 
 
@@ -120,18 +129,23 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const cleanup = async () => {
     console.log("🧹 Matchmaking cleanup başlatılıyor...");
 
+    searchIdRef.current++;
     clearProgressTimer();
     clearBotFallbackTimer();
 
-    if (searchChannel) {
-      autoReconnect.unregisterChannel(searchChannel);
+    const activeChannel = searchChannelRef.current || searchChannel;
+    if (activeChannel) {
+      autoReconnect.unregisterChannel(activeChannel);
       setSearchChannel(null);
+      searchChannelRef.current = null;
       console.log("📡 Real-time channel kapatıldı");
     }
 
 
     setIsSearching(false);
     setCurrentRoom(null);
+    currentRoomRef.current = null;
+
     setSearchProgress(0);
     setSearchTimeout(false);
     setCurrentGameType("timed");
@@ -146,8 +160,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const startSearch = async (gameType: "timed" | "score") => {
     if (!user) return;
 
+    const mySearchId = ++searchIdRef.current;
+    const isStale = () => searchIdRef.current !== mySearchId;
+
     try {
       setIsSearching(true);
+
       setSearchProgress(0);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
@@ -176,6 +194,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         .gt("created_at", twoMinutesAgo)
         .order("created_at", { ascending: true })
         .limit(10);
+
+      if (isStale()) {
+        console.log("🛑 Arama iptal edildi (oda arama sonrası) - çıkılıyor");
+        return;
+      }
+
+
 
       if (searchError) {
         console.error("❌ Oda arama hatası:", searchError);
@@ -254,6 +279,18 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           }
         }
 
+        if (isStale()) {
+          console.log("🛑 Arama iptal edildi (katılım sonrası) - odadan çıkılıyor");
+          if (joinSuccess && targetRoom) {
+            await supabase
+              .from("game_participants")
+              .delete()
+              .eq("room_id", targetRoom.id)
+              .eq("user_id", user.id);
+          }
+          return;
+        }
+
         if (joinSuccess && targetRoom) {
           console.log("✅ Odaya başarıyla katıldı! Countdown başlatılıyor...");
 
@@ -268,7 +305,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
             console.log("✅ Countdown başlatıldı (Player 1) - real-time subscription event'i bekleyeceğiz");
           }
 
+          if (isStale()) {
+            console.log("🛑 Arama iptal edildi (countdown sonrası) - navigate edilmiyor");
+            return;
+          }
+
           setCurrentRoom({
+
             id: targetRoom.id,
             game_type: gameType,
             status: "waiting",
@@ -402,6 +445,11 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         return grid;
       };
 
+      if (isStale()) {
+        console.log("🛑 Arama iptal edildi (oda oluşturma öncesi) - çıkılıyor");
+        return;
+      }
+
       const gridArray = generateRandomGrid();
       const newRoomId = crypto.randomUUID();
 
@@ -425,6 +473,17 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
       console.log("✅ Yeni oda oluşturuldu:", newRoomId.slice(-8));
 
+      const abandonRoom = async () => {
+        await supabase.from("game_participants").delete().eq("room_id", newRoomId);
+        await supabase.from("game_rooms").delete().eq("id", newRoomId).eq("host_id", user.id);
+        console.log("🗑️ İptal sonrası oluşturulan oda silindi");
+      };
+
+      if (isStale()) {
+        await abandonRoom();
+        return;
+      }
+
       // Kendini katılımcı olarak ekle
       const { error: participantError } = await supabase.from("game_participants").insert({
         room_id: newRoomId,
@@ -437,7 +496,13 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         console.error("❌ Katılımcı ekleme hatası:", participantError);
       }
 
+      if (isStale()) {
+        await abandonRoom();
+        return;
+      }
+
       setCurrentRoom({
+
         id: newRoomId,
         game_type: gameType,
         status: "waiting",
@@ -463,10 +528,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `room_id=eq.${newRoomId}`,
             },
             async (payload) => {
+              if (isStale()) return;
               console.log("📡 Yeni katılımcı tespit edildi:", payload);
 
               // Farklı oyuncu ve bot değilse
               if (!payload.new.is_bot && payload.new.user_id !== user.id && payload.new.user_id !== null) {
+
                 console.log("🎉 2. oyuncu odaya katıldı! (Player 2 - oda sahibi tespit etti)");
 
                 // Bot fallback'i iptal et - gerçek oyuncu geldi
@@ -498,7 +565,12 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               filter: `id=eq.${newRoomId}`,
             },
             async (payload) => {
+              if (isStale()) {
+                autoReconnect.unregisterChannel(channelName);
+                return;
+              }
               console.log("📡 Room update tespit edildi:", payload);
+
 
               // countdown_started_at set edildiyse navigate yap
               if (payload.new.countdown_started_at) {
@@ -522,7 +594,14 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
           .subscribe(),
       );
 
+      if (isStale()) {
+        autoReconnect.unregisterChannel(channelName);
+        await abandonRoom();
+        return;
+      }
+
       setSearchChannel(channelName);
+      searchChannelRef.current = channelName;
       console.log("📡 Realtime subscription aktif (participants + room updates) - auto-reconnect destekli");
 
       // 4️⃣ BOT FALLBACK: 5-12 saniye içinde gerçek oyuncu bulunamazsa bot ekle
@@ -532,7 +611,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       const botDelay = instantBot ? 300 : (5000 + Math.floor(Math.random() * 7001));
       clearBotFallbackTimer();
       botFallbackTimerRef.current = window.setTimeout(async () => {
+        if (isStale()) return;
         console.log(`🤖 ${instantBot ? "Instant" : `${botDelay}ms`} bot fallback tetiklendi`);
+
         try {
           const { data: countdownTs, error: botErr } = await supabase.rpc("add_random_match_bot" as any, {
             p_room_id: newRoomId,
@@ -547,6 +628,10 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         }
       }, botDelay);
     } catch (error) {
+      if (isStale()) {
+        console.log("🛑 Arama iptal edilmişti, hata yoksayıldı:", error);
+        return;
+      }
 
       console.error("❌ Matchmaking hatası:", error);
       setIsSearching(false);
@@ -563,28 +648,39 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   // Arama iptal et
   const cancelSearch = async () => {
     console.log("❌ Arama iptal ediliyor...");
+    // 🔒 Devam eden async arama akışını geçersiz kıl
+    searchIdRef.current++;
     clearProgressTimer();
     clearBotFallbackTimer();
 
-
-    if (searchChannel) {
-      autoReconnect.unregisterChannel(searchChannel);
+    const activeChannel = searchChannelRef.current || searchChannel;
+    if (activeChannel) {
+      autoReconnect.unregisterChannel(activeChannel);
       setSearchChannel(null);
+      searchChannelRef.current = null;
       console.log("📡 Real-time channel kapatıldı");
     }
 
+    const roomToDelete = currentRoomRef.current || currentRoom;
+
+    setIsSearching(false);
+    setCurrentRoom(null);
+    currentRoomRef.current = null;
+    matchmakingMode.deactivate();
+    setShowCancelledCard(true);
+
     // Veritabanından odayı sil (eğer bekleyen oda varsa)
-    if (currentRoom && user) {
-      console.log("🗑️ Bekleyen oda veritabanından siliniyor:", currentRoom.id.slice(-8));
+    if (roomToDelete && user) {
+      console.log("🗑️ Bekleyen oda veritabanından siliniyor:", roomToDelete.id.slice(-8));
 
       // Önce katılımcıları sil
-      await supabase.from("game_participants").delete().eq("room_id", currentRoom.id);
+      await supabase.from("game_participants").delete().eq("room_id", roomToDelete.id);
 
       // Sonra odayı sil
       const { error } = await supabase
         .from("game_rooms")
         .delete()
-        .eq("id", currentRoom.id)
+        .eq("id", roomToDelete.id)
         .eq("host_id", user.id)
         .eq("status", "waiting");
 
@@ -594,13 +690,8 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
         console.log("✅ Bekleyen oda veritabanından silindi");
       }
     }
-
-    setIsSearching(false);
-    setCurrentRoom(null);
-    matchmakingMode.deactivate();
-
-    setShowCancelledCard(true);
   };
+
 
   // Aramayı yeniden başlat
   const restartSearch = async (gameType: "timed" | "score") => {
