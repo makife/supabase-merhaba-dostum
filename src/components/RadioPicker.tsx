@@ -1,5 +1,5 @@
 import { useRadio } from "@/contexts/RadioContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { PressableZone } from "@/components/ui/pressable-zone";
 import radyoPenceresi from "@/assets/radyoPenceresi.png";
@@ -29,6 +29,16 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
         style={{ containerType: "inline-size" }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Pencere dışı büyük kapatma butonu (radyo çalmaya devam eder) */}
+        <PressableZone
+          label="Kapat"
+          onPress={onClose}
+          className="rounded-full bg-black/60 border border-white/25 flex items-center justify-center"
+          style={{ right: "-2%", top: "-9%", width: "13cqw", height: "13cqw" }}
+        >
+          <X className="w-[7cqw] h-[7cqw] text-white" strokeWidth={3} />
+        </PressableZone>
+
         <img
           src={radyoPenceresi}
           alt="Radyo"
@@ -62,11 +72,11 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                   <span className="absolute inset-y-[6%] inset-x-[1%] rounded-[2cqw] bg-amber-400/25 pointer-events-none" />
                 )}
                 {loading && (
-                  <span className="absolute inset-y-0 left-[6%] flex items-center">
-                    <Loader2 className="w-[6cqw] h-[6cqw] text-[#1b3a5c] animate-spin" />
+                  <span className="absolute inset-y-0 right-[5%] flex items-center">
+                    <Loader2 className="w-[5cqw] h-[5cqw] text-[#1b3a5c] animate-spin" />
                   </span>
                 )}
-                {playing && (
+                {playing && !loading && (
                   <span className="absolute inset-y-0 right-[5%] flex items-center gap-[1cqw]">
                     <span className="w-[1.2cqw] h-[3cqw] bg-green-600 rounded-full animate-pulse" />
                     <span className="w-[1.2cqw] h-[4.5cqw] bg-green-600 rounded-full animate-pulse" />

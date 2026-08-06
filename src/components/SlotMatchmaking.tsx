@@ -5,6 +5,7 @@ import { User } from "lucide-react";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import modalBg from "@/assets/rakipAraniyorModal.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
+import { PressableZone } from "@/components/ui/pressable-zone";
 
 interface SlotMatchmakingProps {
   onCancel: () => void;
@@ -152,17 +153,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
         </div>
 
         {/* Cancel / retry hot zone over the "Aramadan Vazgeç" button */}
-        <button
-          type="button"
-          onClick={searchProgress >= 100 ? handleRetry : handleCancel}
-          aria-label={searchProgress >= 100 ? "Tekrar ara" : "Aramadan vazgeç"}
-          className="absolute cursor-pointer active:scale-95 transition-transform"
+        <PressableZone
+          label={searchProgress >= 100 ? "Tekrar ara" : "Aramadan vazgeç"}
+          onPress={searchProgress >= 100 ? handleRetry : handleCancel}
+          className="z-10 rounded-2xl"
           style={{
             left: `${CANCEL_ZONE.left}%`,
             top: `${CANCEL_ZONE.top}%`,
             width: `${CANCEL_ZONE.width}%`,
             height: `${CANCEL_ZONE.height}%`,
-            background: "transparent",
           }}
         />
       </div>
