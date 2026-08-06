@@ -1,3 +1,4 @@
+import { homeBackPath } from "@/utils/challengeBackPath";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { ArrowLeft, Trophy } from "lucide-react";
@@ -247,9 +248,9 @@ const DinoRunner = () => {
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const doNavigate = () => {
     if (window.history.length > 1) {
-      window.history.back();
+      window.location.href = homeBackPath();
     } else {
-      window.location.href = "/";
+      window.location.href = homeBackPath();
     }
   };
   // navigate, gameState tanımından sonra aşağıda tanımlanıyor.

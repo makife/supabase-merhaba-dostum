@@ -60,7 +60,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-3">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-1">
           {items.map((item, i) => {
             const anim = {
               transform: mounted ? "translate3d(0,0,0)" : "translate3d(-120%,0,0)",
