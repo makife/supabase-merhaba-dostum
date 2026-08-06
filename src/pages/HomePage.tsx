@@ -441,6 +441,17 @@ const HomePage = () => {
   }, [user?.id]);
 
 
+  // Düello mini oyunlarından dönüşte görev kartları panelini yeniden aç.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("panel") === "challenge") {
+      setShowChallengePanel(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("panel");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -450,6 +461,7 @@ const HomePage = () => {
     url.searchParams.delete("botNow");
     window.history.replaceState({}, "", url.toString());
   }, []);
+
 
 
   const [challengeStatus, setChallengeStatus] = useState<Record<ChallengeType, boolean>>(() => {
