@@ -48,7 +48,7 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
 
   return (
     /* h-full (veya min-h-screen) ve flex items-center justify-center eklendi */
-    <div className="flex justify-center items-center w-full min-h-full">
+    <div className="flex justify-center items-center w-full overflow-hidden">
       <div
         className="relative w-full max-w-[400px] mx-auto animate-in fade-in zoom-in-95 duration-300"
         style={{ containerType: "inline-size" }}
