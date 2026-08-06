@@ -15,9 +15,13 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
 
   if (!open) return null;
 
-  // PNG içindeki beyaz liste alanı ve buton koordinatları (704x1408)
-  const LIST = { left: "18.9%", right: "17.2%", top: "30.1%", bottom: "22.1%" };
+  // PNG (704x1408) üzerinden piksel piksel ölçülmüş liste alanı
+  // Beyaz liste: x 130-574, satır ayırıcıları y: 519.5 / 600.5 / 681.5 / 763.5 / 844.5 / 925.5 / 1007.5
+  const LIST_LEFT = (130 / 704) * 100; // 18.466%
+  const LIST_WIDTH = (444 / 704) * 100; // 63.068%
+  const ROW_EDGES = [424, 519.5, 600.5, 681.5, 763.5, 844.5, 925.5, 1007.5, 1105];
   const rows = stations.slice(0, 8);
+
 
   return (
     <div
