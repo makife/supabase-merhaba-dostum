@@ -585,7 +585,11 @@ const MarketPage = () => {
           }}
           className="h-full flex flex-col"
         >
-          <TabsList className="relative grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
+          <TabsList
+            {...tabSwipeHandlers}
+            style={{ touchAction: "pan-y" }}
+            className="relative grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1"
+          >
             {/* Kayan aktif gösterge */}
             <div
               ref={pillRef}
