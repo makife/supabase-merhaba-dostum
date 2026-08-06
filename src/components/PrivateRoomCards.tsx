@@ -4,7 +4,6 @@ import Lottie from "lottie-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { useSounds } from "@/hooks/useSounds";
 import { toast as sonnerToast } from "sonner";
 import FriendInviteDialog from "@/components/FriendInviteDialog";
 import { PressableZone } from "@/components/ui/pressable-zone";
@@ -65,8 +64,6 @@ const Hot = ({
       label={label || "buton"}
       onPress={onClick}
       disabled={disabled}
-      glow={false}
-      ripple={false}
       className="disabled:opacity-100"
       style={style}
     />
@@ -87,7 +84,6 @@ const PrivateRoomCards = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, isPremium } = useUser();
-  const { playSound } = useSounds();
 
   const hasInitialRoom = Boolean(initialRoomId || initialRoomCode);
   const [step, setStep] = useState<"choose" | "waiting">(hasInitialRoom ? "waiting" : "choose");
@@ -169,7 +165,6 @@ const PrivateRoomCards = ({
 
   const handleCreate = async () => {
     if (loading || !user) return;
-    playSound("buttonClick");
     if (!hasCredit) {
       sonnerToast.error("Oyun için sayfaların yetersiz!", {
         description: "Özel oda oluşturmak için hak satın alın veya dolmasını bekleyin.",
@@ -214,7 +209,6 @@ const PrivateRoomCards = ({
 
   const handleJoin = async () => {
     if (loading || !user || joinCode.trim().length < 3) return;
-    playSound("buttonClick");
     setLoading(true);
     try {
       const code = joinCode.toUpperCase().trim();
@@ -239,7 +233,6 @@ const PrivateRoomCards = ({
 
   const resumeRoom = async () => {
     if (!pendingRoom || !user) return;
-    playSound("buttonClick");
     setRoomId(pendingRoom.id);
     setRoomCode(pendingRoom.room_code);
     setStep("waiting");
@@ -247,7 +240,6 @@ const PrivateRoomCards = ({
 
   const cancelPendingRoom = async () => {
     if (!pendingRoom) return;
-    playSound("buttonClick");
     await supabase
       .from("game_rooms")
       .update({ status: "expired", updated_at: new Date().toISOString() })
@@ -353,7 +345,6 @@ const PrivateRoomCards = ({
 
   const handleReady = async () => {
     if (!roomId || !user || isReady) return;
-    playSound("buttonClick");
     setIsReady(true);
     await supabase
       .from("game_participants")
@@ -363,7 +354,6 @@ const PrivateRoomCards = ({
   };
 
   const handleLeave = async () => {
-    playSound("buttonClick");
     if (roomId && user) {
       await supabase.from("game_participants").delete().eq("room_id", roomId).eq("user_id", user.id);
     }
@@ -421,8 +411,7 @@ const PrivateRoomCards = ({
                 b={0.918}
                 label="İptal"
                 onClick={() => {
-                  playSound("buttonClick");
-                  onClose();
+                                onClose();
                 }}
               />
             </div>
@@ -449,8 +438,7 @@ const PrivateRoomCards = ({
                 b={0.918}
                 label="İptal"
                 onClick={() => {
-                  playSound("buttonClick");
-                  onClose();
+                                onClose();
                 }}
               />
             </div>
@@ -480,8 +468,7 @@ const PrivateRoomCards = ({
             b={0.443}
             label="Arkadaşını Davet Et"
             onClick={() => {
-              playSound("buttonClick");
-              setInviteOpen(true);
+                        setInviteOpen(true);
             }}
           />
 

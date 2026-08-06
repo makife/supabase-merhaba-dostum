@@ -875,7 +875,6 @@ const HomePage = () => {
       dimmed: challengeStatus.puzzle,
       badge: challengeStatus.puzzle ? playedBadge : undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowChallengePanel(false);
         navigate("/challenge/puzzle");
       },
@@ -889,7 +888,6 @@ const HomePage = () => {
       dimmed: challengeStatus.reaktor,
       badge: challengeStatus.reaktor ? playedBadge : undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowChallengePanel(false);
         navigate("/challenge/reaktor");
       },
@@ -903,7 +901,6 @@ const HomePage = () => {
       dimmed: challengeStatus.neon_blitz,
       badge: challengeStatus.neon_blitz ? playedBadge : undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowChallengePanel(false);
         navigate("/challenge/neon-blitz");
       },
@@ -917,7 +914,6 @@ const HomePage = () => {
       dimmed: challengeStatus.memory,
       badge: challengeStatus.memory ? playedBadge : undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowChallengePanel(false);
         navigate("/challenge/memory");
       },
@@ -931,7 +927,6 @@ const HomePage = () => {
       dimmed: challengeStatus.kelime_avi,
       badge: challengeStatus.kelime_avi ? playedBadge : undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowChallengePanel(false);
         navigate("/challenge/kelime-avi");
       },
@@ -948,11 +943,8 @@ const HomePage = () => {
       icon: <Icon className="w-9 h-9" />,
       gradient: mode.gradient,
       imageSrc: `/oyunModu/${mode.id}.png`,
-      badge: mode.isLive ? (
-        <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
-      ) : undefined,
+      badge: undefined,
       onClick: () => {
-        playSound("buttonClick");
         setShowModePanel(false);
         handleGameModeClick(mode.id);
       },
