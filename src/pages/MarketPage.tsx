@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,6 +52,7 @@ interface StationeryItem {
 
 const MarketPage = () => {
   const navigate = useNavigate();
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/market" });
   const { toast } = useToast();
   const { user } = useAuth();
   const { profile, refreshProfile } = useUser();
@@ -495,7 +497,7 @@ const MarketPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
+    <div ref={swipeRef} {...swipeHandlers} className="flex flex-col h-screen bg-slate-50">
       {/* Dekoratif Üst Arkaplan */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-900 via-indigo-800 to-slate-50 rounded-b-[40px] z-0 overflow-hidden">
         <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>

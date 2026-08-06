@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useSounds } from "@/hooks/useSounds";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
@@ -57,6 +58,7 @@ const ProfilePage = () => {
   const { captureFromCamera, captureFromGallery, uploadAvatar, uploadGameAvatar, deleteAvatar, uploading } =
     useAvatarUpload();
   const { id: routeId } = useParams();
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/profile", enabled: !routeId });
   const { playSound } = useSounds();
   const viewedUserId = routeId || user?.id || null;
   const isOwnProfile = !routeId || routeId === user?.id;
@@ -977,7 +979,7 @@ const ProfilePage = () => {
   const isPremium = profileData.premiumUntil && new Date(profileData.premiumUntil) > new Date();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
+    <div ref={swipeRef} {...swipeHandlers} className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
       {/* HEADER */}
       <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20">
         <div className="px-5 py-4 flex items-center gap-4">

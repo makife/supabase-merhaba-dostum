@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, startTransition } from "react";
+import { prefetch, getCached, setCached, LB_KEYS } from "@/utils/pageDataCache";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +78,8 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
+  // Sekmeler yatay swipe kullandığı için sayfa geçişi sadece ekran kenarından
+  const { containerRef: pageSwipeRef, swipeHandlers: pageSwipeHandlers } = usePageSwipeNav({ route: "/leaderboard", edgeOnly: true });
   const swipeRef = useRef<{ x: number; y: number; dx: number; axis: "none" | "x" | "y" } | null>(null);
   const dragLayerRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
@@ -146,14 +150,16 @@ const LeaderboardPage = () => {
   };
 
   // Genel sıralama (4 aylık sezon) - RPC ile
-  const fetchAllTimeLeaders = async () => {
+  const fetchAllTimeLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 50 });
-      if (error) {
-        console.error("Season leaderboard RPC error:", error);
-        setAllTimeLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 50 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.season, d); return d; })
+        : await prefetch(LB_KEYS.season, fetcher);
 
       const allTimeData = Array.isArray(data)
         ? data.map((entry: any) => ({
@@ -183,14 +189,16 @@ const LeaderboardPage = () => {
   };
 
   // Haftalık sıralama
-  const fetchWeeklyLeaders = async () => {
+  const fetchWeeklyLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
-      if (error) {
-        console.error("Weekly leaderboard RPC error:", error);
-        setWeeklyLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.weekly, d); return d; })
+        : await prefetch(LB_KEYS.weekly, fetcher);
 
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -220,14 +228,16 @@ const LeaderboardPage = () => {
   };
 
   // Aylık sıralama
-  const fetchMonthlyLeaders = async () => {
+  const fetchMonthlyLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
-      if (error) {
-        console.error("Monthly leaderboard RPC error:", error);
-        setMonthlyLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.monthly, d); return d; })
+        : await prefetch(LB_KEYS.monthly, fetcher);
 
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -257,8 +267,12 @@ const LeaderboardPage = () => {
   };
 
 
-  const handleLeaderboardResync = useCallback(async () => {
-    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+  const handleLeaderboardResync = useCallback(async (force = false) => {
+    await Promise.all([
+      fetchAllTimeLeaders(force),
+      fetchWeeklyLeaders(force),
+      fetchMonthlyLeaders(force),
+    ]);
   }, []);
 
   // Fetch premium status whenever leaders change + poll every 15s for in_game updates
@@ -275,7 +289,7 @@ const LeaderboardPage = () => {
     return () => clearInterval(interval);
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
-  usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
+  usePageResync(() => handleLeaderboardResync(true), "LeaderboardPage", false);
 
   useEffect(() => {
     fetch("/liderArmaLoading.json")
@@ -286,7 +300,9 @@ const LeaderboardPage = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
+      // Prefetch edilmiş veri varsa spinner göstermeden anında aç
+      const hasCache = !!(getCached(LB_KEYS.season) || getCached(LB_KEYS.weekly) || getCached(LB_KEYS.monthly));
+      setLoading(!hasCache);
       await handleLeaderboardResync();
       setLoading(false);
     };
@@ -305,7 +321,7 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        await handleLeaderboardResync();
+        await handleLeaderboardResync(true);
       }
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -665,6 +681,8 @@ const LeaderboardPage = () => {
 
   return (
     <div
+      ref={pageSwipeRef}
+      {...pageSwipeHandlers}
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
       style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
     >
@@ -845,27 +863,19 @@ const LeaderboardPage = () => {
           playSound("buttonClick");
           try { navigator.vibrate?.(8); } catch {}
           settlePill(nextIdx);
-          el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
-          el.style.transform = `translate3d(${-dir * w * 0.6}px,0,0)`;
-          el.style.opacity = "0";
 
-          window.setTimeout(() => {
-            startTransition(() => setActiveTab(TAB_ORDER[nextIdx]));
-            requestAnimationFrame(() => {
-              const node = dragLayerRef.current;
-              if (!node) return;
-              node.style.transition = "none";
-              node.style.transform = `translate3d(${dir * w * 0.6}px,0,0)`;
-              node.style.opacity = "0";
-              requestAnimationFrame(() => {
-                const n2 = dragLayerRef.current;
-                if (!n2) return;
-                n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 240ms ease-out";
-                n2.style.transform = "translate3d(0,0,0)";
-                n2.style.opacity = "1";
-              });
-            });
-          }, 140);
+          // 🔥 Anında geçiş: veriler zaten bellekte, bekleme yok
+          setActiveTab(TAB_ORDER[nextIdx]);
+          el.style.transition = "none";
+          el.style.transform = `translate3d(${dir * w * 0.35}px,0,0)`;
+          el.style.opacity = "0.6";
+          requestAnimationFrame(() => {
+            const n2 = dragLayerRef.current;
+            if (!n2) return;
+            n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease-out";
+            n2.style.transform = "translate3d(0,0,0)";
+            n2.style.opacity = "1";
+          });
         }}
       >
         <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>

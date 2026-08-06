@@ -1,4 +1,5 @@
 import { MusicPackSelector } from "@/components/MusicPackSelector";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -65,6 +66,7 @@ const openAppSettings = async () => {
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/settings" });
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -435,6 +437,8 @@ const SettingsPage = () => {
 
   return (
     <div
+      ref={swipeRef}
+      {...swipeHandlers}
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
       style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
     >
