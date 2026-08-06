@@ -60,12 +60,13 @@ const Hot = ({
     );
   }
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
+    <PressableZone
+      label={label || "buton"}
+      onPress={onClick}
       disabled={disabled}
-      className="absolute bg-transparent border-0 outline-none active:opacity-60 disabled:opacity-100"
+      glow={false}
+      ripple={false}
+      className="disabled:opacity-100"
       style={style}
     />
   );
