@@ -45,6 +45,8 @@ export function useTabSwipe({
   const onTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (!enabled || e.touches.length !== 1) return;
+      // Sekme alanındaki kaydırma sayfa geçişini tetiklemesin
+      e.stopPropagation();
       stateRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: "none" };
       if (dragLayerRef.current) dragLayerRef.current.style.transition = "none";
       if (pillRef.current) pillRef.current.style.transition = "none";
@@ -56,6 +58,7 @@ export function useTabSwipe({
     (e: React.TouchEvent) => {
       const s = stateRef.current;
       if (!s) return;
+      e.stopPropagation();
       const dx = e.touches[0].clientX - s.x;
       const dy = e.touches[0].clientY - s.y;
       if (s.axis === "none") {
