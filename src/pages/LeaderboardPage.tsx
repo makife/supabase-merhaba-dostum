@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, startTransition } from "react";
+import { prefetch, getCached, setCached, LB_KEYS } from "@/utils/pageDataCache";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,14 +147,16 @@ const LeaderboardPage = () => {
   };
 
   // Genel sıralama (4 aylık sezon) - RPC ile
-  const fetchAllTimeLeaders = async () => {
+  const fetchAllTimeLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 50 });
-      if (error) {
-        console.error("Season leaderboard RPC error:", error);
-        setAllTimeLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_season_leaderboard", { limit_count: 50 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.season, d); return d; })
+        : await prefetch(LB_KEYS.season, fetcher);
 
       const allTimeData = Array.isArray(data)
         ? data.map((entry: any) => ({
@@ -183,14 +186,16 @@ const LeaderboardPage = () => {
   };
 
   // Haftalık sıralama
-  const fetchWeeklyLeaders = async () => {
+  const fetchWeeklyLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
-      if (error) {
-        console.error("Weekly leaderboard RPC error:", error);
-        setWeeklyLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 100 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.weekly, d); return d; })
+        : await prefetch(LB_KEYS.weekly, fetcher);
 
       const weeklyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -220,14 +225,16 @@ const LeaderboardPage = () => {
   };
 
   // Aylık sıralama
-  const fetchMonthlyLeaders = async () => {
+  const fetchMonthlyLeaders = async (force = false) => {
     try {
-      const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
-      if (error) {
-        console.error("Monthly leaderboard RPC error:", error);
-        setMonthlyLeaders([]);
-        return;
-      }
+      const fetcher = async () => {
+        const { data, error } = await supabase.rpc("get_monthly_leaderboard", { limit_count: 100 });
+        if (error) throw error;
+        return Array.isArray(data) ? data : [];
+      };
+      const data = force
+        ? await fetcher().then((d) => { setCached(LB_KEYS.monthly, d); return d; })
+        : await prefetch(LB_KEYS.monthly, fetcher);
 
       const monthlyData = Array.isArray(data)
         ? data.map((entry: any, index: number) => ({
@@ -257,8 +264,12 @@ const LeaderboardPage = () => {
   };
 
 
-  const handleLeaderboardResync = useCallback(async () => {
-    await Promise.all([fetchAllTimeLeaders(), fetchWeeklyLeaders(), fetchMonthlyLeaders()]);
+  const handleLeaderboardResync = useCallback(async (force = false) => {
+    await Promise.all([
+      fetchAllTimeLeaders(force),
+      fetchWeeklyLeaders(force),
+      fetchMonthlyLeaders(force),
+    ]);
   }, []);
 
   // Fetch premium status whenever leaders change + poll every 15s for in_game updates
@@ -286,7 +297,9 @@ const LeaderboardPage = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
+      // Prefetch edilmiş veri varsa spinner göstermeden anında aç
+      const hasCache = !!(getCached(LB_KEYS.season) || getCached(LB_KEYS.weekly) || getCached(LB_KEYS.monthly));
+      setLoading(!hasCache);
       await handleLeaderboardResync();
       setLoading(false);
     };
