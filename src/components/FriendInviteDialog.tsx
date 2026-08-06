@@ -253,13 +253,14 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = 
             <div className="w-full h-full overflow-y-auto pr-1 text-[#12241f]">{list}</div>
           </div>
           {/* KAPAT */}
-          <button
-            type="button"
-            aria-label="Kapat"
-            onClick={() => onOpenChange(false)}
-            className="absolute bg-transparent border-0 outline-none active:opacity-60"
+          <PressableZone
+            label="Kapat"
+            onPress={() => onOpenChange(false)}
+            glow={false}
+            ripple={false}
             style={{ left: "26%", width: "48%", top: "79.5%", height: "9.5%" }}
           />
+          
         </div>
       </div>
     );
