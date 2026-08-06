@@ -76,7 +76,10 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
-  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeRef = useRef<{ x: number; y: number; dx: number; axis: "none" | "x" | "y" } | null>(null);
+  const dragLayerRef = useRef<HTMLDivElement | null>(null);
+  const TAB_ORDER = ["all-time", "monthly", "weekly"];
+
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
   const [liderLoadingAnim, setLiderLoadingAnim] = useState<any>(null);
@@ -758,33 +761,86 @@ const LeaderboardPage = () => {
 
       {/* Scrollable Content */}
       <div
-        className="flex-1 overflow-y-auto px-5 py-4 relative z-10"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 relative z-10"
+        style={{ touchAction: "pan-y" }}
         onTouchStart={(e) => {
-          swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: "none" };
+          const el = dragLayerRef.current;
+          if (el) el.style.transition = "none";
         }}
-        onTouchEnd={(e) => {
-          const start = swipeRef.current;
+        onTouchMove={(e) => {
+          const s = swipeRef.current;
+          if (!s) return;
+          const dx = e.touches[0].clientX - s.x;
+          const dy = e.touches[0].clientY - s.y;
+          if (s.axis === "none") {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            s.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+          }
+          if (s.axis !== "x") return;
+          const idx = TAB_ORDER.indexOf(activeTab);
+          const atEdge = (dx < 0 && idx === TAB_ORDER.length - 1) || (dx > 0 && idx === 0);
+          const eff = atEdge ? dx * 0.25 : dx;
+          s.dx = eff;
+          const el = dragLayerRef.current;
+          if (el) {
+            const w = el.offsetWidth || 1;
+            el.style.transform = `translate3d(${eff}px,0,0)`;
+            el.style.opacity = String(Math.max(0.45, 1 - Math.abs(eff) / w));
+          }
+        }}
+        onTouchEnd={() => {
+          const s = swipeRef.current;
           swipeRef.current = null;
-          if (!start) return;
-          const dx = e.changedTouches[0].clientX - start.x;
-          const dy = e.changedTouches[0].clientY - start.y;
-          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-          const order = ["all-time", "monthly", "weekly"];
-          const idx = order.indexOf(activeTab);
-          const next = dx < 0 ? idx + 1 : idx - 1;
-          if (next < 0 || next >= order.length) return;
+          const el = dragLayerRef.current;
+          if (!s || !el) return;
+          const w = el.offsetWidth || 1;
+          const idx = TAB_ORDER.indexOf(activeTab);
+          const dir = s.dx < 0 ? 1 : -1;
+          const nextIdx = idx + dir;
+          const commit = s.axis === "x" && Math.abs(s.dx) > Math.min(90, w * 0.22) && nextIdx >= 0 && nextIdx < TAB_ORDER.length;
+
+          if (!commit) {
+            el.style.transition = "transform 220ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease-out";
+            el.style.transform = "translate3d(0,0,0)";
+            el.style.opacity = "1";
+            return;
+          }
+
           playSound("buttonClick");
-          startTransition(() => setActiveTab(order[next]));
+          try { navigator.vibrate?.(8); } catch {}
+          el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
+          el.style.transform = `translate3d(${-dir * w * 0.6}px,0,0)`;
+          el.style.opacity = "0";
+          window.setTimeout(() => {
+            startTransition(() => setActiveTab(TAB_ORDER[nextIdx]));
+            requestAnimationFrame(() => {
+              const node = dragLayerRef.current;
+              if (!node) return;
+              node.style.transition = "none";
+              node.style.transform = `translate3d(${dir * w * 0.6}px,0,0)`;
+              node.style.opacity = "0";
+              requestAnimationFrame(() => {
+                const n2 = dragLayerRef.current;
+                if (!n2) return;
+                n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 240ms ease-out";
+                n2.style.transform = "translate3d(0,0,0)";
+                n2.style.opacity = "1";
+              });
+            });
+          }, 140);
         }}
       >
+        <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>
+          {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
+          {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true, "weekly")}
+          {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true, "monthly")}
 
-        {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
-        {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true, "weekly")}
-        {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true, "monthly")}
-
-        {/* Bottom Spacer */}
-        <div className="h-20" />
+          {/* Bottom Spacer */}
+          <div className="h-20" />
+        </div>
       </div>
+
 
       <UserActionMenu
         open={!!menuTarget}
