@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { toast as sonnerToast } from "sonner";
 import FriendInviteDialog from "@/components/FriendInviteDialog";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import odaKurKart from "@/assets/odaKurKart.png";
 import odayaKatilKart from "@/assets/odayaKatilKart.png";
 import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
@@ -60,12 +61,13 @@ const Hot = ({
     );
   }
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
+    <PressableZone
+      label={label || "buton"}
+      onPress={onClick}
       disabled={disabled}
-      className="absolute bg-transparent border-0 outline-none active:opacity-60 disabled:opacity-100"
+      glow={false}
+      ripple={false}
+      className="disabled:opacity-100"
       style={style}
     />
   );
