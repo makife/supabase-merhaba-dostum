@@ -71,14 +71,31 @@ export function PressableZone({
   );
 
   const release = useCallback(
-    (fire: boolean) => {
+    (fire: boolean, e?: React.PointerEvent<HTMLButtonElement>) => {
       if (disabled) return;
       setPhase((p) => (p === "down" ? "up" : p));
       setTimeout(() => setPhase("idle"), 130);
-      if (fire) onPress?.();
+
+      if (!fire) return;
+
+      e?.preventDefault();
+      e?.stopPropagation();
+
+      // Bu buton kapanan bir pencereyi tetikleyebilir; altta kalan öğeye
+      // "ghost click" gitmesini engellemek için bir tur click'i yut.
+      const swallow = (ev: MouseEvent) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 400);
+
+      // click olayı gönderildikten sonra çalıştır
+      setTimeout(() => onPress?.(), 0);
     },
     [disabled, onPress],
   );
+
 
   const transform =
     phase === "down" ? "scale(0.93) translateY(2px)" : phase === "up" ? "scale(1.04)" : "scale(1)";
@@ -89,7 +106,7 @@ export function PressableZone({
       aria-label={label}
       disabled={disabled}
       onPointerDown={handleDown}
-      onPointerUp={() => release(true)}
+      onPointerUp={(e) => release(true, e)}
       onPointerLeave={() => release(false)}
       onPointerCancel={() => release(false)}
       className={`absolute bg-transparent overflow-hidden ${className}`}
