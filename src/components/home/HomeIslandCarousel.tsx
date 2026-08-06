@@ -73,7 +73,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     if (s.axis !== "x") return;
     e.stopPropagation();
     const w = wrapRef.current?.offsetWidth || window.innerWidth;
-    setPos(s.pos - (dx / w) * 2.6);
+    setPos(s.pos - (dx / w) * 3.8);
   }, []);
 
   const onTouchEnd = useCallback(
@@ -85,7 +85,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
       setDragging(false);
       const moved = posRef.current - s.pos;
       // hafif bir itiş de sekme değiştirsin
-      const target = Math.abs(moved) > 0.1 ? s.pos + Math.sign(moved) : s.pos;
+      const target = Math.abs(moved) > 0.06 ? s.pos + Math.sign(moved) : s.pos;
       snap(target);
     },
     [snap],
@@ -123,8 +123,8 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
       {ISLANDS.map((island, i) => {
         const d = signedDelta(i, pos);
         const ad = Math.abs(d);
-        const scale = Math.max(0.46, 1.16 - ad * 0.4);
-        const opacity = ad > 2.2 ? 0 : Math.max(0, 1 - ad * 0.32);
+        const scale = Math.max(0.4, 1.3 - ad * 0.46);
+        const opacity = ad > 2.2 ? 0 : Math.max(0, 1 - ad * 0.5);
         const x = d * 48;
         const isActive = ad < 0.5;
 
