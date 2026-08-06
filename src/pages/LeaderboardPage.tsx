@@ -79,6 +79,8 @@ const LeaderboardPage = () => {
   const swipeRef = useRef<{ x: number; y: number; dx: number; axis: "none" | "x" | "y" } | null>(null);
   const dragLayerRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
+  const TAB_ORDER = ["all-time", "monthly", "weekly"];
+
 
 
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
