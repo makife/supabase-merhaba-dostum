@@ -9,6 +9,7 @@ import { Circle, Loader2, Users, Check } from "lucide-react";
 import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { toast } from "sonner";
 import arkadasDavetKart from "@/assets/arkadasDavetKart.png";
+import { PressableZone } from "@/components/ui/pressable-zone";
 
 
 interface Friend {
