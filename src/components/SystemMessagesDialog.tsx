@@ -106,7 +106,6 @@ export function SystemMessagesDialog({
           className="absolute bg-transparent active:scale-95 transition-transform"
           style={{ left: "13%", width: "36.2%", top: "31.8%", height: "4.3%", touchAction: "manipulation" }}
         >
-          {tab === "read" && <span className="absolute inset-0 rounded-[2cqw] bg-black/25" />}
           {unread.length > 0 && (
             <span className="absolute -top-[1.5cqw] -right-[1.5cqw] min-w-[5cqw] h-[5cqw] px-[1cqw] bg-red-500 rounded-full flex items-center justify-center font-bold text-white" style={{ fontSize: "3cqw" }}>
               {unread.length > 9 ? "9+" : unread.length}
@@ -122,7 +121,6 @@ export function SystemMessagesDialog({
           className="absolute bg-transparent active:scale-95 transition-transform"
           style={{ left: "50.8%", width: "36.2%", top: "31.8%", height: "4.3%", touchAction: "manipulation" }}
         >
-          {tab === "read" && <span className="absolute inset-0 rounded-[2cqw] bg-green-500/45" />}
         </button>
 
         {/* Mesaj listesi (gri alan) */}
