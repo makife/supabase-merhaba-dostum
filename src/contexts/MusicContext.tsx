@@ -167,14 +167,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [musicEnabled]);
 
-  // 📻 Radyo başladığında arka plan müziğini durdur
+  // 📻 Radyo başladığında arka plan müziğini durdur + toggle'ı kapalıya al
   useEffect(() => {
     const handleRadioStarted = () => {
       if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
         try { backgroundMusicRef.current.pause(); } catch {}
       }
-      const nativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
-      if (nativeAndroid) {
+      // UI toggle'ı da kapalı konuma getir ve kalıcı olarak kaydet
+      lastUserToggleAtRef.current = Date.now();
+      musicEnabledRef.current = false;
+      setMusicEnabledState(false);
+      setIsPlaying(false);
+      (async () => {
+        try {
+          const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
+          const settings = settingsStr ? JSON.parse(settingsStr) : {};
+          settings.music = false;
+          await nativeStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+          window.dispatchEvent(new Event("settingsChanged"));
+        } catch {}
+      })();
+      if (Capacitor.isNativePlatform()) {
         (async () => {
           try {
             const { registerPlugin } = await import("@capacitor/core");
@@ -182,7 +195,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               setMusicEnabled: (opts: { enabled: boolean }) => Promise<void>;
             }>("NativeMusic");
             await NativeMusic.setMusicEnabled({ enabled: false });
-            setIsPlaying(false);
           } catch {}
         })();
       }
@@ -190,6 +202,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     window.addEventListener("radio-started", handleRadioStarted);
     return () => window.removeEventListener("radio-started", handleRadioStarted);
   }, []);
+
 
 
 
