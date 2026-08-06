@@ -17,6 +17,12 @@ import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
+  /** Doğrudan bekleme ekranıyla açmak için (rematch / davet akışları) */
+  initialRoomId?: string | null;
+  initialRoomCode?: string | null;
+  gameType?: "timed" | "score";
+  /** Bilgisayara karşı rematch: bot hazır olduğunda tek gerçek oyuncuyla başlar */
+  botRematch?: boolean;
 }
 
 /** Görselin üzerine yüzde koordinatlarla oturan görünmez katman */
@@ -69,21 +75,28 @@ const LETTER_POOL = [
   "A","A","E","E","İ","İ","I","O","U","L","L","N","R","K","M","T","S","D","Y","B","C","Ç","F","G","Ğ","H","P","Ş","V","Z",
 ];
 
-const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
+const PrivateRoomCards = ({
+  onClose,
+  initialRoomId = null,
+  initialRoomCode = null,
+  gameType = "timed",
+  botRematch = false,
+}: PrivateRoomCardsProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, isPremium } = useUser();
   const { playSound } = useSounds();
 
-  const [step, setStep] = useState<"choose" | "waiting">("choose");
+  const hasInitialRoom = Boolean(initialRoomId || initialRoomCode);
+  const [step, setStep] = useState<"choose" | "waiting">(hasInitialRoom ? "waiting" : "choose");
   const [loading, setLoading] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [pendingRoom, setPendingRoom] = useState<{ id: string; room_code: string } | null>(null);
-  const [checkingPending, setCheckingPending] = useState(true);
+  const [checkingPending, setCheckingPending] = useState(!hasInitialRoom);
 
   // waiting state
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [roomCode, setRoomCode] = useState<string>("");
+  const [roomId, setRoomId] = useState<string | null>(initialRoomId);
+  const [roomCode, setRoomCode] = useState<string>(initialRoomCode || "");
   const [participants, setParticipants] = useState<{ user_id: string | null; is_ready: boolean | null; is_bot: boolean | null }[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -91,6 +104,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
   // --- Bekleyen oda kontrolü ---
   useEffect(() => {
+    if (hasInitialRoom) return;
     if (!user) {
       setCheckingPending(false);
       return;
@@ -115,7 +129,29 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, hasInitialRoom]);
+
+  // Sadece oda kodu verildiyse roomId'yi çöz
+  useEffect(() => {
+    if (roomId || !initialRoomCode) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("game_rooms")
+        .select("id, room_code")
+        .eq("room_code", initialRoomCode)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled && data?.id) {
+        setRoomId(data.id);
+        setRoomCode(data.room_code);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, initialRoomCode]);
 
   const hasCredit =
     Boolean(isPremium) ||
@@ -249,8 +285,8 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
     } catch {
       /* devam */
     }
-    navigate(`/game/private-room?room=${roomId}&type=timed`);
-  }, [roomId, navigate]);
+    navigate(`/game/private-room?room=${roomId}&type=${gameType}`);
+  }, [roomId, navigate, gameType]);
 
   useEffect(() => {
     if (step !== "waiting" || !roomId || !user) return;
@@ -281,7 +317,11 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
       if (cancelled || !data) return;
       setParticipants(data);
       const real = data.filter((p) => !p.is_bot);
-      if (real.length >= 2 && real.every((p) => p.is_ready) && !navigatedRef.current) {
+      const hasReadyBot = data.some((p) => p.is_bot && p.is_ready);
+      const allReady = botRematch
+        ? real.length >= 1 && hasReadyBot && real.every((p) => p.is_ready)
+        : real.length >= 2 && real.every((p) => p.is_ready);
+      if (allReady && !navigatedRef.current) {
         startGame();
       }
     };
@@ -307,7 +347,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
       clearInterval(poll);
       supabase.removeChannel(channel);
     };
-  }, [step, roomId, user, startGame]);
+  }, [step, roomId, user, startGame, botRematch]);
 
   const handleReady = async () => {
     if (!roomId || !user || isReady) return;
@@ -475,7 +515,7 @@ const PrivateRoomCards = ({ onClose }: PrivateRoomCardsProps) => {
 
 
           {roomCode && (
-            <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType="timed" variant="card" />
+            <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType={gameType} variant="card" />
           )}
 
         </div>
