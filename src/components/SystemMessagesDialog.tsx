@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import sistemMesajlariPenceresi from "@/assets/sistemMesajlariPenceresi.png";
+
 
 interface Props {
   open: boolean;
