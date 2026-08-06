@@ -369,9 +369,11 @@ const PrivateRoomCards = ({
   };
 
   const real = participants.filter((p) => !p.is_bot);
-  const opponent = real.find((p) => p.user_id !== user?.id);
+  const bot = participants.find((p) => p.is_bot);
+  const humanOpponent = real.find((p) => p.user_id !== user?.id);
+  const opponent = humanOpponent || (botRematch ? bot : undefined);
   const opponentJoined = Boolean(opponent);
-  const opponentReady = Boolean(opponent?.is_ready);
+  const opponentReady = Boolean(opponent?.is_ready) || Boolean(botRematch && bot);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
