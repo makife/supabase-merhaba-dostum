@@ -1,6 +1,7 @@
 import { useRadio } from "@/contexts/RadioContext";
 import { Loader2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import radyoPenceresi from "@/assets/radyoPenceresi.png";
 
 interface RadioPickerProps {
@@ -42,20 +43,19 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
             const loading = active && isLoading;
             const playing = active && isPlaying;
             return (
-              <button
+              <PressableZone
                 key={s.id}
-                type="button"
-                aria-label={s.name}
-                onClick={() => {
+                label={s.name}
+                sound={false}
+                onPress={() => {
                   playSound("buttonClick");
                   if (playing) stop();
                   else play(s);
                 }}
-                className="absolute left-0 right-0 bg-transparent active:scale-[0.98] transition-transform"
+                className="left-0 right-0 rounded-[2cqw]"
                 style={{
                   top: `${(i * 100) / rows.length}%`,
                   height: `${100 / rows.length}%`,
-                  touchAction: "manipulation",
                 }}
               >
                 {active && (
@@ -73,22 +73,22 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                     <span className="w-[1.2cqw] h-[2.5cqw] bg-green-600 rounded-full animate-pulse" />
                   </span>
                 )}
-              </button>
+              </PressableZone>
             );
           })}
         </div>
 
         {/* Radyoyu Kapat */}
-        <button
-          type="button"
-          aria-label="Radyoyu Kapat"
-          onClick={() => {
+        <PressableZone
+          label="Radyoyu Kapat"
+          sound={false}
+          onPress={() => {
             playSound("buttonClick");
             stop();
             onClose();
           }}
-          className="absolute bg-transparent active:scale-95 transition-transform"
-          style={{ left: "23.4%", width: "54%", top: "80.5%", height: "5.4%", touchAction: "manipulation" }}
+          className="rounded-[2cqw]"
+          style={{ left: "23.4%", width: "54%", top: "80.5%", height: "5.4%" }}
         />
       </div>
     </div>
