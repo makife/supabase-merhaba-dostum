@@ -5,6 +5,7 @@ import { User } from "lucide-react";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import modalBg from "@/assets/rakipAraniyorModal.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
+import { PressableZone } from "@/components/ui/pressable-zone";
 
 interface SlotMatchmakingProps {
   onCancel: () => void;
