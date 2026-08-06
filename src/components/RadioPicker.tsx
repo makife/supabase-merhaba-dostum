@@ -69,7 +69,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                 }}
               >
                 {active && (
-                  <span className="absolute inset-y-[6%] inset-x-[1%] rounded-[2cqw] bg-amber-400/25 pointer-events-none" />
+                  <span className="absolute inset-y-[6%] left-[1%] right-[6%] rounded-[2cqw] bg-sky-500/25 pointer-events-none" />
                 )}
                 {loading && (
                   <span className="absolute inset-y-0 right-[5%] flex items-center">
