@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useSounds } from "@/hooks/useSounds";
 import { toast as sonnerToast } from "sonner";
 import FriendInviteDialog from "@/components/FriendInviteDialog";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import odaKurKart from "@/assets/odaKurKart.png";
 import odayaKatilKart from "@/assets/odayaKatilKart.png";
 import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
