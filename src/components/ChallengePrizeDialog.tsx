@@ -3,6 +3,14 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Lottie from "lottie-react";
+import refleksOdul2 from "@/assets/refleksOdulPenceresi2.png";
+import refleksOdul4 from "@/assets/refleksOdulPenceresi4.png";
+import refleksOdul6 from "@/assets/refleksOdulPenceresi6.png";
+import kelimePuzzleOdul from "@/assets/kelimePuzzleOdulPenceresi.png";
+import kelimeAviOdul from "@/assets/kelimeAviOdulPenceresi.png";
+import harfKosusuOdul from "@/assets/harfKosusuOdulPenceresi.png";
+import sansCarkiOdul from "@/assets/sansCarkiOdulPenceresi.png";
+
 
 interface PrizeNotification {
   id: string;
