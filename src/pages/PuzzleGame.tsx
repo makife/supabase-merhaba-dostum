@@ -1,3 +1,4 @@
+import { homeBackPath } from "@/utils/challengeBackPath";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Lottie from "lottie-react";
 import { Timer, RotateCcw, Trophy, ArrowLeft, Type } from "lucide-react";
@@ -380,7 +381,7 @@ const PuzzleGamePage: React.FC = () => {
                 <button
                   onClick={() => {
                     playSound("buttonClick");
-                    navigate("/");
+                    navigate(homeBackPath());
                   }}
                   className="w-full px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
                 >
@@ -464,7 +465,7 @@ const PuzzleGamePage: React.FC = () => {
                   <button
                     onClick={() => {
                       playSound("buttonClick");
-                      navigate("/");
+                      navigate(homeBackPath());
                     }}
                     className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
                   >

@@ -1,3 +1,4 @@
+import { homeBackPath } from "@/utils/challengeBackPath";
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import Lottie from "lottie-react";
@@ -680,7 +681,7 @@ const WordMemoryGame = () => {
               <button
                 onClick={() => {
                   playSound("buttonClick");
-                  navigate("/");
+                  navigate(homeBackPath());
                 }}
                 className="shrink-0 px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform text-sm"
               >

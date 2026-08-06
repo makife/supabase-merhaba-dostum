@@ -1,3 +1,4 @@
+import { homeBackPath } from "@/utils/challengeBackPath";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { useNavigate } from "react-router-dom";
@@ -285,7 +286,7 @@ const WordChainPage = () => {
               <ChallengeLeaderboard leaderboard={leaderboard} />
             </div>
 
-            <button onClick={() => { playSound("buttonClick"); navigate("/"); }} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
+            <button onClick={() => { playSound("buttonClick"); navigate(homeBackPath()); }} className="px-6 py-3 bg-white/10 border border-white/10 rounded-2xl font-bold text-white active:scale-95 transition-transform">
               Ana Sayfa
             </button>
           </div>

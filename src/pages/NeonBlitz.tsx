@@ -1,3 +1,4 @@
+import { homeBackPath } from "@/utils/challengeBackPath";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import Lottie from "lottie-react";
@@ -563,7 +564,7 @@ const NeonBlitz: React.FC = () => {
         <button
           onClick={() => {
             playSound("buttonClick");
-            navigate("/");
+            navigate(homeBackPath());
           }}
           style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}
         >
