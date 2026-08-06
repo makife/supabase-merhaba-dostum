@@ -78,7 +78,10 @@ const LeaderboardPage = () => {
   const [activeTab, setActiveTab] = useState("all-time");
   const swipeRef = useRef<{ x: number; y: number; dx: number; axis: "none" | "x" | "y" } | null>(null);
   const dragLayerRef = useRef<HTMLDivElement | null>(null);
+  const pillRef = useRef<HTMLDivElement | null>(null);
   const TAB_ORDER = ["all-time", "monthly", "weekly"];
+
+
 
   const [premiumUsers, setPremiumUsers] = useState<Set<string>>(new Set());
   const [inGameUsers, setInGameUsers] = useState<Set<string>>(new Set());
@@ -731,24 +734,42 @@ const LeaderboardPage = () => {
           {/* Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
+              <TabsList className="relative grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
+                {/* Kayan aktif gösterge */}
+                <div
+                  ref={pillRef}
+                  aria-hidden
+                  className={`absolute top-1 bottom-1 left-1 rounded-lg pointer-events-none bg-gradient-to-r ${
+                    activeTab === "all-time"
+                      ? "from-red-500 to-orange-500"
+                      : activeTab === "monthly"
+                      ? "from-green-500 to-emerald-500"
+                      : "from-blue-500 to-cyan-500"
+                  }`}
+                  style={{
+                    width: "calc((100% - 0.5rem) / 3)",
+                    transform: `translate3d(${TAB_ORDER.indexOf(activeTab) * 100}%,0,0)`,
+                    transition: "transform 240ms cubic-bezier(0.22,1,0.36,1), background-color 240ms ease-out",
+                    willChange: "transform",
+                  }}
+                />
                 <TabsTrigger
                   value="all-time"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <Trophy className="w-3 h-3 mr-1.5" />
                   Genel
                 </TabsTrigger>
                 <TabsTrigger
                   value="monthly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <CalendarRange className="w-3 h-3 mr-1.5" />
                   Aylık
                 </TabsTrigger>
                 <TabsTrigger
                   value="weekly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <Calendar className="w-3 h-3 mr-1.5" />
                   Haftalık
@@ -756,6 +777,7 @@ const LeaderboardPage = () => {
               </TabsList>
             </Tabs>
           </div>
+
         </div>
       </div>
 
@@ -767,6 +789,7 @@ const LeaderboardPage = () => {
           swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: "none" };
           const el = dragLayerRef.current;
           if (el) el.style.transition = "none";
+          if (pillRef.current) pillRef.current.style.transition = "none";
         }}
         onTouchMove={(e) => {
           const s = swipeRef.current;
@@ -787,6 +810,11 @@ const LeaderboardPage = () => {
             const w = el.offsetWidth || 1;
             el.style.transform = `translate3d(${eff}px,0,0)`;
             el.style.opacity = String(Math.max(0.45, 1 - Math.abs(eff) / w));
+            // Aktif gösterge parmakla birlikte kaysın (ters yönde)
+            if (pillRef.current) {
+              const frac = Math.max(-1, Math.min(1, -eff / w * 1.6));
+              pillRef.current.style.transform = `translate3d(${(idx + frac) * 100}%,0,0)`;
+            }
           }
         }}
         onTouchEnd={() => {
@@ -799,19 +827,28 @@ const LeaderboardPage = () => {
           const dir = s.dx < 0 ? 1 : -1;
           const nextIdx = idx + dir;
           const commit = s.axis === "x" && Math.abs(s.dx) > Math.min(90, w * 0.22) && nextIdx >= 0 && nextIdx < TAB_ORDER.length;
+          const pill = pillRef.current;
+          const settlePill = (target: number) => {
+            if (!pill) return;
+            pill.style.transition = "transform 260ms cubic-bezier(0.22,1,0.36,1)";
+            pill.style.transform = `translate3d(${target * 100}%,0,0)`;
+          };
 
           if (!commit) {
             el.style.transition = "transform 220ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease-out";
             el.style.transform = "translate3d(0,0,0)";
             el.style.opacity = "1";
+            settlePill(idx);
             return;
           }
 
           playSound("buttonClick");
           try { navigator.vibrate?.(8); } catch {}
+          settlePill(nextIdx);
           el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
           el.style.transform = `translate3d(${-dir * w * 0.6}px,0,0)`;
           el.style.opacity = "0";
+
           window.setTimeout(() => {
             startTransition(() => setActiveTab(TAB_ORDER[nextIdx]));
             requestAnimationFrame(() => {
