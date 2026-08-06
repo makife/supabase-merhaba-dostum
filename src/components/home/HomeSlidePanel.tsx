@@ -139,7 +139,6 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
             </PressableZone>
             );
           })}
-          })}
         </div>
       </div>
     </div>
