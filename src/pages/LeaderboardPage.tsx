@@ -731,24 +731,42 @@ const LeaderboardPage = () => {
           {/* Tabs */}
           <div className="mt-3">
             <Tabs value={activeTab} onValueChange={(val) => { playSound("buttonClick"); setActiveTab(val); }} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
+              <TabsList className="relative grid w-full grid-cols-3 bg-[#1e2d45] border border-indigo-500/20 rounded-xl p-1 h-auto">
+                {/* Kayan aktif gösterge */}
+                <div
+                  ref={pillRef}
+                  aria-hidden
+                  className={`absolute top-1 bottom-1 left-1 rounded-lg pointer-events-none bg-gradient-to-r ${
+                    activeTab === "all-time"
+                      ? "from-red-500 to-orange-500"
+                      : activeTab === "monthly"
+                      ? "from-green-500 to-emerald-500"
+                      : "from-blue-500 to-cyan-500"
+                  }`}
+                  style={{
+                    width: "calc((100% - 0.5rem) / 3)",
+                    transform: `translate3d(${TAB_ORDER.indexOf(activeTab) * 100}%,0,0)`,
+                    transition: "transform 240ms cubic-bezier(0.22,1,0.36,1), background-color 240ms ease-out",
+                    willChange: "transform",
+                  }}
+                />
                 <TabsTrigger
                   value="all-time"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <Trophy className="w-3 h-3 mr-1.5" />
                   Genel
                 </TabsTrigger>
                 <TabsTrigger
                   value="monthly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <CalendarRange className="w-3 h-3 mr-1.5" />
                   Aylık
                 </TabsTrigger>
                 <TabsTrigger
                   value="weekly"
-                  className="text-xs font-medium py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-slate-400 transition-all"
+                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
                   <Calendar className="w-3 h-3 mr-1.5" />
                   Haftalık
@@ -756,6 +774,7 @@ const LeaderboardPage = () => {
               </TabsList>
             </Tabs>
           </div>
+
         </div>
       </div>
 
