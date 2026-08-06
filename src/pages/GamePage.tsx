@@ -8201,7 +8201,7 @@ const GamePage = ({
 
     return (
       <div
-        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+        className="fixed inset-0 flex items-center justify-center p-4 relative overflow-hidden touch-none overscroll-none"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
         {winner === "player" && confettiAnim && (
