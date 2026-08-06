@@ -378,6 +378,16 @@ const PrivateRoomCards = ({
         @supports (font-size: 1cqw) { .pr-code-lg { font-size: 5.8cqw; } }
         .pr-code-input { font-size: clamp(12px, 4vw, 22px); }
         @supports (font-size: 1cqw) { .pr-code-input { font-size: 7cqw; } }
+        @keyframes prSlideLeft {
+          0%   { opacity: 0; transform: translate3d(-120%, 0, 0) scale(0.94); }
+          100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes prSlideRight {
+          0%   { opacity: 0; transform: translate3d(120%, 0, 0) scale(0.94); }
+          100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        .pr-in-left  { animation: prSlideLeft 460ms cubic-bezier(0.22,1,0.36,1) both; }
+        .pr-in-right { animation: prSlideRight 460ms cubic-bezier(0.22,1,0.36,1) both; animation-delay: 170ms; }
       `}</style>
       {step === "choose" ? (
         checkingPending ? (
