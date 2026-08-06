@@ -75,8 +75,6 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                   key={item.id}
                   inline
                   label={item.title}
-                  sound={false}
-                  ripple={false}
                   glow={false}
                   onPress={item.onClick}
                   className={`w-[92%] flex-shrink-0 block ${item.dimmed ? "opacity-60 grayscale-[35%]" : ""}`}
@@ -107,8 +105,6 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
               key={item.id}
               inline
               label={item.title}
-              sound={false}
-              ripple={false}
               glow={false}
               onPress={item.onClick}
               className={`w-[86%] rounded-3xl p-4 flex items-center gap-4 border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] text-left ${

@@ -257,8 +257,6 @@ const FriendInviteDialog = ({ open, onOpenChange, roomCode, gameType, variant = 
           <PressableZone
             label="Kapat"
             onPress={() => onOpenChange(false)}
-            glow={false}
-            ripple={false}
             style={{ left: "26%", width: "48%", top: "79.5%", height: "9.5%" }}
           />
           
