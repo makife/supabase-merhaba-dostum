@@ -19,8 +19,10 @@ interface PressableZoneProps {
   glow?: boolean;
   /** tıklama noktasından açılan halka */
   ripple?: boolean;
-  /** ses efekti anahtarı */
-  sound?: string;
+  /** ses efekti anahtarı - false ise ses çalınmaz */
+  sound?: string | false;
+  /** akışta duran (absolute olmayan) buton */
+  inline?: boolean;
   haptic?: "light" | "medium" | "heavy";
   children?: React.ReactNode;
 }
@@ -42,6 +44,7 @@ export function PressableZone({
   ripple = true,
   sound = "buttonClick",
   haptic = "light",
+  inline = false,
   children,
 }: PressableZoneProps) {
   const [phase, setPhase] = useState<"idle" | "down" | "up">("idle");
@@ -54,7 +57,7 @@ export function PressableZone({
     (e: React.PointerEvent<HTMLButtonElement>) => {
       if (disabled) return;
       setPhase("down");
-      playSound(sound as any);
+      if (sound) playSound(sound as any);
       triggerHapticFeedback(haptic);
 
       if (ripple) {
@@ -109,7 +112,7 @@ export function PressableZone({
       onPointerUp={(e) => release(true, e)}
       onPointerLeave={() => release(false)}
       onPointerCancel={() => release(false)}
-      className={`absolute bg-transparent overflow-hidden ${className}`}
+      className={`${inline ? "relative" : "absolute"} bg-transparent overflow-hidden ${className}`}
       style={{
         transform,
         transition:
