@@ -21,7 +21,7 @@ import oynandiIcon from "@/assets/oynandi.svg";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
 import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
-import HomeIslands from "@/components/home/HomeIslands";
+import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
 import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
