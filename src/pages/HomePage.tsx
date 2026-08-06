@@ -21,7 +21,7 @@ import oynandiIcon from "@/assets/oynandi.svg";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
 import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
-import HomeIslands from "@/components/home/HomeIslands";
+import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
 import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
@@ -321,7 +321,7 @@ const HomePage = () => {
   usePremiumDailyRewards();
 
   // 🔥 Yatay sayfa kaydırma: Ana Sayfa → Liderlik → Profil → Market → Ayarlar
-  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/" });
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/", edgeOnly: true });
 
   // Ana sayfada boşta liderlik verisini ön-yükle (kaydırınca anında görünsün)
   useEffect(() => {
@@ -1243,19 +1243,8 @@ const HomePage = () => {
         >
 
 
-          <div
-            className="relative"
-            style={{
-              // Görselin genişliği daima yükseklikten oranla türetiliyor:
-              // header/menü bar yükseklikleri cihazdan cihaza (APK/IPA) değişse de
-              // ada görseli aynı oranı koruyup boşluğa göre büyüyüp küçülüyor.
-              aspectRatio: "768 / 1152",
-              height: "100%",
-              width: "auto",
-              scale: "1.08",
-            }}
-          >
-            <HomeIslands
+          <div className="relative w-full h-full">
+            <HomeIslandCarousel
               pointSize={38}
               alerts={{
                 sohbet: unreadChatCount > 0,
