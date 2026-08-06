@@ -156,7 +156,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
         <PressableZone
           label={searchProgress >= 100 ? "Tekrar ara" : "Aramadan vazgeç"}
           onPress={searchProgress >= 100 ? handleRetry : handleCancel}
-          className="z-10 rounded-[2cqw]"
+          className="z-10 rounded-2xl"
           style={{
             left: `${CANCEL_ZONE.left}%`,
             top: `${CANCEL_ZONE.top}%`,

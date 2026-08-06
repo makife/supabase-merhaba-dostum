@@ -8160,7 +8160,6 @@ const GamePage = ({
 
   // ✅ PNG tabanlı kazandın/kaybettin kartı (turnuva ve beraberlik hariç)
   const goHomeAfterMatch = async () => {
-    playSound("buttonClick");
     if (currentRoom?.id) {
       matchBanlist.add(currentRoom.id);
     }
@@ -8176,7 +8175,6 @@ const GamePage = ({
   };
 
   const playAgainVsComputer = async () => {
-    playSound("buttonClick");
     setButtonsEnabled(false);
     if (!isPremium && (gameMode as string) !== "tournament") {
       const creditConsumed = await consumeCredit();
@@ -8223,7 +8221,7 @@ const GamePage = ({
             adLoading={isAdLoading}
             disabled={!buttonsEnabled}
             onWatchAd={!adWatched && user && !isPremium ? handleWatchAd : undefined}
-            onPlayAgain={canRematch ? (isMulti ? () => { playSound("buttonClick"); requestRematch(); } : playAgainVsComputer) : undefined}
+            onPlayAgain={canRematch ? (isMulti ? () => { requestRematch(); } : playAgainVsComputer) : undefined}
             onHome={goHomeAfterMatch}
           >
             {waitingForRematchResponse && (
