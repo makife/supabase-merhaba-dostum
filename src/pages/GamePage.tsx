@@ -102,6 +102,8 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import { LevelUpDialog } from "@/components/LevelUpDialog";
+import MatchResultCard from "@/components/MatchResultCard";
+
 // RankUpDialog kaldırıldı: seviye/rank yükselişinde sadece LevelUpDialog animasyonu gösteriliyor
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
@@ -8156,7 +8158,87 @@ const GamePage = ({
 
   // GamePage.tsx'teki oyun sonu ekranını şu şekilde düzelt:
 
+  // ✅ PNG tabanlı kazandın/kaybettin kartı (turnuva ve beraberlik hariç)
+  const goHomeAfterMatch = async () => {
+    playSound("buttonClick");
+    if (currentRoom?.id) {
+      matchBanlist.add(currentRoom.id);
+    }
+    if (user?.id) {
+      await supabase.from("rematch_opt_outs").upsert({
+        user_id: user.id,
+        opt_out_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+    window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
+    navigate("/");
+  };
+
+  const playAgainVsComputer = async () => {
+    playSound("buttonClick");
+    setButtonsEnabled(false);
+    if (!isPremium && (gameMode as string) !== "tournament") {
+      const creditConsumed = await consumeCredit();
+      if (!creditConsumed) {
+        toast({
+          title: "Sayfaların tükendi",
+          description: "Oyun oynamak için yeterli sayfan yok. Kırtasiyeden sayfa satın alabilirsiniz.",
+          variant: "destructive",
+        });
+        navigate("/market");
+        return;
+      }
+    }
+    resetGameForRematch();
+  };
+
+  if (gameEnded && gameMode !== "tournament" && (winner === "player" || winner === "opponent")) {
+    const isMulti = gameMode === "private-room" || gameMode === "random-match";
+    const canRematch = isMulti
+      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse
+      : !disconnectWin;
+
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        {winner === "player" && confettiAnim && (
+          <div className="absolute inset-0 pointer-events-none z-20">
+            <Lottie animationData={confettiAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+          </div>
+        )}
+
+        <div className="relative z-30 w-full">
+          <MatchResultCard
+            won={winner === "player"}
+            playerScore={finalPlayerScore || playerScore}
+            opponentScore={finalOpponentScore || opponentScore}
+            adLoading={isAdLoading}
+            disabled={!buttonsEnabled}
+            onWatchAd={!adWatched && user && !isPremium ? handleWatchAd : undefined}
+            onPlayAgain={canRematch ? (isMulti ? () => { playSound("buttonClick"); requestRematch(); } : playAgainVsComputer) : undefined}
+            onHome={goHomeAfterMatch}
+          >
+            {waitingForRematchResponse && (
+              <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-300" />
+                  <span className="text-white text-xs font-medium">Rakibinizin yanıtı bekleniyor...</span>
+                </div>
+              </div>
+            )}
+          </MatchResultCard>
+        </div>
+
+        <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
+      </div>
+    );
+  }
+
   if (gameEnded) {
+
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
