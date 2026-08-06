@@ -789,6 +789,7 @@ const LeaderboardPage = () => {
           swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, axis: "none" };
           const el = dragLayerRef.current;
           if (el) el.style.transition = "none";
+          if (pillRef.current) pillRef.current.style.transition = "none";
         }}
         onTouchMove={(e) => {
           const s = swipeRef.current;
@@ -809,6 +810,11 @@ const LeaderboardPage = () => {
             const w = el.offsetWidth || 1;
             el.style.transform = `translate3d(${eff}px,0,0)`;
             el.style.opacity = String(Math.max(0.45, 1 - Math.abs(eff) / w));
+            // Aktif gösterge parmakla birlikte kaysın (ters yönde)
+            if (pillRef.current) {
+              const frac = Math.max(-1, Math.min(1, -eff / w * 1.6));
+              pillRef.current.style.transform = `translate3d(${(idx + frac) * 100}%,0,0)`;
+            }
           }
         }}
         onTouchEnd={() => {
@@ -821,19 +827,28 @@ const LeaderboardPage = () => {
           const dir = s.dx < 0 ? 1 : -1;
           const nextIdx = idx + dir;
           const commit = s.axis === "x" && Math.abs(s.dx) > Math.min(90, w * 0.22) && nextIdx >= 0 && nextIdx < TAB_ORDER.length;
+          const pill = pillRef.current;
+          const settlePill = (target: number) => {
+            if (!pill) return;
+            pill.style.transition = "transform 260ms cubic-bezier(0.22,1,0.36,1)";
+            pill.style.transform = `translate3d(${target * 100}%,0,0)`;
+          };
 
           if (!commit) {
             el.style.transition = "transform 220ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease-out";
             el.style.transform = "translate3d(0,0,0)";
             el.style.opacity = "1";
+            settlePill(idx);
             return;
           }
 
           playSound("buttonClick");
           try { navigator.vibrate?.(8); } catch {}
+          settlePill(nextIdx);
           el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
           el.style.transform = `translate3d(${-dir * w * 0.6}px,0,0)`;
           el.style.opacity = "0";
+
           window.setTimeout(() => {
             startTransition(() => setActiveTab(TAB_ORDER[nextIdx]));
             requestAnimationFrame(() => {
