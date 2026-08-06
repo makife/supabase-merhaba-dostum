@@ -15,9 +15,13 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
 
   if (!open) return null;
 
-  // PNG içindeki beyaz liste alanı ve buton koordinatları (704x1408)
-  const LIST = { left: "18.9%", right: "17.2%", top: "30.1%", bottom: "22.1%" };
+  // PNG (704x1408) üzerinden piksel piksel ölçülmüş liste alanı
+  // Beyaz liste: x 130-574, satır ayırıcıları y: 519.5 / 600.5 / 681.5 / 763.5 / 844.5 / 925.5 / 1007.5
+  const LIST_LEFT = (130 / 704) * 100; // 18.466%
+  const LIST_WIDTH = (444 / 704) * 100; // 63.068%
+  const ROW_EDGES = [424, 519.5, 600.5, 681.5, 763.5, 844.5, 925.5, 1007.5, 1105];
   const rows = stations.slice(0, 8);
+
 
   return (
     <div
@@ -47,11 +51,13 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
         />
 
         {/* Kanal satırları: görünmez hit-zone'lar */}
-        <div className="absolute" style={LIST}>
+        <div className="absolute inset-0">
           {rows.map((s, i) => {
             const active = currentStation?.id === s.id;
             const loading = active && isLoading;
             const playing = active && isPlaying;
+            const top = (ROW_EDGES[i] / 1408) * 100;
+            const height = ((ROW_EDGES[i + 1] - ROW_EDGES[i]) / 1408) * 100;
             return (
               <PressableZone
                 key={s.id}
@@ -62,15 +68,18 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                   if (playing) stop();
                   else play(s);
                 }}
-                className="left-0 right-0 rounded-[2cqw]"
+                className="rounded-[2cqw]"
                 style={{
-                  top: `${(i * 100) / rows.length}%`,
-                  height: `${100 / rows.length}%`,
+                  left: `${LIST_LEFT}%`,
+                  width: `${LIST_WIDTH}%`,
+                  top: `${top}%`,
+                  height: `${height}%`,
                 }}
               >
                 {active && (
-                  <span className="absolute inset-y-[6%] left-[1%] right-[6%] rounded-[2cqw] bg-sky-500/25 pointer-events-none" />
+                  <span className="absolute inset-0 rounded-[1.5cqw] bg-sky-500/25 pointer-events-none" />
                 )}
+
                 {loading && (
                   <span className="absolute inset-y-0 right-[5%] flex items-center">
                     <Loader2 className="w-[5cqw] h-[5cqw] text-[#1b3a5c] animate-spin" />
