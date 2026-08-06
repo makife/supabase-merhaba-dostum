@@ -397,7 +397,7 @@ const PrivateRoomCards = ({
           </div>
         ) : pendingRoom ? (
           /* SADECE BEKLEYEN ODA */
-          <div className="pr-card relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
+          <div className="pr-card pr-in-left relative w-full max-w-[340px]">
             <img src={bekleyenOdaKart} alt="Bekleyen Oda" className="w-full h-auto select-none pointer-events-none" />
             <Hot l={0.128} r={0.364} t={0.328} b={0.383}>
               <span className="pr-code font-black tracking-[0.12em] text-[#0f2a22] text-center w-full leading-none whitespace-nowrap">
@@ -409,9 +409,9 @@ const PrivateRoomCards = ({
             <Hot l={0.511} r={0.927} t={0.801} b={0.91} label="Odayı İptal Et" onClick={cancelPendingRoom} />
           </div>
         ) : (
-          <div className="w-full max-w-[980px] flex items-center justify-center gap-2 sm:gap-4 animate-in fade-in zoom-in-95 duration-300">
+          <div className="w-full max-w-[980px] flex items-center justify-center gap-2 sm:gap-4 overflow-hidden">
             {/* ODA KUR */}
-            <div className="relative flex-1 max-w-[300px]">
+            <div className="pr-in-left relative flex-1 max-w-[300px]">
               <img src={odaKurKart} alt="Oda Kur" className="w-full h-auto select-none pointer-events-none" />
               <Hot l={0.104} r={0.489} t={0.822} b={0.916} label="Odayı Oluştur" onClick={handleCreate} disabled={loading} />
               <Hot
@@ -427,7 +427,7 @@ const PrivateRoomCards = ({
             </div>
 
             {/* ODAYA KATIL */}
-            <div className="pr-card relative flex-1 max-w-[300px]">
+            <div className="pr-card pr-in-right relative flex-1 max-w-[300px]">
               <img src={odayaKatilKart} alt="Odaya Katıl" className="w-full h-auto select-none pointer-events-none" />
               <Hot l={0.152} r={0.846} t={0.682} b={0.771}>
                 <input
