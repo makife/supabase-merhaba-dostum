@@ -51,11 +51,13 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
         />
 
         {/* Kanal satırları: görünmez hit-zone'lar */}
-        <div className="absolute" style={LIST}>
+        <div className="absolute inset-0">
           {rows.map((s, i) => {
             const active = currentStation?.id === s.id;
             const loading = active && isLoading;
             const playing = active && isPlaying;
+            const top = (ROW_EDGES[i] / 1408) * 100;
+            const height = ((ROW_EDGES[i + 1] - ROW_EDGES[i]) / 1408) * 100;
             return (
               <PressableZone
                 key={s.id}
@@ -66,15 +68,18 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
                   if (playing) stop();
                   else play(s);
                 }}
-                className="left-0 right-0 rounded-[2cqw]"
+                className="rounded-[2cqw]"
                 style={{
-                  top: `${(i * 100) / rows.length}%`,
-                  height: `${100 / rows.length}%`,
+                  left: `${LIST_LEFT}%`,
+                  width: `${LIST_WIDTH}%`,
+                  top: `${top}%`,
+                  height: `${height}%`,
                 }}
               >
                 {active && (
-                  <span className="absolute inset-y-[6%] left-[1%] right-[6%] rounded-[2cqw] bg-sky-500/25 pointer-events-none" />
+                  <span className="absolute inset-0 rounded-[1.5cqw] bg-sky-500/25 pointer-events-none" />
                 )}
+
                 {loading && (
                   <span className="absolute inset-y-0 right-[5%] flex items-center">
                     <Loader2 className="w-[5cqw] h-[5cqw] text-[#1b3a5c] animate-spin" />
