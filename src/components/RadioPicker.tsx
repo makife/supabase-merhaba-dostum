@@ -1,6 +1,7 @@
 import { useRadio } from "@/contexts/RadioContext";
-import { X, Play, Pause, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
+import radyoPenceresi from "@/assets/radyoPenceresi.png";
 
 interface RadioPickerProps {
   open: boolean;
@@ -13,84 +14,82 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
 
   if (!open) return null;
 
+  // PNG içindeki beyaz liste alanı ve buton koordinatları (704x1408)
+  const LIST = { left: "18.9%", right: "17.2%", top: "30.1%", bottom: "22.1%" };
+  const rows = stations.slice(0, 8);
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-[#1e2d45] border border-white/10 shadow-2xl p-5"
+        className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300"
+        style={{ containerType: "inline-size" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 h-8">
-            <img
-              src="/icons/radyo-gorsel.svg"
-              alt="Radyo"
-              className="w-8 h-8"
-            />
-            <img
-              src="/icons/radyotext.svg"
-              alt="Radyo"
-              className="h-full w-auto object-contain"
-            />
-          </div>
-          <button
-            onClick={() => { playSound("buttonClick"); onClose(); }}
-            className="p-1.5 rounded-full hover:bg-white/10 active:opacity-70"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
+        <img
+          src={radyoPenceresi}
+          alt="Radyo"
+          className="w-full h-auto select-none pointer-events-none"
+          draggable={false}
+        />
 
-        <p className="text-white/60 text-xs mb-3">
-          Türkçe internet radyo kanalları. Yayın içerikleri ilgili radyo kuruluşlarına aittir, bu uygulama sadece yönlendirme yapar. Uygulama arka plana geçince durur. 
-        </p>
-
-        <div className="max-h-[55vh] overflow-y-auto flex flex-col gap-2 pr-1">
-          {stations.map((s) => {
+        {/* Kanal satırları: görünmez hit-zone'lar */}
+        <div className="absolute" style={LIST}>
+          {rows.map((s, i) => {
             const active = currentStation?.id === s.id;
             const loading = active && isLoading;
             const playing = active && isPlaying;
             return (
               <button
                 key={s.id}
+                type="button"
+                aria-label={s.name}
                 onClick={() => {
                   playSound("buttonClick");
                   if (playing) stop();
                   else play(s);
                 }}
-                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border transition ${
-                  active
-                    ? "bg-amber-500/20 border-amber-400/50"
-                    : "bg-white/5 border-white/10 hover:bg-white/10"
-                }`}
+                className="absolute left-0 right-0 bg-transparent active:scale-[0.98] transition-transform"
+                style={{
+                  top: `${(i * 100) / rows.length}%`,
+                  height: `${100 / rows.length}%`,
+                  touchAction: "manipulation",
+                }}
               >
-                <div className="flex items-center min-w-0">
-                  <span className="text-white font-medium text-sm truncate">{s.name}</span>
-                </div>
-                <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
-                  ) : playing ? (
-                    <Pause className="w-4 h-4 text-amber-400" />
-                  ) : (
-                    <Play className="w-4 h-4 text-white" />
-                  )}
-                </span>
+                {active && (
+                  <span className="absolute inset-y-[6%] inset-x-[1%] rounded-[2cqw] bg-amber-400/25 pointer-events-none" />
+                )}
+                {loading && (
+                  <span className="absolute inset-y-0 left-[6%] flex items-center">
+                    <Loader2 className="w-[6cqw] h-[6cqw] text-[#1b3a5c] animate-spin" />
+                  </span>
+                )}
+                {playing && (
+                  <span className="absolute inset-y-0 right-[5%] flex items-center gap-[1cqw]">
+                    <span className="w-[1.2cqw] h-[3cqw] bg-green-600 rounded-full animate-pulse" />
+                    <span className="w-[1.2cqw] h-[4.5cqw] bg-green-600 rounded-full animate-pulse" />
+                    <span className="w-[1.2cqw] h-[2.5cqw] bg-green-600 rounded-full animate-pulse" />
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {currentStation && isPlaying && (
-          <button
-            onClick={() => { playSound("buttonClick"); stop(); }}
-            className="mt-4 w-full py-2.5 rounded-xl bg-red-500/90 text-white font-semibold text-sm active:opacity-80"
-          >
-            Radyoyu Durdur
-          </button>
-        )}
+        {/* Radyoyu Kapat */}
+        <button
+          type="button"
+          aria-label="Radyoyu Kapat"
+          onClick={() => {
+            playSound("buttonClick");
+            stop();
+            onClose();
+          }}
+          className="absolute bg-transparent active:scale-95 transition-transform"
+          style={{ left: "23.4%", width: "54%", top: "80.5%", height: "5.4%", touchAction: "manipulation" }}
+        />
       </div>
     </div>
   );
