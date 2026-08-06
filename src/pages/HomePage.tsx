@@ -51,6 +51,7 @@ import {
   Check,
 } from "lucide-react";
 import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChallenge";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 
 // --- YARDIMCI SABİTLER ---
 
@@ -317,6 +318,9 @@ const HomePage = () => {
   const activeTournamentCount = useActiveTournamentDisplayCount();
 
   usePremiumDailyRewards();
+
+  // 🔥 Yatay sayfa kaydırma: Ana Sayfa → Liderlik → Profil → Market → Ayarlar
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/" });
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -956,6 +960,8 @@ const HomePage = () => {
       <LeaderboardPrizeDialog />
       <ChallengePrizeDialog />
       <div
+        ref={swipeRef}
+        {...swipeHandlers}
         className="fixed inset-0 flex flex-col text-slate-100 font-sans selection:bg-indigo-500/30 overflow-hidden"
         style={{
           backgroundColor: "hsl(var(--app-shell))",
