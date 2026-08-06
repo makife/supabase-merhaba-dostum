@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { prefetchRoute } from "@/utils/pageDataCache";
+import { useSounds } from "@/hooks/useSounds";
 
 /**
  * 🔥 Yatay sayfa geçişi (native swipe hissi)
@@ -24,6 +25,7 @@ interface Options {
 
 export function usePageSwipeNav({ route, edgeOnly = false, enabled = true }: Options) {
   const navigate = useNavigate();
+  const { playSound } = useSounds();
   const containerRef = useRef<HTMLElement | null>(null);
   const stateRef = useRef<{
     x: number;
@@ -143,6 +145,7 @@ export function usePageSwipeNav({ route, edgeOnly = false, enabled = true }: Opt
     try {
       sessionStorage.setItem(DIR_KEY, String(dir));
     } catch {}
+    playSound("buttonClick");
     try {
       navigator.vibrate?.(8);
     } catch {}
@@ -155,7 +158,7 @@ export function usePageSwipeNav({ route, edgeOnly = false, enabled = true }: Opt
 
     // Anında geçiş - veri prefetch edildiği için sayfa hazır açılır
     navigate(SWIPE_ROUTES[nextIdx]);
-  }, [index, navigate, reset]);
+  }, [index, navigate, reset, playSound]);
 
   return {
     containerRef: containerRef as React.MutableRefObject<any>,
