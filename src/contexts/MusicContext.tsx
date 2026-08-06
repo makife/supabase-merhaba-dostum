@@ -31,6 +31,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
   const musicEnabledRef = useRef(true);
+  const lastUserToggleAtRef = useRef(0);
 
   // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
   const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
