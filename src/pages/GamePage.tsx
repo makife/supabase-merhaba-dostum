@@ -102,6 +102,8 @@ import { generateBotName, generateBotAvatar } from "@/utils/tournamentHelpers";
 import { matchBanlist } from "@/utils/matchBanlist";
 import { GameEmojiReactions } from "@/components/GameEmojiReactions";
 import { LevelUpDialog } from "@/components/LevelUpDialog";
+import MatchResultCard from "@/components/MatchResultCard";
+
 // RankUpDialog kaldırıldı: seviye/rank yükselişinde sadece LevelUpDialog animasyonu gösteriliyor
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
