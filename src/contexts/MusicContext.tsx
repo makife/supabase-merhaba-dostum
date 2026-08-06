@@ -917,6 +917,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setMusicEnabled = async (enabled: boolean) => {
+    lastUserToggleAtRef.current = Date.now();
     setMusicEnabledState(enabled);
     musicEnabledRef.current = enabled; // 🔥 FIX: ref'i de güncelle
     // Save to native storage
