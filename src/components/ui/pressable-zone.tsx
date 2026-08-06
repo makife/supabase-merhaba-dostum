@@ -106,7 +106,7 @@ export function PressableZone({
       aria-label={label}
       disabled={disabled}
       onPointerDown={handleDown}
-      onPointerUp={() => release(true)}
+      onPointerUp={(e) => release(true, e)}
       onPointerLeave={() => release(false)}
       onPointerCancel={() => release(false)}
       className={`absolute bg-transparent overflow-hidden ${className}`}
