@@ -1243,19 +1243,8 @@ const HomePage = () => {
         >
 
 
-          <div
-            className="relative"
-            style={{
-              // Görselin genişliği daima yükseklikten oranla türetiliyor:
-              // header/menü bar yükseklikleri cihazdan cihaza (APK/IPA) değişse de
-              // ada görseli aynı oranı koruyup boşluğa göre büyüyüp küçülüyor.
-              aspectRatio: "768 / 1152",
-              height: "100%",
-              width: "auto",
-              scale: "1.08",
-            }}
-          >
-            <HomeIslands
+          <div className="relative w-full h-full">
+            <HomeIslandCarousel
               pointSize={38}
               alerts={{
                 sohbet: unreadChatCount > 0,
