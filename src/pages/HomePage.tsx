@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChallenge";
 import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
+import { prefetchLeaderboard } from "@/utils/pageDataCache";
 
 // --- YARDIMCI SABİTLER ---
 
@@ -321,6 +322,12 @@ const HomePage = () => {
 
   // 🔥 Yatay sayfa kaydırma: Ana Sayfa → Liderlik → Profil → Market → Ayarlar
   const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/" });
+
+  // Ana sayfada boşta liderlik verisini ön-yükle (kaydırınca anında görünsün)
+  useEffect(() => {
+    const t = window.setTimeout(() => prefetchLeaderboard(), 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);

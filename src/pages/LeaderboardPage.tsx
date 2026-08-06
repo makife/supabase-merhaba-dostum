@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, startTransition } from "react";
 import { prefetch, getCached, setCached, LB_KEYS } from "@/utils/pageDataCache";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,6 +78,8 @@ const LeaderboardPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all-time");
+  // Sekmeler yatay swipe kullandığı için sayfa geçişi sadece ekran kenarından
+  const { containerRef: pageSwipeRef, swipeHandlers: pageSwipeHandlers } = usePageSwipeNav({ route: "/leaderboard", edgeOnly: true });
   const swipeRef = useRef<{ x: number; y: number; dx: number; axis: "none" | "x" | "y" } | null>(null);
   const dragLayerRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
@@ -286,7 +289,7 @@ const LeaderboardPage = () => {
     return () => clearInterval(interval);
   }, [allTimeLeaders, weeklyLeaders, monthlyLeaders]);
 
-  usePageResync(handleLeaderboardResync, "LeaderboardPage", false);
+  usePageResync(() => handleLeaderboardResync(true), "LeaderboardPage", false);
 
   useEffect(() => {
     fetch("/liderArmaLoading.json")
@@ -318,7 +321,7 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const onVisible = async () => {
       if (document.visibilityState === "visible") {
-        await handleLeaderboardResync();
+        await handleLeaderboardResync(true);
       }
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -678,6 +681,8 @@ const LeaderboardPage = () => {
 
   return (
     <div
+      ref={pageSwipeRef}
+      {...pageSwipeHandlers}
       className="fixed inset-0 flex flex-col text-slate-100 overflow-hidden"
       style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
     >
