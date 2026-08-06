@@ -31,6 +31,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const shuffleIndexRef = useRef(0);
   const wasPlayingBeforeBackgroundRef = useRef(false);
   const musicEnabledRef = useRef(true);
+  const lastUserToggleAtRef = useRef(0);
 
   // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
   const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
@@ -290,8 +291,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const settingsStr = await nativeStorage.getItem(STORAGE_KEYS.SETTINGS);
         const settings = settingsStr ? JSON.parse(settingsStr) : {};
         const enabled = settings.music ?? true;
-        setMusicEnabledState(enabled);
-        musicEnabledRef.current = enabled;
+        // 🔥 FIX: Kullanıcı az önce toggle ettiyse storage'dan gelen (muhtemelen
+        // henüz yazılmamış) eski değeri uygulamayalım -> aç/kapa titremesi olmasın
+        const recentToggle = Date.now() - lastUserToggleAtRef.current < 3000;
+        if (!recentToggle) {
+          setMusicEnabledState(enabled);
+          musicEnabledRef.current = enabled;
+        }
         setMusicPackState(settings.musicPack ?? "default");
       } catch (error) {
         console.warn("Failed to load music settings:", error);
@@ -300,6 +306,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSettingsLoaded(true);
       }
     };
+
 
     loadSettings();
 
@@ -910,6 +917,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setMusicEnabled = async (enabled: boolean) => {
+    lastUserToggleAtRef.current = Date.now();
     setMusicEnabledState(enabled);
     musicEnabledRef.current = enabled; // 🔥 FIX: ref'i de güncelle
     // Save to native storage
