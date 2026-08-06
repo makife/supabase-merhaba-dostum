@@ -321,7 +321,7 @@ const HomePage = () => {
   usePremiumDailyRewards();
 
   // 🔥 Yatay sayfa kaydırma: Ana Sayfa → Liderlik → Profil → Market → Ayarlar
-  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/" });
+  const { containerRef: swipeRef, swipeHandlers } = usePageSwipeNav({ route: "/", edgeOnly: true });
 
   // Ana sayfada boşta liderlik verisini ön-yükle (kaydırınca anında görünsün)
   useEffect(() => {
