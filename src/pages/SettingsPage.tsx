@@ -1,4 +1,5 @@
 import { MusicPackSelector } from "@/components/MusicPackSelector";
+import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {

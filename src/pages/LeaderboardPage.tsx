@@ -845,27 +845,19 @@ const LeaderboardPage = () => {
           playSound("buttonClick");
           try { navigator.vibrate?.(8); } catch {}
           settlePill(nextIdx);
-          el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
-          el.style.transform = `translate3d(${-dir * w * 0.6}px,0,0)`;
-          el.style.opacity = "0";
 
-          window.setTimeout(() => {
-            startTransition(() => setActiveTab(TAB_ORDER[nextIdx]));
-            requestAnimationFrame(() => {
-              const node = dragLayerRef.current;
-              if (!node) return;
-              node.style.transition = "none";
-              node.style.transform = `translate3d(${dir * w * 0.6}px,0,0)`;
-              node.style.opacity = "0";
-              requestAnimationFrame(() => {
-                const n2 = dragLayerRef.current;
-                if (!n2) return;
-                n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 240ms ease-out";
-                n2.style.transform = "translate3d(0,0,0)";
-                n2.style.opacity = "1";
-              });
-            });
-          }, 140);
+          // 🔥 Anında geçiş: veriler zaten bellekte, bekleme yok
+          setActiveTab(TAB_ORDER[nextIdx]);
+          el.style.transition = "none";
+          el.style.transform = `translate3d(${dir * w * 0.35}px,0,0)`;
+          el.style.opacity = "0.6";
+          requestAnimationFrame(() => {
+            const n2 = dragLayerRef.current;
+            if (!n2) return;
+            n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease-out";
+            n2.style.transform = "translate3d(0,0,0)";
+            n2.style.opacity = "1";
+          });
         }}
       >
         <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>
