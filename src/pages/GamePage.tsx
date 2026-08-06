@@ -8202,7 +8202,11 @@ const GamePage = ({
     return (
       <div
         className="fixed inset-0 flex items-center justify-center p-4 relative overflow-hidden touch-none overscroll-none"
-        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+        style={{
+          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
       >
         {winner === "player" && confettiAnim && (
           <div className="absolute inset-0 pointer-events-none z-20">
@@ -8210,7 +8214,8 @@ const GamePage = ({
           </div>
         )}
 
-        <div className="relative z-30 w-full">
+        <div className="relative z-30 w-full -translate-y-[3%]">
+
           <MatchResultCard
             won={winner === "player"}
             playerScore={finalPlayerScore || playerScore}
