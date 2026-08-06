@@ -3,6 +3,14 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Lottie from "lottie-react";
+import refleksOdul2 from "@/assets/refleksOdulPenceresi2.png";
+import refleksOdul4 from "@/assets/refleksOdulPenceresi4.png";
+import refleksOdul6 from "@/assets/refleksOdulPenceresi6.png";
+import kelimePuzzleOdul from "@/assets/kelimePuzzleOdulPenceresi.png";
+import kelimeAviOdul from "@/assets/kelimeAviOdulPenceresi.png";
+import harfKosusuOdul from "@/assets/harfKosusuOdulPenceresi.png";
+import sansCarkiOdul from "@/assets/sansCarkiOdulPenceresi.png";
+
 
 interface PrizeNotification {
   id: string;
@@ -33,25 +41,26 @@ const getPrizeImage = (message: string): string => {
     const hasSenyaz = /Sen\s*Yaz|Senyaz/i.test(message);
     const hasDegistir = /Değiştir/i.test(message);
 
-    if (hasSenyaz) return "/assets/refleksOdulPenceresi6.png";
-    if (hasDegistir) return "/assets/refleksOdulPenceresi4.png";
-    return "/assets/refleksOdulPenceresi2.png";
+    if (hasSenyaz) return refleksOdul6;
+    if (hasDegistir) return refleksOdul4;
+    return refleksOdul2;
   }
 
   if (message.includes("Puzzle") || message.includes("puzzle")) {
-    return "/assets/kelimePuzzleOdulPenceresi.png";
+    return kelimePuzzleOdul;
   }
 
   if (message.includes("Kelime Avı") || message.includes("kelime avı") || message.includes("Kelime Avi")) {
-    return "/assets/kelimeAviOdulPenceresi.png";
+    return kelimeAviOdul;
   }
 
   if (message.includes("Harf Koşusu") || message.includes("harf koşusu")) {
-    return "/assets/harfKosusuOdulPenceresi.png";
+    return harfKosusuOdul;
   }
 
   // Hafıza / diğer tüm oyun türleri için genel çark ödül görseli
-  return "/assets/sansCarkiOdulPenceresi.png";
+  return sansCarkiOdul;
+
 };
 
 const ChallengePrizeDialog = () => {
