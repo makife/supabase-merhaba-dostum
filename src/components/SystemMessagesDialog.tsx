@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
-import { useSounds } from "@/hooks/useSounds";
 import { PressableZone } from "@/components/ui/pressable-zone";
 import sistemMesajlariPenceresi from "@/assets/sistemMesajlariPenceresi.png";
 
@@ -25,7 +24,6 @@ export function SystemMessagesDialog({
 }: Props) {
   const [snapshotRead, setSnapshotRead] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"new" | "read">("new");
-  const { playSound } = useSounds();
 
   useEffect(() => {
     if (open) {
