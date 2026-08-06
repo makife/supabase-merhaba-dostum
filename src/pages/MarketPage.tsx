@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
+import { useTabSwipe } from "@/hooks/useTabSwipe";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -70,6 +71,13 @@ const MarketPage = () => {
   usePageResync(refreshProfile, "MarketPage", false);
 
   const [activeTab, setActiveTab] = useState("ink-store");
+  const MARKET_TABS = ["ink-store", "stationery", "vip"];
+  const {
+    dragLayerRef,
+    pillRef,
+    pillStyleTransform,
+    swipeHandlers: tabSwipeHandlers,
+  } = useTabSwipe({ tabs: MARKET_TABS, activeTab, setActiveTab, pillGap: "0.25rem" });
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [marketAnim, setMarketAnim] = useState<any>(null);
 
@@ -577,28 +585,51 @@ const MarketPage = () => {
           }}
           className="h-full flex flex-col"
         >
-          <TabsList className="grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
+          <TabsList className="relative grid grid-cols-3 mb-4 bg-white/50 backdrop-blur p-1 rounded-xl border border-indigo-100 shadow-sm gap-1">
+            {/* Kayan aktif gösterge */}
+            <div
+              ref={pillRef}
+              aria-hidden
+              className={`absolute top-1 bottom-1 left-1 rounded-md pointer-events-none shadow-md ${
+                activeTab === "ink-store"
+                  ? "bg-indigo-600 shadow-indigo-500/30"
+                  : activeTab === "stationery"
+                  ? "bg-purple-600 shadow-purple-500/30"
+                  : "bg-amber-500 shadow-amber-500/30"
+              }`}
+              style={{
+                width: "calc((100% - 1rem) / 3)",
+                transform: pillStyleTransform,
+                transition: "transform 240ms cubic-bezier(0.22,1,0.36,1), background-color 240ms ease-out",
+                willChange: "transform",
+              }}
+            />
             <TabsTrigger
               value="ink-store"
-              className="bg-indigo-100 text-indigo-400 transition-all data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/30"
+              className="relative z-10 bg-indigo-100/70 text-indigo-400 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               <Droplet className="w-4 h-4 mr-1" /> Mürekkep
             </TabsTrigger>
             <TabsTrigger
               value="stationery"
-              className="bg-purple-100 text-purple-400 transition-all data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-purple-500/30"
+              className="relative z-10 bg-purple-100/70 text-purple-400 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               <PenTool className="w-4 h-4 mr-1" /> Kırtasiye
             </TabsTrigger>
             <TabsTrigger
               value="vip"
-              className="bg-amber-100 text-amber-500 transition-all data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-amber-500/30"
+              className="relative z-10 bg-amber-100/70 text-amber-500 transition-colors data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               <Crown className="w-4 h-4 mr-1" /> VIP Yazar
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
+          <div
+            className="flex-1 overflow-y-auto overflow-x-hidden pb-8 scrollbar-hide"
+            style={{ touchAction: "pan-y" }}
+            {...tabSwipeHandlers}
+          >
+            <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>
             {/* 1. MÜREKKEP DÜKKANI */}
             <TabsContent value="ink-store" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <div className="text-center mb-2">
@@ -878,6 +909,7 @@ const MarketPage = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+            </div>
           </div>
         </Tabs>
       </div>
