@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
-import { useSounds } from "@/hooks/useSounds";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import sistemMesajlariPenceresi from "@/assets/sistemMesajlariPenceresi.png";
+
 
 interface Props {
   open: boolean;
@@ -23,7 +24,6 @@ export function SystemMessagesDialog({
 }: Props) {
   const [snapshotRead, setSnapshotRead] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"new" | "read">("new");
-  const { playSound } = useSounds();
 
   useEffect(() => {
     if (open) {
@@ -99,29 +99,26 @@ export function SystemMessagesDialog({
         />
 
         {/* Yeni Mesajlar sekmesi */}
-        <button
-          type="button"
-          aria-label="Yeni Mesajlar"
-          onClick={() => { playSound("buttonClick"); setTab("new"); }}
-          className="absolute bg-transparent active:scale-95 transition-transform"
-          style={{ left: "13%", width: "36.2%", top: "31.8%", height: "4.3%", touchAction: "manipulation" }}
-        >
-          {unread.length > 0 && (
-            <span className="absolute -top-[1.5cqw] -right-[1.5cqw] min-w-[5cqw] h-[5cqw] px-[1cqw] bg-red-500 rounded-full flex items-center justify-center font-bold text-white" style={{ fontSize: "3cqw" }}>
-              {unread.length > 9 ? "9+" : unread.length}
-            </span>
-          )}
-        </button>
+        <PressableZone
+          label="Yeni Mesajlar"
+          onPress={() => setTab("new")}
+          style={{ left: "13%", width: "36.2%", top: "31.8%", height: "4.3%" }}
+        />
+        {unread.length > 0 && (
+          <span
+            className="absolute z-10 min-w-[5cqw] h-[5cqw] px-[1cqw] bg-red-500 rounded-full flex items-center justify-center font-bold text-white pointer-events-none"
+            style={{ left: "47.4%", top: "30%", fontSize: "3cqw" }}
+          >
+            {unread.length > 9 ? "9+" : unread.length}
+          </span>
+        )}
 
         {/* Okunanlar sekmesi */}
-        <button
-          type="button"
-          aria-label="Okunanlar"
-          onClick={() => { playSound("buttonClick"); setTab("read"); }}
-          className="absolute bg-transparent active:scale-95 transition-transform"
-          style={{ left: "50.8%", width: "36.2%", top: "31.8%", height: "4.3%", touchAction: "manipulation" }}
-        >
-        </button>
+        <PressableZone
+          label="Okunanlar"
+          onPress={() => setTab("read")}
+          style={{ left: "50.8%", width: "36.2%", top: "31.8%", height: "4.3%" }}
+        />
 
         {/* Mesaj listesi (gri alan) */}
         <div
@@ -132,13 +129,13 @@ export function SystemMessagesDialog({
         </div>
 
         {/* Kapat */}
-        <button
-          type="button"
-          aria-label="Kapat"
-          onClick={() => { playSound("buttonClick"); onOpenChange(false); }}
-          className="absolute bg-transparent active:scale-95 transition-transform"
-          style={{ left: "31.9%", width: "36.5%", top: "78.8%", height: "4.8%", touchAction: "manipulation" }}
+        <PressableZone
+          label="Kapat"
+          haptic="medium"
+          onPress={() => onOpenChange(false)}
+          style={{ left: "31.9%", width: "36.5%", top: "78.8%", height: "4.8%" }}
         />
+
       </div>
     </div>
   );

@@ -2485,3 +2485,21 @@ body.is-capacitor.hide-bars::before {
 }
 
 /* ===== AAA GAME UI STYLES END ===== */
+
+/* Native oyun hissi: buton ripple halkası */
+@keyframes pressable-ripple {
+  0% {
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    margin-top: -4px;
+    opacity: 0.9;
+  }
+  100% {
+    width: 120px;
+    height: 120px;
+    margin-left: -60px;
+    margin-top: -60px;
+    opacity: 0;
+  }
+}
