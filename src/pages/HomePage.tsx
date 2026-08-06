@@ -952,6 +952,7 @@ const HomePage = () => {
         <Badge className="bg-red-500 hover:bg-red-500 text-white border-0 text-[10px] px-2 py-0.5">CANLI</Badge>
       ) : undefined,
       onClick: () => {
+        playSound("buttonClick");
         setShowModePanel(false);
         handleGameModeClick(mode.id);
       },

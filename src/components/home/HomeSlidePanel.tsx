@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { PressableZone } from "@/components/ui/pressable-zone";
 
 export interface SlidePanelItem {
   id: string;
@@ -70,15 +71,15 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
 
             if (item.imageSrc) {
               return (
-                <div
+                <PressableZone
                   key={item.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    item.onClick();
-                  }}
-                  className={`relative w-[92%] cursor-pointer active:scale-[0.97] transition-transform flex-shrink-0 ${
-                    item.dimmed ? "opacity-60 grayscale-[35%]" : ""
-                  }`}
+                  inline
+                  label={item.title}
+                  sound={false}
+                  ripple={false}
+                  glow={false}
+                  onPress={item.onClick}
+                  className={`w-[92%] flex-shrink-0 block ${item.dimmed ? "opacity-60 grayscale-[35%]" : ""}`}
                   style={anim}
                 >
                   <img
@@ -97,19 +98,20 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                       {item.badge}
                     </div>
                   )}
-
-                </div>
+                </PressableZone>
               );
             }
 
             return (
-            <div
+            <PressableZone
               key={item.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                item.onClick();
-              }}
-              className={`relative w-[86%] rounded-3xl p-4 flex items-center gap-4 overflow-hidden cursor-pointer border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] active:scale-[0.97] transition-transform ${
+              inline
+              label={item.title}
+              sound={false}
+              ripple={false}
+              glow={false}
+              onPress={item.onClick}
+              className={`w-[86%] rounded-3xl p-4 flex items-center gap-4 border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] text-left ${
                 item.dimmed ? "opacity-70" : ""
               }`}
               style={anim}
@@ -134,8 +136,9 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                 )}
               </div>
               {item.badge && <div className="relative z-10 flex-shrink-0">{item.badge}</div>}
-            </div>
+            </PressableZone>
             );
+          })}
           })}
         </div>
       </div>

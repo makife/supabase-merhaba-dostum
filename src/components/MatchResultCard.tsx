@@ -1,4 +1,5 @@
 import React from "react";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import kazandinKarti from "@/assets/KazandinKarti.png";
 import kaybettinKarti from "@/assets/kaybettinKarti.png";
 
@@ -29,13 +30,12 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
   children,
 }) => {
   const zone = (label: string, left: string, width: string, handler?: () => void, isDisabled?: boolean) => (
-    <button
-      type="button"
-      aria-label={label}
+    <PressableZone
+      label={label}
+      onPress={handler}
       disabled={isDisabled || !handler}
-      onClick={handler}
-      className="absolute z-10 rounded-[2cqw] bg-transparent active:scale-95 transition-transform disabled:opacity-100"
-      style={{ left, width, top: "62.5%", height: "8.2%", touchAction: "manipulation" }}
+      className="z-10 rounded-[2cqw] disabled:opacity-100"
+      style={{ left, width, top: "62.5%", height: "8.2%" }}
     >
       {(isDisabled || !handler) && <span className="absolute inset-0 rounded-[2cqw] bg-black/45" />}
       {label === "Reklam İzle" && adLoading && (
@@ -43,7 +43,7 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
           <span className="w-[5cqw] h-[5cqw] border-2 border-white/30 border-t-white rounded-full animate-spin" />
         </span>
       )}
-    </button>
+    </PressableZone>
   );
 
   return (
