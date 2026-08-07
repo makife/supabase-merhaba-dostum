@@ -76,7 +76,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
       {/* Konfeti (tek seferlik) */}
       {showConfetti && confetti && (
         <div className="absolute inset-x-0 top-0 h-[420px] z-30 pointer-events-none">
-          <Lottie animationData={confetti} loop={false} style={{ width: "100%", height: "100%" }} />
+          <Lottie key={confettiKey} animationData={confetti} loop={false} style={{ width: "100%", height: "100%" }} />
         </div>
       )}
     </div>
