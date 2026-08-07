@@ -126,7 +126,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
         const d = signedDelta(i, pos);
         const ad = Math.abs(d);
         const scale = Math.max(0.4, 1.3 - ad * 0.46) * (island.scaleMul ?? 1);
-        const opacity = ad > 2.2 ? 0 : Math.max(0, 1 - ad * 0.5);
+        const opacity = ad > 1.8 ? 0 : Math.max(0, 1 - ad * 0.72);
         const x = d * 48;
         const isActive = ad < 0.5;
 
