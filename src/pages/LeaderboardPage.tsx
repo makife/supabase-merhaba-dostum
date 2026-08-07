@@ -29,7 +29,7 @@ import {
   TrendingDown,
   Flame,
 } from "lucide-react";
-import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
+import LeaderboardPrizeReveal from "@/components/LeaderboardPrizeReveal";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
 import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
@@ -744,10 +744,11 @@ const LeaderboardPage = () => {
             </div>
           )}
 
-          {/* Prize Banner */}
+          {/* Prize Banner (gizli — "ÖDÜL BURADA" kartına tıklanınca açılır) */}
           <div className="mt-3">
-            <LeaderboardPrizeBanner tab={activeTab as "all-time" | "weekly" | "monthly"} />
+            <LeaderboardPrizeReveal tab={activeTab as "all-time" | "weekly" | "monthly"} />
           </div>
+
 
           {/* Tabs */}
           <div className="mt-3">
