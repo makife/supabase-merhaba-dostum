@@ -78,12 +78,16 @@ const loadOne = (src: string) =>
     img.src = src;
   });
 
+/** Ana sayfa arka planları (gündüz/gece) — gece görseli büyük, önceden yüklenmeli */
+const BACKGROUNDS = ["/alttaban/kompleyesilarkaplan.svg", "/alttaban/kompleyesilarkaplangece.jpg"];
+
 /** Tüm ada görsellerini (ve maskelerini) önceden yükler. Tekrar çağrılırsa aynı promise döner. */
 export const preloadHomeIslands = () => {
   if (!preloadPromise) {
     preloadPromise = Promise.all([
       ...ISLANDS.map((i) => loadOne(i.src)),
       ...ISLANDS.map((i) => loadOne(i.nightSrc)),
+      ...BACKGROUNDS.map((b) => loadOne(b)),
     ]).then(() => undefined);
   }
   return preloadPromise;
