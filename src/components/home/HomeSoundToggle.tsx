@@ -3,6 +3,8 @@ import { useMusic } from "@/contexts/MusicContext";
 import { stopAllSounds, stopAllHTML5Sounds } from "@/services/nativeAudioService";
 import { stopAllIOSWebSounds } from "@/services/iosWebAudioService";
 import { useRadio } from "@/contexts/RadioContext";
+import { useSounds } from "@/hooks/useSounds";
+
 
 /**
  * Ana sayfa 2 kademeli ses düğmesi: "ac" (müzik + efektler açık) / "kapat" (ikisi de kapalı).
@@ -47,6 +49,8 @@ interface HomeSoundToggleProps {
 export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { isPlaying: radioPlaying, stop: stopRadio } = useRadio();
+  const { playSound } = useSounds();
+
   const [effectsOn, setEffectsOn] = useState<boolean>(() => readSoundsEnabled());
 
   useEffect(() => {
