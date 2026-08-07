@@ -106,30 +106,32 @@ export default function HomeTicker({
   return (
     <div className="relative w-full overflow-hidden select-none pointer-events-none">
       <div
-        className="overflow-hidden"
+        className="overflow-hidden flex items-center h-9"
         style={{
           maskImage:
-            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
+            "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
           WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
+            "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
         }}
       >
         <div
           key={text}
-          className="flex w-max"
+          className="flex w-max items-center"
           style={{
             animation: `homeTickerScroll ${duration}s linear infinite`,
             willChange: "transform",
           }}
         >
-          <span className="whitespace-nowrap text-[11px] font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="whitespace-nowrap text-[13px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {text}
           </span>
-          <span className="whitespace-nowrap text-[11px] font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="whitespace-nowrap text-[13px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {text}
           </span>
         </div>
       </div>
+
+
       <style>{`
         @keyframes homeTickerScroll {
           0%   { transform: translate3d(0, 0, 0); }
