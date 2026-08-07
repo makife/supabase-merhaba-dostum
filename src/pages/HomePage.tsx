@@ -1165,6 +1165,21 @@ const HomePage = () => {
                 </button>
               </div>
 
+              {!roleLoading && isModerator && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/moderator");
+                  }}
+                  className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                  aria-label="Moderatör paneli"
+                >
+                  <img src="/icons/moderator-gorsel.svg" alt="Moderatör" className="w-7 h-7 object-contain" />
+                </button>
+              )}
+
+
 
 
 
