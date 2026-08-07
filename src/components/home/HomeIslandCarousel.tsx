@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import HomeMapPoint from "@/components/home/HomeMapPoint";
 import { ISLANDS, preloadHomeIslands, type IslandKey } from "@/lib/homeIslandAssets";
 
 /**
@@ -118,6 +117,10 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
           0%, 100% { transform: translate3d(0, calc(var(--drift) * -1), 0); }
           50%      { transform: translate3d(0, var(--drift), 0); }
         }
+        @keyframes islandRedGlow {
+          0%, 100% { filter: drop-shadow(0 0 6px rgba(255,40,40,0.85)) drop-shadow(0 0 16px rgba(255,0,0,0.55)); }
+          50%      { filter: drop-shadow(0 0 14px rgba(255,70,70,1)) drop-shadow(0 0 34px rgba(255,0,0,0.8)); }
+        }
       `}</style>
 
       {ISLANDS.map((island, i) => {
@@ -168,19 +171,14 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                   decoding="async"
                   className="w-full h-full object-contain select-none pointer-events-none"
                   draggable={false}
+                  style={
+                    alerts?.[island.key]
+                      ? { animation: "islandRedGlow 1.6s ease-in-out infinite" }
+                      : undefined
+                  }
                 />
               </button>
 
-              {isActive && (
-                <HomeMapPoint
-                  x={island.px}
-                  y={island.py}
-                  size={pointSize}
-                  label={island.label}
-                  alert={alerts?.[island.key] ?? false}
-                  onClick={() => onSelect(island.key)}
-                />
-              )}
             </div>
           </div>
         );

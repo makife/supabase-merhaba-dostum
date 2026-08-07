@@ -1259,6 +1259,7 @@ const HomePage = () => {
             <HomeIslandCarousel
               pointSize={38}
               alerts={{
+                carki: (wheelSpinsLeft ?? 0) > 0,
                 arkadaslik: pendingFriendRequests > 0,
               }}
               onSelect={(key) => {
