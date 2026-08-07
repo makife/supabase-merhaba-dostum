@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Lottie from "lottie-react";
 import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
 import odulBuradaAnim from "@/assets/odulBurada.json";
+import { useSounds } from "@/hooks/useSounds";
 
 interface Props {
   tab: "all-time" | "weekly" | "monthly";
@@ -11,24 +12,34 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
   const [open, setOpen] = useState(false);
   const [confetti, setConfetti] = useState<any>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const confettiShown = useRef(false);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const confettiTimer = useRef<number | null>(null);
+  const { playSound } = useSounds();
 
   useEffect(() => {
     fetch("/gunlukKonfeti.json")
       .then((r) => r.json())
       .then(setConfetti)
       .catch(() => {});
+    return () => {
+      if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
+    };
   }, []);
 
   const handleToggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && !confettiShown.current) {
-      confettiShown.current = true;
+    playSound("buttonClick");
+    if (next) {
+      if (confettiTimer.current) window.clearTimeout(confettiTimer.current);
+      setConfettiKey((k) => k + 1);
       setShowConfetti(true);
-      window.setTimeout(() => setShowConfetti(false), 3500);
+      confettiTimer.current = window.setTimeout(() => setShowConfetti(false), 3500);
+    } else {
+      setShowConfetti(false);
     }
   };
+
 
   const borderColor =
     tab === "all-time" ? "border-red-500/30" : tab === "weekly" ? "border-blue-500/30" : "border-green-500/30";
@@ -65,7 +76,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
       {/* Konfeti (tek seferlik) */}
       {showConfetti && confetti && (
         <div className="absolute inset-x-0 top-0 h-[420px] z-30 pointer-events-none">
-          <Lottie animationData={confetti} loop={false} style={{ width: "100%", height: "100%" }} />
+          <Lottie key={confettiKey} animationData={confetti} loop={false} style={{ width: "100%", height: "100%" }} />
         </div>
       )}
     </div>
