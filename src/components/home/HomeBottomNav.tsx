@@ -10,21 +10,22 @@ interface NavItem {
 
 interface HomeBottomNavProps {
   pendingFriendRequests?: number;
-  onRadio?: () => void;
+  unreadChatCount?: number;
 }
 
-export const HomeBottomNav = ({ pendingFriendRequests = 0, onRadio }: HomeBottomNavProps) => {
+export const HomeBottomNav = ({ pendingFriendRequests = 0, unreadChatCount = 0 }: HomeBottomNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { playSound } = useSounds();
 
   const items: NavItem[] = [
-    { route: "radio", label: "Radyo", icon: "/icons/radyo-gorsel.svg" },
+    { route: "/chat", label: "Sohbet", icon: "/icons/sohbet-gorsel.svg", badge: unreadChatCount },
     { route: "/leaderboard", label: "Liderlik", icon: "/icons/liderlik-gorsel.svg" },
     { route: "/profile", label: "Profil", icon: "/icons/profil-gorsel.svg" },
     { route: "/market", label: "Market", icon: "/icons/kirtasiye-gorsel.svg" },
     { route: "/settings", label: "Ayarlar", icon: "/icons/ayarlar-gorsel.svg" },
   ];
+
 
   return (
     <nav
