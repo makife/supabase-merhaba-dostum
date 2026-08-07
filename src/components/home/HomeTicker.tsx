@@ -32,15 +32,27 @@ export default function HomeTicker({
   const { isPlaying, currentStation } = useRadio();
   const { unreadCount, lastMessageSender } = useChatNotifications() as any;
   const [weeklyLeader, setWeeklyLeader] = useState<string | null>(null);
+  const [monthlyLeader, setMonthlyLeader] = useState<string | null>(null);
+  const [seasonLeader, setSeasonLeader] = useState<string | null>(null);
 
-  // Haftanın lideri
+  // Haftanın / ayın / sezonun lideri
   useEffect(() => {
     let cancelled = false;
+    const firstName = (data: unknown) => {
+      const top = Array.isArray(data) ? (data[0] as any) : null;
+      return top?.username || null;
+    };
     (async () => {
       try {
-        const { data } = await supabase.rpc("get_weekly_leaderboard", { limit_count: 1 });
-        const top = Array.isArray(data) ? (data[0] as any) : null;
-        if (!cancelled && top?.username) setWeeklyLeader(top.username);
+        const [weekly, monthly, season] = await Promise.all([
+          supabase.rpc("get_weekly_leaderboard", { limit_count: 1 }),
+          supabase.rpc("get_monthly_leaderboard", { limit_count: 1 }),
+          supabase.rpc("get_season_leaderboard", { limit_count: 1 }),
+        ]);
+        if (cancelled) return;
+        setWeeklyLeader(firstName(weekly.data));
+        setMonthlyLeader(firstName(monthly.data));
+        setSeasonLeader(firstName(season.data));
       } catch {
         /* sessizce yoksay */
       }
