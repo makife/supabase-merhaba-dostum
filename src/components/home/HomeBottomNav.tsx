@@ -44,8 +44,7 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0, unreadChatCount = 0 }
               type="button"
               onClick={() => {
                 playSound("buttonClick");
-                if (item.route === "radio") onRadio?.();
-                else navigate(item.route);
+                navigate(item.route);
               }}
               className="relative flex flex-col items-center justify-end gap-1 flex-1 active:scale-90 transition-transform"
               style={{ WebkitTapHighlightColor: "transparent" }}
