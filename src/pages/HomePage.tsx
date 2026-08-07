@@ -1153,9 +1153,11 @@ const HomePage = () => {
                   />
                 </div>
                 <button
-                  onClick={() =>
-                    setNightOverride(isNight ? "day" : "night")
-                  }
+                  onClick={() => {
+                    playSound("buttonClick");
+                    setNightOverride(isNight ? "day" : "night");
+                  }}
+
                   className="w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-[12px] shadow-md active:scale-95 transition-transform"
                   aria-label="Gece modu testi"
                 >
@@ -1231,7 +1233,14 @@ const HomePage = () => {
             <div className="relative flex items-center justify-center">
               {(!isPremium || isUnlimitedLivesActive(profile)) && (
                 <>
-                  <div className="relative w-12 h-12">
+                  <div
+                    className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
+                    onClick={() => {
+                      playSound("buttonClick");
+                      navigate("/market");
+                    }}
+                  >
+
                     {kalanSayfaAnim ? (
                       <Lottie
                         animationData={kalanSayfaAnim}
