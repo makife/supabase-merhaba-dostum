@@ -137,7 +137,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
             style={{
               width: "72%",
               height: "42%",
-              transform: `translate3d(${x}%, 0, 0) scale(${scale})`,
+              transform: `translate3d(${x}%, ${island.key === "radyo" ? -8 : 0}%, 0) scale(${scale})`,
               transition: dragging ? "none" : "transform 340ms cubic-bezier(0.22,1,0.36,1), opacity 300ms ease-out",
               opacity,
               zIndex: 100 - Math.round(ad * 10),
@@ -168,14 +168,10 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                   alt={island.label}
                   loading="eager"
                   decoding="async"
-                  className="w-full h-full object-contain select-none pointer-events-none"
+                  className={`w-full h-full object-contain select-none pointer-events-none${alerts?.[island.key] ? " island-red-glow" : ""}`}
                   draggable={false}
-                  style={
-                    alerts?.[island.key]
-                      ? { animation: "islandRedGlow 1.6s ease-in-out infinite" }
-                      : undefined
-                  }
                 />
+
               </button>
 
             </div>
