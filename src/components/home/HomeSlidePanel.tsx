@@ -38,11 +38,13 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
   return (
     <div className="fixed inset-0 z-[70] flex flex-col" onClick={onClose}>
       <div
-        className="absolute inset-0 bg-black/55"
-        style={{ backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
       <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 pl-4 pr-6">
+
         <div className="flex items-center justify-between mb-4">
           <h2
             className="text-lg font-black text-white uppercase tracking-widest"

@@ -736,8 +736,8 @@ const HomePage = () => {
   }, []);
 
   const handleGameModeClick = useCallback(
-    async (modeId: string) => {
-      playSound("buttonClick");
+    async (modeId: string, silent = false) => {
+      if (!silent) playSound("buttonClick");
       const hasUsableCredit = async () => {
         if (isPremium || isUnlimitedLivesActive(profile)) return true;
         if ((profile?.game_credits || 0) + (profile?.bonus_credits || 0) > 0) return true;
@@ -971,7 +971,7 @@ const HomePage = () => {
       badge: undefined,
       onClick: () => {
         setShowModePanel(false);
-        handleGameModeClick(mode.id);
+        handleGameModeClick(mode.id, true);
       },
     };
   });
