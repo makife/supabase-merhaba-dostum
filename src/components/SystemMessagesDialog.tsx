@@ -28,12 +28,12 @@ export function SystemMessagesDialog({
   useEffect(() => {
     if (open) {
       setSnapshotRead(new Set(readIds));
-      const hasUnread = messages.some((m) => !readIds.has(m.id));
-      setTab(hasUnread ? "new" : "read");
+      setTab("new");
       const t = setTimeout(() => markAllRead(), 300);
       return () => clearTimeout(t);
     }
   }, [open]);
+
 
   if (!open) return null;
 
