@@ -339,6 +339,8 @@ const HomePage = () => {
   const [islandBounds, setIslandBounds] = useState(cachedIslandBounds);
   const [boundsReady, setBoundsReady] = useState(cachedIslandBounds.measured);
   const isNight = useNightMode();
+  const { isModerator, loading: roleLoading } = useUserRole();
+
 
   useLayoutEffect(() => {
     const measure = () => {
