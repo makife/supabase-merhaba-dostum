@@ -285,7 +285,7 @@ const PuzzleGamePage: React.FC = () => {
           <button
             onClick={() => {
               playSound("buttonClick");
-              requestExit(() => navigate(-1), !gameState.started || gameState.isCompleted);
+              requestExit(() => navigate(homeBackPath()), !gameState.started || gameState.isCompleted);
             }}
             className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
           >
