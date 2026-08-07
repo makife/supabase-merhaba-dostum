@@ -1152,7 +1152,19 @@ const HomePage = () => {
             </div>
           </div>
 
+          {/* Kayan mesaj boardu — avatarın altı, gündüz/gece ikonu hizası */}
+          <div className="mt-1 px-1 pointer-events-none">
+            <HomeTicker
+              wheelSpinsLeft={wheelSpinsLeft}
+              pendingFriendRequests={pendingFriendRequests}
+              systemUnread={systemUnread}
+              username={profile?.username}
+              credits={(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}
+            />
+          </div>
+
         </div>
+
 
         {/* ALT ŞERİT: jokerler (sol) + kalan sayfa & mürekkep (sağ) — menü barın hemen üstü */}
         <div
