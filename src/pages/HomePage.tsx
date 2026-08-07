@@ -25,6 +25,8 @@ import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
 import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
 import HomeBottomNav from "@/components/home/HomeBottomNav";
+import HomeTicker from "@/components/home/HomeTicker";
+
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
