@@ -1141,7 +1141,7 @@ const HomePage = () => {
               <div className="relative w-7 h-7">
                 <div
                   className="absolute right-[calc(100%+8px)] top-0 h-7 flex items-center pointer-events-none"
-                  style={{ width: "100vw", maxWidth: "100vw" }}
+                  style={{ width: "calc(100vw - 76px)", maxWidth: "calc(100vw - 76px)" }}
                 >
 
                   <HomeTicker
