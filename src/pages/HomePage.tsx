@@ -1356,6 +1356,7 @@ const HomePage = () => {
               onCancel={() => {
                 cancelSearch();
                 setShowMatchmaking(false);
+                setShowModePanel(true);
               }}
               searchProgress={searchProgress}
             />
