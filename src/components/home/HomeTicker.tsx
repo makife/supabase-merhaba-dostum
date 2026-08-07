@@ -123,10 +123,10 @@ export default function HomeTicker({
             willChange: "transform",
           }}
         >
-          <span className="whitespace-nowrap text-[13px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {text}
           </span>
-          <span className="whitespace-nowrap text-[13px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          <span className="whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
             {text}
           </span>
         </div>
