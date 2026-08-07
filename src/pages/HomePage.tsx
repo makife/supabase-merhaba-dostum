@@ -24,6 +24,8 @@ import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
 import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
+import { useUserRole } from "@/hooks/useUserRole";
+
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeTicker from "@/components/home/HomeTicker";
 
