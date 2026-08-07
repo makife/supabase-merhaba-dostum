@@ -63,6 +63,7 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
 
   const handleClick = useCallback(() => {
     if (on) {
+      try { playSound("buttonClick"); } catch {}
       writeSoundsEnabled(false);
       setEffectsOn(false);
       stopEverySoundEffect();
@@ -72,8 +73,10 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
       writeSoundsEnabled(true);
       setEffectsOn(true);
       try { setMusicEnabled(true); } catch {}
+      setTimeout(() => { try { playSound("buttonClick"); } catch {} }, 30);
     }
-  }, [on, radioPlaying, stopRadio, setMusicEnabled]);
+  }, [on, radioPlaying, stopRadio, setMusicEnabled, playSound]);
+
 
   return (
     <button
