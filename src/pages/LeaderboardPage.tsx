@@ -744,10 +744,11 @@ const LeaderboardPage = () => {
             </div>
           )}
 
-          {/* Prize Banner */}
+          {/* Prize Banner (gizli — "ÖDÜL BURADA" kartına tıklanınca açılır) */}
           <div className="mt-3">
-            <LeaderboardPrizeBanner tab={activeTab as "all-time" | "weekly" | "monthly"} />
+            <LeaderboardPrizeReveal tab={activeTab as "all-time" | "weekly" | "monthly"} />
           </div>
+
 
           {/* Tabs */}
           <div className="mt-3">
