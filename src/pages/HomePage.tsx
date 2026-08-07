@@ -1137,16 +1137,27 @@ const HomePage = () => {
 
               <HomeSoundToggle />
 
-              {/* Gece modu test butonu */}
-              <button
-                onClick={() =>
-                  setNightOverride(isNight ? "day" : "night")
-                }
-                className="w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-[12px] shadow-md active:scale-95 transition-transform"
-                aria-label="Gece modu testi"
-              >
-                {isNight ? "🌙" : "☀️"}
-              </button>
+              {/* Gece modu test butonu + solunda kayan mesaj boardu */}
+              <div className="relative w-7 h-7">
+                <div className="absolute right-[calc(100%+8px)] top-0 h-7 flex items-center w-[64vw] pointer-events-none">
+                  <HomeTicker
+                    wheelSpinsLeft={wheelSpinsLeft}
+                    pendingFriendRequests={pendingFriendRequests}
+                    systemUnread={systemUnread}
+                    username={profile?.username}
+                    credits={(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}
+                  />
+                </div>
+                <button
+                  onClick={() =>
+                    setNightOverride(isNight ? "day" : "night")
+                  }
+                  className="w-7 h-7 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-[12px] shadow-md active:scale-95 transition-transform"
+                  aria-label="Gece modu testi"
+                >
+                  {isNight ? "🌙" : "☀️"}
+                </button>
+              </div>
 
 
 
@@ -1154,16 +1165,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Kayan mesaj boardu — avatarın altı, gündüz/gece ikonu hizası */}
-          <div className="mt-1 px-1 pointer-events-none">
-            <HomeTicker
-              wheelSpinsLeft={wheelSpinsLeft}
-              pendingFriendRequests={pendingFriendRequests}
-              systemUnread={systemUnread}
-              username={profile?.username}
-              credits={(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}
-            />
-          </div>
+
 
         </div>
 
