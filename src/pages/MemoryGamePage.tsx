@@ -412,7 +412,7 @@ const WordMemoryGame = () => {
           <button
             onClick={() => {
               playSound("buttonClick");
-              requestExit(() => navigate(-1), !oyunBasladi || oyunBitti);
+              requestExit(() => navigate(homeBackPath()), !oyunBasladi || oyunBitti);
             }}
             className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
           >

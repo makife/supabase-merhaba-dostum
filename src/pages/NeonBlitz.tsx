@@ -273,7 +273,7 @@ const NeonBlitz: React.FC = () => {
       <button
         onClick={() => {
           playSound("buttonClick");
-          requestExit(() => navigate(-1), true);
+          requestExit(() => navigate(homeBackPath()), true);
         }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
       >

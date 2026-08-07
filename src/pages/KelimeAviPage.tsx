@@ -329,7 +329,7 @@ const KelimeAviPage = () => {
                   if (timerRef.current) clearInterval(timerRef.current);
                   setGameState("finished");
                 } else {
-                  navigate(-1);
+                  navigate(homeBackPath());
                 }
               }, gameState !== "playing");
             }}
