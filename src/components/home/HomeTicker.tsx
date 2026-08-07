@@ -87,6 +87,12 @@ export default function HomeTicker({
     if (weeklyLeader) {
       list.push(`🏆 Haftanın 1.si ${weeklyLeader} oldu`);
     }
+    if (monthlyLeader) {
+      list.push(`🥇 Ayın 1.si ${monthlyLeader} oldu`);
+    }
+    if (seasonLeader) {
+      list.push(`👑 Sezonun 1.si ${seasonLeader} oldu`);
+    }
     if ((credits ?? 1) <= 0) {
       list.push("🖋️ Mürekkebin bitti, markete uğra");
     }
@@ -107,6 +113,8 @@ export default function HomeTicker({
     pendingFriendRequests,
     systemUnread,
     weeklyLeader,
+    monthlyLeader,
+    seasonLeader,
     credits,
     username,
   ]);
