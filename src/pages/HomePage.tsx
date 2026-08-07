@@ -971,7 +971,7 @@ const HomePage = () => {
       badge: undefined,
       onClick: () => {
         setShowModePanel(false);
-        handleGameModeClick(mode.id);
+        handleGameModeClick(mode.id, true);
       },
     };
   });
