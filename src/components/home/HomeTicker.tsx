@@ -99,7 +99,8 @@ export default function HomeTicker({
     username,
   ]);
 
-  const text = messages.join("             •             ") + "             •             ";
+  const SEP = "\u00A0\u00A0\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
+  const text = messages.join(SEP) + SEP;
   // Uzunluğa göre süre: sabit ve daha hızlı akış
   const duration = Math.max(6, Math.min(30, text.length * 0.14));
 
