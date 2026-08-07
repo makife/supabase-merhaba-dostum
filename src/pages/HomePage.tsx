@@ -24,6 +24,8 @@ import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
 import { useNightMode, setNightOverride } from "@/hooks/useNightMode";
+import { useUserRole } from "@/hooks/useUserRole";
+
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeTicker from "@/components/home/HomeTicker";
 
@@ -339,6 +341,8 @@ const HomePage = () => {
   const [islandBounds, setIslandBounds] = useState(cachedIslandBounds);
   const [boundsReady, setBoundsReady] = useState(cachedIslandBounds.measured);
   const isNight = useNightMode();
+  const { isModerator, loading: roleLoading } = useUserRole();
+
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -1164,6 +1168,21 @@ const HomePage = () => {
                   {isNight ? "🌙" : "☀️"}
                 </button>
               </div>
+
+              {!roleLoading && isModerator && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound("buttonClick");
+                    navigate("/moderator");
+                  }}
+                  className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-md active:scale-90 transition-transform"
+                  aria-label="Moderatör paneli"
+                >
+                  <img src="/icons/moderator-gorsel.svg" alt="Moderatör" className="w-7 h-7 object-contain" />
+                </button>
+              )}
+
 
 
 
