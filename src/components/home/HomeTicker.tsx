@@ -99,34 +99,35 @@ export default function HomeTicker({
     username,
   ]);
 
-  const text = messages.join("     •     ");
-  // Uzunluğa göre süre: sabit hız hissi
-  const duration = Math.max(12, Math.min(60, text.length * 0.28));
+  const text = messages.join("     •     ") + "     •     ";
+  // Uzunluğa göre süre: sabit ve daha hızlı akış
+  const duration = Math.max(6, Math.min(30, text.length * 0.14));
 
   return (
     <div className="relative w-full overflow-hidden select-none pointer-events-none">
       <div
-        className="rounded-full bg-black/35 backdrop-blur-[2px] border border-white/10 py-[3px] overflow-hidden"
+        className="overflow-hidden"
         style={{
           maskImage:
-            "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
+            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
           WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
+            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
         }}
       >
         <div
           key={text}
-          className="whitespace-nowrap text-[11px] font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+          className="flex w-max"
           style={{
-            display: "inline-block",
-            paddingLeft: "100%",
             animation: `homeTickerScroll ${duration}s linear infinite`,
             willChange: "transform",
           }}
         >
-          {text}
-          <span className="inline-block w-16" />
-          {text}
+          <span className="whitespace-nowrap text-[11px] font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            {text}
+          </span>
+          <span className="whitespace-nowrap text-[11px] font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            {text}
+          </span>
         </div>
       </div>
       <style>{`
@@ -138,3 +139,4 @@ export default function HomeTicker({
     </div>
   );
 }
+
