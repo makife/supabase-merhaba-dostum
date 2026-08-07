@@ -1259,7 +1259,6 @@ const HomePage = () => {
             <HomeIslandCarousel
               pointSize={38}
               alerts={{
-                sohbet: unreadChatCount > 0,
                 arkadaslik: pendingFriendRequests > 0,
               }}
               onSelect={(key) => {
@@ -1267,7 +1266,7 @@ const HomePage = () => {
                 if (key === "oyunModlari") setShowModePanel(true);
                 else if (key === "duello") setShowChallengePanel(true);
                 else if (key === "carki") navigate("/wheel");
-                else if (key === "sohbet") navigate("/chat");
+                else if (key === "radyo") setShowRadio(true);
                 else if (key === "arkadaslik") navigate("/friends");
               }}
             />
@@ -1282,7 +1281,7 @@ const HomePage = () => {
 
         {/* ALT MENÜ BAR — harita katmanının üzerinde yüzer */}
         <div ref={navRef} className="absolute bottom-0 left-0 right-0 z-40">
-          <HomeBottomNav pendingFriendRequests={pendingFriendRequests} onRadio={() => setShowRadio(true)} />
+          <HomeBottomNav pendingFriendRequests={pendingFriendRequests} unreadChatCount={unreadChatCount} />
         </div>
 
         {/* --- PANELLER --- */}
