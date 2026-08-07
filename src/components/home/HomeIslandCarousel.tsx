@@ -117,9 +117,8 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
           0%, 100% { transform: translate3d(0, calc(var(--drift) * -1), 0); }
           50%      { transform: translate3d(0, var(--drift), 0); }
         }
-        @keyframes islandRedGlow {
-          0%, 100% { filter: drop-shadow(0 0 6px rgba(255,40,40,0.85)) drop-shadow(0 0 16px rgba(255,0,0,0.55)); }
-          50%      { filter: drop-shadow(0 0 14px rgba(255,70,70,1)) drop-shadow(0 0 34px rgba(255,0,0,0.8)); }
+        .island-red-glow {
+          filter: drop-shadow(0 0 5px rgba(255,50,50,0.9)) drop-shadow(0 0 10px rgba(255,0,0,0.45));
         }
       `}</style>
 
