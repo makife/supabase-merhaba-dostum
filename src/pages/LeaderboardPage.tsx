@@ -29,7 +29,7 @@ import {
   TrendingDown,
   Flame,
 } from "lucide-react";
-import LeaderboardPrizeBanner from "@/components/LeaderboardPrizeBanner";
+import LeaderboardPrizeReveal from "@/components/LeaderboardPrizeReveal";
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
 import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
