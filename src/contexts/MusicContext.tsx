@@ -525,7 +525,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                       return;
                     }
                     // 🔥 Kesinti (interruption) sonrası beklenmedik duraklama → devam ettir
-                    if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current) {
+                    if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null) {
                       playIOSMusicRobust(a).then((r) => setIsPlaying(r));
                     }
                   }, 500);
@@ -572,7 +572,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return;
           }
           // 🔥 Kesinti sonrası beklenmedik duraklama → müzik açıksa devam ettir
-          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && a.currentTime > 0) {
+          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null && a.currentTime > 0) {
             playIOSMusicRobust(a).then((r) => setIsPlaying(r));
           }
         }, 500);
