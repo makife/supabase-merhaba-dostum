@@ -197,7 +197,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
         pausedAtRef.current = null;
-        backgroundMusicRef.current.play().catch(console.warn);
+        if (isIOSNative) { playIOSMusicRobust(backgroundMusicRef.current).then((r) => setIsPlaying(r)); }
+        else backgroundMusicRef.current.play().catch(console.warn);
       } else {
         wasPlayingBeforeBackgroundRef.current = false;
       }
@@ -291,7 +292,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
               }
               pausedAtRef.current = null;
-              backgroundMusicRef.current.play().catch(console.warn);
+              if (isIOSNative) { playIOSMusicRobust(backgroundMusicRef.current).then((r) => setIsPlaying(r)); }
+        else backgroundMusicRef.current.play().catch(console.warn);
             } else {
               wasPlayingBeforeBackgroundRef.current = false;
             }
@@ -731,6 +733,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      pausedAtRef.current = Date.now();
       setMusicVolume(originalVolumeRef.current);
     }
     isStartingRef.current = false;
