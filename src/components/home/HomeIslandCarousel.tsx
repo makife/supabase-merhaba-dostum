@@ -49,68 +49,16 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     [],
   );
 
-  const rafRef = useRef<number | null>(null);
-  const velRef = useRef(0);
-  const lastRef = useRef<{ x: number; t: number } | null>(null);
-
-  const stopRaf = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    setAnimating(false);
-  }, []);
-
-  useEffect(() => stopRaf, [stopRaf]);
-
-  /** yumuşak: hedefe kritik sönümlü yaklaşım (yağ gibi) */
-  const glideTo = useCallback(
-    (target: number, initialVel = 0) => {
-      stopRaf();
-      setAnimating(true);
-      let v = initialVel;
-      let last = performance.now();
-      const step = (now: number) => {
-        const dt = Math.min(0.032, (now - last) / 1000);
-        last = now;
-        const cur = posRef.current;
-        const diff = target - cur;
-        // yay-sönüm
-        v += diff * 130 * dt;
-        v *= Math.pow(0.0025, dt);
-        const next = cur + v * dt;
-        if (Math.abs(target - next) < 0.0015 && Math.abs(v) < 0.05) {
-          const norm = ((target % N) + N) % N;
-          setPos(norm);
-          rafRef.current = null;
-          setAnimating(false);
-          return;
-        }
-        setPos(next);
-        rafRef.current = requestAnimationFrame(step);
-      };
-      rafRef.current = requestAnimationFrame(step);
-    },
-    [stopRaf],
-  );
-
-
   const snap = useCallback((next: number) => {
     const norm = ((Math.round(next) % N) + N) % N;
     setPos(norm);
   }, []);
 
-  const onTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      e.stopPropagation();
-      stopRaf();
-      velRef.current = 0;
-      lastRef.current = { x: e.touches[0].clientX, t: performance.now() };
-      startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
-    },
-    [stopRaf],
-  );
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    e.stopPropagation();
+    startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
+  }, []);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     const s = startRef.current;
@@ -125,54 +73,33 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     if (s.axis !== "x") return;
     e.stopPropagation();
     const w = wrapRef.current?.offsetWidth || window.innerWidth;
-    const next = s.pos - (dx / w) * 3.2;
-    // anlık hız (ada/sn)
-    const now = performance.now();
-    const l = lastRef.current;
-    if (l) {
-      const dt = (now - l.t) / 1000;
-      if (dt > 0.008) {
-        velRef.current = -((e.touches[0].clientX - l.x) / w) * 3.2 / dt;
-        lastRef.current = { x: e.touches[0].clientX, t: now };
-      }
-    } else {
-      lastRef.current = { x: e.touches[0].clientX, t: now };
-    }
-    setPos(next);
+    setPos(s.pos - (dx / w) * 3.2);
   }, []);
 
   const onTouchEnd = useCallback(
     (e: React.TouchEvent) => {
       const s = startRef.current;
       startRef.current = null;
-      lastRef.current = null;
       if (!s) return;
       if (s.axis === "x") e.stopPropagation();
       setDragging(false);
-      if (s.axis !== "x") return;
-      const v = velRef.current;
-      // hız projeksiyonu ile hedefi belirle (flick desteği)
-      const projected = posRef.current + v * 0.16;
-      let target = Math.round(projected);
       const moved = posRef.current - s.pos;
-      if (target === Math.round(s.pos) && Math.abs(moved) > 0.05) {
-        target = Math.round(s.pos) + Math.sign(moved);
-      }
-      glideTo(target, v);
+      const target = Math.abs(moved) > 0.06 ? s.pos + Math.sign(moved) : s.pos;
+      snap(target);
     },
-    [glideTo],
+    [snap],
   );
-
 
   // Klavye/erişilebilirlik: ok tuşları
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "ArrowLeft") glideTo(Math.round(posRef.current) - 1);
-      else if (ev.key === "ArrowRight") glideTo(Math.round(posRef.current) + 1);
+      if (ev.key === "ArrowLeft") snap(posRef.current - 1);
+      else if (ev.key === "ArrowRight") snap(posRef.current + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [glideTo]);
+  }, [snap]);
+
 
   const activeIndex = ((Math.round(pos) % N) + N) % N;
 
