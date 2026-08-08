@@ -37,15 +37,57 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     void preloadHomeIslands();
   }, []);
 
-  // Süzülme parametreleri (ada başına sabit)
+  // Süzülme parametreleri (ada başına sabit) — daha belirgin salınım
   const motion = useMemo(
     () =>
       ISLANDS.map(() => ({
-        duration: 6 + Math.random() * 4,
+        duration: 4.5 + Math.random() * 3,
         delay: -(Math.random() * 5),
-        distance: 4 + Math.random() * 3,
+        distance: 9 + Math.random() * 6,
       })),
     [],
+  );
+
+  const rafRef = useRef<number | null>(null);
+  const velRef = useRef(0);
+  const lastRef = useRef<{ x: number; t: number } | null>(null);
+
+  const stopRaf = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => stopRaf, [stopRaf]);
+
+  /** yumuşak: hedefe kritik sönümlü yaklaşım (yağ gibi) */
+  const glideTo = useCallback(
+    (target: number, initialVel = 0) => {
+      stopRaf();
+      let v = initialVel;
+      let last = performance.now();
+      const step = (now: number) => {
+        const dt = Math.min(0.032, (now - last) / 1000);
+        last = now;
+        const cur = posRef.current;
+        const diff = target - cur;
+        // yay-sönüm
+        v += diff * 130 * dt;
+        v *= Math.pow(0.0025, dt);
+        const next = cur + v * dt;
+        if (Math.abs(target - next) < 0.0015 && Math.abs(v) < 0.05) {
+          const norm = ((target % N) + N) % N;
+          setPos(norm);
+          rafRef.current = null;
+          return;
+        }
+        setPos(next);
+        rafRef.current = requestAnimationFrame(step);
+      };
+      rafRef.current = requestAnimationFrame(step);
+    },
+    [stopRaf],
   );
 
   const snap = useCallback((next: number) => {
@@ -53,11 +95,17 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     setPos(norm);
   }, []);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    e.stopPropagation();
-    startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
-  }, []);
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.stopPropagation();
+      stopRaf();
+      velRef.current = 0;
+      lastRef.current = { x: e.touches[0].clientX, t: performance.now() };
+      startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
+    },
+    [stopRaf],
+  );
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     const s = startRef.current;
@@ -65,30 +113,51 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     const dx = e.touches[0].clientX - s.x;
     const dy = e.touches[0].clientY - s.y;
     if (s.axis === "none") {
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-      s.axis = Math.abs(dx) > Math.abs(dy) * 0.8 ? "x" : "y";
+      if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      s.axis = Math.abs(dx) > Math.abs(dy) * 0.7 ? "x" : "y";
       if (s.axis === "x") setDragging(true);
     }
     if (s.axis !== "x") return;
     e.stopPropagation();
     const w = wrapRef.current?.offsetWidth || window.innerWidth;
-    setPos(s.pos - (dx / w) * 3.8);
+    const next = s.pos - (dx / w) * 3.2;
+    // anlık hız (ada/sn)
+    const now = performance.now();
+    const l = lastRef.current;
+    if (l) {
+      const dt = (now - l.t) / 1000;
+      if (dt > 0.008) {
+        velRef.current = -((e.touches[0].clientX - l.x) / w) * 3.2 / dt;
+        lastRef.current = { x: e.touches[0].clientX, t: now };
+      }
+    } else {
+      lastRef.current = { x: e.touches[0].clientX, t: now };
+    }
+    setPos(next);
   }, []);
 
   const onTouchEnd = useCallback(
     (e: React.TouchEvent) => {
       const s = startRef.current;
       startRef.current = null;
+      lastRef.current = null;
       if (!s) return;
       if (s.axis === "x") e.stopPropagation();
       setDragging(false);
+      if (s.axis !== "x") return;
+      const v = velRef.current;
+      // hız projeksiyonu ile hedefi belirle (flick desteği)
+      const projected = posRef.current + v * 0.16;
+      let target = Math.round(projected);
       const moved = posRef.current - s.pos;
-      // hafif bir itiş de sekme değiştirsin
-      const target = Math.abs(moved) > 0.06 ? s.pos + Math.sign(moved) : s.pos;
-      snap(target);
+      if (target === Math.round(s.pos) && Math.abs(moved) > 0.05) {
+        target = Math.round(s.pos) + Math.sign(moved);
+      }
+      glideTo(target, v);
     },
-    [snap],
+    [glideTo],
   );
+
 
   // Klavye/erişilebilirlik: ok tuşları
   useEffect(() => {
