@@ -72,6 +72,36 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  /**
+   * 🔥 iOS: play() bazen sessizce reddediliyor ya da element "hazır değil" durumunda
+   * kalıyor (ilk parça bittikten sonra). Önce normal play, olmazsa load() + play,
+   * son olarak kısa gecikmeli tekrar dene.
+   */
+  const playIOSMusicRobust = async (audio: HTMLAudioElement): Promise<boolean> => {
+    const tryPlay = async (): Promise<boolean> => {
+      try {
+        await audio.play();
+        return !audio.paused;
+      } catch (e) {
+        console.warn("🎵 [iOS] play() reddedildi:", e);
+        return false;
+      }
+    };
+
+    if (await tryPlay()) return true;
+
+    try {
+      audio.load();
+      audio.currentTime = 0;
+    } catch {}
+    if (await tryPlay()) return true;
+
+    await new Promise((r) => setTimeout(r, 250));
+    return tryPlay();
+  };
+
+
+
   // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
   // Default pack için shuffleIndex'i bir sonrakine ilerletir; diğer paketler tek şarkılı
   // olduğu için sadece currentTime=0 yapar.
