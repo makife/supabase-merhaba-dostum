@@ -63,45 +63,45 @@ export default function HomeTicker({
   }, []);
 
   const messages = useMemo(() => {
-    const list: string[] = [];
+    const list: { text: string; highlight?: boolean }[] = [];
 
     if (isPlaying && currentStation?.name) {
-      list.push(`🎧 Şu an ${currentStation.name} dinliyorsun`);
+      list.push({ text: `🎧 Şu an ${currentStation.name} dinliyorsun` });
     }
     if ((wheelSpinsLeft ?? 0) > 0) {
-      list.push("🎡 Şans çarkı seni bekliyor");
+      list.push({ text: "🎡 Şans çarkı seni bekliyor", highlight: true });
     }
     if (unreadCount > 0) {
-      list.push(
-        lastMessageSender
+      list.push({
+        text: lastMessageSender
           ? `💬 ${lastMessageSender} sana mesaj gönderdi`
-          : `💬 ${unreadCount} okunmamış mesajın var`
-      );
+          : `💬 ${unreadCount} okunmamış mesajın var`,
+      });
     }
     if (pendingFriendRequests > 0) {
-      list.push(`🤝 ${pendingFriendRequests} yeni arkadaşlık isteği var`);
+      list.push({ text: `🤝 ${pendingFriendRequests} yeni arkadaşlık isteği var`, highlight: true });
     }
     if (systemUnread > 0) {
-      list.push(`🔔 ${systemUnread} yeni sistem mesajı var`);
+      list.push({ text: `🔔 ${systemUnread} yeni sistem mesajı var` });
     }
     if (weeklyLeader) {
-      list.push(`🏆 Haftanın 1.si ${weeklyLeader} oldu`);
+      list.push({ text: `🏆 Haftanın 1.si ${weeklyLeader} oldu` });
     }
     if (monthlyLeader) {
-      list.push(`🥇 Ayın 1.si ${monthlyLeader} oldu`);
+      list.push({ text: `🥇 Ayın 1.si ${monthlyLeader} oldu` });
     }
     if (seasonLeader) {
-      list.push(`👑 Sezonun 1.si ${seasonLeader} oldu`);
+      list.push({ text: `👑 Sezonun 1.si ${seasonLeader} oldu` });
     }
     if ((credits ?? 1) <= 0) {
-      list.push("🖋️ Mürekkebin bitti, markete uğra");
+      list.push({ text: "🖋️ Mürekkebin bitti, markete uğra" });
     }
     if (list.length === 0) {
-      list.push(
-        username
+      list.push({
+        text: username
           ? `👋 Hoş geldin ${username}, bugün bir maç yapmaya ne dersin?`
-          : "👋 Hoş geldin! Rakip bulmak için oyun modlarına göz at"
-      );
+          : "👋 Hoş geldin! Rakip bulmak için oyun modlarına göz at",
+      });
     }
     return list;
   }, [
@@ -120,9 +120,27 @@ export default function HomeTicker({
   ]);
 
   const SEP = "\u00A0".repeat(16);
-  const text = messages.join(SEP) + SEP;
+  const totalLength = messages.reduce((acc, m) => acc + m.text.length + SEP.length, 0);
   // Uzunluğa göre süre: sabit ve daha hızlı akış
-  const duration = Math.max(6, Math.min(30, text.length * 0.09));
+  const duration = Math.max(6, Math.min(30, totalLength * 0.09));
+  const key = messages.map((m) => m.text).join("|");
+
+  const baseCls =
+    "whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]";
+
+  const renderRun = (runKey: string) => (
+    <span className="whitespace-nowrap">
+      {messages.map((m, i) => (
+        <span
+          key={`${runKey}-${i}`}
+          className={`${baseCls} ${m.highlight ? "text-yellow-300" : "text-white/95"}`}
+        >
+          {m.text}
+          {SEP}
+        </span>
+      ))}
+    </span>
+  );
 
   return (
     <div className="relative w-full overflow-hidden select-none pointer-events-none">
@@ -136,19 +154,15 @@ export default function HomeTicker({
         }}
       >
         <div
-          key={text}
+          key={key}
           className="flex w-max items-center"
           style={{
             animation: `homeTickerScroll ${duration}s linear infinite`,
             willChange: "transform",
           }}
         >
-          <span className="whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            {text}
-          </span>
-          <span className="whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            {text}
-          </span>
+          {renderRun("a")}
+          {renderRun("b")}
         </div>
       </div>
 
