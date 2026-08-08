@@ -227,7 +227,10 @@ const KelimeAviPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
-  // Pointer drag selection — iOS-safe geometrik hit-test (elementFromPoint yerine)
+  // Drag selection — iOS-safe: native touch events + ref tabanlı path (stale state yok)
+  const pathRef = useRef<number[]>([]);
+  useEffect(() => { pathRef.current = path; }, [path]);
+
   const cellFromPoint = (clientX: number, clientY: number): number => {
     const grid = gridRef.current;
     if (!grid) return -1;
@@ -237,57 +240,122 @@ const KelimeAviPage = () => {
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) return -1;
     const cell = (rect.width - GAP * (GRID - 1)) / GRID;
     const step = cell + GAP;
-    const col = Math.floor(x / step);
-    const row = Math.floor(y / step);
-    if (col < 0 || col >= GRID || row < 0 || row >= GRID) return -1;
-    // İç tolerans: hücrenin sadece merkez %72'lik alanı hit sayılır
+    let col = Math.floor(x / step);
+    let row = Math.floor(y / step);
+    col = Math.max(0, Math.min(GRID - 1, col));
+    row = Math.max(0, Math.min(GRID - 1, row));
+    // Geniş tolerans: hücrenin neredeyse tamamı (kenardan %4) hit sayılır
     const localX = x - col * step;
     const localY = y - row * step;
-    const margin = cell * 0.14;
-    if (localX < margin || localX > cell - margin) return -1;
-    if (localY < margin || localY > cell - margin) return -1;
+    const margin = cell * 0.04;
+    if (localX < margin || localX > cell + GAP - margin) return -1;
+    if (localY < margin || localY > cell + GAP - margin) return -1;
     return row * GRID + col;
+  };
+
+  const pushCell = (idx: number) => {
+    const cur = pathRef.current;
+    if (cur.includes(idx)) return;
+    if (cur.length > 0 && !isAdjacent(cur[cur.length - 1], idx)) return;
+    const next = [...cur, idx];
+    pathRef.current = next;
+    setPath(next);
+    playSound("buttonClick");
   };
 
   const tryAddCell = (idx: number) => {
     if (idx < 0) return;
-    if (path.includes(idx)) {
-      // allow back-step: if user moves to second-to-last, pop last
-      if (path.length >= 2 && path[path.length - 2] === idx) {
-        setPath(prev => prev.slice(0, -1));
-      }
+    const cur = pathRef.current;
+    if (cur.length === 0) { pushCell(idx); return; }
+    const last = cur[cur.length - 1];
+    if (idx === last) return;
+    // Geri adım: sondan bir öncekine dönülürse son harfi sil
+    if (cur.length >= 2 && cur[cur.length - 2] === idx) {
+      const next = cur.slice(0, -1);
+      pathRef.current = next;
+      setPath(next);
       return;
     }
-    if (path.length === 0 || isAdjacent(path[path.length - 1], idx)) {
-      setPath(prev => [...prev, idx]);
+    if (cur.includes(idx)) return;
+    if (isAdjacent(last, idx)) { pushCell(idx); return; }
+    // Hızlı sürüklemede atlanan hücreleri ara adımlarla doldur
+    const r0 = Math.floor(last / GRID), c0 = last % GRID;
+    const r1 = Math.floor(idx / GRID), c1 = idx % GRID;
+    const steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+    for (let s = 1; s <= steps; s++) {
+      const r = r0 + Math.round(((r1 - r0) * s) / steps);
+      const c = c0 + Math.round(((c1 - c0) * s) / steps);
+      pushCell(r * GRID + c);
+    }
+  };
+
+  const startDrag = (clientX: number, clientY: number) => {
+    if (gameState !== "playing") return;
+    isDraggingRef.current = true;
+    pathRef.current = [];
+    setPath([]);
+    const idx = cellFromPoint(clientX, clientY);
+    if (idx >= 0) {
+      pathRef.current = [idx];
+      setPath([idx]);
       playSound("buttonClick");
     }
   };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (gameState !== "playing") return;
-    isDraggingRef.current = true;
-    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch {}
-    setPath([]);
-    const idx = cellFromPoint(e.clientX, e.clientY);
-    if (idx >= 0) setPath([idx]);
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
+  const moveDrag = (clientX: number, clientY: number) => {
     if (!isDraggingRef.current || gameState !== "playing") return;
-    const idx = cellFromPoint(e.clientX, e.clientY);
-    tryAddCell(idx);
+    tryAddCell(cellFromPoint(clientX, clientY));
   };
-  const onPointerUp = (e?: React.PointerEvent) => {
+  const endDrag = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
-    try {
-      if (e) (e.currentTarget as Element).releasePointerCapture(e.pointerId);
-    } catch {}
     submitPath();
   };
 
+  // Native touch listeners (React synthetic touch/pointer iOS WKWebView'de güvenilir değil)
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || gameState !== "playing") return;
+    const onTS = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      if (t) startDrag(t.clientX, t.clientY);
+    };
+    const onTM = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      if (t) moveDrag(t.clientX, t.clientY);
+    };
+    const onTE = (e: TouchEvent) => { e.preventDefault(); endDrag(); };
+    grid.addEventListener("touchstart", onTS, { passive: false });
+    grid.addEventListener("touchmove", onTM, { passive: false });
+    grid.addEventListener("touchend", onTE, { passive: false });
+    grid.addEventListener("touchcancel", onTE, { passive: false });
+    return () => {
+      grid.removeEventListener("touchstart", onTS);
+      grid.removeEventListener("touchmove", onTM);
+      grid.removeEventListener("touchend", onTE);
+      grid.removeEventListener("touchcancel", onTE);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, letters]);
+
+  // Masaüstü (mouse) fallback
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    startDrag(e.clientX, e.clientY);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    moveDrag(e.clientX, e.clientY);
+  };
+  const onPointerUp = (e?: React.PointerEvent) => {
+    if (e && e.pointerType === "touch") return;
+    endDrag();
+  };
+
   const submitPath = () => {
-    const word = currentWord.toLocaleUpperCase("tr-TR");
+    const word = pathRef.current.map(i => letters[i] || "").join("").toLocaleUpperCase("tr-TR");
+    pathRef.current = [];
     setPath([]);
     if (word.length < 3) return;
     if (foundWords.some(f => f.w === word)) {
