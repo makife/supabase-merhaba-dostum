@@ -569,8 +569,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
             try { a.pause(); } catch {}
             handleTrackEnd();
+            return;
+          }
+          // 🔥 Kesinti sonrası beklenmedik duraklama → müzik açıksa devam ettir
+          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && a.currentTime > 0) {
+            playIOSMusicRobust(a).then((r) => setIsPlaying(r));
           }
         }, 500);
+
       }
     };
 
