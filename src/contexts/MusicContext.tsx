@@ -898,11 +898,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
 
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
-    setMusicVolume(0);
+    // iOS'ta volume 0'a çekmek işe yaramaz (setter yok sayılır) ve fade döngüsü
+    // asla bitmez → iOS'ta fade yapmadan tam sesle başlat.
+    if (!isIOSNative) setMusicVolume(0);
+    else setMusicVolume(targetVolume);
 
     // ⏱️ Akıllı resume: 30 sn'den fazla susmuşsak sıradaki şarkıya geç (default pack),
     // aksi halde kaldığı yerden devam et.
@@ -924,9 +928,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     isStartingRef.current = true;
 
-    // iOS: AudioContext suspended olabilir, resume dene
-    if (isIOSNative && iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
-      try { await iosAudioCtxRef.current.resume(); } catch {}
+    if (isIOSNative) {
+      await playIOSMusicRobust(audio);
+      isStartingRef.current = false;
+      return;
     }
 
     const playPromise = audio.play();
@@ -958,6 +963,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isStartingRef.current = false;
     }
   };
+
 
   const setMusicEnabled = async (enabled: boolean) => {
     lastUserToggleAtRef.current = Date.now();
