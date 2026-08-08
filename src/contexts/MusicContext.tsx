@@ -1034,8 +1034,32 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
+    // 🔥 iOS: kullanıcı dokunuşu (gesture) içindeyiz → sağlam başlatma dene
+    if (isIOSNative && backgroundMusicRef.current) {
+      const audio = backgroundMusicRef.current;
+      if (enabled) {
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+          fadeIntervalRef.current = null;
+        }
+        isStartingRef.current = false;
+        setMusicVolume(originalVolumeRef.current);
+        pausedAtRef.current = null;
+        const ok = await playIOSMusicRobust(audio);
+        setIsPlaying(ok);
+        console.log("🎵 [iOS] Müzik toggle AÇ:", ok ? "başladı" : "başlatılamadı");
+      } else {
+        try { audio.pause(); } catch {}
+        pausedAtRef.current = Date.now();
+        isStartingRef.current = false;
+        setIsPlaying(false);
+      }
+      return;
+    }
+
     // Web platformu için HTML5 Audio kontrolü
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
+
       // Kaldığı yerden devam et
       isStartingRef.current = true;
       const playPromise = backgroundMusicRef.current.play();
