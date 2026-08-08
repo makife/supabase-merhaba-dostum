@@ -79,15 +79,18 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                   label={item.title}
                   glow={false}
                   onPress={item.onClick}
-                  className={`w-[92%] flex-shrink-0 block ${item.dimmed ? "opacity-60 grayscale-[35%]" : ""}`}
+                  className="w-[92%] flex-shrink-0 block"
                   style={anim}
                 >
                   <img
                     src={item.imageSrc}
                     alt={item.title}
-                    className="w-full h-auto select-none pointer-events-none"
+                    className={`w-full h-auto select-none pointer-events-none ${
+                      item.dimmed ? "opacity-35 grayscale-[80%] brightness-75 saturate-50" : ""
+                    }`}
                     draggable={false}
                   />
+
                   {item.subtitle && (
                     <p className="absolute left-[46%] right-[4%] top-[62%] text-center text-[11px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                       {item.subtitle}
