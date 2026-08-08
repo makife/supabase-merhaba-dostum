@@ -1,15 +1,8 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trophy, User } from "lucide-react";
+import { User } from "lucide-react";
+import { PressableZone } from "@/components/ui/pressable-zone";
+import yenidenMacKarti from "@/assets/yenidenMacKarti.png";
 
 interface RematchDialogProps {
   open: boolean;
@@ -32,7 +25,10 @@ export const RematchDialog = ({
 }: RematchDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
+  if (!open) return null;
+
   const handleAccept = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
     try {
       await onAccept();
@@ -42,6 +38,7 @@ export const RematchDialog = ({
   };
 
   const handleReject = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
     try {
       await onReject();
@@ -51,55 +48,74 @@ export const RematchDialog = ({
   };
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="sm:max-w-sm w-[90%] rounded-2xl bg-[#1e2d45] border-2 border-white text-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-xl">
-            <img src="/yenidenmac-gorsel.svg" className="h-12 w-12" />
-            Yeniden Maç İsteği
-          </DialogTitle>
-          <DialogDescription className="pt-4">
-            <div className="flex items-center gap-3 mb-4">
-              <Avatar className="h-12 w-12 border-2 border-primary">
-                <AvatarImage src={senderAvatar || undefined} />
-                <AvatarFallback>
-                  <User className="h-6 w-6" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-semibold text-green-400 text-2xl">{senderName}</p>
-                <p className="text-sm text-white">yeniden maç istiyor!</p>
-              </div>
-            </div>
-            <p className="text-sm text-white">Aynı rakibinle yeniden karşılaşmak ister misiniz?</p>
-            {!hasEnoughCredits && (
-              <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive font-medium">⚠️ Yetersiz Hak</p>
-                <p className="text-xs text-destructive/80 mt-1">
-                  Oyunu kabul etmek için yeterli hakkınız bulunmamaktadır.
-                </p>
-              </div>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex-row gap-2 sm:gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReject}
-            disabled={isProcessing}
-            className="flex-1 border-slate-500/30 text-slate-300 hover:bg-slate-700/50"
+    <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
+      <div
+        className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300"
+        style={{ containerType: "inline-size" }}
+      >
+        <img
+          src={yenidenMacKarti}
+          alt="Yeniden maç isteği"
+          className="w-full h-auto select-none pointer-events-none"
+        />
+
+        {/* Avatar - dairenin tam içi */}
+        <div
+          className="absolute overflow-hidden rounded-full"
+          style={{ left: "12.8%", top: "31%", width: "19.5%", height: "14.5%" }}
+        >
+          <Avatar className="w-full h-full rounded-full">
+            <AvatarImage src={senderAvatar || undefined} className="object-cover" />
+            <AvatarFallback className="bg-amber-200 text-amber-900">
+              <User className="w-1/2 h-1/2" />
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Rumuz - input field içi */}
+        <div
+          className="absolute flex items-center justify-center px-[1cqw]"
+          style={{ left: "41.8%", top: "34%", width: "47%", height: "9.5%" }}
+        >
+          <span
+            className="w-full text-center font-extrabold truncate leading-none"
+            style={{
+              fontSize: "5cqw",
+              color: "#16a34a",
+              textShadow: "0 1px 0 rgba(255,255,255,0.6)",
+            }}
           >
-            Reddet
-          </Button>
-          <Button
-            onClick={handleAccept}
-            disabled={isProcessing || !hasEnoughCredits || isAdBusy}
-            className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50"
+            {senderName}
+          </span>
+        </div>
+
+        {/* REDDET */}
+        <PressableZone
+          label="Reddet"
+          onPress={handleReject}
+          disabled={isProcessing}
+          style={{ left: "9.9%", top: "70%", width: "38%", height: "10.5%" }}
+          haptic="medium"
+        />
+
+        {/* KABUL ET */}
+        <PressableZone
+          label="Kabul Et"
+          onPress={handleAccept}
+          disabled={isProcessing || !hasEnoughCredits || isAdBusy}
+          style={{ left: "51.2%", top: "70%", width: "38.7%", height: "10.5%" }}
+          haptic="medium"
+        />
+
+        {!hasEnoughCredits && (
+          <div
+            className="absolute left-[10%] w-[80%] text-center font-bold text-red-700"
+            style={{ top: "83%", fontSize: "3.6cqw" }}
           >
-            {isProcessing ? "Yükleniyor..." : isAdBusy ? "Reklam yükleniyor..." : !hasEnoughCredits ? "Yetersiz Hak" : "Kabul Et"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            ⚠️ Yeterli hakkınız bulunmuyor
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
