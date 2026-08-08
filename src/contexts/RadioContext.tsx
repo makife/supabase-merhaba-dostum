@@ -40,11 +40,68 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentStation, setCurrentStation] = useState<RadioStation | null>(null);
   const currentStationRef = useRef<RadioStation | null>(null);
 
+  const BASE_VOLUME = 0.7;
+
+  // 🔊 iOS native, HTMLAudioElement.volume setter'ını YOK SAYAR.
+  // Bu yüzden fade in/out gerçek seviye kontrolü için WebAudio GainNode
+  // üzerinden yapılıyor (radyo stream'leri CORS `*` verdiği için
+  // MediaElementSource güvenli). Kurulum başarısız olursa element.volume
+  // fallback'ine düşüyoruz.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const srcNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+
+  const ensureGraph = useCallback((a: HTMLAudioElement) => {
+    if (gainRef.current) return true;
+    try {
+      const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!Ctor) return false;
+      const ctx: AudioContext = new Ctor();
+      const src = ctx.createMediaElementSource(a);
+      const gain = ctx.createGain();
+      gain.gain.value = BASE_VOLUME;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      srcNodeRef.current = src;
+      gainRef.current = gain;
+      // Graph kullanıldığında element seviyesi tam olmalı
+      try { a.volume = 1; } catch {}
+      return true;
+    } catch (e) {
+      console.warn("[Radio] WebAudio graph kurulamadı, volume fallback:", e);
+      return false;
+    }
+  }, []);
+
+  const resumeCtx = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (ctx && ctx.state !== "running") {
+      try { ctx.resume().catch(() => {}); } catch {}
+    }
+  }, []);
+
   const clearFade = () => {
     if (fadeTimerRef.current) {
       clearInterval(fadeTimerRef.current);
       fadeTimerRef.current = null;
     }
+  };
+
+  /** Aktif seviyeyi oku (graph varsa gain, yoksa element.volume) */
+  const getLevel = () => {
+    if (gainRef.current) return gainRef.current.gain.value;
+    return audioRef.current?.volume ?? BASE_VOLUME;
+  };
+
+  /** Seviye uygula */
+  const setLevel = (v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    if (gainRef.current) {
+      try { gainRef.current.gain.value = clamped; } catch {}
+      return;
+    }
+    try { if (audioRef.current) audioRef.current.volume = clamped; } catch {}
   };
 
   const stop = useCallback(() => {
@@ -54,6 +111,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try { a.pause(); } catch {}
       try { a.src = ""; a.load(); } catch {}
     }
+    setLevel(BASE_VOLUME);
     setIsPlaying(false);
     setIsLoading(false);
   }, []);
@@ -69,12 +127,16 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         audioRef.current.preload = "none";
       }
       const a = audioRef.current;
-      a.volume = 0.7;
+      a.muted = false;
       a.src = station.url;
       currentStationRef.current = station;
       setCurrentStation(station);
       setIsLoading(true);
       await a.play();
+      // Graph'i ilk play sonrası (user gesture içinde) kur
+      ensureGraph(a);
+      resumeCtx();
+      setLevel(BASE_VOLUME);
       setIsPlaying(true);
       setIsLoading(false);
     } catch (e) {
@@ -82,32 +144,34 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsLoading(false);
       setIsPlaying(false);
     }
-  }, []);
+  }, [ensureGraph, resumeCtx]);
 
 
-  const savedVolumeRef = useRef<number>(0.7);
+  const savedVolumeRef = useRef<number>(BASE_VOLUME);
 
   const fadeOut = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
     if (!a || a.paused) return;
     clearFade();
-    const steps = 20;
-    const startVol = a.volume;
-    savedVolumeRef.current = startVol > 0 ? startVol : 0.7;
-    const dec = startVol / steps;
+    resumeCtx();
+    const steps = 24;
+    const startVol = getLevel() > 0 ? getLevel() : BASE_VOLUME;
+    savedVolumeRef.current = startVol;
+    let i = 0;
     fadeTimerRef.current = setInterval(() => {
-      const cur = a.volume;
-      if (cur > dec) {
-        try { a.volume = Math.max(0, cur - dec); } catch {}
-      } else {
-        try { a.volume = 0; } catch {}
+      i++;
+      if (i >= steps) {
+        setLevel(0);
         // iOS native: pause etme! Aksi halde gesture kaybolur ve
-        // maç sonunda resume başarısız olur. Sadece muted-mute yapıyoruz.
+        // maç sonunda resume başarısız olur. Sadece sessize alıyoruz.
         try { a.muted = true; } catch {}
         clearFade();
+        return;
       }
+      // Step sayacına dayalı: volume setter yok sayılsa bile döngü biter
+      setLevel(startVol * (1 - i / steps));
     }, Math.max(20, durationMs / steps));
-  }, []);
+  }, [resumeCtx]);
 
   const fadeIn = useCallback((durationMs = 1500) => {
     const a = audioRef.current;
@@ -118,21 +182,24 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (a.paused) {
       try { a.play().catch(() => {}); } catch {}
     }
-    const target = savedVolumeRef.current || 0.7;
-    const steps = 20;
-    const inc = target / steps;
-    try { a.volume = 0; } catch {}
+    ensureGraph(a);
+    resumeCtx();
+    const target = savedVolumeRef.current || BASE_VOLUME;
+    const steps = 24;
+    let i = 0;
+    setLevel(0);
     setIsPlaying(true);
     fadeTimerRef.current = setInterval(() => {
-      const cur = a.volume;
-      if (cur + inc < target) {
-        try { a.volume = Math.min(target, cur + inc); } catch {}
-      } else {
-        try { a.volume = target; } catch {}
+      i++;
+      if (i >= steps) {
+        setLevel(target);
         clearFade();
+        return;
       }
+      setLevel(target * (i / steps));
     }, Math.max(20, durationMs / steps));
-  }, []);
+  }, [ensureGraph, resumeCtx]);
+
 
   // Arka plana geçince radyoyu durdur; foreground'da otomatik başlatma yok
   useEffect(() => {
