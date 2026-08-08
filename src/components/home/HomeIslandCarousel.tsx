@@ -167,12 +167,12 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
   // Klavye/erişilebilirlik: ok tuşları
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "ArrowLeft") snap(posRef.current - 1);
-      else if (ev.key === "ArrowRight") snap(posRef.current + 1);
+      if (ev.key === "ArrowLeft") glideTo(Math.round(posRef.current) - 1);
+      else if (ev.key === "ArrowRight") glideTo(Math.round(posRef.current) + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [snap]);
+  }, [glideTo]);
 
   const activeIndex = ((Math.round(pos) % N) + N) % N;
 
@@ -232,7 +232,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                 aria-label={island.label}
                 onClick={() => {
                   if (isActive) onSelect(island.key);
-                  else snap(pos + d);
+                  else glideTo(Math.round(pos) + d);
                 }}
                 className="absolute inset-0 active:scale-[0.97] transition-transform duration-150"
                 style={{ WebkitTapHighlightColor: "transparent" }}
@@ -242,7 +242,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                   alt={island.label}
                   loading="eager"
                   decoding="async"
-                  className={`w-full h-full object-contain select-none pointer-events-none${alerts?.[island.key] ? " island-red-glow" : ""}`}
+                  className={`w-full h-full object-contain select-none pointer-events-none${alerts?.[island.key] && island.key !== "carki" ? " island-red-glow" : ""}`}
                   draggable={false}
                 />
 
