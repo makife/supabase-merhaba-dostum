@@ -1666,29 +1666,36 @@ const DinoRunner = () => {
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0);
             z-index: 61;
-            font-size: 24px;
+            /* 🔥 Küçük ekranlarda (iOS native) taşmayı önle: viewport'a göre ölçekle */
+            font-size: clamp(14px, 4.6vw, 24px);
+            line-height: 1.25;
             font-weight: 900;
             text-align: center;
             color: #fff;
             text-shadow: 0 0 10px #00eaff, 0 0 25px #00eaff, 2px 2px 0 #000;
             background: rgba(0,0,0,0.55);
-            padding: 16px 22px;
+            padding: 12px 16px;
             border-radius: 18px;
             border: 2px solid rgba(0,234,255,0.6);
-            white-space: nowrap;
-            max-width: 90%;
+            /* nowrap taşmaya sebep oluyordu → satır kırılmasına izin ver */
+            white-space: normal;
+            word-break: break-word;
+            width: max-content;
+            max-width: min(78%, 300px);
+            box-sizing: border-box;
             animation:
               levelUpGrow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
               levelUpPulse 0.9s ease-in-out 0.6s infinite;
         }
         @keyframes levelUpGrow {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            60% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
+
         @keyframes levelUpPulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.08); }
+            50% { transform: translate(-50%, -50%) scale(1.04); }
         }
 
         @media (max-width: 400px) {
