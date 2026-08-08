@@ -414,8 +414,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
 
-      // 🔥 iOS: HTMLAudioElement.volume yok sayılır → Web Audio GainNode ile sar
+      // iOS: playsinline + Web Audio graph (devre dışı)
       if (isIOSNative) {
+        try { backgroundMusicRef.current.setAttribute("playsinline", "true"); } catch {}
+      }
+      if (isIOSNative && IOS_USE_WEBAUDIO) {
+
         try {
           if (!iosAudioCtxRef.current) {
             const Ctor: typeof AudioContext =
