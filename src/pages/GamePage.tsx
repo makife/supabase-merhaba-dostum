@@ -7509,6 +7509,7 @@ const GamePage = ({
   };
 
   // Handle letter click
+  const lastCellTapRef = useRef<Record<string, number>>({});
   const handleLetterClick = useCallback(
     (letter: string, row: number, col: number) => {
       if (gameEnded || (waitingForPlayer && !gameStarted) || (isJokerActive && !isFisildaAnimating)) return;
@@ -7516,10 +7517,12 @@ const GamePage = ({
       // Kullanıcı harfe dokunduğunda "kelime göndermedin" göz animasyonunu kapat
       if (showKelimeGondermedinAnim) setShowKelimeGondermedinAnim(false);
 
+      // Per-hücre debounce: farklı harflere hızlı basınca hiçbiri kaçmaz,
+      // sadece aynı hücreye çok hızlı çift dokunma engellenir.
       const now = Date.now();
-      // 150ms debounce (mobil için daha uzun)
-      if (now - lastClickTime < 150) return;
-      setLastClickTime(now);
+      const cellKey = `${row}-${col}`;
+      if (now - (lastCellTapRef.current[cellKey] || 0) < 120) return;
+      lastCellTapRef.current[cellKey] = now;
 
       // Haptic feedback (mobil cihazlarda titreşim)
       if (!isNative && "vibrate" in navigator) {
@@ -7528,20 +7531,24 @@ const GamePage = ({
 
       playSound("letterSelect");
 
-      const isSelected = selectedLetters.some((s) => s.row === row && s.col === col);
-
-      if (isSelected) {
-        const newSelected = selectedLetters.filter((s) => !(s.row === row && s.col === col));
-        setSelectedLetters(newSelected);
-        // currentWord artık derived value, otomatik güncellenecek
-      } else {
-        const newSelected = [...selectedLetters, { letter, row, col }];
-        setSelectedLetters(newSelected);
-        // currentWord artık derived value, otomatik güncellenecek
-      }
+      // Functional update: hızlı ardışık dokunmalarda stale state yüzünden harf kaybolmaz
+      setSelectedLetters((prev) => {
+        const exists = prev.some((s) => s.row === row && s.col === col);
+        return exists ? prev.filter((s) => !(s.row === row && s.col === col)) : [...prev, { letter, row, col }];
+      });
     },
-    [gameEnded, waitingForPlayer, isJokerActive, isFisildaAnimating, lastClickTime, selectedLetters, playSound],
+    [
+      gameEnded,
+      waitingForPlayer,
+      gameStarted,
+      isJokerActive,
+      isFisildaAnimating,
+      showKelimeGondermedinAnim,
+      playSound,
+      isNative,
+    ],
   );
+
 
   // Clear current word
   const clearWord = () => {
