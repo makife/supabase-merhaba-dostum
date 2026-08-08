@@ -508,26 +508,29 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               audio.load();
               audio.currentTime = 0;
               setMusicVolume(originalVolumeRef.current);
-              // iOS: AudioContext suspended olabilir, resume dene
-              if (iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
-                iosAudioCtxRef.current.resume().catch(() => {});
-              }
-              audio.play()
-                .then(() => {
-                  console.log("🎵 [iOS] Sıradaki şarkı başlatıldı:", nextTrackIndex);
-                  setIsPlaying(true);
+              playIOSMusicRobust(audio)
+                .then((ok) => {
+                  console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
+                  setIsPlaying(ok);
                   // Watchdog'u yeniden kur
                   if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
                   iosEndedWatchdogRef.current = setInterval(() => {
                     const a = backgroundMusicRef.current;
                     if (!a) return;
+                    // Şarkı bitti mi?
                     if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
                       console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
                       try { a.pause(); } catch {}
                       handleTrackEnd();
+                      return;
+                    }
+                    // 🔥 Kesinti (interruption) sonrası beklenmedik duraklama → devam ettir
+                    if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current) {
+                      playIOSMusicRobust(a).then((r) => setIsPlaying(r));
                     }
                   }, 500);
                 })
+
                 .catch((e) => console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e));
               // 🔥 iOS FIX: setCurrentTrackIndex ÇAĞIRMA! currentTrackIndex effect
               // dependency'sinde olduğu için re-run tetikler, cleanup az önce
