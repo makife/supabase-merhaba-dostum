@@ -1695,7 +1695,7 @@ const DinoRunner = () => {
 
         @keyframes levelUpPulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.08); }
+            50% { transform: translate(-50%, -50%) scale(1.04); }
         }
 
         @media (max-width: 400px) {
