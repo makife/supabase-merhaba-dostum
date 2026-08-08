@@ -96,7 +96,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Önceki fade'i temizle
     if (backgroundFadeRef.current) {
       clearInterval(backgroundFadeRef.current);
+      backgroundFadeRef.current = null;
     }
+
+    // 🔥 iOS: volume setter yok sayıldığı için fade döngüsü asla bitmez → direkt durdur
+    if (isIOSNative) {
+      try { backgroundMusicRef.current.pause(); } catch {}
+      pausedAtRef.current = Date.now();
+      return;
+    }
+
 
     const audio = backgroundMusicRef.current;
     const startVol = getMusicVolume();
