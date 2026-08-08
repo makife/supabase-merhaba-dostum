@@ -58,6 +58,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    setAnimating(false);
   }, []);
 
   useEffect(() => stopRaf, [stopRaf]);
@@ -66,6 +67,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
   const glideTo = useCallback(
     (target: number, initialVel = 0) => {
       stopRaf();
+      setAnimating(true);
       let v = initialVel;
       let last = performance.now();
       const step = (now: number) => {
@@ -81,6 +83,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
           const norm = ((target % N) + N) % N;
           setPos(norm);
           rafRef.current = null;
+          setAnimating(false);
           return;
         }
         setPos(next);
@@ -90,6 +93,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     },
     [stopRaf],
   );
+
 
   const snap = useCallback((next: number) => {
     const norm = ((Math.round(next) % N) + N) % N;
