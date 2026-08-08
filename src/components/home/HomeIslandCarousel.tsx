@@ -27,6 +27,7 @@ const signedDelta = (i: number, pos: number) => {
 export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) => {
   const [pos, setPos] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [animating, setAnimating] = useState(false);
   const posRef = useRef(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number; pos: number; axis: "none" | "x" | "y" } | null>(null);
