@@ -33,12 +33,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const musicEnabledRef = useRef(true);
   const lastUserToggleAtRef = useRef(0);
 
-  // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
+  // 🔥 iOS: Web Audio (MediaElementSource + GainNode) KULLANILMIYOR.
+  // iOS'ta AudioContext başka bir ses/interruption sonrası "suspended/interrupted"
+  // kalıyor ve element çalsa bile graph üzerinden çıkış ölüyordu → ilk parçadan
+  // sonra müzik susuyor, toggle kapat/aç da düzeltmiyordu. Artık düz HTML5 Audio
+  // kullanıyoruz; iOS volume setter'ı yok saydığı için fade yerine anında
+  // pause/play yapıyoruz (güvenilirlik > yumuşak fade).
   const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const IOS_USE_WEBAUDIO = false;
   const iosAudioCtxRef = useRef<AudioContext | null>(null);
   const iosGainRef = useRef<GainNode | null>(null);
   const iosSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const iosEndedWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+
 
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
