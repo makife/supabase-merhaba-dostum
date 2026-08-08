@@ -79,15 +79,18 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
                   label={item.title}
                   glow={false}
                   onPress={item.onClick}
-                  className={`w-[92%] flex-shrink-0 block ${item.dimmed ? "opacity-60 grayscale-[35%]" : ""}`}
+                  className="w-[92%] flex-shrink-0 block"
                   style={anim}
                 >
                   <img
                     src={item.imageSrc}
                     alt={item.title}
-                    className="w-full h-auto select-none pointer-events-none"
+                    className={`w-full h-auto select-none pointer-events-none ${
+                      item.dimmed ? "opacity-35 grayscale-[80%] brightness-75 saturate-50" : ""
+                    }`}
                     draggable={false}
                   />
+
                   {item.subtitle && (
                     <p className="absolute left-[46%] right-[4%] top-[62%] text-center text-[11px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                       {item.subtitle}
@@ -110,13 +113,14 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
               glow={false}
               onPress={item.onClick}
               className={`w-[86%] rounded-3xl p-4 flex items-center gap-4 border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] text-left ${
-                item.dimmed ? "opacity-70" : ""
+                item.dimmed ? "opacity-45 grayscale-[70%]" : ""
               }`}
               style={anim}
             >
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${item.gradient} ${item.dimmed ? "opacity-50 grayscale-[30%]" : "opacity-95"} rounded-3xl`}
+                className={`absolute inset-0 bg-gradient-to-br ${item.gradient} ${item.dimmed ? "opacity-35 grayscale-[70%]" : "opacity-95"} rounded-3xl`}
               />
+
               <div className="relative z-10 w-14 h-14 rounded-2xl bg-white/20 border border-white/25 flex items-center justify-center flex-shrink-0">
                 {item.icon}
               </div>
