@@ -4,6 +4,10 @@
  * döndüğünde görseller ve maskeler zaten hazır olur (yeniden yükleme beklemesi yok).
  */
 import radyoAdasi from "@/assets/radyoAdasi.png";
+import oyunModlariAdasi from "@/assets/oyunModlariAdasi.png";
+import duelloAdasi from "@/assets/duelloAdasi.png";
+import sansCarkiAdasi from "@/assets/sansCarkiAdasi.png";
+import arkadaslikAdasi from "@/assets/arkadaslikAdasi.png";
 
 export type IslandKey = "oyunModlari" | "duello" | "carki" | "radyo" | "arkadaslik";
 
