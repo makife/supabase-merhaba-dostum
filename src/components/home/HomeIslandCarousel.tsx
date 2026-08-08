@@ -207,7 +207,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
               width: "72%",
               height: "42%",
               transform: `translate3d(${x}%, ${island.key === "radyo" ? -8 : 0}%, 0) scale(${scale})`,
-              transition: dragging ? "none" : "transform 340ms cubic-bezier(0.22,1,0.36,1), opacity 300ms ease-out",
+              transition: dragging || animating ? "none" : "transform 300ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease-out",
               opacity,
               zIndex: 100 - Math.round(ad * 10),
               filter: isActive ? "none" : "brightness(0.82) saturate(0.9)",
