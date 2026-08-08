@@ -33,12 +33,19 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const musicEnabledRef = useRef(true);
   const lastUserToggleAtRef = useRef(0);
 
-  // 🔥 iOS Web Audio (volume + ended sorunlarını çözer)
+  // 🔥 iOS: Web Audio (MediaElementSource + GainNode) KULLANILMIYOR.
+  // iOS'ta AudioContext başka bir ses/interruption sonrası "suspended/interrupted"
+  // kalıyor ve element çalsa bile graph üzerinden çıkış ölüyordu → ilk parçadan
+  // sonra müzik susuyor, toggle kapat/aç da düzeltmiyordu. Artık düz HTML5 Audio
+  // kullanıyoruz; iOS volume setter'ı yok saydığı için fade yerine anında
+  // pause/play yapıyoruz (güvenilirlik > yumuşak fade).
   const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  const IOS_USE_WEBAUDIO = false;
   const iosAudioCtxRef = useRef<AudioContext | null>(null);
   const iosGainRef = useRef<GainNode | null>(null);
   const iosSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const iosEndedWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+
 
   // Arka plana geçişte hızlı fade out için ref
   const backgroundFadeRef = useRef<NodeJS.Timeout | null>(null);
@@ -65,6 +72,36 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  /**
+   * 🔥 iOS: play() bazen sessizce reddediliyor ya da element "hazır değil" durumunda
+   * kalıyor (ilk parça bittikten sonra). Önce normal play, olmazsa load() + play,
+   * son olarak kısa gecikmeli tekrar dene.
+   */
+  const playIOSMusicRobust = async (audio: HTMLAudioElement): Promise<boolean> => {
+    const tryPlay = async (): Promise<boolean> => {
+      try {
+        await audio.play();
+        return !audio.paused;
+      } catch (e) {
+        console.warn("🎵 [iOS] play() reddedildi:", e);
+        return false;
+      }
+    };
+
+    if (await tryPlay()) return true;
+
+    try {
+      audio.load();
+      audio.currentTime = 0;
+    } catch {}
+    if (await tryPlay()) return true;
+
+    await new Promise((r) => setTimeout(r, 250));
+    return tryPlay();
+  };
+
+
+
   // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
   // Default pack için shuffleIndex'i bir sonrakine ilerletir; diğer paketler tek şarkılı
   // olduğu için sadece currentTime=0 yapar.
@@ -89,7 +126,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Önceki fade'i temizle
     if (backgroundFadeRef.current) {
       clearInterval(backgroundFadeRef.current);
+      backgroundFadeRef.current = null;
     }
+
+    // 🔥 iOS: volume setter yok sayıldığı için fade döngüsü asla bitmez → direkt durdur
+    if (isIOSNative) {
+      try { backgroundMusicRef.current.pause(); } catch {}
+      pausedAtRef.current = Date.now();
+      return;
+    }
+
 
     const audio = backgroundMusicRef.current;
     const startVol = getMusicVolume();
@@ -151,7 +197,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
         pausedAtRef.current = null;
-        backgroundMusicRef.current.play().catch(console.warn);
+        if (isIOSNative) { playIOSMusicRobust(backgroundMusicRef.current).then((r) => setIsPlaying(r)); }
+        else backgroundMusicRef.current.play().catch(console.warn);
       } else {
         wasPlayingBeforeBackgroundRef.current = false;
       }
@@ -245,7 +292,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
               }
               pausedAtRef.current = null;
-              backgroundMusicRef.current.play().catch(console.warn);
+              if (isIOSNative) { playIOSMusicRobust(backgroundMusicRef.current).then((r) => setIsPlaying(r)); }
+        else backgroundMusicRef.current.play().catch(console.warn);
             } else {
               wasPlayingBeforeBackgroundRef.current = false;
             }
@@ -407,8 +455,12 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       backgroundMusicRef.current.onplay = () => setIsPlaying(true);
       backgroundMusicRef.current.onpause = () => setIsPlaying(false);
 
-      // 🔥 iOS: HTMLAudioElement.volume yok sayılır → Web Audio GainNode ile sar
+      // iOS: playsinline + Web Audio graph (devre dışı)
       if (isIOSNative) {
+        try { backgroundMusicRef.current.setAttribute("playsinline", "true"); } catch {}
+      }
+      if (isIOSNative && IOS_USE_WEBAUDIO) {
+
         try {
           if (!iosAudioCtxRef.current) {
             const Ctor: typeof AudioContext =
@@ -458,26 +510,29 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               audio.load();
               audio.currentTime = 0;
               setMusicVolume(originalVolumeRef.current);
-              // iOS: AudioContext suspended olabilir, resume dene
-              if (iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
-                iosAudioCtxRef.current.resume().catch(() => {});
-              }
-              audio.play()
-                .then(() => {
-                  console.log("🎵 [iOS] Sıradaki şarkı başlatıldı:", nextTrackIndex);
-                  setIsPlaying(true);
+              playIOSMusicRobust(audio)
+                .then((ok) => {
+                  console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
+                  setIsPlaying(ok);
                   // Watchdog'u yeniden kur
                   if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
                   iosEndedWatchdogRef.current = setInterval(() => {
                     const a = backgroundMusicRef.current;
                     if (!a) return;
+                    // Şarkı bitti mi?
                     if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
                       console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
                       try { a.pause(); } catch {}
                       handleTrackEnd();
+                      return;
+                    }
+                    // 🔥 Kesinti (interruption) sonrası beklenmedik duraklama → devam ettir
+                    if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null) {
+                      playIOSMusicRobust(a).then((r) => setIsPlaying(r));
                     }
                   }, 500);
                 })
+
                 .catch((e) => console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e));
               // 🔥 iOS FIX: setCurrentTrackIndex ÇAĞIRMA! currentTrackIndex effect
               // dependency'sinde olduğu için re-run tetikler, cleanup az önce
@@ -516,8 +571,14 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
             try { a.pause(); } catch {}
             handleTrackEnd();
+            return;
+          }
+          // 🔥 Kesinti sonrası beklenmedik duraklama → müzik açıksa devam ettir
+          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null && a.currentTime > 0) {
+            playIOSMusicRobust(a).then((r) => setIsPlaying(r));
           }
         }, 500);
+
       }
     };
 
@@ -672,6 +733,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
       backgroundMusicRef.current.pause();
+      pausedAtRef.current = Date.now();
       setMusicVolume(originalVolumeRef.current);
     }
     isStartingRef.current = false;
@@ -735,7 +797,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
+
+    // 🔥 iOS: fade yok, direkt durdur (volume setter yok sayılıyor)
+    if (isIOSNative) {
+      try { backgroundMusicRef.current.pause(); } catch {}
+      pausedAtRef.current = Date.now();
+      console.log("🎵 [iOS] Müzik direkt durduruldu (fade yok)");
+      return;
+    }
+
 
     const audio = backgroundMusicRef.current;
     const startVolume = getMusicVolume();
@@ -868,11 +940,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
 
     const audio = backgroundMusicRef.current;
     const targetVolume = originalVolumeRef.current;
-    setMusicVolume(0);
+    // iOS'ta volume 0'a çekmek işe yaramaz (setter yok sayılır) ve fade döngüsü
+    // asla bitmez → iOS'ta fade yapmadan tam sesle başlat.
+    if (!isIOSNative) setMusicVolume(0);
+    else setMusicVolume(targetVolume);
 
     // ⏱️ Akıllı resume: 30 sn'den fazla susmuşsak sıradaki şarkıya geç (default pack),
     // aksi halde kaldığı yerden devam et.
@@ -894,9 +970,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     isStartingRef.current = true;
 
-    // iOS: AudioContext suspended olabilir, resume dene
-    if (isIOSNative && iosAudioCtxRef.current && iosAudioCtxRef.current.state !== "running") {
-      try { await iosAudioCtxRef.current.resume(); } catch {}
+    if (isIOSNative) {
+      await playIOSMusicRobust(audio);
+      isStartingRef.current = false;
+      return;
     }
 
     const playPromise = audio.play();
@@ -928,6 +1005,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isStartingRef.current = false;
     }
   };
+
 
   const setMusicEnabled = async (enabled: boolean) => {
     lastUserToggleAtRef.current = Date.now();
@@ -968,8 +1046,32 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
+    // 🔥 iOS: kullanıcı dokunuşu (gesture) içindeyiz → sağlam başlatma dene
+    if (isIOSNative && backgroundMusicRef.current) {
+      const audio = backgroundMusicRef.current;
+      if (enabled) {
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+          fadeIntervalRef.current = null;
+        }
+        isStartingRef.current = false;
+        setMusicVolume(originalVolumeRef.current);
+        pausedAtRef.current = null;
+        const ok = await playIOSMusicRobust(audio);
+        setIsPlaying(ok);
+        console.log("🎵 [iOS] Müzik toggle AÇ:", ok ? "başladı" : "başlatılamadı");
+      } else {
+        try { audio.pause(); } catch {}
+        pausedAtRef.current = Date.now();
+        isStartingRef.current = false;
+        setIsPlaying(false);
+      }
+      return;
+    }
+
     // Web platformu için HTML5 Audio kontrolü
     if (enabled && backgroundMusicRef.current && backgroundMusicRef.current.paused && !isStartingRef.current) {
+
       // Kaldığı yerden devam et
       isStartingRef.current = true;
       const playPromise = backgroundMusicRef.current.play();
