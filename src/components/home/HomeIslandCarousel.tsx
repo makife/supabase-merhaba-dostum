@@ -27,7 +27,6 @@ const signedDelta = (i: number, pos: number) => {
 export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) => {
   const [pos, setPos] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [animating, setAnimating] = useState(false);
   const posRef = useRef(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const startRef = useRef<{ x: number; y: number; pos: number; axis: "none" | "x" | "y" } | null>(null);
@@ -139,7 +138,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
               width: "72%",
               height: "42%",
               transform: `translate3d(${x}%, ${island.key === "radyo" ? -8 : 0}%, 0) scale(${scale})`,
-              transition: dragging || animating ? "none" : "transform 300ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease-out",
+              transition: dragging ? "none" : "transform 300ms cubic-bezier(0.22,1,0.36,1), opacity 260ms ease-out",
               opacity,
               zIndex: 100 - Math.round(ad * 10),
               filter: isActive ? "none" : "brightness(0.82) saturate(0.9)",
@@ -159,7 +158,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                 aria-label={island.label}
                 onClick={() => {
                   if (isActive) onSelect(island.key);
-                  else glideTo(Math.round(pos) + d);
+                  else snap(pos + d);
                 }}
                 className="absolute inset-0 active:scale-[0.97] transition-transform duration-150"
                 style={{ WebkitTapHighlightColor: "transparent" }}
