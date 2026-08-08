@@ -755,7 +755,17 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Clear any existing fade
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
     }
+
+    // 🔥 iOS: fade yok, direkt durdur (volume setter yok sayılıyor)
+    if (isIOSNative) {
+      try { backgroundMusicRef.current.pause(); } catch {}
+      pausedAtRef.current = Date.now();
+      console.log("🎵 [iOS] Müzik direkt durduruldu (fade yok)");
+      return;
+    }
+
 
     const audio = backgroundMusicRef.current;
     const startVolume = getMusicVolume();
