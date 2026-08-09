@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import Lottie from "lottie-react";
 import abcHarflerHadiAnimation from "../assets/abcHarflerHadi.json";
+
 /**
  * HADİ — 2048 mekaniği, sayı yerine harf.
  * 2=A, 4=B, 8=C, 16=D, 32=E, 64=F, 128=G, 256=H ...
@@ -46,15 +47,6 @@ type Board = number[][];
 
 const emptyBoard = (): Board => Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
 
-const addRandomTile = (b: Board): boolean => {
-  const empties: [number, number][] = [];
-  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!b[r][c]) empties.push([r, c]);
-  if (!empties.length) return false;
-  const [r, c] = empties[Math.floor(Math.random() * empties.length)];
-  b[r][c] = Math.random() < 0.9 ? 2 : 4;
-  return true;
-};
-
 const cloneBoard = (b: Board): Board => b.map((row) => [...row]);
 
 // Bir satırı sola kaydır + birleştir
@@ -78,29 +70,6 @@ const collapseRow = (row: number[]): { row: number[]; gained: number; moved: boo
 };
 
 type Dir = "left" | "right" | "up" | "down";
-
-const move = (board: Board, dir: Dir): { board: Board; gained: number; moved: boolean } => {
-  const b = cloneBoard(board);
-  let gained = 0;
-  let moved = false;
-
-  const applyRow = (get: (i: number) => number, set: (i: number, v: number) => void) => {
-    const row = Array.from({ length: SIZE }, (_, i) => get(i));
-    const res = collapseRow(row);
-    if (res.moved) moved = true;
-    gained += res.gained;
-    res.row.forEach((v, i) => set(i, v));
-  };
-
-  for (let k = 0; k < SIZE; k++) {
-    if (dir === "left") applyRow((i) => b[k][i], (i, v) => (b[k][i] = v));
-    if (dir === "right") applyRow((i) => b[k][SIZE - 1 - i], (i, v) => (b[k][SIZE - 1 - i] = v));
-    if (dir === "up") applyRow((i) => b[i][k], (i, v) => (b[i][k] = v));
-    if (dir === "down") applyRow((i) => b[SIZE - 1 - i][k], (i, v) => (b[SIZE - 1 - i][k] = v));
-  }
-
-  return { board: b, gained, moved };
-};
 
 const hasMoves = (b: Board): boolean => {
   for (let r = 0; r < SIZE; r++)
@@ -195,18 +164,38 @@ const HadiGamePage = () => {
   const [claiming, setClaiming] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
 
+  // Boost Animasyon State'leri
+  const [rocketAnim, setRocketAnim] = useState<any>(null);
+  const [boostButtonAnim, setBoostButtonAnim] = useState<any>(null);
+  const [boostEnergyAnim, setBoostEnergyAnim] = useState<any>(null);
+  const [playButtonAnim, setPlayButtonAnim] = useState(false);
+  const [playEnergyAnim, setPlayEnergyAnim] = useState(false);
+
   const tilesRef = useRef<Tile[]>([]);
   const ghostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(gameState);
   const gridElRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => { stateRef.current = gameState; }, [gameState]);
   useEffect(() => () => { if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); }, []);
 
+  // Animasyon JSON Dosyalarının Yüklenmesi
+  useEffect(() => {
+    fetch("/boostRoket.json").then(r => r.json()).then(setRocketAnim).catch(() => {});
+    fetch("/boostButonBasildi.json").then(r => r.json()).then(setBoostButtonAnim).catch(() => {});
+    fetch("/boostButonBasildiEnerji.json").then(r => r.json()).then(setBoostEnergyAnim).catch(() => {});
+  }, []);
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
   const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
   const boostSource = (profile as any)?.score_boost_source;
   const boostActivated = !!boostUntilDate && boostUntilDate.getTime() > nowTs && boostSource === "kelime_avi";
+
+  useEffect(() => {
+    if (!boostUntilDate || boostUntilDate.getTime() <= Date.now()) return;
+    const t = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [boostUntilDate?.getTime()]);
 
   const handleClaimBoost = async () => {
     if (claiming || pendingMin <= 0) return;
@@ -215,12 +204,27 @@ const HadiGamePage = () => {
     const { data, error } = await supabase.rpc("claim_score_boost" as any);
     if (error || !(data as any)?.success) {
       toast.error("Boost aktif edilemedi");
+      setClaiming(false);
     } else {
       setNowTs(Date.now());
-      toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
-      await refreshProfile(true);
+      
+      // 1. ADIM: Buton içi animasyonu başlat (roket yerine buton animasyonu oynar)
+      setPlayButtonAnim(true);
+      
+      // 2. ADIM: 300 milisaniye sonra tam ekran enerji animasyonunu patlat
+      setTimeout(() => {
+        setPlayEnergyAnim(true);
+      }, 300);
+
+      // 3. ADIM: 2.5 saniye sonra tüm animasyonları temizle, profili yenile ve bildirimi göster
+      setTimeout(async () => {
+        toast.success(`⚡ ${(data as any).minutes_added} dakikalık x2 boost aktif!`);
+        await refreshProfile(true);
+        setPlayButtonAnim(false);
+        setPlayEnergyAnim(false);
+        setClaiming(false);
+      }, 2500);
     }
-    setClaiming(false);
   };
 
   const startGame = useCallback(() => {
@@ -242,7 +246,6 @@ const HadiGamePage = () => {
     markAsPlayed();
     playSound("buttonClick");
   }, [hasPlayedToday, markAsPlayed, playSound]);
-
 
   const doMove = useCallback((dir: Dir) => {
     if (stateRef.current !== "playing") return;
@@ -273,7 +276,6 @@ const HadiGamePage = () => {
       setGameState("finished");
     }
   }, [playSound]);
-
 
   // Save score on finish
   useEffect(() => {
@@ -399,13 +401,13 @@ const HadiGamePage = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-6">
         {gameState === "ready" && (
           <div className="flex flex-col items-center gap-1 pt-4 flex-1 min-h-0">
-            <div className="w-32 h-32 shrink-0"> {/* text-6xl yerine uygun genişlik/yükseklik (örn: w-16 h-16) */}
-  <Lottie 
-    animationData={abcHarflerHadiAnimation} 
-    loop={true} 
-    className="w-full h-full" // Animasyonun div'i doldurmasını sağlar
-  />
-</div>
+            <div className="w-32 h-32 shrink-0">
+              <Lottie 
+                animationData={abcHarflerHadiAnimation} 
+                loop={true} 
+                className="w-full h-full"
+              />
+            </div>
             <div className="text-center shrink-0">
               <h2 className="text-xl font-bold text-white mb-2">HADİ</h2>
               <p className="text-sm text-slate-400 max-w-xs">
@@ -448,17 +450,35 @@ const HadiGamePage = () => {
 
             {(pendingMin > 0 || boostActivated) && (
               <div className="shrink-0 w-full max-w-sm flex items-center justify-center gap-3 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
-                {pendingMin > 0 ? (
-                  <button
-                    onClick={handleClaimBoost}
-                    disabled={claiming}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 font-bold text-white active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    ⚡ {pendingMin} dk x2 boost'u aktif et
-                  </button>
-                ) : (
-                  <span className="text-xs font-bold text-amber-300">⚡ x2 boost aktif!</span>
-                )}
+                <button
+                  onClick={handleClaimBoost}
+                  disabled={pendingMin <= 0 || claiming}
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-white text-sm transition-all ${
+                    boostActivated && pendingMin <= 0
+                      ? "bg-emerald-500/30 border border-emerald-400/40"
+                      : pendingMin > 0
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 active:scale-95 shadow-lg shadow-amber-500/30"
+                      : "bg-white/10 opacity-50"
+                  }`}
+                >
+                  {boostActivated && pendingMin <= 0
+                    ? "⚡ Boost Aktif"
+                    : pendingMin > 0
+                    ? `Boostu Aktif Et (${pendingMin} dk)`
+                    : "Boost yok"}
+                </button>
+                <div className="w-14 h-14 shrink-0">
+                  {playButtonAnim && boostButtonAnim ? (
+                    <Lottie animationData={boostButtonAnim} loop={false} autoplay={true} style={{ width: "100%", height: "100%" }} />
+                  ) : rocketAnim ? (
+                    <Lottie
+                      animationData={rocketAnim}
+                      loop={boostActivated}
+                      autoplay={boostActivated}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  ) : null}
+                </div>
               </div>
             )}
           </div>
@@ -479,7 +499,6 @@ const HadiGamePage = () => {
               @keyframes hadi-pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
             `}</style>
             <div
-
               ref={gridElRef}
               onMouseDown={onMouseDown}
               onMouseUp={onMouseUp}
@@ -525,8 +544,7 @@ const HadiGamePage = () => {
               })}
             </div>
 
-
-            {/* Yön butonları (opsiyonel dokunma yardımı) */}
+            {/* Yön butonları */}
             <div className="flex flex-col items-center gap-2 mt-1">
               <button onClick={() => doMove("up")} className="w-14 h-10 rounded-xl bg-white/10 border border-white/10 font-bold active:scale-90 transition-transform">↑</button>
               <div className="flex gap-2">
@@ -588,6 +606,20 @@ const HadiGamePage = () => {
             <div className="flex-1 min-h-0 flex flex-col">
               <ChallengeLeaderboard leaderboard={leaderboard} scrollable />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sayfayı komple kaplayan Enerji Animasyonu Katmanı */}
+      {playEnergyAnim && boostEnergyAnim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 pointer-events-none animate-fade-in">
+          <div className="w-full h-full">
+            <Lottie 
+              animationData={boostEnergyAnim} 
+              loop={false} 
+              autoplay={true} 
+              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+            />
           </div>
         </div>
       )}
