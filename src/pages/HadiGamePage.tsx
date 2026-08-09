@@ -373,12 +373,7 @@ const HadiGamePage = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="flex items-center gap-2 text-lg font-black text-white">
-  <span className="w-6 h-6 inline-block">
-    <Lottie animationData={abcHarflerHadiAnimation} loop={true} />
-  </span>
-  HADİ
-</h1>
+            <h1 className="text-lg font-black text-white">🔤 HADİ</h1>
             <p className="text-[10px] text-amber-400/80">Aynı harfleri birleştir</p>
           </div>
         </div>
@@ -404,7 +399,7 @@ const HadiGamePage = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-6">
         {gameState === "ready" && (
           <div className="flex flex-col items-center gap-5 pt-4 flex-1 min-h-0">
-            <div className="w-16 h-16 shrink-0"> {/* text-6xl yerine uygun genişlik/yükseklik (örn: w-16 h-16) */}
+            <div className="w-32 h-32 shrink-0"> {/* text-6xl yerine uygun genişlik/yükseklik (örn: w-16 h-16) */}
   <Lottie 
     animationData={abcHarflerHadiAnimation} 
     loop={true} 
