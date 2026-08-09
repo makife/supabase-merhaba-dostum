@@ -159,10 +159,12 @@ const HadiGamePage = () => {
       return;
     }
     const b = emptyBoard();
-    addRandomTile(b);
-    addRandomTile(b);
-    boardRef.current = b;
-    setBoard(cloneBoard(b));
+    const t1 = spawnTile(b);
+    const t2 = spawnTile(b);
+    const initial = [t1, t2].filter(Boolean) as Tile[];
+    tilesRef.current = initial;
+    setTiles(initial);
+    setGhosts([]);
     setScore(0);
     setMoves(0);
     setBestLetter("A");
@@ -170,6 +172,7 @@ const HadiGamePage = () => {
     markAsPlayed();
     playSound("buttonClick");
   }, [hasPlayedToday, markAsPlayed, playSound]);
+
 
   const doMove = useCallback((dir: Dir) => {
     if (stateRef.current !== "playing") return;
