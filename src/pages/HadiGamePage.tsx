@@ -11,7 +11,8 @@ import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
-
+import Lottie from "lottie-react";
+import abcHarflerHadiAnimation from "./assets/abcHarflerHadi.json";
 /**
  * HADİ — 2048 mekaniği, sayı yerine harf.
  * 2=A, 4=B, 8=C, 16=D, 32=E, 64=F, 128=G, 256=H ...
@@ -372,7 +373,12 @@ const HadiGamePage = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="text-lg font-black text-white">🔤 HADİ</h1>
+            <h1 className="flex items-center gap-2 text-lg font-black text-white">
+  <span className="w-6 h-6 inline-block">
+    <Lottie animationData={abcHarflerHadiAnimation} loop={true} />
+  </span>
+  HADİ
+</h1>
             <p className="text-[10px] text-amber-400/80">Aynı harfleri birleştir</p>
           </div>
         </div>
