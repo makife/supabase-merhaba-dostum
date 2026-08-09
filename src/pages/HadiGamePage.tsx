@@ -389,26 +389,48 @@ const HadiGamePage = () => {
               ref={gridElRef}
               onMouseDown={onMouseDown}
               onMouseUp={onMouseUp}
-              className="relative mx-auto grid grid-cols-4 gap-2 p-2 rounded-3xl select-none touch-none"
-              style={{ width: "min(100%, 340px)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}
+              className="relative mx-auto rounded-3xl select-none touch-none"
+              style={{ width: "min(100%, 340px)", aspectRatio: "1 / 1", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}
             >
-              {board.flat().map((v, i) => {
-                const st = tileStyle(v);
+              {/* Boş hücre katmanı */}
+              <div className="absolute inset-0 grid grid-cols-4 gap-2 p-2">
+                {Array.from({ length: SIZE * SIZE }).map((_, i) => (
+                  <div key={i} className="rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }} />
+                ))}
+              </div>
+
+              {/* Kayan harf taşları */}
+              {[...ghosts, ...tiles].map((t) => {
+                const st = tileStyle(t.v);
+                const isGhost = (t as any).ghost;
                 return (
                   <div
-                    key={i}
-                    className="aspect-square rounded-xl flex items-center justify-center text-2xl font-black transition-all duration-100"
-                    style={
-                      v
-                        ? { background: st.bg, color: st.fg, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }
-                        : { background: "rgba(255,255,255,0.05)" }
-                    }
+                    key={(isGhost ? "g" : "t") + t.id}
+                    className="absolute flex items-center justify-center text-2xl font-black rounded-xl"
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      left: cellOffset(t.c),
+                      top: cellOffset(t.r),
+                      background: st.bg,
+                      color: st.fg,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                      transition: "left 130ms ease-in-out, top 130ms ease-in-out",
+                      zIndex: isGhost ? 1 : 2,
+                      animation: t.isNew
+                        ? "hadi-appear 150ms ease-out"
+                        : t.merged
+                          ? "hadi-pop 180ms ease-out 110ms"
+                          : undefined,
+                      willChange: "left, top, transform",
+                    }}
                   >
-                    {valueToLetter(v)}
+                    {valueToLetter(t.v)}
                   </div>
                 );
               })}
             </div>
+
 
             {/* Yön butonları (opsiyonel dokunma yardımı) */}
             <div className="flex flex-col items-center gap-2 mt-1">
