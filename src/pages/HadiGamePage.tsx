@@ -111,6 +111,71 @@ const hasMoves = (b: Board): boolean => {
   return false;
 };
 
+/* ---------- Tile modeli (kayma animasyonu için) ---------- */
+type Tile = { id: number; r: number; c: number; v: number; isNew?: boolean; merged?: boolean; ghost?: boolean };
+
+let TILE_ID = 1;
+const nextId = () => TILE_ID++;
+
+// Grid geometrisi: container padding 8px, gap 8px, 4 kolon
+const CELL = "calc((100% - 40px) / 4)";
+const cellOffset = (i: number) => `calc(8px + ${i} * ((100% - 40px) / 4 + 8px))`;
+
+const boardFromTiles = (ts: Tile[]): Board => {
+  const b = emptyBoard();
+  ts.forEach((t) => { b[t.r][t.c] = t.v; });
+  return b;
+};
+
+const spawnTile = (b: Board): Tile | null => {
+  const empties: [number, number][] = [];
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!b[r][c]) empties.push([r, c]);
+  if (!empties.length) return null;
+  const [r, c] = empties[Math.floor(Math.random() * empties.length)];
+  const v = Math.random() < 0.9 ? 2 : 4;
+  b[r][c] = v;
+  return { id: nextId(), r, c, v, isNew: true };
+};
+
+const posAt = (dir: Dir, k: number, i: number): [number, number] =>
+  dir === "left" ? [k, i] : dir === "right" ? [k, SIZE - 1 - i] : dir === "up" ? [i, k] : [SIZE - 1 - i, k];
+
+const moveTiles = (ts: Tile[], dir: Dir): { tiles: Tile[]; ghosts: Tile[]; gained: number; moved: boolean } => {
+  const at = (r: number, c: number) => ts.find((t) => t.r === r && t.c === c);
+  const out: Tile[] = [];
+  const ghosts: Tile[] = [];
+  let gained = 0;
+  let moved = false;
+
+  for (let k = 0; k < SIZE; k++) {
+    const line: Tile[] = [];
+    for (let i = 0; i < SIZE; i++) {
+      const [r, c] = posAt(dir, k, i);
+      const t = at(r, c);
+      if (t) line.push(t);
+    }
+    let idx = 0;
+    for (let i = 0; i < line.length; i++) {
+      const [tr, tc] = posAt(dir, k, idx);
+      if (i + 1 < line.length && line[i].v === line[i + 1].v) {
+        const nv = line[i].v * 2;
+        gained += nv;
+        moved = true;
+        out.push({ ...line[i], r: tr, c: tc, v: nv, merged: true, isNew: false });
+        ghosts.push({ ...line[i + 1], r: tr, c: tc, merged: false, isNew: false, ghost: true });
+        i++;
+      } else {
+        if (line[i].r !== tr || line[i].c !== tc) moved = true;
+        out.push({ ...line[i], r: tr, c: tc, merged: false, isNew: false });
+      }
+      idx++;
+    }
+  }
+
+  return { tiles: out, ghosts, gained, moved };
+};
+
+
 const HadiGamePage = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
@@ -120,7 +185,8 @@ const HadiGamePage = () => {
     useDailyChallenge("kelime_avi" as any);
 
   const [gameState, setGameState] = useState<"ready" | "playing" | "finished">("ready");
-  const [board, setBoard] = useState<Board>(emptyBoard);
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [ghosts, setGhosts] = useState<Tile[]>([]);
   const [score, setScore] = useState(0);
   const [bestLetter, setBestLetter] = useState("");
   const [moves, setMoves] = useState(0);
@@ -128,10 +194,13 @@ const HadiGamePage = () => {
   const [claiming, setClaiming] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
 
-  const boardRef = useRef<Board>(emptyBoard());
+  const tilesRef = useRef<Tile[]>([]);
+  const ghostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(gameState);
   const gridElRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => { stateRef.current = gameState; }, [gameState]);
+  useEffect(() => () => { if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); }, []);
+
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
   const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
@@ -159,10 +228,12 @@ const HadiGamePage = () => {
       return;
     }
     const b = emptyBoard();
-    addRandomTile(b);
-    addRandomTile(b);
-    boardRef.current = b;
-    setBoard(cloneBoard(b));
+    const t1 = spawnTile(b);
+    const t2 = spawnTile(b);
+    const initial = [t1, t2].filter(Boolean) as Tile[];
+    tilesRef.current = initial;
+    setTiles(initial);
+    setGhosts([]);
     setScore(0);
     setMoves(0);
     setBestLetter("A");
@@ -171,13 +242,23 @@ const HadiGamePage = () => {
     playSound("buttonClick");
   }, [hasPlayedToday, markAsPlayed, playSound]);
 
+
   const doMove = useCallback((dir: Dir) => {
     if (stateRef.current !== "playing") return;
-    const res = move(boardRef.current, dir);
+    const res = moveTiles(tilesRef.current, dir);
     if (!res.moved) return;
-    addRandomTile(res.board);
-    boardRef.current = res.board;
-    setBoard(cloneBoard(res.board));
+
+    const nb = boardFromTiles(res.tiles);
+    const spawn = spawnTile(nb);
+    const nextTiles = spawn ? [...res.tiles, spawn] : res.tiles;
+
+    tilesRef.current = nextTiles;
+    setTiles(nextTiles);
+    setGhosts(res.ghosts);
+    // Kayma animasyonu bitince birleşen taşın hayaletini kaldır
+    if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current);
+    ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
+
     setMoves((m) => m + 1);
     if (res.gained > 0) {
       setScore((s) => s + res.gained);
@@ -185,12 +266,13 @@ const HadiGamePage = () => {
     } else {
       playSound("buttonClick");
     }
-    const max = Math.max(...res.board.flat());
-    setBestLetter(valueToLetter(max));
-    if (!hasMoves(res.board)) {
+    const finalBoard = boardFromTiles(nextTiles);
+    setBestLetter(valueToLetter(Math.max(...finalBoard.flat())));
+    if (!hasMoves(finalBoard)) {
       setGameState("finished");
     }
   }, [playSound]);
+
 
   // Save score on finish
   useEffect(() => {
@@ -385,30 +467,57 @@ const HadiGamePage = () => {
               <span className="text-xs text-slate-500">En büyük harf: <b className="text-white">{bestLetter}</b></span>
             </div>
 
+            <style>{`
+              @keyframes hadi-appear { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+              @keyframes hadi-pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+            `}</style>
             <div
+
               ref={gridElRef}
               onMouseDown={onMouseDown}
               onMouseUp={onMouseUp}
-              className="relative mx-auto grid grid-cols-4 gap-2 p-2 rounded-3xl select-none touch-none"
-              style={{ width: "min(100%, 340px)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}
+              className="relative mx-auto rounded-3xl select-none touch-none"
+              style={{ width: "min(100%, 340px)", aspectRatio: "1 / 1", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}
             >
-              {board.flat().map((v, i) => {
-                const st = tileStyle(v);
+              {/* Boş hücre katmanı */}
+              <div className="absolute inset-0 grid grid-cols-4 gap-2 p-2">
+                {Array.from({ length: SIZE * SIZE }).map((_, i) => (
+                  <div key={i} className="rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }} />
+                ))}
+              </div>
+
+              {/* Kayan harf taşları */}
+              {[...ghosts, ...tiles].map((t) => {
+                const st = tileStyle(t.v);
+                const isGhost = (t as any).ghost;
                 return (
                   <div
-                    key={i}
-                    className="aspect-square rounded-xl flex items-center justify-center text-2xl font-black transition-all duration-100"
-                    style={
-                      v
-                        ? { background: st.bg, color: st.fg, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }
-                        : { background: "rgba(255,255,255,0.05)" }
-                    }
+                    key={(isGhost ? "g" : "t") + t.id}
+                    className="absolute flex items-center justify-center text-2xl font-black rounded-xl"
+                    style={{
+                      width: CELL,
+                      height: CELL,
+                      left: cellOffset(t.c),
+                      top: cellOffset(t.r),
+                      background: st.bg,
+                      color: st.fg,
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                      transition: "left 130ms ease-in-out, top 130ms ease-in-out",
+                      zIndex: isGhost ? 1 : 2,
+                      animation: t.isNew
+                        ? "hadi-appear 150ms ease-out"
+                        : t.merged
+                          ? "hadi-pop 180ms ease-out 110ms"
+                          : undefined,
+                      willChange: "left, top, transform",
+                    }}
                   >
-                    {valueToLetter(v)}
+                    {valueToLetter(t.v)}
                   </div>
                 );
               })}
             </div>
+
 
             {/* Yön butonları (opsiyonel dokunma yardımı) */}
             <div className="flex flex-col items-center gap-2 mt-1">
