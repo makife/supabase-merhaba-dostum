@@ -52,7 +52,7 @@ const SnakeGamePage = React.lazy(() => import("@/pages/SnakeGame"));
 const MiniGamesPage = React.lazy(() => import("@/pages/MiniGamesPage"));
 const MorlesGamePage = React.lazy(() => import("@/pages/MorlesGame"));
 const WordHuntPage = React.lazy(() => import("@/pages/WordHuntPage"));
-const KelimeAviPage = React.lazy(() => import("@/pages/KelimeAviPage"));
+const HadiGamePage = React.lazy(() => import("@/pages/HadiGamePage"));
 const AnagramPage = React.lazy(() => import("@/pages/AnagramPage"));
 const WordChainPage = React.lazy(() => import("@/pages/WordChainPage"));
 import { Capacitor } from "@capacitor/core";
@@ -569,10 +569,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/challenge/kelime-avi"
+            path="/challenge/hadi"
             element={
               <ProtectedRoute>
-                <KelimeAviPage />
+                <HadiGamePage />
               </ProtectedRoute>
             }
           />
