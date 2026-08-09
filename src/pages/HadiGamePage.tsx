@@ -173,11 +173,20 @@ const HadiGamePage = () => {
 
   const doMove = useCallback((dir: Dir) => {
     if (stateRef.current !== "playing") return;
-    const res = move(boardRef.current, dir);
+    const res = moveTiles(tilesRef.current, dir);
     if (!res.moved) return;
-    addRandomTile(res.board);
-    boardRef.current = res.board;
-    setBoard(cloneBoard(res.board));
+
+    const nb = boardFromTiles(res.tiles);
+    const spawn = spawnTile(nb);
+    const nextTiles = spawn ? [...res.tiles, spawn] : res.tiles;
+
+    tilesRef.current = nextTiles;
+    setTiles(nextTiles);
+    setGhosts(res.ghosts);
+    // Kayma animasyonu bitince birleşen taşın hayaletini kaldır
+    if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current);
+    ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
+
     setMoves((m) => m + 1);
     if (res.gained > 0) {
       setScore((s) => s + res.gained);
@@ -185,12 +194,13 @@ const HadiGamePage = () => {
     } else {
       playSound("buttonClick");
     }
-    const max = Math.max(...res.board.flat());
-    setBestLetter(valueToLetter(max));
-    if (!hasMoves(res.board)) {
+    const finalBoard = boardFromTiles(nextTiles);
+    setBestLetter(valueToLetter(Math.max(...finalBoard.flat())));
+    if (!hasMoves(finalBoard)) {
       setGameState("finished");
     }
   }, [playSound]);
+
 
   // Save score on finish
   useEffect(() => {
