@@ -120,7 +120,8 @@ const HadiGamePage = () => {
     useDailyChallenge("kelime_avi" as any);
 
   const [gameState, setGameState] = useState<"ready" | "playing" | "finished">("ready");
-  const [board, setBoard] = useState<Board>(emptyBoard);
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [ghosts, setGhosts] = useState<Tile[]>([]);
   const [score, setScore] = useState(0);
   const [bestLetter, setBestLetter] = useState("");
   const [moves, setMoves] = useState(0);
@@ -128,10 +129,13 @@ const HadiGamePage = () => {
   const [claiming, setClaiming] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
 
-  const boardRef = useRef<Board>(emptyBoard());
+  const tilesRef = useRef<Tile[]>([]);
+  const ghostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(gameState);
   const gridElRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => { stateRef.current = gameState; }, [gameState]);
+  useEffect(() => () => { if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); }, []);
+
 
   const pendingMin = Number((profile as any)?.pending_boost_minutes || 0);
   const boostUntilDate = (profile as any)?.score_boost_until ? new Date((profile as any).score_boost_until) : null;
