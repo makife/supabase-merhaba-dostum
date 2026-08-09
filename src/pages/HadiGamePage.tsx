@@ -12,7 +12,7 @@ import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import Lottie from "lottie-react";
-import abcHarflerHadiAnimation from "./assets/abcHarflerHadi.json";
+import abcHarflerHadiAnimation from "../assets/abcHarflerHadi.json";
 /**
  * HADİ — 2048 mekaniği, sayı yerine harf.
  * 2=A, 4=B, 8=C, 16=D, 32=E, 64=F, 128=G, 256=H ...
