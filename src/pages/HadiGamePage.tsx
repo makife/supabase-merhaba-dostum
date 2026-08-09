@@ -111,6 +111,71 @@ const hasMoves = (b: Board): boolean => {
   return false;
 };
 
+/* ---------- Tile modeli (kayma animasyonu için) ---------- */
+type Tile = { id: number; r: number; c: number; v: number; isNew?: boolean; merged?: boolean; ghost?: boolean };
+
+let TILE_ID = 1;
+const nextId = () => TILE_ID++;
+
+// Grid geometrisi: container padding 8px, gap 8px, 4 kolon
+const CELL = "calc((100% - 40px) / 4)";
+const cellOffset = (i: number) => `calc(8px + ${i} * ((100% - 40px) / 4 + 8px))`;
+
+const boardFromTiles = (ts: Tile[]): Board => {
+  const b = emptyBoard();
+  ts.forEach((t) => { b[t.r][t.c] = t.v; });
+  return b;
+};
+
+const spawnTile = (b: Board): Tile | null => {
+  const empties: [number, number][] = [];
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!b[r][c]) empties.push([r, c]);
+  if (!empties.length) return null;
+  const [r, c] = empties[Math.floor(Math.random() * empties.length)];
+  const v = Math.random() < 0.9 ? 2 : 4;
+  b[r][c] = v;
+  return { id: nextId(), r, c, v, isNew: true };
+};
+
+const posAt = (dir: Dir, k: number, i: number): [number, number] =>
+  dir === "left" ? [k, i] : dir === "right" ? [k, SIZE - 1 - i] : dir === "up" ? [i, k] : [SIZE - 1 - i, k];
+
+const moveTiles = (ts: Tile[], dir: Dir): { tiles: Tile[]; ghosts: Tile[]; gained: number; moved: boolean } => {
+  const at = (r: number, c: number) => ts.find((t) => t.r === r && t.c === c);
+  const out: Tile[] = [];
+  const ghosts: Tile[] = [];
+  let gained = 0;
+  let moved = false;
+
+  for (let k = 0; k < SIZE; k++) {
+    const line: Tile[] = [];
+    for (let i = 0; i < SIZE; i++) {
+      const [r, c] = posAt(dir, k, i);
+      const t = at(r, c);
+      if (t) line.push(t);
+    }
+    let idx = 0;
+    for (let i = 0; i < line.length; i++) {
+      const [tr, tc] = posAt(dir, k, idx);
+      if (i + 1 < line.length && line[i].v === line[i + 1].v) {
+        const nv = line[i].v * 2;
+        gained += nv;
+        moved = true;
+        out.push({ ...line[i], r: tr, c: tc, v: nv, merged: true, isNew: false });
+        ghosts.push({ ...line[i + 1], r: tr, c: tc, merged: false, isNew: false, ghost: true });
+        i++;
+      } else {
+        if (line[i].r !== tr || line[i].c !== tc) moved = true;
+        out.push({ ...line[i], r: tr, c: tc, merged: false, isNew: false });
+      }
+      idx++;
+    }
+  }
+
+  return { tiles: out, ghosts, gained, moved };
+};
+
+
 const HadiGamePage = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
