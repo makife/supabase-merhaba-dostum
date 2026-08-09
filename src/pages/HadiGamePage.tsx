@@ -15,7 +15,7 @@ import Lottie from "lottie-react";
 import abcHarflerHadiAnimation from "../assets/abcHarflerHadi.json";
 
 /**
- * HADİ — 2048 mekaniği, sayı yerine harf.
+ * HADİ — 2048 mekaniği, sayı yerine har demiştik
  * 2=A, 4=B, 8=C, 16=D, 32=E, 64=F, 128=G, 256=H ...
  */
 const SIZE = 4;
