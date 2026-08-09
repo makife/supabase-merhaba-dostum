@@ -467,7 +467,12 @@ const HadiGamePage = () => {
               <span className="text-xs text-slate-500">En büyük harf: <b className="text-white">{bestLetter}</b></span>
             </div>
 
+            <style>{`
+              @keyframes hadi-appear { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+              @keyframes hadi-pop { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+            `}</style>
             <div
+
               ref={gridElRef}
               onMouseDown={onMouseDown}
               onMouseUp={onMouseUp}
