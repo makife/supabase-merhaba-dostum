@@ -64,6 +64,9 @@ export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }
           </button>
         </div>
 
+        {variant === "carousel" ? (
+          <HomeCardCarousel items={items} />
+        ) : (
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-1">
           {items.map((item, i) => {
             const anim = {
