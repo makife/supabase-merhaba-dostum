@@ -405,13 +405,14 @@ const HadiGamePage = () => {
       <div className="flex-1 flex flex-col overflow-hidden px-5 pb-6">
         {gameState === "ready" && (
           <div className="flex flex-col items-center gap-1 pt-4 flex-1 min-h-0">
-            <div className="w-32 h-32 shrink-0">
+            <div className="w-32 h-32 shrink-0 rounded-full bg-white flex items-center justify-center shadow-lg shadow-black/30 overflow-hidden">
               <Lottie 
                 animationData={abcHarflerHadiAnimation} 
                 loop={true} 
-                className="w-full h-full"
+                className="w-[78%] h-[78%]"
               />
             </div>
+
             <div className="text-center shrink-0">
               <h2 className="text-xl font-bold text-white mb-2">HADİ</h2>
               <p className="text-sm text-slate-400 max-w-xs">
