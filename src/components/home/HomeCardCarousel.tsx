@@ -123,7 +123,7 @@ export const HomeCardCarousel = ({ items }: Props) => {
                   draggable={false}
                 />
                 {item.badge && (
-                  <div className="absolute right-[6%] top-[6%] z-10 flex items-center justify-center">
+                  <div className="absolute inset-0 z-10 flex items-center justify-center">
                     {item.badge}
                   </div>
                 )}
