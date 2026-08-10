@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { PressableZone } from "@/components/ui/pressable-zone";
+import HomeCardCarousel from "@/components/home/HomeCardCarousel";
 
 export interface SlidePanelItem {
   id: string;
@@ -20,9 +21,11 @@ interface HomeSlidePanelProps {
   onClose: () => void;
   title: string;
   items: SlidePanelItem[];
+  /** "list" (varsayılan) veya atlıkarınca kart karuseli */
+  variant?: "list" | "carousel";
 }
 
-export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelProps) => {
+export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }: HomeSlidePanelProps) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -62,6 +65,9 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
           </button>
         </div>
 
+        {variant === "carousel" ? (
+          <HomeCardCarousel items={items} />
+        ) : (
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-1">
           {items.map((item, i) => {
             const anim = {
@@ -142,6 +148,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelPr
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

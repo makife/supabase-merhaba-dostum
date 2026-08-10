@@ -30,6 +30,11 @@ import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeTicker from "@/components/home/HomeTicker";
 
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
+import refleksKart from "@/assets/refleksKart.png";
+import harfKosusuKart from "@/assets/harfKosusuKart.png";
+import kelimePuzzleKart from "@/assets/kelimePuzzleKart.png";
+import kelimeHafizaKart from "@/assets/kelimeHafizaKart.png";
+import hadiKart from "@/assets/hadiKart.png";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
@@ -900,7 +905,7 @@ const HomePage = () => {
       title: "Kelime Puzzle",
       icon: <KelimePuzzleIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: "/gunlukModu/puzzle.png",
+      imageSrc: kelimePuzzleKart,
       dimmed: challengeStatus.puzzle,
       badge: challengeStatus.puzzle ? playedBadge : undefined,
       onClick: () => {
@@ -913,7 +918,7 @@ const HomePage = () => {
       title: "Harf Koşusu",
       icon: <ReaktorIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: "/gunlukModu/reaktor.png",
+      imageSrc: harfKosusuKart,
       dimmed: challengeStatus.reaktor,
       badge: challengeStatus.reaktor ? playedBadge : undefined,
       onClick: () => {
@@ -926,7 +931,7 @@ const HomePage = () => {
       title: "Refleks",
       icon: <RefleksIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: "/gunlukModu/neon-blitz.png",
+      imageSrc: refleksKart,
       dimmed: challengeStatus.neon_blitz,
       badge: challengeStatus.neon_blitz ? playedBadge : undefined,
       onClick: () => {
@@ -939,7 +944,7 @@ const HomePage = () => {
       title: "Hafıza",
       icon: <KelimeHafizaIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: "/gunlukModu/memory.png",
+      imageSrc: kelimeHafizaKart,
       dimmed: challengeStatus.memory,
       badge: challengeStatus.memory ? playedBadge : undefined,
       onClick: () => {
@@ -952,7 +957,7 @@ const HomePage = () => {
       title: "HADİ",
       icon: <img src="/surukle.svg" alt="" className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: "/gunlukModu/kelime-avi.png",
+      imageSrc: hadiKart,
       dimmed: challengeStatus.kelime_avi,
       badge: challengeStatus.kelime_avi ? playedBadge : undefined,
       onClick: () => {
@@ -1338,6 +1343,7 @@ const HomePage = () => {
           open={showChallengePanel}
           onClose={() => setShowChallengePanel(false)}
           title="Düello & Challenge"
+          variant="carousel"
           items={challengePanelItems}
         />
         <HomeSlidePanel
