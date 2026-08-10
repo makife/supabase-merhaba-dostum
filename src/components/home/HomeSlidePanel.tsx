@@ -147,6 +147,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );
