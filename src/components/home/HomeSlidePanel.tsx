@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { PressableZone } from "@/components/ui/pressable-zone";
+import HomeCardCarousel from "@/components/home/HomeCardCarousel";
 
 export interface SlidePanelItem {
   id: string;
