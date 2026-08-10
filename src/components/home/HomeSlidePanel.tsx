@@ -24,7 +24,7 @@ interface HomeSlidePanelProps {
   variant?: "list" | "carousel";
 }
 
-export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelProps) => {
+export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }: HomeSlidePanelProps) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
