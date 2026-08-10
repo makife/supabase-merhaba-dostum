@@ -264,12 +264,14 @@ const HadiGamePage = () => {
     ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
 
     setMoves((m) => m + 1);
+    // Harfler kayarken dino zıplama sesi
+    if (!muted) { try { playDinoJump(); } catch {} }
     if (res.gained > 0) {
       setScore((s) => s + res.gained);
-      playSound("correctWord");
-    } else {
+      // Birleşme: normal oyun buton sesi
       playSound("buttonClick");
     }
+
     const finalBoard = boardFromTiles(nextTiles);
     setBestLetter(valueToLetter(Math.max(...finalBoard.flat())));
     if (!hasMoves(finalBoard)) {
