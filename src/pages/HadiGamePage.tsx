@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import Lottie from "lottie-react";
 import abcHarflerHadiAnimation from "../assets/abcHarflerHadi.json";
+import { playDinoJump } from "@/utils/genericBeep";
+
 
 /**
  * HADİ — 2048 mekaniği, sayı yerine har demiştik
