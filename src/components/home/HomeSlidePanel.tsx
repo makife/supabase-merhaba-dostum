@@ -20,6 +20,8 @@ interface HomeSlidePanelProps {
   onClose: () => void;
   title: string;
   items: SlidePanelItem[];
+  /** "list" (varsayılan) veya atlıkarınca kart karuseli */
+  variant?: "list" | "carousel";
 }
 
 export const HomeSlidePanel = ({ open, onClose, title, items }: HomeSlidePanelProps) => {
