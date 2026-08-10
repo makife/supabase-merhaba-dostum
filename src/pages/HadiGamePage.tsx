@@ -279,7 +279,7 @@ const HadiGamePage = () => {
     if (!hasMoves(finalBoard)) {
       setGameState("finished");
     }
-  }, [playSound]);
+  }, [playSound, muted]);
 
   // Save score on finish
   useEffect(() => {
