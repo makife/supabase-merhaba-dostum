@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
 import Lottie from "lottie-react";
 import abcHarflerHadiAnimation from "../assets/abcHarflerHadi.json";
+import { playDinoJump } from "@/utils/genericBeep";
+
 
 /**
  * HADİ — 2048 mekaniği, sayı yerine har demiştik
@@ -264,18 +266,20 @@ const HadiGamePage = () => {
     ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
 
     setMoves((m) => m + 1);
+    // Harfler kayarken dino zıplama sesi
+    if (!muted) { try { playDinoJump(); } catch {} }
     if (res.gained > 0) {
       setScore((s) => s + res.gained);
-      playSound("correctWord");
-    } else {
+      // Birleşme: normal oyun buton sesi
       playSound("buttonClick");
     }
+
     const finalBoard = boardFromTiles(nextTiles);
     setBestLetter(valueToLetter(Math.max(...finalBoard.flat())));
     if (!hasMoves(finalBoard)) {
       setGameState("finished");
     }
-  }, [playSound]);
+  }, [playSound, muted]);
 
   // Save score on finish
   useEffect(() => {
