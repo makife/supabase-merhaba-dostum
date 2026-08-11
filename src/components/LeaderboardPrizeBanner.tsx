@@ -91,15 +91,24 @@ const LeaderboardPrizeBanner = ({ tab }: LeaderboardPrizeBannerProps) => {
 
       <div className="grid grid-cols-3 gap-2">
         {cards.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={`${i + 1}. ödül kartı`}
-            className="w-full h-auto select-none rounded-xl"
-            draggable={false}
-          />
+          <div key={i} className="relative">
+            <img
+              src={src}
+              alt={`${i + 1}. ödül kartı`}
+              className="w-full h-auto select-none rounded-xl"
+              draggable={false}
+            />
+            {/* Görselin üzerindeki "Ödülleri Al" butonuna görünmez hit-zone */}
+            <PressableZone
+              label="Ödülleri Al"
+              haptic="medium"
+              className="rounded-full"
+              style={{ top: "78.5%", left: "23%", width: "54%", height: "5.5%" }}
+            />
+          </div>
         ))}
       </div>
+
 
       <p className="text-[10px] text-slate-400 text-center mt-1.5">🏆 İlk 3 oyuncuya verilecek</p>
     </div>
