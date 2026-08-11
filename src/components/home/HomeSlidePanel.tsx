@@ -68,7 +68,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }
         {variant === "carousel" ? (
           <HomeCardCarousel items={items} />
         ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-1">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide flex flex-col gap-1 items-center justify-center">
           {items.map((item, i) => {
             const anim = {
               transform: mounted ? "translate3d(0,0,0)" : "translate3d(-120%,0,0)",
@@ -85,7 +85,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }
                   label={item.title}
                   glow={false}
                   onPress={item.onClick}
-                  className="w-[92%] flex-shrink-0 block"
+                  className="w-[92%] flex-shrink-0 block mx-auto"
                   style={anim}
                 >
                   <img
@@ -118,7 +118,7 @@ export const HomeSlidePanel = ({ open, onClose, title, items, variant = "list" }
               label={item.title}
               glow={false}
               onPress={item.onClick}
-              className={`w-[86%] rounded-3xl p-4 flex items-center gap-4 border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] text-left ${
+              className={`w-[86%] mx-auto rounded-3xl p-4 flex items-center gap-4 border-2 border-white shadow-[0_0_12px_rgba(255,255,255,0.2)] text-left ${
                 item.dimmed ? "opacity-45 grayscale-[70%]" : ""
               }`}
               style={anim}
