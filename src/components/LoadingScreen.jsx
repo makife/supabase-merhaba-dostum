@@ -217,24 +217,26 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           </div>
 
           <div className="loading-container" style={{ width: "90%", maxWidth: "600px" }}>
-            {/* Lottie Animasyon Konteyneri - Aşağı Kaydırıldı */}
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                marginTop: "50px", // Animasyonu yukarıdan aşağıya iter
-                marginBottom: "10px",
-              }}
-            >
-              <Lottie
-                animationData={wormAnimationData}
-                loop={false}
-                autoplay={true}
-                style={{ width: "100%", height: "auto" }}
-              />
-            </div>
+            {/* Lottie Animasyon Konteyneri */}
+<div
+  style={{
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    top: "50px", // 👈 İlerleme çubuğunu doğrudan 50px aşağı kaydırır (değeri artırabilirsin)
+    marginBottom: "60px", // Alttaki yazının üstüne binmemesi için alt boşluğu da artırdık
+  }}
+>
+  <Lottie
+    animationData={wormAnimationData}
+    loop={false}
+    autoplay={true}
+    style={{ width: "100%", height: "auto" }}
+  />
+</div>
+
 
             {/* Yükleme Yazısı ve Yüzde */}
             <div
