@@ -379,7 +379,7 @@ const HadiGamePage = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="text-lg font-black text-white">🔤 HADİ</h1>
+            <h1 className="text-lg font-black text-white">🔤 KARMA</h1>
             <p className="text-[10px] text-amber-400/80">Aynı harfleri birleştir</p>
           </div>
         </div>
@@ -414,7 +414,7 @@ const HadiGamePage = () => {
             </div>
 
             <div className="text-center shrink-0">
-              <h2 className="text-xl font-bold text-white mb-2">HADİ</h2>
+              <h2 className="text-xl font-bold text-white mb-2">KARMA</h2>
               <p className="text-sm text-slate-400 max-w-xs">
                 Kaydır, aynı harfleri birleştir ve alfabede ilerle! A + A = B, B + B = C...
               </p>
