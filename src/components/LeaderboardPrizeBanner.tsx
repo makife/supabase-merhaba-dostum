@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import genel1 from "@/assets/genel1lik.png";
 import genel2 from "@/assets/genel2lik.png";
 import genel3 from "@/assets/genel3luk.png";
