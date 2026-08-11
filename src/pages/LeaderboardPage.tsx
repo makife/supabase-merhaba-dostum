@@ -837,47 +837,57 @@ const LeaderboardPage = () => {
           }
         }}
         onTouchEnd={() => {
-          const s = swipeRef.current;
-          swipeRef.current = null;
-          const el = dragLayerRef.current;
-          if (!s || !el) return;
-          const w = el.offsetWidth || 1;
-          const idx = TAB_ORDER.indexOf(activeTab);
-          const dir = s.dx < 0 ? 1 : -1;
-          const nextIdx = idx + dir;
-          const commit = s.axis === "x" && Math.abs(s.dx) > Math.min(90, w * 0.22) && nextIdx >= 0 && nextIdx < TAB_ORDER.length;
-          const pill = pillRef.current;
-          const settlePill = (target: number) => {
-            if (!pill) return;
-            pill.style.transition = "transform 260ms cubic-bezier(0.22,1,0.36,1)";
-            pill.style.transform = `translate3d(${target * 100}%,0,0)`;
-          };
+  const s = swipeRef.current;
+  swipeRef.current = null;
+  const el = dragLayerRef.current;
+  if (!s || !el) return;
+  const w = el.offsetWidth || 1;
+  const idx = TAB_ORDER.indexOf(activeTab);
+  const dir = s.dx < 0 ? 1 : -1;
+  const nextIdx = idx + dir;
+  const commit = s.axis === "x" && Math.abs(s.dx) > Math.min(90, w * 0.22) && nextIdx >= 0 && nextIdx < TAB_ORDER.length;
+  const pill = pillRef.current;
+  
+  const settlePill = (target: number) => {
+    if (!pill) return;
+    pill.style.transition = "transform 260ms cubic-bezier(0.22,1,0.36,1)";
+    pill.style.transform = `translate3d(${target * 100}%,0,0)`;
+  };
 
-          if (!commit) {
-            el.style.transition = "transform 220ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease-out";
-            el.style.transform = "translate3d(0,0,0)";
-            el.style.opacity = "1";
-            settlePill(idx);
-            return;
-          }
+  if (!commit) {
+    el.style.transition = "transform 220ms cubic-bezier(0.22,1,0.36,1), opacity 220ms ease-out";
+    el.style.transform = "translate3d(0,0,0)";
+    el.style.opacity = "1";
+    settlePill(idx);
+    return;
+  }
 
-          playSound("buttonClick");
-          try { navigator.vibrate?.(8); } catch {}
-          settlePill(nextIdx);
+  playSound("buttonClick");
+  try { navigator.vibrate?.(8); } catch {}
+  settlePill(nextIdx);
 
-          // 🔥 Anında geçiş: veriler zaten bellekte, bekleme yok
-          setActiveTab(TAB_ORDER[nextIdx]);
-          el.style.transition = "none";
-          el.style.transform = `translate3d(${dir * w * 0.35}px,0,0)`;
-          el.style.opacity = "0.6";
-          requestAnimationFrame(() => {
-            const n2 = dragLayerRef.current;
-            if (!n2) return;
-            n2.style.transition = "transform 240ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease-out";
-            n2.style.transform = "translate3d(0,0,0)";
-            n2.style.opacity = "1";
-          });
-        }}
+  // DÜZELTME 1: Yön hesabı
+  const startX = s.dx < 0 ? Math.min(w * 0.4, 180) : -Math.min(w * 0.4, 180);
+
+  setActiveTab(TAB_ORDER[nextIdx]);
+
+  // DÜZELTME 2: Başlangıç konumunu oturtma
+  el.style.transition = "none";
+  el.style.transform = `translate3d(${startX}px,0,0)`;
+  el.style.opacity = "0.5";
+
+  // DÜZELTME 3: Merkeze kaydırma animasyonu
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const n2 = dragLayerRef.current;
+      if (!n2) return;
+      n2.style.transition = "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out";
+      n2.style.transform = "translate3d(0,0,0)";
+      n2.style.opacity = "1";
+    });
+  });
+}}
+
       >
         <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>
           {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
