@@ -224,7 +224,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                marginTop: "30px", // Animasyonu yukarıdan aşağıya iter
+                marginTop: "500px", // Animasyonu yukarıdan aşağıya iter
                 marginBottom: "10px",
               }}
             >
