@@ -5,7 +5,6 @@ import { preloadHomeIslands } from "@/lib/homeIslandAssets";
 import erganVideo from "@/assets/ergan.mp4";
 import wormAnimationData from "@/assets/ilerlemeCubugu.json";
 
-
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(["Oyun yükleniyor..."]);
   const [currentTip, setCurrentTip] = useState("");
@@ -15,8 +14,6 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [showErganImage, setShowErganImage] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  const lottieRef = useRef(null);
 
   const loadingSteps = [
     { text: "Oyun hazırlanıyor...", progress: 0 },
@@ -136,17 +133,6 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     };
   }, [showLoading, onLoadingComplete]);
 
-  // Solucanın hızını koddaki `progress` adımlarına bağlayan efekt
-  useEffect(() => {
-    if (lottieRef.current) {
-      const totalFrames = wormAnimationData.op || 706;
-      const targetFrame = (progress / 100) * totalFrames;
-      
-      // Animasyonu hedef frame'e taşır (True: frame tabanlı çalışır)
-      lottieRef.current.goToAndStop(targetFrame, true);
-    }
-  }, [progress]);
-
   return (
     <div
       className="loading-screen"
@@ -187,12 +173,13 @@ const LoadingScreen = ({ onLoadingComplete }) => {
         </div>
       ) : showLoading ? (
         <>
+          {/* İpucu Konteyneri */}
           <div
             className="tip-container"
             style={{
               width: "90%",
               maxWidth: "600px",
-              margin: "0 auto 40px auto",
+              margin: "0 auto 20px auto",
               padding: "25px",
               backgroundColor: "rgba(255, 255, 255, 0.05)",
               borderRadius: "15px",
@@ -230,32 +217,35 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           </div>
 
           <div className="loading-container" style={{ width: "90%", maxWidth: "600px" }}>
-            {/* Eski CSS progress bar yerine yerleştirilen Lottie Animasyonu */}
+            {/* Lottie Animasyon Konteyneri - Aşağı Kaydırıldı */}
             <div
               style={{
                 width: "100%",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
+                marginTop: "30px", // Animasyonu yukarıdan aşağıya iter
                 marginBottom: "10px",
               }}
             >
               <Lottie
-                lottieRef={lottieRef}
                 animationData={wormAnimationData}
                 loop={false}
-                autoplay={false}
+                autoplay={true}
                 style={{ width: "100%", height: "auto" }}
               />
             </div>
 
+            {/* Yükleme Yazısı ve Yüzde */}
             <div
               className="loading-text"
               style={{
                 color: isComplete ? "#4ade80" : "#999",
                 textAlign: "center",
-                fontSize: "14px",
+                fontSize: "15px",
+                fontWeight: "600",
                 letterSpacing: "1px",
+                marginTop: "10px",
               }}
             >
               {loadingText} (%{progress})
