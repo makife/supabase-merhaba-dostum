@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ensureImagesLoaded } from "./GameCountdown";
 import { preloadHomeIslands } from "@/lib/homeIslandAssets";
+import erganVideo from "@/assets/ergan.mp4";
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(["Oyun yükleniyor..."]);
