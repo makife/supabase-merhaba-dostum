@@ -224,9 +224,8 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
-    top: "50px", // 👈 İlerleme çubuğunu doğrudan 50px aşağı kaydırır (değeri artırabilirsin)
-    marginBottom: "60px", // Alttaki yazının üstüne binmemesi için alt boşluğu da artırdık
+    transform: "translateY(50px)", // 👈 40px aşağı iter (örn: 60px, 80px yapabilirsin)
+    marginBottom: "50px",
   }}
 >
   <Lottie
@@ -236,6 +235,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     style={{ width: "100%", height: "auto" }}
   />
 </div>
+
 
 
             {/* Yükleme Yazısı ve Yüzde */}
