@@ -941,7 +941,7 @@ const HomePage = () => {
     },
     {
       id: "memory",
-      title: "Hafıza",
+      title: "Kelime Hafıza",
       icon: <KelimeHafizaIcon className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: kelimeHafizaKart,
@@ -954,7 +954,7 @@ const HomePage = () => {
     },
     {
       id: "kelime-avi",
-      title: "HADİ",
+      title: "Karma",
       icon: <img src="/surukle.svg" alt="" className="w-9 h-9" />,
       gradient: "from-yellow-600 via-amber-500 to-yellow-700",
       imageSrc: hadiKart,
