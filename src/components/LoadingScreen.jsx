@@ -162,7 +162,17 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             zIndex: 1000,
           }}
         >
-          <img src="/ergan.jpg" alt="Ergan" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <video
+            src={erganVideo}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={finishIntro}
+            onError={finishIntro}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+
         </div>
       ) : showLoading ? (
         <>
