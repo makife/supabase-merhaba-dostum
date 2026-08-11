@@ -1,44 +1,25 @@
 import { useState, useEffect } from "react";
-import { Gift, Clock, Zap } from "lucide-react";
-import Lottie from "lottie-react";
-
-interface PrizeInfo {
-  degistir: number;
-  fisilida: number;
-  senyaz: number;
-  oyunHakki?: number;
-  boostLabel: string;
-}
+import { Clock } from "lucide-react";
+import genel1 from "@/assets/genel1lik.png";
+import genel2 from "@/assets/genel2lik.png";
+import genel3 from "@/assets/genel3luk.png";
+import aylik1 from "@/assets/aylik1lik.png";
+import aylik2 from "@/assets/aylik2lik.png";
+import aylik3 from "@/assets/aylik3luk.png";
+import haftalik1 from "@/assets/haftalik1lik.png";
+import haftalik2 from "@/assets/haftalik2lik.png";
+import haftalik3 from "@/assets/haftalik3luk.png";
 
 interface LeaderboardPrizeBannerProps {
   tab: "all-time" | "weekly" | "monthly";
 }
 
-const PRIZE_CONFIG: Record<string, { prizes: PrizeInfo[] }> = {
-  "all-time": {
-    prizes: [
-      { degistir: 30, fisilida: 30, senyaz: 30, oyunHakki: 20, boostLabel: "5 gün puan x2" },
-      { degistir: 20, fisilida: 20, senyaz: 20, oyunHakki: 10, boostLabel: "3 gün puan x2" },
-      { degistir: 10, fisilida: 10, senyaz: 10, oyunHakki: 5, boostLabel: "1 gün puan x2" },
-    ],
-  },
-  weekly: {
-    prizes: [
-      { degistir: 3, fisilida: 3, senyaz: 3, oyunHakki: 3, boostLabel: "2 saat puan x2" },
-      { degistir: 2, fisilida: 2, senyaz: 2, oyunHakki: 2, boostLabel: "1 saat puan x2" },
-      { degistir: 1, fisilida: 1, senyaz: 1, oyunHakki: 1, boostLabel: "30 dakika puan x2" },
-    ],
-  },
-  monthly: {
-    prizes: [
-      { degistir: 8, fisilida: 8, senyaz: 8, oyunHakki: 6, boostLabel: "2 gün puan x2" },
-      { degistir: 6, fisilida: 6, senyaz: 6, oyunHakki: 4, boostLabel: "12 saat puan x2" },
-      { degistir: 4, fisilida: 4, senyaz: 4, oyunHakki: 2, boostLabel: "3 saat puan x2" },
-    ],
-  },
+const PRIZE_CARDS: Record<LeaderboardPrizeBannerProps["tab"], string[]> = {
+  "all-time": [genel1, genel2, genel3],
+  monthly: [aylik1, aylik2, aylik3],
+  weekly: [haftalik1, haftalik2, haftalik3],
 };
 
-const RANK_MEDALS = ["🥇", "🥈", "🥉"];
 
 // 4-month seasons: Jan-Apr, May-Aug, Sep-Dec
 function getSeasonEnd(): Date {
