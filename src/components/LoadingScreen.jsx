@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import Lottie from "lottie-react";
 import { ensureImagesLoaded } from "./GameCountdown";
 import { preloadHomeIslands } from "@/lib/homeIslandAssets";
 import erganVideo from "@/assets/ergan.mp4";
+import wormAnimationData from "@/assets/ilerlemeCubugu.json";
+
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(["Oyun yükleniyor..."]);
@@ -12,6 +15,8 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [showErganImage, setShowErganImage] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const lottieRef = useRef(null);
 
   const loadingSteps = [
     { text: "Oyun hazırlanıyor...", progress: 0 },
@@ -30,8 +35,6 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       const ASSET_TIMEOUT = 5000;
 
       try {
-        // Ana sayfa yüzen ada görselleri: açılışta hazırlanır, sonraki
-        // ana sayfa dönüşlerinde bekleme olmaz.
         const islandsPromise = Promise.race([
           preloadHomeIslands(),
           new Promise((resolve) => setTimeout(resolve, ASSET_TIMEOUT)),
@@ -73,7 +76,6 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     setMounted(true);
   }, []);
 
-  // Intro videosu bitince (veya güvenlik süresi dolunca) loading ekranına geç
   const introFinishedRef = useRef(false);
   const finishIntro = () => {
     if (introFinishedRef.current) return;
@@ -84,7 +86,6 @@ const LoadingScreen = ({ onLoadingComplete }) => {
 
   useEffect(() => {
     if (!mounted) return;
-    // Video oynamazsa/yüklenmezse takılı kalmasın
     const introFallback = setTimeout(finishIntro, 12000);
     return () => clearTimeout(introFallback);
   }, [mounted]);
@@ -135,6 +136,17 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     };
   }, [showLoading, onLoadingComplete]);
 
+  // Solucanın hızını koddaki `progress` adımlarına bağlayan efekt
+  useEffect(() => {
+    if (lottieRef.current) {
+      const totalFrames = wormAnimationData.op || 706;
+      const targetFrame = (progress / 100) * totalFrames;
+      
+      // Animasyonu hedef frame'e taşır (True: frame tabanlı çalışır)
+      lottieRef.current.goToAndStop(targetFrame, true);
+    }
+  }, [progress]);
+
   return (
     <div
       className="loading-screen"
@@ -172,11 +184,9 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             onError={finishIntro}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-
         </div>
       ) : showLoading ? (
         <>
-          {/* Genişletilmiş ve Düzenlenmiş İpucu Konteyneri */}
           <div
             className="tip-container"
             style={{
@@ -219,48 +229,26 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             </div>
           </div>
 
-          <div className="loading-container" style={{ width: "80%", maxWidth: "500px" }}>
+          <div className="loading-container" style={{ width: "90%", maxWidth: "600px" }}>
+            {/* Eski CSS progress bar yerine yerleştirilen Lottie Animasyonu */}
             <div
-              className="progress-bar-container"
               style={{
-                position: "relative",
-                height: "35px",
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: "20px",
-                overflow: "hidden",
+                width: "100%",
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "center",
-                marginBottom: "15px",
+                alignItems: "center",
+                marginBottom: "10px",
               }}
             >
-              <div
-                className="progress-bar"
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: 0,
-                  transform: "translateX(-50%)",
-                  width: `${progress}%`,
-                  height: "100%",
-                  transition: "width 0.5s ease-out",
-                  background: isComplete
-                    ? "linear-gradient(90deg, #4ade80, #16a34a)"
-                    : "linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1)",
-                }}
-              ></div>
-              <div
-                style={{
-                  position: "relative",
-                  color: "white",
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                  zIndex: 2,
-                }}
-              >
-                %{progress}
-              </div>
+              <Lottie
+                lottieRef={lottieRef}
+                animationData={wormAnimationData}
+                loop={false}
+                autoplay={false}
+                style={{ width: "100%", height: "auto" }}
+              />
             </div>
+
             <div
               className="loading-text"
               style={{
@@ -270,7 +258,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
                 letterSpacing: "1px",
               }}
             >
-              {loadingText}
+              {loadingText} (%{progress})
             </div>
           </div>
         </>
