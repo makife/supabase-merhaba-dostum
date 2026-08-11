@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ensureImagesLoaded } from "./GameCountdown";
 import { preloadHomeIslands } from "@/lib/homeIslandAssets";
+import erganVideo from "@/assets/ergan.mp4";
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [tips, setTips] = useState(["Oyun yükleniyor..."]);
@@ -72,53 +73,67 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     setMounted(true);
   }, []);
 
+  // Intro videosu bitince (veya güvenlik süresi dolunca) loading ekranına geç
+  const introFinishedRef = useRef(false);
+  const finishIntro = () => {
+    if (introFinishedRef.current) return;
+    introFinishedRef.current = true;
+    setShowErganImage(false);
+    setShowLoading(true);
+  };
+
   useEffect(() => {
     if (!mounted) return;
+    // Video oynamazsa/yüklenmezse takılı kalmasın
+    const introFallback = setTimeout(finishIntro, 12000);
+    return () => clearTimeout(introFallback);
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!showLoading) return;
+
+    let cancelled = false;
+    const timers = [];
 
     const failsafeTimer = setTimeout(() => {
       console.log("⚠️ LoadingScreen: Failsafe timeout");
       if (onLoadingComplete) onLoadingComplete();
     }, 15000);
+    timers.push(failsafeTimer);
 
-    const erganTimer = setTimeout(() => {
-      setShowErganImage(false);
-      setShowLoading(true);
-    }, 3000);
+    let currentStep = 0;
+    const updateStep = () => {
+      if (cancelled || currentStep >= loadingSteps.length) return;
+      const step = loadingSteps[currentStep];
+      setProgress(step.progress);
+      setLoadingText(step.text);
+      currentStep++;
 
-    const loadingTimer = setTimeout(() => {
-      let currentStep = 0;
-
-      const updateStep = () => {
-        if (currentStep < loadingSteps.length) {
-          const step = loadingSteps[currentStep];
-          setProgress(step.progress);
-          setLoadingText(step.text);
-          currentStep++;
-
-          if (currentStep < loadingSteps.length) {
-            setTimeout(updateStep, Math.random() * 500 + 700);
-          } else {
-            setTimeout(() => {
-              setLoadingText("Oyun başlıyor...");
-              setIsComplete(true);
+      if (currentStep < loadingSteps.length) {
+        timers.push(setTimeout(updateStep, Math.random() * 500 + 700));
+      } else {
+        timers.push(
+          setTimeout(() => {
+            setLoadingText("Oyun başlıyor...");
+            setIsComplete(true);
+            timers.push(
               setTimeout(() => {
                 clearTimeout(failsafeTimer);
                 if (onLoadingComplete) onLoadingComplete();
-              }, 1000);
-            }, 500);
-          }
-        }
-      };
+              }, 1000)
+            );
+          }, 500)
+        );
+      }
+    };
 
-      updateStep();
-    }, 3500);
+    updateStep();
 
     return () => {
-      clearTimeout(failsafeTimer);
-      clearTimeout(erganTimer);
-      clearTimeout(loadingTimer);
+      cancelled = true;
+      timers.forEach(clearTimeout);
     };
-  }, [mounted, onLoadingComplete]);
+  }, [showLoading, onLoadingComplete]);
 
   return (
     <div
@@ -147,7 +162,17 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             zIndex: 1000,
           }}
         >
-          <img src="/ergan.jpg" alt="Ergan" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <video
+            src={erganVideo}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={finishIntro}
+            onError={finishIntro}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+
         </div>
       ) : showLoading ? (
         <>
