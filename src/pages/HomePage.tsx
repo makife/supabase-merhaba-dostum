@@ -18,6 +18,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import { RadioPicker } from "@/components/RadioPicker";
 import HomeClouds from "@/components/home/HomeClouds";
 import oynandiIcon from "@/assets/oynandi.svg";
+import { setGameHubPath } from "@/utils/challengeBackPath";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
 import levelBarImg from "@/assets/levelBar.png";
 import murekkepAnim from "@/assets/murekkep.json";
@@ -729,6 +730,7 @@ const HomePage = () => {
   useEffect(() => {
     console.log("🏠 [HomePage] Mount - ilk veri yüklemesi...");
     refreshProfile(true);
+    setGameHubPath("/");
     // loadJokers() kaldırıldı - useJokerInventory hook'u zaten mount'ta çağırıyor
   }, []);
 
@@ -1237,7 +1239,7 @@ const HomePage = () => {
               }}
               onSelect={(key) => {
                 playSound("buttonClick");
-                if (key === "oyunModlari") setShowModePanel(true);
+                if (key === "oyunModlari") navigate("/game-modes");
                 else if (key === "duello") navigate("/challenge");
                 else if (key === "carki") navigate("/wheel");
                 else if (key === "radyo") setShowRadio(true);
@@ -1260,12 +1262,6 @@ const HomePage = () => {
 
         {/* --- PANELLER --- */}
         {/* Düello & Challenge artık /challenge sayfasında */}
-        <HomeSlidePanel
-          open={showModePanel}
-          onClose={() => setShowModePanel(false)}
-          title="Oyun Modları"
-          items={gameModePanelItems}
-        />
 
         {/* --- MODALLAR --- */}
         {selectedMode && selectedMode === "private-room" ? (
@@ -1295,7 +1291,6 @@ const HomePage = () => {
               onCancel={() => {
                 cancelSearch();
                 setShowMatchmaking(false);
-                setShowModePanel(true);
               }}
               searchProgress={searchProgress}
             />
