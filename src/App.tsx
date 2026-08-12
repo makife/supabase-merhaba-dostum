@@ -521,6 +521,14 @@ const AppRoutes = () => {
             }
           />
           <Route
+            path="/challenge"
+            element={
+              <ProtectedRoute>
+                <ChallengeHubPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/challenge/word-hunt"
             element={
               <ProtectedRoute>
