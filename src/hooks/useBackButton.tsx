@@ -35,6 +35,7 @@ const ALLOW_BACK_ROUTES = [
   "/market",
   "/leaderboard",
   "/chat",
+  "/challenge",
   "/wheel",
   "/memory-game",
   "/puzzle-game",
