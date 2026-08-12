@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
+import { homeBackPath } from "@/utils/challengeBackPath";
 import { useNavigate, useSearchParams, useLocation, useParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useGame } from "@/contexts/GameContext";
@@ -3809,7 +3810,7 @@ const GamePage = ({
     // Oyundan çıkarken matchmaking state'ini de temizle
     window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
 
-    navigate("/");
+    navigate(homeBackPath());
   };
 
   // Random match için grid'i URL'den al ve game room oluştur
@@ -3829,7 +3830,7 @@ const GamePage = ({
 
       if (!roomId || !type) {
         console.error("❌ Random match için room ID veya type eksik", { roomId, type });
-        navigate("/");
+        navigate(homeBackPath());
         return;
       }
 
@@ -3862,7 +3863,7 @@ const GamePage = ({
               description: "Oyun odasına bağlanılamadı",
               variant: "destructive",
             });
-            navigate("/");
+            navigate(homeBackPath());
             return;
           }
 
@@ -3886,7 +3887,7 @@ const GamePage = ({
             description: "Eşleşme odasına ulaşılamadı",
             variant: "destructive",
           });
-          navigate("/");
+          navigate(homeBackPath());
           return;
         }
 
@@ -3949,7 +3950,7 @@ const GamePage = ({
               description: "Oyun odası oluşturulamadı",
               variant: "destructive",
             });
-            navigate("/");
+            navigate(homeBackPath());
             return;
           }
 
@@ -3973,11 +3974,11 @@ const GamePage = ({
             description: "Oyun odasına bağlanılamadı",
             variant: "destructive",
           });
-          navigate("/");
+          navigate(homeBackPath());
         }
       } catch (error) {
         console.error("❌ Random match initialization hatası:", error);
-        navigate("/");
+        navigate(homeBackPath());
       }
     };
 
@@ -4000,7 +4001,7 @@ const GamePage = ({
 
       if (!roomParam || !type) {
         console.error("❌ Private room için room veya type eksik");
-        navigate("/");
+        navigate(homeBackPath());
         return;
       }
 
@@ -4018,7 +4019,7 @@ const GamePage = ({
         const resolvedId = await getIdByCode(roomParam);
         if (!resolvedId) {
           toast({ title: "Bağlantı Hatası", description: "Oda bulunamadı", variant: "destructive" });
-          navigate("/");
+          navigate(homeBackPath());
           return;
         }
         roomId = resolvedId;
@@ -4058,7 +4059,7 @@ const GamePage = ({
       }
       if (!joined) {
         toast({ title: "Bağlantı Hatası", description: "Oyun odasına bağlanılamadı", variant: "destructive" });
-        navigate("/");
+        navigate(homeBackPath());
         return;
       }
 
@@ -5141,7 +5142,7 @@ const GamePage = ({
               description: "Oyun odasına bağlanılamadı",
               variant: "destructive",
             });
-            navigate("/");
+            navigate(homeBackPath());
             return;
           }
 
@@ -5163,7 +5164,7 @@ const GamePage = ({
             description: "Oyun odası bulunamadı",
             variant: "destructive",
           });
-          navigate("/");
+          navigate(homeBackPath());
           return;
         }
 
@@ -5184,7 +5185,7 @@ const GamePage = ({
           const joined = await joinRoom(roomId);
           if (!joined) {
             console.error("❌ Failed to join existing room");
-            navigate("/");
+            navigate(homeBackPath());
             return;
           }
         } else {
@@ -5193,7 +5194,7 @@ const GamePage = ({
 
           if (!gameRoom) {
             console.error("❌ Failed to create game room");
-            navigate("/");
+            navigate(homeBackPath());
             return;
           }
 
@@ -5251,7 +5252,7 @@ const GamePage = ({
         }, 1000);
       } catch (error) {
         console.error("❌ Error loading random match data:", error);
-        navigate("/");
+        navigate(homeBackPath());
       }
     };
 
@@ -8178,7 +8179,7 @@ const GamePage = ({
       });
     }
     window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
-    navigate("/");
+    navigate(homeBackPath());
   };
 
   const playAgainVsComputer = async () => {
@@ -8432,7 +8433,7 @@ const GamePage = ({
                         });
                       }
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
-                      navigate("/");
+                      navigate(homeBackPath());
                     }}
                     variant="outline"
                     className="w-full"
@@ -8486,7 +8487,7 @@ const GamePage = ({
                       }
 
                       window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
-                      navigate("/");
+                      navigate(homeBackPath());
                     }}
                     className="w-full"
                   >
@@ -9330,7 +9331,7 @@ const GamePage = ({
                 if (currentRoom) {
                   await leaveRoom();
                 }
-                navigate("/");
+                navigate(homeBackPath());
               }}
             />
 

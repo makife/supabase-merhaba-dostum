@@ -51,6 +51,7 @@ const ReactorRunnerPage = React.lazy(() => import("@/pages/DinoRunner"));
 const NeonBlitzPage = React.lazy(() => import("@/pages/NeonBlitz"));
 const SnakeGamePage = React.lazy(() => import("@/pages/SnakeGame"));
 const MiniGamesPage = React.lazy(() => import("@/pages/MiniGamesPage"));
+const GameModesPage = React.lazy(() => import("@/pages/GameModesPage"));
 const MorlesGamePage = React.lazy(() => import("@/pages/MorlesGame"));
 const WordHuntPage = React.lazy(() => import("@/pages/WordHuntPage"));
 const HadiGamePage = React.lazy(() => import("@/pages/HadiGamePage"));
@@ -518,6 +519,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <MiniGamesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game-modes"
+            element={
+              <ProtectedRoute>
+                <GameModesPage />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Lottie from "lottie-react";
+import { homeBackPath } from "@/utils/challengeBackPath";
 import { useNavigate } from "react-router-dom";
 import { Home, Users, Plus, RefreshCw } from "lucide-react";
 import { TournamentCard } from "@/components/TournamentCard";
@@ -106,7 +107,7 @@ const TournamentPage = () => {
         <div className="flex items-center justify-between">
           {/* Ana Sayfa butonu */}
           <button
-            onClick={() => { playSound("buttonClick"); navigate("/"); }}
+            onClick={() => { playSound("buttonClick"); navigate(homeBackPath()); }}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/8 ring-1 ring-white/10 active:scale-90 transition-transform hover:bg-white/12"
           >
             <Home className="w-4 h-4 text-white/70" />
