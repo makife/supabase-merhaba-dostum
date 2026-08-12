@@ -14,6 +14,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [showErganImage, setShowErganImage] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   const loadingSteps = [
     { text: "Oyun hazırlanıyor...", progress: 0 },
@@ -161,15 +162,22 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           }}
         >
           <video
-            src={erganVideo}
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            onEnded={finishIntro}
-            onError={finishIntro}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+  src={erganVideo}
+  autoPlay
+  muted
+  playsInline
+  preload="auto"
+  onCanPlayThrough={() => setIsVideoReady(true)}
+  onEnded={finishIntro}
+  onError={finishIntro}
+  style={{
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    opacity: isVideoReady ? 1 : 0, // Video hazır olana kadar tamamen gizli
+    transition: "opacity 0.15s ease-in", // Aniden fırlamak yerine yumuşak geçiş
+  }}
+/>
         </div>
       ) : showLoading ? (
         <>
