@@ -141,7 +141,7 @@ const ChallengeHubPage = () => {
           <img
   src={duelloYazi}
   alt="Düello & Challenge"
-  className="h-26 sm:h-30 md:h-34 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+  className="h-24 sm:h-28 md:h-32 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
   draggable={false}
 />
           <button
