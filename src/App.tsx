@@ -45,6 +45,7 @@ import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 const WheelPage = React.lazy(() => import("./pages/WheelPage"));
 const MemoryGamePage = React.lazy(() => import("@/pages/MemoryGamePage"));
 const PuzzleGamePage = React.lazy(() => import("@/pages/PuzzleGame"));
+const ChallengeHubPage = React.lazy(() => import("@/pages/ChallengeHubPage"));
 const GridSimonSaysPage = React.lazy(() => import("@/pages/GridSimonSays"));
 const ReactorRunnerPage = React.lazy(() => import("@/pages/DinoRunner"));
 const NeonBlitzPage = React.lazy(() => import("@/pages/NeonBlitz"));
