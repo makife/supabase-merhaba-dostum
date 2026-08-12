@@ -1339,13 +1339,7 @@ const HomePage = () => {
         </div>
 
         {/* --- PANELLER --- */}
-        <HomeSlidePanel
-          open={showChallengePanel}
-          onClose={() => setShowChallengePanel(false)}
-          title="Düello & Challenge"
-          variant="carousel"
-          items={challengePanelItems}
-        />
+        {/* Düello & Challenge artık /challenge sayfasında */}
         <HomeSlidePanel
           open={showModePanel}
           onClose={() => setShowModePanel(false)}
