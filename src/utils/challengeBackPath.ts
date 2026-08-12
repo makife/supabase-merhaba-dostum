@@ -4,5 +4,5 @@
  */
 export const homeBackPath = () =>
   typeof window !== "undefined" && window.location.pathname.startsWith("/challenge/")
-    ? "/?panel=challenge"
+    ? "/challenge"
     : "/";

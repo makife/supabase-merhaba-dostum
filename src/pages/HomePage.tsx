@@ -416,7 +416,6 @@ const HomePage = () => {
   const [showAvatarView, setShowAvatarView] = useState(false);
   const [showSystemMessages, setShowSystemMessages] = useState(false);
   const [showRadio, setShowRadio] = useState(false);
-  const [showChallengePanel, setShowChallengePanel] = useState(false);
   const [showModePanel, setShowModePanel] = useState(false);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -451,17 +450,6 @@ const HomePage = () => {
     };
   }, [user?.id]);
 
-
-  // Düello mini oyunlarından dönüşte görev kartları panelini yeniden aç.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("panel") === "challenge") {
-      setShowChallengePanel(true);
-      const url = new URL(window.location.href);
-      url.searchParams.delete("panel");
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, []);
 
   // Eski bot rematch URL'lerini temizle; bot rematch artık özel oda bekleme akışıyla başlar.
   useEffect(() => {
@@ -898,74 +886,6 @@ const HomePage = () => {
   const playedBadge = (
     <img src={oynandiIcon} alt="Oynandı" className="w-16 h-16 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]" />
   );
-
-  const challengePanelItems: SlidePanelItem[] = [
-    {
-      id: "puzzle",
-      title: "Kelime Puzzle",
-      icon: <KelimePuzzleIcon className="w-9 h-9" />,
-      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: kelimePuzzleKart,
-      dimmed: challengeStatus.puzzle,
-      badge: challengeStatus.puzzle ? playedBadge : undefined,
-      onClick: () => {
-        setShowChallengePanel(false);
-        navigate("/challenge/puzzle");
-      },
-    },
-    {
-      id: "reaktor",
-      title: "Harf Koşusu",
-      icon: <ReaktorIcon className="w-9 h-9" />,
-      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: harfKosusuKart,
-      dimmed: challengeStatus.reaktor,
-      badge: challengeStatus.reaktor ? playedBadge : undefined,
-      onClick: () => {
-        setShowChallengePanel(false);
-        navigate("/challenge/reaktor");
-      },
-    },
-    {
-      id: "neon-blitz",
-      title: "Refleks",
-      icon: <RefleksIcon className="w-9 h-9" />,
-      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: refleksKart,
-      dimmed: challengeStatus.neon_blitz,
-      badge: challengeStatus.neon_blitz ? playedBadge : undefined,
-      onClick: () => {
-        setShowChallengePanel(false);
-        navigate("/challenge/neon-blitz");
-      },
-    },
-    {
-      id: "memory",
-      title: "Kelime Hafıza",
-      icon: <KelimeHafizaIcon className="w-9 h-9" />,
-      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: kelimeHafizaKart,
-      dimmed: challengeStatus.memory,
-      badge: challengeStatus.memory ? playedBadge : undefined,
-      onClick: () => {
-        setShowChallengePanel(false);
-        navigate("/challenge/memory");
-      },
-    },
-    {
-      id: "kelime-avi",
-      title: "Karma",
-      icon: <img src="/surukle.svg" alt="" className="w-9 h-9" />,
-      gradient: "from-yellow-600 via-amber-500 to-yellow-700",
-      imageSrc: hadiKart,
-      dimmed: challengeStatus.kelime_avi,
-      badge: challengeStatus.kelime_avi ? playedBadge : undefined,
-      onClick: () => {
-        setShowChallengePanel(false);
-        navigate("/challenge/hadi");
-      },
-    },
-  ];
 
   const gameModePanelItems: SlidePanelItem[] = gameModesConfig.map((mode) => {
     const Icon = mode.icon;
