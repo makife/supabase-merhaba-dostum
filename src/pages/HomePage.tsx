@@ -1176,40 +1176,50 @@ const HomePage = () => {
             </div>
 
             {/* 3. sıra: kalan sayfa hakkı — senyaz jokeri ile aynı hizada */}
-            <div className="relative flex items-center justify-center">
-              {(!isPremium || isUnlimitedLivesActive(profile)) && (
-                <>
-                  <div
-                    className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
-                    onClick={() => {
-                      playSound("buttonClick");
-                      navigate("/market");
-                    }}
-                  >
+<div className="relative flex items-center justify-center">
+  {/* Sınırsız durumlardan biri aktif mi? (VIP veya Sınırsız Akış) */}
+  {(() => {
+    const isUnlimited = isPremium || isUnlimitedLivesActive(profile);
+    const badgeText = isUnlimited ? "∞" : totalCredits;
+    const timerText = isUnlimitedLivesActive(profile)
+      ? unlimitedTimeLeft
+      : isPremium
+        ? premiumTimeLeft
+        : timeUntilNextCredit;
 
-                    {kalanSayfaAnim ? (
-                      <Lottie
-                        animationData={kalanSayfaAnim}
-                        loop
-                        autoplay
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : null}
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
-                      {isUnlimitedLivesActive(profile) ? "∞" : totalCredits}
-                    </span>
-                  </div>
-                  {(isUnlimitedLivesActive(profile) ? unlimitedTimeLeft : timeUntilNextCredit) && (
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 -bottom-[2px] text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
-                      style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
-                    >
-                      {isUnlimitedLivesActive(profile) ? unlimitedTimeLeft : timeUntilNextCredit}
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
+    return (
+      <>
+        <div
+          className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
+          onClick={() => {
+            playSound("buttonClick");
+            navigate("/market");
+          }}
+        >
+          {kalanSayfaAnim ? (
+            <Lottie
+              animationData={kalanSayfaAnim}
+              loop
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          ) : null}
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
+            {badgeText}
+          </span>
+        </div>
+        {timerText && (
+          <span
+            className="absolute left-1/2 -translate-x-1/2 -bottom-[2px] text-[9px] font-mono font-bold tabular-nums text-white/90 whitespace-nowrap"
+            style={{ WebkitTextStroke: "0.3px #000", paintOrder: "stroke fill" } as any}
+          >
+            {timerText}
+          </span>
+        )}
+      </>
+    );
+  })()}
+</div>
 
           </div>
 
