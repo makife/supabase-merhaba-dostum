@@ -89,11 +89,11 @@ const GameModesPage = () => {
       <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 pl-4 pr-6">
         <div className="flex items-center justify-between mb-4">
           <img
-            src={oyunModlariYazi}
-            alt="Oyun Modları"
-            className="h-9 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-            draggable={false}
-          />
+  src={oyunModlariYazi}
+  alt="Oyun Modlari"
+  className="h-24 sm:h-28 md:h-32 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+  draggable={false}
+/>
           <button
             type="button"
             onClick={() => {
