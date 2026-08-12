@@ -1067,7 +1067,7 @@ const HomePage = () => {
               <HomeSoundToggle />
 
               {/* Gece modu test butonu + solunda kayan mesaj boardu */}
-              <div className="relative w-7 h-7">
+              <div className="relative w-7 h-7 mt-5">
                 <div
                   className="absolute right-[calc(100%+8px)] top-0 h-7 flex items-center pointer-events-none"
                   style={{ width: "calc(100vw - 76px)", maxWidth: "calc(100vw - 76px)" }}
