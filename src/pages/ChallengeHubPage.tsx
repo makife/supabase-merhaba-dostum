@@ -139,11 +139,11 @@ const ChallengeHubPage = () => {
       <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 pl-4 pr-6">
         <div className="flex items-center justify-between mb-4">
           <img
-            src={duelloYazi}
-            alt="Düello & Challenge"
-            className="h-25 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-            draggable={false}
-          />
+  src={duelloYazi}
+  alt="Düello & Challenge"
+  className="h-10 sm:h-14 md:h-16 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+  draggable={false}
+/>
           <button
             type="button"
             onClick={() => {
