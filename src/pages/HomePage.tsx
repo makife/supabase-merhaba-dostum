@@ -1318,7 +1318,7 @@ const HomePage = () => {
               onSelect={(key) => {
                 playSound("buttonClick");
                 if (key === "oyunModlari") setShowModePanel(true);
-                else if (key === "duello") setShowChallengePanel(true);
+                else if (key === "duello") navigate("/challenge");
                 else if (key === "carki") navigate("/wheel");
                 else if (key === "radyo") setShowRadio(true);
                 else if (key === "arkadaslik") navigate("/friends");
