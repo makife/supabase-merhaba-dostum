@@ -12,6 +12,7 @@ import harfKosusuKart from "@/assets/harfKosusuKart.png";
 import kelimePuzzleKart from "@/assets/kelimePuzzleKart.png";
 import kelimeHafizaKart from "@/assets/kelimeHafizaKart.png";
 import hadiKart from "@/assets/hadiKart.png";
+import duelloYazi from "@/assets/duelloYazi.png";
 
 const emptyStatus: Record<ChallengeType, boolean> = {
   word_hunt: false,
@@ -137,12 +138,12 @@ const ChallengeHubPage = () => {
 
       <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 pl-4 pr-6">
         <div className="flex items-center justify-between mb-4">
-          <h1
-            className="text-lg font-black text-white uppercase tracking-widest"
-            style={{ WebkitTextStroke: "1.5px #000", paintOrder: "stroke fill" } as any}
-          >
-            Düello &amp; Challenge
-          </h1>
+          <img
+            src={duelloYazi}
+            alt="Düello & Challenge"
+            className="h-9 w-auto object-contain select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+            draggable={false}
+          />
           <button
             type="button"
             onClick={() => {
