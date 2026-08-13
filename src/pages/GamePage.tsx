@@ -8169,8 +8169,10 @@ const GamePage = ({
   // ✅ PNG tabanlı kazandın/kaybettin kartı (turnuva ve beraberlik hariç)
   const goHomeAfterMatch = async () => {
     if (currentRoom?.id) {
-      matchBanlist.add(currentRoom.id);
+      // ⚠️ await: yeni arama başlamadan önce eski oda banlanmış olmalı
+      await matchBanlist.add(currentRoom.id);
     }
+
     if (user?.id) {
       await supabase.from("rematch_opt_outs").upsert({
         user_id: user.id,
