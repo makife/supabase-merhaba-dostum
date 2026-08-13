@@ -8169,7 +8169,8 @@ const GamePage = ({
   // ✅ PNG tabanlı kazandın/kaybettin kartı (turnuva ve beraberlik hariç)
   const goHomeAfterMatch = async () => {
     if (currentRoom?.id) {
-      matchBanlist.add(currentRoom.id);
+      // ⚠️ await: yeni arama başlamadan önce eski oda banlanmış olmalı
+      await matchBanlist.add(currentRoom.id);
     }
     if (user?.id) {
       await supabase.from("rematch_opt_outs").upsert({
@@ -8178,9 +8179,18 @@ const GamePage = ({
         updated_at: new Date().toISOString(),
       });
     }
+    // 🔑 KRİTİK: Biten odayı context'ten ve kalıcı depodan temizle.
+    // Aksi halde yeni arama sırasında resync eski "finished" odayı okuyup
+    // önceki maçın kazandın/kaybettin kartını tekrar açıyor.
+    try {
+      await leaveRoom();
+    } catch (e) {
+      console.warn("⚠️ leaveRoom (maç sonu) hatası:", e);
+    }
     window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
     navigate(homeBackPath());
   };
+
 
   const playAgainVsComputer = async () => {
     setButtonsEnabled(false);

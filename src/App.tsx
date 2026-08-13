@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GameProvider } from "@/contexts/GameContext";
@@ -172,6 +172,8 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 // 🎮 GamePage wrapper - URL'deki :mode parametresinden gameMode'u alır
 const GamePageWrapper = () => {
   const { mode } = useParams<{ mode: string }>();
+  const [searchParams] = useSearchParams();
+  const roomParam = searchParams.get("room") || "";
 
   // URL'deki mode'u gameMode'a çevir
   const gameMode = (() => {
@@ -189,8 +191,12 @@ const GamePageWrapper = () => {
     }
   })() as "vs-computer" | "private-room" | "random-match" | "tournament";
 
-  return <GamePage gameMode={gameMode} />;
+  // 🔑 KRİTİK: Oda değiştiğinde GamePage tamamen yeniden mount edilir.
+  // Aksi halde React Router aynı route'ta component'i koruyor ve
+  // önceki maçın "kazandın/kaybettin" kartı yeni maçın üzerinde kalıyor.
+  return <GamePage key={`${gameMode}-${roomParam}`} gameMode={gameMode} />;
 };
+
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();

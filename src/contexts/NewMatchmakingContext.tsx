@@ -721,9 +721,16 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       cleanup();
     };
 
+    // 🔧 FIX: GamePage "cleanupMatchmaking" event'i gönderiyor,
+    // eski isim ("matchmaking:cleanup") hiç tetiklenmiyordu.
     window.addEventListener("matchmaking:cleanup", handleCleanup);
-    return () => window.removeEventListener("matchmaking:cleanup", handleCleanup);
+    window.addEventListener("cleanupMatchmaking", handleCleanup);
+    return () => {
+      window.removeEventListener("matchmaking:cleanup", handleCleanup);
+      window.removeEventListener("cleanupMatchmaking", handleCleanup);
+    };
   }, []);
+
 
   const value: MatchmakingContextType = {
     isSearching,
