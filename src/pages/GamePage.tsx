@@ -1836,7 +1836,7 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync]);
+  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync, searchParams]);
 
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
