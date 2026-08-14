@@ -461,10 +461,12 @@ const DinoRunner = () => {
   };
 
   useEffect(() => {
-    if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContextClass();
-    }
+    // NOT: Burada ayrı bir AudioContext AÇMIYORUZ. iOS'ta ikinci bir context
+    // AVAudioSession'ı resetliyor ve sayfadan çıkınca arka plan müziği kesilip
+    // bir süre sonra sıradaki parçadan başlıyor. Tüm tonlar paylaşımlı
+    // genericBeep context'i üzerinden çalınır.
+
+
 
     fetch("/wordlist.txt")
       .then((r) => r.text())
