@@ -8,7 +8,7 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
-import { playDinoJump, playJumpBeep } from "@/utils/genericBeep";
+import { playDinoJump, playJumpBeep, playGenericTone } from "@/utils/genericBeep";
 import { Capacitor } from "@capacitor/core";
 const IS_IOS_NATIVE = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
@@ -386,7 +386,6 @@ const DinoRunner = () => {
   const sameKindStreakRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
-  const audioContextRef = useRef<AudioContext | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
 
   // Portal Ref'leri: her 500 puanda sağ portal, sonraki level başlangıcında sol portal
