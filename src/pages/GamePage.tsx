@@ -1768,6 +1768,25 @@ const GamePage = ({
       }
 
       // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
+      // 🔒 STALE ROOM GUARD: currentRoom hâlâ önceki (bitmiş) maçı gösteriyorsa resync yapma.
+      // Aksi halde eski odanın status="finished" + winner_id değeri okunup yeni maçın üstüne
+      // önceki maçın kazandın/kaybettin kartı açılıyor.
+      if (gameMode === "random-match" || gameMode === "private-room") {
+        const urlRoomParam = searchParams.get("room");
+        if (
+          urlRoomParam &&
+          currentRoom?.id &&
+          currentRoom.id !== urlRoomParam &&
+          (currentRoom as any).room_code !== urlRoomParam
+        ) {
+          console.log("⏭️ [GamePage Resync] currentRoom URL odası ile eşleşmiyor, resync atlandı", {
+            urlRoomParam,
+            currentRoomId: currentRoom.id?.slice(-8),
+          });
+          return;
+        }
+      }
+
       if ((gameMode === "random-match" || gameMode === "private-room") && currentRoom?.id) {
         const { data: roomData, error: roomError } = await supabase
           .from("game_rooms")
