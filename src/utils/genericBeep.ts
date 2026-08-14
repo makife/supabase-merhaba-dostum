@@ -97,3 +97,17 @@ export const playDinoJump = () => {
   } catch {}
 };
 
+
+/**
+ * Genel amaçlı ton — mini oyunlarda ayrı AudioContext açmak yerine bunu kullan.
+ * iOS'ta ikinci bir AudioContext açmak AVAudioSession'ı sıfırlıyor ve
+ * arka plan müziğini kesiyor; bu yüzden tek paylaşımlı context şart.
+ */
+export const playGenericTone = (
+  freq: number,
+  type: OscillatorType = "sine",
+  vol = 0.1,
+  duration = 0.1
+) => {
+  beep(freq, duration, type, vol);
+};

@@ -8,7 +8,7 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
-import { playDinoJump, playJumpBeep } from "@/utils/genericBeep";
+import { playDinoJump, playJumpBeep, playGenericTone } from "@/utils/genericBeep";
 import { Capacitor } from "@capacitor/core";
 const IS_IOS_NATIVE = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
@@ -386,7 +386,6 @@ const DinoRunner = () => {
   const sameKindStreakRef = useRef(0);
   const nextLetterTimeRef = useRef(0);
   const gameLoopRef = useRef<number>();
-  const audioContextRef = useRef<AudioContext | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
 
   // Portal Ref'leri: her 500 puanda sağ portal, sonraki level başlangıcında sol portal
@@ -461,10 +460,12 @@ const DinoRunner = () => {
   };
 
   useEffect(() => {
-    if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContextClass();
-    }
+    // NOT: Burada ayrı bir AudioContext AÇMIYORUZ. iOS'ta ikinci bir context
+    // AVAudioSession'ı resetliyor ve sayfadan çıkınca arka plan müziği kesilip
+    // bir süre sonra sıradaki parçadan başlıyor. Tüm tonlar paylaşımlı
+    // genericBeep context'i üzerinden çalınır.
+
+
 
     fetch("/wordlist.txt")
       .then((r) => r.text())
@@ -500,21 +501,10 @@ const DinoRunner = () => {
   };
 
   const playSound = (freq, type = "sine", vol = 0.1) => {
-    if (!audioContextRef.current || isMutedRef.current) return;
-    try {
-      const ctx = audioContextRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = type as OscillatorType;
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) {}
+    if (isMutedRef.current) return;
+    playGenericTone(freq, type as OscillatorType, vol);
   };
+
 
   const pickNewWord = useCallback(() => {
     if (wordList.length === 0) return;
