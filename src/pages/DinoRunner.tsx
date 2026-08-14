@@ -502,21 +502,10 @@ const DinoRunner = () => {
   };
 
   const playSound = (freq, type = "sine", vol = 0.1) => {
-    if (!audioContextRef.current || isMutedRef.current) return;
-    try {
-      const ctx = audioContextRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = type as OscillatorType;
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) {}
+    if (isMutedRef.current) return;
+    playGenericTone(freq, type as OscillatorType, vol);
   };
+
 
   const pickNewWord = useCallback(() => {
     if (wordList.length === 0) return;
