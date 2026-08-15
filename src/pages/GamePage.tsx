@@ -5081,16 +5081,23 @@ const GamePage = ({
               )
               .map((p) => String(p.user_id));
 
-            let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+            let profileMap: Record<
+              string,
+              { username: string | null; avatar_url: string | null; premium_until: string | null }
+            > = {};
             if (userIds.length > 0) {
               const { data: profilesData } = await supabase
                 .from("profiles")
-                .select("id, username, avatar_url")
+                .select("id, username, avatar_url, premium_until")
                 .in("id", userIds);
 
               if (profilesData) {
                 profilesData.forEach((pr) => {
-                  profileMap[pr.id as string] = { username: pr.username, avatar_url: pr.avatar_url };
+                  profileMap[pr.id as string] = {
+                    username: pr.username,
+                    avatar_url: pr.avatar_url,
+                    premium_until: (pr as any).premium_until ?? null,
+                  };
                 });
               }
             }
