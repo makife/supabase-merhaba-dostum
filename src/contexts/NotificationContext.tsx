@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { PremiumGiftDialog } from "@/components/PremiumGiftDialog";
+import { GameInviteCard } from "@/components/GameInviteCard";
 
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
 
@@ -20,93 +21,6 @@ const sendInviteResponseNotification = async (hostId: string, username: string, 
   } catch (err) {
     console.error("Davet yanıt bildirimi hatası:", err);
   }
-};
-
-const showInviteToast = (notification: any, user: any, navigate: any) => {
-  const toastId = toast.info(`🎮 ${notification.message}`, {
-    duration: 30000,
-    action: {
-      label: "✅ Katıl",
-      onClick: async () => {
-        toast.dismiss(toastId);
-
-        // 🔒 Kredi kontrolü (premium/sınırsız akış dahil)
-        if (user?.id) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
-            .eq("id", user.id)
-            .single();
-
-          const now = new Date();
-          const hasUnlimitedAccess =
-            (profile?.premium_until && new Date(profile.premium_until) > now) ||
-            (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
-
-          const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
-          if (!hasUnlimitedAccess && totalCredits < 1) {
-            toast.error("Yetersiz Hak! Oyun hakkınız bulunmamaktadır.", { duration: 3000 });
-            navigate("/market");
-            return;
-          }
-        }
-
-        await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
-
-        // Davet edene kabul bildirimi gönder
-        const { data: roomData } = await supabase
-          .from("game_rooms")
-          .select("host_id")
-          .eq("room_code", notification.related_id)
-          .maybeSingle();
-
-        if (roomData?.host_id && user) {
-          const { data: userProfile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", user.id)
-            .maybeSingle();
-          await sendInviteResponseNotification(roomData.host_id, userProfile?.username || "Oyuncu", true);
-        }
-
-        navigate(`/private-room/waiting/${notification.related_id}`);
-      },
-    },
-    cancel: {
-      label: "❌ Reddet",
-      onClick: async () => {
-        toast.dismiss(toastId);
-        try {
-          const { data: roomData } = await supabase
-            .from("game_rooms")
-            .select("host_id")
-            .eq("room_code", notification.related_id)
-            .maybeSingle();
-
-          if (roomData?.host_id && user) {
-            await supabase.from("room_invite_rejections").insert({
-              room_code: notification.related_id,
-              rejected_by: user.id,
-              rejected_from: roomData.host_id,
-            });
-
-            // Davet edene ret bildirimi gönder
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("username")
-              .eq("id", user.id)
-              .maybeSingle();
-            await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", false);
-          }
-
-          await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
-          toast.info("Davet reddedildi", { duration: 2000 });
-        } catch (err) {
-          console.error("Davet reddetme hatası:", err);
-        }
-      },
-    },
-  });
 };
 
 interface NotificationContextType {
@@ -128,6 +42,13 @@ interface NotificationProviderProps {
   children: ReactNode;
 }
 
+interface InviteCardState {
+  open: boolean;
+  notification: any | null;
+  hostUsername: string;
+  hostAvatarUrl: string | null;
+}
+
 export const NotificationProvider = ({ children }: NotificationProviderProps) => {
   const { unreadCount } = useChatNotifications();
   const { user } = useAuth();
@@ -137,6 +58,142 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
   const lastKnownCredits = useRef<number | null>(null);
   const purchaseSuppressRef = useRef(false);
   const [premiumGift, setPremiumGift] = useState<{ open: boolean; message?: string }>({ open: false });
+
+  // 🎮 Oyun daveti kartı (eski toast bildirimi yerine)
+  const [inviteCard, setInviteCard] = useState<InviteCardState>({
+    open: false,
+    notification: null,
+    hostUsername: "",
+    hostAvatarUrl: null,
+  });
+  const [inviteBusy, setInviteBusy] = useState(false);
+
+  // Bir room_invite bildirimi geldiğinde host bilgilerini çekip kartı açar
+  const openInviteCard = async (notification: any) => {
+    if (!notification?.related_id) return;
+    try {
+      const { data: roomData } = await supabase
+        .from("game_rooms")
+        .select("host_id")
+        .eq("room_code", notification.related_id)
+        .maybeSingle();
+
+      let hostUsername = "Oyuncu";
+      let hostAvatarUrl: string | null = null;
+
+      if (roomData?.host_id) {
+        const { data: hostProfile } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("id", roomData.host_id)
+          .maybeSingle();
+        hostUsername = hostProfile?.username || "Oyuncu";
+        // NOT: "avatar_url" kolon adı profiles tablonuzdaki gerçek kolon adıyla
+        // eşleşmiyorsa burayı kendi kolon adınızla değiştirin.
+        hostAvatarUrl = (hostProfile as any)?.avatar_url || null;
+      }
+
+      setInviteCard({ open: true, notification, hostUsername, hostAvatarUrl });
+    } catch (err) {
+      console.error("Davet kartı açma hatası:", err);
+    }
+  };
+
+  const closeInviteCard = () => {
+    setInviteCard({ open: false, notification: null, hostUsername: "", hostAvatarUrl: null });
+  };
+
+  const handleAcceptInvite = async () => {
+    const notification = inviteCard.notification;
+    if (!notification || !user || inviteBusy) return;
+    setInviteBusy(true);
+    try {
+      // 🔒 Kredi kontrolü (premium/sınırsız akış dahil)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("game_credits, bonus_credits, premium_until, unlimited_lives_until")
+        .eq("id", user.id)
+        .single();
+
+      const now = new Date();
+      const hasUnlimitedAccess =
+        (profile?.premium_until && new Date(profile.premium_until) > now) ||
+        (profile?.unlimited_lives_until && new Date(profile.unlimited_lives_until) > now);
+
+      const totalCredits = (profile?.game_credits || 0) + (profile?.bonus_credits || 0);
+      if (!hasUnlimitedAccess && totalCredits < 1) {
+        toast.error("Yetersiz Hak! Oyun hakkınız bulunmamaktadır.", { duration: 3000 });
+        closeInviteCard();
+        navigate("/market");
+        return;
+      }
+
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+
+      // Davet edene kabul bildirimi gönder
+      const { data: roomData } = await supabase
+        .from("game_rooms")
+        .select("host_id")
+        .eq("room_code", notification.related_id)
+        .maybeSingle();
+
+      if (roomData?.host_id) {
+        const { data: userProfile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .maybeSingle();
+        await sendInviteResponseNotification(roomData.host_id, userProfile?.username || "Oyuncu", true);
+      }
+
+      const roomCode = notification.related_id;
+      closeInviteCard();
+      navigate(`/private-room/waiting/${roomCode}`);
+    } catch (err) {
+      console.error("Davet kabul hatası:", err);
+      toast.error("Davet kabul edilemedi");
+      closeInviteCard();
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const handleRejectInvite = async () => {
+    const notification = inviteCard.notification;
+    if (!notification || !user || inviteBusy) return;
+    setInviteBusy(true);
+    try {
+      const { data: roomData } = await supabase
+        .from("game_rooms")
+        .select("host_id")
+        .eq("room_code", notification.related_id)
+        .maybeSingle();
+
+      if (roomData?.host_id) {
+        await supabase.from("room_invite_rejections").insert({
+          room_code: notification.related_id,
+          rejected_by: user.id,
+          rejected_from: roomData.host_id,
+        });
+
+        // Davet edene ret bildirimi gönder
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .maybeSingle();
+        await sendInviteResponseNotification(roomData.host_id, profile?.username || "Oyuncu", false);
+      }
+
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+      toast.info("Davet reddedildi", { duration: 2000 });
+    } catch (err) {
+      console.error("Davet reddetme hatası:", err);
+    } finally {
+      closeInviteCard();
+      setInviteBusy(false);
+    }
+  };
 
   // Satın alma sırasında toast'u bastırmak için global event dinle
   useEffect(() => {
@@ -235,14 +292,13 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           const ids = pendingInvites.map((n) => n.id);
           await supabase.from("notifications").update({ is_read: true }).in("id", ids);
 
-          pendingInvites.forEach((notification) => {
-            if (shownNotifications.current.has(notification.id)) return;
-            shownNotifications.current.add(notification.id);
-
-            if (notification.related_id) {
-              showInviteToast(notification, user, navigate);
-            }
-          });
+          // Aynı anda tek bir davet kartı gösterebiliriz: en güncel olanı seçip aç,
+          // geri kalanlar zaten okundu işaretlendi.
+          const toShow = pendingInvites.find((n) => n.related_id && !shownNotifications.current.has(n.id));
+          if (toShow) {
+            shownNotifications.current.add(toShow.id);
+            openInviteCard(toShow);
+          }
         }
       } catch (err) {
         console.error("Bekleyen davet bildirimleri kontrol hatası:", err);
@@ -308,7 +364,7 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         if (notification.type === "room_invite" && notification.related_id) {
           // Hemen okundu olarak işaretle (tekrar gösterilmesin)
           supabase.from("notifications").update({ is_read: true }).eq("id", notification.id).then();
-          showInviteToast(notification, user, navigate);
+          openInviteCard(notification);
           return;
         }
 
@@ -410,6 +466,14 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         open={premiumGift.open}
         message={premiumGift.message}
         onClose={() => setPremiumGift({ open: false })}
+      />
+      <GameInviteCard
+        open={inviteCard.open}
+        avatarUrl={inviteCard.hostAvatarUrl}
+        username={inviteCard.hostUsername}
+        busy={inviteBusy}
+        onAccept={handleAcceptInvite}
+        onReject={handleRejectInvite}
       />
     </NotificationContext.Provider>
   );
