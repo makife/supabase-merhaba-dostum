@@ -524,29 +524,40 @@ const HadiGamePage = () => {
                 return (
                   <div
                     key={(isGhost ? "g" : "t") + t.id}
-                    className="absolute flex items-center justify-center text-2xl font-black rounded-xl"
+                    className="absolute"
                     style={{
                       width: CELL,
                       height: CELL,
-                      left: cellOffset(t.c),
-                      top: cellOffset(t.r),
-                      background: st.bg,
-                      color: st.fg,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-                      transition: "left 130ms ease-in-out, top 130ms ease-in-out",
+                      left: 8,
+                      top: 8,
+                      transform: `translate3d(calc(${t.c} * (100% + 8px)), calc(${t.r} * (100% + 8px)), 0)`,
+                      transition: "transform 130ms ease-in-out",
                       zIndex: isGhost ? 1 : 2,
-                      animation: t.isNew
-                        ? "hadi-appear 150ms ease-out"
-                        : t.merged
-                          ? "hadi-pop 180ms ease-out 110ms"
-                          : undefined,
-                      willChange: "left, top, transform",
+                      willChange: "transform",
+                      backfaceVisibility: "hidden",
                     }}
                   >
-                    {valueToLetter(t.v)}
+                    <div
+                      className="w-full h-full flex items-center justify-center text-2xl font-black rounded-xl"
+                      style={{
+                        background: st.bg,
+                        color: st.fg,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                        animation: t.isNew
+                          ? "hadi-appear 150ms ease-out"
+                          : t.merged
+                            ? "hadi-pop 180ms ease-out 110ms"
+                            : undefined,
+                        willChange: t.isNew || t.merged ? "transform, opacity" : undefined,
+                        transform: "translateZ(0)",
+                      }}
+                    >
+                      {valueToLetter(t.v)}
+                    </div>
                   </div>
                 );
               })}
+
             </div>
 
             {/* Yön butonları */}
