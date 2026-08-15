@@ -630,7 +630,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           try {
             const { data: profiles } = await supabase
               .from("profiles")
-              .select("id, username, avatar_url")
+              .select("id, username, avatar_url, premium_until")
               .in("id", userIds);
 
             if (profiles) {
@@ -1823,7 +1823,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
               try {
                 const { data: profile } = await supabase
                   .from("profiles")
-                  .select("id, username, avatar_url")
+                  .select("id, username, avatar_url, premium_until")
                   .eq("id", newParticipant.user_id)
                   .maybeSingle();
 
