@@ -8675,15 +8675,18 @@ const GamePage = ({
 
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
-              className="min-h-screen relative overflow-hidden"
+              className="fixed inset-0 relative overflow-hidden touch-none overscroll-none"
               style={{
                 background: "#1a1a2e",
+                height: "100dvh",
+                maxHeight: "100dvh",
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
             >
+
               {matchBgAnim && (
                 <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                   <img
@@ -8695,7 +8698,7 @@ const GamePage = ({
                   />
                 </div>
               )}
-              <div className="h-full flex flex-col px-2 relative z-15">
+              <div className="h-full flex flex-col px-2 relative z-15 min-h-0">
                 {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
@@ -9196,7 +9199,7 @@ const GamePage = ({
 
                 {/* Game Grid */}
                 <div
-                  className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
+                  className="rounded-2xl border border-white/10 mb-2 flex-1 min-h-0 flex items-center justify-center p-3"
                   style={{
                     background: "rgba(20,20,40,0.6)",
                     transform: "translateZ(0)",
@@ -9244,7 +9247,7 @@ const GamePage = ({
                           <button
                             key={`${rowIndex}-${colIndex}`}
                             type="button"
-                            className={`letter-button h-[59px] text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`letter-button text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
                             onPointerDown={(e) => {
                               if (!gameStarted) return;
@@ -9253,7 +9256,9 @@ const GamePage = ({
                             }}
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
+                              height: "clamp(40px, 7.2dvh, 59px)",
                               touchAction: "manipulation",
+
                               WebkitTapHighlightColor: "transparent",
                               WebkitTouchCallout: "none",
                               WebkitUserSelect: "none",
