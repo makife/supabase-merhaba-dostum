@@ -245,14 +245,12 @@ const ParallaxBackground: React.FC<{
 
 
 const DinoRunner = () => {
+  const routerNavigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
   const doNavigate = () => {
-    if (window.history.length > 1) {
-      window.location.href = homeBackPath();
-    } else {
-      window.location.href = homeBackPath();
-    }
+    routerNavigate(homeBackPath(), { replace: true });
   };
+
   // navigate, gameState tanımından sonra aşağıda tanımlanıyor.
 
   const { hasPlayedToday, todayScore, leaderboard, loading: challengeLoading, saveScore: saveChallengeScore, markAsPlayed } = useDailyChallenge("reaktor");
