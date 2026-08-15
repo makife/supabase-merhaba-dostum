@@ -9247,7 +9247,7 @@ const GamePage = ({
                           <button
                             key={`${rowIndex}-${colIndex}`}
                             type="button"
-                            className={`letter-button h-[59px] text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`letter-button text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
                             disabled={!gameStarted}
                             onPointerDown={(e) => {
                               if (!gameStarted) return;
