@@ -9199,7 +9199,7 @@ const GamePage = ({
 
                 {/* Game Grid */}
                 <div
-                  className="rounded-2xl border border-white/10 mb-2 flex-1 flex items-center justify-center p-3"
+                  className="rounded-2xl border border-white/10 mb-2 flex-1 min-h-0 flex items-center justify-center p-3"
                   style={{
                     background: "rgba(20,20,40,0.6)",
                     transform: "translateZ(0)",
