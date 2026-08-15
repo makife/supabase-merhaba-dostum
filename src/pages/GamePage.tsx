@@ -9256,7 +9256,9 @@ const GamePage = ({
                             }}
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
+                              height: "clamp(40px, 7.2dvh, 59px)",
                               touchAction: "manipulation",
+
                               WebkitTapHighlightColor: "transparent",
                               WebkitTouchCallout: "none",
                               WebkitUserSelect: "none",
