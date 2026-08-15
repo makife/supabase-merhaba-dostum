@@ -8698,7 +8698,7 @@ const GamePage = ({
                   />
                 </div>
               )}
-              <div className="h-full flex flex-col px-2 relative z-15">
+              <div className="h-full flex flex-col px-2 relative z-15 min-h-0">
                 {/* Header */}
                 <div className="flex items-center justify-between py-2 shrink-0">
                   {/* Sol taraf - Geri butonu */}
