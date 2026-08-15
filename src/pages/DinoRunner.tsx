@@ -1,5 +1,7 @@
 import { homeBackPath } from "@/utils/challengeBackPath";
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
 import { ArrowLeft, Trophy } from "lucide-react";
 import Lottie from "lottie-react";
