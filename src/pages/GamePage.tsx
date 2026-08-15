@@ -8675,15 +8675,18 @@ const GamePage = ({
 
             <div
               key={`game-${currentRoom?.id || tournamentMatch?.id || "container"}`}
-              className="min-h-screen relative overflow-hidden"
+              className="fixed inset-0 relative overflow-hidden touch-none overscroll-none"
               style={{
                 background: "#1a1a2e",
+                height: "100dvh",
+                maxHeight: "100dvh",
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
             >
+
               {matchBgAnim && (
                 <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                   <img
