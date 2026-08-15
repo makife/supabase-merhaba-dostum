@@ -59,10 +59,10 @@ export const RematchDialog = ({
           className="w-full h-auto select-none pointer-events-none"
         />
 
-        {/* Avatar - dairenin tam içi */}
+        {/* Avatar - dairenin tam içi (yenidenMacKarti.png piksel piksel ölçüldü: 688x1000) */}
         <div
           className="absolute overflow-hidden rounded-full"
-          style={{ left: "12.8%", top: "31%", width: "19.5%", height: "14.5%" }}
+          style={{ left: "12.65%", top: "31.5%", width: "23.98%", height: "16.2%" }}
         >
           <Avatar className="w-full h-full rounded-full">
             <AvatarImage src={senderAvatar || undefined} className="object-cover" />
@@ -75,12 +75,12 @@ export const RematchDialog = ({
         {/* Rumuz - input field içi */}
         <div
           className="absolute flex items-center justify-center px-[1cqw]"
-          style={{ left: "41.8%", top: "34%", width: "47%", height: "9.5%" }}
+          style={{ left: "43.46%", top: "35.8%", width: "44.91%", height: "7.9%" }}
         >
           <span
             className="w-full text-center font-extrabold truncate leading-none"
             style={{
-              fontSize: "5cqw",
+              fontSize: "4.6cqw",
               color: "#16a34a",
               textShadow: "0 1px 0 rgba(255,255,255,0.6)",
             }}
@@ -94,7 +94,7 @@ export const RematchDialog = ({
           label="Reddet"
           onPress={handleReject}
           disabled={isProcessing}
-          style={{ left: "9.9%", top: "70%", width: "38%", height: "10.5%" }}
+          style={{ left: "9.45%", top: "70.1%", width: "38.81%", height: "12%" }}
           haptic="medium"
         />
 
@@ -103,7 +103,7 @@ export const RematchDialog = ({
           label="Kabul Et"
           onPress={handleAccept}
           disabled={isProcessing || !hasEnoughCredits || isAdBusy}
-          style={{ left: "51.2%", top: "70%", width: "38.7%", height: "10.5%" }}
+          style={{ left: "52.04%", top: "71.6%", width: "38.52%", height: "10.5%" }}
           haptic="medium"
         />
 
