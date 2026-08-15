@@ -745,7 +745,7 @@ export default function ChatPage() {
                 </p>
               </div>
               <p className="text-sm text-gray-600 mt-4">
-                Yasak süreniz dolana kadar sohbet özelliklerini kullanamazsınız.
+                Yasak süreniz dolana kadar sohbet özelliklerini kullanamazsınız!
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
