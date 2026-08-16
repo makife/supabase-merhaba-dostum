@@ -100,6 +100,56 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return tryPlay();
   };
 
+  /**
+   * 🔥 iOS: Şarkı bittiğinde aynı element üzerinde src değiştirip HEMEN play()
+   * çağırmak WKWebView'de "AbortError: load interrupted" ile reddediliyordu →
+   * ilk parçadan sonra müzik susuyordu. Artık src set edip `canplay`/`loadeddata`
+   * beklenip sonra play() çağrılıyor.
+   */
+  const iosSwitchingRef = useRef(false);
+
+  const iosSwitchTrackAndPlay = async (
+    audio: HTMLAudioElement,
+    src: string
+  ): Promise<boolean> => {
+    iosSwitchingRef.current = true;
+    try {
+      audio.pause();
+    } catch {}
+    try {
+      audio.src = src;
+      audio.load();
+    } catch (e) {
+      console.warn("🎵 [iOS] src atanamadı:", e);
+    }
+
+    // Metadata/veri hazır olana kadar bekle (max 4 sn)
+    await new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        audio.removeEventListener("canplay", finish);
+        audio.removeEventListener("loadeddata", finish);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(finish, 4000);
+      if (audio.readyState >= 2) return finish();
+      audio.addEventListener("canplay", finish);
+      audio.addEventListener("loadeddata", finish);
+    });
+
+    try {
+      audio.currentTime = 0;
+    } catch {}
+    setMusicVolume(originalVolumeRef.current);
+    const ok = await playIOSMusicRobust(audio);
+    iosSwitchingRef.current = false;
+    return ok;
+  };
+
+
 
 
   // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
@@ -484,10 +534,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const handleTrackEnd = () => {
         setIsPlaying(false);
-        if (iosEndedWatchdogRef.current) {
-          clearInterval(iosEndedWatchdogRef.current);
-          iosEndedWatchdogRef.current = null;
-        }
         // For default pack, move to next track in shuffled playlist and autoplay the next one
         if (musicPack === "default" && musicEnabledRef.current) {
           shuffleIndexRef.current = (shuffleIndexRef.current + 1) % shuffledPlaylistRef.current.length;
@@ -499,53 +545,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
           const nextTrackIndex = shuffledPlaylistRef.current[shuffleIndexRef.current];
 
-          // 🔥 iOS FIX: Yeni Audio elementi oluşturmak yerine MEVCUT elementin src'sini değiştir.
-          // Yeni HTMLAudioElement + createMediaElementSource her seferinde yeniden bağlanınca
-          // iOS Web Audio gesture/unlock state'ini kaybediyor ve play() sessizce reddediliyor.
-          // Aynı elementi yeniden kullanmak GainNode bağlantısını ve unlock state'ini korur.
+          // 🔥 iOS FIX: Yeni Audio elementi oluşturmak yerine MEVCUT elementin src'sini
+          // değiştir; ama play() çağırmadan önce `canplay` bekle (yoksa AbortError).
           if (isIOSNative && backgroundMusicRef.current) {
             const audio = backgroundMusicRef.current;
-            try {
-              audio.src = defaultPlaylist[nextTrackIndex];
-              audio.load();
-              audio.currentTime = 0;
-              setMusicVolume(originalVolumeRef.current);
-              playIOSMusicRobust(audio)
-                .then((ok) => {
-                  console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
-                  setIsPlaying(ok);
-                  // Watchdog'u yeniden kur
-                  if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
-                  iosEndedWatchdogRef.current = setInterval(() => {
-                    const a = backgroundMusicRef.current;
-                    if (!a) return;
-                    // Şarkı bitti mi?
-                    if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
-                      console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
-                      try { a.pause(); } catch {}
-                      handleTrackEnd();
-                      return;
-                    }
-                    // 🔥 Kesinti (interruption) sonrası beklenmedik duraklama → devam ettir
-                    if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null) {
-                      playIOSMusicRobust(a).then((r) => setIsPlaying(r));
-                    }
-                  }, 500);
-                })
-
-                .catch((e) => console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e));
-              // 🔥 iOS FIX: setCurrentTrackIndex ÇAĞIRMA! currentTrackIndex effect
-              // dependency'sinde olduğu için re-run tetikler, cleanup az önce
-              // başlattığımız audio'yu pause eder ve yeni Audio elementi autoplay
-              // izniyle bloklanır. Bu yüzden ilk şarkıdan sonra loop kırılıyordu.
-              // UI için gerekirse ref üzerinden takip edilebilir.
-            } catch (e) {
-              console.warn("🎵 [iOS] src değiştirme hatası, fallback:", e);
-              setCurrentTrackIndex(nextTrackIndex);
-              setTimeout(() => {
-                if (musicEnabledRef.current) startBackgroundMusic();
-              }, 120);
-            }
+            iosSwitchTrackAndPlay(audio, defaultPlaylist[nextTrackIndex])
+              .then((ok) => {
+                console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
+                setIsPlaying(ok);
+              })
+              .catch((e) => {
+                iosSwitchingRef.current = false;
+                console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e);
+              });
+            // 🔥 setCurrentTrackIndex ÇAĞIRMA — effect re-run cleanup ile sesi kesiyor.
             return;
           }
 
@@ -561,25 +574,32 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 
       backgroundMusicRef.current.onended = handleTrackEnd;
-      // 🔥 iOS: onended bazen tetiklenmez — timeupdate watchdog ekle
+      // 🔥 iOS: onended bazen tetiklenmez — periyodik watchdog ile takip et.
+      // Watchdog tek sefer kurulur; şarkı geçişi sırasında iosSwitchingRef ile bekler.
       if (isIOSNative) {
         if (iosEndedWatchdogRef.current) clearInterval(iosEndedWatchdogRef.current);
         iosEndedWatchdogRef.current = setInterval(() => {
           const a = backgroundMusicRef.current;
-          if (!a) return;
+          if (!a || iosSwitchingRef.current) return;
           if (a.duration > 0 && !a.paused && a.currentTime >= a.duration - 0.35) {
             console.log("🎵 [iOS] Watchdog: şarkı bitti, sonrakine geçiliyor");
             try { a.pause(); } catch {}
             handleTrackEnd();
             return;
           }
-          // 🔥 Kesinti sonrası beklenmedik duraklama → müzik açıksa devam ettir
-          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null && a.currentTime > 0) {
+          // 🔥 Şarkı bitmiş ama onended gelmediyse de sonrakine geç
+          if (a.ended) {
+            handleTrackEnd();
+            return;
+          }
+          // 🔥 Kesinti (interruption) sonrası beklenmedik duraklama → devam ettir
+          if (a.paused && musicEnabledRef.current && !wasPlayingBeforeBackgroundRef.current && pausedAtRef.current == null) {
             playIOSMusicRobust(a).then((r) => setIsPlaying(r));
           }
         }, 500);
 
       }
+
     };
 
     initMusic();
