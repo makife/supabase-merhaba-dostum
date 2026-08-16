@@ -168,7 +168,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                   alt={island.label}
                   loading="eager"
                   decoding="async"
-                  className={`w-full h-full object-contain select-none pointer-events-none${alerts?.[island.key] && island.key !== "carki" ? " island-red-glow" : ""}`}
+                  className={`w-full h-full object-contain select-none pointer-events-none${alerts?.[island.key] ? " island-red-glow" : ""}`}
                   draggable={false}
                 />
 
