@@ -100,6 +100,56 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return tryPlay();
   };
 
+  /**
+   * 🔥 iOS: Şarkı bittiğinde aynı element üzerinde src değiştirip HEMEN play()
+   * çağırmak WKWebView'de "AbortError: load interrupted" ile reddediliyordu →
+   * ilk parçadan sonra müzik susuyordu. Artık src set edip `canplay`/`loadeddata`
+   * beklenip sonra play() çağrılıyor.
+   */
+  const iosSwitchingRef = useRef(false);
+
+  const iosSwitchTrackAndPlay = async (
+    audio: HTMLAudioElement,
+    src: string
+  ): Promise<boolean> => {
+    iosSwitchingRef.current = true;
+    try {
+      audio.pause();
+    } catch {}
+    try {
+      audio.src = src;
+      audio.load();
+    } catch (e) {
+      console.warn("🎵 [iOS] src atanamadı:", e);
+    }
+
+    // Metadata/veri hazır olana kadar bekle (max 4 sn)
+    await new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        audio.removeEventListener("canplay", finish);
+        audio.removeEventListener("loadeddata", finish);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(finish, 4000);
+      if (audio.readyState >= 2) return finish();
+      audio.addEventListener("canplay", finish);
+      audio.addEventListener("loadeddata", finish);
+    });
+
+    try {
+      audio.currentTime = 0;
+    } catch {}
+    setMusicVolume(originalVolumeRef.current);
+    const ok = await playIOSMusicRobust(audio);
+    iosSwitchingRef.current = false;
+    return ok;
+  };
+
+
 
 
   // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
