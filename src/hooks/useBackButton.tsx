@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 
 // Oyun sayfaları - bu sayfalarda geri tuşu ile çıkış onayı gösterilecek
 const GAME_ROUTES = [
@@ -23,7 +24,12 @@ const GAME_ROUTES = [
   "/nakama-game",
   "/game/tournament",
   "/tournament-game",
+  "/tournament/game",
 ];
+
+// Turnuva maç sayfaları - turnuva çıkış kartı gösterilecek
+const TOURNAMENT_GAME_ROUTES = ["/game/tournament", "/tournament-game", "/tournament/game"];
+
 
 // Ana sayfa - burada uygulamadan çıkış onayı gösterilecek
 const HOME_ROUTE = "/";
