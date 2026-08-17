@@ -35,14 +35,14 @@ export default function HomeTicker({
   const [monthlyLeader, setMonthlyLeader] = useState<string | null>(null);
   const [seasonLeader, setSeasonLeader] = useState<string | null>(null);
 
-  // Haftanın / ayın / sezonun lideri
+  // Haftanın / ayın / sezonun ANLIK lideri (dönem bitmediği için "oldu" değil "lider")
   useEffect(() => {
     let cancelled = false;
     const firstName = (data: unknown) => {
       const top = Array.isArray(data) ? (data[0] as any) : null;
       return top?.username || null;
     };
-    (async () => {
+    const load = async () => {
       try {
         const [weekly, monthly, season] = await Promise.all([
           supabase.rpc("get_weekly_leaderboard", { limit_count: 1 }),
@@ -56,11 +56,24 @@ export default function HomeTicker({
       } catch {
         /* sessizce yoksay */
       }
-    })();
+    };
+
+    load();
+    // Sıralama değişimlerini hızlı yansıt: periyodik + sekmeye dönünce
+    const interval = window.setInterval(load, 45000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, []);
+
 
   const messages = useMemo(() => {
     const list: { text: string; highlight?: boolean }[] = [];
