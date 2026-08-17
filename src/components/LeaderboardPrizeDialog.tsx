@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Gift, Trophy, PartyPopper, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
+import genel1 from "@/assets/genel1lik.png";
+import genel2 from "@/assets/genel2lik.png";
+import genel3 from "@/assets/genel3luk.png";
+import aylik1 from "@/assets/aylik1lik.png";
+import aylik2 from "@/assets/aylik2lik.png";
+import aylik3 from "@/assets/aylik3luk.png";
+import haftalik1 from "@/assets/haftalik1lik.png";
+import haftalik2 from "@/assets/haftalik2lik.png";
+import haftalik3 from "@/assets/haftalik3luk.png";
 
 interface PrizeNotification {
   id: string;
@@ -14,66 +21,32 @@ interface PrizeNotification {
 
 type PeriodType = "weekly" | "monthly" | "season";
 
-const THEMES: Record<PeriodType, {
-  bg: string;
-  border: string;
-  glow: string;
-  trophy: string;
-  trophyshadow: string;
-  text: string;
-  subtext: string;
-  button: string;
-  buttonHover: string;
-  buttonshadow: string;
-  giftIcon: string;
-}> = {
-  weekly: {
-    bg: "#0f1a2e",
-    border: "border-blue-500/30",
-    glow: "from-blue-500/20",
-    trophy: "from-blue-400 to-blue-600",
-    trophyshadow: "shadow-blue-500/40",
-    text: "text-blue-300",
-    subtext: "text-blue-200",
-    button: "from-blue-500 to-blue-700",
-    buttonHover: "hover:from-blue-600 hover:to-blue-800",
-    buttonshadow: "shadow-blue-500/20",
-    giftIcon: "text-blue-400",
-  },
-  monthly: {
-    bg: "#0f2e1a",
-    border: "border-green-500/30",
-    glow: "from-green-500/20",
-    trophy: "from-green-400 to-green-600",
-    trophyshadow: "shadow-green-500/40",
-    text: "text-green-300",
-    subtext: "text-green-200",
-    button: "from-green-500 to-green-700",
-    buttonHover: "hover:from-green-600 hover:to-green-800",
-    buttonshadow: "shadow-green-500/20",
-    giftIcon: "text-green-400",
-  },
-  season: {
-    bg: "#2e0f0f",
-    border: "border-red-500/30",
-    glow: "from-red-500/20",
-    trophy: "from-red-400 to-red-700",
-    trophyshadow: "shadow-red-500/40",
-    text: "text-red-300",
-    subtext: "text-red-200",
-    button: "from-red-500 to-red-700",
-    buttonHover: "hover:from-red-600 hover:to-red-800",
-    buttonshadow: "shadow-red-500/20",
-    giftIcon: "text-red-400",
-  },
+const CARDS: Record<PeriodType, string[]> = {
+  season: [genel1, genel2, genel3],
+  monthly: [aylik1, aylik2, aylik3],
+  weekly: [haftalik1, haftalik2, haftalik3],
+};
+
+const getPeriod = (message: string): PeriodType => {
+  if (message.includes("Haftal")) return "weekly";
+  if (message.includes("Ayl")) return "monthly";
+  return "season";
+};
+
+const getRank = (message: string): 1 | 2 | 3 => {
+  const m = message.match(/tablosunda\s*(\d)\./);
+  const r = m ? parseInt(m[1], 10) : 1;
+  return (r >= 1 && r <= 3 ? r : 1) as 1 | 2 | 3;
 };
 
 const LeaderboardPrizeDialog = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [notification, setNotification] = useState<PrizeNotification | null>(null);
+  const [queue, setQueue] = useState<PrizeNotification[]>([]);
+  const [index, setIndex] = useState(0);
   const [confettiAnim, setConfettiAnim] = useState<any>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -86,35 +59,19 @@ const LeaderboardPrizeDialog = () => {
         .eq("user_id", user.id)
         .eq("type", "leaderboard_prize")
         .eq("is_read", false)
-        .ilike("message", "%liderlik tablosunda 1. oldun%")
+        .ilike("message", "%liderlik tablosunda%")
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(3);
 
-      if (!error && data) {
-        setNotification(data);
+      if (!error && data && data.length > 0) {
+        setQueue(data);
+        setIndex(0);
         setOpen(true);
-
-        // Konfeti animasyonunu yükle ve bir kerelik oynat
         try {
           const anim = await fetch("/kazanmajson.json").then((r) => r.json());
           setConfettiAnim(anim);
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 4000);
         } catch (e) {
           console.warn("Konfeti yuklenemedi:", e);
-        }
-
-        try {
-          const { isSoundEffectsEnabled } = await import("@/utils/soundSettings");
-          if (isSoundEffectsEnabled()) {
-            const audio = new Audio("/odulMuzik.mp3");
-            audio.volume = 0.7;
-            audioRef.current = audio;
-            await audio.play();
-          }
-        } catch (e) {
-          console.warn("Muzik calinamadi:", e);
         }
       }
     };
@@ -123,165 +80,76 @@ const LeaderboardPrizeDialog = () => {
     return () => clearTimeout(timeout);
   }, [user]);
 
-  const handleClose = async () => {
-    setOpen(false);
-
+  const stopMusic = () => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
+  };
 
-    if (notification) {
-      await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("id", notification.id);
+  const current = queue[index];
+
+  const handleClaim = async () => {
+    if (!current || claiming) return;
+    setClaiming(true);
+
+    // Konfeti patlat
+    setShowConfetti(true);
+    try {
+      const { isSoundEffectsEnabled } = await import("@/utils/soundSettings");
+      if (isSoundEffectsEnabled()) {
+        const audio = new Audio("/odulMuzik.mp3");
+        audio.volume = 0.7;
+        audioRef.current = audio;
+        await audio.play();
+      }
+    } catch (e) {
+      console.warn("Muzik calinamadi:", e);
     }
+
+    // Ödüller dönem bitiminde hesaba işlendi; bildirimi okundu olarak kapat
+    await supabase.from("notifications").update({ is_read: true }).eq("id", current.id);
+
+    setTimeout(() => {
+      setShowConfetti(false);
+      setClaiming(false);
+      if (index < queue.length - 1) {
+        setIndex((p) => p + 1);
+      } else {
+        setOpen(false);
+        stopMusic();
+      }
+    }, 2600);
   };
 
-  const parsePrizes = (message: string) => {
-    const prizes: { label: string; amount: string; icon: string }[] = [];
+  if (!current) return null;
 
-    const degistirMatch = message.match(/(\d+)\s*De\u011fi\u015ftir/);
-    if (degistirMatch) prizes.push({ label: "De\u011fi\u015ftir", amount: degistirMatch[1], icon: "/degistirIkon.png" });
-
-    const fisildaMatch = message.match(/(\d+)\s*F[\u0131i]s[\u0131i]lda/);
-    if (fisildaMatch) prizes.push({ label: "F\u0131s\u0131lda", amount: fisildaMatch[1], icon: "/fisildaIkon.png" });
-
-    const senyazMatch = message.match(/(\d+)\s*Senyaz/);
-    if (senyazMatch) prizes.push({ label: "Senyaz", amount: senyazMatch[1], icon: "/senyazIkon.png" });
-
-    const oyunMatch = message.match(/\+?(\d+)\s*Oyun Sayfas[\u0131i]/);
-    if (oyunMatch) prizes.push({ label: "Oyun Sayfas\u0131", amount: oyunMatch[1], icon: "" });
-
-    return prizes;
-  };
-
-  const getPeriod = (message: string): { label: string; type: PeriodType } => {
-    if (message.includes("Haftal")) return { label: "Haftal\u0131k", type: "weekly" };
-    if (message.includes("Ayl")) return { label: "Ayl\u0131k", type: "monthly" };
-    if (message.includes("Sezon")) return { label: "Sezon", type: "season" };
-    return { label: "Liderlik", type: "monthly" };
-  };
-
-  if (!notification) return null;
-
-  const prizes = parsePrizes(notification.message);
-  const { label: period, type: periodType } = getPeriod(notification.message);
-  const theme = THEMES[periodType];
+  const period = getPeriod(current.message);
+  const rank = getRank(current.message);
+  const src = CARDS[period][rank - 1];
 
   return (
-    <Dialog open={open} onOpenChange={(val) => { if (!val) handleClose(); }}>
-      <DialogContent
-        className={`${theme.border} text-white max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-hidden`}
-        style={{ backgroundColor: theme.bg }}
-      >
-        {/* One-shot konfeti */}
-        {showConfetti && confettiAnim && (
-          <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
-            <Lottie
-              animationData={confettiAnim}
-              loop={false}
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
-          </div>
-        )}
+    <Dialog open={open} onOpenChange={(val) => { if (!val && !claiming) { setOpen(false); stopMusic(); } }}>
+      <DialogContent className="bg-transparent border-0 shadow-none max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-visible">
+        <div className="relative">
+          <img src={src} alt="Ödül kartı" className="w-full h-auto rounded-2xl" draggable={false} />
 
-        {/* Top glow */}
-        <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${theme.glow} to-transparent pointer-events-none`} />
+          {/* Görselin üzerindeki "Ödülleri Al" butonuna görünmez hit-zone */}
+          <PressableZone
+            label="Ödülleri Al"
+            haptic="medium"
+            className="rounded-full"
+            style={{ top: "78.5%", left: "23%", width: "54%", height: "5.5%" }}
+            onPress={handleClaim}
+            disabled={claiming}
+          />
 
-        <div className="relative p-6 flex flex-col items-center text-center">
-          {/* Trophy */}
-          <AnimatePresence>
-            <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-              className={`w-20 h-20 bg-gradient-to-br ${theme.trophy} rounded-full flex items-center justify-center mb-4`}
-            >
-              <Trophy className="w-10 h-10 text-white" />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Sparkles */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="absolute top-8 left-8"
-          >
-            <Sparkles className={`w-5 h-5 ${theme.text} animate-pulse`} />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="absolute top-12 right-10"
-          >
-            <Sparkles className={`w-4 h-4 ${theme.subtext} animate-pulse`} />
-          </motion.div>
-
-          {/* Title */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h2 className="text-xl font-bold mb-1">{"\uD83C\uDF89"} Tebrikler!</h2>
-            <p className={`text-sm ${theme.text} font-semibold mb-4`}>
-              {period} s{"\u0131"}ralamada 1. oldun!
-            </p>
-          </motion.div>
-
-          {/* Prizes */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="w-full bg-slate-800/60 border border-white/10 rounded-2xl p-4 mb-4 -translate-y-[50px]"
-          >
-            <p className="text-xs text-slate-400 mb-3 flex items-center justify-center gap-1.5">
-              <Gift className={`w-3.5 h-3.5 ${theme.giftIcon}`} />
-              Kazand{"\u0131\u011F\u0131n"} Hediyeler
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {prizes.map((prize, i) => (
-                <motion.div
-                  key={prize.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 + i * 0.1 }}
-                  className="bg-slate-700/50 border border-white/5 rounded-xl p-3 flex flex-col items-center gap-1.5"
-                >
-                  {prize.icon ? (
-                    <img src={prize.icon} alt="" className="w-8 h-8 object-contain" />
-                  ) : (
-                    <Gift className={`w-7 h-7 ${theme.giftIcon}`} />
-                  )}
-                  <span className={`text-lg font-bold ${theme.text}`}>+{prize.amount}</span>
-                  <span className="text-[10px] text-slate-400">{prize.label}</span>
-                </motion.div>
-              ))}
+          {showConfetti && confettiAnim && (
+            <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
+              <Lottie animationData={confettiAnim} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
             </div>
-          </motion.div>
-
-          {/* Close button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="w-full"
-          >
-            <Button
-              onClick={handleClose}
-              className={`w-full bg-gradient-to-r ${theme.button} text-white font-bold py-3 rounded-xl`}
-            >
-              <PartyPopper className="w-4 h-4 mr-2" />
-              Harika!
-            </Button>
-          </motion.div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
