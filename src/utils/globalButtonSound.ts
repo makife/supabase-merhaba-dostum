@@ -108,3 +108,10 @@ export const installGlobalButtonSound = () => {
     { capture: true, passive: true }
   );
 };
+
+/**
+ * Global katman az önce tık sesi çaldı mı?
+ * Kendi buton sesini çalan eski bileşenlerin çift ses çıkarmasını önler.
+ */
+export const globalButtonSoundJustPlayed = (windowMs = 250): boolean =>
+  Date.now() - lastPlay < windowMs;
