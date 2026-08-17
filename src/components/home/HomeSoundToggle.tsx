@@ -4,6 +4,7 @@ import { stopAllSounds, stopAllHTML5Sounds } from "@/services/nativeAudioService
 import { stopAllIOSWebSounds } from "@/services/iosWebAudioService";
 import { useRadio } from "@/contexts/RadioContext";
 import { useSounds } from "@/hooks/useSounds";
+import { useThemeContext } from "@/components/ThemeProvider";
 
 /**
  * Ana sayfa 3 kademeli ses düğmesi.
