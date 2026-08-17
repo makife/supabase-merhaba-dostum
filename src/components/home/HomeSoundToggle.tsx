@@ -59,6 +59,8 @@ interface HomeSoundToggleProps {
 }
 
 export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
+  const { theme } = useThemeContext();
+  const isDarkTheme = theme !== "default";
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { isPlaying: radioPlaying, stop: stopRadio } = useRadio();
   const { playSound } = useSounds();
