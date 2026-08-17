@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 
 // Oyun sayfaları - bu sayfalarda geri tuşu ile çıkış onayı gösterilecek
 const GAME_ROUTES = [
@@ -23,7 +24,12 @@ const GAME_ROUTES = [
   "/nakama-game",
   "/game/tournament",
   "/tournament-game",
+  "/tournament/game",
 ];
+
+// Turnuva maç sayfaları - turnuva çıkış kartı gösterilecek
+const TOURNAMENT_GAME_ROUTES = ["/game/tournament", "/tournament-game", "/tournament/game"];
+
 
 // Ana sayfa - burada uygulamadan çıkış onayı gösterilecek
 const HOME_ROUTE = "/";
@@ -124,8 +130,11 @@ export const useBackButton = () => {
     setDialogType(null);
   }, []);
 
+  const isTournamentGame = TOURNAMENT_GAME_ROUTES.some(route => location.pathname.startsWith(route));
+
   return {
     dialogType,
+    isTournamentGame,
     handleGameExit,
     handleAppExit,
     handleCancel,
@@ -134,36 +143,44 @@ export const useBackButton = () => {
 
 // Dialog component
 export const BackButtonDialog: React.FC = () => {
-  const { dialogType, handleGameExit, handleAppExit, handleCancel } = useBackButton();
+  const { dialogType, isTournamentGame, handleGameExit, handleAppExit, handleCancel } = useBackButton();
 
   if (!dialogType) return null;
 
   const isGameExit = dialogType === "game-exit";
 
+  // Oyun/maç çıkışı: Lottie'li kart diyalog (turnuvada turnuva görseli)
+  if (isGameExit) {
+    return (
+      <ExitConfirmCardDialog
+        open
+        variant={isTournamentGame ? "tournament" : "default"}
+        onContinue={handleCancel}
+        onExit={handleGameExit}
+      />
+    );
+  }
+
   return (
     <AlertDialog open={!!dialogType} onOpenChange={(open) => !open && handleCancel()}>
       <AlertDialogContent className="max-w-[90%] sm:max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isGameExit ? "Oyundan Çık" : "Uygulamadan Çık"}
-          </AlertDialogTitle>
+          <AlertDialogTitle>Uygulamadan Çık</AlertDialogTitle>
           <AlertDialogDescription>
-            {isGameExit 
-              ? "Oyundan çıkmak istediğinize emin misiniz? Aktif maçtan çıkarsanız puan kaybedebilirsiniz."
-              : "Uygulamadan çıkmak istediğinize emin misiniz?"
-            }
+            Uygulamadan çıkmak istediğinize emin misiniz?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>İptal</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={isGameExit ? handleGameExit : handleAppExit}
+          <AlertDialogAction
+            onClick={handleAppExit}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isGameExit ? "Oyundan Çık" : "Çık"}
+            Çık
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 };
+
