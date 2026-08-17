@@ -204,7 +204,7 @@ const TournamentBracketPage = () => {
   const [eliminatedRound, setEliminatedRound] = useState<number | null>(null);
   const [eliminatedLottie, setEliminatedLottie] = useState<any>(null);
   const [eliminatedLottieLoadDone, setEliminatedLottieLoadDone] = useState(false);
-  const [elendinTextLottie, setElendinTextLottie] = useState<any>(null);
+  const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
@@ -295,13 +295,6 @@ const TournamentBracketPage = () => {
       .catch(() => {});
   }, []);
 
-  // ELENDİN yazısı Lottie yükle (arka planı çıkarılmış versiyon)
-  useEffect(() => {
-    fetch('/elendin.json')
-      .then((r) => r.json())
-      .then((data) => setElendinTextLottie(data))
-      .catch(() => {});
-  }, []);
 
   // Çeyrek/Yarı finalde elenme tespiti — Lottie + ses
   useEffect(() => {
@@ -1175,27 +1168,12 @@ const TournamentBracketPage = () => {
         </div>
 
         <div className="w-full max-w-md px-6 flex items-center justify-center">
-          {elendinTextLottie ? (
-            <Lottie
-              animationData={elendinTextLottie}
-              loop
-              autoplay
-              className="w-full h-auto"
-            />
-          ) : (
-            <h1
-              className="text-6xl sm:text-7xl font-black text-white text-center tracking-wider"
-              style={{
-                fontFamily: "'Bebas Neue', 'Oswald', 'Impact', sans-serif",
-                letterSpacing: "0.08em",
-                WebkitTextStroke: "2px rgba(0,0,0,0.55)",
-                textShadow:
-                  "0 4px 18px rgba(0,0,0,0.55), 0 0 24px rgba(239,68,68,0.35)",
-              }}
-            >
-              ELENDİN!
-            </h1>
-          )}
+          <img
+            src="/elendinGif.gif"
+            alt="Elendin"
+            className="w-full max-w-[16rem] h-auto select-none pointer-events-none"
+            draggable={false}
+          />
         </div>
 
         <div
