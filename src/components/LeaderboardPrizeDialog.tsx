@@ -64,7 +64,21 @@ const LeaderboardPrizeDialog = () => {
         .limit(3);
 
       if (!error && data && data.length > 0) {
-        setQueue(data);
+        // Aynı dönem (haftalık/aylık/sezon) için sadece EN YENİ bildirimi göster,
+        // eski okunmamış dönem bildirimlerini sessizce okundu işaretle.
+        const seen = new Set<PeriodType>();
+        const fresh: PrizeNotification[] = [];
+        const stale: string[] = [];
+        for (const n of data) {
+          const p = getPeriod(n.message);
+          if (seen.has(p)) stale.push(n.id);
+          else { seen.add(p); fresh.push(n); }
+        }
+        if (stale.length > 0) {
+          await supabase.from("notifications").update({ is_read: true }).in("id", stale);
+        }
+        if (fresh.length === 0) return;
+        setQueue(fresh);
         setIndex(0);
         setOpen(true);
         try {
