@@ -117,8 +117,13 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999] bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300">
+    <div className={cn("fixed inset-0 flex items-center justify-center p-4 z-[9999]", showFound ? "bg-transparent" : "bg-black/70 backdrop-blur-sm")}>
+      <div
+        className={cn(
+          "relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300 transition-transform duration-300",
+          showFound && "-translate-y-[12%]"
+        )}
+      >
         <img src={modalBg} alt="Rakip aranıyor" className="w-full h-auto select-none pointer-events-none" />
 
         {/* Slot reels inside the white boxes */}
@@ -189,18 +194,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           )}
         </div>
 
-        {/* Rakip bulundu görseli */}
+        {/* Rakip bulundu görseli - arama kartının altında, arka plan kararmadan */}
         {showFound && (
-          <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/70 px-4 animate-in fade-in duration-150">
-            <img
-              src={rakipBulundu}
-              alt="Rakip bulundu"
-              className="w-full max-w-[380px] h-auto select-none pointer-events-none animate-in zoom-in-95 duration-200 drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
-              draggable={false}
-            />
-          </div>
+          <img
+            src={rakipBulundu}
+            alt="Rakip bulundu"
+            className="absolute top-[92%] left-0 w-full h-auto select-none pointer-events-none animate-in zoom-in-95 duration-200 drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+            draggable={false}
+          />
         )}
-
 
         {/* Cancel / retry hot zone over the "Aramadan Vazgeç" button */}
         <PressableZone
