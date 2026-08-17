@@ -5,10 +5,19 @@ import { stopAllIOSWebSounds } from "@/services/iosWebAudioService";
 import { useRadio } from "@/contexts/RadioContext";
 import { useSounds } from "@/hooks/useSounds";
 
-
 /**
- * Ana sayfa 2 kademeli ses düğmesi: "ac" (müzik + efektler açık) / "kapat" (ikisi de kapalı).
+ * Ana sayfa 3 kademeli ses düğmesi.
+ *
+ * Kademeler (döngü):
+ *   ac    → hem arka plan müziği / radyo hem ses efektleri AÇIK
+ *   kis   → sadece arka plan müziği / radyo KAPALI, ses efektleri AÇIK
+ *   kapat → hem arka plan müziği / radyo hem ses efektleri KAPALI
  */
+
+type ToggleState = "ac" | "kis" | "kapat";
+
+const CYCLE: ToggleState[] = ["ac", "kis", "kapat"];
+
 const readSoundsEnabled = (): boolean => {
   try {
     const raw = localStorage.getItem("kelimeci-settings");
@@ -30,7 +39,9 @@ const writeSoundsEnabled = (enabled: boolean) => {
     } catch {
       window.dispatchEvent(new Event("storage"));
     }
-    window.dispatchEvent(new CustomEvent("soundEffectsToggled", { detail: { enabled } }));
+    window.dispatchEvent(
+      new CustomEvent("soundEffectsToggled", { detail: { enabled } })
+    );
   } catch (e) {
     console.warn("Ses efekti toggle yazılamadı:", e);
   }
@@ -51,10 +62,24 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
   const { isPlaying: radioPlaying, stop: stopRadio } = useRadio();
   const { playSound } = useSounds();
 
-  const [effectsOn, setEffectsOn] = useState<boolean>(() => readSoundsEnabled());
+  // Başlangıç: efektler kapalıysa "kapat", müzik/radyo kapalıysa "kis", değilse "ac"
+  const [state, setState] = useState<ToggleState>(() => {
+    const effectsOn = readSoundsEnabled();
+    const audioOn = musicEnabled || radioPlaying;
+    if (!effectsOn) return "kapat";
+    if (!audioOn) return "kis";
+    return "ac";
+  });
 
   useEffect(() => {
-    const sync = () => setEffectsOn(readSoundsEnabled());
+    const sync = () => {
+      const effectsOn = readSoundsEnabled();
+      setState((cur) => {
+        if (!effectsOn && cur !== "kapat") return "kapat";
+        if (effectsOn && cur === "kapat") return "kis";
+        return cur;
+      });
+    };
     window.addEventListener("storage", sync);
     window.addEventListener("soundEffectsToggled", sync as EventListener);
     return () => {
@@ -63,24 +88,47 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
     };
   }, []);
 
-  const on = effectsOn && (musicEnabled || radioPlaying);
+  const applyTransition = useCallback((next: ToggleState) => {
+    const nextMusicOn = next === "ac";
+    const nextEffectsOn = next !== "kapat";
 
-  const handleClick = useCallback(() => {
-    if (on) {
-      try { playSound("buttonClick"); } catch {}
-      writeSoundsEnabled(false);
-      setEffectsOn(false);
-      stopEverySoundEffect();
+    // Efekt ayarını yaz
+    writeSoundsEnabled(nextEffectsOn);
+    if (!nextEffectsOn) stopEverySoundEffect();
+
+    // Arka plan müziği / radyo
+    if (!nextMusicOn) {
       if (radioPlaying) { try { stopRadio(); } catch {} }
       try { setMusicEnabled(false); } catch {}
     } else {
-      writeSoundsEnabled(true);
-      setEffectsOn(true);
       try { setMusicEnabled(true); } catch {}
-      setTimeout(() => { try { playSound("buttonClick"); } catch {} }, 30);
     }
-  }, [on, radioPlaying, stopRadio, setMusicEnabled, playSound]);
+  }, [radioPlaying, setMusicEnabled]);
 
+  const handleClick = useCallback(() => {
+    setState((cur) => {
+      const idx = CYCLE.indexOf(cur);
+      const next = CYCLE[(idx + 1) % CYCLE.length];
+      applyTransition(next);
+      return next;
+    });
+    // Kendi buton sesi (efektler açık olsa bile bir kez çalabilir)
+    try { playSound("buttonClick"); } catch {}
+  }, [applyTransition, playSound]);
+
+  const iconSrc =
+    state === "ac"
+      ? "/macEkraniSesEfektiAc.svg"
+      : state === "kis"
+      ? "/macEkraniSesEfektiKis.svg"
+      : "/macEkraniSesEfektiKapat.svg";
+
+  const label =
+    state === "ac"
+      ? "Ses efektleri ve müzik açık"
+      : state === "kis"
+      ? "Sadece ses efektleri açık"
+      : "Ses efektleri ve müzik kapalı";
 
   return (
     <button
@@ -90,12 +138,12 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
         e.stopPropagation();
         handleClick();
       }}
-      aria-label={on ? "Ses efektleri ve müzik açık" : "Ses efektleri ve müzik kapalı"}
+      aria-label={label}
       className={`relative w-11 h-11 flex items-center justify-center active:scale-90 transition-transform ${className}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
       <img
-        src={on ? "/macEkraniSesEfektiAc.svg" : "/macEkraniSesEfektiKapat.svg"}
+        src={iconSrc}
         alt=""
         className="w-9 h-9 object-contain drop-shadow-md"
         draggable={false}
@@ -105,3 +153,4 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
 };
 
 export default HomeSoundToggle;
+
