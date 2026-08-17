@@ -23,8 +23,10 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
   open,
   onContinue,
   onExit,
+  variant = "default",
 }) => {
   if (!open) return null;
+  const imgSrc = variant === "tournament" ? tournamentDialogImg : dialogImg;
 
   const dialog = (
     <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
