@@ -205,7 +205,6 @@ const TournamentBracketPage = () => {
   const [eliminatedLottie, setEliminatedLottie] = useState<any>(null);
   const [eliminatedLottieLoadDone, setEliminatedLottieLoadDone] = useState(false);
   const [navigatedToGame, setNavigatedToGame] = useState(false);
-  const [navigatedToGame, setNavigatedToGame] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [wonReward, setWonReward] = useState<any>(null);
   const [championLottie, setChampionLottie] = useState<any>(null);
