@@ -8,6 +8,11 @@ import modalBg from "@/assets/rakipAraniyorModal.png";
 import rakipBulundu from "@/assets/rakipBulundu.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
 import { PressableZone } from "@/components/ui/pressable-zone";
+import {
+  playMatchmakingSearchSound,
+  stopMatchmakingSearchSound,
+  playMatchFoundSound,
+} from "@/utils/matchmakingSounds";
 
 
 interface SlotMatchmakingProps {
