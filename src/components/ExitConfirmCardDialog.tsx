@@ -2,12 +2,14 @@ import React from "react";
 import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
 import dialogImg from "@/assets/cikmakDiyalogPenceresi.png";
+import tournamentDialogImg from "@/assets/turnuvaCikmakDiyalogPenceresi.png";
 import merakliKopek from "@/assets/merakliKopek.json";
 
 interface ExitConfirmCardDialogProps {
   open: boolean;
   onContinue: () => void;
   onExit: () => void;
+  variant?: "default" | "tournament";
 }
 
 /**
