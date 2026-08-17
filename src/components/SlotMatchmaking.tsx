@@ -8,6 +8,11 @@ import modalBg from "@/assets/rakipAraniyorModal.png";
 import rakipBulundu from "@/assets/rakipBulundu.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
 import { PressableZone } from "@/components/ui/pressable-zone";
+import {
+  playMatchmakingSearchSound,
+  stopMatchmakingSearchSound,
+  playMatchFoundSound,
+} from "@/utils/matchmakingSounds";
 
 
 interface SlotMatchmakingProps {
@@ -80,6 +85,11 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     setIsSpinning(true);
     setPinnedSpot(null);
     setShowFound(false);
+    playMatchmakingSearchSound();
+
+    return () => {
+      stopMatchmakingSearchSound();
+    };
   }, []);
 
   useEffect(() => {
@@ -96,6 +106,9 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   useEffect(() => {
     if (!matchFound) return;
 
+    stopMatchmakingSearchSound();
+    playMatchFoundSound();
+
     setPinnedSpot((prev) => prev ?? PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
     lottieRef.current?.pause();
     setStopped([true, true]);
@@ -105,17 +118,24 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
 
 
 
+
   const handleCancel = () => {
+    stopMatchmakingSearchSound();
     setIsSpinning(false);
     onCancel();
   };
 
   const handleRetry = () => {
+    stopMatchmakingSearchSound();
     setPositions(Array(SLOT_COUNT).fill(0));
     setStopped(Array(SLOT_COUNT).fill(false));
     setIsSpinning(true);
+    setPinnedSpot(null);
+    setShowFound(false);
     restartSearch(currentGameType);
+    playMatchmakingSearchSound();
   };
+
 
   return (
     <div className={cn("fixed inset-0 flex items-center justify-center p-4 z-[9999]", showFound ? "bg-transparent" : "bg-black/70 backdrop-blur-sm")}>
