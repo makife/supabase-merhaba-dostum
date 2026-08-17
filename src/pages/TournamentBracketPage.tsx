@@ -3,18 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, LogOut, Clock, Crown, ArrowLeft, Swords, Flame, Shield } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Trophy, LogOut, Clock, Crown, ArrowLeft, Swords, Flame, Shield, ChevronLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTournament } from "@/hooks/useTournament";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +18,21 @@ import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { playPitchedBeep, preloadPitchedBeep } from "@/services/pitchedBeepService";
 import { isSoundEffectsEnabled } from "@/utils/soundSettings";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
+
+const BRACKET_BEEP_URL = "/onsaniyegerisayim.mp3";
+preloadPitchedBeep(BRACKET_BEEP_URL).catch(() => {});
+
+const triggerHaptic = (pattern: number | number[] = 18) => {
+  try {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    // Haptik desteklenmiyor, sessizce geç
+  }
+};
+
 
 const BRACKET_BEEP_URL = "/onsaniyegerisayim.mp3";
 preloadPitchedBeep(BRACKET_BEEP_URL).catch(() => {});
