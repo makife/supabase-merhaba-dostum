@@ -91,22 +91,18 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     return () => clearInterval(interval);
   }, [isSpinning, stopped]);
 
-  // Rakip bulunduğu an: haritayı rastgele bir konumda sabitle (sarı yanıp sönen nokta),
-  // kısa süre sonra rakipBulundu.png göster
+  // Rakip bulunduğu an haritayı sabitle ve kartı gecikmesiz göster.
+  // searchProgress kontrolü, eşleşme state'i ile navigasyonun aynı anda
+  // tetiklendiği cihazlarda da görsel sekansın kaçırılmasını önler.
   useEffect(() => {
-    if (!matchFound) return;
+    if (!matchFound && searchProgress < 100) return;
 
     setPinnedSpot((prev) => prev ?? PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
     lottieRef.current?.pause();
     setStopped([true, true]);
-
-    const foundTimer = setTimeout(() => setShowFound(true), 900);
-    const spinTimer = setTimeout(() => setIsSpinning(false), 900);
-    return () => {
-      clearTimeout(foundTimer);
-      clearTimeout(spinTimer);
-    };
-  }, [matchFound]);
+    setIsSpinning(false);
+    setShowFound(true);
+  }, [matchFound, searchProgress]);
 
 
 
@@ -197,11 +193,11 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
 
         {/* Rakip bulundu görseli */}
         {showFound && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 animate-in fade-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/70 px-4 animate-in fade-in duration-150">
             <img
               src={rakipBulundu}
               alt="Rakip bulundu"
-              className="w-[86%] h-auto select-none pointer-events-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+              className="w-full max-w-[380px] h-auto select-none pointer-events-none animate-in zoom-in-95 duration-200 drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
               draggable={false}
             />
           </div>
