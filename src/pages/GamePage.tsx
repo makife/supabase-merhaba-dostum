@@ -9363,12 +9363,24 @@ const GamePage = ({
               onContinue={() => setShowExitDialog(false)}
               onExit={async () => {
                 setShowExitDialog(false);
+                const leavingRoomId = currentRoom?.id || savedRoomIdRef.current;
+                // 🔒 Oda banlist'e alınsın ki restore/otomatik geri dönüş olmasın
+                if (leavingRoomId) {
+                  try {
+                    await matchBanlist.add(leavingRoomId);
+                  } catch (e) {
+                    console.warn("Banlist ekleme hatası:", e);
+                  }
+                }
                 if (currentRoom) {
                   await leaveRoom();
                 }
+                // 🧹 Matchmaking state + bekleyen yönlendirmeyi temizle
+                window.dispatchEvent(new CustomEvent("cleanupMatchmaking"));
                 navigate(homeBackPath());
               }}
             />
+
 
 
             {/* Tournament Exit Dialog */}
