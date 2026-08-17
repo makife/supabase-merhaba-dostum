@@ -98,14 +98,15 @@ export default function HomeTicker({
       list.push({ text: `🔔 ${systemUnread} yeni sistem mesajı var` });
     }
     if (weeklyLeader) {
-      list.push({ text: `🏆 Haftanın 1.si ${weeklyLeader} oldu` });
+      list.push({ text: `🏆 Haftalık sıralamada şu an 1. ${weeklyLeader}` });
     }
     if (monthlyLeader) {
-      list.push({ text: `🥇 Ayın 1.si ${monthlyLeader} oldu` });
+      list.push({ text: `🥇 Aylık sıralamada şu an 1. ${monthlyLeader}` });
     }
     if (seasonLeader) {
-      list.push({ text: `👑 Sezonun 1.si ${seasonLeader} oldu` });
+      list.push({ text: `👑 Sezon sıralamasında şu an 1. ${seasonLeader}` });
     }
+
     if ((credits ?? 1) <= 0) {
       list.push({ text: "🖋️ Mürekkebin bitti, markete uğra" });
     }
