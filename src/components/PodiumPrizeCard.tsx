@@ -127,8 +127,9 @@ const PodiumPrizeCard = ({ tab, rank, userId, width = 76 }: Props) => {
               haptic="medium"
               className="rounded-full"
               style={{ top: "78.5%", left: "23%", width: "54%", height: "5.5%" }}
-              onClick={handleClaim}
+              onPress={handleClaim}
               disabled={claiming}
+
             />
           </div>
           <p className="text-[11px] text-slate-400 text-center">
