@@ -85,6 +85,11 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     setIsSpinning(true);
     setPinnedSpot(null);
     setShowFound(false);
+    playMatchmakingSearchSound();
+
+    return () => {
+      stopMatchmakingSearchSound();
+    };
   }, []);
 
   useEffect(() => {
@@ -101,12 +106,16 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   useEffect(() => {
     if (!matchFound) return;
 
+    stopMatchmakingSearchSound();
+    playMatchFoundSound();
+
     setPinnedSpot((prev) => prev ?? PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
     lottieRef.current?.pause();
     setStopped([true, true]);
     setIsSpinning(false);
     setShowFound(true);
   }, [matchFound]);
+
 
 
 
