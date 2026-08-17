@@ -43,6 +43,18 @@ const BOXES = [
 const CANCEL_ZONE = { left: 22.8, top: 82.5, width: 54.5, height: 7.2 };
 const MAP_ZONE = { left: 12, top: 48, width: 76, height: 32 };
 
+// Haritanın kara parçalarına denk gelen olası "rakip konumu" noktaları (% cinsinden, MAP_ZONE içinde)
+const PIN_SPOTS = [
+  { x: 22, y: 34 },
+  { x: 31, y: 58 },
+  { x: 46, y: 30 },
+  { x: 52, y: 62 },
+  { x: 58, y: 42 },
+  { x: 68, y: 36 },
+  { x: 74, y: 66 },
+  { x: 84, y: 44 },
+];
+
 export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingProps) => {
   const [slots] = useState<Player[][]>(() =>
     Array(SLOT_COUNT)
@@ -56,12 +68,17 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   const [positions, setPositions] = useState<number[]>(Array(SLOT_COUNT).fill(0));
   const [stopped, setStopped] = useState<boolean[]>(Array(SLOT_COUNT).fill(false));
   const [isSpinning, setIsSpinning] = useState(true);
+  const [pinnedSpot, setPinnedSpot] = useState<{ x: number; y: number } | null>(null);
+  const [showFound, setShowFound] = useState(false);
+  const lottieRef = useRef<LottieRefCurrentProps | null>(null);
   const { restartSearch, currentGameType } = useMatchmaking();
 
   useEffect(() => {
     setPositions(Array(SLOT_COUNT).fill(0));
     setStopped(Array(SLOT_COUNT).fill(false));
     setIsSpinning(true);
+    setPinnedSpot(null);
+    setShowFound(false);
   }, []);
 
   useEffect(() => {
@@ -74,12 +91,26 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     return () => clearInterval(interval);
   }, [isSpinning, stopped]);
 
+  // Rakip bulmaya yaklaşınca harita animasyonunu rastgele bir konumda sabitle
+  useEffect(() => {
+    if (searchProgress >= 80 && !pinnedSpot) {
+      setPinnedSpot(PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
+      lottieRef.current?.pause();
+    }
+  }, [searchProgress, pinnedSpot]);
+
+  // Rakip bulundu görseli
+  useEffect(() => {
+    if (searchProgress >= 100) setShowFound(true);
+  }, [searchProgress]);
+
   useEffect(() => {
     if (searchProgress > 100 && !stopped[0]) {
       setStopped([true, true]);
       setTimeout(() => setIsSpinning(false), 1500);
     }
   }, [searchProgress, stopped]);
+
 
   const handleCancel = () => {
     setIsSpinning(false);
