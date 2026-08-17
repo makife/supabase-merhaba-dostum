@@ -155,14 +155,42 @@ const OnboardingWrapper = () => {
 // Wrapper component to use useNavigate inside Router context
 const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
+  const navigatedRoomRef = React.useRef<string | null>(null);
+  const pendingNavTimerRef = React.useRef<number | null>(null);
+
+  // 🔒 Kullanıcı maçtan çıkarsa bekleyen yönlendirmeyi iptal et
+  React.useEffect(() => {
+    const cancelPendingNav = () => {
+      if (pendingNavTimerRef.current) {
+        clearTimeout(pendingNavTimerRef.current);
+        pendingNavTimerRef.current = null;
+        console.log("🛑 Bekleyen maç yönlendirmesi iptal edildi");
+      }
+      navigatedRoomRef.current = null;
+    };
+    window.addEventListener("cleanupMatchmaking", cancelPendingNav);
+    window.addEventListener("matchmaking:cleanup", cancelPendingNav);
+    return () => {
+      window.removeEventListener("cleanupMatchmaking", cancelPendingNav);
+      window.removeEventListener("matchmaking:cleanup", cancelPendingNav);
+    };
+  }, []);
 
   return (
     <MatchmakingProvider
       onMatchFound={(roomId) => {
+        // 🔒 Aynı oda için tek yönlendirme (duplicate realtime event koruması)
+        if (navigatedRoomRef.current === roomId) {
+          console.log("⏭️ Bu oda için yönlendirme zaten yapıldı:", roomId);
+          return;
+        }
+        navigatedRoomRef.current = roomId;
         console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
         const currentGameType = (window as any).__currentMatchmakingType || "timed";
         // rakipBulundu.png kısa süre gösterilsin, sonra maç ekranı açılsın
-        setTimeout(() => {
+        if (pendingNavTimerRef.current) clearTimeout(pendingNavTimerRef.current);
+        pendingNavTimerRef.current = window.setTimeout(() => {
+          pendingNavTimerRef.current = null;
           navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
         }, 1800);
       }}
@@ -172,6 +200,7 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
     </MatchmakingProvider>
   );
 };
+
 
 // 🎮 GamePage wrapper - URL'deki :mode parametresinden gameMode'u alır
 const GamePageWrapper = () => {
