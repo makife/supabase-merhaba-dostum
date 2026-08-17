@@ -3,6 +3,7 @@ import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
+import { cn } from "@/lib/utils";
 import modalBg from "@/assets/rakipAraniyorModal.png";
 import rakipBulundu from "@/assets/rakipBulundu.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
