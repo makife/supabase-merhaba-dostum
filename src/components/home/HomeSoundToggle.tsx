@@ -140,7 +140,7 @@ export const HomeSoundToggle = ({ className = "", isNight = false }: HomeSoundTo
         handleClick();
       }}
       aria-label={label}
-      className={`relative w-11 h-11 flex items-center justify-center rounded-full ${
+      className={`relative w-9 h-9 flex items-center justify-center rounded-full ${
         isNight ? "bg-white shadow-lg ring-2 ring-white" : "bg-transparent"
       } active:scale-90 transition-transform ${className}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
@@ -148,7 +148,7 @@ export const HomeSoundToggle = ({ className = "", isNight = false }: HomeSoundTo
       <img
         src={iconSrc}
         alt=""
-        className="relative z-10 w-8 h-8 object-contain drop-shadow-md"
+        className="relative z-10 w-6 h-6 object-contain drop-shadow-md"
         draggable={false}
       />
     </button>
