@@ -142,7 +142,9 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
         handleClick();
       }}
       aria-label={label}
-      className={`relative w-11 h-11 flex items-center justify-center rounded-full dark:bg-white/90 dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)] active:scale-90 transition-transform ${className}`}
+      className={`relative w-11 h-11 flex items-center justify-center rounded-full ${
+        isDarkTheme ? "bg-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.25)]" : ""
+      } active:scale-90 transition-transform ${className}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
       <img
