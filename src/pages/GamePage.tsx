@@ -3810,14 +3810,8 @@ const GamePage = ({
       return;
     }
 
-    // Diğer modlar için normal akış
-    // Random bot rematch özel odaya taşındığı için private-room botu da gerçek oyuncu gibi davranır.
-    const hasRealOpponent = participants.some((p) => !p.is_bot && p.user_id !== user?.id);
-    const hasBotOpponent = hasMultiplayerBotOpponent || searchParams.get("botRematch") === "1";
-    const isRealActiveGame =
-      gameStarted && !gameEnded && (participants.length >= 2 || hasBotOpponent) && (hasRealOpponent || hasBotOpponent);
-
-    if (isRealActiveGame) {
+    // Diğer modlarda: oyun bitmediyse çıkış onay kartı göster (maç ekranı açılır açılmaz da)
+    if (!gameEnded) {
       setShowExitDialog(true);
       return;
     }
