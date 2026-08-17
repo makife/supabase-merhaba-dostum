@@ -1066,7 +1066,7 @@ const HomePage = () => {
                 )}
               </button>
 
-              <HomeSoundToggle />
+              <HomeSoundToggle isNight={isNight} />
 
               {/* Gece modu test butonu + solunda kayan mesaj boardu */}
               <div className="relative w-7 h-7 mt-5">
