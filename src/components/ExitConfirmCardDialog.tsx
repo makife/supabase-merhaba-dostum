@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
 import dialogImg from "@/assets/cikmakDiyalogPenceresi.png";
 import merakliKopek from "@/assets/merakliKopek.json";
@@ -12,6 +13,9 @@ interface ExitConfirmCardDialogProps {
 /**
  * Aktif maçtan çıkış onayı - cikmakDiyalogPenceresi.png tabanlı kart.
  * Açık mor alanın alt kenarına hizalanmış merakliKopek.json animasyonu içerir.
+ *
+ * Portal'a body üzerinden render edilir; böylece geri sayım / maç overlay
+ * gibi üst katman elementlerinin üzerinde gösterilir.
  */
 const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
   open,
@@ -20,7 +24,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
 }) => {
   if (!open) return null;
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
@@ -70,6 +74,10 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined" || !document.body) return dialog;
+
+  return createPortal(dialog, document.body);
 };
 
 export default ExitConfirmCardDialog;
