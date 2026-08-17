@@ -33,10 +33,6 @@ const triggerHaptic = (pattern: number | number[] = 18) => {
   }
 };
 
-
-const BRACKET_BEEP_URL = "/onsaniyegerisayim.mp3";
-preloadPitchedBeep(BRACKET_BEEP_URL).catch(() => {});
-
 // ── Tur bilgileri ─────────────────────────────────────────────────────────────
 const ROUND_INFO = {
   1: {
