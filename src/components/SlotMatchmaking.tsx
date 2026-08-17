@@ -177,13 +177,38 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           }}
         >
           <Lottie
+            lottieRef={lottieRef}
             animationData={dunyaHaritasiArama}
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: "100%", height: "100%", opacity: pinnedSpot ? 0.45 : 1 }}
           />
+
+          {/* Sabitlenen rakip konumu - sarı yanıp sönen nokta */}
+          {pinnedSpot && (
+            <div
+              className="absolute"
+              style={{ left: `${pinnedSpot.x}%`, top: `${pinnedSpot.y}%`, transform: "translate3d(-50%,-50%,0)" }}
+            >
+              <span className="absolute inset-0 m-auto block w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-400/40 animate-ping" />
+              <span className="relative block w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_12px_4px_rgba(250,204,21,0.8)] animate-pulse" />
+            </div>
+          )}
         </div>
+
+        {/* Rakip bulundu görseli */}
+        {showFound && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 animate-in fade-in zoom-in-95 duration-200">
+            <img
+              src={rakipBulundu}
+              alt="Rakip bulundu"
+              className="w-[86%] h-auto select-none pointer-events-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+              draggable={false}
+            />
+          </div>
+        )}
+
 
         {/* Cancel / retry hot zone over the "Aramadan Vazgeç" button */}
         <PressableZone
