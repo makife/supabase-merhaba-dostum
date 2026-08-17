@@ -516,9 +516,18 @@ const LeaderboardPage = () => {
             )}
           </div>
         </div>
+
+        {/* Ödül kartı (1./2./3.) */}
+        <PodiumPrizeCard
+          tab={tab}
+          rank={rank as 1 | 2 | 3}
+          userId={leader.user_id}
+          width={size === "lg" ? 96 : 76}
+        />
       </div>
     );
   };
+
 
   const renderLeaderboard = (leaders: LeaderboardEntry[], showChange: boolean, tab: LeaderboardTab) => {
     if (leaders.length === 0) {
