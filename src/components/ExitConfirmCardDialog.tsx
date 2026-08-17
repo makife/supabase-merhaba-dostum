@@ -3,13 +3,14 @@ import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
 import dialogImg from "@/assets/cikmakDiyalogPenceresi.png";
 import tournamentDialogImg from "@/assets/turnuvaCikmakDiyalogPenceresi.png";
+import tournamentBracketDialogImg from "@/assets/turnuvaSayfaCikmakDiyalogPenceresi.png";
 import merakliKopek from "@/assets/merakliKopek.json";
 
 interface ExitConfirmCardDialogProps {
   open: boolean;
   onContinue: () => void;
   onExit: () => void;
-  variant?: "default" | "tournament";
+  variant?: "default" | "tournament" | "tournament-bracket";
 }
 
 /**
@@ -26,7 +27,12 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
   variant = "default",
 }) => {
   if (!open) return null;
-  const imgSrc = variant === "tournament" ? tournamentDialogImg : dialogImg;
+  const imgSrc =
+    variant === "tournament"
+      ? tournamentDialogImg
+      : variant === "tournament-bracket"
+        ? tournamentBracketDialogImg
+        : dialogImg;
 
   const dialog = (
     <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
@@ -85,3 +91,4 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
 };
 
 export default ExitConfirmCardDialog;
+
