@@ -1246,98 +1246,46 @@ const TournamentBracketPage = () => {
         style={{ backgroundColor: "#1a1a2e" }}
       >
         <div className="flex items-center justify-between">
-          {/* Ayrıl butonu */}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button
-                disabled={isLeaving}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-300 bg-red-500/10 ring-1 ring-red-500/20 active:scale-90 transition-transform hover:bg-red-500/15 disabled:opacity-40"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                {isLeaving ? "Çıkıyor..." : "Ayrıl"}
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent
-              className="w-[calc(100%-2rem)] max-w-sm rounded-3xl border-0 p-0 shadow-2xl bg-[#16213e] ring-1 ring-white/10 
-             fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            >
-              {(() => {
-                const isTournamentOver =
-                  currentTournament.status === "completed" || currentTournament.status === "cancelled";
-                const hasActiveMatch =
-                  !isTournamentOver &&
-                  matches.some(
-                    (m) =>
-                      m.round === currentRound &&
-                      (m.player1_id === user?.id || m.player2_id === user?.id) &&
-                      (m.status === "pending" || m.status === "in_progress"),
-                  );
-                return (
-                  <>
-                    <div className="px-5 pt-6 pb-4 border-b border-white/5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-1 h-5 rounded-full ${isTournamentOver ? "bg-amber-400" : "bg-red-400"}`} />
-                        <h2 className="text-sm font-black text-white uppercase tracking-widest">
-                          {isTournamentOver ? "Turnuvadan Çık" : "Turnuvadan Ayrıl"}
-                        </h2>
-                      </div>
-                      <p className="text-[11px] text-slate-400 ml-3">
-                        {isTournamentOver
-                          ? "Turnuva sona erdi. Turnuva listesine dönmek istiyor musunuz?"
-                          : hasActiveMatch
-                            ? "Aktif maçınızı kaybetmiş sayılırsınız ve rakibiniz tur atlar. Bu işlem geri alınamaz."
-                            : "Turnuvadan ayrılmak istediğinize emin misiniz?"}
-                      </p>
-                    </div>
-                    <div className="px-4 py-4 flex flex-col gap-2">
-                      <AlertDialogCancel className="rounded-2xl bg-white/8 ring-1 ring-white/10 text-white/80 border-0 hover:bg-white/12 text-sm font-semibold h-11">
-                        Vazgeç
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={async () => {
-                          setIsLeaving(true);
-                          try {
-                            if (!user || !tournamentId) return;
-
-                            // Turnuva bittiyse sadece çık
-                            if (isTournamentOver) {
-                              navigate("/tournament");
-                              return;
-                            }
-
-                            // Maç sonuçlandırma artık leaveTournament içinde otomatik yapılıyor
-                            await leaveTournament();
-                            navigate("/tournament");
-                          } catch (e) {
-                            console.error("❌ Bracket ayrılma hatası:", e);
-                            toast.error("Ayrılırken bir hata oluştu");
-                          } finally {
-                            setIsLeaving(false);
-                          }
-                        }}
-                        className={`rounded-2xl border-0 text-sm font-semibold h-11 ${isTournamentOver ? "bg-amber-500/15 ring-1 ring-amber-500/30 text-amber-300 hover:bg-amber-500/20" : "bg-red-500/15 ring-1 ring-red-500/30 text-red-300 hover:bg-red-500/20"}`}
-                      >
-                        {isTournamentOver ? "Turnuvalara Dön" : "Ayrıl"}
-                      </AlertDialogAction>
-                    </div>
-                  </>
-                );
-              })()}
-              <div className="h-2" />
-            </AlertDialogContent>
-          </AlertDialog>
+          {/* Geri butonu */}
+          <button
+            type="button"
+            disabled={isLeaving}
+            onClick={() => openExitDialog("back")}
+            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-white/80 bg-white/8 ring-1 ring-white/15 active:scale-90 transition-transform hover:bg-white/12 disabled:opacity-40"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Geri
+          </button>
 
           {/* Başlık */}
           <div className="flex items-center gap-2">
             <div className="w-1 h-5 bg-amber-400 rounded-full" />
-            <h1 className="text-sm font-black text-white uppercase tracking-widest truncate max-w-[160px]">
+            <h1 className="text-sm font-black text-white uppercase tracking-widest truncate max-w-[140px]">
               {currentTournament.name}
             </h1>
           </div>
 
-          <div className="w-16" />
+          {/* Ayrıl butonu */}
+          <button
+            type="button"
+            disabled={isLeaving}
+            onClick={() => openExitDialog("leave")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-300 bg-red-500/10 ring-1 ring-red-500/20 active:scale-90 transition-transform hover:bg-red-500/15 disabled:opacity-40"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            {isLeaving ? "Çıkıyor..." : "Ayrıl"}
+          </button>
         </div>
       </div>
+
+      {/* Lottie'li çıkış onay diyaloğu */}
+      <ExitConfirmCardDialog
+        open={showExitDialog}
+        variant="tournament-bracket"
+        onContinue={closeExitDialog}
+        onExit={handleConfirmExit}
+      />
+
 
       {/* ── Sticky geri sayım ve banner'lar ── */}
       {(isWaitingForCountdown || isWaitingForRoundCreation || hasActiveCountdown) && (
