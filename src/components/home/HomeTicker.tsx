@@ -35,14 +35,14 @@ export default function HomeTicker({
   const [monthlyLeader, setMonthlyLeader] = useState<string | null>(null);
   const [seasonLeader, setSeasonLeader] = useState<string | null>(null);
 
-  // Haftanın / ayın / sezonun lideri
+  // Haftanın / ayın / sezonun ANLIK lideri (dönem bitmediği için "oldu" değil "lider")
   useEffect(() => {
     let cancelled = false;
     const firstName = (data: unknown) => {
       const top = Array.isArray(data) ? (data[0] as any) : null;
       return top?.username || null;
     };
-    (async () => {
+    const load = async () => {
       try {
         const [weekly, monthly, season] = await Promise.all([
           supabase.rpc("get_weekly_leaderboard", { limit_count: 1 }),
@@ -56,11 +56,24 @@ export default function HomeTicker({
       } catch {
         /* sessizce yoksay */
       }
-    })();
+    };
+
+    load();
+    // Sıralama değişimlerini hızlı yansıt: periyodik + sekmeye dönünce
+    const interval = window.setInterval(load, 45000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, []);
+
 
   const messages = useMemo(() => {
     const list: { text: string; highlight?: boolean }[] = [];
@@ -85,14 +98,15 @@ export default function HomeTicker({
       list.push({ text: `🔔 ${systemUnread} yeni sistem mesajı var` });
     }
     if (weeklyLeader) {
-      list.push({ text: `🏆 Haftanın 1.si ${weeklyLeader} oldu` });
+      list.push({ text: `🏆 Haftalık sıralamada şu an 1. ${weeklyLeader}` });
     }
     if (monthlyLeader) {
-      list.push({ text: `🥇 Ayın 1.si ${monthlyLeader} oldu` });
+      list.push({ text: `🥇 Aylık sıralamada şu an 1. ${monthlyLeader}` });
     }
     if (seasonLeader) {
-      list.push({ text: `👑 Sezonun 1.si ${seasonLeader} oldu` });
+      list.push({ text: `👑 Sezon sıralamasında şu an 1. ${seasonLeader}` });
     }
+
     if ((credits ?? 1) <= 0) {
       list.push({ text: "🖋️ Mürekkebin bitti, markete uğra" });
     }
