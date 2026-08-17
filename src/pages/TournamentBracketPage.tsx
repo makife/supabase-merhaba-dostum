@@ -216,8 +216,54 @@ const TournamentBracketPage = () => {
   const championLottieIndexRef = useRef<number>(Math.floor(Math.random() * 8) + 1);
   const eliminatedSoundPlayedRef = useRef(false);
 
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [exitDialogMode, setExitDialogMode] = useState<"back" | "leave">("back");
+
+  const openExitDialog = useCallback((mode: "back" | "leave") => {
+    triggerHaptic([12, 28, 12]);
+    setExitDialogMode(mode);
+    setShowExitDialog(true);
+  }, []);
+
+  const closeExitDialog = useCallback(() => {
+    setShowExitDialog(false);
+  }, []);
+
+  const handleConfirmExit = useCallback(async () => {
+    triggerHaptic(22);
+    setShowExitDialog(false);
+
+    if (exitDialogMode === "back") {
+      navigate("/tournament");
+      return;
+    }
+
+    // leave mode
+    setIsLeaving(true);
+    try {
+      if (!user || !tournamentId) return;
+
+      const isTournamentOver =
+        currentTournament?.status === "completed" || currentTournament?.status === "cancelled";
+
+      if (isTournamentOver) {
+        navigate("/tournament");
+        return;
+      }
+
+      await leaveTournament();
+      navigate("/tournament");
+    } catch (e) {
+      console.error("❌ Bracket ayrılma hatası:", e);
+      toast.error("Ayrılırken bir hata oluştu");
+    } finally {
+      setIsLeaving(false);
+    }
+  }, [exitDialogMode, navigate, user, tournamentId, currentTournament, leaveTournament]);
+
   useEffect(() => {
     if (!showChampion) return;
+
     const idx = championLottieIndexRef.current;
     let cancelled = false;
     Promise.all([
