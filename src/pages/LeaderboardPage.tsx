@@ -30,7 +30,6 @@ import {
   Flame,
 } from "lucide-react";
 import LeaderboardPrizeReveal from "@/components/LeaderboardPrizeReveal";
-import PodiumPrizeCard from "@/components/PodiumPrizeCard";
 
 import { VipBadge, isUserPremium } from "@/components/VipBadge";
 import liderArmaLoadingAnim from "@/assets/liderArmaLoading.json";
