@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import Lottie from "lottie-react";
+import { useEffect, useRef, useState } from "react";
+import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import modalBg from "@/assets/rakipAraniyorModal.png";
+import rakipBulundu from "@/assets/rakipBulundu.png";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
 import { PressableZone } from "@/components/ui/pressable-zone";
+
 
 interface SlotMatchmakingProps {
   onCancel: () => void;
@@ -41,6 +43,18 @@ const BOXES = [
 const CANCEL_ZONE = { left: 22.8, top: 82.5, width: 54.5, height: 7.2 };
 const MAP_ZONE = { left: 12, top: 48, width: 76, height: 32 };
 
+// Haritanın kara parçalarına denk gelen olası "rakip konumu" noktaları (% cinsinden, MAP_ZONE içinde)
+const PIN_SPOTS = [
+  { x: 22, y: 34 },
+  { x: 31, y: 58 },
+  { x: 46, y: 30 },
+  { x: 52, y: 62 },
+  { x: 58, y: 42 },
+  { x: 68, y: 36 },
+  { x: 74, y: 66 },
+  { x: 84, y: 44 },
+];
+
 export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingProps) => {
   const [slots] = useState<Player[][]>(() =>
     Array(SLOT_COUNT)
@@ -54,12 +68,17 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   const [positions, setPositions] = useState<number[]>(Array(SLOT_COUNT).fill(0));
   const [stopped, setStopped] = useState<boolean[]>(Array(SLOT_COUNT).fill(false));
   const [isSpinning, setIsSpinning] = useState(true);
+  const [pinnedSpot, setPinnedSpot] = useState<{ x: number; y: number } | null>(null);
+  const [showFound, setShowFound] = useState(false);
+  const lottieRef = useRef<LottieRefCurrentProps | null>(null);
   const { restartSearch, currentGameType } = useMatchmaking();
 
   useEffect(() => {
     setPositions(Array(SLOT_COUNT).fill(0));
     setStopped(Array(SLOT_COUNT).fill(false));
     setIsSpinning(true);
+    setPinnedSpot(null);
+    setShowFound(false);
   }, []);
 
   useEffect(() => {
@@ -72,12 +91,26 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     return () => clearInterval(interval);
   }, [isSpinning, stopped]);
 
+  // Rakip bulmaya yaklaşınca harita animasyonunu rastgele bir konumda sabitle
+  useEffect(() => {
+    if (searchProgress >= 80 && !pinnedSpot) {
+      setPinnedSpot(PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
+      lottieRef.current?.pause();
+    }
+  }, [searchProgress, pinnedSpot]);
+
+  // Rakip bulundu görseli
+  useEffect(() => {
+    if (searchProgress >= 100) setShowFound(true);
+  }, [searchProgress]);
+
   useEffect(() => {
     if (searchProgress > 100 && !stopped[0]) {
       setStopped([true, true]);
       setTimeout(() => setIsSpinning(false), 1500);
     }
   }, [searchProgress, stopped]);
+
 
   const handleCancel = () => {
     setIsSpinning(false);
@@ -144,13 +177,38 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
           }}
         >
           <Lottie
+            lottieRef={lottieRef}
             animationData={dunyaHaritasiArama}
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: "100%", height: "100%", opacity: pinnedSpot ? 0.45 : 1 }}
           />
+
+          {/* Sabitlenen rakip konumu - sarı yanıp sönen nokta */}
+          {pinnedSpot && (
+            <div
+              className="absolute"
+              style={{ left: `${pinnedSpot.x}%`, top: `${pinnedSpot.y}%`, transform: "translate3d(-50%,-50%,0)" }}
+            >
+              <span className="absolute inset-0 m-auto block w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-400/40 animate-ping" />
+              <span className="relative block w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_12px_4px_rgba(250,204,21,0.8)] animate-pulse" />
+            </div>
+          )}
         </div>
+
+        {/* Rakip bulundu görseli */}
+        {showFound && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 animate-in fade-in zoom-in-95 duration-200">
+            <img
+              src={rakipBulundu}
+              alt="Rakip bulundu"
+              className="w-[86%] h-auto select-none pointer-events-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+              draggable={false}
+            />
+          </div>
+        )}
+
 
         {/* Cancel / retry hot zone over the "Aramadan Vazgeç" button */}
         <PressableZone

@@ -161,9 +161,13 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
       onMatchFound={(roomId) => {
         console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
         const currentGameType = (window as any).__currentMatchmakingType || "timed";
-        navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
+        // rakipBulundu.png kısa süre gösterilsin, sonra maç ekranı açılsın
+        setTimeout(() => {
+          navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
+        }, 600);
       }}
     >
+
       {children}
     </MatchmakingProvider>
   );
