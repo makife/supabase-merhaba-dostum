@@ -164,7 +164,7 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
         // rakipBulundu.png kısa süre gösterilsin, sonra maç ekranı açılsın
         setTimeout(() => {
           navigate(`/game/random-match?room=${roomId}&type=${currentGameType}`);
-        }, 600);
+        }, 1800);
       }}
     >
 

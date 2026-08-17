@@ -23,6 +23,7 @@ interface MatchmakingContextType {
   isSearching: boolean;
   currentRoom: MatchmakingRoom | null;
   searchProgress: number;
+  matchFound: boolean;
   searchTimeout: boolean;
   currentGameType: "timed" | "score";
   startSearch: (gameType: "timed" | "score") => Promise<void>;
@@ -54,6 +55,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
   const [isSearching, setIsSearching] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<MatchmakingRoom | null>(null);
   const [searchProgress, setSearchProgress] = useState(0);
+  const [matchFound, setMatchFound] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState(false);
   const [currentGameType, setCurrentGameType] = useState<"timed" | "score">("timed");
   const [searchChannel, setSearchChannel] = useState<any>(null);
@@ -147,6 +149,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     currentRoomRef.current = null;
 
     setSearchProgress(0);
+    setMatchFound(false);
     setSearchTimeout(false);
     setCurrentGameType("timed");
 
@@ -167,6 +170,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
       setIsSearching(true);
 
       setSearchProgress(0);
+      setMatchFound(false);
       setSearchTimeout(false);
       setCurrentGameType(gameType);
 
@@ -323,6 +327,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
           clearProgressTimer();
           setSearchProgress(100);
+          setMatchFound(true);
           setIsSearching(false);
           matchmakingMode.deactivate();
           onMatchFound?.(targetRoom.id);
@@ -545,6 +550,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
 
                 clearProgressTimer();
                 setSearchProgress(100);
+                setMatchFound(true);
                 setIsSearching(false);
 
                 // Channel'ı KAPATMA - room update için açık tutuyoruz
@@ -575,6 +581,9 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
               // countdown_started_at set edildiyse navigate yap
               if (payload.new.countdown_started_at) {
                 console.log("✅ Countdown timestamp alındı, navigate ediliyor...", payload.new.countdown_started_at);
+                clearProgressTimer();
+                setSearchProgress(100);
+                setMatchFound(true);
 
                 // ÖNCE channel'ı kapat - duplicate tetiklemeyi önle
                 autoReconnect.unregisterChannel(channelName);
@@ -736,6 +745,7 @@ export const MatchmakingProvider: React.FC<MatchmakingProviderProps> = ({ childr
     isSearching,
     currentRoom,
     searchProgress,
+    matchFound,
     searchTimeout,
     currentGameType,
     startSearch,

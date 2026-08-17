@@ -71,7 +71,7 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   const [pinnedSpot, setPinnedSpot] = useState<{ x: number; y: number } | null>(null);
   const [showFound, setShowFound] = useState(false);
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const { restartSearch, currentGameType } = useMatchmaking();
+  const { restartSearch, currentGameType, matchFound } = useMatchmaking();
 
   useEffect(() => {
     setPositions(Array(SLOT_COUNT).fill(0));
@@ -91,25 +91,23 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
     return () => clearInterval(interval);
   }, [isSpinning, stopped]);
 
-  // Rakip bulmaya yaklaşınca harita animasyonunu rastgele bir konumda sabitle
+  // Rakip bulunduğu an: haritayı rastgele bir konumda sabitle (sarı yanıp sönen nokta),
+  // kısa süre sonra rakipBulundu.png göster
   useEffect(() => {
-    if (searchProgress >= 80 && !pinnedSpot) {
-      setPinnedSpot(PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
-      lottieRef.current?.pause();
-    }
-  }, [searchProgress, pinnedSpot]);
+    if (!matchFound) return;
 
-  // Rakip bulundu görseli
-  useEffect(() => {
-    if (searchProgress >= 100) setShowFound(true);
-  }, [searchProgress]);
+    setPinnedSpot((prev) => prev ?? PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
+    lottieRef.current?.pause();
+    setStopped([true, true]);
 
-  useEffect(() => {
-    if (searchProgress > 100 && !stopped[0]) {
-      setStopped([true, true]);
-      setTimeout(() => setIsSpinning(false), 1500);
-    }
-  }, [searchProgress, stopped]);
+    const foundTimer = setTimeout(() => setShowFound(true), 900);
+    const spinTimer = setTimeout(() => setIsSpinning(false), 900);
+    return () => {
+      clearTimeout(foundTimer);
+      clearTimeout(spinTimer);
+    };
+  }, [matchFound]);
+
 
 
   const handleCancel = () => {
