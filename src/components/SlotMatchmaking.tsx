@@ -120,16 +120,22 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
 
 
   const handleCancel = () => {
+    stopMatchmakingSearchSound();
     setIsSpinning(false);
     onCancel();
   };
 
   const handleRetry = () => {
+    stopMatchmakingSearchSound();
     setPositions(Array(SLOT_COUNT).fill(0));
     setStopped(Array(SLOT_COUNT).fill(false));
     setIsSpinning(true);
+    setPinnedSpot(null);
+    setShowFound(false);
     restartSearch(currentGameType);
+    playMatchmakingSearchSound();
   };
+
 
   return (
     <div className={cn("fixed inset-0 flex items-center justify-center p-4 z-[9999]", showFound ? "bg-transparent" : "bg-black/70 backdrop-blur-sm")}>
