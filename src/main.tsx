@@ -7,6 +7,10 @@ import App from './App.tsx'
 import './index.css'
 import { Capacitor } from '@capacitor/core'
 import { checkResumeReload } from '@/hooks/useForceReloadOnResume';
+import { installGlobalButtonSound } from '@/utils/globalButtonSound';
+
+// 🔊 Tüm butonlara global tık sesi
+installGlobalButtonSound();
 
 // Add a class on native (iOS/Android) to control platform-specific styles
 if (Capacitor.getPlatform() !== 'web') {

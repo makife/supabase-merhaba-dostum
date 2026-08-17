@@ -9,6 +9,7 @@ import {
   isNativeAudioReady
 } from "@/services/nativeAudioService";
 
+import { globalButtonSoundJustPlayed } from "@/utils/globalButtonSound";
 const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
 interface SoundConfig {
@@ -423,6 +424,9 @@ export const useSounds = () => {
   const playSound = useCallback(
     async (soundKey: keyof SoundConfig) => {
       if (!soundsEnabled) return;
+
+      // 🔊 Global buton sesi katmanı zaten çaldıysa çift ses çıkarma
+      if (soundKey === "buttonClick" && globalButtonSoundJustPlayed()) return;
 
       // 🔓 Mobil için her ses çalmadan önce unlock dene
       unlockAudioForMobile();
