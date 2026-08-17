@@ -2,12 +2,14 @@ import React from "react";
 import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
 import dialogImg from "@/assets/cikmakDiyalogPenceresi.png";
+import tournamentDialogImg from "@/assets/turnuvaCikmakDiyalogPenceresi.png";
 import merakliKopek from "@/assets/merakliKopek.json";
 
 interface ExitConfirmCardDialogProps {
   open: boolean;
   onContinue: () => void;
   onExit: () => void;
+  variant?: "default" | "tournament";
 }
 
 /**
@@ -21,8 +23,10 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
   open,
   onContinue,
   onExit,
+  variant = "default",
 }) => {
   if (!open) return null;
+  const imgSrc = variant === "tournament" ? tournamentDialogImg : dialogImg;
 
   const dialog = (
     <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
@@ -33,7 +37,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
 
       <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
         <img
-          src={dialogImg}
+          src={imgSrc}
           alt="Çıkmak istediğine emin misin?"
           className="w-full h-auto select-none pointer-events-none"
           draggable={false}

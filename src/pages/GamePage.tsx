@@ -9372,33 +9372,15 @@ const GamePage = ({
 
 
             {/* Tournament Exit Dialog */}
-            <AlertDialog open={showTournamentExitDialog} onOpenChange={setShowTournamentExitDialog}>
-              <AlertDialogContent
-                className="max-w-xs mx-auto rounded-2xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]"
-                style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.98) 0%, rgba(30,30,30,0.98) 100%)" }}
-              >
-                <AlertDialogHeader className="items-center text-center">
-                  <span className="text-4xl mb-2">⚠️</span>
-                  <AlertDialogTitle className="text-base font-bold text-white">
-                    Turnuvayı kaybetmiş olacaksın!
-                  </AlertDialogTitle>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col space-y-2 sm:flex-col sm:space-y-2 sm:space-x-0 mt-2">
-                  <AlertDialogCancel className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white border-0 font-semibold">
-                    Hayır Devam Et
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      setShowTournamentExitDialog(false);
-                      await handleTournamentExit();
-                    }}
-                    className="w-full bg-white/5 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 font-medium"
-                  >
-                    Evet Çık
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ExitConfirmCardDialog
+              open={showTournamentExitDialog}
+              variant="tournament"
+              onContinue={() => setShowTournamentExitDialog(false)}
+              onExit={async () => {
+                setShowTournamentExitDialog(false);
+                await handleTournamentExit();
+              }}
+            />
           </>
         )}
 
