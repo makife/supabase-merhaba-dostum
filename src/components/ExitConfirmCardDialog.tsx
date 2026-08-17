@@ -37,7 +37,7 @@ const ExitConfirmCardDialog: React.FC<ExitConfirmCardDialogProps> = ({
 
       <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
         <img
-          src={dialogImg}
+          src={imgSrc}
           alt="Çıkmak istediğine emin misin?"
           className="w-full h-auto select-none pointer-events-none"
           draggable={false}
