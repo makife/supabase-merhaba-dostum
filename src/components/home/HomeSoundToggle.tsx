@@ -4,7 +4,6 @@ import { stopAllSounds, stopAllHTML5Sounds } from "@/services/nativeAudioService
 import { stopAllIOSWebSounds } from "@/services/iosWebAudioService";
 import { useRadio } from "@/contexts/RadioContext";
 import { useSounds } from "@/hooks/useSounds";
-import { useThemeContext } from "@/components/ThemeProvider";
 
 /**
  * Ana sayfa 3 kademeli ses düğmesi.
@@ -56,11 +55,10 @@ const stopEverySoundEffect = () => {
 
 interface HomeSoundToggleProps {
   className?: string;
+  isNight?: boolean;
 }
 
-export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
-  const { theme } = useThemeContext();
-  const isDarkTheme = theme !== "default";
+export const HomeSoundToggle = ({ className = "", isNight = false }: HomeSoundToggleProps) => {
   const { musicEnabled, setMusicEnabled } = useMusic();
   const { isPlaying: radioPlaying, stop: stopRadio } = useRadio();
   const { playSound } = useSounds();
@@ -143,14 +141,14 @@ export const HomeSoundToggle = ({ className = "" }: HomeSoundToggleProps) => {
       }}
       aria-label={label}
       className={`relative w-11 h-11 flex items-center justify-center rounded-full ${
-        isDarkTheme ? "bg-white/90 shadow-[0_2px_8px_rgba(0,0,0,0.25)]" : ""
+        isNight ? "bg-white shadow-lg ring-2 ring-white" : "bg-transparent"
       } active:scale-90 transition-transform ${className}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
       <img
         src={iconSrc}
         alt=""
-        className="w-9 h-9 object-contain drop-shadow-md"
+        className="relative z-10 w-8 h-8 object-contain drop-shadow-md"
         draggable={false}
       />
     </button>
