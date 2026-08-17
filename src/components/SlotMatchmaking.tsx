@@ -92,17 +92,15 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
   }, [isSpinning, stopped]);
 
   // Rakip bulunduğu an haritayı sabitle ve kartı gecikmesiz göster.
-  // searchProgress kontrolü, eşleşme state'i ile navigasyonun aynı anda
-  // tetiklendiği cihazlarda da görsel sekansın kaçırılmasını önler.
   useEffect(() => {
-    if (!matchFound && searchProgress < 100) return;
+    if (!matchFound) return;
 
     setPinnedSpot((prev) => prev ?? PIN_SPOTS[Math.floor(Math.random() * PIN_SPOTS.length)]);
     lottieRef.current?.pause();
     setStopped([true, true]);
     setIsSpinning(false);
     setShowFound(true);
-  }, [matchFound, searchProgress]);
+  }, [matchFound]);
 
 
 
