@@ -9,6 +9,7 @@ import {
   isNativeAudioReady
 } from "@/services/nativeAudioService";
 
+import { globalButtonSoundJustPlayed } from "@/utils/globalButtonSound";
 const isIOSNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
 interface SoundConfig {
