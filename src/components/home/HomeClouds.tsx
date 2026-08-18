@@ -22,16 +22,17 @@ interface HomeCloudsProps {
 export const HomeClouds = ({ layer = "back" }: HomeCloudsProps) => {
   const clouds = useMemo<Cloud[]>(() => {
     // Yoğunluk: arkada 2 tur, önde 1 tur (biraz daha yoğun bulut)
-    const passes = layer === "back" ? 2 : 1;
+    const passes = 1;
     const list: Cloud[] = [];
     for (let p = 0; p < passes; p++) {
-      CLOUDS.forEach((name, i) => {
+      const names = layer === "front" ? CLOUDS.slice(0, 4) : CLOUDS;
+      names.forEach((name, i) => {
         list.push({
           src: `/anaSayfa/${name}.png`,
           top: rand(2, 90),
           size: layer === "front" ? rand(120, 240) : rand(90, 190),
           duration: layer === "front" ? rand(28, 55) : rand(34, 70),
-          delay: -rand(0, 45) - (i + p * CLOUDS.length) * 2,
+          delay: -rand(0, 45) - (i + p * names.length) * 2,
           ltr: Math.random() > 0.5,
           opacity: layer === "front" ? rand(0.22, 0.45) : rand(0.35, 0.75),
         });
