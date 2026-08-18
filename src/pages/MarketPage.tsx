@@ -28,6 +28,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
+
+// Kırtasiye satın alma görselleri (vite glob ile yüklenir)
+const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
 
 // Veri Tipleri
 interface InkPack {
@@ -85,6 +93,10 @@ const MarketPage = () => {
   const [itemToBuy, setItemToBuy] = useState<StationeryItem | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [quantityToBuy, setQuantityToBuy] = useState(1);
+
+  // Başarılı satın alma gösterimi
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successItemName, setSuccessItemName] = useState<string>("");
 
   // Joker adet seçici state'leri
   const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
@@ -233,6 +245,45 @@ const MarketPage = () => {
 
   // Not: isSystemConnected artık usePageResync hook'u tarafından yönetiliyor (satır 61)
 
+  // Onay penceresinde gösterilecek kırtasiye görselini döndürür
+  const getConfirmationImage = (item: StationeryItem | null, quantity: number): string => {
+    if (!item) return "";
+
+    if (item.type === "joker") {
+      const jokerName =
+        item.subtype === "joker_degistir"
+          ? "degistir"
+          : item.subtype === "joker_fisildi"
+          ? "fisilda"
+          : item.subtype === "joker_senyaz"
+          ? "senyaz"
+          : "";
+      if (jokerName) {
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${quantity}${jokerName}Gorsel.png`] || "";
+      }
+    }
+
+    if (item.type === "heart") {
+      const heartMap: Record<string, string> = {
+        h_full: "musvedde",
+        h_25: "notdefteri",
+        h_50: "ajanda",
+        h_85: "ansiklopedi",
+      };
+      const file = heartMap[item.id];
+      if (file) {
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${file}Gorsel.png`] || "";
+      }
+    }
+
+    if (item.type === "time") {
+      const hours = item.value === 1 ? "1saat" : "24saat";
+      return marketImages[`/src/assets/marketSatinAlmaGorsel/market${hours}Gorsel.png`] || "";
+    }
+
+    return item.image || "";
+  };
+
   // --- Aksiyonlar ---
 
   const handleBuyInkPack = async (pack: InkPack) => {
@@ -270,6 +321,8 @@ const MarketPage = () => {
 
       await refreshProfile(true);
       playSound("buttonClick");
+      setSuccessItemName(pack.name);
+      setShowSuccessDialog(true);
       toast({
         title: "Satın Alma Başarılı! 💧",
         description: `${pack.amount} damla mürekkep eklendi.`,
@@ -409,6 +462,9 @@ const MarketPage = () => {
       // Eğer useSounds hook'unda 'success' tanımlı değilse hata verebilir,
       // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
+
+      setSuccessItemName(itemToBuy.name);
+      setShowSuccessDialog(true);
 
       toast({
         title: "Satın Alma Başarılı! 🖋️",
@@ -872,7 +928,14 @@ const MarketPage = () => {
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <Button
                       className="bg-white text-orange-600 hover:bg-orange-50 font-bold h-auto py-3 flex-col gap-1 shadow-md"
-                      onClick={() => purchaseSubscription("premium_monthly")}
+                      onClick={async () => {
+                        playSound("buttonClick");
+                        const success = await purchaseSubscription("premium_monthly");
+                        if (success) {
+                          setSuccessItemName("VIP Aylık Abonelik");
+                          setShowSuccessDialog(true);
+                        }
+                      }}
                       disabled={isSubscriptionLoading}
                     >
                       <span className="text-lg">Aylık</span>
@@ -881,7 +944,14 @@ const MarketPage = () => {
                     </Button>
                     <Button
                       className="bg-indigo-900 text-white hover:bg-indigo-800 font-bold h-auto py-3 flex-col gap-1 border border-white/20 shadow-md relative"
-                      onClick={() => purchaseSubscription("premium_yearly")}
+                      onClick={async () => {
+                        playSound("buttonClick");
+                        const success = await purchaseSubscription("premium_yearly");
+                        if (success) {
+                          setSuccessItemName("VIP Yıllık Abonelik");
+                          setShowSuccessDialog(true);
+                        }
+                      }}
                       disabled={isSubscriptionLoading}
                     >
                       <span className="absolute -top-2 right-0 bg-red-500 text-[9px] px-2 py-0.5 rounded-full animate-bounce">
@@ -925,11 +995,11 @@ const MarketPage = () => {
           <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-indigo-600/20 via-[#1e2d45] to-[#1e2d45] border-b border-white/5">
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
             <div className="relative flex items-center gap-3">
-              {itemToBuy?.image && (
+              {itemToBuy && (
                 <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <img
-                    src={itemToBuy.image}
-                    className="w-10 h-10 object-contain drop-shadow-lg"
+                    src={getConfirmationImage(itemToBuy, quantityToBuy)}
+                    className="w-12 h-12 object-contain drop-shadow-lg"
                     alt={itemToBuy?.name}
                   />
                 </div>
@@ -1000,6 +1070,33 @@ const MarketPage = () => {
               {itemToBuy?.type === "time" && isUnlimitedLivesActive(profile) ? "Süreyi Uzat" : "Satın Al"}
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* --- BAŞARILI SATIN ALMA DİYALOĞU --- */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent className="w-[90%] rounded-2xl bg-[#1e2d45] border border-green-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] p-0 overflow-hidden">
+          <div className="relative flex flex-col items-center px-6 pt-6 pb-6">
+            <div className="absolute -right-6 -top-6 w-28 h-28 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
+            <img
+              src={successImage}
+              alt="Satın Alma Başarılı"
+              className="w-56 h-auto object-contain drop-shadow-2xl relative z-10"
+            />
+            <div className="mt-4 text-center relative z-10">
+              <p className="text-green-300 text-[10px] uppercase tracking-[0.15em] font-bold mb-1">Tebrikler</p>
+              <h3 className="text-lg font-black text-white leading-tight">Satın Alma Başarılı!</h3>
+              <p className="text-sm text-slate-300 mt-1">
+                {successItemName ? `${successItemName} envanterine eklendi.` : "Öğe envanterine eklendi."}
+              </p>
+            </div>
+            <Button
+              className="mt-5 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white rounded-xl h-11 font-bold shadow-lg shadow-green-900/40"
+              onClick={() => setShowSuccessDialog(false)}
+            >
+              Harika!
+            </Button>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>
