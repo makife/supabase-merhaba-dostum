@@ -98,6 +98,14 @@ const MarketPage = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [successItemName, setSuccessItemName] = useState<string>("");
 
+  // Başarı görseli 2.5s sonra kendiliğinden kapanır
+  useEffect(() => {
+    if (!showSuccessDialog) return;
+    const t = setTimeout(() => setShowSuccessDialog(false), 2500);
+    return () => clearTimeout(t);
+  }, [showSuccessDialog]);
+
+
   // Joker adet seçici state'leri
   const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
