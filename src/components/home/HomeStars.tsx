@@ -12,7 +12,7 @@ interface HomeStarsProps {
  * Gece modunda ekranın rastgele yerlerinde parlayıp sönen yıldızlar.
  * Konum/boyut/süre/gecikme mount başına rastgele belirlenir.
  */
-export const HomeStars = ({ count = 14 }: HomeStarsProps) => {
+export const HomeStars = ({ count = 9 }: HomeStarsProps) => {
   const stars = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({

@@ -63,6 +63,8 @@ export const HomeClouds = ({ layer = "back" }: HomeCloudsProps) => {
           src={c.src}
           alt=""
           aria-hidden
+          decoding="async"
+          loading="lazy"
           className="absolute select-none"
           style={
             {
