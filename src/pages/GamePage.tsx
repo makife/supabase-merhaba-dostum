@@ -5834,21 +5834,18 @@ const GamePage = ({
         return;
       }
 
-      console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - 2 SANİYE BEKLENİYOR...`);
+      console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - senkron bekleme başlıyor...`);
 
-      // 🔧 KRİTİK FIX: 2 SANİYE BEKLE - Kullanıcı talebi
-      // Böylece iki oyuncu da odaya tam girmiş olur ve sakinleşir
-      // countdown_started_at = ŞİMDİ + 2s (2 saniye boş bekleme sonrası buffer başlangıcı)
-      // Buffer time: countdown_started_at → countdown_started_at + 5s
-      // Countdown: countdown_started_at + 5s → countdown_started_at + 10s
-      // TOPLAM: 2s bekleme + 5s buffer + 5s countdown = 12 saniye
-      const IDLE_WAIT_MS = 2000; // 2 saniye boş bekleme
+      // 🔧 SENKRON: Her iki cihaz da "gerçekten hazır" olduktan sonra planlanır.
+      // 3s boş bekleme, yavaş cihazın countdown_started_at bilgisini (realtime veya polling)
+      // buffer başlamadan almasını garanti eder.
+      // Buffer: +3s → +8s, Countdown: +8s → +13s
+      const IDLE_WAIT_MS = 3000;
       const nowServerTime = Date.now() + serverTimeOffset;
-      const countdownStartsAt = nowServerTime + IDLE_WAIT_MS; // countdown_started_at = 2s sonra
+      const countdownStartsAt = nowServerTime + IDLE_WAIT_MS;
 
-      console.log("⏰ Yeni Countdown zamanlaması (KULLANICI TALEBİ):", {
+      console.log("⏰ Yeni Countdown zamanlaması:", {
         now: new Date(nowServerTime).toISOString(),
-        "2s bekleme bitiş": new Date(countdownStartsAt).toISOString(),
         countdown_started_at: new Date(countdownStartsAt).toISOString(),
         bufferEndsAt: new Date(countdownStartsAt + 5000).toISOString(),
         gameStartsAt: new Date(countdownStartsAt + 10000).toISOString(),
@@ -5865,7 +5862,7 @@ const GamePage = ({
           if (error) {
             console.error("❌ Countdown başlatma hatası:", error);
           } else {
-            console.log(`✅ ${gameMode} - countdown 2s sonra başlayacak:`, new Date(countdownStartsAt).toISOString());
+            console.log(`✅ ${gameMode} - countdown planlandı:`, new Date(countdownStartsAt).toISOString());
           }
         });
     }
@@ -5877,7 +5874,67 @@ const GamePage = ({
     gameMode,
     gameStarted,
     serverTimeOffset,
+    clientPrepared,
   ]);
+
+  // 🛰️ COUNTDOWN POLLING FALLBACK (yavaş/gecikmeli realtime koruması)
+  // Yavaş cihazda realtime paketi gecikirse countdown_started_at'ı DB'den yoklayarak
+  // en fazla ~500ms gecikmeyle yakalar - böylece iki cihaz da aynı anda buffer'a girer.
+  useEffect(() => {
+    if (gameMode === "tournament" || gameMode === "vs-computer") return;
+    if (!currentRoom?.id || !user?.id) return;
+    if (gameStarted || showCountdown || countdownInitiatedRef.current) return;
+    if (currentRoom.countdown_started_at) return;
+    if (!clientPrepared) return;
+
+    let cancelled = false;
+    let attempts = 0;
+
+    const poll = async () => {
+      if (cancelled || countdownInitiatedRef.current) return;
+      attempts += 1;
+      if (attempts > 60) {
+        // ~30 saniye sonra bırak
+        cancelled = true;
+        return;
+      }
+
+      const { data } = await supabase
+        .from("game_rooms")
+        .select("countdown_started_at")
+        .eq("id", currentRoom.id)
+        .maybeSingle();
+
+      const cs = (data as any)?.countdown_started_at as string | undefined;
+      if (!cs || cancelled || countdownInitiatedRef.current) return;
+      if (processedCountdownRef.current === cs) return;
+
+      const countdownStartTime = new Date(cs).getTime();
+      const shouldSkipBuffer = Date.now() + serverTimeOffset - countdownStartTime >= 5000;
+      console.log("🛰️ Countdown polling ile yakalandı:", { cs, shouldSkipBuffer });
+      cancelled = true;
+      initiateCountdown(cs, shouldSkipBuffer);
+    };
+
+    const interval = setInterval(poll, 500);
+    poll();
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [
+    gameMode,
+    currentRoom?.id,
+    currentRoom?.countdown_started_at,
+    user?.id,
+    gameStarted,
+    showCountdown,
+    clientPrepared,
+    serverTimeOffset,
+    initiateCountdown,
+  ]);
+
 
   // 🎮 NORMAL OYUNLAR (RANDOM-MATCH, PRIVATE-ROOM) İÇİN COUNTDOWN SYNC
   // 🔒 Çift tetiklemeyi önlemek için: İlk yüklemede ve realtime'da aynı countdown_started_at kontrolü
