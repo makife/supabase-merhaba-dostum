@@ -165,7 +165,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       // DÜZELTME 1: onClose() kaldırıldı. Sayfa değiştiği için modal zaten kapanacak.
       navigate(`/private-room/waiting/${shortCode}`);
     } catch (error: any) {
-      toast({ title: "Hata", description: "Oda oluşturulamadı", variant: "destructive" });
+      toast({ title: "❗", description: "Oda oluşturulamadı", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -195,7 +195,7 @@ const PrivateRoomModal = ({ onClose, onStartGame }: PrivateRoomModalProps) => {
       // DÜZELTME 2: onClose() kaldırıldı.
       navigate(`/private-room/waiting/${joinCode.toUpperCase()}`);
     } catch (error: any) {
-      toast({ title: "Hata", description: error.message, variant: "destructive" });
+      toast({ title: "❗", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
