@@ -29,6 +29,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 import HomeBottomNav from "@/components/home/HomeBottomNav";
 import HomeTicker from "@/components/home/HomeTicker";
+import UnlimitedFlowBadge from "@/components/home/UnlimitedFlowBadge";
 
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import refleksKart from "@/assets/refleksKart.png";
@@ -1083,6 +1084,14 @@ const HomePage = () => {
                     credits={(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}
                   />
                 </div>
+                {/* Sınırsız akış göstergesi: kayan yazıların altında, sol kenara yaslı */}
+                <div
+                  className="absolute right-[calc(100%+8px)] top-8 flex items-center justify-start pointer-events-none"
+                  style={{ width: "calc(100vw - 76px)", maxWidth: "calc(100vw - 76px)" }}
+                >
+                  <UnlimitedFlowBadge until={(profile as any)?.unlimited_lives_until} />
+                </div>
+
                 <button
                   onClick={() => {
                     playSound("buttonClick");
