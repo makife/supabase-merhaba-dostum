@@ -5763,7 +5763,16 @@ const GamePage = ({
       currentReady: currentParticipant.is_ready,
       otherReady: otherParticipant.is_ready,
       otherIsAI: otherParticipant.is_ai,
+      clientPrepared,
     });
+
+    // 🔒 SENKRON GARANTİSİ: "Hazır" sinyalini SADECE cihaz gerçekten hazır olunca gönder.
+    // (server time senkronu tamam + geri sayım görselleri/sesleri yüklendi)
+    // Böylece yavaş cihaz "hazır" demeden countdown başlamaz; hızlı cihaz onu bekler.
+    if (!clientPrepared) {
+      console.log("⏳ Cihaz henüz tam hazır değil (server time / asset), hazır sinyali bekletiliyor");
+      return;
+    }
 
     // Mevcut oyuncuyu otomatik hazır yap (eğer henüz hazır değilse)
     if (!currentParticipant.is_ready) {
@@ -5781,6 +5790,7 @@ const GamePage = ({
         });
       return; // Güncelleme yapıldı, bir sonraki render'da kontrol devam edecek
     }
+
 
     // Her iki oyuncu da hazırsa countdown başlat
     // 🔒 ÖNEMLİ: Race condition önleme - sadece ilk katılan (joined_at küçük olan) countdown başlatır
