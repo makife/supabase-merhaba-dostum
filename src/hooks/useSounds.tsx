@@ -36,6 +36,16 @@ let globalAudioUnlocked = false;
 let globalAudioContext: AudioContext | null = null;
 let nativeAudioInitialized = false;
 
+// 🔧 DÜZELTME: Audio pool'lar artık modül seviyesinde GLOBAL.
+// Önceden bu bir useRef idi; bu yüzden her sayfa/component her mount olduğunda
+// (useSounds() her çağrıldığında) sıfırdan yeni Audio() nesneleri yaratılıyordu.
+// Yeni yaratılan Audio nesneleri henüz indirilmediği/decode edilmediği için
+// "sayfa açılır açılmaz ilk tıklama sessiz kalıyor, ikinci tıklamada ses geliyor"
+// sorununa yol açıyordu ve bu her sayfa geçişinde tekrar ediyordu.
+// Artık pool bir kere oluşturuluyor ve tüm component instance'ları arasında paylaşılıyor.
+const globalAudioPools = new Map<string, HTMLAudioElement[]>();
+let globalAudioPoolsPackId: string | null = null;
+
 const unlockGlobalAudio = () => {
   if (globalAudioUnlocked) return;
   
@@ -110,7 +120,9 @@ if (typeof window !== "undefined") {
 export const useSounds = () => {
   const [soundsEnabled, setSoundsEnabled] = useState(true);
   const { soundPack } = useThemeContext();
-  const audioCache = useRef<Map<string, HTMLAudioElement[]>>(new Map());
+  // 🔧 DÜZELTME: artık her hook instance'ı kendi Map'ini yaratmıyor,
+  // hepsi aynı global pool'a referans veriyor (bkz. globalAudioPools yukarıda).
+  const audioCache = useRef<Map<string, HTMLAudioElement[]>>(globalAudioPools);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioUnlockedRef = useRef(false);
 
@@ -324,6 +336,16 @@ export const useSounds = () => {
     }
     
     const activePack = getActiveSoundPack();
+
+    // 🔧 DÜZELTME: Pool bu ses paketi için zaten oluşturulmuşsa hiçbir şey yapma.
+    // Önceden bu effect HER mount'ta (yani her sayfa geçişinde) audioCache'i
+    // temizleyip Audio nesnelerini sıfırdan yaratıyordu -> ilk tıklamada ses
+    // henüz yüklenmediği için sessiz kalıyordu. Artık sadece paket gerçekten
+    // değiştiyse (veya hiç oluşturulmadıysa) yeniden kuruluyor.
+    if (globalAudioPoolsPackId === activePack.id && audioCache.current.size > 0) {
+      return;
+    }
+    globalAudioPoolsPackId = activePack.id;
 
     // Cache'i temizle
     audioCache.current.clear();
