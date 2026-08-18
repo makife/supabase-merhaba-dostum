@@ -795,7 +795,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
             return false;
           }
           toast({
-            title: "Hata",
+            title: "❗",
             description: "Oda bulunamadı veya dolu",
             variant: "destructive",
           });
@@ -830,7 +830,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
         if (realPlayerCount >= 2) {
           toast({
-            title: "Hata",
+            title: "❗",
             description: "Oda dolu",
             variant: "destructive",
           });
@@ -1202,7 +1202,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       setLastOpponent(null);
 
       toast({
-        title: "Hata",
+        title: "❗",
         description: "Oyundan çıkış sırasında bir hata oluştu",
         variant: "destructive",
       });
