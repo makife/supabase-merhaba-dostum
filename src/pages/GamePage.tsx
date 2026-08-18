@@ -6319,7 +6319,9 @@ const GamePage = ({
               endsAtTimestamp = gameStartTimestamp + 120 * 1000;
             }
           } else if (currentRoom?.countdown_started_at) {
-            // 🎮 Normal oyunlar (Private/Random) için countdown_started_at kullan
+            // 🎮 Normal oyunlarda countdown_started_at tek gerçek başlangıç kaynağıdır.
+            // Oda countdown'dan önce active olduysa DB'deki eski ends_at 10-12 saniye erken
+            // kalabilir; bu yüzden normal maçlarda ends_at yerine countdown anchor'ını kullan.
             const countdownStartTime = new Date(currentRoom.countdown_started_at).getTime();
 
             // 🔧 FIX: Buffer (5s) + Countdown (5s) = 10s offset
@@ -6563,11 +6565,11 @@ const GamePage = ({
 
         // 2. ends_at hesapla
         let recoveredEndsAt: number | null = null;
-        if ((freshRoom as any).ends_at) {
-          recoveredEndsAt = new Date((freshRoom as any).ends_at).getTime();
-        } else if (freshRoom.countdown_started_at) {
+        if (freshRoom.countdown_started_at) {
           const cdStart = new Date(freshRoom.countdown_started_at).getTime();
           recoveredEndsAt = cdStart + 10000 + 120 * 1000; // 5s buffer + 5s countdown + 120s game
+        } else if ((freshRoom as any).ends_at) {
+          recoveredEndsAt = new Date((freshRoom as any).ends_at).getTime();
         } else if ((freshRoom as any).started_at) {
           recoveredEndsAt = new Date((freshRoom as any).started_at).getTime() + 120 * 1000;
         }
@@ -8693,11 +8695,11 @@ const GamePage = ({
         if (cs) endsAtTimestamp = cs + TOURNAMENT_START_OFFSET_MS + MATCH_DURATION_MS;
       }
     } else {
-      endsAtTimestamp = parseTs((currentRoom as any)?.ends_at);
-      if (!endsAtTimestamp) {
-        const cs = parseTs(currentRoom?.countdown_started_at);
-        if (cs) endsAtTimestamp = cs + NORMAL_START_OFFSET_MS + MATCH_DURATION_MS;
-      }
+      // Random/private maçlarda countdown anchor'ı eski veya erken yazılmış ends_at'ten
+      // daha güvenilirdir. Böylece bot ve gerçek oyuncu maçları tam 2:00'dan başlar.
+      const cs = parseTs(currentRoom?.countdown_started_at);
+      if (cs) endsAtTimestamp = cs + NORMAL_START_OFFSET_MS + MATCH_DURATION_MS;
+      if (!endsAtTimestamp) endsAtTimestamp = parseTs((currentRoom as any)?.ends_at);
       if (!endsAtTimestamp) {
         const st = parseTs((currentRoom as any)?.started_at);
         if (st) endsAtTimestamp = st + MATCH_DURATION_MS;
