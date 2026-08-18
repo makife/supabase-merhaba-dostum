@@ -215,7 +215,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (opponentId: string, gameType: "timed" | "score", currentGameMode: string): Promise<boolean> => {
       if (!userId) {
         toast({
-          title: "Hata",
+          title: "❗",
           description: "Giriş yapmanız gerekiyor",
           variant: "destructive",
         });
@@ -224,7 +224,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (!opponentId) {
         toast({
-          title: "Hata",
+          title: "❗",
           description: "Rakip bulunamadı",
           variant: "destructive",
           duration: 1000,
@@ -259,7 +259,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (!senderAccess.hasAccess) {
           toast({
             title: "Yetersiz Hak",
-            description: "Aktif sınırsız hakkınız veya oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
+            description:
+              "Aktif sınırsız hakkınız veya oyun hakkınız bulunmamaktadır. Marketten hak satın alabilirsiniz.",
             variant: "destructive",
             duration: 3000,
           });
@@ -424,7 +425,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Push bildirim gönderilMEZ - rematch sadece in-app realtime + polling ile çalışır
         console.log("ℹ️ Rematch push bildirimi atlandı (tasarım gereği)");
 
-
         setIsWaiting(true);
         toast({
           title: "🔄 Tekrar Oyun İsteği Gönderildi",
@@ -447,7 +447,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } catch (error: any) {
         console.error("❌ Rematch hatası:", error);
         toast({
-          title: "Hata",
+          title: "❗",
           description: error.message || "Rematch gönderilemedi",
           variant: "destructive",
           duration: 1000,
@@ -505,7 +505,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (!room) {
         toast({
-          title: "Hata",
+          title: "❗",
           description: "Oda bulunamadı",
           variant: "destructive",
           duration: 1000,
@@ -558,7 +558,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
-        title: "Hata",
+        title: "❗",
         description: "Rematch kabul edilemedi",
         variant: "destructive",
         duration: 1000,
