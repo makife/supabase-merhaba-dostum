@@ -1083,6 +1083,15 @@ const HomePage = () => {
                     credits={(profile?.game_credits || 0) + (profile?.bonus_credits || 0)}
                   />
                 </div>
+                {/* Sınırsız akış göstergesi: kayan yazıların altında, sol kenara yaslı */}
+                <div
+                  className="absolute right-[calc(100%+8px)] top-8 flex items-center justify-start pointer-events-none"
+                  style={{ width: "calc(100vw - 76px)", maxWidth: "calc(100vw - 76px)" }}
+                >
+                  <div style={{ marginLeft: "calc(-1 * (100vw - 76px) + 100%)" }} />
+                  <UnlimitedFlowBadge until={(profile as any)?.unlimited_lives_until} />
+                </div>
+
                 <button
                   onClick={() => {
                     playSound("buttonClick");
