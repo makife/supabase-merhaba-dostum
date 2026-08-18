@@ -307,11 +307,6 @@ export const useNativeSubscriptions = () => {
           isActive: true,
         });
 
-        toast({
-          title: "Abonelik Başarılı! 🎉",
-          description: "VIP Yazar özellikleri aktif edildi!",
-        });
-
         await refreshProfile();
         return true;
       } catch (error: any) {

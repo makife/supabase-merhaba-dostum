@@ -14,20 +14,11 @@ import { useNativePurchases } from "@/hooks/useNativePurchases";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { supabase } from "@/integrations/supabase/client";
 import { useSounds } from "@/hooks/useSounds";
+import { PressableZone } from "@/components/ui/pressable-zone";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, ChevronDown } from "lucide-react";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie from "lottie-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
 
 // Kırtasiye satın alma görselleri (vite glob ile yüklenir)
@@ -96,7 +87,6 @@ const MarketPage = () => {
 
   // Başarılı satın alma gösterimi
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [successItemName, setSuccessItemName] = useState<string>("");
 
   // Başarı görseli 2.5s sonra kendiliğinden kapanır
   useEffect(() => {
@@ -329,13 +319,7 @@ const MarketPage = () => {
 
       await refreshProfile(true);
       playSound("buttonClick");
-      setSuccessItemName(pack.name);
       setShowSuccessDialog(true);
-      toast({
-        title: "Satın Alma Başarılı! 💧",
-        description: `${pack.amount} damla mürekkep eklendi.`,
-        className: "bg-indigo-900 text-white border-indigo-700",
-      });
     } catch (error) {
       console.error(error);
       toast({ title: "Hata", description: "Mürekkep eklenirken sorun oluştu.", variant: "destructive" });
@@ -471,14 +455,7 @@ const MarketPage = () => {
       // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
 
-      setSuccessItemName(itemToBuy.name);
       setShowSuccessDialog(true);
-
-      toast({
-        title: "Satın Alma Başarılı! 🖋️",
-        description: <span className="text-white">{itemToBuy.name} başarıyla alındı.</span>,
-        className: "bg-green-600 text-white border-green-500",
-      });
     } catch (error) {
       console.error(error);
       toast({ title: "Hata", description: "İşlem gerçekleştirilemedi.", variant: "destructive" });
@@ -940,7 +917,6 @@ const MarketPage = () => {
                         playSound("buttonClick");
                         const success = await purchaseSubscription("premium_monthly");
                         if (success) {
-                          setSuccessItemName("VIP Aylık Abonelik");
                           setShowSuccessDialog(true);
                         }
                       }}
@@ -956,7 +932,6 @@ const MarketPage = () => {
                         playSound("buttonClick");
                         const success = await purchaseSubscription("premium_yearly");
                         if (success) {
-                          setSuccessItemName("VIP Yıllık Abonelik");
                           setShowSuccessDialog(true);
                         }
                       }}
@@ -1016,22 +991,22 @@ const MarketPage = () => {
               draggable={false}
             />
             {/* Görselin içindeki butonların üzerine şeffaf dokunma alanları */}
-            <button
-              type="button"
-              aria-label="Vazgeç"
-              className="absolute bg-transparent"
+            <PressableZone
+              label="Vazgeç"
+              haptic="medium"
+              sound="buttonClick"
               style={{ left: "10.5%", width: "38%", top: "66.8%", height: "7.2%" }}
-              onClick={() => {
+              onPress={() => {
                 setItemToBuy(null);
                 setShowConfirmation(false);
               }}
             />
-            <button
-              type="button"
-              aria-label="Satın Al"
-              className="absolute bg-transparent"
+            <PressableZone
+              label="Satın Al"
+              haptic="medium"
+              sound="buttonClick"
               style={{ left: "50.2%", width: "39%", top: "66.8%", height: "7.2%" }}
-              onClick={() => {
+              onPress={() => {
                 setShowConfirmation(false);
                 confirmPurchase();
               }}
