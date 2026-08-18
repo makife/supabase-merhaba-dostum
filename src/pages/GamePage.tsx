@@ -4439,7 +4439,7 @@ const GamePage = ({
       for (let i = 0; i < wordPositions.length; i++) {
         setTimeout(() => {
           setHighlightedLetters([wordPositions[i]]);
-          playSound("letterSelect");
+          playSound("buttonClick");
 
           setTimeout(() => {
             setHighlightedLetters([]);
@@ -4648,7 +4648,7 @@ const GamePage = ({
     // Tüm harfleri aynı anda yak
     const allPositions = wordPositions.map((p) => ({ row: p.row, col: p.col }));
     setHighlightedLetters(allPositions);
-    playSound("letterSelect");
+    playSound("buttonClick");
 
     setTimeout(() => {
       setHighlightedLetters([]);
@@ -7550,7 +7550,7 @@ const GamePage = ({
         navigator.vibrate(50);
       }
 
-      playSound("letterSelect");
+      playSound("buttonClick");
 
       // Functional update: hızlı ardışık dokunmalarda stale state yüzünden harf kaybolmaz
       setSelectedLetters((prev) => {
