@@ -5893,8 +5893,8 @@ const GamePage = ({
     const poll = async () => {
       if (cancelled || countdownInitiatedRef.current) return;
       attempts += 1;
-      if (attempts > 60) {
-        // ~30 saniye sonra bırak
+      if (attempts > 22) {
+        // ~30 saniye sonra bırak (1.5s aralık)
         cancelled = true;
         return;
       }
@@ -5916,8 +5916,10 @@ const GamePage = ({
       initiateCountdown(cs, shouldSkipBuffer);
     };
 
-    const interval = setInterval(poll, 500);
+    // Realtime ana yol; polling sadece yedek → sunucu yükünü 3x azaltmak için 1.5s
+    const interval = setInterval(poll, 1500);
     poll();
+
 
     return () => {
       cancelled = true;
