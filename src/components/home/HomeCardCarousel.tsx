@@ -15,7 +15,14 @@ export const HomeCardCarousel = ({ items }: Props) => {
   const [dragging, setDragging] = useState(false);
   const posRef = useRef(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const startRef = useRef<{ x: number; y: number; pos: number; axis: "none" | "x" | "y" } | null>(null);
+  const startRef = useRef<{
+    x: number;
+    y: number;
+    pos: number;
+    axis: "none" | "x" | "y";
+    itemId: string | null;
+  } | null>(null);
+  const lastTouchActionRef = useRef(0);
   posRef.current = pos;
 
   const signedDelta = (i: number, p: number) => {
@@ -35,7 +42,14 @@ export const HomeCardCarousel = ({ items }: Props) => {
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     e.stopPropagation();
-    startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
+    const target = e.target as Element | null;
+    startRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      pos: posRef.current,
+      axis: "none",
+      itemId: target?.closest<HTMLElement>("[data-carousel-item]")?.dataset.carouselItem ?? null,
+    };
   }, []);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
@@ -44,7 +58,7 @@ export const HomeCardCarousel = ({ items }: Props) => {
     const dx = e.touches[0].clientX - s.x;
     const dy = e.touches[0].clientY - s.y;
     if (s.axis === "none") {
-      if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       s.axis = Math.abs(dx) > Math.abs(dy) * 0.7 ? "x" : "y";
       if (s.axis === "x") setDragging(true);
     }
@@ -61,11 +75,25 @@ export const HomeCardCarousel = ({ items }: Props) => {
       if (!s) return;
       if (s.axis === "x") e.stopPropagation();
       setDragging(false);
+      if (s.axis === "none" && s.itemId) {
+        const item = items.find((candidate) => candidate.id === s.itemId);
+        if (item) {
+          lastTouchActionRef.current = Date.now();
+          item.onClick();
+          return;
+        }
+      }
       const moved = posRef.current - s.pos;
       snap(Math.abs(moved) > 0.08 ? s.pos + Math.sign(moved) : s.pos);
     },
-    [snap],
+    [items, snap],
   );
+
+  const onTouchCancel = useCallback(() => {
+    startRef.current = null;
+    setDragging(false);
+    snap(posRef.current);
+  }, [snap]);
 
   const activeIndex = ((Math.round(pos) % N) + N) % N;
 
@@ -77,7 +105,7 @@ export const HomeCardCarousel = ({ items }: Props) => {
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchEnd}
+      onTouchCancel={onTouchCancel}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="relative w-full flex-1 min-h-0 flex items-center justify-center">
@@ -107,7 +135,9 @@ export const HomeCardCarousel = ({ items }: Props) => {
               <button
                 type="button"
                 aria-label={item.title}
+                data-carousel-item={item.id}
                 onClick={() => {
+                  if (Date.now() - lastTouchActionRef.current < 500) return;
                   if (!isActive) snap(pos + d);
                   item.onClick();
                 }}

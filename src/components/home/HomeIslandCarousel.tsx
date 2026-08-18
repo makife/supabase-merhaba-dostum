@@ -29,7 +29,14 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
   const [dragging, setDragging] = useState(false);
   const posRef = useRef(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const startRef = useRef<{ x: number; y: number; pos: number; axis: "none" | "x" | "y" } | null>(null);
+  const startRef = useRef<{
+    x: number;
+    y: number;
+    pos: number;
+    axis: "none" | "x" | "y";
+    islandKey: IslandKey | null;
+  } | null>(null);
+  const lastTouchActionRef = useRef(0);
 
   posRef.current = pos;
 
@@ -56,7 +63,14 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length !== 1) return;
     e.stopPropagation();
-    startRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, pos: posRef.current, axis: "none" };
+    const target = e.target as Element | null;
+    startRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      pos: posRef.current,
+      axis: "none",
+      islandKey: (target?.closest<HTMLElement>("[data-island-key]")?.dataset.islandKey as IslandKey | undefined) ?? null,
+    };
   }, []);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
@@ -65,7 +79,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
     const dx = e.touches[0].clientX - s.x;
     const dy = e.touches[0].clientY - s.y;
     if (s.axis === "none") {
-      if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       s.axis = Math.abs(dx) > Math.abs(dy) * 0.7 ? "x" : "y";
       if (s.axis === "x") setDragging(true);
     }
@@ -82,12 +96,23 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
       if (!s) return;
       if (s.axis === "x") e.stopPropagation();
       setDragging(false);
+      if (s.axis === "none" && s.islandKey) {
+        lastTouchActionRef.current = Date.now();
+        onSelect(s.islandKey);
+        return;
+      }
       const moved = posRef.current - s.pos;
       const target = Math.abs(moved) > 0.06 ? s.pos + Math.sign(moved) : s.pos;
       snap(target);
     },
-    [snap],
+    [onSelect, snap],
   );
+
+  const onTouchCancel = useCallback(() => {
+    startRef.current = null;
+    setDragging(false);
+    snap(posRef.current);
+  }, [snap]);
 
   // Klavye/erişilebilirlik: ok tuşları
   useEffect(() => {
@@ -110,7 +135,7 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchEnd}
+      onTouchCancel={onTouchCancel}
     >
       <style>{`
         @keyframes homeCarouselDrift {
@@ -156,7 +181,9 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
               <button
                 type="button"
                 aria-label={island.label}
+                data-island-key={island.key}
                 onClick={() => {
+                  if (Date.now() - lastTouchActionRef.current < 500) return;
                   if (!isActive) snap(pos + d);
                   onSelect(island.key);
                 }}
