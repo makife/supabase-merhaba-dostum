@@ -245,6 +245,45 @@ const MarketPage = () => {
 
   // Not: isSystemConnected artık usePageResync hook'u tarafından yönetiliyor (satır 61)
 
+  // Onay penceresinde gösterilecek kırtasiye görselini döndürür
+  const getConfirmationImage = (item: StationeryItem | null, quantity: number): string => {
+    if (!item) return "";
+
+    if (item.type === "joker") {
+      const jokerName =
+        item.subtype === "joker_degistir"
+          ? "degistir"
+          : item.subtype === "joker_fisildi"
+          ? "fisilda"
+          : item.subtype === "joker_senyaz"
+          ? "senyaz"
+          : "";
+      if (jokerName) {
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${quantity}${jokerName}Gorsel.png`] || "";
+      }
+    }
+
+    if (item.type === "heart") {
+      const heartMap: Record<string, string> = {
+        h_full: "musvedde",
+        h_25: "notdefteri",
+        h_50: "ajanda",
+        h_85: "ansiklopedi",
+      };
+      const file = heartMap[item.id];
+      if (file) {
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${file}Gorsel.png`] || "";
+      }
+    }
+
+    if (item.type === "time") {
+      const hours = item.value === 1 ? "1saat" : "24saat";
+      return marketImages[`/src/assets/marketSatinAlmaGorsel/market${hours}Gorsel.png`] || "";
+    }
+
+    return item.image || "";
+  };
+
   // --- Aksiyonlar ---
 
   const handleBuyInkPack = async (pack: InkPack) => {
