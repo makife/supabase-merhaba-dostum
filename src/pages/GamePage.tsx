@@ -8579,18 +8579,44 @@ const GamePage = ({
     setShowCountdown(false);
     countdownCompletedAtRef.current = Date.now();
 
-    // 🔒 Turnuvada süreyi her zaman server'daki ends_at üzerinden kullan
+    // 🔒 SERVER-AUTHORITY: Bitiş zamanı ASLA cihazın countdown'ı bitirdiği ana göre hesaplanmaz.
+    // Her cihaz aynı server anchor'ını (ends_at veya countdown_started_at + 10s) kullanır.
     const nowServer = Date.now() + serverTimeOffset;
-    let endsAtTimestamp = nowServer + 120 * 1000;
+    const parseTs = (v?: string | null): number | null => {
+      if (!v) return null;
+      const t = new Date(v).getTime();
+      return Number.isFinite(t) && t > 0 ? t : null;
+    };
 
-    if (gameMode === "tournament" && tournamentMatch?.ends_at) {
-      const parsedEndsAt = new Date(tournamentMatch.ends_at).getTime();
-      if (Number.isFinite(parsedEndsAt) && parsedEndsAt > 0) {
-        endsAtTimestamp = parsedEndsAt;
+    const MATCH_DURATION_MS = 120 * 1000;
+    const NORMAL_START_OFFSET_MS = 10000; // 5s buffer + 5s countdown
+    const TOURNAMENT_START_OFFSET_MS = 12000;
+
+    let endsAtTimestamp: number | null = null;
+
+    if (gameMode === "tournament") {
+      endsAtTimestamp = parseTs(tournamentMatch?.ends_at);
+      if (!endsAtTimestamp) {
+        const cs = parseTs((tournamentMatch as any)?.countdown_started_at);
+        if (cs) endsAtTimestamp = cs + TOURNAMENT_START_OFFSET_MS + MATCH_DURATION_MS;
+      }
+    } else {
+      endsAtTimestamp = parseTs((currentRoom as any)?.ends_at);
+      if (!endsAtTimestamp) {
+        const cs = parseTs(currentRoom?.countdown_started_at);
+        if (cs) endsAtTimestamp = cs + NORMAL_START_OFFSET_MS + MATCH_DURATION_MS;
+      }
+      if (!endsAtTimestamp) {
+        const st = parseTs((currentRoom as any)?.started_at);
+        if (st) endsAtTimestamp = st + MATCH_DURATION_MS;
       }
     }
 
+    // Son çare (vs-computer / veri eksik): local server time
+    if (!endsAtTimestamp) endsAtTimestamp = nowServer + MATCH_DURATION_MS;
+
     const remainingSeconds = Math.max(0, Math.min(120, Math.floor((endsAtTimestamp - nowServer) / 1000)));
+
 
     console.log("⏱️ Countdown sonrası timer server ends_at ile ayarlandı:", {
       now: new Date(nowServer).toISOString(),
