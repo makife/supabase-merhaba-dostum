@@ -108,8 +108,8 @@ export const HomeCardCarousel = ({ items }: Props) => {
                 type="button"
                 aria-label={item.title}
                 onClick={() => {
-                  if (isActive) item.onClick();
-                  else snap(pos + d);
+                  if (!isActive) snap(pos + d);
+                  item.onClick();
                 }}
                 className="relative w-full block active:scale-[0.97] transition-transform duration-150"
                 style={{ WebkitTapHighlightColor: "transparent" }}
