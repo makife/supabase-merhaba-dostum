@@ -463,6 +463,9 @@ const MarketPage = () => {
       // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
 
+      setSuccessItemName(itemToBuy.name);
+      setShowSuccessDialog(true);
+
       toast({
         title: "Satın Alma Başarılı! 🖋️",
         description: <span className="text-white">{itemToBuy.name} başarıyla alındı.</span>,
