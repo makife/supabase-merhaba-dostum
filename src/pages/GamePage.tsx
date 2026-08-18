@@ -36,7 +36,7 @@ import { useRematchContext } from "@/contexts/RematchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateServerOffset } from "@/utils/serverTimeSync";
 import { useServerTimeContext, subscribeToOffsetChange } from "@/contexts/ServerTimeContext";
-import GameCountdown from "@/components/GameCountdown";
+import GameCountdown, { ensureImagesLoaded } from "@/components/GameCountdown";
 import FinalCountdown from "@/components/FinalCountdown";
 import ComboBoost from "@/components/ComboBoost";
 import NiceCatchText from "@/components/NiceCatchText";
