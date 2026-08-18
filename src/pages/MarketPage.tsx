@@ -981,11 +981,11 @@ const MarketPage = () => {
           <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-indigo-600/20 via-[#1e2d45] to-[#1e2d45] border-b border-white/5">
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
             <div className="relative flex items-center gap-3">
-              {itemToBuy?.image && (
+              {itemToBuy && (
                 <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <img
-                    src={itemToBuy.image}
-                    className="w-10 h-10 object-contain drop-shadow-lg"
+                    src={getConfirmationImage(itemToBuy, quantityToBuy)}
+                    className="w-12 h-12 object-contain drop-shadow-lg"
                     alt={itemToBuy?.name}
                   />
                 </div>
