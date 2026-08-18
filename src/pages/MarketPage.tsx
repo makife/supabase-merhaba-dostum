@@ -28,6 +28,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
+
+// Kırtasiye satın alma görselleri (vite glob ile yüklenir)
+const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
 
 // Veri Tipleri
 interface InkPack {
