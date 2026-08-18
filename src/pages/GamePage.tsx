@@ -5741,6 +5741,31 @@ const GamePage = ({
     currentRoom?.countdown_started_at,
   ]);
 
+  // 🔒 CİHAZ HAZIRLIK SİNYALİ: Server time senkronu + geri sayım asset'leri yüklenmeden
+  // "hazır" deme. Böylece yavaş cihaz hazır olana kadar countdown hiç başlamaz.
+  const [assetsPrepared, setAssetsPrepared] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    ensureImagesLoaded()
+      .then(() => {
+        if (!cancelled) setAssetsPrepared(true);
+      })
+      .catch(() => {
+        if (!cancelled) setAssetsPrepared(true);
+      });
+    // Güvenlik ağı: 4sn içinde yüklenmezse yine de devam et (oyun kilitlenmesin)
+    const t = setTimeout(() => {
+      if (!cancelled) setAssetsPrepared(true);
+    }, 4000);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, []);
+
+  const clientPrepared = assetsPrepared && contextServerTimeReady;
+
+
   // 🆕 TÜM MODLAR İÇİN OTOMATİK HAZIR DURUMU VE COUNTDOWN BAŞLATMA
   // AI modundaki gibi: Her iki oyuncu da hazır olunca otomatik countdown başlat
   useEffect(() => {
