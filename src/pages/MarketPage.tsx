@@ -1072,6 +1072,33 @@ const MarketPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* --- BAŞARILI SATIN ALMA DİYALOĞU --- */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent className="w-[90%] rounded-2xl bg-[#1e2d45] border border-green-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] p-0 overflow-hidden">
+          <div className="relative flex flex-col items-center px-6 pt-6 pb-6">
+            <div className="absolute -right-6 -top-6 w-28 h-28 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
+            <img
+              src={successImage}
+              alt="Satın Alma Başarılı"
+              className="w-56 h-auto object-contain drop-shadow-2xl relative z-10"
+            />
+            <div className="mt-4 text-center relative z-10">
+              <p className="text-green-300 text-[10px] uppercase tracking-[0.15em] font-bold mb-1">Tebrikler</p>
+              <h3 className="text-lg font-black text-white leading-tight">Satın Alma Başarılı!</h3>
+              <p className="text-sm text-slate-300 mt-1">
+                {successItemName ? `${successItemName} envanterine eklendi.` : "Öğe envanterine eklendi."}
+              </p>
+            </div>
+            <Button
+              className="mt-5 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white rounded-xl h-11 font-bold shadow-lg shadow-green-900/40"
+              onClick={() => setShowSuccessDialog(false)}
+            >
+              Harika!
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
