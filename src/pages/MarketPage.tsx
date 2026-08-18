@@ -321,6 +321,8 @@ const MarketPage = () => {
 
       await refreshProfile(true);
       playSound("buttonClick");
+      setSuccessItemName(pack.name);
+      setShowSuccessDialog(true);
       toast({
         title: "Satın Alma Başarılı! 💧",
         description: `${pack.amount} damla mürekkep eklendi.`,
