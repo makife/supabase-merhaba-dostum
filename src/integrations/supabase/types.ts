@@ -2122,6 +2122,15 @@ export type Database = {
         Args: { p_tournament_id: string; p_user_id: string }
         Returns: Json
       }
+      find_or_create_random_room: {
+        Args: { p_exclude?: string[]; p_game_type: string; p_grid: string[] }
+        Returns: {
+          current_grid: string[]
+          host_id: string
+          joined: boolean
+          room_id: string
+        }[]
+      }
       generate_random_grid: { Args: never; Returns: Json }
       get_avatar_url: { Args: { user_id: string }; Returns: string }
       get_daily_top_leaders: {
