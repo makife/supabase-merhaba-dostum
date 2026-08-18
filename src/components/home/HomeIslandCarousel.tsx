@@ -157,8 +157,8 @@ export const HomeIslandCarousel = ({ pointSize = 38, alerts, onSelect }: Props) 
                 type="button"
                 aria-label={island.label}
                 onClick={() => {
-                  if (isActive) onSelect(island.key);
-                  else snap(pos + d);
+                  if (!isActive) snap(pos + d);
+                  onSelect(island.key);
                 }}
                 className="absolute inset-0 active:scale-[0.97] transition-transform duration-150"
                 style={{ WebkitTapHighlightColor: "transparent" }}
