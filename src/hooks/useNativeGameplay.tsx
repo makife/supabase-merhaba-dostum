@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useToast } from '@/hooks/use-toast';
 
 export const useNativeGameplay = () => {
@@ -8,22 +9,15 @@ export const useNativeGameplay = () => {
   // Native haptic feedback
   const triggerHapticFeedback = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
     if (Capacitor.isNativePlatform()) {
-      if (Capacitor.getPlatform() === 'ios') return;
+      const styles = {
+        light: ImpactStyle.Light,
+        medium: ImpactStyle.Medium,
+        heavy: ImpactStyle.Heavy,
+      };
 
-      try {
-        // For Capacitor apps, use vibration pattern
-        const patterns = {
-          light: [50],
-          medium: [100],
-          heavy: [200]
-        };
-        
-        if ('vibrate' in navigator) {
-          navigator.vibrate(patterns[type]);
-        }
-      } catch (error) {
+      void Haptics.impact({ style: styles[type] }).catch((error) => {
         console.warn('Haptic feedback not available:', error);
-      }
+      });
     }
   }, []);
 
