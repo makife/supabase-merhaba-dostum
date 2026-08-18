@@ -94,6 +94,10 @@ const MarketPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [quantityToBuy, setQuantityToBuy] = useState(1);
 
+  // Başarılı satın alma gösterimi
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successItemName, setSuccessItemName] = useState<string>("");
+
   // Joker adet seçici state'leri
   const [jokerQuantities, setJokerQuantities] = useState<Record<string, number>>({});
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
