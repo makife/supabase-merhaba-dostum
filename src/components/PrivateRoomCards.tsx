@@ -14,6 +14,7 @@ import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
 import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
 import yukleniyorAnim from "@/assets/ozelOdaYukleniyor.json";
 import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
+import arkadasinGeldiGorsel from "@/assets/arkadasinGeldiGorsel.png";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
@@ -99,7 +100,9 @@ const PrivateRoomCards = ({
   const [isReady, setIsReady] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [opponentProfile, setOpponentProfile] = useState<{ avatar_url: string | null; username: string | null } | null>(null);
+  const [friendArrivedAnim, setFriendArrivedAnim] = useState(false);
   const navigatedRef = useRef(false);
+  const prevOpponentJoinedRef = useRef(false);
 
 
   // --- Bekleyen oda kontrolü ---
