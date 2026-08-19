@@ -241,6 +241,18 @@ const MarketPage = () => {
     return expiry > new Date();
   };
 
+  // Aylık veya yıllık VIP aboneliği aktif mi?
+  const hasVipSubscription = (() => {
+    const p: any = profile;
+    if (!p?.premium_until) return false;
+    if (new Date(p.premium_until) <= new Date()) return false;
+    const type = String(p.premium_type || "");
+    // premium_type yoksa (eski kayıtlar) aktif premium_until yeterli sayılır
+    if (!type) return true;
+    return type.includes("monthly") || type.includes("yearly") || type.includes("aylik") || type.includes("yillik");
+  })();
+
+
   // Not: isSystemConnected artık usePageResync hook'u tarafından yönetiliyor (satır 61)
 
   // Onay penceresinde gösterilecek kırtasiye görselini döndürür
@@ -839,7 +851,9 @@ const MarketPage = () => {
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-4 text-white flex items-center justify-between shadow-lg relative overflow-hidden"
+                        className={`bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-4 text-white flex items-center justify-between shadow-lg relative overflow-hidden ${
+                          hasVipSubscription ? "opacity-50" : ""
+                        }`}
                       >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                         <div className="flex items-center gap-3 relative z-10">
@@ -850,13 +864,19 @@ const MarketPage = () => {
                           )}
                           <div>
                             <p className="font-bold">{item.name}</p>
-                            <p className="text-xs text-slate-300">{item.description}</p>
+                            <p className="text-xs text-slate-300">
+                              {hasVipSubscription ? "VIP üyeliğinde zaten sınırsız" : item.description}
+                            </p>
                           </div>
                         </div>
                         <Button
                           size="sm"
-                          className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm z-10"
-                          onClick={() => handleSpendInk(item)}
+                          disabled={hasVipSubscription}
+                          className="bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm z-10 disabled:opacity-60 disabled:cursor-not-allowed"
+                          onClick={() => {
+                            if (hasVipSubscription) return;
+                            handleSpendInk(item);
+                          }}
                         >
                           {item.priceInInk} Damla
                         </Button>
