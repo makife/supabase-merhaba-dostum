@@ -492,9 +492,20 @@ const MarketPage = () => {
           joker_senyaz: { key: "senyaz", icon: "/icons/senyaz.svg" },
         };
         const t = itemToBuy.subtype ? map[itemToBuy.subtype] : undefined;
-        if (t) pendingFlightRef.current = { targetKey: t.key, icon: t.icon, count: itemToBuy.value };
+        if (t)
+          pendingFlightRef.current = {
+            targetKey: t.key,
+            icon: t.icon,
+            count: itemToBuy.value,
+            sourceItemId: itemToBuy.id,
+          };
       } else if (itemToBuy.type === "heart") {
-        pendingFlightRef.current = { targetKey: "hak", icon: "/icons/kredifazlasi-badge.svg", count: itemToBuy.value };
+        pendingFlightRef.current = {
+          targetKey: "hak",
+          icon: "/icons/kredifazlasi-badge.svg",
+          count: itemToBuy.value,
+          sourceItemId: itemToBuy.id,
+        };
       }
 
       setShowSuccessDialog(true);
