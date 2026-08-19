@@ -232,7 +232,9 @@ const GameCountdown = memo(
     const hasShown5Ref = useRef(false);
     const forced5StartTimeRef = useRef<number>(0);
     const MIN_DISPLAY_MS = 950; // Her sayı en az 950ms gösterilmeli (doğal hız)
+    const CATCHUP_DISPLAY_MS = 220; // ⚡ Sunucudan geride kalındıysa hızlı yakalama modu
     const lastValueChangeTimeRef = useRef<number>(0);
+    const hardDeadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const playCountdownSound = () => {
       if (!isSoundEffectsEnabled()) return;
