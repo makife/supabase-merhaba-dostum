@@ -426,6 +426,7 @@ export type Database = {
           time_limit: number | null
           updated_at: string | null
           used_words: Json | null
+          version: number
           winner_id: string | null
         }
         Insert: {
@@ -451,6 +452,7 @@ export type Database = {
           time_limit?: number | null
           updated_at?: string | null
           used_words?: Json | null
+          version?: number
           winner_id?: string | null
         }
         Update: {
@@ -476,6 +478,7 @@ export type Database = {
           time_limit?: number | null
           updated_at?: string | null
           used_words?: Json | null
+          version?: number
           winner_id?: string | null
         }
         Relationships: [
@@ -2414,6 +2417,7 @@ export type Database = {
           time_limit: number | null
           updated_at: string | null
           used_words: Json | null
+          version: number
           winner_id: string | null
         }
         SetofOptions: {
