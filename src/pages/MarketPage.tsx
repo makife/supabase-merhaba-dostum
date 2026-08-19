@@ -241,6 +241,18 @@ const MarketPage = () => {
     return expiry > new Date();
   };
 
+  // Aylık veya yıllık VIP aboneliği aktif mi?
+  const hasVipSubscription = (() => {
+    const p: any = profile;
+    if (!p?.premium_until) return false;
+    if (new Date(p.premium_until) <= new Date()) return false;
+    const type = String(p.premium_type || "");
+    // premium_type yoksa (eski kayıtlar) aktif premium_until yeterli sayılır
+    if (!type) return true;
+    return type.includes("monthly") || type.includes("yearly") || type.includes("aylik") || type.includes("yillik");
+  })();
+
+
   // Not: isSystemConnected artık usePageResync hook'u tarafından yönetiliyor (satır 61)
 
   // Onay penceresinde gösterilecek kırtasiye görselini döndürür
