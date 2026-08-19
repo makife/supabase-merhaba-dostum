@@ -20,6 +20,8 @@ import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, Ch
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie from "lottie-react";
 import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
+import MarketInventoryBar from "@/components/market/MarketInventoryBar";
+import InventoryFlyAnimation, { FlightRequest } from "@/components/market/InventoryFlyAnimation";
 
 // Kırtasiye satın alma görselleri (vite glob ile yüklenir)
 const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.png", {
