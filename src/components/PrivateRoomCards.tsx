@@ -374,6 +374,13 @@ const PrivateRoomCards = ({
   const opponentUserId = humanOpponent?.user_id || null;
 
   useEffect(() => {
+    if (opponentJoined && !prevOpponentJoinedRef.current) {
+      setFriendArrivedAnim(true);
+    }
+    prevOpponentJoinedRef.current = opponentJoined;
+  }, [opponentJoined]);
+
+  useEffect(() => {
     if (!opponentUserId) {
       setOpponentProfile(null);
       return;
