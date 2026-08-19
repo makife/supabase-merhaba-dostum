@@ -109,7 +109,11 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     setIsSyncing(true);
 
     const samples: TimeSample[] = [];
-    const SYNC_TIMEOUT = 2000; // 🔧 2 saniyeye düşürüldü - failsafe için
+    // 🎯 NTP tarzı kalibrasyon: çok örnek al, en düşük RTT'li olanı seç.
+    // Timeout dolsa bile o ana kadar toplanan örnekler kullanılır (partial sonuç).
+    const SAMPLE_COUNT = 7;
+    const SAMPLE_GAP_MS = 60;
+    const SYNC_TIMEOUT = 3500;
     
     try {
       // Timeout promise
