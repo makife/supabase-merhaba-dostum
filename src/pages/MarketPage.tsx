@@ -1079,7 +1079,7 @@ const MarketPage = () => {
       {showSuccessDialog && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4"
-          onClick={() => setShowSuccessDialog(false)}
+          onClick={closeSuccessDialog}
         >
           <img
             src={successImage}
