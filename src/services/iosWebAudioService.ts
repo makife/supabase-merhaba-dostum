@@ -151,7 +151,8 @@ export const initIOSWebAudio = async (
 export const playIOSWebSound = async (
   assetId: string,
   volume = 0.7,
-  fallbackUrl?: string
+  fallbackUrl?: string,
+  playbackRate?: number
 ): Promise<boolean> => {
   if (!isIOSNative) return false;
 
