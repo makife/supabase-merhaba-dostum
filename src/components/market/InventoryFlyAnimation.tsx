@@ -118,7 +118,7 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
             { transform: "scale(1.14)" },
             { transform: "scale(1)" },
           ],
-          { duration: 200, easing: "ease-out" },
+          { duration: 140, easing: "ease-out" },
         );
       };
     }
