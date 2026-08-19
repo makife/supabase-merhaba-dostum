@@ -368,6 +368,28 @@ const PrivateRoomCards = ({
   const opponent = humanOpponent || (botRematch ? bot : undefined);
   const opponentJoined = Boolean(opponent);
   const opponentReady = Boolean(opponent?.is_ready) || Boolean(botRematch && bot);
+  const opponentUserId = humanOpponent?.user_id || null;
+
+  useEffect(() => {
+    if (!opponentUserId) {
+      setOpponentProfile(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url, username")
+        .eq("user_id", opponentUserId)
+        .maybeSingle();
+      if (!cancelled && data) setOpponentProfile({ avatar_url: data.avatar_url, username: data.username });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [opponentUserId]);
+
+
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
