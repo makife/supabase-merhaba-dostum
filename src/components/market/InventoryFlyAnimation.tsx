@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { playGenericTone } from "@/utils/genericBeep";
+import { isSoundEffectsEnabled } from "@/utils/soundSettings";
 
 export interface FlightRequest {
   /** Hedef chip anahtarı: degistir | fisilda | senyaz | hak */
