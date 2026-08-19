@@ -37,8 +37,10 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
       return;
     }
 
+    const targetIcon = target.querySelector<HTMLElement>("[data-inv-icon]") || target;
+
     const layer = layerRef.current;
-    const tRect = target.getBoundingClientRect();
+    const tRect = targetIcon.getBoundingClientRect();
     const endX = tRect.left + tRect.width / 2;
     const endY = tRect.top + tRect.height / 2;
     // Başlangıç: satın alınan öğenin karttaki ikonunun tam üstü
@@ -111,8 +113,8 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
           // Her varışta yükselen kısa "toplama" sesi
           playGenericTone(880 + (i % 8) * 90, "triangle", 0.07, 0.07);
         }
-        // Hedef chip'e küçük bir "pop" efekti
-        target.animate(
+        // Hedef ikonuna küçük bir "pop" efekti
+        targetIcon.animate(
           [
             { transform: "scale(1)" },
             { transform: "scale(1.14)" },
