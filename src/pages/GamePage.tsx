@@ -1919,8 +1919,11 @@ const GamePage = ({
           timerRef.current = null;
         }
 
-        // Ses: setWinner üstte olmadığı için burada manuel tetikle (disconnect-win akışı)
-        playCelebrationSound();
+        // Ses: tek noktadan, tekrar çalmayı engelleyerek tetikle
+        if (!endSoundPlayedRef.current) {
+          endSoundPlayedRef.current = true;
+          playCelebrationSound();
+        }
 
         toast({
           title: "Rakip Bağlantısı Koptu",
@@ -2113,8 +2116,11 @@ const GamePage = ({
         console.log("Credit refund skipped/failed:", err);
       }
 
-      // Ses efekti çal (disconnect-win akışı, winner state'i bu blokta set edilmiyor)
-      playCelebrationSound();
+      // Ses efekti çal (disconnect-win akışı) - sadece bir kez
+      if (!endSoundPlayedRef.current) {
+        endSoundPlayedRef.current = true;
+        playCelebrationSound();
+      }
 
       // 🎯 Odayı finished yap ve kazananı belirle
       if (currentRoom?.id && user?.id) {
