@@ -64,7 +64,7 @@ export function flyIconsToInventory(opts: FlyIconsOptions): Promise<void> {
       const bow = Math.sin(Math.PI * t) * AMP;
       const x = startX + dx * t + nx * bow;
       const y = startY + dy * t + ny * bow;
-      const scale = t < 0.12 ? 0.5 + t * 5 : 1.1 - t * 0.7;
+      const scale = 0.5 + 0.8 * Math.sin(Math.PI * t);
       const opacity = t === 0 ? 0 : t > 0.95 ? 0.6 : 1;
       pathKeyframes.push({
         transform: `translate3d(${x - half}px, ${y - half}px, 0) scale(${scale})`,
