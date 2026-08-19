@@ -15,6 +15,7 @@ import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
 import yukleniyorAnim from "@/assets/ozelOdaYukleniyor.json";
 import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
 import arkadasinGeldiGorsel from "@/assets/arkadasinGeldiGorsel.png";
+import arkadasinOdadanAyrildiGorsel from "@/assets/arkadasinOdadanAyrildiGorsel.png";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
@@ -101,6 +102,7 @@ const PrivateRoomCards = ({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [opponentProfile, setOpponentProfile] = useState<{ avatar_url: string | null; username: string | null } | null>(null);
   const [friendArrivedAnim, setFriendArrivedAnim] = useState(false);
+  const [friendLeftAnim, setFriendLeftAnim] = useState(false);
   const navigatedRef = useRef(false);
   const prevOpponentJoinedRef = useRef(false);
 
@@ -376,6 +378,8 @@ const PrivateRoomCards = ({
   useEffect(() => {
     if (opponentJoined && !prevOpponentJoinedRef.current) {
       setFriendArrivedAnim(true);
+    } else if (!opponentJoined && prevOpponentJoinedRef.current) {
+      setFriendLeftAnim(true);
     }
     prevOpponentJoinedRef.current = opponentJoined;
   }, [opponentJoined]);
@@ -592,6 +596,17 @@ const PrivateRoomCards = ({
                 alt="Arkadaşın geldi"
                 className="friend-arrived-slide absolute top-0 left-1/2 -translate-x-1/2 w-[72%] max-w-[340px] h-auto select-none"
                 onAnimationEnd={() => setFriendArrivedAnim(false)}
+              />
+            </div>
+          )}
+
+          {friendLeftAnim && (
+            <div className="absolute left-1/2 -translate-x-1/2 w-screen top-[100%] mt-4 pointer-events-none z-30 flex items-start justify-center">
+              <img
+                src={arkadasinOdadanAyrildiGorsel}
+                alt="Arkadaş odadan ayrıldı"
+                className="friend-arrived-slide absolute top-0 left-1/2 -translate-x-1/2 w-[72%] max-w-[340px] h-auto select-none"
+                onAnimationEnd={() => setFriendLeftAnim(false)}
               />
             </div>
           )}
