@@ -55,11 +55,30 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
     const nx = -dy / dist;
     const ny = dx / dist;
 
-    const STEPS = 14;
-    const DUR = 1000;
-    const GAP = 70;
+    const STEPS = 24;
+    const DUR = 1100;
+    const GAP = 55; // tren gibi peşpeşe: küçük sabit aralık
     const SIZE = 34;
     const half = SIZE / 2;
+
+    // TEK ORTAK YÖRÜNGE: tüm ikonlar aynı yoldan, sırayla geçer
+    const AMP = 42; // salınım genliği
+    const WAVES = 2; // salınım sayısı
+    const pathKeyframes: Keyframe[] = [];
+    for (let s = 0; s <= STEPS; s++) {
+      const t = s / STEPS;
+      const env = Math.sin(Math.PI * t); // uçlarda salınım sıfırlanır
+      const wave = Math.sin(t * WAVES * Math.PI * 2) * AMP * env;
+      const x = startX + dx * t + nx * wave;
+      const y = startY + dy * t + ny * wave - 50 * env;
+      const scale = t < 0.12 ? 0.5 + t * 5 : 1.1 - t * 0.7;
+      const opacity = t === 0 ? 0 : t > 0.95 ? 0.6 : 1;
+      pathKeyframes.push({
+        transform: `translate3d(${x - half}px, ${y - half}px, 0) scale(${scale}) rotate(${wave * 0.5}deg)`,
+        opacity: String(opacity),
+        offset: t,
+      });
+    }
 
     for (let i = 0; i < total; i++) {
       const img = document.createElement("img");
@@ -68,35 +87,10 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
       layer.appendChild(img);
       sprites.push(img);
 
-      const side = i % 2 === 0 ? 1 : -1;
-      const amp = (26 + (i % 5) * 12) * side; // salınım genliği
-      const waves = 1.5 + (i % 3) * 0.5; // salınım sayısı
-      const phase = (i / total) * Math.PI * 2;
-      // Başlangıçta hafif dağılma
-      const jitterX = (Math.random() - 0.5) * 50;
-      const jitterY = (Math.random() - 0.5) * 50;
-
-      const keyframes: Keyframe[] = [];
-      for (let s = 0; s <= STEPS; s++) {
-        const t = s / STEPS;
-        // Salınım uçlarda sıfıra iner (envelope)
-        const env = Math.sin(Math.PI * t);
-        const wave = Math.sin(t * waves * Math.PI * 2 + phase) * amp * env;
-        const x = startX + dx * t + nx * wave + jitterX * (1 - t);
-        const y = startY + dy * t + ny * wave - 60 * env + jitterY * (1 - t);
-        const scale = t < 0.12 ? 0.5 + t * 5 : 1.1 - t * 0.7;
-        const opacity = t === 0 ? 0 : t > 0.95 ? 0.6 : 1;
-        keyframes.push({
-          transform: `translate3d(${x - half}px, ${y - half}px, 0) scale(${scale}) rotate(${wave * 0.6}deg)`,
-          opacity: String(opacity),
-          offset: t,
-        });
-      }
-
-      const anim = img.animate(keyframes, {
+      const anim = img.animate(pathKeyframes, {
         duration: DUR,
         delay: i * GAP,
-        easing: "cubic-bezier(0.3, 0.05, 0.4, 1)",
+        easing: "linear", // sabit hız → aralar bozulmaz, zincir gibi akar
         fill: "forwards",
       });
       animations.push(anim);
