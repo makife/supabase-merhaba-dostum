@@ -81,6 +81,60 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
     forceUnlockSync();
   }, [forceUnlockSync]);
 
+  // ⏱️ CLOCK SLEW: offset'i ani zıplatmak yerine hedefe doğru kaydır.
+  // Ani zıplama, aktif maçta geri sayımın/sürenin sıçramasına sebep olur.
+  // İlk senkronda veya çok büyük sapmada (cihaz saati değişti) doğrudan uygula.
+  const slewTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const slewTargetRef = useRef(0);
+
+  const commitOffset = useCallback((value: number) => {
+    offsetRef.current = value;
+    globalOffset = value;
+    setOffset(value);
+    notifyOffsetChange(value);
+  }, []);
+
+  const applyOffsetSmooth = useCallback((target: number) => {
+    slewTargetRef.current = target;
+
+    const delta = target - offsetRef.current;
+    const JUMP_THRESHOLD = 2000; // cihaz saati gerçekten değişmiş
+    const DEADBAND = 8; // 8ms altı sapma önemsiz
+
+    if (slewTimerRef.current) {
+      clearInterval(slewTimerRef.current);
+      slewTimerRef.current = null;
+    }
+
+    if (!globalIsReady || Math.abs(delta) > JUMP_THRESHOLD || Math.abs(delta) <= DEADBAND) {
+      commitOffset(target);
+      return;
+    }
+
+    // ~10ms / 100ms hızında kaydır → 300ms sapma ~3sn'de kapanır
+    const STEP_MS = 100;
+    const MAX_STEP = 10;
+    slewTimerRef.current = setInterval(() => {
+      const remaining = slewTargetRef.current - offsetRef.current;
+      if (Math.abs(remaining) <= MAX_STEP) {
+        commitOffset(slewTargetRef.current);
+        if (slewTimerRef.current) {
+          clearInterval(slewTimerRef.current);
+          slewTimerRef.current = null;
+        }
+        return;
+      }
+      commitOffset(offsetRef.current + Math.sign(remaining) * MAX_STEP);
+    }, STEP_MS);
+  }, [commitOffset]);
+
+  useEffect(() => {
+    return () => {
+      if (slewTimerRef.current) clearInterval(slewTimerRef.current);
+    };
+  }, []);
+
+
   // Server time offset hesapla - multiple samples + best RTT selection
   const calculateOffset = useCallback(async (forceReset: boolean = false): Promise<number> => {
     // 🆕 Force reset: mevcut sync'i iptal et ve temiz başla
