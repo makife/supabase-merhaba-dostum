@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { flyRewardsSequentially } from "@/utils/flyIcons";
 import Lottie from "lottie-react";
 import refleksOdul2 from "@/assets/refleksOdulPenceresi2.png";
 import refleksOdul4 from "@/assets/refleksOdulPenceresi4.png";
@@ -115,6 +116,8 @@ const ChallengePrizeDialog = () => {
     const current = notifications[currentIndex];
     if (current) {
       await supabase.from("notifications").update({ is_read: true }).eq("id", current.id);
+      const msg = current.message;
+      setTimeout(() => { flyRewardsSequentially(msg); }, 300);
     }
     if (currentIndex < notifications.length - 1) {
       setCurrentIndex((prev) => prev + 1);
