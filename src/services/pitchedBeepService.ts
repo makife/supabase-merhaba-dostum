@@ -16,6 +16,8 @@
  * - `playbackRate` taban frekans çarpanı olarak kullanılır.
  */
 
+import { isIOSWebAudioTarget, playIOSWebSound } from "./iosWebAudioService";
+
 type WebAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
 };
@@ -90,15 +92,23 @@ export const playPitchedBeep = async (
   playbackRate: number = 1,
   volume: number = 0.7
 ): Promise<boolean> => {
-  const c = getCtx();
-  if (!c) return false;
-
   // Aynı kaynaktan çok hızlı tekrar çağrıları yut (defansif guard).
   const now = performance.now();
   const key = url || "__default__";
   const last = lastPlayAt.get(key) || 0;
   if (now - last < MIN_PLAY_GAP_MS) return false;
   lastPlayAt.set(key, now);
+
+  // 🔧 iOS native: OscillatorNode WKWebView'da AVAudioSession ile çakışıp
+  // sessiz kalabiliyor. Bunun yerine çalışan HTML5 havuzunu playbackRate ile kullan.
+  if (isIOSWebAudioTarget()) {
+    const ok = await playIOSWebSound("beep", volume, "/beep.mp3", playbackRate);
+    if (ok) return true;
+  }
+
+  const c = getCtx();
+  if (!c) return false;
+
 
   if (c.state !== "running") {
     try { await c.resume(); } catch {}
