@@ -377,7 +377,7 @@ const PrivateRoomCards = ({
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("profiles")
         .select("avatar_url, username")
         .eq("user_id", opponentUserId)
