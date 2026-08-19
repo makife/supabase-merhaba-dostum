@@ -98,7 +98,9 @@ const PrivateRoomCards = ({
   const [participants, setParticipants] = useState<{ user_id: string | null; is_ready: boolean | null; is_bot: boolean | null }[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [opponentProfile, setOpponentProfile] = useState<{ avatar_url: string | null; username: string | null } | null>(null);
   const navigatedRef = useRef(false);
+
 
   // --- Bekleyen oda kontrolü ---
   useEffect(() => {
