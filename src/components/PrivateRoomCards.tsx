@@ -537,10 +537,10 @@ const PrivateRoomCards = ({
               />
             )}
           </Hot>
-          <Hot l={0.531} r={0.91} t={0.486} b={0.7}>
+          <Hot l={0.5463} r={0.8688} t={0.5053} b={0.7335}>
             {opponentJoined ? (
               <div className="relative w-full h-full flex items-center justify-center">
-                <div className="relative w-[86%] h-[86%] rounded-2xl overflow-hidden">
+                <div className="relative w-full h-full rounded-2xl overflow-hidden">
                   {opponentProfile?.avatar_url ? (
                     <img
                       src={opponentProfile.avatar_url}
@@ -563,7 +563,7 @@ const PrivateRoomCards = ({
                   <img
                     src={beklemeHazirSvg}
                     alt="Hazır"
-                    className="absolute w-[52%] h-auto select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52%] h-auto select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
                   />
                 )}
               </div>
