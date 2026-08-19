@@ -886,7 +886,7 @@ const MarketPage = () => {
                             handleSpendInk(item);
                           }}
                         >
-                          {item.priceInInk} Damla
+                          {hasVipSubscription ? "VIP Aktif" : `${item.priceInInk} Damla`}
                         </Button>
                       </div>
                     ))}
