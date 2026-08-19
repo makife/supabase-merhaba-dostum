@@ -20,6 +20,8 @@ import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, Ch
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie from "lottie-react";
 import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
+import MarketInventoryBar from "@/components/market/MarketInventoryBar";
+import InventoryFlyAnimation, { FlightRequest } from "@/components/market/InventoryFlyAnimation";
 
 // Kırtasiye satın alma görselleri (vite glob ile yüklenir)
 const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.png", {
@@ -88,12 +90,27 @@ const MarketPage = () => {
   // Başarılı satın alma gösterimi
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
+  // Envantere uçan ikon animasyonu
+  const [flight, setFlight] = useState<FlightRequest | null>(null);
+  const pendingFlightRef = useRef<Omit<FlightRequest, "id"> | null>(null);
+
+  const startPendingFlight = useCallback(() => {
+    const pending = pendingFlightRef.current;
+    pendingFlightRef.current = null;
+    if (pending) setFlight({ ...pending, id: Date.now() });
+  }, []);
+
+  const closeSuccessDialog = useCallback(() => {
+    setShowSuccessDialog(false);
+    startPendingFlight();
+  }, [startPendingFlight]);
+
   // Başarı görseli 2.5s sonra kendiliğinden kapanır
   useEffect(() => {
     if (!showSuccessDialog) return;
-    const t = setTimeout(() => setShowSuccessDialog(false), 2500);
+    const t = setTimeout(() => closeSuccessDialog(), 2500);
     return () => clearTimeout(t);
-  }, [showSuccessDialog]);
+  }, [showSuccessDialog, closeSuccessDialog]);
 
 
   // Joker adet seçici state'leri
@@ -467,6 +484,19 @@ const MarketPage = () => {
       // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
 
+      // Uçan ikon animasyonu için hedef/ikon hazırla
+      if (itemToBuy.type === "joker") {
+        const map: Record<string, { key: string; icon: string }> = {
+          joker_degistir: { key: "degistir", icon: "/icons/degistir.svg" },
+          joker_fisildi: { key: "fisilda", icon: "/icons/fisilda.svg" },
+          joker_senyaz: { key: "senyaz", icon: "/icons/senyaz.svg" },
+        };
+        const t = itemToBuy.subtype ? map[itemToBuy.subtype] : undefined;
+        if (t) pendingFlightRef.current = { targetKey: t.key, icon: t.icon, count: itemToBuy.value };
+      } else if (itemToBuy.type === "heart") {
+        pendingFlightRef.current = { targetKey: "hak", icon: "/icons/kredifazlasi-badge.svg", count: itemToBuy.value };
+      }
+
       setShowSuccessDialog(true);
     } catch (error) {
       console.error(error);
@@ -629,6 +659,8 @@ const MarketPage = () => {
 
       {/* Ana İçerik */}
       <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
+        {/* Sahip olunan jokerler + oyun hakkı (sabit) */}
+        <MarketInventoryBar />
         <Tabs
           defaultValue="ink-store"
           value={activeTab}
@@ -1047,7 +1079,7 @@ const MarketPage = () => {
       {showSuccessDialog && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 px-4"
-          onClick={() => setShowSuccessDialog(false)}
+          onClick={closeSuccessDialog}
         >
           <img
             src={successImage}
@@ -1057,6 +1089,9 @@ const MarketPage = () => {
           />
         </div>
       )}
+
+      {/* --- ENVANTERE UÇAN İKON ANİMASYONU --- */}
+      <InventoryFlyAnimation flight={flight} onDone={() => setFlight(null)} />
 
     </div>
   );
