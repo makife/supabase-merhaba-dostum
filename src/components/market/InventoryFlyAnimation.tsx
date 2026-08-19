@@ -12,6 +12,8 @@ export interface FlightRequest {
   count: number;
   /** Animasyonu tekrar tetiklemek için benzersiz id */
   id: number;
+  /** Uçuşun başlayacağı market kartındaki ikonun item id'si */
+  sourceItemId?: string;
 }
 
 interface Props {
@@ -39,8 +41,17 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
     const tRect = target.getBoundingClientRect();
     const endX = tRect.left + tRect.width / 2;
     const endY = tRect.top + tRect.height / 2;
-    const startX = window.innerWidth / 2;
-    const startY = window.innerHeight / 2;
+    // Başlangıç: satın alınan öğenin karttaki ikonunun tam üstü
+    const source = flight.sourceItemId
+      ? document.querySelector<HTMLElement>(`[data-market-item="${flight.sourceItemId}"]`)
+      : null;
+    let startX = window.innerWidth / 2;
+    let startY = window.innerHeight / 2;
+    if (source) {
+      const sRect = source.getBoundingClientRect();
+      startX = sRect.left + sRect.width / 2;
+      startY = sRect.top - 6; // ikonun tam üstü
+    }
 
     // Satın alınan adetten bağımsız olarak bol miktarda ikon uçur (15-20)
     const total = 15 + Math.floor(Math.random() * 6);
@@ -61,20 +72,19 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
     const SIZE = 34;
     const half = SIZE / 2;
 
-    // TEK ORTAK YÖRÜNGE: tüm ikonlar aynı yoldan, sırayla geçer
-    const AMP = 42; // salınım genliği
-    const WAVES = 2; // salınım sayısı
+    // TEK ORTAK YÖRÜNGE: zikzak yok, tek yumuşak eğri (yay)
+    const side = dx >= 0 ? -1 : 1; // yay dışa doğru kavis yapar
+    const AMP = Math.min(120, Math.max(50, dist * 0.28)) * side;
     const pathKeyframes: Keyframe[] = [];
     for (let s = 0; s <= STEPS; s++) {
       const t = s / STEPS;
-      const env = Math.sin(Math.PI * t); // uçlarda salınım sıfırlanır
-      const wave = Math.sin(t * WAVES * Math.PI * 2) * AMP * env;
-      const x = startX + dx * t + nx * wave;
-      const y = startY + dy * t + ny * wave - 50 * env;
+      const bow = Math.sin(Math.PI * t) * AMP; // tek kavis
+      const x = startX + dx * t + nx * bow;
+      const y = startY + dy * t + ny * bow;
       const scale = t < 0.12 ? 0.5 + t * 5 : 1.1 - t * 0.7;
       const opacity = t === 0 ? 0 : t > 0.95 ? 0.6 : 1;
       pathKeyframes.push({
-        transform: `translate3d(${x - half}px, ${y - half}px, 0) scale(${scale}) rotate(${wave * 0.5}deg)`,
+        transform: `translate3d(${x - half}px, ${y - half}px, 0) scale(${scale})`,
         opacity: String(opacity),
         offset: t,
       });

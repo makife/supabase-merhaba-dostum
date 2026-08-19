@@ -492,9 +492,20 @@ const MarketPage = () => {
           joker_senyaz: { key: "senyaz", icon: "/icons/senyaz.svg" },
         };
         const t = itemToBuy.subtype ? map[itemToBuy.subtype] : undefined;
-        if (t) pendingFlightRef.current = { targetKey: t.key, icon: t.icon, count: itemToBuy.value };
+        if (t)
+          pendingFlightRef.current = {
+            targetKey: t.key,
+            icon: t.icon,
+            count: itemToBuy.value,
+            sourceItemId: itemToBuy.id,
+          };
       } else if (itemToBuy.type === "heart") {
-        pendingFlightRef.current = { targetKey: "hak", icon: "/icons/kredifazlasi-badge.svg", count: itemToBuy.value };
+        pendingFlightRef.current = {
+          targetKey: "hak",
+          icon: "/icons/kredifazlasi-badge.svg",
+          count: itemToBuy.value,
+          sourceItemId: itemToBuy.id,
+        };
       }
 
       setShowSuccessDialog(true);
@@ -771,7 +782,7 @@ const MarketPage = () => {
                           className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0" data-market-item={item.id}>
                               {item.image ? (
                                 <img
                                   src={item.image}
@@ -852,7 +863,10 @@ const MarketPage = () => {
                         }`}
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
-                          <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
+                          <div
+                            className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1"
+                            data-market-item={item.id}
+                          >
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                             ) : (
