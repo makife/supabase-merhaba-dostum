@@ -460,6 +460,33 @@ const GameCountdown = memo(
           tick(); // İlk tick
           intervalRef.current = setInterval(tick, 100);
         }, delayBeforeTicks);
+
+        // 🔒 HARD DEADLINE: Oyun HER CİHAZDA mutlak sunucu anında başlar.
+        // Görsel sayım gecikse bile START_AT geldiğinde "BAŞLA" zorlanır ve onComplete tetiklenir.
+        const HARD_GRACE_MS = 350;
+        const msUntilHardEnd = startTime + 5000 - (Date.now() + serverTimeOffset);
+        if (hardDeadlineRef.current) clearTimeout(hardDeadlineRef.current);
+        hardDeadlineRef.current = setTimeout(() => {
+          if (!mountedRef.current || completedRef.current) return;
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          if (!soundPlayedRef.current.has("start")) {
+            console.log(`🏁 [${instanceId}] HARD DEADLINE - BAŞLA zorlandı (server anchor)`);
+            soundPlayedRef.current.add("start");
+            setDisplayValue("start");
+            playStartSound();
+          }
+          if (!completeTimeoutRef.current) {
+            completeTimeoutRef.current = setTimeout(() => {
+              if (mountedRef.current && !completedRef.current) {
+                completedRef.current = true;
+                onComplete();
+              }
+            }, HARD_GRACE_MS);
+          }
+        }, Math.max(0, msUntilHardEnd));
       };
 
       // Son 1 saniyeye girdiysek hemen 5'i göster, daha erkense son saniyede başlat
