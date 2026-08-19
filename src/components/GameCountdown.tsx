@@ -259,6 +259,10 @@ const GameCountdown = memo(
         clearTimeout(startTimeoutRef.current);
         startTimeoutRef.current = null;
       }
+      if (hardDeadlineRef.current) {
+        clearTimeout(hardDeadlineRef.current);
+        hardDeadlineRef.current = null;
+      }
     };
 
     // Mount/Unmount lifecycle
