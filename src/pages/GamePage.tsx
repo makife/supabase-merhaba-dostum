@@ -2116,8 +2116,11 @@ const GamePage = ({
         console.log("Credit refund skipped/failed:", err);
       }
 
-      // Ses efekti çal (disconnect-win akışı, winner state'i bu blokta set edilmiyor)
-      playCelebrationSound();
+      // Ses efekti çal (disconnect-win akışı) - sadece bir kez
+      if (!endSoundPlayedRef.current) {
+        endSoundPlayedRef.current = true;
+        playCelebrationSound();
+      }
 
       // 🎯 Odayı finished yap ve kazananı belirle
       if (currentRoom?.id && user?.id) {
