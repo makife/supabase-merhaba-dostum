@@ -15,6 +15,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { usePageResync } from "@/hooks/useGlobalResync";
+import { useFontReady } from "@/hooks/useFontReady";
 import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
 import { toast } from "sonner";
 import { isUserPremium } from "@/components/VipBadge";
@@ -47,6 +48,7 @@ interface BanInfo {
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const bungeeReady = useFontReady("700 1.25rem Bungee");
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile, onlineUsers, isUserOnline, isSystemConnected } = useUser();
