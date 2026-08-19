@@ -311,6 +311,7 @@ const GamePage = ({
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
   const processedCountdownRef = useRef<string | null>(null); // 🔒 İşlenmiş countdown timestamp'ini sakla - çift tetiklemeyi önler
+  const roomVersionRef = useRef<number | null>(null); // 🔢 game_rooms.version takibi - realtime paket kaybını yakalar
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
 
@@ -3193,6 +3194,7 @@ const GamePage = ({
     setShowCountdown(false);
     countdownInitiatedRef.current = false; // 🔒 Rematch için countdown guard'ı sıfırla
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
+    roomVersionRef.current = null; // 🔢 Yeni oda için version takibini sıfırla
     setGameStarted(false);
     setGameEnded(false);
     jokerUsedInMatchRef.current = false;
@@ -6041,6 +6043,38 @@ const GamePage = ({
           }
 
           const newData = payload.new as any;
+
+          // 🔢 VERSION GAP KONTROLÜ (AAA "seq" mantığı):
+          // Odanın her güncellemesinde version 1 artar. Aradaki bir paket kaçtıysa
+          // (version atlaması) tek seferlik FULL FETCH yapıp gerçek durumu alırız.
+          const incomingVersion = typeof newData.version === "number" ? newData.version : null;
+          if (incomingVersion !== null) {
+            const prevVersion = roomVersionRef.current;
+            roomVersionRef.current = incomingVersion;
+
+            if (prevVersion !== null && incomingVersion > prevVersion + 1) {
+              console.warn("🔢 Room version atlaması tespit edildi - full fetch yapılıyor:", {
+                prevVersion,
+                incomingVersion,
+              });
+              supabase
+                .from("game_rooms")
+                .select("countdown_started_at, status, version")
+                .eq("id", currentRoom.id)
+                .maybeSingle()
+                .then(({ data: fresh }) => {
+                  const f = fresh as any;
+                  if (!f) return;
+                  if (typeof f.version === "number") roomVersionRef.current = f.version;
+                  if (gameStartedRef.current || !f.countdown_started_at) return;
+                  if (processedCountdownRef.current === f.countdown_started_at) return;
+                  const cst = new Date(f.countdown_started_at).getTime();
+                  const skip = Date.now() + serverTimeOffset - cst >= 5000;
+                  initiateCountdown(f.countdown_started_at, skip);
+                });
+              return;
+            }
+          }
 
           if (newData.countdown_started_at) {
             // 🔒 KRİTİK: Aynı countdown_started_at zaten işlenmişse atla
