@@ -348,6 +348,12 @@ const MarketPage = () => {
 
       await refreshProfile(true);
       playSound("buttonClick");
+      pendingFlightRef.current = {
+        targetKey: "murekkep",
+        icon: "/damlaMurekkep.png",
+        count: Math.min(10, Math.max(6, pack.amount)),
+        sourceItemId: pack.id,
+      };
       setShowSuccessDialog(true);
     } catch (error) {
       console.error(error);
@@ -740,6 +746,7 @@ const MarketPage = () => {
                   <div
                     key={pack.id}
                     onClick={() => handleBuyInkPack(pack)}
+                    data-market-item={pack.id}
                     className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all group"
                   >
                     {pack.label && (
