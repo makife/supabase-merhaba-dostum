@@ -1919,8 +1919,11 @@ const GamePage = ({
           timerRef.current = null;
         }
 
-        // Ses: setWinner üstte olmadığı için burada manuel tetikle (disconnect-win akışı)
-        playCelebrationSound();
+        // Ses: tek noktadan, tekrar çalmayı engelleyerek tetikle
+        if (!endSoundPlayedRef.current) {
+          endSoundPlayedRef.current = true;
+          playCelebrationSound();
+        }
 
         toast({
           title: "Rakip Bağlantısı Koptu",
