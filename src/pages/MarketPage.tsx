@@ -508,7 +508,7 @@ const MarketPage = () => {
       } else if (itemToBuy.type === "heart") {
         pendingFlightRef.current = {
           targetKey: "hak",
-          icon: "/icons/kredifazlasi-badge.svg",
+          icon: "/sayfaHakIkon.png",
           count: itemToBuy.value,
           sourceItemId: itemToBuy.id,
         };
