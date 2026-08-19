@@ -67,8 +67,8 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
     const ny = dx / dist;
 
     const STEPS = 24;
-    const DUR = 1100;
-    const GAP = 55; // tren gibi peşpeşe: küçük sabit aralık
+    const DUR = 700;
+    const GAP = 35; // tren gibi peşpeşe: daha hızlı akış
     const SIZE = 34;
     const half = SIZE / 2;
 
@@ -118,7 +118,7 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
             { transform: "scale(1.14)" },
             { transform: "scale(1)" },
           ],
-          { duration: 200, easing: "ease-out" },
+          { duration: 140, easing: "ease-out" },
         );
       };
     }
