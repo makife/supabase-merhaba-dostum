@@ -484,6 +484,19 @@ const MarketPage = () => {
       // o yüzden şimdilik güvenli olan 'buttonClick' bırakıyorum.
       playSound("buttonClick");
 
+      // Uçan ikon animasyonu için hedef/ikon hazırla
+      if (itemToBuy.type === "joker") {
+        const map: Record<string, { key: string; icon: string }> = {
+          joker_degistir: { key: "degistir", icon: "/icons/degistir.svg" },
+          joker_fisildi: { key: "fisilda", icon: "/icons/fisilda.svg" },
+          joker_senyaz: { key: "senyaz", icon: "/icons/senyaz.svg" },
+        };
+        const t = itemToBuy.subtype ? map[itemToBuy.subtype] : undefined;
+        if (t) pendingFlightRef.current = { targetKey: t.key, icon: t.icon, count: itemToBuy.value };
+      } else if (itemToBuy.type === "heart") {
+        pendingFlightRef.current = { targetKey: "hak", icon: "/icons/kredifazlasi-badge.svg", count: itemToBuy.value };
+      }
+
       setShowSuccessDialog(true);
     } catch (error) {
       console.error(error);
