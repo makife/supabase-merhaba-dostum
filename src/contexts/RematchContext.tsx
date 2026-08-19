@@ -354,7 +354,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
 
             await setLastRoomId(null);
-            navigate(`/private-room/waiting/${existingFromOpponent.room_code}?roomId=${room.id}&gameType=${gameType}`);
+            // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
+            await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+            navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
             return true;
           }
         }
