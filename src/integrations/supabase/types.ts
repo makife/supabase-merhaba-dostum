@@ -2357,6 +2357,10 @@ export type Database = {
             Returns: boolean
           }
       start_game_countdown: { Args: { p_room_id: string }; Returns: string }
+      start_match_countdown: {
+        Args: { p_idle_ms?: number; p_room_id: string }
+        Returns: string
+      }
       start_tournament_automatically: {
         Args: { p_tournament_id: string }
         Returns: Json
@@ -2364,6 +2368,10 @@ export type Database = {
       start_tournament_countdown: {
         Args: { p_match_id: string }
         Returns: undefined
+      }
+      start_tournament_match_countdown: {
+        Args: { p_idle_ms?: number; p_match_id: string }
+        Returns: string
       }
       start_tournament_structure: {
         Args: { p_tournament_id: string }
