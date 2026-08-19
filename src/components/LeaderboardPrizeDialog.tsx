@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PressableZone } from "@/components/ui/pressable-zone";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { flyRewardsSequentially } from "@/utils/flyIcons";
 import Lottie from "lottie-react";
 import genel1 from "@/assets/genel1lik.png";
 import genel2 from "@/assets/genel2lik.png";
@@ -125,15 +126,19 @@ const LeaderboardPrizeDialog = () => {
     // Ödüller dönem bitiminde hesaba işlendi; bildirimi okundu olarak kapat
     await supabase.from("notifications").update({ is_read: true }).eq("id", current.id);
 
+    const claimedMessage = current.message;
     setTimeout(() => {
       setShowConfetti(false);
       setClaiming(false);
-      if (index < queue.length - 1) {
+      const isLast = index >= queue.length - 1;
+      if (!isLast) {
         setIndex((p) => p + 1);
       } else {
         setOpen(false);
         stopMusic();
       }
+      // Ödül ikonları ana sayfadaki envanter ikonlarına uçsun
+      setTimeout(() => { flyRewardsSequentially(claimedMessage); }, isLast ? 350 : 0);
     }, 2600);
   };
 
