@@ -41,8 +41,17 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
     const tRect = target.getBoundingClientRect();
     const endX = tRect.left + tRect.width / 2;
     const endY = tRect.top + tRect.height / 2;
-    const startX = window.innerWidth / 2;
-    const startY = window.innerHeight / 2;
+    // Başlangıç: satın alınan öğenin karttaki ikonunun tam üstü
+    const source = flight.sourceItemId
+      ? document.querySelector<HTMLElement>(`[data-market-item="${flight.sourceItemId}"]`)
+      : null;
+    let startX = window.innerWidth / 2;
+    let startY = window.innerHeight / 2;
+    if (source) {
+      const sRect = source.getBoundingClientRect();
+      startX = sRect.left + sRect.width / 2;
+      startY = sRect.top - 6; // ikonun tam üstü
+    }
 
     // Satın alınan adetten bağımsız olarak bol miktarda ikon uçur (15-20)
     const total = 15 + Math.floor(Math.random() * 6);
