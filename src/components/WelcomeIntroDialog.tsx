@@ -176,14 +176,15 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <h3 className="font-bold text-white/80 flex items-center gap-2 mb-3">
-                <img src="/gorevIkon.svg" alt="" className="w-4 h-4" /> Düello & Görev
+                <img src="/gorevIkon.svg" alt="" className="w-4 h-4" /> Düello & Challenge
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { icon: "/icons/kelimepuzzle.svg", color: "#fbbf24", label: "Kelime Puzzle" },
-                  { icon: "/icons/reaktor.svg", color: "#fb923c", label: "Reaktör Koşusu" },
+                  { icon: "/icons/reaktor.svg", color: "#fb923c", label: "Harf Koşusu" },
                   { icon: "/icons/refleks.svg", color: "#22d3ee", label: "Refleks" },
-                  { icon: "/icons/kelimehafiza.svg", color: "#f472b6", label: "Hafıza Eşleştir" },
+                  { icon: "/icons/kelimehafiza.svg", color: "#f472b6", label: "Kelime Hafıza" },
+                  { icon: "/brainIkon.svg", color: "#a78bfa", label: "Karma" },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -195,6 +196,7 @@ export const WelcomeIntroDialog = ({ open, onClose }: WelcomeIntroDialogProps) =
                   </div>
                 ))}
               </div>
+
             </div>
 
             {/* Günlük Çark */}
