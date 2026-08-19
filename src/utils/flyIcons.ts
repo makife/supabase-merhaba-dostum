@@ -135,7 +135,7 @@ export function parseRewardIcons(message: string): ParsedReward[] {
   push("degistir", "/icons/degistir.svg", degistir);
   push("fisilda", "/icons/fisilda.svg", fisilda);
   push("senyaz", "/icons/senyaz.svg", senyaz);
-  push("hak", "/icons/kredifazlasi-badge.svg", hak);
+  push("hak", "/sayfaHakIkon.png", hak);
   push("murekkep", "/damlaMurekkep.png", murekkep);
 
   return out;
