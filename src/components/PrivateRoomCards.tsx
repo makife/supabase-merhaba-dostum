@@ -497,8 +497,35 @@ const PrivateRoomCards = ({
             )}
           </Hot>
           <Hot l={0.531} r={0.91} t={0.486} b={0.7}>
-            {opponentReady ? (
-              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            {opponentJoined ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-[86%] h-[86%] rounded-2xl overflow-hidden">
+                  {opponentProfile?.avatar_url ? (
+                    <img
+                      src={opponentProfile.avatar_url}
+                      alt={opponentProfile.username || "Rakip"}
+                      className={`w-full h-full object-cover select-none pointer-events-none transition-all duration-300 ${
+                        opponentReady ? "opacity-40 saturate-50" : ""
+                      }`}
+                    />
+                  ) : (
+                    <div
+                      className={`w-full h-full flex items-center justify-center bg-[#1e2d45] text-white font-black text-2xl transition-all duration-300 ${
+                        opponentReady ? "opacity-40 saturate-50" : ""
+                      }`}
+                    >
+                      {(opponentProfile?.username || "R").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                {opponentReady && (
+                  <img
+                    src={beklemeHazirSvg}
+                    alt="Hazır"
+                    className="absolute w-[52%] h-auto select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                  />
+                )}
+              </div>
             ) : (
               <Lottie
                 animationData={beklemeAramaAnim}
@@ -509,6 +536,7 @@ const PrivateRoomCards = ({
               />
             )}
           </Hot>
+
 
           {/* HAZIRIM / ÇIK */}
           <Hot l={0.102} r={0.494} t={0.8} b={0.906} label="Hazırım" onClick={handleReady} disabled={isReady} />
