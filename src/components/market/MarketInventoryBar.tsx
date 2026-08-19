@@ -43,11 +43,6 @@ export const MarketInventoryBar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-1.5">
-      <div className={chipClass} data-inv-target="murekkep" title="Mürekkep">
-        <img src="/damlaMurekkep.png" alt="Mürekkep" className="w-6 h-6 object-contain" />
-        <span className="text-xs font-bold text-slate-700 tabular-nums">{profile?.ink_count || 0}</span>
-      </div>
-
       <div className={chipClass} data-inv-target="hak" title="Oyun Hakkı">
         {hakAnim ? (
           <Lottie animationData={hakAnim} loop autoplay style={{ width: 26, height: 26 }} />
