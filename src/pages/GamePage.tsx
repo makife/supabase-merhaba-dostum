@@ -311,6 +311,7 @@ const GamePage = ({
   const syncSuppressUntilRef = useRef<number>(0);
   const countdownCompletedAtRef = useRef<number | null>(null);
   const processedCountdownRef = useRef<string | null>(null); // 🔒 İşlenmiş countdown timestamp'ini sakla - çift tetiklemeyi önler
+  const roomVersionRef = useRef<number | null>(null); // 🔢 game_rooms.version takibi - realtime paket kaybını yakalar
   // Touch/click double-fire koruması: Gönder butonu için son touch zaman damgası
   const submitTouchTsRef = useRef(0);
 
