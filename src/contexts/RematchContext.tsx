@@ -696,7 +696,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 });
 
                 await setLastRoomId(null);
-                navigate(`/private-room/waiting/${request.room_code}?roomId=${room.id}&gameType=${gameType}`);
+                await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+                navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
