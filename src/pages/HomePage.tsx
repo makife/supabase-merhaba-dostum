@@ -1175,6 +1175,7 @@ const HomePage = () => {
             {/* 2. sıra: mürekkep — fısılda jokeri ile aynı hizada */}
             <div className="relative flex items-center justify-center">
               <div
+                data-inv-target="murekkep"
                 className="relative w-[76px] h-[76px] active:scale-90 transition-transform cursor-pointer"
                 onClick={() => {
                   playSound("buttonClick");

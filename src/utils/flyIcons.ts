@@ -128,11 +128,13 @@ export function parseRewardIcons(message: string): ParsedReward[] {
   const fisilda = num(/\+?\s*(\d+)\s*Fısılda/i);
   const senyaz = num(/\+?\s*(\d+)\s*(?:Sen\s*Yaz|Senyaz)/i);
   const hak = num(/\+?\s*(\d+)\s*(?:Oyun\s*Sayfası|Oyun\s*Hakkı|Sayfa)/i);
+  const murekkep = num(/\+?\s*(\d+)\s*Mürekkep/i);
 
   push("degistir", "/icons/degistir.svg", degistir);
   push("fisilda", "/icons/fisilda.svg", fisilda);
   push("senyaz", "/icons/senyaz.svg", senyaz);
   push("hak", "/icons/kredifazlasi-badge.svg", hak);
+  push("murekkep", "/damlaMurekkep.png", murekkep);
 
   return out;
 }
