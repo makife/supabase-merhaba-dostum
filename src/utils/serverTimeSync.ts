@@ -14,7 +14,7 @@ interface TimeSample {
 export async function calculateServerOffset(): Promise<number> {
   const samples: TimeSample[] = [];
   
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 7; i++) {
     const t0 = Date.now();
     
     try {
@@ -37,7 +37,7 @@ export async function calculateServerOffset(): Promise<number> {
       console.log(`📊 Sample ${i + 1}: offset=${offset}ms, RTT=${rtt}ms`);
       
       // Son sample hariç 100ms bekle
-      if (i < 2) {
+      if (i < 6) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (err) {
