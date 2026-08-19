@@ -35,20 +35,22 @@ export const MarketInventoryBar: React.FC = () => {
     <div className="flex items-center justify-between gap-2 mb-2">
       <div className="flex items-center gap-1.5">
         {items.map((it) => (
-          <div key={it.key} className={chipClass} data-inv-target={it.key} title={it.label}>
-            <img src={it.icon} alt={it.label} className="w-6 h-6 object-contain" />
+          <div key={it.key} className={chipClass} title={it.label}>
+            <img src={it.icon} data-inv-target={it.key} data-inv-icon="true" alt={it.label} className="w-6 h-6 object-contain" />
             <span className="text-xs font-bold text-slate-700 tabular-nums">{it.count}</span>
           </div>
         ))}
       </div>
 
       <div className="flex items-center gap-1.5">
-      <div className={chipClass} data-inv-target="hak" title="Oyun Hakkı">
-        {hakAnim ? (
-          <Lottie animationData={hakAnim} loop autoplay style={{ width: 26, height: 26 }} />
-        ) : (
-          <div className="w-[26px] h-[26px]" />
-        )}
+      <div className={chipClass} title="Oyun Hakkı">
+        <div data-inv-target="hak" data-inv-icon="true" style={{ width: 26, height: 26 }}>
+          {hakAnim ? (
+            <Lottie animationData={hakAnim} loop autoplay style={{ width: 26, height: 26 }} />
+          ) : (
+            <div className="w-[26px] h-[26px]" />
+          )}
+        </div>
         <span className="text-xs font-bold text-slate-700 tabular-nums">{credits}</span>
       </div>
       </div>

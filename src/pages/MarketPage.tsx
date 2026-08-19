@@ -649,8 +649,8 @@ const MarketPage = () => {
         <Card className="mt-[45px] bg-white/10 backdrop-blur-md border-white/20 shadow-xl overflow-hidden">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-white p-2 rounded-full shadow-inner" data-inv-target="murekkep">
-                <Droplet className="w-6 h-6 text-indigo-600 fill-indigo-600" />
+              <div className="bg-white p-2 rounded-full shadow-inner">
+                <Droplet data-inv-target="murekkep" data-inv-icon="true" className="w-6 h-6 text-indigo-600 fill-indigo-600" />
               </div>
               <div>
                 <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">Mürekkep Haznen</p>
