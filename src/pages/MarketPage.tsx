@@ -815,7 +815,9 @@ const MarketPage = () => {
                     .map((item) => (
                       <Card
                         key={item.id}
-                        className="border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors"
+                        className={`border-slate-100 shadow-sm overflow-hidden group hover:border-red-200 transition-colors ${
+                          hasVipSubscription ? "opacity-50" : ""
+                        }`}
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
                           <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
@@ -827,15 +829,21 @@ const MarketPage = () => {
                           </div>
                           <div>
                             <p className="font-bold text-sm text-slate-800">{item.name}</p>
-                            <p className="text-[10px] text-slate-500 leading-tight">{item.description}</p>
+                            <p className="text-[10px] text-slate-500 leading-tight">
+                              {hasVipSubscription ? "VIP üyeliğinde zaten sınırsız sayfa" : item.description}
+                            </p>
                           </div>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="w-full mt-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 text-xs"
-                            onClick={() => handleSpendInk(item)}
+                            className="w-full mt-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => {
+                              if (hasVipSubscription) return;
+                              handleSpendInk(item);
+                            }}
+                            disabled={hasVipSubscription || purchaseLoading}
                           >
-                            {item.priceInInk} Damla
+                            {hasVipSubscription ? "VIP Aktif" : `${item.priceInInk} Damla`}
                           </Button>
                         </CardContent>
                       </Card>
