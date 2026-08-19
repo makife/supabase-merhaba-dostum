@@ -28,12 +28,14 @@ export function flyIconsToInventory(opts: FlyIconsOptions): Promise<void> {
     const target = document.querySelector<HTMLElement>(`[data-inv-target="${opts.targetKey}"]`);
     if (!target) return resolve();
 
+    const targetIcon = target.querySelector<HTMLElement>("[data-inv-icon]") || target;
+
     const layer = document.createElement("div");
     layer.style.cssText =
       "position:fixed;inset:0;z-index:99999;pointer-events:none;";
     document.body.appendChild(layer);
 
-    const tRect = target.getBoundingClientRect();
+    const tRect = targetIcon.getBoundingClientRect();
     const endX = tRect.left + tRect.width / 2;
     const endY = tRect.top + tRect.height / 2;
 
@@ -89,7 +91,7 @@ export function flyIconsToInventory(opts: FlyIconsOptions): Promise<void> {
       anim.onfinish = () => {
         img.style.opacity = "0";
         if (soundOn) playGenericTone(880 + (i % 8) * 90, "triangle", 0.07, 0.07);
-        target.animate(
+        targetIcon.animate(
           [{ transform: "scale(1)" }, { transform: "scale(1.14)" }, { transform: "scale(1)" }],
           { duration: 140, easing: "ease-out" },
         );

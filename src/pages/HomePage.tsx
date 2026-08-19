@@ -1152,10 +1152,9 @@ const HomePage = () => {
                 }}
               >
                 <div
-                  data-inv-target={j.key}
                   className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
                 >
-                  <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
+                  <img src={j.img} data-inv-target={j.key} data-inv-icon="true" className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
                     {j.count}
                   </span>
@@ -1175,14 +1174,15 @@ const HomePage = () => {
             {/* 2. sıra: mürekkep — fısılda jokeri ile aynı hizada */}
             <div className="relative flex items-center justify-center">
               <div
-                data-inv-target="murekkep"
                 className="relative w-[76px] h-[76px] active:scale-90 transition-transform cursor-pointer"
                 onClick={() => {
                   playSound("buttonClick");
                   navigate("/market");
                 }}
               >
-                <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+                <div data-inv-target="murekkep" data-inv-icon="true" style={{ width: "100%", height: "100%" }}>
+                  <Lottie animationData={murekkepAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
+                </div>
                 <span className="absolute top-[10px] right-[10px] min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
                   {profile?.ink_count ?? 0}
                 </span>
@@ -1204,21 +1204,22 @@ const HomePage = () => {
     return (
       <>
         <div
-          data-inv-target="hak"
           className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
           onClick={() => {
             playSound("buttonClick");
             navigate("/market");
           }}
         >
-          {kalanSayfaAnim ? (
-            <Lottie
-              animationData={kalanSayfaAnim}
-              loop
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
-          ) : null}
+          <div data-inv-target="hak" data-inv-icon="true" style={{ width: "100%", height: "100%" }}>
+            {kalanSayfaAnim ? (
+              <Lottie
+                animationData={kalanSayfaAnim}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : null}
+          </div>
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
             {badgeText}
           </span>
