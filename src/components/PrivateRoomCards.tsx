@@ -390,7 +390,7 @@ const PrivateRoomCards = ({
       const { data } = await (supabase as any)
         .from("profiles")
         .select("avatar_url, username")
-        .eq("user_id", opponentUserId)
+        .eq("id", opponentUserId)
         .maybeSingle();
       if (!cancelled && data) setOpponentProfile({ avatar_url: data.avatar_url, username: data.username });
     })();
