@@ -372,8 +372,12 @@ const GameCountdown = memo(
           }
 
           // 🔒 Mevcut sayının minimum gösterim süresi kontrolü
+          // ⚡ CATCH-UP: Sunucu zamanı bizden ilerideyse (geç mount / gecikmeli paket)
+          // minimum gösterim süresini kısaltıp sayıları hızlandırarak START_AT'i yakalarız.
+          const isBehind = typeof phase === "number" ? phase < currentValueRef.current - 1 : true;
+          const effectiveMinDisplay = isBehind ? CATCHUP_DISPLAY_MS : MIN_DISPLAY_MS;
           const timeSinceLastChange = Date.now() - lastValueChangeTimeRef.current;
-          if (timeSinceLastChange < MIN_DISPLAY_MS) {
+          if (timeSinceLastChange < effectiveMinDisplay) {
             // Mevcut sayı hala minimum süresini doldurmadı, bekle
             return;
           }
