@@ -555,8 +555,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       await setLastRoomId(null);
 
-      // Navigate
-      navigate(`/private-room/waiting/${incomingRequest.roomCode}?roomId=${room.id}&gameType=${gameType}`);
+      // Her iki oyuncuyu hazır yap ve direkt maç sayfasına git
+      await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+      navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
