@@ -623,14 +623,14 @@ const TournamentBracketPage = () => {
             })
             .eq("id", match.id);
         } else {
-          const now = new Date();
-          await supabase
-            .from("tournament_matches")
-            .update({
-              status: "in_progress",
-              countdown_started_at: now.toISOString(),
-            })
-            .eq("id", match.id);
+          // 🔒 SUNUCU OTORİTESİ: başlangıç anı istemci saatiyle değil, sunucu saatiyle yazılır
+          const { error: cdError } = await supabase.rpc("start_tournament_match_countdown", {
+            p_match_id: match.id,
+            p_idle_ms: 3000,
+          });
+          if (cdError) {
+            console.error("❌ Turnuva countdown RPC hatası:", cdError);
+          }
         }
       }
       setTimeout(() => checkAndAdvance(), 2000);

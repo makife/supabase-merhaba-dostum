@@ -5842,33 +5842,22 @@ const GamePage = ({
 
       console.log(`✅ ${gameMode} modunda her iki oyuncu hazır - senkron bekleme başlıyor...`);
 
-      // 🔧 SENKRON: Her iki cihaz da "gerçekten hazır" olduktan sonra planlanır.
-      // 3s boş bekleme, yavaş cihazın countdown_started_at bilgisini (realtime veya polling)
-      // buffer başlamadan almasını garanti eder.
-      // Buffer: +3s → +8s, Countdown: +8s → +13s
+      // 🔒 SUNUCU OTORİTESİ: Başlangıç anını artık istemci HESAPLAMIYOR.
+      // RPC sunucu saatinde (now() + idle) hesaplar, satırı kilitler ve
+      // countdown_started_at zaten yazılmışsa aynı değeri döner (idempotent).
+      // Böylece istemci offset hatası maça bulaşmıyor ve yarış durumu kalkıyor.
       const IDLE_WAIT_MS = 3000;
-      const nowServerTime = Date.now() + serverTimeOffset;
-      const countdownStartsAt = nowServerTime + IDLE_WAIT_MS;
-
-      console.log("⏰ Yeni Countdown zamanlaması:", {
-        now: new Date(nowServerTime).toISOString(),
-        countdown_started_at: new Date(countdownStartsAt).toISOString(),
-        bufferEndsAt: new Date(countdownStartsAt + 5000).toISOString(),
-        gameStartsAt: new Date(countdownStartsAt + 10000).toISOString(),
-      });
 
       supabase
-        .from("game_rooms")
-        .update({
-          countdown_started_at: new Date(countdownStartsAt).toISOString(),
-          updated_at: new Date(nowServerTime).toISOString(),
+        .rpc("start_match_countdown", {
+          p_room_id: currentRoom.id,
+          p_idle_ms: IDLE_WAIT_MS,
         })
-        .eq("id", currentRoom.id)
-        .then(({ error }) => {
+        .then(({ data, error }) => {
           if (error) {
-            console.error("❌ Countdown başlatma hatası:", error);
+            console.error("❌ Countdown başlatma hatası (RPC):", error);
           } else {
-            console.log(`✅ ${gameMode} - countdown planlandı:`, new Date(countdownStartsAt).toISOString());
+            console.log(`✅ ${gameMode} - countdown sunucu tarafından planlandı:`, data);
           }
         });
     }
