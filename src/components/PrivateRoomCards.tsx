@@ -98,7 +98,9 @@ const PrivateRoomCards = ({
   const [participants, setParticipants] = useState<{ user_id: string | null; is_ready: boolean | null; is_bot: boolean | null }[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [opponentProfile, setOpponentProfile] = useState<{ avatar_url: string | null; username: string | null } | null>(null);
   const navigatedRef = useRef(false);
+
 
   // --- Bekleyen oda kontrolü ---
   useEffect(() => {
@@ -366,6 +368,28 @@ const PrivateRoomCards = ({
   const opponent = humanOpponent || (botRematch ? bot : undefined);
   const opponentJoined = Boolean(opponent);
   const opponentReady = Boolean(opponent?.is_ready) || Boolean(botRematch && bot);
+  const opponentUserId = humanOpponent?.user_id || null;
+
+  useEffect(() => {
+    if (!opponentUserId) {
+      setOpponentProfile(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("avatar_url, username")
+        .eq("user_id", opponentUserId)
+        .maybeSingle();
+      if (!cancelled && data) setOpponentProfile({ avatar_url: data.avatar_url, username: data.username });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [opponentUserId]);
+
+
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-in fade-in duration-200">
@@ -497,8 +521,35 @@ const PrivateRoomCards = ({
             )}
           </Hot>
           <Hot l={0.531} r={0.91} t={0.486} b={0.7}>
-            {opponentReady ? (
-              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
+            {opponentJoined ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-[86%] h-[86%] rounded-2xl overflow-hidden">
+                  {opponentProfile?.avatar_url ? (
+                    <img
+                      src={opponentProfile.avatar_url}
+                      alt={opponentProfile.username || "Rakip"}
+                      className={`w-full h-full object-cover select-none pointer-events-none transition-all duration-300 ${
+                        opponentReady ? "opacity-40 saturate-50" : ""
+                      }`}
+                    />
+                  ) : (
+                    <div
+                      className={`w-full h-full flex items-center justify-center bg-[#1e2d45] text-white font-black text-2xl transition-all duration-300 ${
+                        opponentReady ? "opacity-40 saturate-50" : ""
+                      }`}
+                    >
+                      {(opponentProfile?.username || "R").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                {opponentReady && (
+                  <img
+                    src={beklemeHazirSvg}
+                    alt="Hazır"
+                    className="absolute w-[52%] h-auto select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                  />
+                )}
+              </div>
             ) : (
               <Lottie
                 animationData={beklemeAramaAnim}
@@ -509,6 +560,7 @@ const PrivateRoomCards = ({
               />
             )}
           </Hot>
+
 
           {/* HAZIRIM / ÇIK */}
           <Hot l={0.102} r={0.494} t={0.8} b={0.906} label="Hazırım" onClick={handleReady} disabled={isReady} />
