@@ -1090,6 +1090,9 @@ const MarketPage = () => {
         </div>
       )}
 
+      {/* --- ENVANTERE UÇAN İKON ANİMASYONU --- */}
+      <InventoryFlyAnimation flight={flight} onDone={() => setFlight(null)} />
+
     </div>
   );
 };
