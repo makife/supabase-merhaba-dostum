@@ -81,6 +81,26 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    * son olarak kısa gecikmeli tekrar dene.
    */
   const playIOSMusicRobust = async (audio: HTMLAudioElement): Promise<boolean> => {
+    const waitUntilPlayable = async (maxWaitMs = 5000): Promise<void> => {
+      if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          audio.removeEventListener("canplay", finish);
+          audio.removeEventListener("loadeddata", finish);
+          audio.removeEventListener("error", finish);
+          clearTimeout(timer);
+          resolve();
+        };
+        const timer = setTimeout(finish, maxWaitMs);
+        audio.addEventListener("canplay", finish, { once: true });
+        audio.addEventListener("loadeddata", finish, { once: true });
+        audio.addEventListener("error", finish, { once: true });
+      });
+    };
+
     const tryPlay = async (): Promise<boolean> => {
       try {
         await audio.play();
@@ -97,9 +117,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audio.load();
       audio.currentTime = 0;
     } catch {}
+    await waitUntilPlayable();
     if (await tryPlay()) return true;
 
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 500));
+    await waitUntilPlayable(2500);
     return tryPlay();
   };
 
@@ -112,12 +134,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const iosSwitchingRef = useRef(false);
 
   const iosSwitchTrackAndPlay = async (audio: HTMLAudioElement, src: string): Promise<boolean> => {
-    iosSwitchingRef.current = true;
     try {
       audio.pause();
     } catch {}
     try {
-      audio.src = src;
+      // WKWebView'de göreli URL, route değiştikten sonra yanlış çözülebiliyor.
+      // Her geçişte uygulamanın document base'inden mutlak capacitor URL üret.
+      audio.src = new URL(src, document.baseURI).href;
       audio.load();
     } catch (e) {
       console.warn("🎵 [iOS] src atanamadı:", e);
@@ -144,9 +167,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audio.currentTime = 0;
     } catch {}
     setMusicVolume(originalVolumeRef.current);
-    const ok = await playIOSMusicRobust(audio);
-    iosSwitchingRef.current = false;
-    return ok;
+    return playIOSMusicRobust(audio);
   };
 
   // ⏱️ Duraklatmadan bu yana geçen süre eşiği aşıldıysa sıradaki şarkıya geç.
@@ -547,6 +568,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       const handleTrackEnd = () => {
+        // iOS aynı bitiş için timeupdate, ended ve watchdog'u art arda
+        // tetikleyebilir. Kilidi indeks ilerletmeden önce alarak tek geçiş sağla.
+        if (isIOSNative && iosSwitchingRef.current) return;
+        if (isIOSNative) iosSwitchingRef.current = true;
         setIsPlaying(false);
         // For default pack, move to next track in shuffled playlist and autoplay the next one
         if (musicPack === "default" && musicEnabledRef.current) {
@@ -567,10 +592,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               .then((ok) => {
                 console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
                 setIsPlaying(ok);
+                return ok;
               })
               .catch((e) => {
-                iosSwitchingRef.current = false;
                 console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e);
+                return false;
+              })
+              .then((ok) => {
+                iosSwitchingRef.current = false;
+                // Tek bir bozuk/uyumsuz MP3 tüm çalma sırasını kilitlemesin.
+                if (!ok && musicEnabledRef.current) {
+                  setTimeout(handleTrackEnd, 300);
+                }
               });
             // 🔥 setCurrentTrackIndex ÇAĞIRMA — effect re-run cleanup ile sesi kesiyor.
             return;
@@ -584,9 +617,29 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           }, 120);
         }
+        if (isIOSNative) iosSwitchingRef.current = false;
       };
 
       backgroundMusicRef.current.onended = handleTrackEnd;
+      // iOS WKWebView `ended` olayını bazı MP3'lerde atlayabiliyor. timeupdate,
+      // interval watchdog'dan daha erken ve güvenilir bir ikinci bitiş sinyalidir.
+      if (isIOSNative) {
+        backgroundMusicRef.current.ontimeupdate = () => {
+          const a = backgroundMusicRef.current;
+          if (
+            !a ||
+            iosSwitchingRef.current ||
+            a.paused ||
+            !Number.isFinite(a.duration) ||
+            a.duration <= 0
+          ) return;
+          if (a.currentTime >= a.duration - 0.2) handleTrackEnd();
+        };
+        // Bozuk/okunamayan tek parça tüm listeyi durdurmasın; sıradakine geç.
+        backgroundMusicRef.current.onerror = () => {
+          if (!iosSwitchingRef.current && musicEnabledRef.current) handleTrackEnd();
+        };
+      }
       // 🔥 iOS: onended bazen tetiklenmez — periyodik watchdog ile takip et.
       // Watchdog tek sefer kurulur; şarkı geçişi sırasında iosSwitchingRef ile bekler.
       if (isIOSNative) {
@@ -673,6 +726,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return () => {
         document.removeEventListener("touchstart", onFirstInteraction);
         document.removeEventListener("click", onFirstInteraction);
+        if (iosEndedWatchdogRef.current) {
+          clearInterval(iosEndedWatchdogRef.current);
+          iosEndedWatchdogRef.current = null;
+        }
         if (backgroundMusicRef.current && !backgroundMusicRef.current.paused) {
           backgroundMusicRef.current.pause();
           backgroundMusicRef.current.currentTime = 0;
