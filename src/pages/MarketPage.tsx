@@ -659,6 +659,8 @@ const MarketPage = () => {
 
       {/* Ana İçerik */}
       <div className="flex-1 relative z-10 px-4 mt-2 overflow-hidden flex flex-col">
+        {/* Sahip olunan jokerler + oyun hakkı (sabit) */}
+        <MarketInventoryBar />
         <Tabs
           defaultValue="ink-store"
           value={activeTab}
