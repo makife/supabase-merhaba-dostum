@@ -12,6 +12,8 @@ export interface FlightRequest {
   count: number;
   /** Animasyonu tekrar tetiklemek için benzersiz id */
   id: number;
+  /** Uçuşun başlayacağı market kartındaki ikonun item id'si */
+  sourceItemId?: string;
 }
 
 interface Props {
