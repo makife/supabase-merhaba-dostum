@@ -56,6 +56,7 @@ export const MarketInventoryBar: React.FC = () => {
         )}
         <span className="text-xs font-bold text-slate-700 tabular-nums">{credits}</span>
       </div>
+      </div>
     </div>
   );
 };
