@@ -53,8 +53,8 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
       startY = sRect.top - 6; // ikonun tam üstü
     }
 
-    // Satın alınan adetten bağımsız olarak bol miktarda ikon uçur (15-20)
-    const total = 15 + Math.floor(Math.random() * 6);
+    // Daha seyrek akış: 7-9 ikon
+    const total = 7 + Math.floor(Math.random() * 3);
     const sprites: HTMLImageElement[] = [];
     const animations: Animation[] = [];
     const soundOn = isSoundEffectsEnabled();
@@ -68,7 +68,7 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
 
     const STEPS = 24;
     const DUR = 700;
-    const GAP = 35; // tren gibi peşpeşe: daha hızlı akış
+    const GAP = 80; // ikonlar arası sıklık azaltıldı
     const SIZE = 34;
     const half = SIZE / 2;
 
