@@ -354,7 +354,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
 
             await setLastRoomId(null);
-            navigate(`/private-room/waiting/${existingFromOpponent.room_code}?roomId=${room.id}&gameType=${gameType}`);
+            // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
+            await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+            navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
             return true;
           }
         }
@@ -553,8 +555,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       await setLastRoomId(null);
 
-      // Navigate
-      navigate(`/private-room/waiting/${incomingRequest.roomCode}?roomId=${room.id}&gameType=${gameType}`);
+      // Her iki oyuncuyu hazır yap ve direkt maç sayfasına git
+      await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+      navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
       toast({
@@ -693,7 +696,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 });
 
                 await setLastRoomId(null);
-                navigate(`/private-room/waiting/${request.room_code}?roomId=${room.id}&gameType=${gameType}`);
+                await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+                navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
