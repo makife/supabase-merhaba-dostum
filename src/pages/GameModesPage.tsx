@@ -86,7 +86,7 @@ const GameModesPage = () => {
       />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-transparent to-transparent pointer-events-none opacity-30" />
 
-      <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 pl-4 pr-6">
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col pt-8 pb-6 px-5">
         <div className="flex items-center justify-between mb-4">
           <img
   src={oyunModlariYazi}
