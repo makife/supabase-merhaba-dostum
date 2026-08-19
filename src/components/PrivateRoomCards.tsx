@@ -584,6 +584,18 @@ const PrivateRoomCards = ({
           <Hot l={0.519} r={0.91} t={0.8} b={0.906} label="Çık" onClick={handleLeave} />
 
 
+          {/* Arkadaşın geldi kayan görsel */}
+          {friendArrivedAnim && (
+            <div className="absolute left-1/2 -translate-x-1/2 w-screen top-[100%] mt-1 flex justify-center pointer-events-none z-30">
+              <img
+                src={arkadasinGeldiGorsel}
+                alt="Arkadaşın geldi"
+                className="friend-arrived-slide w-[72%] max-w-[340px] h-auto select-none"
+                onAnimationEnd={() => setFriendArrivedAnim(false)}
+              />
+            </div>
+          )}
+
           {roomCode && (
             <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType={gameType} variant="card" />
           )}
