@@ -69,28 +69,29 @@ export default function UnlimitedFlowBadge({ until }: UnlimitedFlowBadgeProps) {
         type="button"
         onClick={handlePress}
         aria-label="Sınırsız akış kalan süre"
-        className="flex items-center gap-1 pl-1 pr-1 py-0.5 rounded-r-full active:scale-95 transition-transform overflow-hidden"
+        className="flex items-center gap-2 pl-2 pr-2 py-1 rounded-r-full active:scale-95 transition-transform overflow-hidden"
         style={{
           background:
             "linear-gradient(to right, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.75) 55%, rgba(255,255,255,0) 100%)",
-          width: open ? 148 : 44,
+          width: open ? 296 : 88,
+          height: 88,
           transition: "width 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms ease",
         }}
       >
-        <span className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+        <span className="w-16 h-16 flex-shrink-0 flex items-center justify-center">
           {animData ? (
-            <Lottie animationData={animData} loop autoplay style={{ width: 32, height: 32 }} />
+            <Lottie animationData={animData} loop autoplay style={{ width: 64, height: 64 }} />
           ) : null}
         </span>
         <span
-          className="whitespace-nowrap tabular-nums text-[15px] font-bold leading-none"
+          className="whitespace-nowrap tabular-nums text-[30px] font-bold leading-none"
           style={{
             fontFamily: "'Share Tech Mono', 'Courier New', monospace",
             color: "#15c93f",
-            textShadow: "0 0 6px rgba(21,201,63,0.65)",
+            textShadow: "0 0 12px rgba(21,201,63,0.65)",
             opacity: open ? 1 : 0,
             transition: "opacity 220ms ease",
-            letterSpacing: "1px",
+            letterSpacing: "2px",
           }}
         >
           {remaining}
