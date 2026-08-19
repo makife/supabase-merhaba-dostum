@@ -16,6 +16,8 @@
  * - `playbackRate` taban frekans çarpanı olarak kullanılır.
  */
 
+import { isIOSWebAudioTarget, playIOSWebSound } from "./iosWebAudioService";
+
 type WebAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
 };
