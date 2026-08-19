@@ -868,18 +868,21 @@ const HomePage = () => {
   const jokerList = [
     {
       img: "/icons/degistir.svg",
+      key: "degistir",
       count: jokers.degistir,
       name: "Değiştir",
       layer: "bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600",
     },
     {
       img: "/icons/fisilda.svg",
+      key: "fisilda",
       count: jokers.fisilida,
       name: "Fısılda",
       layer: "bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500",
     },
     {
       img: "/icons/senyaz.svg",
+      key: "senyaz",
       count: jokers.senYaz,
       name: "Sen Yaz",
       layer: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
@@ -1149,6 +1152,7 @@ const HomePage = () => {
                 }}
               >
                 <div
+                  data-inv-target={j.key}
                   className={`relative w-12 h-12 rounded-full ${j.layer} border-2 border-white flex items-center justify-center shadow-[0_0_10px_rgba(255,255,255,0.18)]`}
                 >
                   <img src={j.img} className="w-6 h-6 object-contain drop-shadow" alt={j.name} />
@@ -1199,6 +1203,7 @@ const HomePage = () => {
     return (
       <>
         <div
+          data-inv-target="hak"
           className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
           onClick={() => {
             playSound("buttonClick");
