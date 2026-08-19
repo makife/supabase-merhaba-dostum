@@ -14,6 +14,7 @@ import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
 import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
 import yukleniyorAnim from "@/assets/ozelOdaYukleniyor.json";
 import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
+import arkadasinGeldiGorsel from "@/assets/arkadasinGeldiGorsel.png";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;
@@ -99,7 +100,9 @@ const PrivateRoomCards = ({
   const [isReady, setIsReady] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [opponentProfile, setOpponentProfile] = useState<{ avatar_url: string | null; username: string | null } | null>(null);
+  const [friendArrivedAnim, setFriendArrivedAnim] = useState(false);
   const navigatedRef = useRef(false);
+  const prevOpponentJoinedRef = useRef(false);
 
 
   // --- Bekleyen oda kontrolü ---
@@ -371,6 +374,13 @@ const PrivateRoomCards = ({
   const opponentUserId = humanOpponent?.user_id || null;
 
   useEffect(() => {
+    if (opponentJoined && !prevOpponentJoinedRef.current) {
+      setFriendArrivedAnim(true);
+    }
+    prevOpponentJoinedRef.current = opponentJoined;
+  }, [opponentJoined]);
+
+  useEffect(() => {
     if (!opponentUserId) {
       setOpponentProfile(null);
       return;
@@ -412,6 +422,13 @@ const PrivateRoomCards = ({
         }
         .pr-in-left  { animation: prSlideLeft 460ms cubic-bezier(0.22,1,0.36,1) both; }
         .pr-in-right { animation: prSlideRight 460ms cubic-bezier(0.22,1,0.36,1) both; animation-delay: 170ms; }
+        @keyframes friendArrivedSlide {
+          0%   { left: -36%; opacity: 0; transform: translateX(-50%); }
+          12%  { left: 50%; opacity: 1; transform: translateX(-50%); }
+          88%  { left: 50%; opacity: 1; transform: translateX(-50%); }
+          100% { left: 136%; opacity: 0; transform: translateX(-50%); }
+        }
+        .friend-arrived-slide { animation: friendArrivedSlide 3s ease-in-out forwards; }
       `}</style>
       {step === "choose" ? (
         checkingPending ? (
@@ -566,6 +583,18 @@ const PrivateRoomCards = ({
           <Hot l={0.102} r={0.494} t={0.8} b={0.906} label="Hazırım" onClick={handleReady} disabled={isReady} />
           <Hot l={0.519} r={0.91} t={0.8} b={0.906} label="Çık" onClick={handleLeave} />
 
+
+          {/* Arkadaşın geldi kayan görsel */}
+          {friendArrivedAnim && (
+            <div className="absolute left-1/2 -translate-x-1/2 w-screen top-[100%] mt-1 h-0 flex items-center justify-center pointer-events-none z-30">
+              <img
+                src={arkadasinGeldiGorsel}
+                alt="Arkadaşın geldi"
+                className="friend-arrived-slide absolute left-1/2 -translate-x-1/2 w-[72%] max-w-[340px] h-auto select-none"
+                onAnimationEnd={() => setFriendArrivedAnim(false)}
+              />
+            </div>
+          )}
 
           {roomCode && (
             <FriendInviteDialog open={inviteOpen} onOpenChange={setInviteOpen} roomCode={roomCode} gameType={gameType} variant="card" />
