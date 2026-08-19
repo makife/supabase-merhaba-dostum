@@ -208,31 +208,26 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
       return offsetRef.current;
     }
     
-    // En düşük RTT'ye sahip sample'ı kullan (en güvenilir)
-    const bestSample = samples.sort((a, b) => a.rtt - b.rtt)[0];
+    // En düşük RTT'ye sahip sample'ı kullan (en güvenilir / en az jitter'lı)
+    const bestSample = [...samples].sort((a, b) => a.rtt - b.rtt)[0];
     const newOffset = bestSample.offset;
-    
+
     // 🔧 QUIET: Sadece development'ta log bas
     if (process.env.NODE_ENV === 'development') {
       const drift = Math.abs(newOffset - offsetRef.current);
-      if (drift > 100) {
-        console.debug(`[ServerTime] Drift: ${drift}ms`);
-      }
-      console.debug(`[ServerTime] Synced: offset=${newOffset}ms, RTT=${bestSample.rtt}ms`);
+      console.debug(
+        `[ServerTime] Synced: offset=${newOffset}ms, RTT=${bestSample.rtt}ms, samples=${samples.length}, drift=${drift}ms`
+      );
     }
-    
-    // State ve ref'leri güncelle
-    offsetRef.current = newOffset;
+
     lastSyncAtRef.current = Date.now();
-    setOffset(newOffset);
     setLastSyncAt(Date.now());
     setIsReady(true);
-    
-    // Global değişkenleri güncelle
-    globalOffset = newOffset;
     globalIsReady = true;
-    notifyOffsetChange(newOffset);
-    
+
+    // 🎯 SLEW: offset'i zıplatmadan hedefe kaydır (AAA clock slew)
+    applyOffsetSmooth(newOffset);
+
     return newOffset;
   }, [abortCurrentSync]);
 
