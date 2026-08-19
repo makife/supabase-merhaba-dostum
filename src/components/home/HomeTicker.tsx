@@ -140,7 +140,7 @@ export default function HomeTicker({
   const key = messages.map((m) => m.text).join("|");
 
   const baseCls =
-    "whitespace-nowrap font-fredoka tracking-wide text-[13.5px] leading-none font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]";
+    "whitespace-nowrap font-comfortaa tracking-wide text-[13.5px] leading-none font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]";
 
   const renderRun = (runKey: string) => (
     <span className="whitespace-nowrap">
