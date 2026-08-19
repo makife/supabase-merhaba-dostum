@@ -3194,6 +3194,7 @@ const GamePage = ({
     setShowCountdown(false);
     countdownInitiatedRef.current = false; // 🔒 Rematch için countdown guard'ı sıfırla
     processedCountdownRef.current = null; // 🔒 Rematch için işlenmiş countdown'ı sıfırla
+    roomVersionRef.current = null; // 🔢 Yeni oda için version takibini sıfırla
     setGameStarted(false);
     setGameEnded(false);
     jokerUsedInMatchRef.current = false;
