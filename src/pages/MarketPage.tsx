@@ -90,12 +90,27 @@ const MarketPage = () => {
   // Başarılı satın alma gösterimi
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
+  // Envantere uçan ikon animasyonu
+  const [flight, setFlight] = useState<FlightRequest | null>(null);
+  const pendingFlightRef = useRef<Omit<FlightRequest, "id"> | null>(null);
+
+  const startPendingFlight = useCallback(() => {
+    const pending = pendingFlightRef.current;
+    pendingFlightRef.current = null;
+    if (pending) setFlight({ ...pending, id: Date.now() });
+  }, []);
+
+  const closeSuccessDialog = useCallback(() => {
+    setShowSuccessDialog(false);
+    startPendingFlight();
+  }, [startPendingFlight]);
+
   // Başarı görseli 2.5s sonra kendiliğinden kapanır
   useEffect(() => {
     if (!showSuccessDialog) return;
-    const t = setTimeout(() => setShowSuccessDialog(false), 2500);
+    const t = setTimeout(() => closeSuccessDialog(), 2500);
     return () => clearTimeout(t);
-  }, [showSuccessDialog]);
+  }, [showSuccessDialog, closeSuccessDialog]);
 
 
   // Joker adet seçici state'leri
