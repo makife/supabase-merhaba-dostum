@@ -276,14 +276,16 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
 
     lastSyncAtRef.current = Date.now();
     setLastSyncAt(Date.now());
+
+    // 🎯 SLEW: offset'i zıplatmadan hedefe kaydır (AAA clock slew)
+    // İlk senkronda (globalIsReady henüz false) doğrudan uygulanır.
+    applyOffsetSmooth(newOffset);
+
     setIsReady(true);
     globalIsReady = true;
 
-    // 🎯 SLEW: offset'i zıplatmadan hedefe kaydır (AAA clock slew)
-    applyOffsetSmooth(newOffset);
-
     return newOffset;
-  }, [abortCurrentSync]);
+  }, [abortCurrentSync, applyOffsetSmooth]);
 
   // Sunucu zamanını al (her zaman güncel)
   const serverNow = useCallback((): number => {
