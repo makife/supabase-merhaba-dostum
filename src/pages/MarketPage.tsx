@@ -771,7 +771,7 @@ const MarketPage = () => {
                           className="bg-white rounded-xl p-3 border border-slate-100 flex items-center justify-between shadow-sm"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0" data-market-item={item.id}>
                               {item.image ? (
                                 <img
                                   src={item.image}
