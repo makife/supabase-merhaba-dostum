@@ -175,6 +175,13 @@ export const playIOSWebSound = async (
   try {
     audio.volume = Math.max(0, Math.min(1, volume));
     try {
+      audio.playbackRate = playbackRate
+        ? Math.max(0.5, Math.min(4, playbackRate))
+        : 1;
+    } catch {
+      /* ignore */
+    }
+    try {
       audio.currentTime = 0;
     } catch {
       /* ignore */
