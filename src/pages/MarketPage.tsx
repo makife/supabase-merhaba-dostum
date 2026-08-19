@@ -881,8 +881,6 @@ const MarketPage = () => {
                           {item.priceInInk} Damla
                         </Button>
                       </div>
-
-                      </div>
                     ))}
                 </div>
               </div>
