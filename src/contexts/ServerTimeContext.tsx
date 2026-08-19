@@ -130,41 +130,51 @@ export function ServerTimeProvider({ children }: { children: React.ReactNode }) 
       
       // Sync işlemi
       const syncPromise = (async () => {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < SAMPLE_COUNT; i++) {
           // Abort edildi mi kontrol et
           if (abortController.signal.aborted) {
             throw new Error('Sync aborted');
           }
-          
+
           const t0 = Date.now();
-          
+
           try {
             const { data: serverTime, error } = await supabase.rpc("get_server_time");
-            
+
             if (error || !serverTime) {
-              console.error("[ServerTime] Fetch error:", error);
+              if (process.env.NODE_ENV === 'development') {
+                console.debug("[ServerTime] Fetch error:", error?.message);
+              }
               continue;
             }
-            
+
             const t3 = Date.now();
             const rtt = t3 - t0;
-            
+
             // RTT kompansasyonlu offset: server time - client time - (rtt/2)
             const calculatedOffset = new Date(serverTime as string).getTime() - t0 - (rtt / 2);
-            
+
             samples.push({ offset: calculatedOffset, rtt });
-            
-            console.log(`[ServerTime] 📊 Sample ${i + 1}: offset=${calculatedOffset}ms, RTT=${rtt}ms`);
-            
-            // Bir sample yeterli - hızlı devam et
-            if (samples.length >= 1) break;
-            
+
+            if (process.env.NODE_ENV === 'development') {
+              console.debug(`[ServerTime] 📊 Sample ${i + 1}: offset=${calculatedOffset}ms, RTT=${rtt}ms`);
+            }
+
+            // Çok iyi bir örnek yakaladıysak (jitter yok) erken çık
+            if (rtt <= 40 && samples.length >= 3) break;
+
+            if (i < SAMPLE_COUNT - 1) {
+              await new Promise((r) => setTimeout(r, SAMPLE_GAP_MS));
+            }
           } catch (err) {
-            console.error("[ServerTime] Sample fetch error:", err);
+            if (process.env.NODE_ENV === 'development') {
+              console.debug("[ServerTime] Sample fetch error");
+            }
           }
         }
         return samples;
       })();
+
 
       // Race: sync vs timeout vs abort
       await Promise.race([syncPromise, timeoutPromise, abortPromise]);
