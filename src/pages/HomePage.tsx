@@ -1204,21 +1204,22 @@ const HomePage = () => {
     return (
       <>
         <div
-          data-inv-target="hak"
           className="relative w-12 h-12 active:scale-90 transition-transform cursor-pointer"
           onClick={() => {
             playSound("buttonClick");
             navigate("/market");
           }}
         >
-          {kalanSayfaAnim ? (
-            <Lottie
-              animationData={kalanSayfaAnim}
-              loop
-              autoplay
-              style={{ width: "100%", height: "100%" }}
-            />
-          ) : null}
+          <div data-inv-target="hak" data-inv-icon="true" style={{ width: "100%", height: "100%" }}>
+            {kalanSayfaAnim ? (
+              <Lottie
+                animationData={kalanSayfaAnim}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+            ) : null}
+          </div>
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#1e2d45] border-2 border-white flex items-center justify-center text-[9px] font-black text-white">
             {badgeText}
           </span>
