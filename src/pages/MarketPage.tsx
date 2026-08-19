@@ -852,7 +852,10 @@ const MarketPage = () => {
                         }`}
                       >
                         <CardContent className="p-3 text-center flex flex-col items-center gap-2">
-                          <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1">
+                          <div
+                            className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform mb-1"
+                            data-market-item={item.id}
+                          >
                             {item.image ? (
                               <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                             ) : (
