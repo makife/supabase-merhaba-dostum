@@ -423,10 +423,10 @@ const PrivateRoomCards = ({
         .pr-in-left  { animation: prSlideLeft 460ms cubic-bezier(0.22,1,0.36,1) both; }
         .pr-in-right { animation: prSlideRight 460ms cubic-bezier(0.22,1,0.36,1) both; animation-delay: 170ms; }
         @keyframes friendArrivedSlide {
-          0%   { transform: translateX(-100%); opacity: 0; }
-          12%  { transform: translateX(0); opacity: 1; }
-          88%  { transform: translateX(0); opacity: 1; }
-          100% { transform: translateX(100%); opacity: 0; }
+          0%   { left: -36%; opacity: 0; transform: translateX(-50%); }
+          12%  { left: 50%; opacity: 1; transform: translateX(-50%); }
+          88%  { left: 50%; opacity: 1; transform: translateX(-50%); }
+          100% { left: 136%; opacity: 0; transform: translateX(-50%); }
         }
         .friend-arrived-slide { animation: friendArrivedSlide 3s ease-in-out forwards; }
       `}</style>
