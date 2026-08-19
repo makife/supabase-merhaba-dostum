@@ -586,11 +586,11 @@ const PrivateRoomCards = ({
 
           {/* Arkadaşın geldi kayan görsel */}
           {friendArrivedAnim && (
-            <div className="absolute left-1/2 -translate-x-1/2 w-screen top-[100%] mt-1 flex justify-center pointer-events-none z-30">
+            <div className="absolute left-1/2 -translate-x-1/2 w-screen top-[100%] mt-1 h-0 flex items-center justify-center pointer-events-none z-30">
               <img
                 src={arkadasinGeldiGorsel}
                 alt="Arkadaşın geldi"
-                className="friend-arrived-slide w-[72%] max-w-[340px] h-auto select-none"
+                className="friend-arrived-slide absolute left-1/2 -translate-x-1/2 w-[72%] max-w-[340px] h-auto select-none"
                 onAnimationEnd={() => setFriendArrivedAnim(false)}
               />
             </div>
