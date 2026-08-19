@@ -592,12 +592,18 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               .then((ok) => {
                 console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
                 setIsPlaying(ok);
+                return ok;
               })
               .catch((e) => {
                 console.warn("🎵 [iOS] Sıradaki şarkı çalınamadı:", e);
+                return false;
               })
-              .finally(() => {
+              .then((ok) => {
                 iosSwitchingRef.current = false;
+                // Tek bir bozuk/uyumsuz MP3 tüm çalma sırasını kilitlemesin.
+                if (!ok && musicEnabledRef.current) {
+                  setTimeout(handleTrackEnd, 300);
+                }
               });
             // 🔥 setCurrentTrackIndex ÇAĞIRMA — effect re-run cleanup ile sesi kesiyor.
             return;
