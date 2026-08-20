@@ -98,13 +98,29 @@ Deno.serve(async (req) => {
 
     if (mode === "reply" && !message) return json({ error: "message required" }, 400);
 
+    const GAME_KNOWLEDGE = [
+      "OYUN BILGI TABANI (sadece buradaki bilgileri gercek kabul et, uydurma yapma):",
+      "- Uygulama adi: kelimele. Turkce kelime bulma/yazma oyunu. Maclar 120 saniye, sunucu senkronize.",
+      "- Oyun modlari: Rastgele Rakip (rastgele eslesme), Yapay Zeka (AI rakip), Ozel Oda (kod ile arkadas davet), Turnuva (ceyrek-yari-final; en az 2 gercek oyuncu, kalan slotlar bot).",
+      "- Duello & Gorevler (Challenge) mini oyunlari: Kelime Puzzle, Harf Kosusu (kosan karakterli runner), Refleks, Kelime Hafiza, Karma (HADI - 2048 tarzi harf birlestirme). Her biri gunde bir kez oynanir, odul verir.",
+      "- Mini Oyunlar sayfasi: Yilan, Hafiza, Refleks.",
+      "- Diger ekranlar: Liderlik (haftalik/aylik/genel siralama ve oduller), Kirtasiye/Market (murekkep, oyun hakki, joker satin alma; gunluk reklam izleyerek 5 murekkep), Sans Carki, Profil (istatistikler, rank), Arkadaslar, Sohbet, Ayarlar, Radyo.",
+      "- Jokerler ve murekkep (oyun hakki) sistemi var. VIP abonelik: sinirsiz sayfa/akis + gunluk 5 joker.",
+      "- Puan/EXP: kazanma x5, beraberlik x2, kaybetme x1. Mactan ayrilirsan EXP cezasi var. Rank sistemi 7 kademeli, +50/-30 RP.",
+      "- Sohbette @rumuz ile mention, emoji tepki, engelleme ve sikayet (bayrak) ozellikleri var. Kufur/argo bot tarafindan tespit edilir.",
+      "Bilmedigin bir detay sorulursa uydurmadan 'emin degilim' de ve ilgili sayfaya yonlendir.",
+    ].join("\n");
+
     const instructions = [
       "Sen 'kelimele' adlı, Türkçe bir kelime oyunu mobil uygulamasının sohbet asistanısın.",
       "Her zaman Türkçe yaz. Samimi, sıcak, esprili ve kısa konuş.",
       "Cevaplar en fazla 2 kısa cümle ve 220 karakter olsun. Madde işareti, markdown ve emoji spamı kullanma (en fazla 1 emoji).",
       "Küfür, hakaret, siyaset ve müstehcen içerikten uzak dur; provokasyona kibarca gülümseyerek karşılık ver.",
-      "Oyun hakkında sorulursa kelime oyunu, turnuvalar, jokerler, liderlik ve mini oyunlar hakkında yardımcı ol.",
+      "Oyun hakkında sorulursa aşağıdaki bilgi tabanını kullan; oyun içeriğini asla uydurma.",
+      "Oyun ismi veya mini oyun listesi sorulursa net isimleri say.",
+      "\n" + GAME_KNOWLEDGE,
     ].join(" ");
+
 
     const input =
       mode === "greeting"
