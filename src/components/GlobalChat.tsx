@@ -598,6 +598,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
         }
       }
 
+      // 🤖 @kelimele etiketlenmişse AI botu cevaplasın
+      if (mentionsAiBot(trimmedMessage)) {
+        void callAiBot({ mode: "reply", message: trimmedMessage });
+      }
+
       playSound("buttonClick");
       startCooldown();
     } catch (error) {
