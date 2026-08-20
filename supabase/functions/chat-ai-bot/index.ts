@@ -101,13 +101,15 @@ Deno.serve(async (req) => {
     const GAME_KNOWLEDGE = [
       "OYUN BILGI TABANI (sadece buradaki bilgileri gercek kabul et, uydurma yapma):",
       "- Uygulama adi: kelimele. Turkce kelime bulma/yazma oyunu. Maclar 120 saniye, sunucu senkronize.",
-      "- Oyun modlari: Rastgele Rakip (rastgele eslesme), Yapay Zeka (AI rakip), Ozel Oda (kod ile arkadas davet), Turnuva (ceyrek-yari-final; en az 2 gercek oyuncu, kalan slotlar bot).",
-      "- Duello & Gorevler (Challenge) mini oyunlari: Kelime Puzzle, Harf Kosusu (kosan karakterli runner), Refleks, Kelime Hafiza, Karma (HADI - 2048 tarzi harf birlestirme). Her biri gunde bir kez oynanir, odul verir.",
-      "- Mini Oyunlar sayfasi: Yilan, Hafiza, Refleks.",
+      "- OYUN MODU SAYISI: tam 4 cesit ana oyun modu var: 1) Rastgele Rakip (rastgele eslesme), 2) Turnuva (ceyrek-yari-final; en az 2 gercek oyuncu, kalan slotlar bot), 3) Yapay Zeka (AI rakip), 4) Ozel Oda (kod ile arkadas davet). 'Kac cesit oyun modu var' sorusuna 4 de ve isimleri say.",
+      "- Duello & Gorevler (Challenge) mini oyunlari: 5 adet -> Kelime Puzzle, Harf Kosusu (kosan karakterli runner), Refleks, Kelime Hafiza, HADI (2048 tarzi harf birlestirme). Her biri gunde bir kez oynanir, odul verir.",
+      "- Mini Oyunlar sayfasi: 3 adet -> Yilan, Hafiza, Refleks.",
       "- Diger ekranlar: Liderlik (haftalik/aylik/genel siralama ve oduller), Kirtasiye/Market (murekkep, oyun hakki, joker satin alma; gunluk reklam izleyerek 5 murekkep), Sans Carki, Profil (istatistikler, rank), Arkadaslar, Sohbet, Ayarlar, Radyo.",
-      "- Jokerler (Degistir, Fisilda, Sen Yaz) ve murekkep (oyun hakki) sistemi var. VIP abonelik: sinirsiz sayfa/akis + gunluk joker hediyesi.",
+      "- Jokerler: 3 cesit -> Degistir, Fisilda, Sen Yaz. Murekkep = oyun hakki. VIP abonelik: sinirsiz sayfa/akis + gunluk joker hediyesi.",
       "- VIP gunluk joker miktari: AYLIK VIP her gun her jokerden 5'er (5 Degistir + 5 Fisilda + 5 Sen Yaz), YILLIK VIP her gun 7'ser (7 Degistir + 7 Fisilda + 7 Sen Yaz). Bu miktarlar kesindir.",
-      "- Puan/EXP: kazanma x5, beraberlik x2, kaybetme x1. Mactan ayrilirsan EXP cezasi var. Rank sistemi 7 kademeli, +50/-30 RP.",
+      "- Puan/EXP: kazanma x5, beraberlik x2, kaybetme x1. Mactan ayrilirsan EXP cezasi var.",
+      "- RANK SISTEMI: sadece rastgele eslesme maclari rank puani (RP) verir. Kazanma +50 RP, beraberlik +10 RP, kaybetme -30 RP.",
+      "  7 rank grubu ve 22 kademe var: Cirak (Harf Ciragi, Hece Toplayici, Kelime Fidani, Soz Tomurcugu), Katip (Murekkep Yolcusu, Defter Bekcisi, Satir Dokumacisi), Yazar (Kalem Zanaatkari, Divan Sakirdi, Beyit Iscisi), Sair (Gazel Nakkasi, Misra Mimari, Kaside Hattati), Bilge (Soz Simyacisi, Hikmet Dervisi, Irfan Seyhi), Efsane (Lugat Filozofu, Efsane Ozan, Soz Sultani), Ustat (Kelime Piri, Lisan-i Ustad, Kelam-i Ezel).",
       "- Sohbette @rumuz ile mention, emoji tepki, engelleme ve sikayet (bayrak) ozellikleri var. Kufur/argo bot tarafindan tespit edilir.",
       "Bilmedigin bir detay sorulursa uydurmadan 'emin degilim' de ve ilgili sayfaya yonlendir.",
     ].join("\n");
@@ -118,12 +120,52 @@ Deno.serve(async (req) => {
       "Cevaplar en fazla 2 kısa cümle ve 220 karakter olsun. Madde işareti, markdown ve emoji spamı kullanma (en fazla 1 emoji).",
       "Küfür, hakaret, siyaset ve müstehcen içerikten uzak dur; provokasyona kibarca gülümseyerek karşılık ver.",
       "Oyun hakkında sorulursa aşağıdaki bilgi tabanını kullan; oyun içeriğini asla uydurma.",
-      "Oyun ismi veya mini oyun listesi sorulursa net isimleri say.",
+      "Oyun ismi, oyun modu sayısı veya mini oyun listesi sorulursa net sayı ve isimleri say; 'bilmiyorum' deme.",
       "\n" + GAME_KNOWLEDGE,
-      "\nCANLI VERI: Asagida 'CANLI VERI' bolumu varsa oradaki siralama ve oyuncu bilgilerini kullanarak net cevap ver; 'liderlik verisine erisemiyorum' demeyi birak.",
+      "\nCANLI VERI: Asagida 'CANLI VERI' bolumu varsa oradaki siralama, oyuncu ve rank bilgilerini kullanarak net cevap ver; 'veriye erisemiyorum' demeyi birak. Bir oyuncu sorulduysa ve 'SORULAN OYUNCULAR' bolumunde varsa onun rank adi, RP'si ve istatistiklerini soyle.",
     ].join(" ");
 
-    // --- Canlı veri: liderlik ilk 3 + soruyu soranın durumu ---
+    // Rank kademeleri (src/utils/rankSystem.ts ile birebir aynı)
+    const RANK_TIERS: { name: string; min: number }[] = [
+      { name: "Harf Çırağı", min: 0 },
+      { name: "Hece Toplayıcı", min: 100 },
+      { name: "Kelime Fidanı", min: 210 },
+      { name: "Söz Tomurcuğu", min: 320 },
+      { name: "Mürekkep Yolcusu", min: 450 },
+      { name: "Defter Bekçisi", min: 630 },
+      { name: "Satır Dokumacısı", min: 840 },
+      { name: "Kalem Zanaatkârı", min: 1080 },
+      { name: "Divan Şakirdi", min: 1340 },
+      { name: "Beyit İşçisi", min: 1640 },
+      { name: "Gazel Nakkaşı", min: 1980 },
+      { name: "Mısra Mimarı", min: 2360 },
+      { name: "Kaside Hattatı", min: 2780 },
+      { name: "Söz Simyacısı", min: 3240 },
+      { name: "Hikmet Dervişi", min: 3740 },
+      { name: "İrfan Şeyhi", min: 4290 },
+      { name: "Lügat Filozofu", min: 4700 },
+      { name: "Efsane Ozan", min: 4980 },
+      { name: "Söz Sultanı", min: 5200 },
+      { name: "Kelime Piri", min: 5350 },
+      { name: "Lisan-ı Üstad", min: 5430 },
+      { name: "Kelâm-ı Ezel", min: 5480 },
+    ];
+    const rankName = (rp: number) => {
+      let name = RANK_TIERS[0].name;
+      for (const t of RANK_TIERS) if (rp >= t.min) name = t.name;
+      return name;
+    };
+
+    const PROFILE_FIELDS =
+      "id, username, total_score, total_games, wins, losses, win_streak, best_streak, rank_points, game_credits, bonus_credits, ink_count, premium_until, tournament_wins, weekly_first_count, monthly_first_count, season_first_count, longest_word, highest_word, highest_word_score, in_game, last_seen";
+
+    const describeProfile = (p: any) => {
+      const rp = p?.rank_points ?? 0;
+      const vip = p?.premium_until && new Date(p.premium_until) > new Date() ? "VIP aktif" : "VIP yok";
+      return `${p?.username ?? "Anonim"}: rank ${rankName(rp)} (${rp} RP), ${p?.total_score ?? 0} puan, ${p?.total_games ?? 0} mac, ${p?.wins ?? 0} galibiyet / ${p?.losses ?? 0} yenilgi, seri ${p?.win_streak ?? 0} (rekor ${p?.best_streak ?? 0}), ${p?.game_credits ?? 0}+${p?.bonus_credits ?? 0} oyun hakki, ${p?.ink_count ?? 0} murekkep, ${p?.tournament_wins ?? 0} turnuva sampiyonlugu, en uzun kelime ${p?.longest_word ?? "-"}, en yuksek kelime ${p?.highest_word ?? "-"} (${p?.highest_word_score ?? 0}p), ${vip}, ${p?.in_game ? "su an macta" : "macta degil"}`;
+    };
+
+    // --- Canlı veri: liderlik + soran oyuncu + mesajda geçen oyuncular ---
     const admin = createClient(supabaseUrl, serviceKey);
     let liveContext = "";
     if (mode === "reply") {
@@ -155,17 +197,59 @@ Deno.serve(async (req) => {
 
         const { data: me } = await admin
           .from("profiles")
-          .select("username, level, total_score, games_played, games_won, game_credits, premium_until")
+          .select(PROFILE_FIELDS)
           .eq("id", userData.user.id)
           .maybeSingle();
-        if (me) {
-          const vip = me.premium_until && new Date(me.premium_until) > new Date() ? "VIP aktif" : "VIP yok";
-          liveContext += `\n- Soruyu soran oyuncu (${me.username ?? username}): seviye ${me.level ?? "?"}, ${me.total_score ?? 0} puan, ${me.games_played ?? 0} mac, ${me.games_won ?? 0} galibiyet, ${me.game_credits ?? 0} murekkep, ${vip}.`;
+        if (me) liveContext += `\n- Soruyu soran oyuncu -> ${describeProfile(me)}`;
+
+        // Mesajda adı geçen oyuncuları bul (rank/istatistik sorguları için)
+        const tokens = Array.from(
+          new Set(
+            message
+              .replace(/[@?!.,;:()"']/g, " ")
+              .split(/\s+/)
+              .map((t) => t.trim())
+              .filter((t) => t.length >= 3 && t.toLowerCase() !== "kelimele")
+              .slice(0, 12),
+          ),
+        );
+
+        if (tokens.length) {
+          const orFilter = tokens
+            .map((t) => `username.ilike.${t.replace(/[,%]/g, "")}`)
+            .concat(tokens.map((t) => `username.ilike.${t.replace(/[,%]/g, "")}%`))
+            .join(",");
+          const { data: matched } = await admin
+            .from("profiles")
+            .select(PROFILE_FIELDS)
+            .or(orFilter)
+            .neq("id", userData.user.id)
+            .limit(4);
+          if (matched?.length) {
+            liveContext +=
+              "\nSORULAN OYUNCULAR (mesajda adi gecenler):\n" +
+              matched.map((p: any) => `- ${describeProfile(p)}`).join("\n");
+          }
         }
+
+        // Genel canlı istatistikler
+        const [{ count: totalPlayers }, { count: onlineNow }, { count: activeTournaments }] = await Promise.all([
+          admin.from("profiles").select("id", { count: "exact", head: true }),
+          admin
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .gt("last_seen", new Date(Date.now() - 5 * 60 * 1000).toISOString()),
+          admin
+            .from("tournaments")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["waiting", "active", "in_progress"]),
+        ]);
+        liveContext += `\n- Toplam kayitli oyuncu: ${totalPlayers ?? "?"}, son 5 dakikada aktif: ${onlineNow ?? "?"}, devam eden turnuva: ${activeTournaments ?? "?"}.`;
       } catch (e) {
         console.error("live context error:", (e as any)?.message ?? e);
       }
     }
+
 
     const input =
       mode === "greeting"
