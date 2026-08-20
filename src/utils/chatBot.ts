@@ -334,3 +334,15 @@ export const getBanTimeLeft = async (userId: string): Promise<string> => {
     return '';
   }
 };
+
+// === AI SOHBET BOTU ===
+export const AI_BOT_NAME = 'kelimele';
+export const BOT_USERNAMES = ['kelimeciBot', AI_BOT_NAME];
+
+// Mesaj bot tarafından mı gönderildi?
+export const isBotUsername = (username?: string | null): boolean =>
+  !!username && BOT_USERNAMES.some((b) => b.toLowerCase() === username.toLowerCase());
+
+// Mesajda @kelimele etiketi var mı?
+export const mentionsAiBot = (message: string): boolean =>
+  new RegExp(`@${AI_BOT_NAME}\\b`, 'i').test(message);

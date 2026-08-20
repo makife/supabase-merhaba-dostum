@@ -26,7 +26,15 @@ import { toast } from "sonner";
 import Lottie from "lottie-react";
 import aiRobotAnim from "@/assets/aiRobot.json";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
-import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from "@/utils/chatBot";
+import {
+  isUserBanned,
+  containsBannedWords,
+  banUser,
+  getBanTimeLeft,
+  isBotUsername,
+  mentionsAiBot,
+  AI_BOT_NAME,
+} from "@/utils/chatBot";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { useNavigate } from "react-router-dom";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
@@ -74,8 +82,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const navigate = useNavigate();
   const { sendMentionNotification } = useMobileNotifications();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const aiBotBusyRef = useRef(false);
   const { cooldownRemaining, isCoolingDown, startCooldown } = useMessageCooldown();
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -421,6 +433,53 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
+  // 🤖 AI sohbet botu (@kelimele) — edge function üzerinden cevap/karşılama üretir
+  const callAiBot = useCallback(
+    async (payload: { mode: "reply" | "greeting"; message?: string }) => {
+      if (!user?.id) return;
+      if (aiBotBusyRef.current) return;
+      aiBotBusyRef.current = true;
+      if (payload.mode === "reply") setIsAiTyping(true);
+
+      try {
+        const history = messagesRef.current.slice(-8).map((m) => ({ username: m.username, message: m.message }));
+        const { error } = await supabase.functions.invoke("chat-ai-bot", {
+          body: {
+            mode: payload.mode,
+            username: profile?.username || user.email?.split("@")[0] || "Oyuncu",
+            message: payload.message ?? "",
+            history,
+          },
+        });
+        if (error) throw error;
+      } catch (error) {
+        console.error("🤖 AI bot hatası:", error);
+        if (payload.mode === "reply") toast.error("kelimele şu an cevap veremiyor, birazdan tekrar dene");
+      } finally {
+        aiBotBusyRef.current = false;
+        setIsAiTyping(false);
+      }
+    },
+    [user?.id, profile?.username],
+  );
+
+  // 🤖 Sohbete girişte rastgele AI karşılama mesajı (6 saat cooldown)
+  useEffect(() => {
+    if (!isOpen || !user?.id || !profile?.username) return;
+    const key = `aiGreeting_${user.id}`;
+    try {
+      const last = Number(localStorage.getItem(key) || 0);
+      if (Date.now() - last < 6 * 60 * 60 * 1000) return;
+      localStorage.setItem(key, Date.now().toString());
+    } catch {
+      // localStorage yoksa yine de dene
+    }
+    const timer = setTimeout(() => {
+      callAiBot({ mode: "greeting" });
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [isOpen, user?.id, profile?.username, callAiBot]);
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
@@ -537,6 +596,11 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
           await sendMentionNotification(mentionedUser.id, username, trimmedMessage, insertData.id);
         }
+      }
+
+      // 🤖 @kelimele etiketlenmişse AI botu cevaplasın
+      if (mentionsAiBot(trimmedMessage)) {
+        void callAiBot({ mode: "reply", message: trimmedMessage });
       }
 
       playSound("buttonClick");
@@ -1014,7 +1078,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <div
                       className="cursor-pointer"
                       onClick={(e) => {
-                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        if (!message.user_id || isBotUsername(message.username)) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         setMenuTarget({
                           id: message.user_id,
@@ -1031,19 +1095,19 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         size="xs"
                         isPremium={message.user_id ? !!userPremiumMap[message.user_id] : false}
                         inGame={message.user_id ? !!userInGameMap[message.user_id] : false}
-                        className={`border-2 ${message.username === "kelimeciBot" ? "border-blue-500" : "border-chat-300"}`}
+                        className={`border-2 ${isBotUsername(message.username) ? "border-blue-500" : "border-chat-300"}`}
                       />
                     </div>
                     <span
                       className={`text-sm font-medium cursor-pointer ${
-                        message.username === "kelimeciBot"
+                        isBotUsername(message.username)
                           ? "text-blue-400 font-bold"
                           : message.user_id === user?.id
                             ? "text-green-400"
                             : "text-gray-200"
                       }`}
                       onClick={(e) => {
-                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        if (!message.user_id || isBotUsername(message.username)) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         setMenuTarget({
                           id: message.user_id,
@@ -1054,10 +1118,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       }}
                     >
                       {message.username}
-                      {message.username === "kelimeciBot" && " 🤖"}
+                      {isBotUsername(message.username) && " 🤖"}
                     </span>
 
-                    {message.user_id && message.username !== "kelimeciBot" && (userInGameMap[message.user_id] || isUserOnline(message.user_id)) ? (
+                    {message.user_id && !isBotUsername(message.username) && (userInGameMap[message.user_id] || isUserOnline(message.user_id)) ? (
                       <div className={`w-3 h-3 rounded-full ${userInGameMap[message.user_id] ? "bg-blue-500 shadow-[0_0_6px_rgba(96,165,250,0.9)]" : "bg-green-500"}`} />
                     ) : null}
 
@@ -1065,7 +1129,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                     {message.user_id &&
                       message.user_id !== user?.id &&
-                      message.username !== "kelimeciBot" &&
+                      !isBotUsername(message.username) &&
                       onStartPrivateChat && (
                         <Button
                           size="sm"
@@ -1086,7 +1150,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   </div>
 
                   <div className="flex items-center space-x-1">
-                    {message.user_id && message.user_id !== user?.id && message.username !== "kelimeciBot" && (
+                    {message.user_id && message.user_id !== user?.id && !isBotUsername(message.username) && (
                       <button
                         onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
                         className="p-1 rounded"
@@ -1105,13 +1169,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                 <div
                   className={`text-gray-200 break-words ${
-                    message.username === "kelimeciBot" ? "font-medium text-blue-300" : ""
+                    isBotUsername(message.username) ? "font-medium text-blue-300" : ""
                   }`}
                 >
                   {message.message}
                 </div>
 
-                {!message.id.startsWith("temp-") && message.username !== "kelimeciBot" && (
+                {!message.id.startsWith("temp-") && !isBotUsername(message.username) && (
                   <div className="flex items-center flex-wrap gap-1.5 mt-2">
                     {messageReactions[message.id] &&
                       Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
@@ -1173,6 +1237,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             </div>
           )}
 
+          {isAiTyping && (
+            <div className="flex items-center gap-2 px-2 py-1 text-[12px] text-blue-300">
+              <Lottie animationData={aiRobotAnim} loop autoplay style={{ width: 28, height: 28 }} />
+              <span>{AI_BOT_NAME} yazıyor...</span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
