@@ -1014,7 +1014,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     <div
                       className="cursor-pointer"
                       onClick={(e) => {
-                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        if (!message.user_id || isBotUsername(message.username)) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         setMenuTarget({
                           id: message.user_id,
@@ -1031,19 +1031,19 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         size="xs"
                         isPremium={message.user_id ? !!userPremiumMap[message.user_id] : false}
                         inGame={message.user_id ? !!userInGameMap[message.user_id] : false}
-                        className={`border-2 ${message.username === "kelimeciBot" ? "border-blue-500" : "border-chat-300"}`}
+                        className={`border-2 ${isBotUsername(message.username) ? "border-blue-500" : "border-chat-300"}`}
                       />
                     </div>
                     <span
                       className={`text-sm font-medium cursor-pointer ${
-                        message.username === "kelimeciBot"
+                        isBotUsername(message.username)
                           ? "text-blue-400 font-bold"
                           : message.user_id === user?.id
                             ? "text-green-400"
                             : "text-gray-200"
                       }`}
                       onClick={(e) => {
-                        if (!message.user_id || message.username === "kelimeciBot") return;
+                        if (!message.user_id || isBotUsername(message.username)) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         setMenuTarget({
                           id: message.user_id,
@@ -1054,10 +1054,10 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       }}
                     >
                       {message.username}
-                      {message.username === "kelimeciBot" && " 🤖"}
+                      {isBotUsername(message.username) && " 🤖"}
                     </span>
 
-                    {message.user_id && message.username !== "kelimeciBot" && (userInGameMap[message.user_id] || isUserOnline(message.user_id)) ? (
+                    {message.user_id && !isBotUsername(message.username) && (userInGameMap[message.user_id] || isUserOnline(message.user_id)) ? (
                       <div className={`w-3 h-3 rounded-full ${userInGameMap[message.user_id] ? "bg-blue-500 shadow-[0_0_6px_rgba(96,165,250,0.9)]" : "bg-green-500"}`} />
                     ) : null}
 
@@ -1065,7 +1065,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                     {message.user_id &&
                       message.user_id !== user?.id &&
-                      message.username !== "kelimeciBot" &&
+                      !isBotUsername(message.username) &&
                       onStartPrivateChat && (
                         <Button
                           size="sm"
@@ -1086,7 +1086,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                   </div>
 
                   <div className="flex items-center space-x-1">
-                    {message.user_id && message.user_id !== user?.id && message.username !== "kelimeciBot" && (
+                    {message.user_id && message.user_id !== user?.id && !isBotUsername(message.username) && (
                       <button
                         onClick={() => handleReportMessage(message.id, message.user_id, message.username)}
                         className="p-1 rounded"
@@ -1105,13 +1105,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
 
                 <div
                   className={`text-gray-200 break-words ${
-                    message.username === "kelimeciBot" ? "font-medium text-blue-300" : ""
+                    isBotUsername(message.username) ? "font-medium text-blue-300" : ""
                   }`}
                 >
                   {message.message}
                 </div>
 
-                {!message.id.startsWith("temp-") && message.username !== "kelimeciBot" && (
+                {!message.id.startsWith("temp-") && !isBotUsername(message.username) && (
                   <div className="flex items-center flex-wrap gap-1.5 mt-2">
                     {messageReactions[message.id] &&
                       Object.entries(groupReactions(messageReactions[message.id])).map(([emoji, reactions]) => (
