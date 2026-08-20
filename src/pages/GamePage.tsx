@@ -8437,28 +8437,29 @@ const GamePage = ({
           />
           {/* Senin puanın */}
           <div
-            className="absolute right-[12%] top-[48.5%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
+            className="absolute right-[21.5%] top-[48.8%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
             style={{
-              fontSize: "clamp(1.25rem, 5.5vw, 1.75rem)",
-              textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+              fontSize: "clamp(1rem, 4.5vw, 1.5rem)",
               fontFamily: "'Fredoka', 'Comfortaa', sans-serif",
-              width: "40%",
+              maxWidth: "22%",
+              overflow: "hidden",
             }}
           >
             {playerScore}
           </div>
           {/* Rakip puanı */}
           <div
-            className="absolute right-[12%] top-[63.5%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
+            className="absolute right-[21.5%] top-[63.8%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
             style={{
-              fontSize: "clamp(1.25rem, 5.5vw, 1.75rem)",
-              textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+              fontSize: "clamp(1rem, 4.5vw, 1.5rem)",
               fontFamily: "'Fredoka', 'Comfortaa', sans-serif",
-              width: "40%",
+              maxWidth: "22%",
+              overflow: "hidden",
             }}
           >
             {opponentScore}
           </div>
+
         </div>
       </div>
     );
