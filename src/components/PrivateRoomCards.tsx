@@ -528,23 +528,40 @@ const PrivateRoomCards = ({
           />
 
           {/* Katılımcı durum kutuları */}
-          <Hot l={0.123} r={0.509} t={0.486} b={0.7}>
-            {isReady ? (
-              <img src={beklemeHazirSvg} alt="Hazır" className="w-[52%] h-auto select-none pointer-events-none" />
-            ) : (
-              <Lottie
-                animationData={beklemeAramaAnim}
-                loop
-                autoplay
-                rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
-                style={{ width: "78%", height: "78%" }}
-              />
-            )}
+          <Hot l={0.1312} r={0.4537} t={0.5053} b={0.7335}>
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.username || "Sen"}
+                    className={`w-full h-full object-cover select-none pointer-events-none transition-all duration-300 ${
+                      isReady ? "opacity-40 saturate-50" : ""
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center bg-[#1e2d45] text-white font-black text-2xl transition-all duration-300 ${
+                      isReady ? "opacity-40 saturate-50" : ""
+                    }`}
+                  >
+                    {(profile?.username || "S").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {isReady && (
+                <img
+                  src={beklemeHazirSvg}
+                  alt="Hazır"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52%] h-auto select-none pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+                />
+              )}
+            </div>
           </Hot>
           <Hot l={0.5463} r={0.8688} t={0.5053} b={0.7335}>
             {opponentJoined ? (
               <div className="relative w-full h-full flex items-center justify-center">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white">
                   {opponentProfile?.avatar_url ? (
                     <img
                       src={opponentProfile.avatar_url}
@@ -581,6 +598,7 @@ const PrivateRoomCards = ({
               />
             )}
           </Hot>
+
 
 
           {/* HAZIRIM / ÇIK */}
