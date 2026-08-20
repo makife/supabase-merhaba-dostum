@@ -2760,7 +2760,7 @@ const GamePage = ({
 
         toast({
           title: "✅ Rakip Kabul Etti",
-          description: "Özel odaya yönlendiriliyorsunuz...",
+          description: "Oyun başlıyor...",
           duration: 1500,
         });
 
@@ -2789,22 +2789,34 @@ const GamePage = ({
           if (roomError || !room?.id) throw roomError || new Error("Bot rematch room oluşturulamadı");
 
           const { error: participantsError } = await supabase.from("game_participants").insert([
-            { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: false },
+            { room_id: room.id, user_id: user.id, score: 0, is_bot: false, is_ready: true },
             { room_id: room.id, user_id: null, score: 0, is_bot: true, is_ready: true },
           ]);
           if (participantsError) throw participantsError;
 
           sessionStorage.setItem(`${BOT_REMATCH_META_PREFIX}${room.id}`, JSON.stringify(botIdentity));
 
+          // 🚀 Bekleme sayfası atlanıyor: oda direkt aktif edilip maça giriliyor
+          await supabase
+            .from("game_rooms")
+            .update({ status: "active", player1_id: user.id, player2_id: null })
+            .eq("id", room.id);
+          try {
+            await supabase.rpc("start_game_countdown", { p_room_id: room.id });
+          } catch {
+            /* countdown zaten başlamış olabilir */
+          }
+
           const params = new URLSearchParams({
+            room: room.id,
+            type: currentGameType,
             botRematch: "1",
-            roomId: room.id,
-            gameType: currentGameType,
             botSeed: String(botIdentity.seed),
             botName: botIdentity.name,
             botAvatar: botIdentity.avatar,
           });
-          navigate(`/private-room/waiting/${roomCode}?${params.toString()}`, { replace: true });
+          navigate(`/game/private-room?${params.toString()}`, { replace: true });
+
         } catch (error) {
           console.error("❌ Bot rematch room oluşturma hatası:", error);
           setRematchRequested(false);
