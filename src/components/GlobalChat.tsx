@@ -429,6 +429,53 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
+  // 🤖 AI sohbet botu (@kelimele) — edge function üzerinden cevap/karşılama üretir
+  const callAiBot = useCallback(
+    async (payload: { mode: "reply" | "greeting"; message?: string }) => {
+      if (!user?.id) return;
+      if (aiBotBusyRef.current) return;
+      aiBotBusyRef.current = true;
+      if (payload.mode === "reply") setIsAiTyping(true);
+
+      try {
+        const history = messagesRef.current.slice(-8).map((m) => ({ username: m.username, message: m.message }));
+        const { error } = await supabase.functions.invoke("chat-ai-bot", {
+          body: {
+            mode: payload.mode,
+            username: profile?.username || user.email?.split("@")[0] || "Oyuncu",
+            message: payload.message ?? "",
+            history,
+          },
+        });
+        if (error) throw error;
+      } catch (error) {
+        console.error("🤖 AI bot hatası:", error);
+        if (payload.mode === "reply") toast.error("kelimele şu an cevap veremiyor, birazdan tekrar dene");
+      } finally {
+        aiBotBusyRef.current = false;
+        setIsAiTyping(false);
+      }
+    },
+    [user?.id, profile?.username],
+  );
+
+  // 🤖 Sohbete girişte rastgele AI karşılama mesajı (6 saat cooldown)
+  useEffect(() => {
+    if (!isOpen || !user?.id || !profile?.username) return;
+    const key = `aiGreeting_${user.id}`;
+    try {
+      const last = Number(localStorage.getItem(key) || 0);
+      if (Date.now() - last < 6 * 60 * 60 * 1000) return;
+      localStorage.setItem(key, Date.now().toString());
+    } catch {
+      // localStorage yoksa yine de dene
+    }
+    const timer = setTimeout(() => {
+      callAiBot({ mode: "greeting" });
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [isOpen, user?.id, profile?.username, callAiBot]);
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
