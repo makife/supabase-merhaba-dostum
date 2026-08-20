@@ -1237,6 +1237,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             </div>
           )}
 
+          {isAiTyping && (
+            <div className="flex items-center gap-2 px-2 py-1 text-[12px] text-blue-300">
+              <Lottie animationData={aiRobotAnim} loop autoplay style={{ width: 28, height: 28 }} />
+              <span>{AI_BOT_NAME} yazıyor...</span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
