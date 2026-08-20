@@ -44,7 +44,7 @@ const generateColor = () => {
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { muted, playSound } = useGameMute("neon_blitz");
+  const { muted } = useGameMute("neon_blitz");
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
@@ -247,7 +247,7 @@ const NeonBlitz: React.FC = () => {
       }
       beginTurn();
     },
-    [beginTurn, playSound],
+    [beginTurn],
   );
 
   const returnToMenu = () => {
