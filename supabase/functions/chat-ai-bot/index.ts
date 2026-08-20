@@ -120,13 +120,58 @@ Deno.serve(async (req) => {
       "Oyun hakkında sorulursa aşağıdaki bilgi tabanını kullan; oyun içeriğini asla uydurma.",
       "Oyun ismi veya mini oyun listesi sorulursa net isimleri say.",
       "\n" + GAME_KNOWLEDGE,
+      "\nCANLI VERI: Asagida 'CANLI VERI' bolumu varsa oradaki siralama ve oyuncu bilgilerini kullanarak net cevap ver; 'liderlik verisine erisemiyorum' demeyi birak.",
     ].join(" ");
 
+    // --- Canlı veri: liderlik ilk 3 + soruyu soranın durumu ---
+    const admin = createClient(supabaseUrl, serviceKey);
+    let liveContext = "";
+    if (mode === "reply") {
+      try {
+        const [weekly, monthly, season] = await Promise.all([
+          admin.rpc("get_weekly_leaderboard", { limit_count: 5 }),
+          admin.rpc("get_monthly_leaderboard", { limit_count: 5 }),
+          admin.rpc("get_season_leaderboard", { limit_count: 5 }),
+        ]);
+
+        const fmt = (rows: any, scoreKeys: string[]) =>
+          Array.isArray(rows)
+            ? rows
+                .slice(0, 3)
+                .map((r: any, i: number) => {
+                  const score = scoreKeys.map((k) => r?.[k]).find((v) => typeof v === "number") ?? 0;
+                  return `${i + 1}. ${r?.username ?? "Anonim"} (${score} puan)`;
+                })
+                .join(", ")
+            : "veri yok";
+
+        liveContext = [
+          "CANLI VERI (su anki gercek siralama):",
+          `- Haftalik ilk 3: ${fmt(weekly.data, ["weekly_score", "total_score", "score"])}`,
+          `- Aylik ilk 3: ${fmt(monthly.data, ["monthly_score", "total_score", "score"])}`,
+          `- Genel/sezon ilk 3: ${fmt(season.data, ["season_score", "total_score", "score"])}`,
+          "Not: Haftalik pazartesi 00:00'da, aylik ay basinda, sezon 4 ayda bir sifirlanir; oduller donem bitince verilir.",
+        ].join("\n");
+
+        const { data: me } = await admin
+          .from("profiles")
+          .select("username, level, total_score, games_played, games_won, game_credits, premium_until")
+          .eq("id", userData.user.id)
+          .maybeSingle();
+        if (me) {
+          const vip = me.premium_until && new Date(me.premium_until) > new Date() ? "VIP aktif" : "VIP yok";
+          liveContext += `\n- Soruyu soran oyuncu (${me.username ?? username}): seviye ${me.level ?? "?"}, ${me.total_score ?? 0} puan, ${me.games_played ?? 0} mac, ${me.games_won ?? 0} galibiyet, ${me.game_credits ?? 0} murekkep, ${vip}.`;
+        }
+      } catch (e) {
+        console.error("live context error:", (e as any)?.message ?? e);
+      }
+    }
 
     const input =
       mode === "greeting"
         ? `Sohbete "${username}" adlı oyuncu katıldı. Ona rastgele, her seferinde farklı ve doğal bir karşılama mesajı yaz. İsmini mutlaka kullan ve gününün nasıl gittiğini sor. Tek cümle olsun.`
-        : `Genel sohbet geçmişi:\n${history || "(yok)"}\n\n"${username}" sana şunu yazdı: ${message}\n\nOna doğal bir şekilde cevap ver, ismini kullanabilirsin.`;
+        : `${liveContext ? liveContext + "\n\n" : ""}Genel sohbet geçmişi:\n${history || "(yok)"}\n\n"${username}" sana şunu yazdı: ${message}\n\nOna doğal bir şekilde cevap ver, ismini kullanabilirsin.`;
+
 
     let reply = await askAI(apiKey, instructions, input);
     if (!reply) {
@@ -137,7 +182,6 @@ Deno.serve(async (req) => {
     }
     if (reply.length > 400) reply = reply.slice(0, 397) + "...";
 
-    const admin = createClient(supabaseUrl, serviceKey);
     const { data: inserted, error: insertError } = await admin
       .from("global_chat")
       .insert({
