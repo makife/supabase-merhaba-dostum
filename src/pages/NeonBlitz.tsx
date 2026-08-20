@@ -8,7 +8,6 @@ import { useDailyChallenge } from "@/hooks/useDailyChallenge";
 import { ChallengeLeaderboard } from "@/components/ChallengeLeaderboard";
 import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
-import { playTileBeep } from "@/utils/genericBeep";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
 
@@ -45,7 +44,7 @@ const generateColor = () => {
 const NeonBlitz: React.FC = () => {
   const navigate = useNavigate();
   const { requestExit, ExitConfirmDialog } = useExitGameConfirm();
-  const { muted, playSound } = useGameMute("neon_blitz");
+  const { muted } = useGameMute("neon_blitz");
   const { hasPlayedToday, todayScore, leaderboard, loading, saveScore, markAsPlayed } = useDailyChallenge("neon_blitz");
 
   const [gameState, setGameState] = useState<GameState>("MENU");
@@ -208,7 +207,6 @@ const NeonBlitz: React.FC = () => {
   const handleTileClick = useCallback(
     (id: number) => {
       if (!isPlayingRef.current) return;
-      if (!muted) playTileBeep(letterIndexRef.current);
       if (id !== activeTileRef.current) {
         isPlayingRef.current = false;
         clearTimer();
@@ -249,7 +247,7 @@ const NeonBlitz: React.FC = () => {
       }
       beginTurn();
     },
-    [beginTurn, playSound],
+    [beginTurn],
   );
 
   const returnToMenu = () => {
@@ -272,7 +270,6 @@ const NeonBlitz: React.FC = () => {
     <div style={s.center}>
       <button
         onClick={() => {
-          playSound("buttonClick");
           requestExit(() => navigate(homeBackPath()), true);
         }}
         style={{ position: "absolute", top: 16, left: 16, ...s.iconBtn }}
@@ -398,8 +395,7 @@ const NeonBlitz: React.FC = () => {
         <div style={s.header}>
           <button
             onClick={() => {
-              playSound("buttonClick");
-              requestExit(() => returnToMenu());
+                  requestExit(() => returnToMenu());
             }}
             style={s.iconBtn}
           >
@@ -544,8 +540,7 @@ const NeonBlitz: React.FC = () => {
         {!hasPlayedToday && (
           <button
             onClick={() => {
-              playSound("buttonClick");
-              startGame();
+                  startGame();
             }}
             style={{ ...s.btn, background: themeColor, boxShadow: `0 0 15px ${themeColor}66` }}
           >
@@ -554,8 +549,7 @@ const NeonBlitz: React.FC = () => {
         )}
         <button
           onClick={() => {
-            playSound("buttonClick");
-            setShowLeaderboard(!showLeaderboard);
+              setShowLeaderboard(!showLeaderboard);
           }}
           style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}
         >
@@ -563,8 +557,7 @@ const NeonBlitz: React.FC = () => {
         </button>
         <button
           onClick={() => {
-            playSound("buttonClick");
-            navigate(homeBackPath());
+              navigate(homeBackPath());
           }}
           style={{ ...s.outlineBtn, borderColor: themeColor, color: themeColor }}
         >
