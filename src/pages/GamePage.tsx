@@ -108,6 +108,8 @@ import MatchResultCard from "@/components/MatchResultCard";
 // RankUpDialog kaldırıldı: seviye/rank yükselişinde sadece LevelUpDialog animasyonu gösteriliyor
 import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
+import yariFinaldesinGorsel from "@/assets/yariFinaldesinGorsel.png";
+import finaldesinGorsel from "@/assets/finaldesinGorsel.png";
 import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
@@ -8411,6 +8413,43 @@ const GamePage = ({
         </div>
 
         <LevelUpDialog open={showLevelUp} onClose={() => setShowLevelUp(false)} newLevel={newLevel} />
+      </div>
+    );
+  }
+
+  if (gameEnded && gameMode === "tournament" && winner === "player") {
+    const tournamentId = searchParams.get("tournament") || tournamentMatch?.tournament_id;
+    const advancingImage = tournamentMatch?.round === 1 ? yariFinaldesinGorsel : finaldesinGorsel;
+
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <motion.img
+          src={advancingImage}
+          alt={tournamentMatch?.round === 1 ? "Yarı Finaldesiniz" : "Finaldesiniz"}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md rounded-2xl shadow-2xl"
+        />
+        <Button
+          variant="outline"
+          disabled={!buttonsEnabled}
+          onClick={() => {
+            playSound("buttonClick");
+            if (tournamentId) {
+              navigate(`/tournament/bracket/${tournamentId}`);
+            } else {
+              navigate("/tournament");
+            }
+          }}
+          className="w-full max-w-md mt-6"
+        >
+          <Trophy className="w-4 h-4 mr-2" />
+          Turnuva Sayfasına Git
+        </Button>
       </div>
     );
   }
