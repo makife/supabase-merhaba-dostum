@@ -26,7 +26,15 @@ import { toast } from "sonner";
 import Lottie from "lottie-react";
 import aiRobotAnim from "@/assets/aiRobot.json";
 import { useMobileNotifications } from "@/hooks/useMobileNotifications";
-import { isUserBanned, containsBannedWords, banUser, getBanTimeLeft } from "@/utils/chatBot";
+import {
+  isUserBanned,
+  containsBannedWords,
+  banUser,
+  getBanTimeLeft,
+  isBotUsername,
+  mentionsAiBot,
+  AI_BOT_NAME,
+} from "@/utils/chatBot";
 import { useUserBlocking } from "@/hooks/useUserBlocking";
 import { useNavigate } from "react-router-dom";
 import { autoReconnect } from "@/utils/supabaseAutoReconnect";
