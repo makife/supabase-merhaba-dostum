@@ -8426,30 +8426,40 @@ const GamePage = ({
         className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
         style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
       >
-        <motion.img
-          src={advancingImage}
-          alt={tournamentMatch?.round === 1 ? "Yarı Finaldesiniz" : "Finaldesiniz"}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md rounded-2xl shadow-2xl"
-        />
-        <Button
-          variant="outline"
-          disabled={!buttonsEnabled}
-          onClick={() => {
-            playSound("buttonClick");
-            if (tournamentId) {
-              navigate(`/tournament/bracket/${tournamentId}`);
-            } else {
-              navigate("/tournament");
-            }
-          }}
-          className="w-full max-w-md mt-6"
-        >
-          <Trophy className="w-4 h-4 mr-2" />
-          Turnuva Sayfasına Git
-        </Button>
+        <div className="relative w-full max-w-md">
+          <motion.img
+            src={advancingImage}
+            alt={tournamentMatch?.round === 1 ? "Yarı Finaldesiniz" : "Finaldesiniz"}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full rounded-2xl shadow-2xl"
+          />
+          {/* Senin puanın */}
+          <div
+            className="absolute right-[12%] top-[48.5%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
+            style={{
+              fontSize: "clamp(1.25rem, 5.5vw, 1.75rem)",
+              textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+              fontFamily: "'Fredoka', 'Comfortaa', sans-serif",
+              width: "40%",
+            }}
+          >
+            {playerScore}
+          </div>
+          {/* Rakip puanı */}
+          <div
+            className="absolute right-[12%] top-[63.5%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
+            style={{
+              fontSize: "clamp(1.25rem, 5.5vw, 1.75rem)",
+              textShadow: "0 1px 0 rgba(255,255,255,0.5)",
+              fontFamily: "'Fredoka', 'Comfortaa', sans-serif",
+              width: "40%",
+            }}
+          >
+            {opponentScore}
+          </div>
+        </div>
       </div>
     );
   }
