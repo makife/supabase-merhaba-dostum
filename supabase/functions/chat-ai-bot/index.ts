@@ -182,7 +182,6 @@ Deno.serve(async (req) => {
     }
     if (reply.length > 400) reply = reply.slice(0, 397) + "...";
 
-    const admin = createClient(supabaseUrl, serviceKey);
     const { data: inserted, error: insertError } = await admin
       .from("global_chat")
       .insert({
