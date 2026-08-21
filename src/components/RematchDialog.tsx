@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import yenidenMacKarti from "@/assets/yenidenMacKarti.png";
+import yenidenMacKarti from "@/assets/yenidenMacKarti.webp";
 
 interface RematchDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ export const RematchDialog = ({
           className="w-full h-auto select-none pointer-events-none"
         />
 
-        {/* Avatar - dairenin tam içi (yenidenMacKarti.png piksel piksel ölçüldü: 688x1000) */}
+        {/* Avatar - dairenin tam içi (yenidenMacKarti.webp piksel piksel ölçüldü: 688x1000) */}
         <div
           className="absolute overflow-hidden rounded-full"
           style={{ left: "12.65%", top: "31.5%", width: "23.98%", height: "16.2%" }}

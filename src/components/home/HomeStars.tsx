@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
-/** parlayanYildizlar.png içinden ayrılan 7 yıldız görseli */
-const STAR_SRCS = [1, 2, 3, 4, 5, 6, 7].map((i) => `/anaSayfa/yildizlar/${i}.png`);
+/** parlayanYildizlar.webp içinden ayrılan 7 yıldız görseli */
+const STAR_SRCS = [1, 2, 3, 4, 5, 6, 7].map((i) => `/anaSayfa/yildizlar/${i}.webp`);
 
 interface HomeStarsProps {
   /** ekranda kaç yıldız parlayacak */

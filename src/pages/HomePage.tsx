@@ -20,7 +20,7 @@ import HomeClouds from "@/components/home/HomeClouds";
 import oynandiIcon from "@/assets/oynandi.svg";
 import { setGameHubPath } from "@/utils/challengeBackPath";
 import HomeMapPoint from "@/components/home/HomeMapPoint";
-import levelBarImg from "@/assets/levelBar.png";
+import levelBarImg from "@/assets/levelBar.webp";
 import murekkepAnim from "@/assets/murekkep.json";
 import HomeIslandCarousel from "@/components/home/HomeIslandCarousel";
 import HomeStars from "@/components/home/HomeStars";
@@ -32,11 +32,11 @@ import HomeTicker from "@/components/home/HomeTicker";
 import UnlimitedFlowBadge from "@/components/home/UnlimitedFlowBadge";
 
 import HomeSlidePanel, { SlidePanelItem } from "@/components/home/HomeSlidePanel";
-import refleksKart from "@/assets/refleksKart.png";
-import harfKosusuKart from "@/assets/harfKosusuKart.png";
-import kelimePuzzleKart from "@/assets/kelimePuzzleKart.png";
-import kelimeHafizaKart from "@/assets/kelimeHafizaKart.png";
-import hadiKart from "@/assets/hadiKart.png";
+import refleksKart from "@/assets/refleksKart.webp";
+import harfKosusuKart from "@/assets/harfKosusuKart.webp";
+import kelimePuzzleKart from "@/assets/kelimePuzzleKart.webp";
+import kelimeHafizaKart from "@/assets/kelimeHafizaKart.webp";
+import hadiKart from "@/assets/hadiKart.webp";
 import LeaderboardPrizeDialog from "@/components/LeaderboardPrizeDialog";
 import ChallengePrizeDialog from "@/components/ChallengePrizeDialog";
 import { useSearchingPlayersCount } from "@/hooks/useSearchingPlayersCount";
@@ -902,7 +902,7 @@ const HomePage = () => {
 
       icon: <Icon className="w-9 h-9" />,
       gradient: mode.gradient,
-      imageSrc: `/oyunModu/${mode.id}.png`,
+      imageSrc: `/oyunModu/${mode.id}.webp`,
       badge: undefined,
       onClick: () => {
         setShowModePanel(false);

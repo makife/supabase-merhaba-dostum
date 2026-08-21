@@ -19,12 +19,12 @@ import { Capacitor } from "@capacitor/core";
 import { ArrowLeft, Crown, Zap, Infinity, Droplet, PenTool, Video, RotateCcw, ChevronDown } from "lucide-react";
 import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import Lottie from "lottie-react";
-import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.png";
+import successImage from "@/assets/marketSatinAlmaGorsel/marketsatinalmabasariliGorsel.webp";
 import MarketInventoryBar from "@/components/market/MarketInventoryBar";
 import InventoryFlyAnimation, { FlightRequest } from "@/components/market/InventoryFlyAnimation";
 
 // Kırtasiye satın alma görselleri (vite glob ile yüklenir)
-const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.png", {
+const marketImages = import.meta.glob("/src/assets/marketSatinAlmaGorsel/*.webp", {
   eager: true,
   query: "?url",
   import: "default",
@@ -135,7 +135,7 @@ const MarketPage = () => {
       name: "Bir Damla Mürekkep",
       amount: 100,
       price: 49.99,
-      image: "/damlaMurekkep.png",
+      image: "/damlaMurekkep.webp",
     },
     {
       id: "ink_bottle",
@@ -143,14 +143,14 @@ const MarketPage = () => {
       amount: 300,
       price: 149.99,
       label: "Popüler",
-      image: "/murekkepSisesi.png",
+      image: "/murekkepSisesi.webp",
     },
     {
       id: "ink_pot",
       name: "Hokka",
       amount: 850,
       price: 299.99,
-      image: "/murekkepHokka.png",
+      image: "/murekkepHokka.webp",
     },
     {
       id: "ink_barrel",
@@ -158,7 +158,7 @@ const MarketPage = () => {
       amount: 2500,
       price: 899.99,
       label: "En İyi Fiyat",
-      image: "/murekkepVaril.png",
+      image: "/murekkepVaril.webp",
     },
   ];
 
@@ -202,7 +202,7 @@ const MarketPage = () => {
       description: "Stoğunuza 5 sayfa ekler",
       priceInInk: 25,
       value: 5,
-      image: "/bescanPaketi.png",
+      image: "/bescanPaketi.webp",
     },
     {
       id: "h_25",
@@ -211,7 +211,7 @@ const MarketPage = () => {
       description: "Stoğunuza 25 sayfa ekler",
       priceInInk: 90,
       value: 25,
-      image: "/yirmibescanPaketi.png",
+      image: "/yirmibescanPaketi.webp",
     },
     {
       id: "h_50",
@@ -220,7 +220,7 @@ const MarketPage = () => {
       description: "Stoğunuza 50 sayfa ekler",
       priceInInk: 200,
       value: 50,
-      image: "/ellicanPaketi.png",
+      image: "/ellicanPaketi.webp",
     },
     {
       id: "h_85",
@@ -229,7 +229,7 @@ const MarketPage = () => {
       description: "Stoğunuza 85 sayfa ekler",
       priceInInk: 220,
       value: 85,
-      image: "/Ansiklopedi.png",
+      image: "/Ansiklopedi.webp",
     },
     // Sınırsız Zaman
     {
@@ -239,7 +239,7 @@ const MarketPage = () => {
       description: "1 Saat boyunca sınırsız sayfa",
       priceInInk: 40,
       value: 1,
-      image: "/birsaatUyelik.png",
+      image: "/birsaatUyelik.webp",
     },
     {
       id: "t_24h",
@@ -248,7 +248,7 @@ const MarketPage = () => {
       description: "24 Saat boyunca sınırsız sayfa",
       priceInInk: 100,
       value: 24,
-      image: "/yirmidortsaatUyelik.png",
+      image: "/yirmidortsaatUyelik.webp",
     },
   ];
 
@@ -286,7 +286,7 @@ const MarketPage = () => {
           ? "senyaz"
           : "";
       if (jokerName) {
-        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${quantity}${jokerName}Gorsel.png`] || "";
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${quantity}${jokerName}Gorsel.webp`] || "";
       }
     }
 
@@ -299,13 +299,13 @@ const MarketPage = () => {
       };
       const file = heartMap[item.id];
       if (file) {
-        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${file}Gorsel.png`] || "";
+        return marketImages[`/src/assets/marketSatinAlmaGorsel/market${file}Gorsel.webp`] || "";
       }
     }
 
     if (item.type === "time") {
       const hours = item.value === 1 ? "1saat" : "24saat";
-      return marketImages[`/src/assets/marketSatinAlmaGorsel/market${hours}Gorsel.png`] || "";
+      return marketImages[`/src/assets/marketSatinAlmaGorsel/market${hours}Gorsel.webp`] || "";
     }
 
     return item.image || "";
@@ -350,7 +350,7 @@ const MarketPage = () => {
       playSound("buttonClick");
       pendingFlightRef.current = {
         targetKey: "murekkep",
-        icon: "/damlaMurekkep.png",
+        icon: "/damlaMurekkep.webp",
         count: Math.min(10, Math.max(6, pack.amount)),
         sourceItemId: pack.id,
       };
@@ -508,7 +508,7 @@ const MarketPage = () => {
       } else if (itemToBuy.type === "heart") {
         pendingFlightRef.current = {
           targetKey: "hak",
-          icon: "/sayfaHakIkon.png",
+          icon: "/sayfaHakIkon.webp",
           count: itemToBuy.value,
           sourceItemId: itemToBuy.id,
         };
@@ -952,7 +952,7 @@ const MarketPage = () => {
               <Card className="bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-xl text-white overflow-hidden">
                 <CardHeader className="text-center pb-2">
                   <div className="mx-auto flex items-center justify-center -mb-16 -mt-20">
-                    <img src="/vipIkon.png" alt="VIP" className="w-64 h-64 object-contain drop-shadow-xl" />
+                    <img src="/vipIkon.webp" alt="VIP" className="w-64 h-64 object-contain drop-shadow-xl" />
                   </div>
                   <CardTitle className="text-2xl font-serif relative z-10">VIP Yazar Ol</CardTitle>
                   <CardDescription className="text-amber-100 italic">

@@ -60,7 +60,7 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
       {runFrames.map((n) => (
         <img
           key={`r${n}`}
-          src={`/DinoRunners/${cfg.folder}/Run (${n}).png`}
+          src={`/DinoRunners/${cfg.folder}/Run (${n}).webp`}
           alt=""
           draggable={false}
           style={{
@@ -77,7 +77,7 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
       {jumpFrames.map((n) => (
         <img
           key={`j${n}`}
-          src={`/DinoRunners/${cfg.folder}/Jump (${n}).png`}
+          src={`/DinoRunners/${cfg.folder}/Jump (${n}).webp`}
           alt=""
           draggable={false}
           style={{
@@ -98,52 +98,52 @@ const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
 type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
 
-// 5 katmanlı (1..5.png) yeni pack'ler için ortak parallax hızları.
+// 5 katmanlı (1..5.webp) yeni pack'ler için ortak parallax hızları.
 // 1 = en uzak (gökyüzü), 5 = en yakın (zemin) varsayımı.
 const FIVE_LAYER_SPEEDS = [0.03, 0.15, 0.35, 0.6, 1.0];
 const buildFiveLayerConfig = (folder: string) =>
   FIVE_LAYER_SPEEDS.map((speed, i) => ({
-    src: `/DinoRunners/${folder}/${i + 1}.png`,
+    src: `/DinoRunners/${folder}/${i + 1}.webp`,
     speed,
   }));
 
 const PARALLAX_CONFIGS: Record<LevelBg, { src: string; speed: number }[]> = {
   level1: [
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer07_Sky.png", speed: 0.03 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer06_Rocks.png", speed: 0.08 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer05_Hills.png", speed: 0.18 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer04_Clouds.png", speed: 0.12 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer03_Hills_Castle.png", speed: 0.3 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer02_Trees_rocks.png", speed: 0.55 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer01_Ground.png", speed: 1.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer07_Sky.webp", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer06_Rocks.webp", speed: 0.08 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer05_Hills.webp", speed: 0.18 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer04_Clouds.webp", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer03_Hills_Castle.webp", speed: 0.3 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer02_Trees_rocks.webp", speed: 0.55 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan11/layer01_Ground.webp", speed: 1.0 },
   ],
   level2: [
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer07_Sky.png", speed: 0.03 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer06_Rocks.png", speed: 0.08 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer05_Clouds.png", speed: 0.12 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer04_Hills_2.png", speed: 0.22 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer03_Hills_1.png", speed: 0.38 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer02_Trees.png", speed: 0.6 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer01_Ground.png", speed: 1.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer07_Sky.webp", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer06_Rocks.webp", speed: 0.08 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer05_Clouds.webp", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer04_Hills_2.webp", speed: 0.22 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer03_Hills_1.webp", speed: 0.38 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer02_Trees.webp", speed: 0.6 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan22/layer01_Ground.webp", speed: 1.0 },
   ],
   level3: [
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer09_Sky.png", speed: 0.0 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer08_Stars_1.png", speed: 0.04 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer07_Stars_2.png", speed: 0.07 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer06_Stars_3.png", speed: 0.11 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer05_Castle.png", speed: 0.25 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer03_Clouds_3.png", speed: 0.35 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer02_Clouds_2.png", speed: 0.5 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer01_Clouds_1.png", speed: 0.7 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer04_Path.png", speed: 1.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer09_Sky.webp", speed: 0.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer08_Stars_1.webp", speed: 0.04 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer07_Stars_2.webp", speed: 0.07 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer06_Stars_3.webp", speed: 0.11 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer05_Castle.webp", speed: 0.25 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer03_Clouds_3.webp", speed: 0.35 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer02_Clouds_2.webp", speed: 0.5 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer01_Clouds_1.webp", speed: 0.7 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan33/layer04_Path.webp", speed: 1.0 },
   ],
   level4: [
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer06_sky.png", speed: 0.03 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer05_rocks.png", speed: 0.12 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer04_clouds.png", speed: 0.18 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer03_trees.png", speed: 0.42 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer02_cake.png", speed: 0.65 },
-    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer01_ground.png", speed: 1.0 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer06_sky.webp", speed: 0.03 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer05_rocks.webp", speed: 0.12 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer04_clouds.webp", speed: 0.18 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer03_trees.webp", speed: 0.42 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer02_cake.webp", speed: 0.65 },
+    { src: "/DinoRunners/DinoRunnerArkaPlan44/layer01_ground.webp", speed: 1.0 },
   ],
   level5: buildFiveLayerConfig("DinoRunnerArkaPlan55"),
   level6: buildFiveLayerConfig("DinoRunnerArkaPlan66"),

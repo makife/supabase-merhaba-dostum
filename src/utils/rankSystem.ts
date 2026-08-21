@@ -91,7 +91,7 @@ export function getRankFrame(rankPoints: number): string {
   const tier = getRankTier(rankPoints);
   const idx = RANK_TIERS.findIndex(t => t.id === tier.id);
   const frameNo = Math.min(11, Math.floor(idx / 2) + 1);
-  return `/rankCerceve/${frameNo}rank.png`;
+  return `/rankCerceve/${frameNo}rank.webp`;
 }
 
 // Aynı gruptaki tüm sub-tier'ları döndürür (progress bar için)

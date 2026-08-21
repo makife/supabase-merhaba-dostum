@@ -1,7 +1,7 @@
 import React from "react";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import kazandinKarti from "@/assets/KazandinKarti.png";
-import kaybettinKarti from "@/assets/kaybettinKarti.png";
+import kazandinKarti from "@/assets/KazandinKarti.webp";
+import kaybettinKarti from "@/assets/kaybettinKarti.webp";
 
 interface MatchResultCardProps {
   won: boolean;

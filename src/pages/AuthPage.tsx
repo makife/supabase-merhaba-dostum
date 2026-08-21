@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { checkUsernameAvailable, usernameErrorMessage } from "@/utils/usernameValidation";
-import kelimeleLogo from "/kelimeleLogo.png";
+import kelimeleLogo from "/kelimeleLogo.webp";
 
 const AuthPage = () => {
   const navigate = useNavigate();

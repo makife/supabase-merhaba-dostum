@@ -15,7 +15,7 @@ interface GameCountdownProps {
 }
 
 // --- ASSET YÖNETİMİ (PRELOAD) ---
-const IMAGE_PATHS = ["/bes.png", "/dort.png", "/uc.png", "/iki.png", "/bir.png", "/basla.png"];
+const IMAGE_PATHS = ["/bes.webp", "/dort.webp", "/uc.webp", "/iki.webp", "/bir.webp", "/basla.webp"];
 const preloadedImages: Map<string, HTMLImageElement> = new Map();
 let imagesPreloaded = false;
 
@@ -511,13 +511,13 @@ const GameCountdown = memo(
 
     // Görsel Seçimi
     const getImageSrc = () => {
-      if (displayValue === "start") return "/basla.png";
-      if (displayValue === 5) return "/bes.png";
-      if (displayValue === 4) return "/dort.png";
-      if (displayValue === 3) return "/uc.png";
-      if (displayValue === 2) return "/iki.png";
-      if (displayValue === 1) return "/bir.png";
-      return "/bes.png";
+      if (displayValue === "start") return "/basla.webp";
+      if (displayValue === 5) return "/bes.webp";
+      if (displayValue === 4) return "/dort.webp";
+      if (displayValue === 3) return "/uc.webp";
+      if (displayValue === 2) return "/iki.webp";
+      if (displayValue === 1) return "/bir.webp";
+      return "/bes.webp";
     };
 
     // Eğer değer yoksa hiçbir şey gösterme

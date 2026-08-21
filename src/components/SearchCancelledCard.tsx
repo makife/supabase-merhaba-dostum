@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import cancelCard from "@/assets/aramaIptalEdildiKart.png";
+import cancelCard from "@/assets/aramaIptalEdildiKart.webp";
 
 interface SearchCancelledCardProps {
   open: boolean;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import inviteCardBg from "@/assets/oyunDavetKarti.png";
+import inviteCardBg from "@/assets/oyunDavetKarti.webp";
 
 interface GameInviteCardProps {
   open: boolean;
@@ -11,7 +11,7 @@ interface GameInviteCardProps {
 }
 
 /**
- * oyunDavetKarti.png (688x1000) piksel piksel analiz edilerek çıkarılan alan koordinatları.
+ * oyunDavetKarti.webp (688x1000) piksel piksel analiz edilerek çıkarılan alan koordinatları.
  * Görsel bir aspect-ratio (688/1000) kilitli container içinde gösterildiği için
  * bu yüzdeler container boyutu ne olursa olsun (mobil/masaüstü) doğru hizalanır.
  */

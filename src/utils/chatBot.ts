@@ -300,7 +300,7 @@ export const sendWelcomeMessage = async (chatId?: string) => {
         user_id: null,
         username: 'kelimeciBot',
         message: 'Hoşgeldiniz! 🎉 Lütfen kurallar çerçevesinde sohbet ediniz. Küfür, argo ve hakaret içeren mesajlar otomatik olarak tespit edilir ve 2 gün sohbet yasağı uygulanır.',
-        avatar_url: '/bot-avatar.png'
+        avatar_url: '/bot-avatar.webp'
       });
 
     return !error;

@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import genel1 from "@/assets/genel1lik.png";
-import genel2 from "@/assets/genel2lik.png";
-import genel3 from "@/assets/genel3luk.png";
-import aylik1 from "@/assets/aylik1lik.png";
-import aylik2 from "@/assets/aylik2lik.png";
-import aylik3 from "@/assets/aylik3luk.png";
-import haftalik1 from "@/assets/haftalik1lik.png";
-import haftalik2 from "@/assets/haftalik2lik.png";
-import haftalik3 from "@/assets/haftalik3luk.png";
+import genel1 from "@/assets/genel1lik.webp";
+import genel2 from "@/assets/genel2lik.webp";
+import genel3 from "@/assets/genel3luk.webp";
+import aylik1 from "@/assets/aylik1lik.webp";
+import aylik2 from "@/assets/aylik2lik.webp";
+import aylik3 from "@/assets/aylik3luk.webp";
+import haftalik1 from "@/assets/haftalik1lik.webp";
+import haftalik2 from "@/assets/haftalik2lik.webp";
+import haftalik3 from "@/assets/haftalik3luk.webp";
 
 interface LeaderboardPrizeBannerProps {
   tab: "all-time" | "weekly" | "monthly";

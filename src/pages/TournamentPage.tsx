@@ -93,7 +93,7 @@ const TournamentPage = () => {
       {/* Arka plan turnuva görseli */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <img
-          src="/turnuvaBracket.png"
+          src="/turnuvaBracket.webp"
           alt=""
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-2xl opacity-5"
         />

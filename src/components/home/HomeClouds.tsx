@@ -28,7 +28,7 @@ export const HomeClouds = ({ layer = "back" }: HomeCloudsProps) => {
       const names = layer === "front" ? CLOUDS.slice(0, 4) : CLOUDS;
       names.forEach((name, i) => {
         list.push({
-          src: `/anaSayfa/${name}.png`,
+          src: `/anaSayfa/${name}.webp`,
           top: rand(2, 90),
           size: layer === "front" ? rand(120, 240) : rand(90, 190),
           duration: layer === "front" ? rand(28, 55) : rand(34, 70),
