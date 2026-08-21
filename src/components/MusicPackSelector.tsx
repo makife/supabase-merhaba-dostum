@@ -32,23 +32,13 @@ export const MusicPackSelector = () => {
       preview: 'Standart oyun müziği'
     },
     {
-      id: 'nature1',
-      name: 'Doğa Müziği 1',
-      description: 'Sakin doğa müziği - Orman sesleri',
-      requiredPurchase: 'music_pack_nature1',
-      icon: Music,
-      preview: 'Huzurlu orman sesleri'
-    },
-    {
-      id: 'nature2',
-      name: 'Doğa Müziği 2',
-      description: 'Huzurlu doğa müziği - Su sesleri',
-      requiredPurchase: 'music_pack_nature2',
-      icon: Music,
-      preview: 'Akarsuyar ve kuş sesleri'
-    },
-    {
       id: 'space1',
+      name: 'Uzay Müziği 1',
+      description: 'Elektronik uzay müziği - Ambient',
+      requiredPurchase: 'music_pack_space1',
+      icon: Zap,
+      preview: 'Futuristik ambient müzik'
+    },
       name: 'Uzay Müziği 1',
       description: 'Elektronik uzay müziği - Ambient',
       requiredPurchase: 'music_pack_space1',
