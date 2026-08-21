@@ -71,6 +71,7 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_win', assetPath: 'public/turKazanma.mp3', volume: 0.8 },
   { assetId: 'tournament_eliminated', assetPath: 'public/turnuvaElenmeSes.mp3', volume: 0.8 },
   { assetId: 'boost_arti_ses', assetPath: 'public/BoostArtiSes.mp3', volume: 0.8, channels: 3 },
+  { assetId: 'boost_aktif', assetPath: 'public/boostAktif.mp3', volume: 0.7 },
 ];
 
 const toIOSNativeAssetPath = (assetPath: string): string => {
