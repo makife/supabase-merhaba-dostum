@@ -266,12 +266,14 @@ const HadiGamePage = () => {
     ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
 
     setMoves((m) => m + 1);
-    // Sesleri render commit'ini bloklamayacak şekilde ertele (iOS jank önleme)
+    // Sadece harf birleşmesinde kısa tık; kaydırma sesi yok.
+    // (iOS'ta HTML5 <audio> arka plan müziğinin AVAudioSession'ını kesiyordu)
     const gained = res.gained;
-    setTimeout(() => {
-      if (!muted) { try { playDinoJump(); } catch {} }
-      if (gained > 0) { try { playSound("buttonClick"); } catch {} }
-    }, 0);
+    if (gained > 0) {
+      setTimeout(() => {
+        try { playSound("buttonClick"); } catch {}
+      }, 0);
+    }
     if (res.gained > 0) {
       setScore((s) => s + res.gained);
     }
