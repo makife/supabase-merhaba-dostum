@@ -2,6 +2,7 @@ import React from "react";
 import { PressableZone } from "@/components/ui/pressable-zone";
 import kazandinKarti from "@/assets/KazandinKarti.webp";
 import kaybettinKarti from "@/assets/kaybettinKarti.webp";
+import { RematchRoboAnimation, RematchStatus } from "@/components/RematchRoboAnimation";
 
 interface MatchResultCardProps {
   won: boolean;
@@ -15,6 +16,13 @@ interface MatchResultCardProps {
   onHome?: () => void;
   disabled?: boolean;
   children?: React.ReactNode;
+  /**
+   * Rematch isteğinin durumu. "idle" -> animasyon gösterilmez.
+   * "waiting" -> thinking/alert döngüsü, "accepted"/"declined" -> yes/no.
+   */
+  rematchStatus?: RematchStatus;
+  /** yes/no animasyonu bitince çağrılır (örn. animasyonu kapatmak için) */
+  onRematchAnimationFinished?: () => void;
 }
 
 /** PNG kart üzerine görünmez hit-zone butonlar giydirir. */
@@ -28,6 +36,8 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
   onHome,
   disabled,
   children,
+  rematchStatus = "idle",
+  onRematchAnimationFinished,
 }) => {
   const zone = (label: string, left: string, width: string, handler?: () => void, isDisabled?: boolean) => (
     <PressableZone
@@ -84,8 +94,37 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         {zone("Tekrar Oyna", "37.1%", "25.7%", onPlayAgain, disabled)}
         {zone("Ana Menüye Dön", "64.4%", "25.7%", onHome, disabled)}
 
+        {rematchStatus !== "idle" && (
+          <div
+            key={rematchStatus === "waiting" ? "waiting" : rematchStatus}
+            className="absolute left-1/2 z-20 -translate-x-1/2 animate-rematch-slide-in"
+            style={{ top: "100%", marginTop: "0.75rem" }}
+          >
+            <RematchRoboAnimation
+              status={rematchStatus}
+              onResultFinished={onRematchAnimationFinished}
+            />
+          </div>
+        )}
+
         {children}
       </div>
+
+      <style>{`
+        @keyframes rematch-slide-in {
+          from {
+            transform: translate(calc(-50% - 60vw), 0);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+        .animate-rematch-slide-in {
+          animation: rematch-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   );
 };
