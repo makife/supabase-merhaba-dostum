@@ -72,6 +72,42 @@ export const playJumpBeep = () => {
   } catch {}
 };
 
+// Karma (2048) kaydırma sesi — kısa "swoosh".
+// WebAudio ile sentezlenir, HTML5 <audio> kullanılmaz; iOS'ta arka plan müziği kesilmez.
+export const playSwipeSwoosh = () => {
+  const ac = getCtx();
+  if (!ac) return;
+  try {
+    const now = ac.currentTime;
+    const dur = 0.13;
+    // Kısa gürültü buffer'ı (band-pass süzülmüş) = swoosh
+    const frames = Math.floor(ac.sampleRate * dur);
+    const buf = ac.createBuffer(1, frames, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < frames; i++) {
+      const t = i / frames;
+      data[i] = (Math.random() * 2 - 1) * (1 - t) * (1 - t);
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const filter = ac.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.Q.value = 1.1;
+    filter.frequency.setValueAtTime(900, now);
+    filter.frequency.exponentialRampToValueAtTime(2600, now + dur);
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.09, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+    src.start(now);
+    src.stop(now + dur + 0.02);
+  } catch {}
+};
+
+
 // Dino Runner zıplama sesi — mp3 havuzu
 const DINO_JUMP_URL = "/DinoRunners/dinoRunnerZiplama.mp3";
 let dinoJumpPool: HTMLAudioElement[] | null = null;

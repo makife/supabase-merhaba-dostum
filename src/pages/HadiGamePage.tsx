@@ -1,6 +1,8 @@
 import { homeBackPath } from "@/utils/challengeBackPath";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
+import { playSwipeSwoosh } from "@/utils/genericBeep";
+
 import { useNavigate } from "react-router-dom";
 import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
@@ -265,9 +267,12 @@ const HadiGamePage = () => {
     ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
 
     setMoves((m) => m + 1);
-    // Sadece harf birleşmesinde kısa tık; kaydırma sesi yok.
-    // (iOS'ta HTML5 <audio> arka plan müziğinin AVAudioSession'ını kesiyordu)
+    // Kaydırma sesi: WebAudio ile sentezlenmiş kısa swoosh (arka plan müziği kesilmez)
+    if (!muted) {
+      try { playSwipeSwoosh(); } catch {}
+    }
     const gained = res.gained;
+
     if (gained > 0) {
       setTimeout(() => {
         try { playSound("buttonClick"); } catch {}
