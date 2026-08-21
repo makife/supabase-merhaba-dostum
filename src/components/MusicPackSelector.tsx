@@ -38,12 +38,6 @@ export const MusicPackSelector = () => {
       icon: Zap,
       preview: 'Futuristik ambient müzik'
     },
-      name: 'Uzay Müziği 1',
-      description: 'Elektronik uzay müziği - Ambient',
-      requiredPurchase: 'music_pack_space1',
-      icon: Zap,
-      preview: 'Futuristik ambient müzik'
-    },
     {
       id: 'space2',
       name: 'Uzay Müziği 2',
