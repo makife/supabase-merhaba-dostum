@@ -1089,6 +1089,7 @@ const DinoRunner = () => {
         {/* OYUN ALANI */}
         <div 
           className="game-stage" 
+          data-no-sfx
           onPointerDown={handleJump}
           style={{ background: "transparent" }}
         >
@@ -1362,10 +1363,10 @@ const DinoRunner = () => {
 
         {/* MOBİL KONTROLLER */}
         <div className="mobile-controls">
-          <button className="control-btn" onPointerDown={(e) => handleJump(e)}>
+          <button className="control-btn" data-no-sfx onPointerDown={(e) => handleJump(e)}>
             ZIPLA ↰
           </button>
-          <button className="control-btn" onPointerDown={(e) => handleJump(e)}>
+          <button className="control-btn" data-no-sfx onPointerDown={(e) => handleJump(e)}>
             ZIPLA ↱
           </button>
         </div>
