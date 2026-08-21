@@ -727,14 +727,15 @@ const DinoRunner = () => {
     // Zıplama sadece aktif oyunda çalışsın; oyunu başlatma görevi BAŞLA butonlarına kalsın.
     if (gameStateRef.current !== "playing") return;
     velocityRef.current = JUMP_FORCE;
-    // Jenerik zıplama bip sesi (buton sesinden farklı)
-    // iOS nativde mp3 pool HTMLAudio play() ana thread'de hitch yaratıyor;
-    // WebAudio oscillator (playJumpBeep) donma yaşatmadan zıplama sesi verir.
+    // Ses, input frame'ini bloklamasın: fizik hemen uygulanır, ses bir sonraki
+    // frame'den sonra (idle) çalınır. Böylece basış anında donma olmaz.
     if (!gameMuted) {
-      if (IS_IOS_NATIVE) playJumpBeep();
-      else playDinoJump();
+      const fire = () => playJumpBeep();
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => setTimeout(fire, 0));
+      else setTimeout(fire, 0);
     }
   };
+
 
   const checkCollision = (rect1, rect2) => {
     return (
