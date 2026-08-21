@@ -265,9 +265,12 @@ const HadiGamePage = () => {
     ghostTimerRef.current = setTimeout(() => setGhosts([]), 170);
 
     setMoves((m) => m + 1);
-    // Sadece harf birleşmesinde kısa tık; kaydırma sesi yok.
-    // (iOS'ta HTML5 <audio> arka plan müziğinin AVAudioSession'ını kesiyordu)
+    // Kaydırma sesi: WebAudio ile sentezlenmiş kısa swoosh (arka plan müziği kesilmez)
+    if (!muted) {
+      try { playSwipeSwoosh(); } catch {}
+    }
     const gained = res.gained;
+
     if (gained > 0) {
       setTimeout(() => {
         try { playSound("buttonClick"); } catch {}
