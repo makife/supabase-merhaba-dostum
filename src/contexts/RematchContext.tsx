@@ -25,9 +25,14 @@ interface IncomingRequest {
   gameType: "timed" | "score";
 }
 
+/** MatchResultCard / RematchRoboAnimation'ın beklediği animasyon durumu. */
+export type RematchStatus = "idle" | "waiting" | "accepted" | "declined";
+
 interface RematchContextType {
   isSending: boolean;
   isWaiting: boolean;
+  /** MatchResultCard'daki robot animasyonuna doğrudan bağlanacak durum. */
+  rematchStatus: RematchStatus;
   incomingRequest: IncomingRequest | null;
   sendRematchRequest: (opponentId: string, gameType: "timed" | "score", currentGameMode: string) => Promise<boolean>;
   acceptRematch: () => Promise<void>;
@@ -52,6 +57,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [isSending, setIsSending] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [rematchStatus, setRematchStatus] = useState<RematchStatus>("idle");
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null);
 
   const sendingRef = useRef(false);
@@ -428,6 +434,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         console.log("ℹ️ Rematch push bildirimi atlandı (tasarım gereği)");
 
         setIsWaiting(true);
+        setRematchStatus("waiting");
         toast({
           title: "🔄 Tekrar Oyun İsteği Gönderildi",
           description: "Rakibinizin yanıtını bekliyoruz...",
@@ -437,6 +444,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Set timeout
         waitingTimeoutRef.current = setTimeout(() => {
           setIsWaiting(false);
+          setRematchStatus("idle");
           toast({
             title: "⏰ Süre Doldu",
             description: "Rakibiniz yanıt vermedi.",
@@ -594,6 +602,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const resetRematchState = useCallback(() => {
     setIsSending(false);
     setIsWaiting(false);
+    setRematchStatus("idle");
     setIncomingRequest(null);
     processedRef.current.clear();
     if (waitingTimeoutRef.current) {
@@ -679,6 +688,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 waitingTimeoutRef.current = null;
               }
               setIsWaiting(false);
+              setRematchStatus("accepted");
 
               const { data: room } = await supabase
                 .from("game_rooms")
@@ -697,7 +707,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
                 await setLastRoomId(null);
                 await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
-                navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
+
+                // "yes" animasyonunun oynaması için maça geçişi minik bir süre erteliyoruz.
+                // Animasyon zaten kendi bitince (onResultFinished) navigasyonu tetikleyecekse
+                // bu setTimeout'u kaldırıp navigate'i oradan çağırabilirsin.
+                setTimeout(() => {
+                  navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
+                }, 900);
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
@@ -707,6 +723,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 waitingTimeoutRef.current = null;
               }
               setIsWaiting(false);
+              setRematchStatus("declined");
+              // "no" animasyonu oynasın diye birkaç saniye sonra idle'a dönüyoruz.
+              setTimeout(() => setRematchStatus("idle"), 2500);
 
               // 🔒 Bu rakibe oturum boyunca tekrar istek gönderme
               if (request.to_user_id) {
@@ -740,6 +759,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         isSending,
         isWaiting,
+        rematchStatus,
         incomingRequest,
         sendRematchRequest,
         acceptRematch,
