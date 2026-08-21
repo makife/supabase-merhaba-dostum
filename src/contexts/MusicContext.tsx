@@ -513,10 +513,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Get music file based on selected pack - Capacitor için relative path
       const getMusicFile = () => {
         switch (musicPack) {
-          case "nature1":
-            return "./sounds/default/doga1.mp3";
-          case "nature2":
-            return "./sounds/default/doga2.mp3";
           case "space1":
             return "./sounds/default/uzay1.mp3";
           case "space2":

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,22 +29,6 @@ export const MusicPackSelector = () => {
       description: 'Klasik arkaplan müziği',
       icon: Volume2,
       preview: 'Standart oyun müziği'
-    },
-    {
-      id: 'nature1',
-      name: 'Doğa Müziği 1',
-      description: 'Sakin doğa müziği - Orman sesleri',
-      requiredPurchase: 'music_pack_nature1',
-      icon: Music,
-      preview: 'Huzurlu orman sesleri'
-    },
-    {
-      id: 'nature2',
-      name: 'Doğa Müziği 2',
-      description: 'Huzurlu doğa müziği - Su sesleri',
-      requiredPurchase: 'music_pack_nature2',
-      icon: Music,
-      preview: 'Akarsuyar ve kuş sesleri'
     },
     {
       id: 'space1',
