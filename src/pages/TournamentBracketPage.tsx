@@ -342,13 +342,14 @@ const TournamentBracketPage = () => {
 
 
   const REWARD_IMAGES = {
-    ink: "/murekkepOdul.png",
-    degistir: "/degistirOdul.png",
-    senyaz: "/senyazOdul.png",
-    fisilda: "/fisildaOdul.png",
-    credits: "/ucsayfaOdul.png",
-    extra_spin: "/carkOdul.png",
+    ink: "/murekkepOdul.jpg",
+    degistir: "/degistirOdul.jpg",
+    senyaz: "/senyazOdul.jpg",
+    fisilda: "/fisildaOdul.jpg",
+    credits: "/ucsayfaOdul.jpg",
+    extra_spin: "/carkOdul.jpg",
   };
+
 
   const navigatedMatchIdRef = useRef<string | null>(null);
   const fromCompletedMatchRef = useRef<string | null>(null);
