@@ -10,7 +10,7 @@ import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import { toast } from "sonner";
-import { playDinoJump, playJumpBeep, playGenericTone } from "@/utils/genericBeep";
+import { playJumpBeep, playGenericTone } from "@/utils/genericBeep";
 import { Capacitor } from "@capacitor/core";
 const IS_IOS_NATIVE = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 
