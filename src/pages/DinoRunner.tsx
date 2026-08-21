@@ -26,74 +26,111 @@ const CHARACTERS: Record<CharacterId, { folder: string; runFrames: number; jumpF
   robot:     { folder: "robotSprite",     runFrames: 8, jumpFrames: 10, label: "Robot", previewSrc: "/DinoRunners/previews/robot.webp" },
 };
 
-const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean; size: number }> = ({ character, isJumping, size }) => {
-  const cfg = CHARACTERS[character];
-  const [frame, setFrame] = useState(1);
-  const frameRef = useRef(1);
-  const modeRef = useRef<boolean>(isJumping);
+const DinoCharacterSprite: React.FC<{ character: CharacterId; isJumping: boolean; size: number }> = React.memo(
+  ({ character, isJumping, size }) => {
+    const cfg = CHARACTERS[character];
+    const wrapRef = useRef<HTMLDivElement | null>(null);
+    const runRefs = useRef<(HTMLImageElement | null)[]>([]);
+    const jumpRefs = useRef<(HTMLImageElement | null)[]>([]);
+    const frameRef = useRef(1);
+    const jumpingRef = useRef(isJumping);
+    const visibleRef = useRef<HTMLImageElement | null>(null);
 
-  // Mod değişimini takip et — frame sıfırlansın
-  useEffect(() => {
-    if (modeRef.current !== isJumping) {
-      modeRef.current = isJumping;
+    const runFrames = Array.from({ length: cfg.runFrames }, (_, i) => i + 1);
+    const jumpFrames = Array.from({ length: cfg.jumpFrames }, (_, i) => i + 1);
+
+    // Tüm frameleri önceden decode et → ilk zıplamada GPU/CPU decode hitch'i olmaz
+    useEffect(() => {
+      let cancelled = false;
+      const urls = [
+        ...runFrames.map((n) => `/DinoRunners/${cfg.folder}/Run (${n}).webp`),
+        ...jumpFrames.map((n) => `/DinoRunners/${cfg.folder}/Jump (${n}).webp`),
+      ];
+      urls.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+        // decode() tarayıcı desteklemezse sessizce geç
+        (img as any).decode?.().catch?.(() => {});
+        if (cancelled) img.src = "";
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [cfg.folder, cfg.runFrames, cfg.jumpFrames]);
+
+    // Frame gösterimi tamamen imperative: React re-render yok → zıplamada donma yok
+    const showFrame = useCallback(() => {
+      const list = jumpingRef.current ? jumpRefs.current : runRefs.current;
+      const el = list[frameRef.current - 1];
+      if (!el || el === visibleRef.current) return;
+      if (visibleRef.current) visibleRef.current.style.visibility = "hidden";
+      el.style.visibility = "visible";
+      visibleRef.current = el;
+    }, []);
+
+    useEffect(() => {
+      if (jumpingRef.current === isJumping) return;
+      jumpingRef.current = isJumping;
       frameRef.current = 1;
-      setFrame(1);
-    }
-  }, [isJumping]);
+      showFrame();
+    }, [isJumping, showFrame]);
 
-  // Frame döngüsü
-  useEffect(() => {
-    const id = setInterval(() => {
-      const total = modeRef.current ? cfg.jumpFrames : cfg.runFrames;
-      frameRef.current = frameRef.current >= total ? 1 : frameRef.current + 1;
-      setFrame(frameRef.current);
-    }, 70);
-    return () => clearInterval(id);
-  }, [character, cfg.jumpFrames, cfg.runFrames]);
+    useEffect(() => {
+      showFrame();
+      const id = setInterval(() => {
+        const total = jumpingRef.current ? cfg.jumpFrames : cfg.runFrames;
+        frameRef.current = frameRef.current >= total ? 1 : frameRef.current + 1;
+        showFrame();
+      }, 70);
+      return () => clearInterval(id);
+    }, [character, cfg.jumpFrames, cfg.runFrames, showFrame]);
 
-  // Tüm frameleri baştan mount et; sadece görünürlüğü değiştir → flicker/yeniden yükleme yok
-  const runFrames = Array.from({ length: cfg.runFrames }, (_, i) => i + 1);
-  const jumpFrames = Array.from({ length: cfg.jumpFrames }, (_, i) => i + 1);
+    const imgStyle: React.CSSProperties = {
+      position: "absolute",
+      inset: 0,
+      width: "100%",
+      height: "100%",
+      objectFit: "contain",
+      userSelect: "none",
+      visibility: "hidden",
+      transform: "translateZ(0)",
+      backfaceVisibility: "hidden",
+    };
 
-  return (
-    <div style={{ position: "relative", width: size, height: size, pointerEvents: "none" }}>
-      {runFrames.map((n) => (
-        <img
-          key={`r${n}`}
-          src={`/DinoRunners/${cfg.folder}/Run (${n}).webp`}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            userSelect: "none",
-            visibility: !isJumping && frame === n ? "visible" : "hidden",
-          }}
-        />
-      ))}
-      {jumpFrames.map((n) => (
-        <img
-          key={`j${n}`}
-          src={`/DinoRunners/${cfg.folder}/Jump (${n}).webp`}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            userSelect: "none",
-            visibility: isJumping && frame === n ? "visible" : "hidden",
-          }}
-        />
-      ))}
-    </div>
-  );
-};
+    return (
+      <div ref={wrapRef} style={{ position: "relative", width: size, height: size, pointerEvents: "none" }}>
+        {runFrames.map((n, i) => (
+          <img
+            key={`r${n}`}
+            ref={(el) => {
+              runRefs.current[i] = el;
+            }}
+            src={`/DinoRunners/${cfg.folder}/Run (${n}).webp`}
+            alt=""
+            draggable={false}
+            decoding="sync"
+            style={imgStyle}
+          />
+        ))}
+        {jumpFrames.map((n, i) => (
+          <img
+            key={`j${n}`}
+            ref={(el) => {
+              jumpRefs.current[i] = el;
+            }}
+            src={`/DinoRunners/${cfg.folder}/Jump (${n}).webp`}
+            alt=""
+            draggable={false}
+            decoding="sync"
+            style={imgStyle}
+          />
+        ))}
+      </div>
+    );
+  },
+);
+DinoCharacterSprite.displayName = "DinoCharacterSprite";
+
 
 // --- Parallax arka plan katmanları (her level için, uzak → yakın sırada) ---
 type LevelBg = "level1" | "level2" | "level3" | "level4" | "level5" | "level6" | "level7" | "level8";
