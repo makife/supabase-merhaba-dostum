@@ -1,6 +1,12 @@
 // Simple WebAudio synthetic beeps for mini-games.
 // Kısa, jenerik "bip" sesleri — decode / dosya yüklemesi yok.
 
+import { Capacitor } from "@capacitor/core";
+
+const IS_IOS_NATIVE =
+  Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+
+
 let ctx: AudioContext | null = null;
 const getCtx = (): AudioContext | null => {
   try {
