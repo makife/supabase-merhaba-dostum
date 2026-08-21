@@ -1089,6 +1089,7 @@ const DinoRunner = () => {
         {/* OYUN ALANI */}
         <div 
           className="game-stage" 
+          data-no-sfx
           onPointerDown={handleJump}
           style={{ background: "transparent" }}
         >
