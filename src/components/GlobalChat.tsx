@@ -1089,7 +1089,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       }}
                     >
                       <UserAvatar
-                        src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.webp"}
+                        src={message.user_id ? userAvatars[message.user_id] : "/bot-avatar.png"}
                         alt={message.username}
                         fallback={message.username.charAt(0).toUpperCase()}
                         size="xs"
