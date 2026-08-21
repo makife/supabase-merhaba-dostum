@@ -110,6 +110,7 @@ import { getRankTier, RankTier } from "@/utils/rankSystem";
 import robotAvatar from "@/assets/robot-avatar.png";
 import yariFinaldesinGorsel from "@/assets/yariFinaldesinGorsel.png";
 import finaldesinGorsel from "@/assets/finaldesinGorsel.png";
+import sampiyonsunGorsel from "@/assets/sampiyonsunGorsel.png";
 import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";
