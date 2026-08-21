@@ -212,6 +212,11 @@ const HadiGamePage = () => {
     } else {
       setNowTs(Date.now());
       
+      // Boost aktif sesi çal
+      if (!muted) {
+        try { playNativeSound('boost_aktif'); } catch {}
+      }
+      
       // 1. ADIM: Buton içi animasyonu başlat (roket yerine buton animasyonu oynar)
       setPlayButtonAnim(true);
       
