@@ -87,7 +87,16 @@ const ensureDinoPool = (): HTMLAudioElement[] => {
   return dinoJumpPool;
 };
 
+/**
+ * iOS nativde HTML5 <audio> çalmak AVAudioSession'ı sıfırlıyor ve arka plan
+ * müziğini kesiyor; ayrıca play() ana thread'de hitch yaratıyor.
+ * Bu yüzden iOS'ta zıplama sesi paylaşımlı WebAudio ile sentezleniyor.
+ */
 export const playDinoJump = () => {
+  if (IS_IOS_NATIVE) {
+    playJumpBeep();
+    return;
+  }
   const pool = ensureDinoPool();
   if (pool.length === 0) return;
   const a = pool.find((x) => x.paused || x.ended) ?? pool[0];
