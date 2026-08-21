@@ -1,6 +1,8 @@
 import { homeBackPath } from "@/utils/challengeBackPath";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { playChallengeWinSound } from "@/utils/challengeWinSound";
+import { playSwipeSwoosh } from "@/utils/genericBeep";
+
 import { useNavigate } from "react-router-dom";
 import { useGameMute } from "@/hooks/useGameMute";
 import { GameMuteButton } from "@/components/GameMuteButton";
