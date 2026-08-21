@@ -6,21 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { playNativeSound } from "@/services/nativeAudioService";
 
 const EMOJIS = [
-  { id: "gulen", src: "/emojiler/gulenEmoji.png", label: "Gülen" },
-  { id: "kahkaha", src: "/emojiler/kahkahaEmoji.png", label: "Kahkaha" },
-  { id: "opucuk", src: "/emojiler/opucukEmoji.png", label: "Öpücük" },
-  { id: "kizgin", src: "/emojiler/kizginEmoji.png", label: "Kızgın" },
-  { id: "aglayan", src: "/emojiler/aglayanEmoji.png", label: "Ağlayan" },
-  { id: "coksikici", src: "/emojiler/coksikiciEmoji.png", label: "Çok Sıkıcı" },
-  { id: "uyuyan", src: "/emojiler/uyuyanEmoji.png", label: "Uyuyan" },
-  { id: "fermuar", src: "/emojiler/fermuarEmoji.png", label: "Fermuar" },
-  { id: "aklimagelmiyor", src: "/emojiler/aklimagelmiyorEmoji.png", label: "Aklıma Gelmiyor" },
-  { id: "izgara", src: "/emojiler/izgaraEmoji.png", label: "Izgara" },
-  { id: "konfeti", src: "/emojiler/konfetiEmoji.png", label: "Konfeti" },
-  { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.png", label: "Tekrar Oynayalım" },
-  { id: "sanirim", src: "/emojiler/sanirimEmoji.png", label: "Sanırım Kazanıyorum" },
-  { id: "galiba", src: "/emojiler/galibaEmoji.png", label: "Galiba Kaybettim" },
-  { id: "iyiolan", src: "/emojiler/iyiolanEmoji.png", label: "iyi olan kazansın" },
+  { id: "gulen", src: "/emojiler/gulenEmoji.webp", label: "Gülen" },
+  { id: "kahkaha", src: "/emojiler/kahkahaEmoji.webp", label: "Kahkaha" },
+  { id: "opucuk", src: "/emojiler/opucukEmoji.webp", label: "Öpücük" },
+  { id: "kizgin", src: "/emojiler/kizginEmoji.webp", label: "Kızgın" },
+  { id: "aglayan", src: "/emojiler/aglayanEmoji.webp", label: "Ağlayan" },
+  { id: "coksikici", src: "/emojiler/coksikiciEmoji.webp", label: "Çok Sıkıcı" },
+  { id: "uyuyan", src: "/emojiler/uyuyanEmoji.webp", label: "Uyuyan" },
+  { id: "fermuar", src: "/emojiler/fermuarEmoji.webp", label: "Fermuar" },
+  { id: "aklimagelmiyor", src: "/emojiler/aklimagelmiyorEmoji.webp", label: "Aklıma Gelmiyor" },
+  { id: "izgara", src: "/emojiler/izgaraEmoji.webp", label: "Izgara" },
+  { id: "konfeti", src: "/emojiler/konfetiEmoji.webp", label: "Konfeti" },
+  { id: "tekraroynayalim", src: "/emojiler/tekraroynayalimEmoji.webp", label: "Tekrar Oynayalım" },
+  { id: "sanirim", src: "/emojiler/sanirimEmoji.webp", label: "Sanırım Kazanıyorum" },
+  { id: "galiba", src: "/emojiler/galibaEmoji.webp", label: "Galiba Kaybettim" },
+  { id: "iyiolan", src: "/emojiler/iyiolanEmoji.webp", label: "iyi olan kazansın" },
 ];
 
 // Görseller public/emojiler/ klasöründe, AAB'ye derleniyor - fetch gereksiz

@@ -53,16 +53,16 @@ const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan7.jpg",
   "/macArkaPlanlar/macArkaPlan8.jpg",
   "/macArkaPlanlar/macArkaPlan9.jpg",
-  "/macArkaPlanlar/macArkaPlan10.png",
+  "/macArkaPlanlar/macArkaPlan10.webp",
   "/macArkaPlanlar/macArkaPlan11.jpg",
-  "/macArkaPlanlar/macArkaPlan12.png",
+  "/macArkaPlanlar/macArkaPlan12.webp",
   "/macArkaPlanlar/macArkaPlan13.jpg",
   "/macArkaPlanlar/macArkaPlan14.jpg",
   "/macArkaPlanlar/macArkaPlan15.jpg",
   "/macArkaPlanlar/macArkaPlan16.jpg",
   "/macArkaPlanlar/macArkaPlan17.jpg",
   "/macArkaPlanlar/macArkaPlan18.jpg",
-  "/macArkaPlanlar/macArkaPlan19.png",
+  "/macArkaPlanlar/macArkaPlan19.webp",
   "/macArkaPlanlar/macArkaPlan20.jpg",
   "/macArkaPlanlar/macArkaPlan21.jpg",
   "/macArkaPlanlar/macArkaPlan22.jpg",
@@ -76,7 +76,7 @@ const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan30.jpeg",
   "/macArkaPlanlar/macArkaPlan31.jpeg",
   "/macArkaPlanlar/macArkaPlan32.jpg",
-  "/macArkaPlanlar/macArkaPlan33.png",
+  "/macArkaPlanlar/macArkaPlan33.webp",
   "/macArkaPlanlar/macArkaPlan34.jpg",
   "/macArkaPlanlar/macArkaPlan35.jpg",
   "/macArkaPlanlar/macArkaPlan36.jpg",
@@ -107,10 +107,10 @@ import MatchResultCard from "@/components/MatchResultCard";
 
 // RankUpDialog kaldırıldı: seviye/rank yükselişinde sadece LevelUpDialog animasyonu gösteriliyor
 import { getRankTier, RankTier } from "@/utils/rankSystem";
-import robotAvatar from "@/assets/robot-avatar.png";
-import yariFinaldesinGorsel from "@/assets/yariFinaldesinGorsel.png";
-import finaldesinGorsel from "@/assets/finaldesinGorsel.png";
-import sampiyonsunGorsel from "@/assets/sampiyonsunGorsel.png";
+import robotAvatar from "@/assets/robot-avatar.webp";
+import yariFinaldesinGorsel from "@/assets/yariFinaldesinGorsel.webp";
+import finaldesinGorsel from "@/assets/finaldesinGorsel.webp";
+import sampiyonsunGorsel from "@/assets/sampiyonsunGorsel.webp";
 import { VipBadge } from "@/components/VipBadge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGlobalResync } from "@/hooks/useGlobalResync";

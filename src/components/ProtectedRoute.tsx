@@ -18,7 +18,7 @@ const DarkLoadingScreen = () => (
   >
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-40" />
     <div className="relative z-10 flex flex-col items-center gap-4">
-      <img src="/kelimeleLogo.png" alt="Kelimele" className="w-16 h-16 rounded-2xl shadow-2xl ring-2 ring-white/10" />
+      <img src="/kelimeleLogo.webp" alt="Kelimele" className="w-16 h-16 rounded-2xl shadow-2xl ring-2 ring-white/10" />
       <Lottie animationData={parmakLoadingAnim} loop autoplay style={{ width: 80, height: 80 }} />
       <p className="text-white/50 text-xs font-bold uppercase tracking-widest">Yükleniyor</p>
     </div>

@@ -1356,9 +1356,9 @@ const ProfilePage = () => {
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Jokerler</h3>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <JokerCard icon="degistirIkon.png" value={jokers.degistir} label="Değiştir" />
-              <JokerCard icon="fisildaIkon.png" value={jokers.fisilida} label="Fısılda" />
-              <JokerCard icon="senyazIkon.png" value={jokers.senYaz} label="Sen Yaz" />
+              <JokerCard icon="degistirIkon.webp" value={jokers.degistir} label="Değiştir" />
+              <JokerCard icon="fisildaIkon.webp" value={jokers.fisilida} label="Fısılda" />
+              <JokerCard icon="senyazIkon.webp" value={jokers.senYaz} label="Sen Yaz" />
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { SystemMessage } from "@/hooks/useSystemMessages";
 import { Bell } from "lucide-react";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import sistemMesajlariPenceresi from "@/assets/sistemMesajlariPenceresi.png";
+import sistemMesajlariPenceresi from "@/assets/sistemMesajlariPenceresi.webp";
 
 
 interface Props {

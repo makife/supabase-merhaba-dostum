@@ -2,7 +2,7 @@ import { useRadio } from "@/contexts/RadioContext";
 import { Loader2, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import radyoPenceresi from "@/assets/radyoPenceresi.png";
+import radyoPenceresi from "@/assets/radyoPenceresi.webp";
 
 interface RadioPickerProps {
   open: boolean;

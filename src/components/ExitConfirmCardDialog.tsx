@@ -1,9 +1,9 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
-import dialogImg from "@/assets/cikmakDiyalogPenceresi.png";
-import tournamentDialogImg from "@/assets/turnuvaCikmakDiyalogPenceresi.png";
-import tournamentBracketDialogImg from "@/assets/turnuvaSayfaCikmakDiyalogPenceresi.png";
+import dialogImg from "@/assets/cikmakDiyalogPenceresi.webp";
+import tournamentDialogImg from "@/assets/turnuvaCikmakDiyalogPenceresi.webp";
+import tournamentBracketDialogImg from "@/assets/turnuvaSayfaCikmakDiyalogPenceresi.webp";
 import merakliKopek from "@/assets/merakliKopek.json";
 
 interface ExitConfirmCardDialogProps {
@@ -14,7 +14,7 @@ interface ExitConfirmCardDialogProps {
 }
 
 /**
- * Aktif maçtan çıkış onayı - cikmakDiyalogPenceresi.png tabanlı kart.
+ * Aktif maçtan çıkış onayı - cikmakDiyalogPenceresi.webp tabanlı kart.
  * Açık mor alanın alt kenarına hizalanmış merakliKopek.json animasyonu içerir.
  *
  * Portal'a body üzerinden render edilir; böylece geri sayım / maç overlay

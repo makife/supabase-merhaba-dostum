@@ -4,13 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { flyRewardsSequentially } from "@/utils/flyIcons";
 import Lottie from "lottie-react";
-import refleksOdul2 from "@/assets/refleksOdulPenceresi2.png";
-import refleksOdul4 from "@/assets/refleksOdulPenceresi4.png";
-import refleksOdul6 from "@/assets/refleksOdulPenceresi6.png";
-import kelimePuzzleOdul from "@/assets/kelimePuzzleOdulPenceresi.png";
-import kelimeAviOdul from "@/assets/kelimeAviOdulPenceresi.png";
-import harfKosusuOdul from "@/assets/harfKosusuOdulPenceresi.png";
-import sansCarkiOdul from "@/assets/sansCarkiOdulPenceresi.png";
+import refleksOdul2 from "@/assets/refleksOdulPenceresi2.webp";
+import refleksOdul4 from "@/assets/refleksOdulPenceresi4.webp";
+import refleksOdul6 from "@/assets/refleksOdulPenceresi6.webp";
+import kelimePuzzleOdul from "@/assets/kelimePuzzleOdulPenceresi.webp";
+import kelimeAviOdul from "@/assets/kelimeAviOdulPenceresi.webp";
+import harfKosusuOdul from "@/assets/harfKosusuOdulPenceresi.webp";
+import sansCarkiOdul from "@/assets/sansCarkiOdulPenceresi.webp";
 
 
 interface PrizeNotification {

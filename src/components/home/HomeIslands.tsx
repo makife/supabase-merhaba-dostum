@@ -8,7 +8,7 @@ import {
 } from "@/lib/homeIslandAssets";
 
 /**
- * anasayfaGorsel.png içindeki 5 ada, ayrı PNG'lere bölündü.
+ * anasayfaGorsel.webp içindeki 5 ada, ayrı PNG'lere bölündü.
  * Her ada bağımsız (rastgele süre/gecikme/mesafe) şekilde yukarı-aşağı süzülür.
  * Görseller ve alfa maskeleri modül seviyesinde önbellekte tutulur (bkz. homeIslandAssets),
  * bu yüzden sayfalar arası geçişte yeniden yükleme beklemesi olmaz.

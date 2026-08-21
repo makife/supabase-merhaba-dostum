@@ -3,11 +3,11 @@
  * Modül seviyesinde önbelleğe alınır: oyuncu başka sayfalara gidip ana sayfaya
  * döndüğünde görseller ve maskeler zaten hazır olur (yeniden yükleme beklemesi yok).
  */
-import radyoAdasi from "@/assets/radyoAdasi.png";
-import oyunModlariAdasi from "@/assets/oyunModlariAdasi.png";
-import duelloAdasi from "@/assets/duelloAdasi.png";
-import sansCarkiAdasi from "@/assets/sansCarkiAdasi.png";
-import arkadaslikAdasi from "@/assets/arkadaslikAdasi.png";
+import radyoAdasi from "@/assets/radyoAdasi.webp";
+import oyunModlariAdasi from "@/assets/oyunModlariAdasi.webp";
+import duelloAdasi from "@/assets/duelloAdasi.webp";
+import sansCarkiAdasi from "@/assets/sansCarkiAdasi.webp";
+import arkadaslikAdasi from "@/assets/arkadaslikAdasi.webp";
 
 export type IslandKey = "oyunModlari" | "duello" | "carki" | "radyo" | "arkadaslik";
 

@@ -12,7 +12,7 @@ import GameModeSelector from "@/components/GameModeSelector";
 import PrivateRoomCards from "@/components/PrivateRoomCards";
 import { SlotMatchmaking } from "@/components/SlotMatchmaking";
 import { setGameHubPath } from "@/utils/challengeBackPath";
-import oyunModlariYazi from "@/assets/oyunModlariYazi.png";
+import oyunModlariYazi from "@/assets/oyunModlariYazi.webp";
 
 const isUnlimitedLivesActive = (profile: any) => {
   if (!profile?.unlimited_lives_until) return false;
@@ -124,7 +124,7 @@ const GameModesPage = () => {
               }}
             >
               <img
-                src={`/oyunModu/${mode.id}.png`}
+                src={`/oyunModu/${mode.id}.webp`}
                 alt={mode.title}
                 className="w-full h-auto select-none pointer-events-none"
                 draggable={false}

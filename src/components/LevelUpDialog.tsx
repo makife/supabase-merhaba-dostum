@@ -26,7 +26,7 @@ export const LevelUpDialog: React.FC<LevelUpDialogProps> = ({ open, onClose, new
 
   const digitNames = ["sifir", "bir", "iki", "uc", "dort", "bes", "alti", "yedi", "sekiz", "dokuz"];
   const digitsRaw = String(newLevel).split("");
-  const digitFiles = digitsRaw.map((d) => `/${digitNames[parseInt(d, 10)]}Level.png`);
+  const digitFiles = digitsRaw.map((d) => `/${digitNames[parseInt(d, 10)]}Level.webp`);
 
   useEffect(() => {
     setShowTebrikler(false);

@@ -7,15 +7,15 @@ import { useUser } from "@/contexts/UserContext";
 import { toast as sonnerToast } from "sonner";
 import FriendInviteDialog from "@/components/FriendInviteDialog";
 import { PressableZone } from "@/components/ui/pressable-zone";
-import odaKurKart from "@/assets/odaKurKart.png";
-import odayaKatilKart from "@/assets/odayaKatilKart.png";
-import odaBeklemeKart from "@/assets/odaBeklemeKart.png";
-import bekleyenOdaKart from "@/assets/bekleyenOdaKart.png";
+import odaKurKart from "@/assets/odaKurKart.webp";
+import odayaKatilKart from "@/assets/odayaKatilKart.webp";
+import odaBeklemeKart from "@/assets/odaBeklemeKart.webp";
+import bekleyenOdaKart from "@/assets/bekleyenOdaKart.webp";
 import beklemeAramaAnim from "@/assets/ozelOdaBeklemeArama.json";
 import yukleniyorAnim from "@/assets/ozelOdaYukleniyor.json";
 import beklemeHazirSvg from "@/assets/ozelOdaBeklemeHazir.svg";
-import arkadasinGeldiGorsel from "@/assets/arkadasinGeldiGorsel.png";
-import arkadasinOdadanAyrildiGorsel from "@/assets/arkadasinOdadanAyrildiGorsel.png";
+import arkadasinGeldiGorsel from "@/assets/arkadasinGeldiGorsel.webp";
+import arkadasinOdadanAyrildiGorsel from "@/assets/arkadasinOdadanAyrildiGorsel.webp";
 
 interface PrivateRoomCardsProps {
   onClose: () => void;

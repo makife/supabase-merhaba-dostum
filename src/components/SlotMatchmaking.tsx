@@ -4,8 +4,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useMatchmaking } from "@/contexts/NewMatchmakingContext";
 import { cn } from "@/lib/utils";
-import modalBg from "@/assets/rakipAraniyorModal.png";
-import rakipBulundu from "@/assets/rakipBulundu.png";
+import modalBg from "@/assets/rakipAraniyorModal.webp";
+import rakipBulundu from "@/assets/rakipBulundu.webp";
 import dunyaHaritasiArama from "@/assets/dunyaHaritasiArama.json";
 import { PressableZone } from "@/components/ui/pressable-zone";
 import {
@@ -41,7 +41,7 @@ const INITIAL_SPEED = 30;
 const SLOT_ITEM_HEIGHT = 80;
 const REEL_LENGTH = 30;
 
-// Normalized coordinates measured from rakipAraniyorModal.png (832 x 1248)
+// Normalized coordinates measured from rakipAraniyorModal.webp (832 x 1248)
 const BOXES = [
   { left: 15.4, top: 24.8, width: 32.7, height: 21.3 },
   { left: 52.3, top: 24.8, width: 32.7, height: 21.3 },

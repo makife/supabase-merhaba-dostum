@@ -187,7 +187,7 @@ const MatchmakingWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
         navigatedRoomRef.current = roomId;
         console.log("✅ Eşleşme bulundu, oyun sayfasına yönlendiriliyor:", roomId);
         const currentGameType = (window as any).__currentMatchmakingType || "timed";
-        // rakipBulundu.png kısa süre gösterilsin, sonra maç ekranı açılsın
+        // rakipBulundu.webp kısa süre gösterilsin, sonra maç ekranı açılsın
         if (pendingNavTimerRef.current) clearTimeout(pendingNavTimerRef.current);
         pendingNavTimerRef.current = window.setTimeout(() => {
           pendingNavTimerRef.current = null;

@@ -7,12 +7,12 @@ import { getDailyChallengeStatus, ChallengeType } from "@/hooks/useDailyChalleng
 import HomeCardCarousel from "@/components/home/HomeCardCarousel";
 import type { SlidePanelItem } from "@/components/home/HomeSlidePanel";
 import oynandiIcon from "@/assets/oynandi.svg";
-import refleksKart from "@/assets/refleksKart.png";
-import harfKosusuKart from "@/assets/harfKosusuKart.png";
-import kelimePuzzleKart from "@/assets/kelimePuzzleKart.png";
-import kelimeHafizaKart from "@/assets/kelimeHafizaKart.png";
-import hadiKart from "@/assets/hadiKart.png";
-import duelloYazi from "@/assets/duelloYazi.png";
+import refleksKart from "@/assets/refleksKart.webp";
+import harfKosusuKart from "@/assets/harfKosusuKart.webp";
+import kelimePuzzleKart from "@/assets/kelimePuzzleKart.webp";
+import kelimeHafizaKart from "@/assets/kelimeHafizaKart.webp";
+import hadiKart from "@/assets/hadiKart.webp";
+import duelloYazi from "@/assets/duelloYazi.webp";
 
 const emptyStatus: Record<ChallengeType, boolean> = {
   word_hunt: false,
