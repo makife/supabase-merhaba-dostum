@@ -8417,9 +8417,18 @@ const GamePage = ({
     );
   }
 
-  if (gameEnded && gameMode === "tournament" && winner === "player") {
+  // Sadece 1. tur (yarı finale çıkış) ve 2. tur (finale çıkış) zaferlerinde ilerleme kartı gösterilir.
+  // Final maçı (3. tur) kazanılınca doğrudan şampiyonluk/ödül ekranına geçilir.
+  const tournamentAdvanceRound = tournamentMatch?.round;
+  if (
+    gameEnded &&
+    gameMode === "tournament" &&
+    winner === "player" &&
+    (tournamentAdvanceRound === 1 || tournamentAdvanceRound === 2)
+  ) {
     const tournamentId = searchParams.get("tournament") || tournamentMatch?.tournament_id;
-    const advancingImage = tournamentMatch?.round === 1 ? yariFinaldesinGorsel : finaldesinGorsel;
+    const advancingImage = tournamentAdvanceRound === 1 ? yariFinaldesinGorsel : finaldesinGorsel;
+
 
     return (
       <div
