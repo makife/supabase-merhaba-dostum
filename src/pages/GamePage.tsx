@@ -8417,17 +8417,24 @@ const GamePage = ({
     );
   }
 
-  // Sadece 1. tur (yarı finale çıkış) ve 2. tur (finale çıkış) zaferlerinde ilerleme kartı gösterilir.
-  // Final maçı (3. tur) kazanılınca doğrudan şampiyonluk/ödül ekranına geçilir.
+  // Turnuva zaferlerinde ilerleme/şampiyonluk kartı gösterilir:
+  // 1. tur → yarı finaldesin, 2. tur → finaldesin, 3. tur (final) → şampiyonsun
   const tournamentAdvanceRound = tournamentMatch?.round;
   if (
     gameEnded &&
     gameMode === "tournament" &&
     winner === "player" &&
-    (tournamentAdvanceRound === 1 || tournamentAdvanceRound === 2)
+    (tournamentAdvanceRound === 1 || tournamentAdvanceRound === 2 || tournamentAdvanceRound === 3)
   ) {
     const tournamentId = searchParams.get("tournament") || tournamentMatch?.tournament_id;
-    const advancingImage = tournamentAdvanceRound === 1 ? yariFinaldesinGorsel : finaldesinGorsel;
+    const advancingImage =
+      tournamentAdvanceRound === 1
+        ? yariFinaldesinGorsel
+        : tournamentAdvanceRound === 2
+          ? finaldesinGorsel
+          : sampiyonsunGorsel;
+    const advancingAlt =
+      tournamentAdvanceRound === 1 ? "Yarı Finaldesiniz" : tournamentAdvanceRound === 2 ? "Finaldesiniz" : "Şampiyonsunuz";
 
 
     return (
@@ -8438,12 +8445,13 @@ const GamePage = ({
         <div className="relative w-full max-w-md">
           <motion.img
             src={advancingImage}
-            alt={tournamentMatch?.round === 1 ? "Yarı Finaldesiniz" : "Finaldesiniz"}
+            alt={advancingAlt}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
             className="w-full rounded-2xl shadow-2xl"
           />
+
           {/* Senin puanın */}
           <div
             className="absolute right-[21.5%] top-[48.8%] transform -translate-y-1/2 font-bold text-[#334155] text-right tabular-nums leading-none"
