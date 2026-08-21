@@ -342,13 +342,14 @@ const TournamentBracketPage = () => {
 
 
   const REWARD_IMAGES = {
-    ink: "/murekkepOdul.png",
-    degistir: "/degistirOdul.png",
-    senyaz: "/senyazOdul.png",
-    fisilda: "/fisildaOdul.png",
-    credits: "/ucsayfaOdul.png",
-    extra_spin: "/carkOdul.png",
+    ink: "/murekkepOdul.jpg",
+    degistir: "/degistirOdul.jpg",
+    senyaz: "/senyazOdul.jpg",
+    fisilda: "/fisildaOdul.jpg",
+    credits: "/ucsayfaOdul.jpg",
+    extra_spin: "/carkOdul.jpg",
   };
+
 
   const navigatedMatchIdRef = useRef<string | null>(null);
   const fromCompletedMatchRef = useRef<string | null>(null);
@@ -1131,10 +1132,11 @@ const TournamentBracketPage = () => {
               <h2 className="text-white text-2xl font-bold mb-4">Ödülünüz</h2>
               <img
                 src={REWARD_IMAGES[wonReward.key as keyof typeof REWARD_IMAGES] ?? REWARD_IMAGES.ink}
-                className="w-52 h-auto mx-auto drop-shadow-2xl mt-4 select-none"
+                className="w-[86vw] max-w-[360px] h-auto mx-auto rounded-2xl drop-shadow-2xl mt-4 select-none"
                 draggable={false}
                 alt={wonReward.label ?? "Kazanılan Ödül"}
               />
+
             </div>
           )}
         </div>
