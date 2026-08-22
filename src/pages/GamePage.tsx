@@ -1696,6 +1696,7 @@ const GamePage = ({
   // Rematch state
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
+  const [botRematchStatus, setBotRematchStatus] = useState<"idle" | "waiting" | "accepted" | "declined">("idle");
   const rematchSendingRef = useRef(false);
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
@@ -2719,6 +2720,7 @@ const GamePage = ({
 
       // Gerçek oyuncuya gönderilmiş gibi "istek gönderildi" toastu
       setWaitingForRematchResponse(true);
+      setBotRematchStatus("waiting");
       toast({
         title: "🔄 Tekrar Oyun İsteği Gönderildi",
         description: "Rakibinizin yanıtını bekliyoruz...",
@@ -2732,6 +2734,10 @@ const GamePage = ({
 
         if (decision === "left") {
           setWaitingForRematchResponse(false);
+          setBotRematchStatus("declined");
+          setTimeout(() => {
+            if (isMountedRef.current) setBotRematchStatus("idle");
+          }, 2500);
           toast({
             title: "❌ Rematch Reddedildi",
             description: "Rakip rematch isteğini reddetti.",
@@ -2760,6 +2766,7 @@ const GamePage = ({
         }
         setRematchRequested(true);
         setWaitingForRematchResponse(false);
+        setBotRematchStatus("accepted");
 
         toast({
           title: "✅ Rakip Kabul Etti",
@@ -2824,6 +2831,7 @@ const GamePage = ({
           console.error("❌ Bot rematch room oluşturma hatası:", error);
           setRematchRequested(false);
           setWaitingForRematchResponse(false);
+          setBotRematchStatus("idle");
           toast({
             title: "Hata",
             description: "Tekrar oyun odası oluşturulamadı.",
@@ -8401,7 +8409,17 @@ const GamePage = ({
             onWatchAd={!adWatched && user && !isPremium ? handleWatchAd : undefined}
             onPlayAgain={canRematch ? (isMulti ? () => { requestRematch(); } : playAgainVsComputer) : undefined}
             onHome={goHomeAfterMatch}
-            rematchStatus={isMulti ? rematchStatus : "idle"}
+            rematchStatus={
+              !isMulti
+                ? "idle"
+                : hasMultiplayerBotOpponent
+                  ? botRematchStatus
+                  : rematchStatus !== "idle"
+                    ? rematchStatus
+                    : waitingForRematchResponse
+                      ? "waiting"
+                      : "idle"
+            }
           >
             {waitingForRematchResponse && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">

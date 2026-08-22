@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import aiRoboAnimation from "@/assets/AI_robo.json";
 
@@ -10,6 +10,13 @@ const SEGMENTS = {
   alert: [181, 270] as [number, number],
   yes: [31, 105] as [number, number],
   no: [106, 180] as [number, number],
+};
+
+// İlk 10 katman animasyondaki yazılar ve onların arka plan plakalarıdır.
+// Kontrol katmanları ile robot çizimini koruyup yalnızca robotu gösteriyoruz.
+const robotOnlyAnimation = {
+  ...aiRoboAnimation,
+  layers: aiRoboAnimation.layers.filter((layer) => layer.ind >= 11),
 };
 
 interface RematchRoboAnimationProps {
@@ -28,18 +35,20 @@ export function RematchRoboAnimation({
   const lottieRef = useRef<LottieRefCurrentProps>(null);
   const waitingPhase = useRef<"thinking" | "alert">("thinking");
 
-  useEffect(() => {
+  const playCurrentSegment = useCallback(() => {
     if (status === "waiting") {
       waitingPhase.current = "thinking";
       lottieRef.current?.playSegments(SEGMENTS.thinking, true);
     } else if (status === "accepted") {
       lottieRef.current?.playSegments(SEGMENTS.yes, true);
-    } else if (status === "declined") {
+    } else {
       lottieRef.current?.playSegments(SEGMENTS.no, true);
     }
-    // status değiştiğinde önceki onComplete'in yanlış segmenti tetiklememesi için
-    // effect her status değişiminde baştan kuruluyor.
   }, [status]);
+
+  useEffect(() => {
+    playCurrentSegment();
+  }, [playCurrentSegment]);
 
   const handleComplete = () => {
     if (status === "waiting") {
@@ -55,9 +64,10 @@ export function RematchRoboAnimation({
   return (
     <Lottie
       lottieRef={lottieRef}
-      animationData={aiRoboAnimation}
+      animationData={robotOnlyAnimation}
       loop={false}
       autoplay={false}
+      onDOMLoaded={playCurrentSegment}
       onComplete={handleComplete}
       style={{ width: size, height: size }}
     />
