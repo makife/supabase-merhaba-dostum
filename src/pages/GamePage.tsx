@@ -1728,7 +1728,7 @@ const GamePage = ({
   }, [hasMultiplayerBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
-  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
+  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext, rematchStatus } = useRematchContext();
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
   const handleGameResync = useCallback(async () => {
