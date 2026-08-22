@@ -58,7 +58,7 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
 
   return (
     /* h-full (veya min-h-screen) ve flex items-center justify-center eklendi */
-    <div className="flex justify-center items-center w-full overflow-hidden">
+    <div className="flex justify-center items-center w-full">
       <div
         className="relative w-full max-w-[400px] mx-auto animate-in fade-in zoom-in-95 duration-300"
         style={{ containerType: "inline-size" }}
@@ -97,8 +97,8 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         {rematchStatus !== "idle" && (
           <div
             key={rematchStatus === "waiting" ? "waiting" : rematchStatus}
-            className="absolute left-1/2 z-20 -translate-x-1/2 animate-rematch-slide-in"
-            style={{ top: "100%", marginTop: "0.75rem" }}
+            className="absolute left-1/2 z-20 -translate-x-1/2 animate-rematch-slide-in pointer-events-none"
+            style={{ top: "78%" }}
           >
             <RematchRoboAnimation
               status={rematchStatus}
