@@ -1728,7 +1728,7 @@ const GamePage = ({
   }, [hasMultiplayerBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
-  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext } = useRematchContext();
+  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext, rematchStatus } = useRematchContext();
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
   const handleGameResync = useCallback(async () => {
@@ -8401,6 +8401,7 @@ const GamePage = ({
             onWatchAd={!adWatched && user && !isPremium ? handleWatchAd : undefined}
             onPlayAgain={canRematch ? (isMulti ? () => { requestRematch(); } : playAgainVsComputer) : undefined}
             onHome={goHomeAfterMatch}
+            rematchStatus={isMulti ? rematchStatus : "idle"}
           >
             {waitingForRematchResponse && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">
