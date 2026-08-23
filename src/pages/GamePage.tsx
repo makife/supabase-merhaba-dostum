@@ -2854,6 +2854,7 @@ const GamePage = ({
           console.error("❌ Bot rematch room oluşturma hatası:", error);
           setRematchRequested(false);
           setWaitingForRematchResponse(false);
+          setRematchSentOnce(false);
           setBotRematchStatus("idle");
           toast({
             title: "Hata",
@@ -2899,6 +2900,7 @@ const GamePage = ({
       if (!success) {
         setRematchRequested(false);
         setWaitingForRematchResponse(false);
+        setRematchSentOnce(false); // gönderim başarısız: tekrar denenebilir
         rematchSendingRef.current = false;
         disconnectHandledRef.current = false;
       }
