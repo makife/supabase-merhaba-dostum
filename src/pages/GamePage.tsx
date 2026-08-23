@@ -1698,6 +1698,8 @@ const GamePage = ({
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   const [botRematchStatus, setBotRematchStatus] = useState<"idle" | "waiting" | "accepted" | "declined">("idle");
   const rematchSendingRef = useRef(false);
+  // 🔒 Bu maç sonucu ekranında rematch isteği bir kez gönderilir (spam/çoklu istek engeli)
+  const [rematchSentOnce, setRematchSentOnce] = useState(false);
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
