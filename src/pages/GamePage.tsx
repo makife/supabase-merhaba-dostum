@@ -2720,6 +2720,12 @@ const GamePage = ({
   // Bu polling sadece "Skor hesaplanıyor..." mesajı gösterip gereksiz gecikmeye neden oluyordu
 
   const requestRematch = async () => {
+    // 🔒 Tek istek kuralı: bu maç sonucu ekranında ikinci kez rematch gönderilemez
+    if (rematchSentOnce || rematchSendingRef.current || waitingForRematchResponse) {
+      console.log("🚫 Rematch isteği zaten gönderildi, tekrar gönderim engellendi");
+      return;
+    }
+    setRematchSentOnce(true);
     if (!user) {
       console.error("❌ Rematch: User yok");
       return;
