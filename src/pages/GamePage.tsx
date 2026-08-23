@@ -1944,6 +1944,21 @@ const GamePage = ({
         return;
       }
 
+      // 🔒 STALE ROOM GUARD: rematch sonrası yeni odaya geçtiysek, currentRoom hâlâ eski odayı
+      // gösterirken gelen "rakip ayrıldı" eventi yeni maçın üstüne yanlış kazandın kartı açıyordu.
+      const urlRoomForEvent = searchParams.get("room");
+      const currentRoomMatchesUrl =
+        !urlRoomForEvent ||
+        currentRoom?.id === urlRoomForEvent ||
+        (currentRoom as any)?.room_code === urlRoomForEvent;
+      if (!currentRoomMatchesUrl) {
+        console.log("🚫 Eski (rematch öncesi) odaya ait disconnect eventi yok sayıldı", {
+          evtRoomId,
+          urlRoomForEvent,
+        });
+        return;
+      }
+
       // Eğer ben kaybettim (opponent kazandı), sadece kaybetme ekranını göster
       if (eventWinner === "opponent") {
         console.log("😢 Ben oyundan ayrıldım veya kaybettim");
