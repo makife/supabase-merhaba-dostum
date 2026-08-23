@@ -1698,6 +1698,8 @@ const GamePage = ({
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   const [botRematchStatus, setBotRematchStatus] = useState<"idle" | "waiting" | "accepted" | "declined">("idle");
   const rematchSendingRef = useRef(false);
+  // 🔒 Bu maç sonucu ekranında rematch isteği bir kez gönderilir (spam/çoklu istek engeli)
+  const [rematchSentOnce, setRematchSentOnce] = useState(false);
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
@@ -1941,6 +1943,21 @@ const GamePage = ({
       // NORMAL MOD KONTROLLARI
       if (!evtRoomId || evtRoomId !== currentRoom?.id) {
         console.log("🚫 Farklı odaya ait disconnect eventi yok sayıldı", { evtRoomId, current: currentRoom?.id });
+        return;
+      }
+
+      // 🔒 STALE ROOM GUARD: rematch sonrası yeni odaya geçtiysek, currentRoom hâlâ eski odayı
+      // gösterirken gelen "rakip ayrıldı" eventi yeni maçın üstüne yanlış kazandın kartı açıyordu.
+      const urlRoomForEvent = searchParams.get("room");
+      const currentRoomMatchesUrl =
+        !urlRoomForEvent ||
+        currentRoom?.id === urlRoomForEvent ||
+        (currentRoom as any)?.room_code === urlRoomForEvent;
+      if (!currentRoomMatchesUrl) {
+        console.log("🚫 Eski (rematch öncesi) odaya ait disconnect eventi yok sayıldı", {
+          evtRoomId,
+          urlRoomForEvent,
+        });
         return;
       }
 
@@ -2703,6 +2720,12 @@ const GamePage = ({
   // Bu polling sadece "Skor hesaplanıyor..." mesajı gösterip gereksiz gecikmeye neden oluyordu
 
   const requestRematch = async () => {
+    // 🔒 Tek istek kuralı: bu maç sonucu ekranında ikinci kez rematch gönderilemez
+    if (rematchSentOnce || rematchSendingRef.current || waitingForRematchResponse) {
+      console.log("🚫 Rematch isteği zaten gönderildi, tekrar gönderim engellendi");
+      return;
+    }
+    setRematchSentOnce(true);
     if (!user) {
       console.error("❌ Rematch: User yok");
       return;
@@ -2831,6 +2854,7 @@ const GamePage = ({
           console.error("❌ Bot rematch room oluşturma hatası:", error);
           setRematchRequested(false);
           setWaitingForRematchResponse(false);
+          setRematchSentOnce(false);
           setBotRematchStatus("idle");
           toast({
             title: "Hata",
@@ -2876,6 +2900,7 @@ const GamePage = ({
       if (!success) {
         setRematchRequested(false);
         setWaitingForRematchResponse(false);
+        setRematchSentOnce(false); // gönderim başarısız: tekrar denenebilir
         rematchSendingRef.current = false;
         disconnectHandledRef.current = false;
       }
@@ -3233,6 +3258,7 @@ const GamePage = ({
     setTimeWarningPlayed(false);
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
+    setRematchSentOnce(false);
     setFinalPlayerScore(0);
     setFinalOpponentScore(0);
     // Joker state'leri artık hook'tan geldiği için sıfırlama yok
@@ -8380,7 +8406,7 @@ const GamePage = ({
   if (gameEnded && gameMode !== "tournament" && (winner === "player" || winner === "opponent")) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
-      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse
+      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && !rematchSentOnce
       : !disconnectWin;
 
     return (
@@ -8645,7 +8671,11 @@ const GamePage = ({
                   )}
 
                   {/* Disconnect durumunda (rakip ayrıldı VEYA biz arka plandan disconnect olduk) rematch butonu gösterme */}
-                  {!disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && (
+                  {!disconnectWin &&
+                    !backgroundDisconnected &&
+                    !rematchRequested &&
+                    !waitingForRematchResponse &&
+                    !rematchSentOnce && (
                     <Button
                       disabled={!buttonsEnabled}
                       onClick={() => {
