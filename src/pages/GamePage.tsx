@@ -3256,6 +3256,7 @@ const GamePage = ({
     setTimeWarningPlayed(false);
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
+    setRematchSentOnce(false);
     setFinalPlayerScore(0);
     setFinalOpponentScore(0);
     // Joker state'leri artık hook'tan geldiği için sıfırlama yok
@@ -8403,7 +8404,7 @@ const GamePage = ({
   if (gameEnded && gameMode !== "tournament" && (winner === "player" || winner === "opponent")) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
-      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse
+      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && !rematchSentOnce
       : !disconnectWin;
 
     return (
@@ -8668,7 +8669,11 @@ const GamePage = ({
                   )}
 
                   {/* Disconnect durumunda (rakip ayrıldı VEYA biz arka plandan disconnect olduk) rematch butonu gösterme */}
-                  {!disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && (
+                  {!disconnectWin &&
+                    !backgroundDisconnected &&
+                    !rematchRequested &&
+                    !waitingForRematchResponse &&
+                    !rematchSentOnce && (
                     <Button
                       disabled={!buttonsEnabled}
                       onClick={() => {
