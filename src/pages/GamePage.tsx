@@ -8567,7 +8567,7 @@ const GamePage = ({
     !isBotRematchTransitioning &&
     !rematchTransitionRef.current &&
     gameMode !== "tournament" &&
-    (winner === "player" || winner === "opponent")
+    (winner === "player" || winner === "opponent" || winner === "tie")
   ) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
