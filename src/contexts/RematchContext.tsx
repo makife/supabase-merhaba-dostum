@@ -441,15 +441,20 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (senderParticipantError) throw senderParticipantError;
 
         // Create rematch request
-        const { error: requestError } = await supabase.from("rematch_requests").insert({
-          room_code: roomCode,
-          from_user_id: userId,
-          to_user_id: opponentId,
-          status: "pending",
-          game_type: gameType,
-        });
+        const { data: insertedRequest, error: requestError } = await supabase
+          .from("rematch_requests")
+          .insert({
+            room_code: roomCode,
+            from_user_id: userId,
+            to_user_id: opponentId,
+            status: "pending",
+            game_type: gameType,
+          })
+          .select("id")
+          .single();
 
         if (requestError) throw new Error("Rematch isteği gönderilemedi");
+        outgoingRequestIdRef.current = insertedRequest?.id ?? null;
 
         // Get sender profile for notification
         const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
