@@ -1708,6 +1708,29 @@ const GamePage = ({
   const rematchSendingRef = useRef(false);
   // 🔒 Bu maç sonucu ekranında rematch isteği bir kez gönderilir (spam/çoklu istek engeli)
   const [rematchSentOnce, setRematchSentOnce] = useState(false);
+  // 🔔 "Rakibin yanıtı bekleniyor" göstergesi: yalnızca kesin bir sonuç (kabul/ret/30sn timeout)
+  // geldiğinde kapanır. Ara state sıfırlamaları (oda yenilenmesi, context reset) yüzünden
+  // anlık kapanıp kullanıcıyı "istek gitti mi?" belirsizliğinde bırakmasın.
+  const [rematchWaitingVisible, setRematchWaitingVisible] = useState(false);
+  const rematchWaitingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearRematchWaitingUI = useCallback(() => {
+    if (rematchWaitingTimeoutRef.current) {
+      clearTimeout(rematchWaitingTimeoutRef.current);
+      rematchWaitingTimeoutRef.current = null;
+    }
+    setRematchWaitingVisible(false);
+  }, []);
+  const startRematchWaitingUI = useCallback(() => {
+    if (rematchWaitingTimeoutRef.current) clearTimeout(rematchWaitingTimeoutRef.current);
+    setRematchWaitingVisible(true);
+    rematchWaitingTimeoutRef.current = setTimeout(() => {
+      rematchWaitingTimeoutRef.current = null;
+      setRematchWaitingVisible(false);
+    }, 30000);
+  }, []);
+  useEffect(() => () => {
+    if (rematchWaitingTimeoutRef.current) clearTimeout(rematchWaitingTimeoutRef.current);
+  }, []);
 
   // 🎮 Opponent ID - ref ile sakla ki oyun bittiğinde kaybolmasın
   const savedOpponentIdRef = useRef<string | null>(null);
