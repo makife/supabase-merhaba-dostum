@@ -67,6 +67,31 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // 🔒 Reddedildiyse aynı rakibe tekrar istek gönderilmesin (oturum boyunca)
   const rejectedOpponentsRef = useRef<Set<string>>(new Set());
+  // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
+  const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
+
+  const runPendingNavigation = useCallback(() => {
+    if (pendingNavigationFallbackRef.current) {
+      clearTimeout(pendingNavigationFallbackRef.current);
+      pendingNavigationFallbackRef.current = null;
+    }
+    const run = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
+    run?.();
+  }, []);
+
+  const queueNavigationAfterAnimation = useCallback(
+    (run: () => void) => {
+      pendingNavigationRef.current = run;
+      if (pendingNavigationFallbackRef.current) {
+        clearTimeout(pendingNavigationFallbackRef.current);
+      }
+      // Animasyon sinyali gelmezse (lottie hatası vb.) güvenlik ağı
+      pendingNavigationFallbackRef.current = setTimeout(() => runPendingNavigation(), 3000);
+    },
+    [runPendingNavigation],
+  );
 
   const userId = user?.id;
 
