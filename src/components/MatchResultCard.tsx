@@ -20,13 +20,6 @@ interface MatchResultCardProps {
   onHome?: () => void;
   disabled?: boolean;
   children?: React.ReactNode;
-  /**
-   * Rematch isteğinin durumu. "idle" -> animasyon gösterilmez.
-   * "waiting" -> thinking/alert döngüsü, "accepted"/"declined" -> yes/no.
-   */
-  rematchStatus?: RematchStatus;
-  /** yes/no animasyonu bitince çağrılır (örn. animasyonu kapatmak için) */
-  onRematchAnimationFinished?: () => void;
 }
 
 /**
