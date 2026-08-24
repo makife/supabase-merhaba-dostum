@@ -19,6 +19,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
+import { VipBadge } from "@/components/VipBadge";
 import { PrivateChat } from "@/components/PrivateChat";
 import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
