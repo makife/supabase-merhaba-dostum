@@ -65,8 +65,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // 🔒 Reddedildiyse aynı rakibe tekrar istek gönderilmesin (oturum boyunca)
-  const rejectedOpponentsRef = useRef<Set<string>>(new Set());
+  // 🔒 Reddedilen rakip için kısa süreli bekleme (kalıcı kilit YOK)
+  const rejectedOpponentsRef = useRef<Map<string, number>>(new Map());
+  const REJECT_COOLDOWN_MS = 20000;
   // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
   const pendingNavigationRef = useRef<(() => void) | null>(null);
   const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
