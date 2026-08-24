@@ -38,6 +38,8 @@ interface RematchContextType {
   acceptRematch: () => Promise<void>;
   rejectRematch: () => Promise<void>;
   resetRematchState: () => void;
+  /** Robot animasyonu (yes/no) bittiğinde çağrılır; bekleyen maç geçişini tetikler. */
+  notifyRematchAnimationFinished: () => void;
 }
 
 const RematchContext = createContext<RematchContextType | undefined>(undefined);
