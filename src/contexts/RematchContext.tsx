@@ -726,21 +726,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               if (room) {
                 const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
-                toast({
-                  title: "✅ Rematch Kabul Edildi",
-                  description: "Oyun başlıyor...",
-                  duration: 1000,
-                });
-
                 await setLastRoomId(null);
                 await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
 
-                // "yes" animasyonunun oynaması için maça geçişi minik bir süre erteliyoruz.
-                // Animasyon zaten kendi bitince (onResultFinished) navigasyonu tetikleyecekse
-                // bu setTimeout'u kaldırıp navigate'i oradan çağırabilirsin.
-                setTimeout(() => {
+                // Maça geçiş, robotun "yes" animasyonu bitene kadar bekletiliyor.
+                queueNavigationAfterAnimation(() => {
+                  toast({
+                    title: "✅ Rematch Kabul Edildi",
+                    description: "Oyun başlıyor...",
+                    duration: 1000,
+                  });
                   navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
-                }, 900);
+                });
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
