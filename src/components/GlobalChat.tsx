@@ -1072,7 +1072,13 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             .map((message) => (
               <div
                 key={message.id}
-                className="flex flex-col space-y-1 p-3 rounded-lg bg-primary/10 border border-primary/20 relative overflow-visible"
+                className={`flex flex-col space-y-1 p-3 rounded-lg border relative ${
+                  message.user_id &&
+                  !isBotUsername(message.username) &&
+                  userPremiumMap[message.user_id]
+                    ? "bg-primary/10 border-primary/20"
+                    : "bg-white/5 border-white/10"
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1094,7 +1100,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         alt={message.username}
                         fallback={message.username.charAt(0).toUpperCase()}
                         size="xs"
-                        isPremium={message.user_id ? !!userPremiumMap[message.user_id] : false}
+                        isPremium={false}
                         inGame={message.user_id ? !!userInGameMap[message.user_id] : false}
                         className={`border-2 ${isBotUsername(message.username) ? "border-blue-500" : "border-chat-300"}`}
                       />
@@ -1228,7 +1234,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                 )}
 
                 {message.user_id && !isBotUsername(message.username) && userPremiumMap[message.user_id] && (
-                  <div className="absolute -bottom-2 -right-2 z-10">
+                  <div className="absolute bottom-1 right-1 z-10">
                     <VipBadge size="xs" />
                   </div>
                 )}
