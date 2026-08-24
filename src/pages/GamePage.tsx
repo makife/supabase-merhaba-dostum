@@ -8593,6 +8593,8 @@ const GamePage = ({
 
           <MatchResultCard
             won={winner === "player"}
+            result={winner === "tie" ? "draw" : winner === "player" ? "win" : "lose"}
+
             playerScore={finalPlayerScore || playerScore}
             opponentScore={finalOpponentScore || opponentScore}
             adLoading={isAdLoading}
