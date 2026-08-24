@@ -2802,12 +2802,12 @@ const GamePage = ({
             return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
           })();
 
-        roomSessionRef.current += 1;
+        // Yeni oda oluşturulurken aynı GamePage instance'ı yaşamaya devam ediyor.
+        // Eski sonuç kartını ve bütün maç-sonu callback'lerini oda değişmeden önce
+        // atomik olarak kapat; aksi halde yeni bot participant skoru (0), eski
+        // sonuç kartına akıp "253-0 Kazandın" kartını yeniden gösterebilir.
+        resetGameForRematch();
         rematchTransitionRef.current = true;
-        if (pendingEndGameTimeoutRef.current) {
-          clearTimeout(pendingEndGameTimeoutRef.current);
-          pendingEndGameTimeoutRef.current = null;
-        }
         if (currentRoom?.id) {
           matchBanlist.add(currentRoom.id);
         }
@@ -3265,6 +3265,8 @@ const GamePage = ({
     setOpponentWordsWithScores([]);
     setPlayerScore(0);
     setOpponentScore(0);
+    playerScoreRef.current = 0;
+    opponentScoreRef.current = 0;
     timeLeftRef.current = gameType === "timed" ? 120 : 0;
     setDisplayTime(timeLeftRef.current);
     // Countdown, server zamanıyla veya vs-computer'da local zamanla başlatılacak
@@ -3284,6 +3286,7 @@ const GamePage = ({
     gameStartedRef.current = false; // Arka plan disconnect kontrolü için sıfırla
     gameHasStartedRef.current = false; // 🔒 KRİTİK: Bu ref sıfırlanmazsa handleCountdownComplete çalışmaz!
     setWinner(null);
+    winnerRef.current = null;
     setShowResults(false); // ⚠️ KRİTİK: Skor kartını kapat
     setTimeWarningPlayed(false);
     setRematchRequested(false);
@@ -5650,6 +5653,17 @@ const GamePage = ({
 
           console.log("✅ endGame tamamlandı");
         }, 3000);
+      }
+
+      // Uzun süren maç-sonu işlemleri sırasında rematch başlamış olabilir.
+      // Eski odanın skoru yeni oda/result state'ine asla yazılmamalı.
+      if (
+        rematchTransitionRef.current ||
+        roomSessionRef.current !== winnerSession ||
+        currentRoomIdRef.current !== winnerRoomId
+      ) {
+        console.log("🚫 Eski maçın final skor yazımı rematch sonrasında yok sayıldı");
+        return;
       }
 
       // Final skorları kaydet (reset'ten etkilenmemesi için)
