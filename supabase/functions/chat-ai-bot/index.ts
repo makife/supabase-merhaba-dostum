@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
 
     const input =
       mode === "greeting"
-        ? `Sohbete "${username}" adlı oyuncu katıldı. Ona rastgele, her seferinde farklı ve doğal bir karşılama mesajı yaz. İsmini mutlaka kullan ve gününün nasıl gittiğini sor. Tek cümle olsun.`
+        ? `Sohbete "${username}" adlı oyuncu katıldı. Sen kelimele uygulamasının yapay zeka sohbet asistanısın. Ona samimi, esprili ve her seferinde farklı bir karşılama mesajı yaz. İsmini kullan. Günün nasıl geçtiğini sormak zorunda değilsin; bazen oyunla, bazen sohbetle, bazen de kısa bir espriyle karşıla. Tek cümle olsun ve kesinlikle yapay zeka olduğunu belli edecek şekilde doğal konuş.`
         : `${liveContext ? liveContext + "\n\n" : ""}Genel sohbet geçmişi:\n${history || "(yok)"}\n\n"${username}" sana şunu yazdı: ${message}\n\nOna doğal bir şekilde cevap ver, ismini kullanabilirsin.`;
 
 
@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     if (!reply) {
       reply =
         mode === "greeting"
-          ? `${username} hoş geldin! Bugün nasıl gidiyor? 🙂`
+          ? `Selam ${username}! Ben kelimele'nin yapay zeka asistanıyım. Sohbette bana @kelimele yazarak istediğini sorabilirsin. 🎯`
           : `${username}, tam anlayamadım ama tekrar yazarsan yardımcı olayım.`;
     }
     if (reply.length > 400) reply = reply.slice(0, 397) + "...";
