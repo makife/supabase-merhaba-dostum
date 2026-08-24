@@ -1744,7 +1744,32 @@ const GamePage = ({
     sendRematchRequest: sendRematchContext,
     rematchStatus,
     resetRematchState,
+    notifyRematchAnimationFinished,
   } = useRematchContext();
+
+  // 🤖 Robot animasyonunun (yes/no) bitişini bekleyebilmek için sinyal kanalı
+  const roboAnimResolveRef = useRef<(() => void) | null>(null);
+  const handleRematchAnimationFinished = useCallback(() => {
+    const resolve = roboAnimResolveRef.current;
+    roboAnimResolveRef.current = null;
+    resolve?.();
+    notifyRematchAnimationFinished();
+  }, [notifyRematchAnimationFinished]);
+  const waitForRoboAnimation = useCallback(
+    (fallbackMs = 2500) =>
+      new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        roboAnimResolveRef.current = finish;
+        setTimeout(finish, fallbackMs);
+      }),
+    [],
+  );
+
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
   const handleGameResync = useCallback(async () => {
@@ -2813,9 +2838,10 @@ const GamePage = ({
         if (decision === "left") {
           setWaitingForRematchResponse(false);
           setBotRematchStatus("declined");
-          setTimeout(() => {
-            if (isMountedRef.current) setBotRematchStatus("idle");
-          }, 2500);
+          // "no" animasyonu bitince bilgi ver
+          await waitForRoboAnimation();
+          if (!isMountedRef.current) return;
+          setBotRematchStatus("idle");
           toast({
             title: "❌ Rematch Reddedildi",
             description: "Rakip rematch isteğini reddetti.",
@@ -2825,6 +2851,7 @@ const GamePage = ({
           return;
         }
 
+
         const currentGameType: "timed" | "score" = gameType;
         const botIdentity =
           currentBotIdentity ||
@@ -2833,6 +2860,12 @@ const GamePage = ({
             const fallbackName = generateBotName(fallbackSeed);
             return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
           })();
+
+        // Önce robotun "yes" animasyonu oynasın: sonuç kartı bu sürede açık kalıyor.
+        setWaitingForRematchResponse(false);
+        setBotRematchStatus("accepted");
+        await waitForRoboAnimation();
+        if (!isMountedRef.current) return;
 
         // Yeni oda oluşturulurken aynı GamePage instance'ı yaşamaya devam ediyor.
         // Eski sonuç kartını ve bütün maç-sonu callback'lerini oda değişmeden önce
@@ -2845,14 +2878,13 @@ const GamePage = ({
           matchBanlist.add(currentRoom.id);
         }
         setRematchRequested(true);
-        setWaitingForRematchResponse(false);
-        setBotRematchStatus("accepted");
 
         toast({
           title: "✅ Rakip Kabul Etti",
           description: "Oyun başlıyor...",
           duration: 1500,
         });
+
 
         try {
           const roomCode = generateRoomCode();
@@ -8613,6 +8645,7 @@ const GamePage = ({
                       ? "waiting"
                       : "idle"
             }
+            onRematchAnimationFinished={handleRematchAnimationFinished}
           >
             {waitingForRematchResponse && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">

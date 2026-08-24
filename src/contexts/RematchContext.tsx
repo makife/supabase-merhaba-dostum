@@ -38,6 +38,8 @@ interface RematchContextType {
   acceptRematch: () => Promise<void>;
   rejectRematch: () => Promise<void>;
   resetRematchState: () => void;
+  /** Robot animasyonu (yes/no) bittiğinde çağrılır; bekleyen maç geçişini tetikler. */
+  notifyRematchAnimationFinished: () => void;
 }
 
 const RematchContext = createContext<RematchContextType | undefined>(undefined);
@@ -65,6 +67,31 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // 🔒 Reddedildiyse aynı rakibe tekrar istek gönderilmesin (oturum boyunca)
   const rejectedOpponentsRef = useRef<Set<string>>(new Set());
+  // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
+  const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
+
+  const runPendingNavigation = useCallback(() => {
+    if (pendingNavigationFallbackRef.current) {
+      clearTimeout(pendingNavigationFallbackRef.current);
+      pendingNavigationFallbackRef.current = null;
+    }
+    const run = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
+    run?.();
+  }, []);
+
+  const queueNavigationAfterAnimation = useCallback(
+    (run: () => void) => {
+      pendingNavigationRef.current = run;
+      if (pendingNavigationFallbackRef.current) {
+        clearTimeout(pendingNavigationFallbackRef.current);
+      }
+      // Animasyon sinyali gelmezse (lottie hatası vb.) güvenlik ağı
+      pendingNavigationFallbackRef.current = setTimeout(() => runPendingNavigation(), 3000);
+    },
+    [runPendingNavigation],
+  );
 
   const userId = user?.id;
 
@@ -699,21 +726,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               if (room) {
                 const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
-                toast({
-                  title: "✅ Rematch Kabul Edildi",
-                  description: "Oyun başlıyor...",
-                  duration: 1000,
-                });
-
                 await setLastRoomId(null);
                 await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
 
-                // "yes" animasyonunun oynaması için maça geçişi minik bir süre erteliyoruz.
-                // Animasyon zaten kendi bitince (onResultFinished) navigasyonu tetikleyecekse
-                // bu setTimeout'u kaldırıp navigate'i oradan çağırabilirsin.
-                setTimeout(() => {
+                // Maça geçiş, robotun "yes" animasyonu bitene kadar bekletiliyor.
+                queueNavigationAfterAnimation(() => {
+                  toast({
+                    title: "✅ Rematch Kabul Edildi",
+                    description: "Oyun başlıyor...",
+                    duration: 1000,
+                  });
                   navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
-                }, 900);
+                });
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
@@ -751,8 +775,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
       }
+      if (pendingNavigationFallbackRef.current) {
+        clearTimeout(pendingNavigationFallbackRef.current);
+        pendingNavigationFallbackRef.current = null;
+      }
+      pendingNavigationRef.current = null;
     };
-  }, [userId, toast, navigate]);
+  }, [userId, toast, navigate, queueNavigationAfterAnimation]);
 
   return (
     <RematchContext.Provider
@@ -765,6 +794,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         acceptRematch,
         rejectRematch,
         resetRematchState,
+        notifyRematchAnimationFinished: runPendingNavigation,
       }}
     >
       {children}
