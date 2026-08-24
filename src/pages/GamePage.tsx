@@ -8645,6 +8645,7 @@ const GamePage = ({
                       ? "waiting"
                       : "idle"
             }
+            onRematchAnimationFinished={handleRematchAnimationFinished}
           >
             {waitingForRematchResponse && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">
