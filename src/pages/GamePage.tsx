@@ -2838,9 +2838,10 @@ const GamePage = ({
         if (decision === "left") {
           setWaitingForRematchResponse(false);
           setBotRematchStatus("declined");
-          setTimeout(() => {
-            if (isMountedRef.current) setBotRematchStatus("idle");
-          }, 2500);
+          // "no" animasyonu bitince bilgi ver
+          await waitForRoboAnimation();
+          if (!isMountedRef.current) return;
+          setBotRematchStatus("idle");
           toast({
             title: "❌ Rematch Reddedildi",
             description: "Rakip rematch isteğini reddetti.",
@@ -2849,6 +2850,7 @@ const GamePage = ({
           });
           return;
         }
+
 
         const currentGameType: "timed" | "score" = gameType;
         const botIdentity =
