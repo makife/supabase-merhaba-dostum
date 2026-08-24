@@ -68,6 +68,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // 🔒 Reddedilen rakip için kısa süreli bekleme (kalıcı kilit YOK)
   const rejectedOpponentsRef = useRef<Map<string, number>>(new Map());
   const REJECT_COOLDOWN_MS = 20000;
+  // 📤 Şu an bekleyen kendi isteğimizin id'si (eski kayıtlar yanıt sanılmasın)
+  const outgoingRequestIdRef = useRef<string | null>(null);
   // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
   const pendingNavigationRef = useRef<(() => void) | null>(null);
   const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
