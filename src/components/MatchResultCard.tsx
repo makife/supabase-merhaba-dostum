@@ -3,7 +3,6 @@ import { PressableZone } from "@/components/ui/pressable-zone";
 import kazandinKarti from "@/assets/KazandinKarti.webp";
 import kaybettinKarti from "@/assets/kaybettinKarti.webp";
 import berabereKarti from "@/assets/berabereKarti.png";
-import { RematchRoboAnimation, RematchStatus } from "@/components/RematchRoboAnimation";
 
 type MatchResultKind = "win" | "lose" | "draw";
 
