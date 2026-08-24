@@ -176,38 +176,8 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         {zone("Tekrar Oyna", 1, onPlayAgain, disabled)}
         {zone("Ana Menüye Dön", 2, onHome, disabled, "heavy")}
 
-
-        {rematchStatus !== "idle" && (
-          <div
-            key={rematchStatus === "waiting" ? "waiting" : rematchStatus}
-            className="absolute left-1/2 z-20 -translate-x-1/2 animate-rematch-slide-in pointer-events-none"
-            style={{ top: "78%" }}
-          >
-            <RematchRoboAnimation
-              status={rematchStatus}
-              onResultFinished={onRematchAnimationFinished}
-            />
-          </div>
-        )}
-
         {children}
       </div>
-
-      <style>{`
-        @keyframes rematch-slide-in {
-          from {
-            transform: translate(calc(-50% - 60vw), 0);
-            opacity: 0;
-          }
-          to {
-            transform: translate(-50%, 0);
-            opacity: 1;
-          }
-        }
-        .animate-rematch-slide-in {
-          animation: rematch-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}</style>
     </div>
   );
 };
