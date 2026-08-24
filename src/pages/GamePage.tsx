@@ -324,6 +324,9 @@ const GamePage = ({
   const roomSessionRef = useRef(0);
   const pendingEndGameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gameEndFinalizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Bot rematch kabul edildikten sonra eski odadan gelebilecek timer/realtime/async
+  // sonuçları yeni maç ekranının üzerine sonuç kartı olarak yazamaz.
+  const rematchTransitionRef = useRef(false);
   const [comboResetId, setComboResetId] = useState(0);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
@@ -2800,6 +2803,7 @@ const GamePage = ({
           })();
 
         roomSessionRef.current += 1;
+        rematchTransitionRef.current = true;
         if (pendingEndGameTimeoutRef.current) {
           clearTimeout(pendingEndGameTimeoutRef.current);
           pendingEndGameTimeoutRef.current = null;
@@ -2872,6 +2876,7 @@ const GamePage = ({
 
         } catch (error) {
           console.error("❌ Bot rematch room oluşturma hatası:", error);
+          rematchTransitionRef.current = false;
           setRematchRequested(false);
           setWaitingForRematchResponse(false);
           setRematchSentOnce(false);
@@ -3286,6 +3291,7 @@ const GamePage = ({
     setRematchSentOnce(false);
     setFinalPlayerScore(0);
     setFinalOpponentScore(0);
+    rematchTransitionRef.current = false;
     // Joker state'leri artık hook'tan geldiği için sıfırlama yok
     setSelectedJoker(null);
     setHighlightedLetters([]);
@@ -3693,6 +3699,13 @@ const GamePage = ({
 
   // Oyun biti fonksiyonunu güncelle
   const handleGameEnd = async () => {
+    if (rematchTransitionRef.current) {
+      console.log("🚫 Rematch geçişinde eski handleGameEnd çağrısı yok sayıldı");
+      return;
+    }
+
+    const endSession = roomSessionRef.current;
+    const endRoomId = currentRoomIdRef.current;
     console.log("🏁 handleGameEnd çağrıldı!");
     console.log("🎮 gameMode:", gameMode, "tournamentMatch:", !!tournamentMatch);
 
@@ -3782,6 +3795,22 @@ const GamePage = ({
           }
         }
       }
+    }
+
+    // RPC/profil yenilemesi sürerken rematch başlamış veya oda değişmiş olabilir.
+    // Bu durumda eski maç sonucu yeni maçın üstüne kesinlikle yazılmamalı.
+    if (
+      rematchTransitionRef.current ||
+      roomSessionRef.current !== endSession ||
+      currentRoomIdRef.current !== endRoomId
+    ) {
+      console.log("🚫 Eski handleGameEnd sonucu rematch sonrasında yok sayıldı", {
+        endRoomId: endRoomId?.slice(-8),
+        currentRoomId: currentRoomIdRef.current?.slice(-8),
+        endSession,
+        currentSession: roomSessionRef.current,
+      });
+      return;
     }
 
     // Normal oyun sonu
@@ -5365,6 +5394,13 @@ const GamePage = ({
 
   const checkWinnerWithScores = useCallback(
     async (currentPlayerScore: number, currentOpponentScore: number) => {
+      if (rematchTransitionRef.current) {
+        console.log("🚫 Rematch geçişinde eski kazanan kontrolü yok sayıldı");
+        return;
+      }
+
+      const winnerSession = roomSessionRef.current;
+      const winnerRoomId = currentRoomIdRef.current;
       // gameEnded state'i bazı akışlarda checkWinner çağrısından önce set ediliyor.
       // Bu durumda erken çıkmak skor/istatistik RPC'sini tamamen kaçırıyor.
       const existingWinner = winnerRef.current;
@@ -5520,6 +5556,20 @@ const GamePage = ({
             console.error("❌ İstatistik güncelleme hatası:", error);
           }
         }
+      }
+
+      if (
+        rematchTransitionRef.current ||
+        roomSessionRef.current !== winnerSession ||
+        currentRoomIdRef.current !== winnerRoomId
+      ) {
+        console.log("🚫 Eski maçın kazanan sonucu rematch sonrasında yok sayıldı", {
+          winnerRoomId: winnerRoomId?.slice(-8),
+          currentRoomId: currentRoomIdRef.current?.slice(-8),
+          winnerSession,
+          currentSession: roomSessionRef.current,
+        });
+        return;
       }
 
       // Skor çarpanı bilgisi toast
