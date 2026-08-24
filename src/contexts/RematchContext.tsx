@@ -715,6 +715,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           async (payload) => {
             const request = payload.new as RematchRequest;
 
+            // Sadece şu an gönderdiğimiz isteğe ait yanıtları işle
+            if (outgoingRequestIdRef.current && request.id !== outgoingRequestIdRef.current) {
+              return;
+            }
+
             const responseKey = `resp-${request.id}`;
             if (processedRef.current.has(responseKey)) return;
             processedRef.current.add(responseKey);
