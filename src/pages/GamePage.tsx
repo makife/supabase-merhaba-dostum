@@ -2859,6 +2859,12 @@ const GamePage = ({
             return { seed: fallbackSeed, name: fallbackName, avatar: generateBotAvatar(fallbackSeed, fallbackName) };
           })();
 
+        // Önce robotun "yes" animasyonu oynasın: sonuç kartı bu sürede açık kalıyor.
+        setWaitingForRematchResponse(false);
+        setBotRematchStatus("accepted");
+        await waitForRoboAnimation();
+        if (!isMountedRef.current) return;
+
         // Yeni oda oluşturulurken aynı GamePage instance'ı yaşamaya devam ediyor.
         // Eski sonuç kartını ve bütün maç-sonu callback'lerini oda değişmeden önce
         // atomik olarak kapat; aksi halde yeni bot participant skoru (0), eski
@@ -2870,14 +2876,13 @@ const GamePage = ({
           matchBanlist.add(currentRoom.id);
         }
         setRematchRequested(true);
-        setWaitingForRematchResponse(false);
-        setBotRematchStatus("accepted");
 
         toast({
           title: "✅ Rakip Kabul Etti",
           description: "Oyun başlıyor...",
           duration: 1500,
         });
+
 
         try {
           const roomCode = generateRoomCode();
