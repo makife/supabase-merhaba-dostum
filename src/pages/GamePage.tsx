@@ -1732,7 +1732,12 @@ const GamePage = ({
   }, [hasMultiplayerBotOpponent, participants, currentRoom, user?.id]);
 
   // RematchContext'ten rematch fonksiyonlarını al
-  const { isWaiting: rematchIsWaiting, sendRematchRequest: sendRematchContext, rematchStatus } = useRematchContext();
+  const {
+    isWaiting: rematchIsWaiting,
+    sendRematchRequest: sendRematchContext,
+    rematchStatus,
+    resetRematchState,
+  } = useRematchContext();
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
   const handleGameResync = useCallback(async () => {
@@ -2312,11 +2317,22 @@ const GamePage = ({
     // 🎯 REMATCH FIX: Rematch state'lerini de sıfırla ki disconnect detection çalışsın
     setRematchRequested(false);
     setWaitingForRematchResponse(false);
+    // 🤖 KRİTİK: Bot rematch akışında "accepted/declined" durumu bir önceki maçtan sonra
+    // hiç sıfırlanmıyordu. GamePage aynı route'ta kalıp yeniden mount olmadığından,
+    // botRematchStatus "accepted" olarak takılı kalıyor ve YENİ maç bittiğinde
+    // MatchResultCard + RematchRoboAnimation bunu görüp eski maçın "yes" animasyonunu
+    // hiç istenmeden hemen tekrar oynatıyordu. Oda değişince mutlaka idle'a çek.
+    setBotRematchStatus("idle");
+    // İnsan rakip akışında da aynı sınıf sızıntı: RematchContext içindeki rematchStatus
+    // (accepted/declined) ve bu sayfadaki "tek istek gönderildi" bayrağı sıfırlanmazsa
+    // yeni maçın sonuç kartı eski maçın animasyonunu/kilidini miras alır.
+    resetRematchState();
+    setRematchSentOnce(false);
     comboCountRef.current = 0;
     setComboEvent({ id: 0, count: 0 });
     setBonusEvent({ id: 0, amount: 0 });
     setComboResetId((prev) => prev + 1);
-  }, [currentRoom?.id]);
+  }, [currentRoom?.id, resetRematchState]);
 
   // 🎯 REALTIME SUBSCRIPTION: Rakip participant silindiyinde anında tespit et
   // Polling yerine Supabase Realtime kullanıyoruz
@@ -2379,9 +2395,10 @@ const GamePage = ({
             // Opponent ID'yi kaydet (ceza için)
             savedOpponentIdRef.current = opponentId;
 
-            // ❌ DEVRE DIŞI: Subscription'ı kapat - bağlantı koruması
-            // supabase.removeChannel(channel);
-            console.log("⚠️ [GamePage] Disconnect handler - removeChannel ATLANYOR (bağlantı koruması)");
+            // ✅ Kendi topic'ini kapat - global realtime bağlantısını ETKİLEMEZ,
+            // sadece bu odaya özel kanalı kapatır. Event zaten işlendiği için artık gerekmiyor.
+            supabase.removeChannel(channel);
+            console.log("🧹 [GamePage] Disconnect kanalı kapatıldı (event işlendi):", shortId(capturedRoomId));
 
             // Disconnect event'i dispatch et
             window.dispatchEvent(
@@ -2400,10 +2417,12 @@ const GamePage = ({
         console.log("📡 Disconnect channel status:", status);
       });
 
-    // ⚠️ CLEANUP DEVRE DIŞI - Bağlantı koruması
+    // ✅ Oda değiştiğinde (rematch) veya component unmount olduğunda eski kanalı MUTLAKA kapat.
+    // Aksi halde eski odanın aboneliği açık kalır ve arka planda gelen bir event
+    // yeni maçın üstüne eski "kazandın/kaybettin" kartını tekrar açabilir (bot rematch bug'ı).
     return () => {
-      console.log("⚠️ [GamePage] Disconnect subscription cleanup ATLANYOR (bağlantı koruması)");
-      // ❌ DEVRE DIŞI: supabase.removeChannel(channel);
+      console.log("🧹 [GamePage] Disconnect subscription temizleniyor:", shortId(capturedRoomId));
+      supabase.removeChannel(channel);
     };
   }, [gameMode, gameStarted, gameEnded, currentRoom?.id, currentRoom?.player1_id, currentRoom?.player2_id, user?.id]);
 
@@ -6179,10 +6198,12 @@ const GamePage = ({
     countdownChannelRef.current = channel;
 
     return () => {
-      // 🔒 Sadece oyun başladığında veya component unmount olduğunda temizle
-      if (countdownChannelRef.current && gameStartedRef.current) {
-        console.log("🧹 Countdown subscription temizleniyor (oyun başladı)");
-        supabase.removeChannel(countdownChannelRef.current);
+      // ✅ Bu effect'in oluşturduğu kanalı, oyun başlamış olsun ya da olmasın HER ZAMAN kapat.
+      // Önceki hâliyle (yalnızca gameStartedRef.current true ise temizle) rematch sonrası
+      // henüz oyunu başlamamış eski oda kanalı açık kalıp sızıntıya (leak) yol açıyordu.
+      console.log("🧹 Countdown subscription temizleniyor (effect cleanup):", shortId(currentRoom?.id));
+      supabase.removeChannel(channel);
+      if (countdownChannelRef.current === channel) {
         countdownChannelRef.current = null;
       }
     };
