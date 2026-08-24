@@ -1226,6 +1226,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                     )}
                   </div>
                 )}
+
+                {message.user_id && !isBotUsername(message.username) && userPremiumMap[message.user_id] && (
+                  <div className="absolute -bottom-2 -right-2 z-10">
+                    <VipBadge size="xs" />
+                  </div>
+                )}
               </div>
             ))}
 
