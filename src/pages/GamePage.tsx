@@ -8567,7 +8567,7 @@ const GamePage = ({
     !isBotRematchTransitioning &&
     !rematchTransitionRef.current &&
     gameMode !== "tournament" &&
-    (winner === "player" || winner === "opponent")
+    (winner === "player" || winner === "opponent" || winner === "tie")
   ) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
@@ -8593,6 +8593,8 @@ const GamePage = ({
 
           <MatchResultCard
             won={winner === "player"}
+            result={winner === "tie" ? "draw" : winner === "player" ? "win" : "lose"}
+
             playerScore={finalPlayerScore || playerScore}
             opponentScore={finalOpponentScore || opponentScore}
             adLoading={isAdLoading}
