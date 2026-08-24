@@ -1118,7 +1118,6 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                       }}
                     >
                       {message.username}
-                      {isBotUsername(message.username) && " 🤖"}
                     </span>
 
                     {message.user_id && !isBotUsername(message.username) && (userInGameMap[message.user_id] || isUserOnline(message.user_id)) ? (
