@@ -644,6 +644,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setRematchStatus("idle");
     setIncomingRequest(null);
     processedRef.current.clear();
+    outgoingRequestIdRef.current = null;
     if (waitingTimeoutRef.current) {
       clearTimeout(waitingTimeoutRef.current);
       waitingTimeoutRef.current = null;
