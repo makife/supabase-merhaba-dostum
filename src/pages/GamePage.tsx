@@ -1744,7 +1744,32 @@ const GamePage = ({
     sendRematchRequest: sendRematchContext,
     rematchStatus,
     resetRematchState,
+    notifyRematchAnimationFinished,
   } = useRematchContext();
+
+  // 🤖 Robot animasyonunun (yes/no) bitişini bekleyebilmek için sinyal kanalı
+  const roboAnimResolveRef = useRef<(() => void) | null>(null);
+  const handleRematchAnimationFinished = useCallback(() => {
+    const resolve = roboAnimResolveRef.current;
+    roboAnimResolveRef.current = null;
+    resolve?.();
+    notifyRematchAnimationFinished();
+  }, [notifyRematchAnimationFinished]);
+  const waitForRoboAnimation = useCallback(
+    (fallbackMs = 2500) =>
+      new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        roboAnimResolveRef.current = finish;
+        setTimeout(finish, fallbackMs);
+      }),
+    [],
+  );
+
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
   const handleGameResync = useCallback(async () => {
