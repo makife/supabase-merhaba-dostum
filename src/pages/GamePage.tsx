@@ -1701,6 +1701,10 @@ const GamePage = ({
   const [rematchRequested, setRematchRequested] = useState(false);
   const [waitingForRematchResponse, setWaitingForRematchResponse] = useState(false);
   const [botRematchStatus, setBotRematchStatus] = useState<"idle" | "waiting" | "accepted" | "declined">("idle");
+  // Bot rematch kabulü ile yeni odanın context'e yerleşmesi arasındaki sürede eski
+  // maçın sonuç kartını render seviyesinde kapalı tutar. Ref tabanlı callback
+  // korumalarına ek olarak UI'ın 281-0 gibi eski/yeni skor karışımı göstermesini önler.
+  const [isBotRematchTransitioning, setIsBotRematchTransitioning] = useState(false);
   const rematchSendingRef = useRef(false);
   // 🔒 Bu maç sonucu ekranında rematch isteği bir kez gönderilir (spam/çoklu istek engeli)
   const [rematchSentOnce, setRematchSentOnce] = useState(false);
@@ -1784,6 +1788,15 @@ const GamePage = ({
       }
 
       // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
+      // Bot skorları yalnızca client-side tutulur; game_rooms içindeki bot skoru 0 kalabilir.
+      // Bu yüzden bot maçını DB'den skor/sonuç olarak yeniden hydrate etmek, rematch sırasında
+      // eski sonuç kartını oyuncu skoru + 0 rakip skoru ile tekrar açar.
+      if (hasMultiplayerBotOpponent) {
+        console.log("⏭️ [GamePage Resync] Bot maçında DB skor/sonuç senkronizasyonu atlandı");
+        await triggerResync();
+        return;
+      }
+
       // 🔒 STALE ROOM GUARD: currentRoom hâlâ önceki (bitmiş) maçı gösteriyorsa resync yapma.
       // Aksi halde eski odanın status="finished" + winner_id değeri okunup yeni maçın üstüne
       // önceki maçın kazandın/kaybettin kartı açılıyor.
@@ -1822,7 +1835,12 @@ const GamePage = ({
           }
 
           // Oda bittiyse UI'ı güncelle
-          if (roomData.status === "finished" && roomData.winner_id) {
+          if (
+            roomData.status === "finished" &&
+            roomData.winner_id &&
+            !rematchTransitionRef.current &&
+            currentRoomIdRef.current === currentRoom.id
+          ) {
             const iWon = roomData.winner_id === user?.id;
             setWinner(iWon ? "player" : "opponent");
             setGameEnded(true);
@@ -1852,7 +1870,16 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync, searchParams]);
+  }, [
+    gameMode,
+    tournamentMatch?.id,
+    currentRoom?.id,
+    user?.id,
+    gridSyncPaused,
+    triggerResync,
+    searchParams,
+    hasMultiplayerBotOpponent,
+  ]);
 
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
@@ -2335,7 +2362,12 @@ const GamePage = ({
     setComboEvent({ id: 0, count: 0 });
     setBonusEvent({ id: 0, amount: 0 });
     setComboResetId((prev) => prev + 1);
-  }, [currentRoom?.id, resetRematchState]);
+    const urlRoomId = searchParams.get("room");
+    if (urlRoomId && currentRoom?.id === urlRoomId) {
+      rematchTransitionRef.current = false;
+      setIsBotRematchTransitioning(false);
+    }
+  }, [currentRoom?.id, resetRematchState, searchParams]);
 
   // 🎯 REALTIME SUBSCRIPTION: Rakip participant silindiyinde anında tespit et
   // Polling yerine Supabase Realtime kullanıyoruz
@@ -2806,6 +2838,7 @@ const GamePage = ({
         // Eski sonuç kartını ve bütün maç-sonu callback'lerini oda değişmeden önce
         // atomik olarak kapat; aksi halde yeni bot participant skoru (0), eski
         // sonuç kartına akıp "253-0 Kazandın" kartını yeniden gösterebilir.
+        setIsBotRematchTransitioning(true);
         resetGameForRematch();
         rematchTransitionRef.current = true;
         if (currentRoom?.id) {
@@ -2877,6 +2910,7 @@ const GamePage = ({
         } catch (error) {
           console.error("❌ Bot rematch room oluşturma hatası:", error);
           rematchTransitionRef.current = false;
+          setIsBotRematchTransitioning(false);
           setRematchRequested(false);
           setWaitingForRematchResponse(false);
           setRematchSentOnce(false);
@@ -8518,7 +8552,13 @@ const GamePage = ({
     resetGameForRematch();
   };
 
-  if (gameEnded && gameMode !== "tournament" && (winner === "player" || winner === "opponent")) {
+  if (
+    gameEnded &&
+    !isBotRematchTransitioning &&
+    !rematchTransitionRef.current &&
+    gameMode !== "tournament" &&
+    (winner === "player" || winner === "opponent")
+  ) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
       ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && !rematchSentOnce
