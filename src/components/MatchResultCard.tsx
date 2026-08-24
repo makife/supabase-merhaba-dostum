@@ -92,8 +92,6 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
   onHome,
   disabled,
   children,
-  rematchStatus = "idle",
-  onRematchAnimationFinished,
 }) => {
   const kind: MatchResultKind = result ?? (won ? "win" : "lose");
   const layout = LAYOUTS[kind];
