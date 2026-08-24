@@ -19,6 +19,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/UserAvatar";
+import { VipBadge } from "@/components/VipBadge";
 import { PrivateChat } from "@/components/PrivateChat";
 import { UserActionMenu, type AnchorRect } from "@/components/UserActionMenu";
 import { ReportMessageDialog } from "@/components/ReportMessageDialog";
@@ -1071,7 +1072,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             .map((message) => (
               <div
                 key={message.id}
-                className="flex flex-col space-y-1 p-3 rounded-lg bg-white/10 border border-white/10"
+                className="flex flex-col space-y-1 p-3 rounded-lg bg-primary/10 border border-primary/20 relative overflow-visible"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -1223,6 +1224,12 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
                         😀+
                       </button>
                     )}
+                  </div>
+                )}
+
+                {message.user_id && !isBotUsername(message.username) && userPremiumMap[message.user_id] && (
+                  <div className="absolute -bottom-2 -right-2 z-10">
+                    <VipBadge size="xs" />
                   </div>
                 )}
               </div>
