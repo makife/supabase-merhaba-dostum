@@ -65,8 +65,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // 🔒 Reddedildiyse aynı rakibe tekrar istek gönderilmesin (oturum boyunca)
-  const rejectedOpponentsRef = useRef<Set<string>>(new Set());
+  // 🔒 Reddedilen rakip için kısa süreli bekleme (kalıcı kilit YOK)
+  const rejectedOpponentsRef = useRef<Map<string, number>>(new Map());
+  const REJECT_COOLDOWN_MS = 20000;
+  // 📤 Şu an bekleyen kendi isteğimizin id'si (eski kayıtlar yanıt sanılmasın)
+  const outgoingRequestIdRef = useRef<string | null>(null);
   // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
   const pendingNavigationRef = useRef<(() => void) | null>(null);
   const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,16 +272,19 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return false;
       }
 
-      // 🔒 Bu rakip daha önce isteği reddettiyse tekrar gönderme
-      if (rejectedOpponentsRef.current.has(opponentId)) {
+      // 🔒 Az önce reddedildiyse kısa süre bekle (kalıcı engel değil)
+      const rejectedAt = rejectedOpponentsRef.current.get(opponentId);
+      if (rejectedAt && Date.now() - rejectedAt < REJECT_COOLDOWN_MS) {
+        const wait = Math.ceil((REJECT_COOLDOWN_MS - (Date.now() - rejectedAt)) / 1000);
         toast({
           title: "Rematch Gönderilemedi",
-          description: "Rakibiniz daha önce isteğinizi reddetti.",
+          description: `Rakibiniz isteği reddetti. ${wait} saniye sonra tekrar deneyebilirsiniz.`,
           variant: "destructive",
           duration: 2000,
         });
         return false;
       }
+      if (rejectedAt) rejectedOpponentsRef.current.delete(opponentId);
 
       sendingRef.current = true;
       setIsSending(true);
@@ -394,10 +400,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Cancel any other old pending requests (cleanup)
+        // Kendi eski bekleyen isteklerini SİL (status'u rejected yapmak kendi
+        // dinleyicimizi tetikleyip "rakip reddetti" sanılmasına yol açıyordu)
         await supabase
           .from("rematch_requests")
-          .update({ status: "rejected", responded_at: new Date().toISOString() })
+          .delete()
           .eq("from_user_id", userId)
           .eq("to_user_id", opponentId)
           .eq("status", "pending");
@@ -436,15 +443,20 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (senderParticipantError) throw senderParticipantError;
 
         // Create rematch request
-        const { error: requestError } = await supabase.from("rematch_requests").insert({
-          room_code: roomCode,
-          from_user_id: userId,
-          to_user_id: opponentId,
-          status: "pending",
-          game_type: gameType,
-        });
+        const { data: insertedRequest, error: requestError } = await supabase
+          .from("rematch_requests")
+          .insert({
+            room_code: roomCode,
+            from_user_id: userId,
+            to_user_id: opponentId,
+            status: "pending",
+            game_type: gameType,
+          })
+          .select("id")
+          .single();
 
         if (requestError) throw new Error("Rematch isteği gönderilemedi");
+        outgoingRequestIdRef.current = insertedRequest?.id ?? null;
 
         // Get sender profile for notification
         const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
@@ -632,6 +644,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setRematchStatus("idle");
     setIncomingRequest(null);
     processedRef.current.clear();
+    outgoingRequestIdRef.current = null;
     if (waitingTimeoutRef.current) {
       clearTimeout(waitingTimeoutRef.current);
       waitingTimeoutRef.current = null;
@@ -703,6 +716,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           async (payload) => {
             const request = payload.new as RematchRequest;
 
+            // Sadece şu an gönderdiğimiz isteğe ait yanıtları işle
+            if (outgoingRequestIdRef.current && request.id !== outgoingRequestIdRef.current) {
+              return;
+            }
+
             const responseKey = `resp-${request.id}`;
             if (processedRef.current.has(responseKey)) return;
             processedRef.current.add(responseKey);
@@ -741,6 +759,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
+              outgoingRequestIdRef.current = null;
 
               if (waitingTimeoutRef.current) {
                 clearTimeout(waitingTimeoutRef.current);
@@ -751,9 +770,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               // "no" animasyonu oynasın diye birkaç saniye sonra idle'a dönüyoruz.
               setTimeout(() => setRematchStatus("idle"), 2500);
 
-              // 🔒 Bu rakibe oturum boyunca tekrar istek gönderme
+              // 🔒 Kısa süreli bekleme (kalıcı engel yok)
               if (request.to_user_id) {
-                rejectedOpponentsRef.current.add(request.to_user_id);
+                rejectedOpponentsRef.current.set(request.to_user_id, Date.now());
               }
 
               toast({
