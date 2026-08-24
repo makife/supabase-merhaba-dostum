@@ -70,31 +70,18 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const REJECT_COOLDOWN_MS = 20000;
   // 📤 Şu an bekleyen kendi isteğimizin id'si (eski kayıtlar yanıt sanılmasın)
   const outgoingRequestIdRef = useRef<string | null>(null);
-  // 🤖 "yes" animasyonu bitene kadar bekletilen maç geçişi
+  // 🤖 AI robo animasyonu kaldırıldı: geçişler anında yapılır, kuyruk yok.
   const pendingNavigationRef = useRef<(() => void) | null>(null);
-  const pendingNavigationFallbackRef = useRef<NodeJS.Timeout | null>(null);
 
   const runPendingNavigation = useCallback(() => {
-    if (pendingNavigationFallbackRef.current) {
-      clearTimeout(pendingNavigationFallbackRef.current);
-      pendingNavigationFallbackRef.current = null;
-    }
     const run = pendingNavigationRef.current;
     pendingNavigationRef.current = null;
     run?.();
   }, []);
 
-  const queueNavigationAfterAnimation = useCallback(
-    (run: () => void) => {
-      pendingNavigationRef.current = run;
-      if (pendingNavigationFallbackRef.current) {
-        clearTimeout(pendingNavigationFallbackRef.current);
-      }
-      // Animasyon sinyali gelmezse (lottie hatası vb.) güvenlik ağı
-      pendingNavigationFallbackRef.current = setTimeout(() => runPendingNavigation(), 3000);
-    },
-    [runPendingNavigation],
-  );
+  const queueNavigationAfterAnimation = useCallback((run: () => void) => {
+    run();
+  }, []);
 
   const userId = user?.id;
 
@@ -793,10 +780,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       autoReconnect.unregisterChannel(channelName);
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
-      }
-      if (pendingNavigationFallbackRef.current) {
-        clearTimeout(pendingNavigationFallbackRef.current);
-        pendingNavigationFallbackRef.current = null;
       }
       pendingNavigationRef.current = null;
     };

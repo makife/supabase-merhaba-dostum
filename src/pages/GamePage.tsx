@@ -1747,28 +1747,8 @@ const GamePage = ({
     notifyRematchAnimationFinished,
   } = useRematchContext();
 
-  // 🤖 Robot animasyonunun (yes/no) bitişini bekleyebilmek için sinyal kanalı
-  const roboAnimResolveRef = useRef<(() => void) | null>(null);
-  const handleRematchAnimationFinished = useCallback(() => {
-    const resolve = roboAnimResolveRef.current;
-    roboAnimResolveRef.current = null;
-    resolve?.();
-    notifyRematchAnimationFinished();
-  }, [notifyRematchAnimationFinished]);
-  const waitForRoboAnimation = useCallback(
-    (fallbackMs = 2500) =>
-      new Promise<void>((resolve) => {
-        let done = false;
-        const finish = () => {
-          if (done) return;
-          done = true;
-          resolve();
-        };
-        roboAnimResolveRef.current = finish;
-        setTimeout(finish, fallbackMs);
-      }),
-    [],
-  );
+  // 🤖 AI robo animasyonu kaldırıldı: rematch geçişleri artık beklemesiz ilerler.
+  const waitForRoboAnimation = useCallback(async () => {}, []);
 
 
   // ============= GLOBAL RESYNC - Bağlantı kopup geldiğinde oda, skor ve veri senkronizasyonu =============
@@ -8634,18 +8614,6 @@ const GamePage = ({
             onWatchAd={!adWatched && user && !isPremium ? handleWatchAd : undefined}
             onPlayAgain={canRematch ? (isMulti ? () => { requestRematch(); } : playAgainVsComputer) : undefined}
             onHome={goHomeAfterMatch}
-            rematchStatus={
-              !isMulti
-                ? "idle"
-                : hasMultiplayerBotOpponent
-                  ? botRematchStatus
-                  : rematchStatus !== "idle"
-                    ? rematchStatus
-                    : waitingForRematchResponse
-                      ? "waiting"
-                      : "idle"
-            }
-            onRematchAnimationFinished={handleRematchAnimationFinished}
           >
             {waitingForRematchResponse && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">
