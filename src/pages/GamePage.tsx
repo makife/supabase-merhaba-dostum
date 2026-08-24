@@ -2897,6 +2897,16 @@ const GamePage = ({
             /* countdown zaten başlamış olabilir */
           }
 
+          // GameContext route değişiminden sonra da yaşamaya devam eder. Context'i burada
+          // yeni odaya taşımadan navigate edilirse yeni GamePage ilk render'da eski, bitmiş
+          // odanın participant'larını görür: oyuncu skoru eski değerde kalırken bot skoru
+          // DB'de 0 olduğu için sonuç kartı kısa süreliğine tekrar açılabilir. Önce yeni
+          // odayı context'e kesin olarak yükle, ardından yeni GamePage'i mount et.
+          const joinedNewRoom = await joinRoom(room.id);
+          if (!joinedNewRoom) {
+            throw new Error("Bot rematch odasına bağlanılamadı");
+          }
+
           const params = new URLSearchParams({
             room: room.id,
             type: currentGameType,
