@@ -270,16 +270,19 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return false;
       }
 
-      // 🔒 Bu rakip daha önce isteği reddettiyse tekrar gönderme
-      if (rejectedOpponentsRef.current.has(opponentId)) {
+      // 🔒 Az önce reddedildiyse kısa süre bekle (kalıcı engel değil)
+      const rejectedAt = rejectedOpponentsRef.current.get(opponentId);
+      if (rejectedAt && Date.now() - rejectedAt < REJECT_COOLDOWN_MS) {
+        const wait = Math.ceil((REJECT_COOLDOWN_MS - (Date.now() - rejectedAt)) / 1000);
         toast({
           title: "Rematch Gönderilemedi",
-          description: "Rakibiniz daha önce isteğinizi reddetti.",
+          description: `Rakibiniz isteği reddetti. ${wait} saniye sonra tekrar deneyebilirsiniz.`,
           variant: "destructive",
           duration: 2000,
         });
         return false;
       }
+      if (rejectedAt) rejectedOpponentsRef.current.delete(opponentId);
 
       sendingRef.current = true;
       setIsSending(true);
