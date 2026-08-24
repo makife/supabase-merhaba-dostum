@@ -1072,7 +1072,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
             .map((message) => (
               <div
                 key={message.id}
-                className="flex flex-col space-y-1 p-3 rounded-lg bg-white/10 border border-white/10"
+                className="flex flex-col space-y-1 p-3 rounded-lg bg-primary/10 border border-primary/20 relative overflow-visible"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
