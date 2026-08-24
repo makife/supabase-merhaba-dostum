@@ -8693,6 +8693,19 @@ const GamePage = ({
     );
   }
 
+  // 🔒 Bot rematch geçişinde eski maçın sonuç kartı (özellikle "Berabere!" fallback'i)
+  // asla gösterilmesin; yeni oda açılana kadar nötr geçiş ekranı göster.
+  if (isBotRematchTransitioning || rematchTransitionRef.current) {
+    return (
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)" }}
+      >
+        <Loader2 className="w-10 h-10 animate-spin text-amber-400" aria-label="Yeni maç hazırlanıyor" />
+      </div>
+    );
+  }
+
   if (gameEnded) {
 
     return (
