@@ -144,8 +144,8 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         style={{ containerType: "inline-size" }}
       >
         <img
-          src={won ? kazandinKarti : kaybettinKarti}
-          alt={won ? "Kazandın" : "Kaybettin"}
+          src={CARD_IMAGES[kind]}
+          alt={CARD_ALTS[kind]}
           className="w-full h-auto select-none pointer-events-none"
           draggable={false}
         />
@@ -153,7 +153,13 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         {/* Senin Puanın */}
         <div
           className="absolute flex items-center justify-end pointer-events-none"
-          style={{ left: "9.9%", width: "80.2%", top: "49%", height: "4.7%", paddingRight: "4cqw" }}
+          style={{
+            left: layout.scoreField.left,
+            width: layout.scoreField.width,
+            top: layout.scoreField.playerTop,
+            height: layout.scoreField.height,
+            paddingRight: "4cqw",
+          }}
         >
           <span className="font-extrabold text-[#1b3a5c]" style={{ fontSize: "6cqw" }}>
             {playerScore}
@@ -163,16 +169,23 @@ const MatchResultCard: React.FC<MatchResultCardProps> = ({
         {/* Rakip Puanı */}
         <div
           className="absolute flex items-center justify-end pointer-events-none"
-          style={{ left: "9.9%", width: "80.2%", top: "55.5%", height: "4.6%", paddingRight: "4cqw" }}
+          style={{
+            left: layout.scoreField.left,
+            width: layout.scoreField.width,
+            top: layout.scoreField.opponentTop,
+            height: layout.scoreField.height,
+            paddingRight: "4cqw",
+          }}
         >
           <span className="font-extrabold text-[#1b3a5c]" style={{ fontSize: "6cqw" }}>
             {opponentScore}
           </span>
         </div>
 
-        {zone("Reklam İzle", "9.9%", "25.7%", onWatchAd, disabled || adLoading)}
-        {zone("Tekrar Oyna", "37.1%", "25.7%", onPlayAgain, disabled)}
-        {zone("Ana Menüye Dön", "64.4%", "25.7%", onHome, disabled)}
+        {zone("Reklam İzle", 0, onWatchAd, disabled || adLoading)}
+        {zone("Tekrar Oyna", 1, onPlayAgain, disabled)}
+        {zone("Ana Menüye Dön", 2, onHome, disabled, "heavy")}
+
 
         {rematchStatus !== "idle" && (
           <div
