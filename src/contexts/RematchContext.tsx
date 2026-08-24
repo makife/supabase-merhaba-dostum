@@ -758,6 +758,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               }
             } else if (request.status === "rejected") {
               console.log("❌ Rematch reddedildi");
+              outgoingRequestIdRef.current = null;
 
               if (waitingTimeoutRef.current) {
                 clearTimeout(waitingTimeoutRef.current);
@@ -768,9 +769,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               // "no" animasyonu oynasın diye birkaç saniye sonra idle'a dönüyoruz.
               setTimeout(() => setRematchStatus("idle"), 2500);
 
-              // 🔒 Bu rakibe oturum boyunca tekrar istek gönderme
+              // 🔒 Kısa süreli bekleme (kalıcı engel yok)
               if (request.to_user_id) {
-                rejectedOpponentsRef.current.add(request.to_user_id);
+                rejectedOpponentsRef.current.set(request.to_user_id, Date.now());
               }
 
               toast({
