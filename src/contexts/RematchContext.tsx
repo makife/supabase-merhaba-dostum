@@ -398,10 +398,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Cancel any other old pending requests (cleanup)
+        // Kendi eski bekleyen isteklerini SİL (status'u rejected yapmak kendi
+        // dinleyicimizi tetikleyip "rakip reddetti" sanılmasına yol açıyordu)
         await supabase
           .from("rematch_requests")
-          .update({ status: "rejected", responded_at: new Date().toISOString() })
+          .delete()
           .eq("from_user_id", userId)
           .eq("to_user_id", opponentId)
           .eq("status", "pending");
