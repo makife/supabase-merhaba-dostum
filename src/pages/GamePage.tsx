@@ -2826,6 +2826,7 @@ const GamePage = ({
 
       // Gerçek oyuncuya gönderilmiş gibi "istek gönderildi" toastu
       setWaitingForRematchResponse(true);
+      startRematchWaitingUI();
       setBotRematchStatus("waiting");
       toast({
         title: "🔄 Tekrar Oyun İsteği Gönderildi",
@@ -2839,6 +2840,7 @@ const GamePage = ({
         if (!isMountedRef.current) return;
 
         if (decision === "left") {
+          clearRematchWaitingUI();
           setWaitingForRematchResponse(false);
           setBotRematchStatus("declined");
           // "no" animasyonu bitince bilgi ver
@@ -2865,6 +2867,7 @@ const GamePage = ({
           })();
 
         // Önce robotun "yes" animasyonu oynasın: sonuç kartı bu sürede açık kalıyor.
+        clearRematchWaitingUI();
         setWaitingForRematchResponse(false);
         setBotRematchStatus("accepted");
         await waitForRoboAnimation();
@@ -2957,6 +2960,7 @@ const GamePage = ({
           rematchTransitionRef.current = false;
           setIsBotRematchTransitioning(false);
           setRematchRequested(false);
+          clearRematchWaitingUI();
           setWaitingForRematchResponse(false);
           setRematchSentOnce(false);
           setBotRematchStatus("idle");
@@ -2989,6 +2993,7 @@ const GamePage = ({
 
       setRematchRequested(true);
       setWaitingForRematchResponse(true);
+      startRematchWaitingUI();
       rematchSendingRef.current = true;
 
       // Yeni hook ile rematch gönder
@@ -3004,12 +3009,14 @@ const GamePage = ({
       if (!success) {
         setRematchRequested(false);
         setWaitingForRematchResponse(false);
+        clearRematchWaitingUI();
         setRematchSentOnce(false); // gönderim başarısız: tekrar denenebilir
         rematchSendingRef.current = false;
         disconnectHandledRef.current = false;
       }
     } catch (error) {
       console.error("Rematch request error:", error);
+      clearRematchWaitingUI();
       setRematchRequested(false);
       setWaitingForRematchResponse(false);
       rematchSendingRef.current = false;
@@ -7880,6 +7887,15 @@ const GamePage = ({
     }
   }, [rematchIsWaiting]);
 
+  // Kesin sonuç geldiğinde bekleme göstergesini kapat
+  useEffect(() => {
+    if (rematchStatus === "accepted" || rematchStatus === "declined") {
+      clearRematchWaitingUI();
+    } else if (rematchStatus === "waiting") {
+      setRematchWaitingVisible(true);
+    }
+  }, [rematchStatus, clearRematchWaitingUI]);
+
   // NOT: handleRematchAccept ve handleRematchReject artık global RematchContext tarafından yönetiliyor
   // GamePage'de bu fonksiyonlara gerek yok - RematchDialog App.tsx'te global olarak render ediliyor
 
@@ -8606,7 +8622,12 @@ const GamePage = ({
   ) {
     const isMulti = gameMode === "private-room" || gameMode === "random-match";
     const canRematch = isMulti
-      ? !disconnectWin && !backgroundDisconnected && !rematchRequested && !waitingForRematchResponse && !rematchSentOnce
+      ? !disconnectWin &&
+        !backgroundDisconnected &&
+        !rematchRequested &&
+        !waitingForRematchResponse &&
+        !rematchWaitingVisible &&
+        !rematchSentOnce
       : !disconnectWin;
 
     return (
@@ -8638,7 +8659,7 @@ const GamePage = ({
             onPlayAgain={canRematch ? (isMulti ? () => { requestRematch(); } : playAgainVsComputer) : undefined}
             onHome={goHomeAfterMatch}
           >
-            {waitingForRematchResponse && (
+            {(waitingForRematchResponse || rematchWaitingVisible) && (
               <div className="absolute left-[10%] right-[10%] top-[72%] rounded-xl bg-black/60 border border-white/15 p-3 text-center">
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-blue-300" />
@@ -8879,6 +8900,7 @@ const GamePage = ({
                     !backgroundDisconnected &&
                     !rematchRequested &&
                     !waitingForRematchResponse &&
+                    !rematchWaitingVisible &&
                     !rematchSentOnce && (
                     <Button
                       disabled={!buttonsEnabled}
@@ -8893,7 +8915,7 @@ const GamePage = ({
                     </Button>
                   )}
 
-                  {waitingForRematchResponse && (
+                  {(waitingForRematchResponse || rematchWaitingVisible) && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-center justify-center space-x-2">
                         <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
