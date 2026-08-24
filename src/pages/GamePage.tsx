@@ -1788,6 +1788,15 @@ const GamePage = ({
       }
 
       // 2. MULTIPLAYER ROOM SYNC (random-match, private-room)
+      // Bot skorları yalnızca client-side tutulur; game_rooms içindeki bot skoru 0 kalabilir.
+      // Bu yüzden bot maçını DB'den skor/sonuç olarak yeniden hydrate etmek, rematch sırasında
+      // eski sonuç kartını oyuncu skoru + 0 rakip skoru ile tekrar açar.
+      if (hasMultiplayerBotOpponent) {
+        console.log("⏭️ [GamePage Resync] Bot maçında DB skor/sonuç senkronizasyonu atlandı");
+        await triggerResync();
+        return;
+      }
+
       // 🔒 STALE ROOM GUARD: currentRoom hâlâ önceki (bitmiş) maçı gösteriyorsa resync yapma.
       // Aksi halde eski odanın status="finished" + winner_id değeri okunup yeni maçın üstüne
       // önceki maçın kazandın/kaybettin kartı açılıyor.
@@ -1826,7 +1835,12 @@ const GamePage = ({
           }
 
           // Oda bittiyse UI'ı güncelle
-          if (roomData.status === "finished" && roomData.winner_id) {
+          if (
+            roomData.status === "finished" &&
+            roomData.winner_id &&
+            !rematchTransitionRef.current &&
+            currentRoomIdRef.current === currentRoom.id
+          ) {
             const iWon = roomData.winner_id === user?.id;
             setWinner(iWon ? "player" : "opponent");
             setGameEnded(true);
@@ -1856,7 +1870,16 @@ const GamePage = ({
     } catch (err) {
       console.error("❌ [GamePage Resync] Hata:", err);
     }
-  }, [gameMode, tournamentMatch?.id, currentRoom?.id, user?.id, gridSyncPaused, triggerResync, searchParams]);
+  }, [
+    gameMode,
+    tournamentMatch?.id,
+    currentRoom?.id,
+    user?.id,
+    gridSyncPaused,
+    triggerResync,
+    searchParams,
+    hasMultiplayerBotOpponent,
+  ]);
 
   // Priority: true - GamePage en kritik sayfa!
   useGlobalResync({
