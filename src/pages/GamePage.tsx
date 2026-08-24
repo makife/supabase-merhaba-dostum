@@ -323,6 +323,7 @@ const GamePage = ({
   const currentRoomIdRef = useRef<string | null>(currentRoom?.id || null);
   const roomSessionRef = useRef(0);
   const pendingEndGameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const gameEndFinalizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [comboResetId, setComboResetId] = useState(0);
 
   const [globalUsedWords, setGlobalUsedWords] = useState<Set<string>>(new Set());
@@ -3191,6 +3192,11 @@ const GamePage = ({
       clearTimeout(pendingEndGameTimeoutRef.current);
       pendingEndGameTimeoutRef.current = null;
       console.log("✅ Pending endGame timeout cleared for rematch");
+    }
+    if (gameEndFinalizeTimeoutRef.current) {
+      clearTimeout(gameEndFinalizeTimeoutRef.current);
+      gameEndFinalizeTimeoutRef.current = null;
+      console.log("✅ Finalize timeout cleared for rematch");
     }
 
     // Clear existing timers and intervals
@@ -6548,8 +6554,20 @@ const GamePage = ({
             setIsMatchFinishing(true);
             handleGameEnd();
           } else {
+            const finalizeSession = roomSessionRef.current;
+            const finalizeRoomId = currentRoomIdRef.current;
             handleGameEnd();
-            setTimeout(() => {
+            if (gameEndFinalizeTimeoutRef.current) clearTimeout(gameEndFinalizeTimeoutRef.current);
+            gameEndFinalizeTimeoutRef.current = setTimeout(() => {
+              gameEndFinalizeTimeoutRef.current = null;
+              if (
+                !isMountedRef.current ||
+                roomSessionRef.current !== finalizeSession ||
+                currentRoomIdRef.current !== finalizeRoomId
+              ) {
+                console.log("🚫 Eski maça ait finalize timeout yok sayıldı");
+                return;
+              }
               setGameEnded(true);
               checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
             }, 50);
@@ -6705,8 +6723,20 @@ const GamePage = ({
                 clearInterval(timerRef.current);
                 timerRef.current = null;
               }
+              const finalizeSession = roomSessionRef.current;
+              const finalizeRoomId = currentRoomIdRef.current;
               handleGameEnd();
-              setTimeout(() => {
+              if (gameEndFinalizeTimeoutRef.current) clearTimeout(gameEndFinalizeTimeoutRef.current);
+              gameEndFinalizeTimeoutRef.current = setTimeout(() => {
+                gameEndFinalizeTimeoutRef.current = null;
+                if (
+                  !isMountedRef.current ||
+                  roomSessionRef.current !== finalizeSession ||
+                  currentRoomIdRef.current !== finalizeRoomId
+                ) {
+                  console.log("🚫 Eski maça ait finalize timeout yok sayıldı (watchdog)");
+                  return;
+                }
                 setGameEnded(true);
                 checkWinnerWithScores(playerScoreRef.current, opponentScoreRef.current);
               }, 50);
