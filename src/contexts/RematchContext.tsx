@@ -781,10 +781,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
       }
-      if (pendingNavigationFallbackRef.current) {
-        clearTimeout(pendingNavigationFallbackRef.current);
-        pendingNavigationFallbackRef.current = null;
-      }
       pendingNavigationRef.current = null;
     };
   }, [userId, toast, navigate, queueNavigationAfterAnimation]);
