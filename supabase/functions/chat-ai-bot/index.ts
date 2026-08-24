@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     if (!reply) {
       reply =
         mode === "greeting"
-          ? `${username} hoş geldin! Bugün nasıl gidiyor? 🙂`
+          ? `Selam ${username}! Ben kelimele'nin yapay zeka asistanıyım. Sohbette bana @kelimele yazarak istediğini sorabilirsin. 🎯`
           : `${username}, tam anlayamadım ama tekrar yazarsan yardımcı olayım.`;
     }
     if (reply.length > 400) reply = reply.slice(0, 397) + "...";
