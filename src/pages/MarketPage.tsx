@@ -665,7 +665,7 @@ const MarketPage = () => {
               disabled={isAdLoading}
             >
               <img
-                src="/reklamGorsel.jpg"
+                src="/reklamGorsel.webp"
                 alt="Reklam İzle"
                 className={`h-12 w-auto object-contain rounded-lg shadow-lg ring-2 ring-white ring-offset-2 ring-offset-transparent hover:scale-105 active:scale-95 transition-all duration-200 ${isAdLoading ? "opacity-50 grayscale cursor-not-allowed" : ""}`}
               />
