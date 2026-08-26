@@ -379,7 +379,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // FIRST-WINS: Check if opponent already sent a pending request to us
         const { data: existingFromOpponent } = await supabase
           .from("rematch_requests")
-          .select("id, room_code, game_type")
+          .select("id, room_code, game_type, created_at")
           .eq("from_user_id", opponentId)
           .eq("to_user_id", userId)
           .eq("status", "pending")
@@ -387,7 +387,13 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .maybeSingle();
 
         if (existingFromOpponent) {
-          if (dismissedIncomingRequestIdsRef.current.has(existingFromOpponent.id)) {
+          const existingRequestAge = Date.now() - new Date(existingFromOpponent.created_at).getTime();
+          const isVisibleIncomingRequest = incomingRequestRef.current?.id === existingFromOpponent.id;
+
+          if (
+            dismissedIncomingRequestIdsRef.current.has(existingFromOpponent.id) ||
+            (!isVisibleIncomingRequest && existingRequestAge > 3000)
+          ) {
             console.log("⏭️ Süresi dolmuş/gizlenmiş rematch isteği otomatik kabul edilmiyor:", existingFromOpponent.id);
             await rejectPendingRequest(existingFromOpponent.id);
           } else {
