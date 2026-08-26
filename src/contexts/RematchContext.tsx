@@ -599,6 +599,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
+      clearIncomingTimeout();
+
       // 🔒 HAK KONTROLÜ: Kabul etmeden önce taze profil ve aktif hakları kontrol et
       const receiverAccess = await getFreshPlayAccess(userId);
 
@@ -675,16 +677,21 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
-      await supabase
+      const { data: acceptedRequest, error: acceptError } = await supabase
         .from("rematch_requests")
         .update({
           status: "accepted",
           responded_at: new Date().toISOString(),
         })
         .eq("id", requestToAccept.id)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
 
-      clearIncomingTimeout();
+      if (acceptError || !acceptedRequest) {
+        throw acceptError || new Error("Rematch isteğinin süresi doldu");
+      }
+
       setIncomingRequest(null);
 
       await setLastRoomId(null);
