@@ -44,6 +44,9 @@ interface RematchContextType {
 
 const RematchContext = createContext<RematchContextType | undefined>(undefined);
 
+const REMATCH_REQUEST_TTL_MS = 30000;
+const REJECT_COOLDOWN_MS = 20000;
+
 export const useRematchContext = () => {
   const context = useContext(RematchContext);
   if (!context) {
@@ -65,9 +68,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const sendingRef = useRef(false);
   const processedRef = useRef<Set<string>>(new Set());
   const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const incomingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const incomingRequestRef = useRef<IncomingRequest | null>(null);
+  const dismissedIncomingRequestIdsRef = useRef<Set<string>>(new Set());
   // 🔒 Reddedilen rakip için kısa süreli bekleme (kalıcı kilit YOK)
   const rejectedOpponentsRef = useRef<Map<string, number>>(new Map());
-  const REJECT_COOLDOWN_MS = 20000;
   // 📤 Şu an bekleyen kendi isteğimizin id'si (eski kayıtlar yanıt sanılmasın)
   const outgoingRequestIdRef = useRef<string | null>(null);
   // 🤖 AI robo animasyonu kaldırıldı: geçişler anında yapılır, kuyruk yok.
@@ -84,6 +89,57 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const userId = user?.id;
+
+  useEffect(() => {
+    incomingRequestRef.current = incomingRequest;
+  }, [incomingRequest]);
+
+  const clearIncomingTimeout = useCallback(() => {
+    if (incomingTimeoutRef.current) {
+      clearTimeout(incomingTimeoutRef.current);
+      incomingTimeoutRef.current = null;
+    }
+  }, []);
+
+  const rejectPendingRequest = useCallback(async (requestId: string) => {
+    const { error } = await supabase
+      .from("rematch_requests")
+      .update({
+        status: "rejected",
+        responded_at: new Date().toISOString(),
+      })
+      .eq("id", requestId)
+      .eq("status", "pending");
+
+    if (error) {
+      console.warn("⚠️ Rematch isteği pasifleştirilemedi:", error);
+    }
+  }, []);
+
+  const expireIncomingRequest = useCallback(
+    async (requestId: string) => {
+      dismissedIncomingRequestIdsRef.current.add(requestId);
+      if (incomingRequestRef.current?.id === requestId) {
+        setIncomingRequest(null);
+      }
+      await rejectPendingRequest(requestId);
+    },
+    [rejectPendingRequest],
+  );
+
+  const startIncomingExpiryTimer = useCallback(
+    (request: RematchRequest) => {
+      clearIncomingTimeout();
+      const requestAge = Date.now() - new Date(request.created_at).getTime();
+      const remainingMs = Math.max(0, REMATCH_REQUEST_TTL_MS - requestAge);
+
+      incomingTimeoutRef.current = setTimeout(() => {
+        incomingTimeoutRef.current = null;
+        void expireIncomingRequest(request.id);
+      }, remainingMs);
+    },
+    [clearIncomingTimeout, expireIncomingRequest],
+  );
 
   // Generate room code
   const generateRoomCode = () => {
@@ -323,67 +379,80 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // FIRST-WINS: Check if opponent already sent a pending request to us
         const { data: existingFromOpponent } = await supabase
           .from("rematch_requests")
-          .select("id, room_code, game_type")
+          .select("id, room_code, game_type, created_at")
           .eq("from_user_id", opponentId)
           .eq("to_user_id", userId)
           .eq("status", "pending")
-          .gte("created_at", new Date(Date.now() - 30000).toISOString()) // Son 30 saniye içinde
+          .gte("created_at", new Date(Date.now() - REMATCH_REQUEST_TTL_MS).toISOString()) // Son 30 saniye içinde
           .maybeSingle();
 
         if (existingFromOpponent) {
-          console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
+          const existingRequestAge = existingFromOpponent.created_at
+            ? Date.now() - new Date(existingFromOpponent.created_at).getTime()
+            : Number.POSITIVE_INFINITY;
+          const isVisibleIncomingRequest = incomingRequestRef.current?.id === existingFromOpponent.id;
 
-          // Get the room
-          const { data: room } = await supabase
-            .from("game_rooms")
-            .select("id, game_mode")
-            .eq("room_code", existingFromOpponent.room_code)
-            .maybeSingle();
+          if (
+            dismissedIncomingRequestIdsRef.current.has(existingFromOpponent.id) ||
+            (!isVisibleIncomingRequest && existingRequestAge > 3000)
+          ) {
+            console.log("⏭️ Süresi dolmuş/gizlenmiş rematch isteği otomatik kabul edilmiyor:", existingFromOpponent.id);
+            await rejectPendingRequest(existingFromOpponent.id);
+          } else {
+            console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
 
-          if (room) {
-            // Add as participant if not exists
-            const { data: existing } = await supabase
-              .from("game_participants")
-              .select("id")
-              .eq("room_id", room.id)
-              .eq("user_id", userId)
+            // Get the room
+            const { data: room } = await supabase
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", existingFromOpponent.room_code)
               .maybeSingle();
 
-            if (!existing) {
-              const { error: participantError } = await supabase.from("game_participants").insert({
-                room_id: room.id,
-                user_id: userId,
-                score: 0,
-                is_bot: false,
-                is_ready: true,
-              });
-              if (participantError) throw participantError;
-            } else {
-              const { error: readyError } = await supabase
+            if (room) {
+              // Add as participant if not exists
+              const { data: existing } = await supabase
                 .from("game_participants")
-                .update({ is_ready: true })
-                .eq("id", existing.id);
-              if (readyError) throw readyError;
+                .select("id")
+                .eq("room_id", room.id)
+                .eq("user_id", userId)
+                .maybeSingle();
+
+              if (!existing) {
+                const { error: participantError } = await supabase.from("game_participants").insert({
+                  room_id: room.id,
+                  user_id: userId,
+                  score: 0,
+                  is_bot: false,
+                  is_ready: true,
+                });
+                if (participantError) throw participantError;
+              } else {
+                const { error: readyError } = await supabase
+                  .from("game_participants")
+                  .update({ is_ready: true })
+                  .eq("id", existing.id);
+                if (readyError) throw readyError;
+              }
+
+              const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+              await supabase
+                .from("rematch_requests")
+                .update({ status: "accepted", responded_at: new Date().toISOString() })
+                .eq("id", existingFromOpponent.id);
+
+              toast({
+                title: "✅ Rematch Eşleşti",
+                description: "Her iki oyuncu da aynı anda istek gönderdi!",
+                duration: 1000,
+              });
+
+              await setLastRoomId(null);
+              // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
+              await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+              navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
+              return true;
             }
-
-            const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-
-            await supabase
-              .from("rematch_requests")
-              .update({ status: "accepted", responded_at: new Date().toISOString() })
-              .eq("id", existingFromOpponent.id);
-
-            toast({
-              title: "✅ Rematch Eşleşti",
-              description: "Her iki oyuncu da aynı anda istek gönderdi!",
-              duration: 1000,
-            });
-
-            await setLastRoomId(null);
-            // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
-            await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
-            navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
-            return true;
           }
         }
 
@@ -469,6 +538,8 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Set timeout
         waitingTimeoutRef.current = setTimeout(() => {
+          const timedOutRequestId = outgoingRequestIdRef.current;
+          outgoingRequestIdRef.current = null;
           setIsWaiting(false);
           setRematchStatus("idle");
           toast({
@@ -477,7 +548,10 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             variant: "destructive",
             duration: 1000,
           });
-        }, 30000);
+          if (timedOutRequestId) {
+            void rejectPendingRequest(timedOutRequestId);
+          }
+        }, REMATCH_REQUEST_TTL_MS);
 
         return true;
       } catch (error: any) {
@@ -496,15 +570,44 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }, 2000);
       }
     },
-    [userId, toast, navigate, getFreshPlayAccess],
+    [userId, toast, navigate, getFreshPlayAccess, rejectPendingRequest],
   );
 
   // Accept rematch - HAK KONTROLÜ EKLENDİ
   const acceptRematch = useCallback(async () => {
     if (!userId || !incomingRequest) return;
+    const requestToAccept = incomingRequest;
 
     try {
-      console.log("✅ Rematch kabul ediliyor:", incomingRequest.id);
+      console.log("✅ Rematch kabul ediliyor:", requestToAccept.id);
+
+      const { data: freshRequest, error: requestError } = await supabase
+        .from("rematch_requests")
+        .select("id, status, created_at")
+        .eq("id", requestToAccept.id)
+        .maybeSingle();
+
+      const requestExpired = freshRequest
+        ? Date.now() - new Date(freshRequest.created_at).getTime() > REMATCH_REQUEST_TTL_MS
+        : true;
+
+      if (requestError || !freshRequest || freshRequest.status !== "pending" || requestExpired) {
+        dismissedIncomingRequestIdsRef.current.add(requestToAccept.id);
+        clearIncomingTimeout();
+        setIncomingRequest(null);
+        if (freshRequest?.status === "pending") {
+          await rejectPendingRequest(requestToAccept.id);
+        }
+        toast({
+          title: "⏰ Süre Doldu",
+          description: "Rematch isteğinin süresi doldu.",
+          variant: "destructive",
+          duration: 1500,
+        });
+        return;
+      }
+
+      clearIncomingTimeout();
 
       // 🔒 HAK KONTROLÜ: Kabul etmeden önce taze profil ve aktif hakları kontrol et
       const receiverAccess = await getFreshPlayAccess(userId);
@@ -525,8 +628,10 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             status: "rejected",
             responded_at: new Date().toISOString(),
           })
-          .eq("id", incomingRequest.id);
+          .eq("id", requestToAccept.id);
 
+        dismissedIncomingRequestIdsRef.current.add(requestToAccept.id);
+        clearIncomingTimeout();
         setIncomingRequest(null);
         navigate("/market");
         return;
@@ -536,7 +641,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { data: room } = await supabase
         .from("game_rooms")
         .select("id, game_mode")
-        .eq("room_code", incomingRequest.roomCode)
+        .eq("room_code", requestToAccept.roomCode)
         .maybeSingle();
 
       if (!room) {
@@ -546,8 +651,28 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           variant: "destructive",
           duration: 1000,
         });
+        dismissedIncomingRequestIdsRef.current.add(requestToAccept.id);
+        clearIncomingTimeout();
+        await rejectPendingRequest(requestToAccept.id);
         setIncomingRequest(null);
         return;
+      }
+
+      const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+      const { data: acceptedRequest, error: acceptError } = await supabase
+        .from("rematch_requests")
+        .update({
+          status: "accepted",
+          responded_at: new Date().toISOString(),
+        })
+        .eq("id", requestToAccept.id)
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
+
+      if (acceptError || !acceptedRequest) {
+        throw acceptError || new Error("Rematch isteğinin süresi doldu");
       }
 
       // Add as participant
@@ -575,16 +700,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (readyError) throw readyError;
       }
 
-      const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-
-      await supabase
-        .from("rematch_requests")
-        .update({
-          status: "accepted",
-          responded_at: new Date().toISOString(),
-        })
-        .eq("id", incomingRequest.id);
-
       setIncomingRequest(null);
 
       await setLastRoomId(null);
@@ -594,6 +709,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
+        dismissedIncomingRequestIdsRef.current.add(requestToAccept.id);
+        clearIncomingTimeout();
+        setIncomingRequest(null);
       toast({
         title: "❗",
         description: "Rematch kabul edilemedi",
@@ -601,14 +719,15 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         duration: 1000,
       });
     }
-  }, [userId, incomingRequest, toast, navigate, getFreshPlayAccess]);
+  }, [userId, incomingRequest, toast, navigate, getFreshPlayAccess, clearIncomingTimeout, rejectPendingRequest]);
 
   // Reject rematch
   const rejectRematch = useCallback(async () => {
     if (!userId || !incomingRequest) return;
+    const requestToReject = incomingRequest;
 
     try {
-      console.log("❌ Rematch reddediliyor:", incomingRequest.id);
+      console.log("❌ Rematch reddediliyor:", requestToReject.id);
 
       await supabase
         .from("rematch_requests")
@@ -616,20 +735,23 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           status: "rejected",
           responded_at: new Date().toISOString(),
         })
-        .eq("id", incomingRequest.id);
+        .eq("id", requestToReject.id)
+        .eq("status", "pending");
 
+      dismissedIncomingRequestIdsRef.current.add(requestToReject.id);
+      clearIncomingTimeout();
       setIncomingRequest(null);
     } catch (error) {
       console.error("❌ Rematch red hatası:", error);
     }
-  }, [userId, incomingRequest]);
+  }, [userId, incomingRequest, clearIncomingTimeout]);
 
   // Reset state
   const resetRematchState = useCallback(() => {
     setIsSending(false);
     setIsWaiting(false);
     setRematchStatus("idle");
-    setIncomingRequest(null);
+    // Gelen rematch kartı globaldir; oda/state resetleri kartı erken kapatmasın.
     processedRef.current.clear();
     outgoingRequestIdRef.current = null;
     if (waitingTimeoutRef.current) {
@@ -662,14 +784,17 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           async (payload) => {
             const request = payload.new as RematchRequest;
 
+            if (request.status !== "pending") return;
+
             // Skip if already processed
             if (processedRef.current.has(request.id)) return;
             processedRef.current.add(request.id);
 
             // Check if request is recent (within 30 seconds)
             const requestAge = Date.now() - new Date(request.created_at).getTime();
-            if (requestAge > 30000) {
+            if (requestAge > REMATCH_REQUEST_TTL_MS) {
               console.log("⏭️ Eski rematch isteği atlanıyor:", request.id);
+              await rejectPendingRequest(request.id);
               return;
             }
 
@@ -682,6 +807,12 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               .eq("id", request.from_user_id)
               .single();
 
+            if (Date.now() - new Date(request.created_at).getTime() > REMATCH_REQUEST_TTL_MS) {
+              console.log("⏭️ Profil yüklenirken süresi dolan rematch isteği atlandı:", request.id);
+              await rejectPendingRequest(request.id);
+              return;
+            }
+
             setIncomingRequest({
               id: request.id,
               senderId: request.from_user_id,
@@ -690,6 +821,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
               roomCode: request.room_code,
               gameType: request.game_type,
             });
+            startIncomingExpiryTimer(request);
           },
         )
         .on(
@@ -704,7 +836,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const request = payload.new as RematchRequest;
 
             // Sadece şu an gönderdiğimiz isteğe ait yanıtları işle
-            if (outgoingRequestIdRef.current && request.id !== outgoingRequestIdRef.current) {
+            if (!outgoingRequestIdRef.current || request.id !== outgoingRequestIdRef.current) {
               return;
             }
 
@@ -714,6 +846,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             if (request.status === "accepted") {
               console.log("✅ Rematch kabul edildi:", request.room_code);
+              outgoingRequestIdRef.current = null;
 
               if (waitingTimeoutRef.current) {
                 clearTimeout(waitingTimeoutRef.current);
@@ -771,6 +904,24 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
           },
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "rematch_requests",
+            filter: `to_user_id=eq.${userId}`,
+          },
+          async (payload) => {
+            const request = payload.new as RematchRequest;
+            if (request.status === "pending") return;
+            if (incomingRequestRef.current?.id !== request.id) return;
+
+            dismissedIncomingRequestIdsRef.current.add(request.id);
+            clearIncomingTimeout();
+            setIncomingRequest(null);
+          },
+        )
         .subscribe((status) => {
           console.log("🔌 RematchContext channel:", status);
         }),
@@ -781,9 +932,10 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (waitingTimeoutRef.current) {
         clearTimeout(waitingTimeoutRef.current);
       }
+      clearIncomingTimeout();
       pendingNavigationRef.current = null;
     };
-  }, [userId, toast, navigate, queueNavigationAfterAnimation]);
+  }, [userId, toast, navigate, queueNavigationAfterAnimation, clearIncomingTimeout, rejectPendingRequest, startIncomingExpiryTimer]);
 
   return (
     <RematchContext.Provider
