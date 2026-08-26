@@ -650,6 +650,23 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
 
+      const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+      const { data: acceptedRequest, error: acceptError } = await supabase
+        .from("rematch_requests")
+        .update({
+          status: "accepted",
+          responded_at: new Date().toISOString(),
+        })
+        .eq("id", requestToAccept.id)
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
+
+      if (acceptError || !acceptedRequest) {
+        throw acceptError || new Error("Rematch isteğinin süresi doldu");
+      }
+
       // Add as participant
       const { data: existing } = await supabase
         .from("game_participants")
@@ -673,23 +690,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .update({ is_ready: true })
           .eq("id", existing.id);
         if (readyError) throw readyError;
-      }
-
-      const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-
-      const { data: acceptedRequest, error: acceptError } = await supabase
-        .from("rematch_requests")
-        .update({
-          status: "accepted",
-          responded_at: new Date().toISOString(),
-        })
-        .eq("id", requestToAccept.id)
-        .eq("status", "pending")
-        .select("id")
-        .maybeSingle();
-
-      if (acceptError || !acceptedRequest) {
-        throw acceptError || new Error("Rematch isteğinin süresi doldu");
       }
 
       setIncomingRequest(null);
