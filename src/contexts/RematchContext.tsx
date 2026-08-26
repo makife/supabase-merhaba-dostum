@@ -562,7 +562,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }, 2000);
       }
     },
-    [userId, toast, navigate, getFreshPlayAccess],
+    [userId, toast, navigate, getFreshPlayAccess, rejectPendingRequest],
   );
 
   // Accept rematch - HAK KONTROLÜ EKLENDİ
@@ -701,6 +701,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
+        dismissedIncomingRequestIdsRef.current.add(requestToAccept.id);
+        clearIncomingTimeout();
+        setIncomingRequest(null);
       toast({
         title: "❗",
         description: "Rematch kabul edilemedi",
