@@ -387,7 +387,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           .maybeSingle();
 
         if (existingFromOpponent) {
-          const existingRequestAge = Date.now() - new Date(existingFromOpponent.created_at).getTime();
+          const existingRequestAge = existingFromOpponent.created_at
+            ? Date.now() - new Date(existingFromOpponent.created_at).getTime()
+            : Number.POSITIVE_INFINITY;
           const isVisibleIncomingRequest = incomingRequestRef.current?.id === existingFromOpponent.id;
 
           if (
@@ -397,60 +399,60 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.log("⏭️ Süresi dolmuş/gizlenmiş rematch isteği otomatik kabul edilmiyor:", existingFromOpponent.id);
             await rejectPendingRequest(existingFromOpponent.id);
           } else {
-          console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
+            console.log("✅ Rakip zaten istek göndermiş, otomatik kabul ediyorum:", existingFromOpponent.room_code);
 
-          // Get the room
-          const { data: room } = await supabase
-            .from("game_rooms")
-            .select("id, game_mode")
-            .eq("room_code", existingFromOpponent.room_code)
-            .maybeSingle();
-
-          if (room) {
-            // Add as participant if not exists
-            const { data: existing } = await supabase
-              .from("game_participants")
-              .select("id")
-              .eq("room_id", room.id)
-              .eq("user_id", userId)
+            // Get the room
+            const { data: room } = await supabase
+              .from("game_rooms")
+              .select("id, game_mode")
+              .eq("room_code", existingFromOpponent.room_code)
               .maybeSingle();
 
-            if (!existing) {
-              const { error: participantError } = await supabase.from("game_participants").insert({
-                room_id: room.id,
-                user_id: userId,
-                score: 0,
-                is_bot: false,
-                is_ready: true,
-              });
-              if (participantError) throw participantError;
-            } else {
-              const { error: readyError } = await supabase
+            if (room) {
+              // Add as participant if not exists
+              const { data: existing } = await supabase
                 .from("game_participants")
-                .update({ is_ready: true })
-                .eq("id", existing.id);
-              if (readyError) throw readyError;
+                .select("id")
+                .eq("room_id", room.id)
+                .eq("user_id", userId)
+                .maybeSingle();
+
+              if (!existing) {
+                const { error: participantError } = await supabase.from("game_participants").insert({
+                  room_id: room.id,
+                  user_id: userId,
+                  score: 0,
+                  is_bot: false,
+                  is_ready: true,
+                });
+                if (participantError) throw participantError;
+              } else {
+                const { error: readyError } = await supabase
+                  .from("game_participants")
+                  .update({ is_ready: true })
+                  .eq("id", existing.id);
+                if (readyError) throw readyError;
+              }
+
+              const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+              await supabase
+                .from("rematch_requests")
+                .update({ status: "accepted", responded_at: new Date().toISOString() })
+                .eq("id", existingFromOpponent.id);
+
+              toast({
+                title: "✅ Rematch Eşleşti",
+                description: "Her iki oyuncu da aynı anda istek gönderdi!",
+                duration: 1000,
+              });
+
+              await setLastRoomId(null);
+              // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
+              await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+              navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
+              return true;
             }
-
-            const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-
-            await supabase
-              .from("rematch_requests")
-              .update({ status: "accepted", responded_at: new Date().toISOString() })
-              .eq("id", existingFromOpponent.id);
-
-            toast({
-              title: "✅ Rematch Eşleşti",
-              description: "Her iki oyuncu da aynı anda istek gönderdi!",
-              duration: 1000,
-            });
-
-            await setLastRoomId(null);
-            // Her iki oyuncuyu da hazır işaretle (bekleme ekranı atlanıyor)
-            await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
-            navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
-            return true;
-          }
           }
         }
 
