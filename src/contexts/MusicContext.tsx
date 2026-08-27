@@ -614,7 +614,34 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // değiştir; ama play() çağırmadan önce `canplay` bekle (yoksa AbortError).
           if (isIOSNative && backgroundMusicRef.current) {
             const audio = backgroundMusicRef.current;
-            iosSwitchTrackAndPlay(audio, defaultPlaylist[nextTrackIndex])
+            const nextSrc = defaultPlaylist[nextTrackIndex];
+            iosPendingSrcRef.current = nextSrc;
+
+            // Bekleyen parçayı tekrar dene (kullanıcı dokunuşu / kısa gecikme)
+            const retryPending = () => {
+              const a = backgroundMusicRef.current;
+              const src = iosPendingSrcRef.current;
+              if (!a || !src || !musicEnabledRef.current || iosSwitchingRef.current) return;
+              iosSwitchingRef.current = true;
+              iosSwitchTrackAndPlay(a, src)
+                .catch(() => false)
+                .then((ok) => {
+                  iosSwitchingRef.current = false;
+                  setIsPlaying(!!ok);
+                  if (ok) {
+                    iosPendingSrcRef.current = null;
+                    iosSwitchFailCountRef.current = 0;
+                  } else {
+                    iosSwitchFailCountRef.current += 1;
+                    bindIOSGestureResume(retryPending);
+                    if (iosSwitchFailCountRef.current <= 20) {
+                      setTimeout(retryPending, 1000);
+                    }
+                  }
+                });
+            };
+
+            iosSwitchTrackAndPlay(audio, nextSrc)
               .then((ok) => {
                 console.log("🎵 [iOS] Sıradaki şarkı:", nextTrackIndex, ok ? "çalıyor" : "başlatılamadı");
                 setIsPlaying(ok);
@@ -626,14 +653,22 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               })
               .then((ok) => {
                 iosSwitchingRef.current = false;
-                // Tek bir bozuk/uyumsuz MP3 tüm çalma sırasını kilitlemesin.
-                if (!ok && musicEnabledRef.current) {
-                  setTimeout(handleTrackEnd, 300);
+                if (ok) {
+                  iosPendingSrcRef.current = null;
+                  iosSwitchFailCountRef.current = 0;
+                  return;
                 }
+                if (!musicEnabledRef.current) return;
+                // 🔥 Maç/challenge ekranında play() reddedilebiliyor →
+                // ilk dokunuşta ve periyodik olarak tekrar dene.
+                iosSwitchFailCountRef.current = 1;
+                bindIOSGestureResume(retryPending);
+                setTimeout(retryPending, 600);
               });
             // 🔥 setCurrentTrackIndex ÇAĞIRMA — effect re-run cleanup ile sesi kesiyor.
             return;
           }
+
 
           setCurrentTrackIndex(nextTrackIndex);
           // Allow the effect to create the new Audio element, then start it
