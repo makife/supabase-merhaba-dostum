@@ -132,13 +132,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const startIncomingExpiryTimer = useCallback(
     (request: RematchRequest) => {
       clearIncomingTimeout();
-      const requestAge = Date.now() - new Date(request.created_at).getTime();
-      const remainingMs = Math.max(0, REMATCH_REQUEST_TTL_MS - requestAge);
-
+      // Kart gösterildiği andan itibaren tam 20 saniye ekranda kalır.
       incomingTimeoutRef.current = setTimeout(() => {
         incomingTimeoutRef.current = null;
         void expireIncomingRequest(request.id);
-      }, remainingMs);
+      }, INCOMING_DISPLAY_MS);
     },
     [clearIncomingTimeout, expireIncomingRequest],
   );
