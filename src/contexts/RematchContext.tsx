@@ -897,9 +897,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
               toast({
                 title: "❌ Rematch Reddedildi",
-                description: "Rakip rematch isteğini reddetti.",
+                description: "Rakip yeniden maç isteğini reddetti.",
                 variant: "destructive",
-                duration: 1000,
+                duration: 3000,
               });
             }
           },
