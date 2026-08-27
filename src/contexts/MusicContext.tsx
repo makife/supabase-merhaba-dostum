@@ -133,6 +133,36 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    */
   const iosSwitchingRef = useRef(false);
 
+  // 🔥 iOS: Maç/challenge ekranında (yoğun sahne + ses efektleri) parça geçişi
+  // için yapılan play() bazen "gesture yok" gibi reddediliyor ve müzik susuyor.
+  // Bekleyen src'yi tutup bir sonraki kullanıcı dokunuşunda tekrar deniyoruz.
+  const iosPendingSrcRef = useRef<string | null>(null);
+  const iosSwitchFailCountRef = useRef(0);
+  const iosGestureBoundRef = useRef(false);
+
+  const bindIOSGestureResume = (retry: () => void) => {
+    if (!isIOSNative || iosGestureBoundRef.current) return;
+    iosGestureBoundRef.current = true;
+    const opts: AddEventListenerOptions = { capture: true, passive: true };
+    const unbind = () => {
+      iosGestureBoundRef.current = false;
+      window.removeEventListener("touchstart", handler, opts);
+      window.removeEventListener("pointerdown", handler, opts);
+      window.removeEventListener("click", handler, opts);
+      window.removeEventListener("keydown", handler, opts);
+    };
+    const handler = () => {
+      unbind();
+      retry();
+    };
+    window.addEventListener("touchstart", handler, opts);
+    window.addEventListener("pointerdown", handler, opts);
+    window.addEventListener("click", handler, opts);
+    window.addEventListener("keydown", handler, opts);
+  };
+
+
+
   const iosSwitchTrackAndPlay = async (audio: HTMLAudioElement, src: string): Promise<boolean> => {
     try {
       audio.pause();
