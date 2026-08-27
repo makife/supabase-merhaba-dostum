@@ -45,6 +45,8 @@ interface RematchContextType {
 const RematchContext = createContext<RematchContextType | undefined>(undefined);
 
 const REMATCH_REQUEST_TTL_MS = 30000;
+// Rakibin ekranında yeniden maç kartının garanti kalma süresi (cevap yoksa otomatik red)
+const INCOMING_DISPLAY_MS = 20000;
 const REJECT_COOLDOWN_MS = 20000;
 
 export const useRematchContext = () => {
