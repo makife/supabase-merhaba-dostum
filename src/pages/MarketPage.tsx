@@ -100,6 +100,12 @@ const MarketPage = () => {
     if (pending) setFlight({ ...pending, id: Date.now() });
   }, []);
 
+  // Referansı stabil tutuyoruz: InventoryFlyAnimation bu callback'i
+  // useEffect bağımlılığında kullanıyor. Her render'da yeni bir fonksiyon
+  // geçersek (örn. inline "() => setFlight(null)") animasyon, ilgisiz bir
+  // buton tıklamasıyla tetiklenen her re-render'da baştan başlıyordu.
+  const handleFlightDone = useCallback(() => setFlight(null), []);
+
   const closeSuccessDialog = useCallback(() => {
     setShowSuccessDialog(false);
     startPendingFlight();
@@ -1112,7 +1118,7 @@ const MarketPage = () => {
       )}
 
       {/* --- ENVANTERE UÇAN İKON ANİMASYONU --- */}
-      <InventoryFlyAnimation flight={flight} onDone={() => setFlight(null)} />
+      <InventoryFlyAnimation flight={flight} onDone={handleFlightDone} />
 
     </div>
   );
