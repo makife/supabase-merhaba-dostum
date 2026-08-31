@@ -24,6 +24,9 @@ import { LevelUpDialog } from "@/components/LevelUpDialog";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Capacitor } from "@capacitor/core";
 import { RealtimeClient } from "@supabase/supabase-js";
+import degistirIkon from "@/assets/degistirIkon.webp";
+import fisildaIkon from "@/assets/fisildaIkon.webp";
+import senyazIkon from "@/assets/senyazIkon.webp";
 import {
   ArrowLeft,
   Trophy,
@@ -1356,9 +1359,9 @@ const ProfilePage = () => {
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Jokerler</h3>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <JokerCard icon="degistirIkon.webp" value={jokers.degistir} label="Değiştir" />
-              <JokerCard icon="fisildaIkon.webp" value={jokers.fisilida} label="Fısılda" />
-              <JokerCard icon="senyazIkon.webp" value={jokers.senYaz} label="Sen Yaz" />
+              <JokerCard icon={degistirIkon} value={jokers.degistir} label="Değiştir" />
+              <JokerCard icon={fisildaIkon} value={jokers.fisilida} label="Fısılda" />
+              <JokerCard icon={senyazIkon} value={jokers.senYaz} label="Sen Yaz" />
             </div>
           </div>
         )}
@@ -1535,7 +1538,7 @@ const StatCard = ({ icon: Icon, value, label, colorClass }: any) => (
 
 const JokerCard = ({ icon, value, label }: any) => (
   <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
-    <img src={`/${icon}`} alt={label} className="w-8 h-8 mb-1 object-contain" />
+    <img src={icon} alt={label} className="w-8 h-8 mb-1 object-contain" />
     <span className="text-lg font-bold text-white">{value}</span>
     <span className="text-[10px] text-white/60 font-medium uppercase tracking-wide">{label}</span>
   </div>
