@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { nativeStorage } from "@/utils/nativeStorage";
+import UpdateCardDialog from "@/components/UpdateCardDialog";
 
 // Basit semver karşılaştırma: a < b ise -1, eşitse 0, a > b ise 1
 const compareVersions = (a: string, b: string): number => {
@@ -27,7 +26,6 @@ export const UpdateDialog: React.FC = () => {
   const [forceUpdate, setForceUpdate] = useState(false);
   const [storeUrl, setStoreUrl] = useState<string>("");
   const [latestVersion, setLatestVersion] = useState<string>("");
-  const [releaseNotes, setReleaseNotes] = useState<string>("");
 
   useEffect(() => {
     const check = async () => {
@@ -59,7 +57,6 @@ export const UpdateDialog: React.FC = () => {
         let manualMin: string | null = null;
         let manualForce = false;
         let manualStoreUrl = "";
-        let manualNotes = "";
         try {
           const { data: row } = await supabase
             .from("app_versions")
@@ -71,7 +68,6 @@ export const UpdateDialog: React.FC = () => {
             manualMin = row.min_version;
             manualForce = !!row.force_update;
             manualStoreUrl = row.store_url || "";
-            manualNotes = row.release_notes || "";
           }
         } catch (e) {
           console.warn("[UpdateDialog] manual override fetch failed:", e);
@@ -99,7 +95,6 @@ export const UpdateDialog: React.FC = () => {
 
         setLatestVersion(latest);
         setStoreUrl(resolvedStoreUrl || manualStoreUrl);
-        setReleaseNotes(manualNotes);
         setForceUpdate(force);
         setOpen(true);
       } catch (e) {
@@ -126,48 +121,11 @@ export const UpdateDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <UpdateCardDialog
       open={open}
-      onOpenChange={(v) => {
-        if (forceUpdate) return;
-        if (!v) handleLater();
-      }}
-    >
-      <DialogContent
-        className="w-[90%] max-w-sm rounded-2xl border-0 p-6"
-        style={{ backgroundColor: "#1e2d45" }}
-        onPointerDownOutside={(e) => forceUpdate && e.preventDefault()}
-        onEscapeKeyDown={(e) => forceUpdate && e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-center text-white text-xl">
-            Yeni Güncelleme Mevcut
-          </DialogTitle>
-          <DialogDescription className="text-center text-white/70 mt-2">
-            {releaseNotes ||
-              `Kelimele'nin yeni sürümü (${latestVersion}) yayında. Daha iyi bir deneyim için lütfen güncelleyin.`}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-2 mt-4">
-          <Button
-            onClick={handleUpdate}
-            className="w-full rounded-xl text-white"
-            style={{ backgroundColor: "#3b82f6" }}
-          >
-            Güncelle
-          </Button>
-          {!forceUpdate && (
-            <Button
-              onClick={handleLater}
-              variant="ghost"
-              className="w-full rounded-xl text-white/70 hover:text-white"
-            >
-              Daha Sonra
-            </Button>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      forceUpdate={forceUpdate}
+      onUpdate={handleUpdate}
+      onLater={handleLater}
+    />
   );
 };
