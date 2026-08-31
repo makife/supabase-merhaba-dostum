@@ -15,6 +15,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [showLoading, setShowLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const videoRef = useRef(null);
 
   const loadingSteps = [
     { text: "Oyun hazırlanıyor...", progress: 0 },
@@ -86,6 +87,38 @@ const LoadingScreen = ({ onLoadingComplete }) => {
     if (!mounted) return;
     const introFallback = setTimeout(finishIntro, 12000);
     return () => clearTimeout(introFallback);
+  }, [mounted]);
+
+  // iOS WKWebView, autoplay kararını video DOM node'una eklendiği "ilk an" veriyor.
+  // React'in muted/playsInline prop'ları bazen bu ilk kontrolden SONRA DOM'a yansıyor,
+  // bu yüzden WKWebView videoyu "sesli" sanıp autoplay'i engelleyip kendi play butonunu
+  // gösteriyor. Attribute'ları elle, senkron şekilde set edip play() çağırmak bunu çözüyor.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !mounted) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    const tryPlay = () => {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("Video autoplay engellendi, tekrar deneniyor:", err);
+          // Bir sonraki tick'te tekrar dene; hâlâ başarısızsa intro'yu atla ki
+          // kullanıcı boş bir play butonuyla kalmasın.
+          setTimeout(() => {
+            video.muted = true;
+            video.play().catch(() => finishIntro());
+          }, 150);
+        });
+      }
+    };
+
+    tryPlay();
   }, [mounted]);
 
   useEffect(() => {
@@ -162,10 +195,16 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           }}
         >
           <video
+  ref={videoRef}
   src={erganVideo}
   autoPlay
   muted
+  defaultMuted
   playsInline
+  webkit-playsinline="true"
+  x5-playsinline="true"
+  disablePictureInPicture
+  controls={false}
   preload="auto"
   onCanPlayThrough={() => setIsVideoReady(true)}
   onEnded={finishIntro}
