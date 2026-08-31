@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import { ensureImagesLoaded } from "./GameCountdown";
 import { preloadHomeIslands } from "@/lib/homeIslandAssets";
-import erganVideo from "@/assets/ergan.mp4";
+import erganGif from "@/assets/ergan.gif";
 import wormAnimationData from "@/assets/ilerlemeCubugu.json";
 
 const LoadingScreen = ({ onLoadingComplete }) => {
@@ -14,8 +14,12 @@ const LoadingScreen = ({ onLoadingComplete }) => {
   const [showErganImage, setShowErganImage] = useState(true);
   const [showLoading, setShowLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isVideoReady, setIsVideoReady] = useState(false);
-  const videoRef = useRef(null);
+  const [isGifReady, setIsGifReady] = useState(false);
+
+  // GIF 5 saniye (54 frame) ve sonsuz döngüde (loop) oynuyor,
+  // videoda olduğu gibi "onEnded" event'i yok, bu yüzden süresini
+  // biliyor olmamız ve elle bir timer ile intro'yu bitirmemiz gerekiyor.
+  const ERGAN_GIF_DURATION_MS = 5000;
 
   const loadingSteps = [
     { text: "Oyun hazırlanıyor...", progress: 0 },
@@ -85,40 +89,19 @@ const LoadingScreen = ({ onLoadingComplete }) => {
 
   useEffect(() => {
     if (!mounted) return;
-    const introFallback = setTimeout(finishIntro, 12000);
+    // Gif zaten ERGAN_GIF_DURATION_MS sonra finishIntro'yu tetikliyor;
+    // bu, olması gerekmeyen ama garanti olsun diye duran bir son çare (safety net).
+    const introFallback = setTimeout(finishIntro, ERGAN_GIF_DURATION_MS + 3000);
     return () => clearTimeout(introFallback);
   }, [mounted]);
 
-  // iOS WKWebView, autoplay kararını video DOM node'una eklendiği "ilk an" veriyor.
-  // React'in muted/playsInline prop'ları bazen bu ilk kontrolden SONRA DOM'a yansıyor,
-  // bu yüzden WKWebView videoyu "sesli" sanıp autoplay'i engelleyip kendi play butonunu
-  // gösteriyor. Attribute'ları elle, senkron şekilde set edip play() çağırmak bunu çözüyor.
+  // GIF her zaman "autoplay" olduğu için (img tag'i ekrana geldiği an oynamaya başlar,
+  // iOS'un video'da yaptığı gibi kullanıcı etkileşimi/mute kontrolü YOK), sadece
+  // süresi kadar bekleyip intro'yu bitiriyoruz.
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !mounted) return;
-
-    video.muted = true;
-    video.defaultMuted = true;
-    video.setAttribute("muted", "");
-    video.setAttribute("playsinline", "");
-    video.setAttribute("webkit-playsinline", "");
-
-    const tryPlay = () => {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn("Video autoplay engellendi, tekrar deneniyor:", err);
-          // Bir sonraki tick'te tekrar dene; hâlâ başarısızsa intro'yu atla ki
-          // kullanıcı boş bir play butonuyla kalmasın.
-          setTimeout(() => {
-            video.muted = true;
-            video.play().catch(() => finishIntro());
-          }, 150);
-        });
-      }
-    };
-
-    tryPlay();
+    if (!mounted) return;
+    const gifTimer = setTimeout(finishIntro, ERGAN_GIF_DURATION_MS);
+    return () => clearTimeout(gifTimer);
   }, [mounted]);
 
   useEffect(() => {
@@ -194,26 +177,16 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             zIndex: 1000,
           }}
         >
-          <video
-  ref={videoRef}
-  src={erganVideo}
-  autoPlay
-  muted
-  defaultMuted
-  playsInline
-  webkit-playsinline="true"
-  x5-playsinline="true"
-  disablePictureInPicture
-  controls={false}
-  preload="auto"
-  onCanPlayThrough={() => setIsVideoReady(true)}
-  onEnded={finishIntro}
+          <img
+  src={erganGif}
+  alt=""
+  onLoad={() => setIsGifReady(true)}
   onError={finishIntro}
   style={{
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    opacity: isVideoReady ? 1 : 0, // Video hazır olana kadar tamamen gizli
+    opacity: isGifReady ? 1 : 0, // Gif hazır olana kadar tamamen gizli
     transition: "opacity 0.15s ease-in", // Aniden fırlamak yerine yumuşak geçiş
   }}
 />
