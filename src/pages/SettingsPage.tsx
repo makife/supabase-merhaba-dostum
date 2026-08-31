@@ -1,7 +1,7 @@
 import { MusicPackSelector } from "@/components/MusicPackSelector";
 import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 import { ContactDialog } from "@/components/ContactDialog";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
 import cikisYapildiImg from "@/assets/cikisYapildi.webp";
+import DeleteAccountCardDialog from "@/components/DeleteAccountCardDialog";
 import {
   ArrowLeft,
   Bell,
@@ -734,105 +735,51 @@ const SettingsPage = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              Hesabı Silmeyi Onaylayın
-            </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
-              <li>Profil bilgileriniz</li>
-              <li>Oyun geçmişiniz ve istatistikleriniz</li>
-              <li>Rozetleriniz ve başarılarınız</li>
-              <li>Satın alımlarınız ve envanter</li>
-            </ul>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setDeleteConfirmOpen(false)}
-                className="flex-1 bg-slate-700 hover:bg-slate-600"
-                disabled={isDeleting}
-              >
-                İptal
-              </Button>
-              <Button
-                onClick={() => {
-                  setDeleteConfirmOpen(false);
-                  setDeleteFinalConfirmOpen(true);
-                }}
-                className="flex-1 bg-red-500 hover:bg-red-600"
-                disabled={isDeleting}
-              >
-                Evet, Hesabımı Sil
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteAccountCardDialog
+        open={deleteConfirmOpen}
+        step="confirm"
+        onCancel={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          setDeleteConfirmOpen(false);
+          setDeleteFinalConfirmOpen(true);
+        }}
+      />
 
       <ContactDialog open={contactOpen} onOpenChange={setContactOpen} />
 
       {/* Final Delete Confirmation Dialog */}
-      <Dialog open={deleteFinalConfirmOpen} onOpenChange={setDeleteFinalConfirmOpen}>
-        <DialogContent className="bg-[#1e2d45] border-red-400/30 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              Son Onay
-            </DialogTitle>
-            <DialogDescription className="text-slate-400 text-base pt-2">
-              Bu son onay aşamasıdır ve geri alınması imkansızdır.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={() => setDeleteFinalConfirmOpen(false)}
-              className="flex-1 bg-slate-700 hover:bg-slate-600"
-              disabled={isDeleting}
-            >
-              Kalıyorum
-            </Button>
-            <Button
-              onClick={async () => {
-                setIsDeleting(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke("delete-user-account");
+      <DeleteAccountCardDialog
+        open={deleteFinalConfirmOpen}
+        step="final"
+        loading={isDeleting}
+        onCancel={() => setDeleteFinalConfirmOpen(false)}
+        onConfirm={async () => {
+          setIsDeleting(true);
+          try {
+            const { data, error } = await supabase.functions.invoke("delete-user-account");
 
-                  if (error) throw error;
-                  if (data?.error) throw new Error(data.error);
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
 
-                  setDeleteFinalConfirmOpen(false);
-                  setDeleteConfirmOpen(false);
+            setDeleteFinalConfirmOpen(false);
+            setDeleteConfirmOpen(false);
 
-                  await nativeStorage.clear();
-                  await supabase.auth.signOut();
+            await nativeStorage.clear();
+            await supabase.auth.signOut();
 
-                  window.location.href = "/auth";
-                } catch (error) {
-                  console.error("Delete error:", error);
-                  toast({
-                    title: "Hata",
-                    description: "Hesap silinemedi. Lütfen tekrar deneyin.",
-                    variant: "destructive",
-                  });
-                  setIsDeleting(false);
-                  setDeleteFinalConfirmOpen(false);
-                }
-              }}
-              className="flex-1 bg-red-500 hover:bg-red-600"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Siliniyor..." : "Hesabımı Sil"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            window.location.href = "/auth";
+          } catch (error) {
+            console.error("Delete error:", error);
+            toast({
+              title: "Hata",
+              description: "Hesap silinemedi. Lütfen tekrar deneyin.",
+              variant: "destructive",
+            });
+            setIsDeleting(false);
+            setDeleteFinalConfirmOpen(false);
+          }
+        }}
+      />
 
       {/* Bildirim Kapatma Uyarı Dialogu */}
       <AlertDialog open={notificationWarningOpen} onOpenChange={setNotificationWarningOpen}>
