@@ -27,6 +27,12 @@ interface Props {
  */
 export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
   const layerRef = useRef<HTMLDivElement | null>(null);
+  // onDone referansı parent her render olduğunda değişebilir; bunu bağımlılığa
+  // sokmadan güncel tutmak için ref kullanıyoruz. Aksi halde parent'taki
+  // ilgisiz bir state değişikliği bile bu efekti yeniden tetikleyip
+  // animasyonu baştan başlatıyordu.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     if (!flight || !layerRef.current) return;
@@ -127,7 +133,7 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
 
     const timeout = window.setTimeout(() => {
       sprites.forEach((s) => s.remove());
-      onDone();
+      onDoneRef.current();
     }, DUR + total * GAP + 300);
 
     return () => {
@@ -135,7 +141,10 @@ export const InventoryFlyAnimation: React.FC<Props> = ({ flight, onDone }) => {
       animations.forEach((a) => a.cancel());
       sprites.forEach((s) => s.remove());
     };
-  }, [flight, onDone]);
+    // Sadece flight.id değişince yeniden çalışsın: onDone referansı parent
+    // render'larında değişse bile animasyon resetlenmemeli.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flight?.id]);
 
   if (typeof document === "undefined") return null;
 
