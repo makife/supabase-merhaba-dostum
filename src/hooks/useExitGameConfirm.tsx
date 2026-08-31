@@ -1,14 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 
 /**
  * Mini oyun / düello-görev sayfaları için "Çıkmak istediğine emin misin?"
@@ -20,10 +11,7 @@ import {
  *   {ExitConfirmDialog}
  */
 export const useExitGameConfirm = (options?: {
-  title?: string;
-  description?: string;
-  confirmText?: string;
-  cancelText?: string;
+  variant?: "default" | "tournament" | "tournament-bracket";
 }) => {
   const [open, setOpen] = useState(false);
   const actionRef = useRef<(() => void) | null>(null);
@@ -50,33 +38,12 @@ export const useExitGameConfirm = (options?: {
   }, []);
 
   const ExitConfirmDialog = (
-    <AlertDialog open={open} onOpenChange={(v) => !v && handleCancel()}>
-      <AlertDialogContent className="max-w-[90%] sm:max-w-md rounded-2xl bg-[#1e2d45] border-white/10 text-white">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-white">
-            {options?.title ?? "Oyundan çık"}
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-white/70">
-            {options?.description ??
-              "Oyundan çıkmak istediğine emin misin? Mevcut ilerlemeni kaybedebilirsin."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel
-            onClick={handleCancel}
-            className="rounded-xl bg-white/10 border-white/10 text-white hover:bg-white/15"
-          >
-            {options?.cancelText ?? "Devam et"}
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirm}
-            className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {options?.confirmText ?? "Çık"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ExitConfirmCardDialog
+      open={open}
+      onContinue={handleCancel}
+      onExit={handleConfirm}
+      variant={options?.variant}
+    />
   );
 
   return { requestExit, ExitConfirmDialog, isOpen: open };
