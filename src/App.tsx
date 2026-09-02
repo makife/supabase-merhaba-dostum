@@ -712,7 +712,6 @@ const AppRoutes = () => {
       <RoomAutoNavigator />
       <GlobalRematchDialogWrapper />
       <UpdateDialog />
-      <SignedOutOverlay />
     </>
   );
 };
@@ -787,6 +786,7 @@ const AppProviders = () => {
                             <OnboardingWrapper />
                             <BackButtonDialog />
                             <AppRoutes />
+                            <SignedOutOverlay />
                           </RematchProvider>
                         </MatchmakingWrapper>
                       </NotificationProvider>
