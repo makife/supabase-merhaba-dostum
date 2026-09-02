@@ -27,7 +27,7 @@ import { useUserPurchases } from "@/hooks/useUserPurchases";
 import { nativeStorage, STORAGE_KEYS } from "@/utils/nativeStorage";
 import { ContactDialog } from "@/components/ContactDialog";
 import { useExitGameConfirm } from "@/hooks/useExitGameConfirm";
-import cikisYapildiImg from "@/assets/cikisYapildi.webp";
+import { showSignedOutCard } from "@/components/SignedOutOverlay";
 import DeleteAccountCardDialog from "@/components/DeleteAccountCardDialog";
 import {
   ArrowLeft,
@@ -107,9 +107,10 @@ const SettingsPage = () => {
   const [contactOpen, setContactOpen] = useState(false);
   const [notificationWarningOpen, setNotificationWarningOpen] = useState(false);
 
-  // Çıkış Yapıldı görseli belirli bir süre gösterildikten sonra auth sayfasına yönlendir
+  // Çıkış Yapıldı görseli global overlay üzerinden gösterilir
   useEffect(() => {
     if (!showSignedOutImage) return;
+    showSignedOutCard();
     const t = setTimeout(() => {
       setShowSignedOutImage(false);
       navigate("/auth");
@@ -818,17 +819,6 @@ const SettingsPage = () => {
       {/* Çıkış Yap onay diyaloğu */}
       {SignOutConfirmDialog}
 
-      {/* Çıkış Yapıldı görseli */}
-      {showSignedOutImage && (
-        <div className="fixed inset-0 z-[2147483000] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 animate-in fade-in duration-200">
-          <img
-            src={cikisYapildiImg}
-            alt="Çıkış Yapıldı"
-            className="w-full max-w-[420px] h-auto select-none animate-in fade-in zoom-in-95 duration-300"
-            draggable={false}
-          />
-        </div>
-      )}
     </div>
   );
 };

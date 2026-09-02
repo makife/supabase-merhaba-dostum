@@ -17,6 +17,7 @@ import { TournamentProvider } from "@/contexts/TournamentContext";
 import { ServerTimeProvider } from "@/contexts/ServerTimeContext";
 import { RematchProvider, useRematchContext } from "@/contexts/RematchContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import SignedOutOverlay from "@/components/SignedOutOverlay";
 import ModeratorRoute from "@/components/ModeratorRoute";
 import LoadingScreen from "@/components/LoadingScreen";
 import AuthPage from "@/pages/AuthPage";
@@ -711,6 +712,7 @@ const AppRoutes = () => {
       <RoomAutoNavigator />
       <GlobalRematchDialogWrapper />
       <UpdateDialog />
+      <SignedOutOverlay />
     </>
   );
 };
