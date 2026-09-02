@@ -406,9 +406,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setLoading(false);
-    
-    toast({ title: "Çıkış Yapıldı" });
   };
+
 
   // 🔑 Reset Password
   const resetPassword = async (email: string) => {

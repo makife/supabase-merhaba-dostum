@@ -14,6 +14,7 @@ import { Menu as MenuIcon, X } from "lucide-react";
 import { SvgAsset } from "@/components/ui/svg-asset";
 import { RadioPicker } from "@/components/RadioPicker";
 import { useRadio } from "@/contexts/RadioContext";
+import cikisYapildiImg from "@/assets/cikisYapildi.webp";
 
 // --- Yardımcı Fonksiyonlar ---
 const isUserBannedFromProfile = (profile: any): boolean => {
@@ -146,10 +147,17 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
     setIsOpen(false);
   };
 
+  const [showSignedOutImage, setShowSignedOutImage] = useState(false);
+
   const handleLogout = async () => {
     playSound("buttonClick");
-    await signOut();
     setIsOpen(false);
+    setShowSignedOutImage(true);
+    await signOut();
+    setTimeout(() => {
+      setShowSignedOutImage(false);
+      navigate("/auth");
+    }, 1800);
   };
 
   // ─── Ortak satır stili ──────────────
@@ -361,6 +369,17 @@ export function FloatingMenu({ onOpenChange }: FloatingMenuProps) {
       </div>
 
       <RadioPicker open={radioOpen} onClose={() => setRadioOpen(false)} />
+
+      {showSignedOutImage && (
+        <div className="fixed inset-0 z-[2147483000] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <img
+            src={cikisYapildiImg}
+            alt="Çıkış Yapıldı"
+            className="w-full max-w-[420px] h-auto select-none"
+            draggable={false}
+          />
+        </div>
+      )}
     </div>
   );
 }
