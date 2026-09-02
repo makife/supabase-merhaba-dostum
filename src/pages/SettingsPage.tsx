@@ -73,7 +73,6 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { user, signOut } = useAuth();
   const { requestExit: requestSignOut, ExitConfirmDialog: SignOutConfirmDialog } = useExitGameConfirm();
-  const [showSignedOutImage, setShowSignedOutImage] = useState(false);
   const { theme, setTheme } = useTheme();
   const { soundsEnabled, setSoundsEnabled, playSound } = useSounds();
   const { musicEnabled, setMusicEnabled } = useMusic();
@@ -106,17 +105,6 @@ const SettingsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [notificationWarningOpen, setNotificationWarningOpen] = useState(false);
-
-  // Çıkış Yapıldı görseli global overlay üzerinden gösterilir
-  useEffect(() => {
-    if (!showSignedOutImage) return;
-    showSignedOutCard();
-    const t = setTimeout(() => {
-      setShowSignedOutImage(false);
-      navigate("/auth");
-    }, 1800);
-    return () => clearTimeout(t);
-  }, [showSignedOutImage, navigate]);
 
   // Load settings and check real OS permission status
   useEffect(() => {
@@ -676,8 +664,9 @@ const SettingsPage = () => {
             onClick={() => {
               requestSignOut(async () => {
                 try {
+                  showSignedOutCard();
                   await signOut();
-                  setShowSignedOutImage(true);
+                  setTimeout(() => navigate("/auth"), 1800);
                 } catch (e) {
                   toast({ title: "Hata", description: "Çıkış yapılamadı.", variant: "destructive" });
                 }
