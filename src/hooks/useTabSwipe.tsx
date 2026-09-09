@@ -62,10 +62,27 @@ export function useTabSwipe({
       const dx = e.touches[0].clientX - s.x;
       const dy = e.touches[0].clientY - s.y;
       if (s.axis === "none") {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-        s.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+        if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
+        // Sadece belirgin yatay hareket sekme geçişi başlatır
+        s.axis = Math.abs(dx) > Math.abs(dy) * 2 ? "x" : "y";
       }
       if (s.axis !== "x") return;
+      // Yatay sürükleme sırasında dikey kaçış olursa geçişi iptal et (360 derece hissi olmasın)
+      if (Math.abs(dy) > 34) {
+        s.axis = "y";
+        s.dx = 0;
+        const layer = dragLayerRef.current;
+        if (layer) {
+          layer.style.transition = "transform 180ms ease-out, opacity 180ms ease-out";
+          layer.style.transform = "translate3d(0,0,0)";
+          layer.style.opacity = "1";
+        }
+        if (pillRef.current) {
+          pillRef.current.style.transition = "transform 180ms ease-out";
+          pillRef.current.style.transform = pillTransform(tabs.indexOf(activeTab));
+        }
+        return;
+      }
 
       const idx = tabs.indexOf(activeTab);
       const atEdge = (dx < 0 && idx === tabs.length - 1) || (dx > 0 && idx === 0);
