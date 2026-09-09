@@ -7366,13 +7366,15 @@ const GamePage = ({
       if (cancelled) return;
       // Turnuva: round'a göre artan zorluk (çeyrek 2.5-25s, yarı 2.5-20s, final 2.5-15s)
       // Random-match botu normal AI modundan biraz daha hızlı
+      // ⚠️ Rematch odaları "private-room" moduna açılıyor; bot rematch'lerinde de
+      // random-match zorluğu korunmalı (aksi halde ikinci maçta bot yavaşlıyordu)
       let minDelay = 2500;
       let maxDelay = 25000;
       if (gameMode === "tournament") {
         const round = tournamentMatch?.round ?? 1;
         minDelay = 2500;
         maxDelay = round >= 3 ? 15000 : round === 2 ? 20000 : 25000;
-      } else if (gameMode === "random-match") {
+      } else if (gameMode === "random-match" || gameMode === "private-room") {
         minDelay = 1500;
         maxDelay = 12000;
       }
