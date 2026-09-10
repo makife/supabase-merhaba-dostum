@@ -41,9 +41,6 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
   };
 
 
-  const borderColor =
-    tab === "all-time" ? "border-red-500/30" : tab === "weekly" ? "border-blue-500/30" : "border-green-500/30";
-
   return (
     <div className="relative">
       {/* Kapalı/başlık kartı — sekme kartıyla aynı ölçülerde */}
