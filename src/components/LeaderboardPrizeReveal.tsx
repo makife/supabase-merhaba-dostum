@@ -41,16 +41,14 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
   };
 
 
-  const borderColor =
-    tab === "all-time" ? "border-red-500/30" : tab === "weekly" ? "border-blue-500/30" : "border-green-500/30";
-
   return (
     <div className="relative">
       {/* Kapalı/başlık kartı — sekme kartıyla aynı ölçülerde */}
+      <div className="prize-comet">
       <button
         type="button"
         onClick={handleToggle}
-        className={`relative w-full grid grid-cols-3 items-center bg-[#1e2d45] border ${borderColor} rounded-xl p-1 h-auto overflow-hidden active:scale-[0.99] transition-transform`}
+        className={`relative w-full grid grid-cols-3 items-center bg-[#1e2d45] rounded-xl p-1 h-auto overflow-hidden active:scale-[0.99] transition-transform`}
       >
         <div className="h-9 w-full">
           <Lottie animationData={odulBuradaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
@@ -62,6 +60,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
           <Lottie animationData={odulBuradaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
         </div>
       </button>
+      </div>
 
       {/* Açılan ödül kartı */}
       <div
