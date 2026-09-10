@@ -63,6 +63,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
           <Lottie animationData={odulBuradaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
         </div>
       </button>
+      </div>
 
       {/* Açılan ödül kartı */}
       <div
