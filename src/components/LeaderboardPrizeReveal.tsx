@@ -48,7 +48,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
       <button
         type="button"
         onClick={handleToggle}
-        className={`relative w-full grid grid-cols-3 items-center bg-[#1e2d45] rounded-xl p-1 h-auto overflow-hidden active:scale-[0.99] transition-transform`}
+        className={`relative w-full grid grid-cols-3 items-center bg-white rounded-xl p-1 h-auto overflow-hidden active:scale-[0.99] transition-transform`}
       >
         <div className="h-9 w-full">
           <Lottie animationData={odulBuradaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
