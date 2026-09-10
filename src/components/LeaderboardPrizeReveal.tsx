@@ -53,7 +53,7 @@ const LeaderboardPrizeReveal = ({ tab }: Props) => {
         <div className="h-9 w-full">
           <Lottie animationData={odulBuradaAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
         </div>
-        <span className="text-sm font-black tracking-wider text-amber-300 whitespace-nowrap text-center">
+        <span className="prize-title text-base font-black tracking-wider whitespace-nowrap text-center">
           ÖDÜL BURADA
         </span>
         <div className="h-9 w-full">

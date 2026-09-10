@@ -2504,7 +2504,7 @@ body.is-capacitor.hide-bars::before {
   }
 }
 
-/* === Ödül kartı neon kuyruklu kenar animasyonu === */
+/* === Ödül kartı sabit beyaz kenar animasyonu === */
 @property --prize-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -2513,10 +2513,6 @@ body.is-capacitor.hide-bars::before {
 
 @keyframes prize-comet-spin {
   to { --prize-angle: 360deg; }
-}
-@keyframes prize-comet-hue {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(360deg); }
 }
 
 .prize-comet {
@@ -2528,15 +2524,13 @@ body.is-capacitor.hide-bars::before {
       from var(--prize-angle),
       transparent 0deg,
       transparent 255deg,
-      hsl(45 100% 55% / 0.15) 290deg,
-      hsl(45 100% 55% / 0.5) 320deg,
-      hsl(45 100% 60%) 345deg,
-      hsl(45 100% 75%) 355deg,
-      hsl(45 100% 90%) 360deg
+      hsl(0 0% 100% / 0.15) 290deg,
+      hsl(0 0% 100% / 0.45) 320deg,
+      hsl(0 0% 100% / 0.75) 345deg,
+      hsl(0 0% 100% / 0.9) 355deg,
+      hsl(0 0% 100%) 360deg
     );
-  animation:
-    prize-comet-spin 3.2s linear infinite,
-    prize-comet-hue 8s linear infinite;
+  animation: prize-comet-spin 3.2s linear infinite;
 }
 
 .prize-comet::before {
@@ -2546,11 +2540,27 @@ body.is-capacitor.hide-bars::before {
   border-radius: 1.1rem;
   background: inherit;
   filter: blur(10px);
-  opacity: 0.55;
+  opacity: 0.45;
   z-index: -1;
   pointer-events: none;
 }
 
 .prize-comet > * {
   border-radius: calc(0.85rem - 2px);
+}
+
+/* Ödül Burada yazısı: beyaz dolgu + lacivert kontur + cartoon font */
+.prize-title {
+  font-family: "Fredoka", "Bungee", "Righteous", sans-serif;
+  color: #ffffff;
+  text-shadow:
+    -1.5px -1.5px 0 #1e3a8a,
+    1.5px -1.5px 0 #1e3a8a,
+    -1.5px 1.5px 0 #1e3a8a,
+    1.5px 1.5px 0 #1e3a8a,
+    -2px 0 0 #1e3a8a,
+    2px 0 0 #1e3a8a,
+    0 -2px 0 #1e3a8a,
+    0 2px 0 #1e3a8a;
+  letter-spacing: 0.04em;
 }
