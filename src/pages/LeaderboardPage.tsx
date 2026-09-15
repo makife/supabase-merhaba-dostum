@@ -425,22 +425,14 @@ const LeaderboardPage = () => {
     },
   };
 
-  // Sezon ve aylık sekmelerde çerçeveler geniş (kare değil), haftalıkta ise kare kutu kullanılıyor.
-  // Önceki hesap sadece AVATARLAR arası mesafeyi eşitliyordu; bu da kutu genişlikleri farklı olduğu için
-  // toplam satır genişliğini (dolayısıyla 2./3. kutunun EKRANDAKİ KONUMUNU) sekmeler arasında
-  // farklılaştırıyordu - haftalıktaki kutular sezon/aylığa göre daha dar bir alana sıkışıyordu.
-  // Burada bunun yerine sezon/aylığın (birbirleriyle zaten eşleşen, doğru görünen) TOPLAM satır
-  // genişliğini referans alıp haftalığın gap'ini buna göre büyütüyoruz; böylece 2./3. kutu tüm
-  // sekmelerde ekranda aynı konumda oturuyor.
-  const SEASON_MONTHLY_SM_GAP_PX = 18; // sezon/aylık: mevcut, doğru görünen boşluk
-  const getPodiumGapPx = (tab: LeaderboardTab): number => {
-    if (tab !== "weekly") return SEASON_MONTHLY_SM_GAP_PX;
-
-    const seasonBox = Math.round(FRAME_CONFIG.season.sm.lottieH * FRAME_ASPECT);
-    const targetRowWidth = seasonBox * 2 + SEASON_MONTHLY_SM_GAP_PX;
-
-    const weeklyBox = FRAME_CONFIG.weekly.sm.lottieH; // haftalık kare kutu
-    return Math.max(0, Math.round(targetRowWidth - weeklyBox * 2));
+  // Ekran görüntülerinde görüldüğü üzere, asıl sorun 2./3. kutuların TOPLAM satır genişliği değil,
+  // aralarındaki BOŞLUĞUN kendisiydi: haftalıkta boşluk (eski 80px) sezon/aylığa (18px) göre çok
+  // daha büyük görünüyordu, kutular kare olduğu için bu boşluk çıplak gözle daha da belirginleşiyordu.
+  // Çözüm: kutu genişliği ne olursa olsun aynı sabit boşluğu kullanmak - böylece üç sekmede de
+  // 2. ve 3. kart arasındaki boşluk birebir aynı görünüyor.
+  const PODIUM_SM_GAP_PX = 18;
+  const getPodiumGapPx = (_tab: LeaderboardTab): number => {
+    return PODIUM_SM_GAP_PX;
   };
 
   const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
