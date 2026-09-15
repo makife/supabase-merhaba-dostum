@@ -430,9 +430,15 @@ const LeaderboardPage = () => {
   // daha büyük görünüyordu, kutular kare olduğu için bu boşluk çıplak gözle daha da belirginleşiyordu.
   // Çözüm: kutu genişliği ne olursa olsun aynı sabit boşluğu kullanmak - böylece üç sekmede de
   // 2. ve 3. kart arasındaki boşluk birebir aynı görünüyor.
-  const PODIUM_SM_GAP_PX = 18;
-  const getPodiumGapPx = (_tab: LeaderboardTab): number => {
-    return PODIUM_SM_GAP_PX;
+  // Aynı px'lik gap, farklı en-boy oranlı çerçevelerde AYNI görsel boşluk anlamına gelmiyor:
+  // sezon/aylık çerçevesi geniş (152px) ve görseli muhtemelen kutu sınırları içinde kalıyor;
+  // haftalık çerçeve kare (90px) ama kanatlar muhtemelen kutunun dışına taşıyor. Bu yüzden ikisini
+  // ayrı sabit olarak tutup gözle ince ayar yapıyoruz - Lottie'nin gerçek çizim sınırlarını
+  // koddan bilemediğimiz için kesin matematiksel eşitlik kurulamıyor.
+  const SEASON_MONTHLY_SM_GAP_PX = 18;
+  const WEEKLY_SM_GAP_PX = 45; // önceki 80 çok geniş, 18 çok dardı - ara değerle başlıyoruz
+  const getPodiumGapPx = (tab: LeaderboardTab): number => {
+    return tab === "weekly" ? WEEKLY_SM_GAP_PX : SEASON_MONTHLY_SM_GAP_PX;
   };
 
   const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
