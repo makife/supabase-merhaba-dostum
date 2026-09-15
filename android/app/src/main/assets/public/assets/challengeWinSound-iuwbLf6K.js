@@ -1,1 +1,0 @@
-let t=null;const o=()=>{try{if(JSON.parse(localStorage.getItem("kelimeci-settings")||"{}").sounds===!1)return}catch{}try{t||(t=new Audio(`${window.location.origin}/BoostArtiSes.mp3`),t.preload="auto",t.volume=.85),t.currentTime=0,t.play().catch(()=>{})}catch{}};export{o as p};
