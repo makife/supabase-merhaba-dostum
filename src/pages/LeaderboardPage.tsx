@@ -46,9 +46,9 @@ const formatCompactNumber = (value: number | null | undefined) => {
 // Konturlu (siyah kontur + renkli dolgu) yazı stili - nickname/istatistik metinlerinde
 // native oyun hissi vermek için kullanılıyor. WebKit tabanlı Capacitor webview'de
 // (hem iOS hem Android Chromium) -webkit-text-stroke düzgün render ediliyor.
-const outlinedTextStyle = (color: string, strokeWidth = "0.6px", extra?: CSSProperties): CSSProperties => ({
+const outlinedTextStyle = (color: string, strokeWidth = "0.6px", extra?: CSSProperties, strokeColor = "rgba(0,0,0,0.9)"): CSSProperties => ({
   color,
-  WebkitTextStroke: `${strokeWidth} rgba(0,0,0,0.9)`,
+  WebkitTextStroke: `${strokeWidth} ${strokeColor}`,
   paintOrder: "stroke fill",
   ...extra,
 });
@@ -639,10 +639,10 @@ const LeaderboardPage = () => {
                       className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
                       style={
                         inGameUsers.has(leader.user_id)
-                          ? outlinedTextStyle("#00E5FF", "0.5px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" })
+                          ? outlinedTextStyle("#00E5FF", "0.6px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }, "#facc15")
                           : isUserOnline(leader.user_id)
-                            ? outlinedTextStyle("#39FF14", "0.5px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" })
-                            : outlinedTextStyle("#ffffff", "0.5px")
+                            ? outlinedTextStyle("#39FF14", "0.6px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }, "#facc15")
+                            : outlinedTextStyle("#ffffff", "0.6px", undefined, "#facc15")
                       }
                       onClick={(e) => openUserMenu(leader, e)}
                     >
@@ -656,18 +656,18 @@ const LeaderboardPage = () => {
                   <div className="flex items-center gap-3 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
                       <Target className="w-3 h-3" />
-                      <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px")}>{leader.score.toLocaleString()}</span>
+                      <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px", undefined, "#facc15")}>{leader.score.toLocaleString()}</span>
                     </span>
                     {leader.games_played > 0 && (
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
-                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.games_played}</span>
+                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px", undefined, "#facc15")}>{leader.games_played}</span>
                       </span>
                     )}
                     {leader.wins > 0 && (
                       <span className="flex items-center gap-1">
                         <Trophy className="w-3 h-3" />
-                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.wins}</span>
+                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px", undefined, "#facc15")}>{leader.wins}</span>
                       </span>
                     )}
                   </div>
