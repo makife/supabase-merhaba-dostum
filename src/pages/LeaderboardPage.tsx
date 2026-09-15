@@ -518,13 +518,13 @@ const LeaderboardPage = () => {
         >
           <div className="text-center min-w-0 w-full flex flex-col items-center justify-center">
             <h3
-              className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
+              className="font-bold truncate text-base cursor-pointer hover:text-indigo-300 transition-colors w-full"
               style={
                 inGameUsers.has(leader.user_id)
-                  ? outlinedTextStyle("#00E5FF", "0.5px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" })
+                  ? outlinedTextStyle("#00E5FF", "0.6px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }, "#facc15")
                   : isUserOnline(leader.user_id)
-                    ? outlinedTextStyle("#39FF14", "0.5px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" })
-                    : outlinedTextStyle("#ffffff", "0.5px")
+                    ? outlinedTextStyle("#39FF14", "0.6px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }, "#facc15")
+                    : outlinedTextStyle("#ffffff", "0.6px", undefined, "#facc15")
               }
               onClick={(e) => openUserMenu(leader, e)}
             >
@@ -532,11 +532,11 @@ const LeaderboardPage = () => {
               {isCurrentUser && <span className="text-[9px] text-indigo-400 font-bold ml-1">(Sen)</span>}
             </h3>
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-slate-400">
-            <Target className="w-3 h-3" />
-            <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px")}>{leader.score.toLocaleString()}</span>
-          </div>
           <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+            <span className="flex items-center gap-0.5">
+              <Target className="w-3 h-3" />
+              <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px")}>{leader.score.toLocaleString()}</span>
+            </span>
             {leader.games_played > 0 && (
               <span className="flex items-center gap-0.5">
                 <Users className="w-3 h-3" />
