@@ -425,19 +425,22 @@ const LeaderboardPage = () => {
     },
   };
 
-  // Haftalık sekmede 2. ve 3.'nün arasındaki boşluk Tailwind "gap-20" (80px) ile ayarlanıyordu.
-  // Sezon/aylık çerçeveler artık kare değil (daha geniş kutu), bu yüzden aynı 80px flex-gap kullanılırsa
-  // aradaki GÖRSEL boşluk haftalıktan çok daha büyük görünür. Burada, kutu genişliği ne olursa olsun
-  // avatarlar arasındaki gerçek görsel mesafe haftalıktakiyle birebir aynı olacak şekilde gap'i hesaplıyoruz.
-  const WEEKLY_FLEX_GAP_PX = 80; // Tailwind gap-20
+  // Sezon ve aylık sekmelerde çerçeveler geniş (kare değil), haftalıkta ise kare kutu kullanılıyor.
+  // Önceki hesap sadece AVATARLAR arası mesafeyi eşitliyordu; bu da kutu genişlikleri farklı olduğu için
+  // toplam satır genişliğini (dolayısıyla 2./3. kutunun EKRANDAKİ KONUMUNU) sekmeler arasında
+  // farklılaştırıyordu - haftalıktaki kutular sezon/aylığa göre daha dar bir alana sıkışıyordu.
+  // Burada bunun yerine sezon/aylığın (birbirleriyle zaten eşleşen, doğru görünen) TOPLAM satır
+  // genişliğini referans alıp haftalığın gap'ini buna göre büyütüyoruz; böylece 2./3. kutu tüm
+  // sekmelerde ekranda aynı konumda oturuyor.
+  const SEASON_MONTHLY_SM_GAP_PX = 18; // sezon/aylık: mevcut, doğru görünen boşluk
   const getPodiumGapPx = (tab: LeaderboardTab): number => {
-    const weeklyBox = FRAME_CONFIG.weekly.sm.lottieH; // haftalık kare kutu
-    const weeklyAvatar = FRAME_CONFIG.weekly.sm.avatarPx;
-    const targetAvatarDistance = WEEKLY_FLEX_GAP_PX + (weeklyBox - weeklyAvatar);
+    if (tab !== "weekly") return SEASON_MONTHLY_SM_GAP_PX;
 
-    const box = tab === "weekly" ? FRAME_CONFIG.weekly.sm.lottieH : Math.round(FRAME_CONFIG[tab].sm.lottieH * FRAME_ASPECT);
-    const avatar = FRAME_CONFIG[tab].sm.avatarPx;
-    return Math.max(0, Math.round(targetAvatarDistance - (box - avatar)));
+    const seasonBox = Math.round(FRAME_CONFIG.season.sm.lottieH * FRAME_ASPECT);
+    const targetRowWidth = seasonBox * 2 + SEASON_MONTHLY_SM_GAP_PX;
+
+    const weeklyBox = FRAME_CONFIG.weekly.sm.lottieH; // haftalık kare kutu
+    return Math.max(0, Math.round(targetRowWidth - weeklyBox * 2));
   };
 
   const [frameData, setFrameData] = useState<Record<LeaderboardTab, { first: any; second: any; third: any }>>({
