@@ -53,6 +53,13 @@ const outlinedTextStyle = (color: string, strokeWidth = "0.6px", extra?: CSSProp
   ...extra,
 });
 
+// Rengi elemandan miras alıp sadece siyah kontur ekleyen versiyon (ör. sekme etiketleri:
+// aktif/pasif renk zaten Tailwind class'ıyla yönetiliyor, biz sadece kontur katıyoruz).
+const textStrokeOnly = (strokeWidth = "0.5px", strokeColor = "rgba(0,0,0,0.9)"): CSSProperties => ({
+  WebkitTextStroke: `${strokeWidth} ${strokeColor}`,
+  paintOrder: "stroke fill",
+});
+
 // Sekmeye göre sıra rozeti rengi (sezon: kırmızı, aylık: yeşil, haftalık: mavi)
 const RANK_BADGE_COLOR: Record<"season" | "monthly" | "weekly", string> = {
   season: "#ef4444",
@@ -636,7 +643,7 @@ const LeaderboardPage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3
-                      className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
+                      className="font-bold truncate text-base cursor-pointer hover:text-indigo-300 transition-colors"
                       style={
                         inGameUsers.has(leader.user_id)
                           ? outlinedTextStyle("#00E5FF", "0.6px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }, "#facc15")
@@ -653,20 +660,20 @@ const LeaderboardPage = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <div className="flex items-center gap-3 text-sm text-slate-400">
                     <span className="flex items-center gap-1">
-                      <Target className="w-3 h-3" />
+                      <Target className="w-4 h-4" />
                       <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px", undefined, "#facc15")}>{leader.score.toLocaleString()}</span>
                     </span>
                     {leader.games_played > 0 && (
                       <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
+                        <Users className="w-4 h-4" />
                         <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px", undefined, "#facc15")}>{leader.games_played}</span>
                       </span>
                     )}
                     {leader.wins > 0 && (
                       <span className="flex items-center gap-1">
-                        <Trophy className="w-3 h-3" />
+                        <Trophy className="w-4 h-4" />
                         <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px", undefined, "#facc15")}>{leader.wins}</span>
                       </span>
                     )}
@@ -754,19 +761,19 @@ const LeaderboardPage = () => {
 
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
-                  <div className="text-lg font-bold text-amber-500 truncate">{currentStats.rank || "—"}</div>
+                  <div className="text-lg font-bold font-mono tracking-wide truncate" style={outlinedTextStyle("#f59e0b", "0.5px", undefined, "#ffffff")}>{currentStats.rank || "—"}</div>
                   <div className="text-[10px] text-slate-400">Sıra</div>
                 </div>
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
-                  <div className="text-lg font-bold text-indigo-400 truncate">{formatCompactNumber(currentStats.score)}</div>
+                  <div className="text-lg font-bold font-mono tracking-wide truncate" style={outlinedTextStyle("#818cf8", "0.5px", undefined, "#ffffff")}>{formatCompactNumber(currentStats.score)}</div>
                   <div className="text-[10px] text-slate-400">Puan</div>
                 </div>
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
-                  <div className="text-lg font-bold text-blue-400 truncate">{formatCompactNumber(currentStats.games_played)}</div>
+                  <div className="text-lg font-bold font-mono tracking-wide truncate" style={outlinedTextStyle("#60a5fa", "0.5px", undefined, "#ffffff")}>{formatCompactNumber(currentStats.games_played)}</div>
                   <div className="text-[10px] text-slate-400">Oyun</div>
                 </div>
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
-                  <div className="text-lg font-bold text-green-400 truncate">{formatCompactNumber(currentStats.wins)}</div>
+                  <div className="text-lg font-bold font-mono tracking-wide truncate" style={outlinedTextStyle("#4ade80", "0.5px", undefined, "#ffffff")}>{formatCompactNumber(currentStats.wins)}</div>
                   <div className="text-[10px] text-slate-400">Zafer</div>
                 </div>
               </div>
@@ -804,24 +811,24 @@ const LeaderboardPage = () => {
                 />
                 <TabsTrigger
                   value="all-time"
-                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
+                  className="relative z-10 text-sm font-bold py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
-                  <Trophy className="w-3 h-3 mr-1.5" />
-                  Genel
+                  <Trophy className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={textStrokeOnly()}>Genel</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="monthly"
-                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
+                  className="relative z-10 text-sm font-bold py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
-                  <CalendarRange className="w-3 h-3 mr-1.5" />
-                  Aylık
+                  <CalendarRange className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={textStrokeOnly()}>Aylık</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="weekly"
-                  className="relative z-10 text-xs font-medium py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
+                  className="relative z-10 text-sm font-bold py-2 rounded-lg bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white text-slate-400 transition-colors"
                 >
-                  <Calendar className="w-3 h-3 mr-1.5" />
-                  Haftalık
+                  <Calendar className="w-3.5 h-3.5 mr-1.5" />
+                  <span style={textStrokeOnly()}>Haftalık</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
