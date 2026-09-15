@@ -943,7 +943,18 @@ const LeaderboardPage = () => {
 }}
 
       >
-        <div ref={dragLayerRef} style={{ willChange: "transform, opacity" }}>
+        {/* Sekmeye göre renkli üst geçiş - lacivert arka planın üstüne bindiriliyor */}
+        <div
+          aria-hidden
+          className={`absolute inset-x-0 top-0 h-56 pointer-events-none z-0 bg-gradient-to-b transition-colors duration-500 ${
+            activeTab === "all-time"
+              ? "from-red-600/35 via-red-500/10 to-transparent"
+              : activeTab === "monthly"
+                ? "from-green-600/35 via-green-500/10 to-transparent"
+                : "from-blue-600/35 via-blue-500/10 to-transparent"
+          }`}
+        />
+        <div ref={dragLayerRef} className="relative z-10" style={{ willChange: "transform, opacity" }}>
           {activeTab === "all-time" && renderLeaderboard(allTimeLeaders, false, "season")}
           {activeTab === "weekly" && renderLeaderboard(weeklyLeaders, true, "weekly")}
           {activeTab === "monthly" && renderLeaderboard(monthlyLeaders, true, "monthly")}
