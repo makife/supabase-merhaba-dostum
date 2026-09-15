@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, startTransition } from "react";
+import { useState, useEffect, useCallback, useRef, startTransition, type CSSProperties } from "react";
 import { prefetch, getCached, setCached, LB_KEYS } from "@/utils/pageDataCache";
 import { usePageSwipeNav } from "@/hooks/usePageSwipeNav";
 import Lottie from "lottie-react";
@@ -41,6 +41,23 @@ const formatCompactNumber = (value: number | null | undefined) => {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
   if (Math.abs(n) >= 100_000) return `${(n / 1_000).toFixed(0)}B`;
   return n.toLocaleString("tr-TR");
+};
+
+// Konturlu (siyah kontur + renkli dolgu) yazı stili - nickname/istatistik metinlerinde
+// native oyun hissi vermek için kullanılıyor. WebKit tabanlı Capacitor webview'de
+// (hem iOS hem Android Chromium) -webkit-text-stroke düzgün render ediliyor.
+const outlinedTextStyle = (color: string, strokeWidth = "0.6px", extra?: CSSProperties): CSSProperties => ({
+  color,
+  WebkitTextStroke: `${strokeWidth} rgba(0,0,0,0.9)`,
+  paintOrder: "stroke fill",
+  ...extra,
+});
+
+// Sekmeye göre sıra rozeti rengi (sezon: kırmızı, aylık: yeşil, haftalık: mavi)
+const RANK_BADGE_COLOR: Record<"season" | "monthly" | "weekly", string> = {
+  season: "#ef4444",
+  monthly: "#22c55e",
+  weekly: "#3b82f6",
 };
 
 interface LeaderboardEntry {
@@ -329,7 +346,7 @@ const LeaderboardPage = () => {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [handleLeaderboardResync]);
 
-  const getRankIcon = (rank: number) => {
+  const getRankIcon = (rank: number, tab: LeaderboardTab) => {
     switch (rank) {
       case 1:
         return <Crown className="w-6 h-6 text-amber-400 fill-amber-400 drop-shadow-lg" />;
@@ -339,7 +356,17 @@ const LeaderboardPage = () => {
         return <Medal className="w-6 h-6 text-orange-600 fill-orange-600 drop-shadow-lg" />;
       default:
         return (
-          <span className="w-6 h-6 flex items-center justify-center text-xs font-bold text-slate-400">#{rank}</span>
+          <div
+            className="w-8 h-8 flex items-center justify-center rounded-xl border-2 border-white shadow-[0_2px_6px_rgba(0,0,0,0.45)] active:scale-90 transition-transform duration-150"
+            style={{ backgroundColor: RANK_BADGE_COLOR[tab] }}
+          >
+            <span
+              className="text-base leading-none font-black"
+              style={outlinedTextStyle("#ffffff", "1.1px")}
+            >
+              {rank}
+            </span>
+          </div>
         );
     }
   };
@@ -487,10 +514,10 @@ const LeaderboardPage = () => {
               className="font-bold text-xs truncate cursor-pointer hover:text-indigo-300 transition-colors w-full"
               style={
                 inGameUsers.has(leader.user_id)
-                  ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                  ? outlinedTextStyle("#00E5FF", "0.5px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" })
                   : isUserOnline(leader.user_id)
-                    ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
-                    : { color: "#ffffff" }
+                    ? outlinedTextStyle("#39FF14", "0.5px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" })
+                    : outlinedTextStyle("#ffffff", "0.5px")
               }
               onClick={(e) => openUserMenu(leader, e)}
             >
@@ -500,19 +527,19 @@ const LeaderboardPage = () => {
           </div>
           <div className="flex items-center gap-1 text-[10px] text-slate-400">
             <Target className="w-3 h-3" />
-            <span className="font-bold text-amber-400">{leader.score.toLocaleString()}</span>
+            <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px")}>{leader.score.toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
             {leader.games_played > 0 && (
               <span className="flex items-center gap-0.5">
                 <Users className="w-3 h-3" />
-                {leader.games_played}
+                <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.games_played}</span>
               </span>
             )}
             {leader.wins > 0 && (
               <span className="flex items-center gap-0.5">
                 <Trophy className="w-3 h-3" />
-                {leader.wins}
+                <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.wins}</span>
               </span>
             )}
           </div>
@@ -570,7 +597,7 @@ const LeaderboardPage = () => {
           return (
             <div
               key={leader.user_id}
-              className={`relative group rounded-2xl p-4 transition-all duration-300 border ${
+              className={`relative group rounded-2xl p-4 transition-all duration-300 border active:scale-[0.98] ${
                 isCurrentUser
                   ? "bg-[#1e2d45] border-indigo-400/30 shadow-lg shadow-indigo-500/10"
                   : "bg-[#1e2d45] border-indigo-500/20"
@@ -579,7 +606,7 @@ const LeaderboardPage = () => {
               <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
 
               <div className="flex items-center gap-4 relative z-10">
-                <div className="flex-shrink-0">{getRankIcon(leader.rank)}</div>
+                <div className="flex-shrink-0">{getRankIcon(leader.rank, tab)}</div>
 
                 <div className="relative flex-shrink-0">
                   <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-indigo-400 to-purple-500">
@@ -612,10 +639,10 @@ const LeaderboardPage = () => {
                       className="font-bold truncate text-sm cursor-pointer hover:text-indigo-300 transition-colors"
                       style={
                         inGameUsers.has(leader.user_id)
-                          ? { color: "#00E5FF", textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" }
+                          ? outlinedTextStyle("#00E5FF", "0.5px", { textShadow: "0 0 6px rgba(0,229,255,0.9), 0 0 12px rgba(0,229,255,0.6)" })
                           : isUserOnline(leader.user_id)
-                            ? { color: "#39FF14", textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" }
-                            : { color: "#ffffff" }
+                            ? outlinedTextStyle("#39FF14", "0.5px", { textShadow: "0 0 6px rgba(57,255,20,0.9), 0 0 12px rgba(57,255,20,0.6)" })
+                            : outlinedTextStyle("#ffffff", "0.5px")
                       }
                       onClick={(e) => openUserMenu(leader, e)}
                     >
@@ -629,18 +656,18 @@ const LeaderboardPage = () => {
                   <div className="flex items-center gap-3 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
                       <Target className="w-3 h-3" />
-                      {leader.score.toLocaleString()}
+                      <span className="font-bold" style={outlinedTextStyle("#fbbf24", "0.4px")}>{leader.score.toLocaleString()}</span>
                     </span>
                     {leader.games_played > 0 && (
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
-                        {leader.games_played}
+                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.games_played}</span>
                       </span>
                     )}
                     {leader.wins > 0 && (
                       <span className="flex items-center gap-1">
                         <Trophy className="w-3 h-3" />
-                        {leader.wins}
+                        <span className="font-bold" style={outlinedTextStyle("#ffffff", "0.4px")}>{leader.wins}</span>
                       </span>
                     )}
                   </div>
@@ -727,7 +754,7 @@ const LeaderboardPage = () => {
 
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
-                  <div className="text-lg font-bold text-amber-500 truncate">#{currentStats.rank || "—"}</div>
+                  <div className="text-lg font-bold text-amber-500 truncate">{currentStats.rank || "—"}</div>
                   <div className="text-[10px] text-slate-400">Sıra</div>
                 </div>
                 <div className="bg-[#0f1829] rounded-xl p-2 text-center min-w-0">
