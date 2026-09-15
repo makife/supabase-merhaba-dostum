@@ -1,0 +1,1 @@
+ALTER TABLE public.challenge_scores ALTER COLUMN score TYPE numeric(10,2) USING score::numeric(10,2);

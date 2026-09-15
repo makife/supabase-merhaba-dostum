@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no, minimal-ui"
+    />
+    <title>Kelimele</title>
+    <link rel="apple-touch-icon" href="/app-icon.png" />
+    <meta name="description" content="This app integrates Supabase to manage user profiles, tournament invitations, and system messages.">
+    <meta name="author" content="Lovable" />
+
+    <!-- Mobile optimizations -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="apple-mobile-web-app-title" content="Kelimele" />
+    <meta name="application-name" content="Kelimele" />
+
+    <!-- Preload audio files for mobile -->
+    <link rel="preload" href="/yes.mp3" as="audio" type="audio/mpeg" />
+    <link rel="preload" href="/wow2.mp3" as="audio" type="audio/mpeg" />
+    <link rel="preload" href="/yahoo.mp3" as="audio" type="audio/mpeg" />
+    <!-- Preload splash image to avoid flicker -->
+    <link rel="preload" href="/ergan.jpg" as="image" />
+    <!-- Preload homepage background -->
+    <link rel="preload" href="/alttaban/kompleyesilarkaplan.svg" as="image" />
+    <link rel="preload" href="/alttaban/kompleyesilarkaplangece.jpg" as="image" type="image/jpeg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Righteous&family=Bungee&family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Comfortaa:wght@300;400;500;600;700&family=Righteous&family=Bungee&family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700;800;900&family=Permanent+Marker&display=swap"
+      rel="stylesheet"
+    />
+
+    
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/49538f88e2f07db088be8c2b5bdceda5/id-preview-96209595--3b5b6132-76aa-4286-88ad-82b8da5a6692.lovable.app-1786451377478.png">
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/49538f88e2f07db088be8c2b5bdceda5/id-preview-96209595--3b5b6132-76aa-4286-88ad-82b8da5a6692.lovable.app-1786451377478.png">
+
+    <!-- Mobile touch and audio unlock script -->
+    <script>
+      // Mobile audio unlock - sayfa yüklendiğinde çalışır
+      document.addEventListener('DOMContentLoaded', function() {
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+          if (audioUnlocked) return;
+
+          console.log('🔊 Mobile audio unlock attempt');
+
+          // Sessiz audio dosyası çal
+          const audio = new Audio();
+          audio.volume = 0;
+          audio.preload = 'auto';
+
+          const unlockPromise = audio.play();
+          if (unlockPromise) {
+            unlockPromise.then(() => {
+              audio.pause();
+              audioUnlocked = true;
+              console.log('✅ Mobile audio unlocked successfully');
+
+              // Event listener'ları kaldır
+              document.removeEventListener('touchstart', unlockAudio);
+              document.removeEventListener('touchend', unlockAudio);
+              document.removeEventListener('click', unlockAudio);
+            }).catch((error) => {
+              console.log('❌ Mobile audio unlock failed:', error);
+            });
+          }
+        }
+
+        // İlk dokunuşta ses kilidini aç
+        document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+        document.addEventListener('touchend', unlockAudio, { once: true, passive: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+
+        // Viewport height fix for mobile
+        function setVH() {
+          let vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+
+        window.addEventListener('resize', setVH);
+        setVH();
+      });
+    </script>
+
+    <style>
+      /* Mobile viewport fix */
+      :root {
+        --vh: 1vh;
+      }
+
+      .mobile-container {
+        min-height: 100vh;
+        min-height: calc(var(--vh, 1vh) * 100);
+      }
+
+      /* Prevent zoom on input focus - mobile */
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+
+      /* Mobile tap highlight removal */
+      * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+      }
+
+      /* Prevent elastic scroll and auto-hide navigation */
+      html {
+        overscroll-behavior: none;
+        touch-action: manipulation;
+      }
+
+      body {
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
+        touch-action: manipulation;
+      }
+
+      /* Mobile browser UI auto-hide */
+      @media (max-width: 768px) {
+        html, body {
+          height: 100%;
+          overflow: hidden;
+          position: fixed;
+          width: 100%;
+        }
+
+        #root {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: none;
+          -webkit-overflow-scrolling: auto;
+        }
+      }
+    </style>
+    <meta property="og:title" content="Kelimele">
+  <meta name="twitter:title" content="Kelimele">
+  <meta property="og:description" content="This app integrates Supabase to manage user profiles, tournament invitations, and system messages.">
+  <meta name="twitter:description" content="This app integrates Supabase to manage user profiles, tournament invitations, and system messages.">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

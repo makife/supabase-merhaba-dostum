@@ -1,0 +1,70 @@
+{
+	"appId": "com.ergan.kelimele",
+	"appName": "Kelimele",
+	"webDir": "dist",
+	"android": {
+		"allowMixedContent": true,
+		"captureInput": false,
+		"webContentsDebuggingEnabled": true,
+		"windowSoftInputMode": "adjustResize",
+		"overrideUserAgent": "ImmersiveApp",
+		"backgroundColor": "#000000",
+		"useLegacyBridge": false
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"scrollEnabled": false,
+		"allowsLinkPreview": false,
+		"backgroundColor": "#000000"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": true,
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false,
+			"splashFullScreen": true,
+			"splashImmersive": true,
+			"backgroundColor": "#000000"
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#000000",
+			"overlay": true
+		},
+		"Keyboard": {
+			"resize": "ionic"
+		},
+		"AdMob": {
+			"appId": "ca-app-pub-4768026665961339~9319477813",
+			"androidAppId": "ca-app-pub-4768026665961339~9319477813",
+			"iosAppId": "ca-app-pub-4768026665961339~4109751189"
+		},
+		"ScreenOrientation": {
+			"orientation": "portrait"
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	},
+	"packageClassList": [
+		"AdMobPlugin",
+		"NativeAudio",
+		"AppPlugin",
+		"CAPCameraPlugin",
+		"LocalNotificationsPlugin",
+		"CAPNetworkPlugin",
+		"PreferencesPlugin",
+		"PushNotificationsPlugin",
+		"ScreenOrientationPlugin",
+		"SharePlugin",
+		"StatusBarPlugin",
+		"NavigationBarPlugin",
+		"PurchasesPlugin"
+	]
+}

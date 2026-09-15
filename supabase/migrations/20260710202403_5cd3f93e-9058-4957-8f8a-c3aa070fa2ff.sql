@@ -1,0 +1,2 @@
+DELETE FROM public.player_activities WHERE match_id = player_id;
+UPDATE public.profiles SET in_game = false WHERE in_game = true AND id NOT IN (SELECT DISTINCT player_id FROM public.player_activities WHERE last_action_time > now() - interval '12 seconds');

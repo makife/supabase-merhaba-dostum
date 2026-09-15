@@ -1,0 +1,37 @@
+project_id = "nnlvtqmuwmrqfinsgvwc"
+
+[functions.reset-daily-stats]
+verify_jwt = false
+
+[functions.nakama-config]
+verify_jwt = false
+
+[functions.send-scheduled-notifications]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.send-engagement-notifications]
+verify_jwt = false
+
+[functions.send-premium-daily-reminder]
+verify_jwt = false
+
+[functions.send-broadcast-notification]
+verify_jwt = false
+
+[functions.send-credit-notification]
+verify_jwt = false
+
+[functions.award-leaderboard-prizes]
+verify_jwt = false
+
+[functions.award-challenge-prizes]
+verify_jwt = false
+
+[functions.check-app-version]
+verify_jwt = false
+
+[functions.chat-ai-bot]
+verify_jwt = false
