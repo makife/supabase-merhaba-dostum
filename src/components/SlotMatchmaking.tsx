@@ -194,13 +194,30 @@ export const SlotMatchmaking = ({ onCancel, searchProgress }: SlotMatchmakingPro
             height: `${MAP_ZONE.height}%`,
           }}
         >
+          {/* Haritanın kartın mor zemininde kaybolmaması için yumuşak, kenarsız açık ışık */}
+          <div
+            aria-hidden
+            className="absolute"
+            style={{
+              inset: "-14% -8%",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(58% 56% at 50% 62%, rgba(247,243,255,0.75) 0%, rgba(247,243,255,0.5) 38%, rgba(247,243,255,0.22) 66%, rgba(247,243,255,0.06) 85%, rgba(247,243,255,0) 100%)",
+            }}
+          />
+
           <Lottie
             lottieRef={lottieRef}
             animationData={dunyaHaritasiArama}
             loop
             autoplay
             rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
-            style={{ width: "100%", height: "100%", opacity: pinnedSpot ? 0.45 : 1 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              opacity: pinnedSpot ? 0.45 : 1,
+              filter: "brightness(1.3) saturate(1.15)",
+            }}
           />
 
           {/* Sabitlenen rakip konumu - sarı yanıp sönen nokta */}
