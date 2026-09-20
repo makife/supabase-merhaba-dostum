@@ -28,13 +28,22 @@ const UpdateCardDialog: React.FC<UpdateCardDialogProps> = ({
   if (!open) return null;
 
   const dialog = (
-    <div className="fixed inset-0 z-[2147483000] flex items-center justify-center px-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Uygulama güncellemesi"
+      className="fixed inset-0 z-[2147483647] isolate flex items-center justify-center px-4 pointer-events-auto touch-none"
+      style={{ pointerEvents: "auto" }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerUp={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 pointer-events-auto bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={() => !forceUpdate && onLater()}
       />
 
-      <div className="relative w-full max-w-[340px] animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative z-10 w-full max-w-[340px] pointer-events-auto animate-in fade-in zoom-in-95 duration-300">
         <img
           src={guncellemeImg}
           alt="Güncelleme"
