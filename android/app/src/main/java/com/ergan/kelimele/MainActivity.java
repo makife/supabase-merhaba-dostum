@@ -11,6 +11,9 @@ import android.util.Log;
 import android.view.View;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 
 /**
@@ -44,6 +47,10 @@ public class MainActivity extends BridgeActivity {
 		registerPlugin(NativeMusicPlugin.class);
 		registerPlugin(NativeCameraPlugin.class); // 📷 Avatar kamera plugin'i
         super.onCreate(savedInstanceState);
+
+        // Sistem çubukları geçici olarak görünürken WebView'i yeniden ölçme.
+        // İçerik daima ekranın tamamında kalır; çubuklar üstüne bindirilir.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 		
 		// 🔔 Push Notification Channel - IMPORTANCE_HIGH = heads-up banner
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -390,6 +397,15 @@ public class MainActivity extends BridgeActivity {
     
     private void hideSystemUI() {
         View decorView = getWindow().getDecorView();
+
+        WindowInsetsControllerCompat insetsController =
+            WindowCompat.getInsetsController(getWindow(), decorView);
+        insetsController.setSystemBarsBehavior(
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        );
+        insetsController.hide(WindowInsetsCompat.Type.systemBars());
+
+        // Eski Android sürümleri için aynı edge-to-edge davranışını koru.
         decorView.setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             | View.SYSTEM_UI_FLAG_LAYOUT_STABLE

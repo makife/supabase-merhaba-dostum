@@ -308,6 +308,29 @@ All colors MUST be HSL.
     touch-action: manipulation !important;
   }
 
+  /* Android immersive: geçici sistem çubukları WebView yüksekliğini değiştirmesin. */
+  html.is-android-native,
+  html.is-android-native body,
+  html.is-android-native #root {
+    width: 100%;
+    height: var(--android-stable-height, 100vh) !important;
+    min-height: var(--android-stable-height, 100vh) !important;
+    max-height: var(--android-stable-height, 100vh) !important;
+    overflow: hidden !important;
+  }
+
+  html.is-android-native body,
+  html.is-android-native #root {
+    position: fixed;
+    inset: 0;
+  }
+
+  html.is-android-native .native-game-layout,
+  html.is-android-native .mobile-fullscreen {
+    height: var(--android-stable-height, 100vh) !important;
+    max-height: var(--android-stable-height, 100vh) !important;
+  }
+
   /* Performance optimizations for native - scoped to opted-in elements only */
   body.native-platform .gpu-accelerated {
     -webkit-backface-visibility: hidden;
