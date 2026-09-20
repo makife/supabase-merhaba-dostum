@@ -927,75 +927,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             filter: `from_user_id=eq.${userId}`,
           },
           async (payload) => {
-            const request = payload.new as RematchRequest;
-
-            // Sadece şu an gönderdiğimiz isteğe ait yanıtları işle
-            if (!outgoingRequestIdRef.current || request.id !== outgoingRequestIdRef.current) {
-              return;
-            }
-
-            const responseKey = `resp-${request.id}`;
-            if (processedRef.current.has(responseKey)) return;
-            processedRef.current.add(responseKey);
-
-            if (request.status === "accepted") {
-              console.log("✅ Rematch kabul edildi:", request.room_code);
-              outgoingRequestIdRef.current = null;
-
-              if (waitingTimeoutRef.current) {
-                clearTimeout(waitingTimeoutRef.current);
-                waitingTimeoutRef.current = null;
-              }
-              setIsWaiting(false);
-              setRematchStatus("accepted");
-
-              const { data: room } = await supabase
-                .from("game_rooms")
-                .select("id, game_mode")
-                .eq("room_code", request.room_code)
-                .maybeSingle();
-
-              if (room) {
-                const gameType = room.game_mode?.includes("score") ? "score" : "timed";
-
-                await setLastRoomId(null);
-                await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
-
-                // Maça geçiş, robotun "yes" animasyonu bitene kadar bekletiliyor.
-                queueNavigationAfterAnimation(() => {
-                  toast({
-                    title: "✅ Rematch Kabul Edildi",
-                    description: "Oyun başlıyor...",
-                    duration: 1000,
-                  });
-                  navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
-                });
-              }
-            } else if (request.status === "rejected") {
-              console.log("❌ Rematch reddedildi");
-              outgoingRequestIdRef.current = null;
-
-              if (waitingTimeoutRef.current) {
-                clearTimeout(waitingTimeoutRef.current);
-                waitingTimeoutRef.current = null;
-              }
-              setIsWaiting(false);
-              setRematchStatus("declined");
-              // "no" animasyonu oynasın diye birkaç saniye sonra idle'a dönüyoruz.
-              setTimeout(() => setRematchStatus("idle"), 2500);
-
-              // 🔒 Kısa süreli bekleme (kalıcı engel yok)
-              if (request.to_user_id) {
-                rejectedOpponentsRef.current.set(request.to_user_id, Date.now());
-              }
-
-              toast({
-                title: "❌ Rematch Reddedildi",
-                description: "Rakip yeniden maç isteğini reddetti.",
-                variant: "destructive",
-                duration: 3000,
-              });
-            }
+            await handleOutgoingResponse(payload.new as RematchRequest);
           },
         )
         .on(
