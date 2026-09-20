@@ -9187,8 +9187,8 @@ const GamePage = ({
               className="fixed inset-0 relative overflow-hidden touch-none overscroll-none"
               style={{
                 background: "#1a1a2e",
-                height: "100dvh",
-                maxHeight: "100dvh",
+                height: "var(--android-stable-height, 100dvh)",
+                maxHeight: "var(--android-stable-height, 100dvh)",
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
                 paddingBottom: "env(safe-area-inset-bottom, 8px)",
                 paddingLeft: "env(safe-area-inset-left, 4px)",
