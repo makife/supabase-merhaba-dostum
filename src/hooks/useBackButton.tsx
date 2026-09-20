@@ -2,16 +2,6 @@ import { useEffect, useCallback, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import ExitConfirmCardDialog from "@/components/ExitConfirmCardDialog";
 
 // Oyun sayfaları - bu sayfalarda geri tuşu ile çıkış onayı gösterilecek
@@ -162,25 +152,12 @@ export const BackButtonDialog: React.FC = () => {
   }
 
   return (
-    <AlertDialog open={!!dialogType} onOpenChange={(open) => !open && handleCancel()}>
-      <AlertDialogContent className="max-w-[90%] sm:max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Uygulamadan Çık</AlertDialogTitle>
-          <AlertDialogDescription>
-            Uygulamadan çıkmak istediğinize emin misiniz?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>İptal</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleAppExit}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Çık
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ExitConfirmCardDialog
+      open
+      variant="default"
+      onContinue={handleCancel}
+      onExit={handleAppExit}
+    />
   );
 };
 
