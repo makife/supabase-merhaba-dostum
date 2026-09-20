@@ -152,25 +152,12 @@ export const BackButtonDialog: React.FC = () => {
   }
 
   return (
-    <AlertDialog open={!!dialogType} onOpenChange={(open) => !open && handleCancel()}>
-      <AlertDialogContent className="max-w-[90%] sm:max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Uygulamadan Çık</AlertDialogTitle>
-          <AlertDialogDescription>
-            Uygulamadan çıkmak istediğinize emin misiniz?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>İptal</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleAppExit}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Çık
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ExitConfirmCardDialog
+      open
+      variant="default"
+      onContinue={handleCancel}
+      onExit={handleAppExit}
+    />
   );
 };
 
