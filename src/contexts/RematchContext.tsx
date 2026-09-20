@@ -760,7 +760,101 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  // Realtime listener handles accepted/rejected - no polling needed
+  // Giden isteğin yanıtını işler (realtime UPDATE + polling fallback aynı fonksiyonu kullanır)
+  const handleOutgoingResponse = useCallback(
+    async (request: RematchRequest) => {
+      if (!outgoingRequestIdRef.current || request.id !== outgoingRequestIdRef.current) return;
+
+      const responseKey = `resp-${request.id}`;
+      if (processedRef.current.has(responseKey)) return;
+      processedRef.current.add(responseKey);
+
+      if (request.status === "accepted") {
+        console.log("✅ Rematch kabul edildi:", request.room_code);
+        outgoingRequestIdRef.current = null;
+
+        if (waitingTimeoutRef.current) {
+          clearTimeout(waitingTimeoutRef.current);
+          waitingTimeoutRef.current = null;
+        }
+        setIsWaiting(false);
+        setRematchStatus("accepted");
+
+        const { data: room } = await supabase
+          .from("game_rooms")
+          .select("id, game_mode")
+          .eq("room_code", request.room_code)
+          .maybeSingle();
+
+        if (room) {
+          const gameType = room.game_mode?.includes("score") ? "score" : "timed";
+
+          await setLastRoomId(null);
+          await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+
+          queueNavigationAfterAnimation(() => {
+            toast({
+              title: "✅ Rematch Kabul Edildi",
+              description: "Oyun başlıyor...",
+              duration: 1000,
+            });
+            navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
+          });
+        } else {
+          // Oda bulunamazsa bekleme ekranında kilitlenmeyelim
+          setRematchStatus("idle");
+        }
+      } else if (request.status === "rejected") {
+        console.log("❌ Rematch reddedildi");
+        outgoingRequestIdRef.current = null;
+
+        if (waitingTimeoutRef.current) {
+          clearTimeout(waitingTimeoutRef.current);
+          waitingTimeoutRef.current = null;
+        }
+        setIsWaiting(false);
+        setRematchStatus("declined");
+        setTimeout(() => setRematchStatus("idle"), 2500);
+
+        if (request.to_user_id) {
+          rejectedOpponentsRef.current.set(request.to_user_id, Date.now());
+        }
+
+        toast({
+          title: "❌ Rematch Reddedildi",
+          description: "Rakip yeniden maç isteğini reddetti.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    },
+    [toast, navigate, queueNavigationAfterAnimation],
+  );
+
+  // 🔁 Polling fallback: realtime UPDATE kaçarsa (iOS socket kopması vb.)
+  // "rakibinizin yanıtı bekleniyor" ekranında kilitlenmeyi önler.
+  useEffect(() => {
+    if (!isWaiting) return;
+
+    const interval = setInterval(async () => {
+      const requestId = outgoingRequestIdRef.current;
+      if (!requestId) return;
+
+      const { data, error } = await supabase
+        .from("rematch_requests")
+        .select("id, room_code, from_user_id, to_user_id, status, game_type, created_at")
+        .eq("id", requestId)
+        .maybeSingle();
+
+      if (error || !data) return;
+      if (data.status === "pending") return;
+
+      console.log("🔁 Rematch yanıtı polling ile yakalandı:", data.status);
+      await handleOutgoingResponse(data as RematchRequest);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isWaiting, handleOutgoingResponse]);
 
   // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
