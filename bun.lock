@@ -8,10 +8,11 @@
         "@capacitor-community/admob": "^8.0.0",
         "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/native-audio": "^8.0.0",
+        "@capacitor/android": "^8.1.0",
         "@capacitor/app": "^8.0.0",
         "@capacitor/camera": "^8.0.0",
         "@capacitor/core": "^8.0.0",
-        "@capacitor/haptics": "^8.0.0",
+        "@capacitor/haptics": "^8.0.2",
         "@capacitor/ios": "^8.1.0",
         "@capacitor/local-notifications": "^8.0.0",
         "@capacitor/network": "^8.0.0",
@@ -84,7 +85,7 @@
         "@capacitor/cli": "^8.1.0",
         "@eslint/js": "^9.32.0",
         "@lovable.dev/vite-plugin-dev-server-bridge": "^1.0.2",
-        "@lovable.dev/vite-plugin-hmr-gate": "^1.8.0",
+        "@lovable.dev/vite-plugin-hmr-gate": "^1.4.1",
         "@tailwindcss/typography": "^0.5.16",
         "@types/node": "^22.16.5",
         "@types/react": "^18.3.23",
@@ -122,6 +123,8 @@
     "@capacitor-community/in-app-review": ["@capacitor-community/in-app-review@8.0.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor-community/in-app-review/-/in-app-review-8.0.0.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-AYpEkIjdv27WGS3hnlc7xAQ1BhaBvD2svgQBfHF4P2Olw1N6a7MSCOQC6O4SuxmdBdJ2fM6uFeo1jyNjKLtIPw=="],
 
     "@capacitor-community/native-audio": ["@capacitor-community/native-audio@8.0.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-2y7uZfwmAkwfaz+Sj8ZX0ZWGgBK+0Hbg3IUl8gb1brCkH3UgQLAKkMNoaxVJ6yKP5Ov9vp8wKkeyLxU2KEpNMw=="],
+
+    "@capacitor/android": ["@capacitor/android@8.5.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/android/-/android-8.5.2.tgz", { "peerDependencies": { "@capacitor/core": "^8.5.0" } }, "sha512-rtiaz78egCcS+vs29wkWCL3C+RhazKMSygXcjutwWP8NmO6r5UBxOvGf3Wjz5+ahobyQ723tn9gCePwRwcNDZQ=="],
 
     "@capacitor/app": ["@capacitor/app@8.0.1", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-yeG3yyA0ETKqvgqexwHMBlmVOF13A1hRXzv/km0Ptv5TrNIZvZJK4MTI3uiqvnbHrzoJGP5DwWAjEXEfi90v3Q=="],
 
