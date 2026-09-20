@@ -961,7 +961,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       clearIncomingTimeout();
       pendingNavigationRef.current = null;
     };
-  }, [userId, toast, navigate, queueNavigationAfterAnimation, clearIncomingTimeout, rejectPendingRequest, startIncomingExpiryTimer]);
+  }, [userId, toast, navigate, handleOutgoingResponse, clearIncomingTimeout, rejectPendingRequest, startIncomingExpiryTimer]);
 
   return (
     <RematchContext.Provider
