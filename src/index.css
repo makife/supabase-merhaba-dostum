@@ -2593,3 +2593,36 @@ body.is-capacitor.hide-bars::before {
     0 2px 0 #1e3a8a;
   letter-spacing: 0.04em;
 }
+
+/* Android WebView bazen şeffaf hit-zone ve yuvarlatılmış PNG katmanlarının
+   sınırlarını ince bir odak/GPU çizgisi olarak gösterebiliyor. */
+html.is-android-native .android-prize-dialog,
+html.is-android-native .android-prize-surface,
+html.is-android-native .android-prize-image,
+html.is-android-native .android-prize-hit-zone {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+html.is-android-native .android-prize-surface,
+html.is-android-native .android-prize-image {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+html.is-android-native .android-prize-surface {
+  isolation: isolate;
+  contain: paint;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+html.is-android-native .android-prize-hit-zone {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+}

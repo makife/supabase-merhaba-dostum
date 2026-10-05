@@ -150,18 +150,20 @@ const LeaderboardPrizeDialog = () => {
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val && !claiming) { setOpen(false); stopMusic(); } }}>
-      <DialogContent className="bg-transparent border-0 shadow-none max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-visible">
-        <div className="relative">
-          <img src={src} alt="Ödül kartı" className="w-full h-auto rounded-2xl" draggable={false} />
+      <DialogContent className="android-prize-dialog bg-transparent border-0 shadow-none max-w-[calc(100%-2.5rem)] mx-auto p-0 overflow-visible">
+        <div className="android-prize-surface relative">
+          <img src={src} alt="Ödül kartı" className="android-prize-image block w-full h-auto rounded-2xl" draggable={false} />
 
           {/* Görselin üzerindeki "Ödülleri Al" butonuna görünmez hit-zone */}
           <PressableZone
             label="Ödülleri Al"
             haptic="medium"
-            className="rounded-full"
+            className="android-prize-hit-zone rounded-full border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
             style={{ top: "78.5%", left: "23%", width: "54%", height: "5.5%" }}
             onPress={handleClaim}
             disabled={claiming}
+            glow={false}
+            ripple={false}
           />
 
           {showConfetti && confettiAnim && (
