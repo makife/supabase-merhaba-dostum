@@ -17,6 +17,7 @@ import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { usePendingAvatarRecovery } from "@/hooks/usePendingAvatarRecovery";
 import { usePageResync } from "@/hooks/useGlobalResync";
 import { IN_GAME_STATUS_POLL_MS, getInGameActivityThreshold } from "@/utils/playerActivityStatus";
+import { getProfileLastSeen, parseProfileTimestamp, PROFILE_DATE_TIME_ZONE } from "@/utils/profileDates";
 import { AvatarOptionsDialog } from "@/components/AvatarOptionsDialog";
 import { VipBadge } from "@/components/VipBadge";
 import { BadgesDialog } from "@/components/BadgesDialog";
@@ -327,14 +328,15 @@ const ProfilePage = () => {
         fetchTournamentStats(),
       ]);
 
-      const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+      const oneMinuteAgo = Date.now() - 60 * 1000;
       const { data: presenceData } = await supabase
         .from("user_presence")
         .select("is_online, last_seen")
         .eq("user_id", viewedUserId)
         .maybeSingle();
 
-      const isOnlineNow = !!presenceData?.is_online && !!presenceData?.last_seen && presenceData.last_seen >= oneMinuteAgo;
+      const presenceLastSeen = parseProfileTimestamp(presenceData?.last_seen);
+      const isOnlineNow = !!presenceData?.is_online && presenceLastSeen !== null && presenceLastSeen >= oneMinuteAgo;
       setIsUserOnline(isOnlineNow);
 
       // 🔵 In-game freshness check via player_activities; profiles.in_game tek başına stale kalabiliyor
@@ -380,7 +382,7 @@ const ProfilePage = () => {
           scoreBoostUntil: data.score_boost_until || null,
           scoreBoostSource: data.score_boost_source || null,
           createdAt: (data as any).created_at || null,
-          lastSeen: presenceData?.last_seen || null,
+          lastSeen: getProfileLastSeen(data.created_at, presenceData?.last_seen, data.last_seen),
         }));
 
         setUserStats({
@@ -1486,7 +1488,7 @@ const ProfilePage = () => {
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                    timeZone: "Europe/Istanbul",
+                    timeZone: PROFILE_DATE_TIME_ZONE,
                   })
                 : "Bilinmiyor"}
             </span>
@@ -1503,6 +1505,7 @@ const ProfilePage = () => {
                   day: "2-digit",
                   month: "long",
                   year: "numeric",
+                  timeZone: PROFILE_DATE_TIME_ZONE,
                 })}
               </span>
             </p>
