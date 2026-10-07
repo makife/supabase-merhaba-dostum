@@ -7362,6 +7362,21 @@ const GamePage = ({
     console.log("🤖 Starting AI play with setTimeout for game mode:", gameMode);
     let cancelled = false;
 
+    // Bot zorluğu oyuncunun rütbesine göre ölçeklenir (rastgele eşleşme / özel oda botları).
+    // Turnuva botları tur bazlı zorlukta kalmaya devam eder.
+    const playerTier = getRankTier(profile?.rank_points ?? 0);
+    const botDifficulty = (
+      {
+        cirak: { minDelay: 6000, maxDelay: 20000, longWordChance: 0.1, mediumWordChance: 0.35 },
+        katip: { minDelay: 4500, maxDelay: 16000, longWordChance: 0.2, mediumWordChance: 0.45 },
+        yazar: { minDelay: 3500, maxDelay: 13000, longWordChance: 0.3, mediumWordChance: 0.5 },
+        sair: { minDelay: 2500, maxDelay: 11000, longWordChance: 0.4, mediumWordChance: 0.55 },
+        bilge: { minDelay: 2000, maxDelay: 9000, longWordChance: 0.5, mediumWordChance: 0.6 },
+        efsane: { minDelay: 1500, maxDelay: 7000, longWordChance: 0.65, mediumWordChance: 0.7 },
+        ustat: { minDelay: 1200, maxDelay: 6000, longWordChance: 0.8, mediumWordChance: 0.8 },
+      } as Record<string, { minDelay: number; maxDelay: number; longWordChance: number; mediumWordChance: number }>
+    )[playerTier.group] ?? { minDelay: 4500, maxDelay: 16000, longWordChance: 0.2, mediumWordChance: 0.45 };
+
     const scheduleNextAIWord = () => {
       if (cancelled) return;
       // Turnuva: round'a göre artan zorluk (çeyrek 2.5-25s, yarı 2.5-20s, final 2.5-15s)
@@ -7375,8 +7390,8 @@ const GamePage = ({
         minDelay = 2500;
         maxDelay = round >= 3 ? 15000 : round === 2 ? 20000 : 25000;
       } else if (gameMode === "random-match" || gameMode === "private-room") {
-        minDelay = 1500;
-        maxDelay = 12000;
+        minDelay = botDifficulty.minDelay;
+        maxDelay = botDifficulty.maxDelay;
       }
       const delay = minDelay + Math.random() * (maxDelay - minDelay);
 
@@ -7514,7 +7529,20 @@ const GamePage = ({
           ];
 
           // Kelime listesini karıştır, daha büyük havuzdan seç
-          const shuffledWords = [...potentialWords].sort(() => Math.random() - 0.5);
+          // Rütbe arttıkça bot daha uzun kelimelere yönelir (uzun kelime = uzunluk bonusu ile daha çok puan)
+          const qualityRoll = Math.random();
+          const targetCategory =
+            qualityRoll < botDifficulty.longWordChance
+              ? "long"
+              : qualityRoll < botDifficulty.longWordChance + botDifficulty.mediumWordChance
+                ? "medium"
+                : "short";
+          const categoryWords = potentialWords.filter((w) =>
+            targetCategory === "long" ? w.length >= 8 : targetCategory === "medium" ? w.length >= 5 && w.length <= 7 : w.length <= 4,
+          );
+          // Önce hedef kategoriden dene; bulunamazsa tüm havuza düş (bot asla takılmaz)
+          const shuffledWords = [...(categoryWords.length > 0 ? categoryWords : potentialWords), ...potentialWords]
+            .sort(() => Math.random() - 0.5);
           let wordUsed = false;
           const currentGlobalUsed = globalUsedWordsRef.current;
 
