@@ -421,7 +421,7 @@ const SettingsPage = () => {
       <div class="space-y-4">
         <div class="text-center space-y-2">
           <h4 class="text-2xl font-bold text-primary">KELİMELE</h4>
-          <p class="text-lg font-medium">Versiyon 6.4.6</p>
+          <p class="text-lg font-medium">Versiyon 6.4.8</p>
         </div>
         
         <div class="space-y-3">
@@ -703,7 +703,7 @@ const SettingsPage = () => {
 
         {/* Version */}
         <div className="bg-[#1e2d45] border border-indigo-500/20 rounded-2xl p-4 text-center">
-          <p className="text-sm text-slate-400">Kelimele v6.4.6</p>
+          <p className="text-sm text-slate-400">Kelimele v6.4.8</p>
           <p className="text-xs text-slate-500 mt-1">© 2026 Ergan Yazılım</p>
         </div>
 
