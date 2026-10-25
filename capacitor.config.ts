@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     captureInput: false,
     webContentsDebuggingEnabled: true,
-    windowSoftInputMode: "adjustResize",
+    windowSoftInputMode: "adjustPan",
     overrideUserAgent: "ImmersiveApp",
     backgroundColor: "#000000",
     useLegacyBridge: false,

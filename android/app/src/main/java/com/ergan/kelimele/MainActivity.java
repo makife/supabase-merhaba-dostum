@@ -405,15 +405,20 @@ public class MainActivity extends BridgeActivity {
         );
         insetsController.hide(WindowInsetsCompat.Type.systemBars());
 
-        // Eski Android sürümleri için aynı edge-to-edge davranışını koru.
-        decorView.setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_FULLSCREEN
-        );
+        // Eski bayraklar sadece Android 11 (API 30) altı cihazlarda gerekli.
+        // API 30+ üzerinde WindowInsetsControllerCompat ile birlikte kullanmak
+        // çubukların geçici gösterimi sırasında içeriğin yeniden boyutlanmasına
+        // (esneme) yol açabiliyor.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+            );
+        }
         getWindow().setStatusBarColor(0xFF000000);
         getWindow().setNavigationBarColor(0xFF000000);
     }
