@@ -9218,7 +9218,7 @@ const GamePage = ({
                 height: "var(--android-stable-height, 100dvh)",
                 maxHeight: "var(--android-stable-height, 100dvh)",
                 paddingTop: "calc(env(safe-area-inset-top, 8px) + 1rem)",
-                paddingBottom: "env(safe-area-inset-bottom, 8px)",
+                paddingBottom: "var(--android-stable-safe-bottom, env(safe-area-inset-bottom, 8px))",
                 paddingLeft: "env(safe-area-inset-left, 4px)",
                 paddingRight: "env(safe-area-inset-right, 4px)",
               }}
