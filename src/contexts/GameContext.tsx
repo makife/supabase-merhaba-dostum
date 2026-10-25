@@ -1367,6 +1367,102 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     ): Promise<void> => {
       if (!currentRoom) return;
 
+      // 🔒 SERVER-AUTHORITATIVE: insan-insan maçlarında (özel oda / rastgele eşleşme)
+      // kazananı ve skoru client değil, finish_game_room RPC'si belirler.
+      // RPC skoru game_words ledger'ından hesaplar, bitiş koşulunu (süre/skor) kendi
+      // doğrular ve iki client aynı anda çağırsa da idempotent kilitle tek sonucu yazar.
+      const roomMode = currentRoom.game_mode || "";
+      const isHumanMultiplayer = roomMode.includes("private-room") || roomMode.includes("random-match");
+
+      if (isHumanMultiplayer) {
+        try {
+          console.log("🏁 Oyun bitiyor (server-authoritative):", String(currentRoom.id).slice(-8));
+
+          const { data, error: finishError } = await supabase.rpc("finish_game_room", {
+            p_room_id: currentRoom.id,
+          });
+
+          if (finishError) {
+            console.error("❌ finish_game_room RPC hatası:", finishError);
+            return;
+          }
+
+          const result = data as {
+            already_finished: boolean;
+            winner_id: string | null;
+            player1_id: string | null;
+            player2_id: string | null;
+            player1_score: number;
+            player2_score: number;
+          };
+
+          const myServerScore =
+            result.player1_id === user?.id
+              ? result.player1_score
+              : result.player2_id === user?.id
+                ? result.player2_score
+                : playerStats?.score ?? 0;
+          const amIWinner = result.winner_id === user?.id;
+
+          if (playerStats && playerStats.userId === user?.id) {
+            const gameDuration = currentRoom.started_at
+              ? Math.floor((Date.now() - new Date(currentRoom.started_at).getTime()) / 1000)
+              : 0;
+
+            const { error: sessionError } = await supabase.from("game_sessions").insert({
+              user_id: playerStats.userId,
+              score: myServerScore,
+              words_count: playerStats.words.length,
+              game_duration: gameDuration,
+              is_winner: amIWinner,
+              game_mode: currentRoom.game_mode,
+            });
+
+            if (sessionError) {
+              console.error("❌ Player game session kayıt hatası:", sessionError);
+            } else {
+              console.log("✅ Player game session kaydedildi (server skoru ile):", playerStats.userId.slice(-8));
+            }
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          if (playerStats) {
+            await checkBadges(playerStats.userId, playerStats.words.length);
+            if (playerStats.userId === user?.id) {
+              refreshProfile();
+            }
+          }
+          if (opponentStats && !participants.find((p) => p.user_id === opponentStats.userId && p.is_bot)) {
+            await checkBadges(opponentStats.userId, opponentStats.words.length);
+            if (opponentStats.userId === user?.id) {
+              refreshProfile();
+            }
+          }
+
+          setTimeout(async () => {
+            try {
+              await supabase.from("game_rooms").delete().eq("id", currentRoom.id);
+              console.log("✅ Room cleaned up after stats processing");
+            } catch (error) {
+              console.error("❌ Room cleanup error:", error);
+            }
+          }, 2000);
+
+          const opponent = participants.find((p) => !p.is_bot && p.user_id !== user?.id);
+          if (opponent) {
+            setLastOpponent(opponent);
+          }
+
+          setCurrentRoom(null);
+          setParticipants([]);
+          console.log("✅ Oyun bitti (server-authoritative), game_sessions tablosuna kaydedildi");
+        } catch (error) {
+          console.error("❌ End game (server-authoritative) hatası:", error);
+        }
+        return;
+      }
+
       try {
         console.log("🏁 Oyun bitiyor - room güncelleniyor:", String(currentRoom.id).slice(-8));
 
