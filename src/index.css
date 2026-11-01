@@ -331,6 +331,18 @@ All colors MUST be HSL.
     max-height: var(--android-stable-height, 100vh) !important;
   }
 
+  /* Home content lives inside permanent system-bar/cutout bounds, not dvh.
+     Transient bars overlay the reserved strips without moving any home layers. */
+  html.is-android-native .home-viewport {
+    --home-safe-bottom: 0px;
+    position: absolute;
+    top: var(--android-stable-safe-top, 0px);
+    bottom: auto;
+    left: var(--android-stable-safe-left, 0px);
+    right: var(--android-stable-safe-right, 0px);
+    height: calc(var(--android-stable-height, 100vh) - var(--android-stable-safe-top, 0px) - var(--android-stable-safe-bottom, 0px));
+  }
+
   /* Performance optimizations for native - scoped to opted-in elements only */
   body.native-platform .gpu-accelerated {
     -webkit-backface-visibility: hidden;
