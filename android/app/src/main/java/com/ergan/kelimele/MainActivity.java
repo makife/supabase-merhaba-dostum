@@ -46,6 +46,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
 		registerPlugin(NativeMusicPlugin.class);
 		registerPlugin(NativeCameraPlugin.class); // 📷 Avatar kamera plugin'i
+        registerPlugin(StableViewportPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Sistem çubukları geçici olarak görünürken WebView'i yeniden ölçme.

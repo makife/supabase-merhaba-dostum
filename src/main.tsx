@@ -8,6 +8,7 @@ import './index.css'
 import { Capacitor } from '@capacitor/core'
 import { checkResumeReload } from '@/hooks/useForceReloadOnResume';
 import { installGlobalButtonSound } from '@/utils/globalButtonSound';
+import { initializeAndroidViewport } from '@/utils/androidViewport';
 
 // 🔊 Tüm butonlara global tık sesi
 installGlobalButtonSound();
@@ -21,7 +22,7 @@ if (Capacitor.getPlatform() !== 'web') {
 // bile uygulamanın yerleşim yüksekliğini ilk tam ekran ölçüsünde sabit tut.
 if (Capacitor.getPlatform() === 'android') {
   document.documentElement.classList.add('is-android-native')
-  const stableHeight = Math.max(window.innerHeight, window.screen.height)
+  const stableHeight = window.innerHeight
   document.documentElement.style.setProperty('--android-stable-height', `${stableHeight}px`)
 
   // Alt gesture/nav bar icin ayrilan guvenli alani BIR KEZ olcup sabitliyoruz.
@@ -55,6 +56,9 @@ if (Capacitor.getPlatform() === 'android') {
       setTimeout(pinSafeBottom, 300)
     }
   })
+  // Native insets remain available even when Android hides both system bars.
+  // Apply them after the fallback probe so a zero/temporary env() cannot win.
+  setTimeout(() => { void initializeAndroidViewport() }, 350)
 }
 
 // 🔥 RESUME RELOAD KONTROLÜ

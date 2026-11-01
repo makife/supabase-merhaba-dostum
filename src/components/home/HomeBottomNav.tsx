@@ -30,7 +30,7 @@ export const HomeBottomNav = ({ pendingFriendRequests = 0, unreadChatCount = 0 }
   return (
     <nav
       className="flex-none z-40 px-3 pt-2"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
+      style={{ paddingBottom: "max(var(--home-safe-bottom, env(safe-area-inset-bottom)), 10px)" }}
     >
       <div
         className="relative flex items-end justify-around rounded-3xl bg-white/10 border border-white/25 shadow-[0_-4px_18px_rgba(0,0,0,0.25)] px-2 py-2"
