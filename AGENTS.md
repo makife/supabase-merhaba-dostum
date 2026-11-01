@@ -1,3 +1,4 @@
 # Architecture rules
 
 - Normalize profile activity timestamps without timezone offsets as UTC and display both membership and activity dates in the same explicit timezone; this prevents device-dependent date shifts. Ignore activity dates earlier than membership and prefer the freshest valid profile/presence timestamp.
+- Random-match and private-room bot difficulty scales with the player's rank group (`getRankTier(profile.rank_points)` → per-group min/max word delay + word-length weights in GamePage's `scheduleNextAIWord`); tournament bots keep round-based difficulty. Values live only in that table so they can be tuned in one place.

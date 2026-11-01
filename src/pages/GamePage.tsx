@@ -7371,9 +7371,9 @@ const GamePage = ({
         katip: { minDelay: 4500, maxDelay: 16000, longWordChance: 0.2, mediumWordChance: 0.45 },
         yazar: { minDelay: 3500, maxDelay: 13000, longWordChance: 0.3, mediumWordChance: 0.5 },
         sair: { minDelay: 2500, maxDelay: 11000, longWordChance: 0.4, mediumWordChance: 0.55 },
-        bilge: { minDelay: 2000, maxDelay: 9000, longWordChance: 0.5, mediumWordChance: 0.6 },
-        efsane: { minDelay: 1500, maxDelay: 7000, longWordChance: 0.65, mediumWordChance: 0.7 },
-        ustat: { minDelay: 1200, maxDelay: 6000, longWordChance: 0.8, mediumWordChance: 0.8 },
+        bilge: { minDelay: 2000, maxDelay: 9000, longWordChance: 0.5, mediumWordChance: 0.5 },
+        efsane: { minDelay: 1500, maxDelay: 7000, longWordChance: 0.65, mediumWordChance: 0.35 },
+        ustat: { minDelay: 1200, maxDelay: 6000, longWordChance: 0.8, mediumWordChance: 0.2 },
       } as Record<string, { minDelay: number; maxDelay: number; longWordChance: number; mediumWordChance: number }>
     )[playerTier.group] ?? { minDelay: 4500, maxDelay: 16000, longWordChance: 0.2, mediumWordChance: 0.45 };
 
@@ -7662,7 +7662,7 @@ const GamePage = ({
       console.log("🤖 Stopping AI play for game mode:", gameMode);
       cancelled = true;
     };
-  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, tournamentMatch?.round]);
+  }, [gameStarted, gameEnded, gameMode, user?.id, tournamentMatch?.id, tournamentMatch?.round, profile?.rank_points]);
 
   // lastPlayerAction'ı başlat
   useEffect(() => {
