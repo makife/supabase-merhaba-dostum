@@ -77,6 +77,10 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const rejectedOpponentsRef = useRef<Map<string, number>>(new Map());
   // 📤 Şu an bekleyen kendi isteğimizin id'si (eski kayıtlar yanıt sanılmasın)
   const outgoingRequestIdRef = useRef<string | null>(null);
+  // 📤 Gönderdiğimiz istekler (id → gönderim zamanı). resetRematchState bunu
+  // temizlemez; böylece maç sayfası sıfırlansa da kabul yanıtı kaçmaz.
+  const sentRequestsRef = useRef<Map<string, number>>(new Map());
+  const handledResponseIdsRef = useRef<Set<string>>(new Set());
   // 🤖 AI robo animasyonu kaldırıldı: geçişler anında yapılır, kuyruk yok.
   const pendingNavigationRef = useRef<(() => void) | null>(null);
 
@@ -488,13 +492,14 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           throw new Error("Oda oluşturulamadı");
         }
 
-        // Add sender as participant
+        // Add sender as participant — istek gönderen zaten oynamak istiyor, hazır ekle.
+        // Böylece rakip kabul edip kendi satırını hazırladığı an geri sayım başlar.
         const { error: senderParticipantError } = await supabase.from("game_participants").insert({
           room_id: room.id,
           user_id: userId,
           score: 0,
           is_bot: false,
-          is_ready: false,
+          is_ready: true,
         });
         if (senderParticipantError) throw senderParticipantError;
 
@@ -513,6 +518,9 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (requestError) throw new Error("Rematch isteği gönderilemedi");
         outgoingRequestIdRef.current = insertedRequest?.id ?? null;
+        if (insertedRequest?.id) {
+          sentRequestsRef.current.set(insertedRequest.id, Date.now());
+        }
 
         // Get sender profile for notification
         const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
@@ -549,6 +557,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             duration: 1000,
           });
           if (timedOutRequestId) {
+            // Takipten çıkarmıyoruz: son anda kabul edildiyse polling yakalar.
             void rejectPendingRequest(timedOutRequestId);
           }
         }, REMATCH_REQUEST_TTL_MS);
@@ -660,6 +669,33 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
+      // 1) ÖNCE odaya katıl: gönderen "kabul edildi"yi görüp odaya girdiğinde
+      //    biz de katılımcı olarak orada olalım (yarış durumunu önler).
+      const { data: existing } = await supabase
+        .from("game_participants")
+        .select("id")
+        .eq("room_id", room.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      let insertedParticipantId: string | null = null;
+      if (!existing) {
+        const { data: inserted, error: participantError } = await supabase
+          .from("game_participants")
+          .insert({
+            room_id: room.id,
+            user_id: userId,
+            score: 0,
+            is_bot: false,
+            is_ready: true,
+          })
+          .select("id")
+          .single();
+        if (participantError) throw participantError;
+        insertedParticipantId = inserted?.id ?? null;
+      }
+
+      // 2) Sonra isteği kabul et (yalnızca hâlâ bekliyorsa)
       const { data: acceptedRequest, error: acceptError } = await supabase
         .from("rematch_requests")
         .update({
@@ -672,40 +708,23 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .maybeSingle();
 
       if (acceptError || !acceptedRequest) {
+        if (insertedParticipantId) {
+          await supabase.from("game_participants").delete().eq("id", insertedParticipantId);
+        }
         throw acceptError || new Error("Rematch isteğinin süresi doldu");
-      }
-
-      // Add as participant
-      const { data: existing } = await supabase
-        .from("game_participants")
-        .select("id")
-        .eq("room_id", room.id)
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (!existing) {
-        const { error: participantError } = await supabase.from("game_participants").insert({
-          room_id: room.id,
-          user_id: userId,
-          score: 0,
-          is_bot: false,
-          is_ready: true,
-        });
-        if (participantError) throw participantError;
-      } else {
-        const { error: readyError } = await supabase
-          .from("game_participants")
-          .update({ is_ready: true })
-          .eq("id", existing.id);
-        if (readyError) throw readyError;
       }
 
       setIncomingRequest(null);
 
       await setLastRoomId(null);
 
-      // Her iki oyuncuyu hazır yap ve direkt maç sayfasına git
-      await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+      // 3) Kendi satırımızı UPDATE ile hazır yap → tetikleyici geri sayımı başlatır
+      //    (gönderen oda oluştururken zaten hazır olarak eklenir).
+      await supabase
+        .from("game_participants")
+        .update({ is_ready: true })
+        .eq("room_id", room.id)
+        .eq("user_id", userId);
       navigate(`/game/private-room?room=${room.id}&type=${gameType}`, { replace: true });
     } catch (error) {
       console.error("❌ Rematch kabul hatası:", error);
