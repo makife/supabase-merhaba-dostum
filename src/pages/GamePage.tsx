@@ -355,6 +355,17 @@ const GamePage = ({
   const [wordlist, setWordlist] = useState<Set<string>>(new Set());
   const [wordlistLoaded, setWordlistLoaded] = useState(false);
 
+  // ⚡ Joker hızlandırma: sözlük harf sayımları bir kere hesaplanır
+  const wordEntries = useMemo(() => {
+    if (!wordlistLoaded) return [] as { word: string; counts: Record<string, number> }[];
+    return Array.from(wordlist).map((w) => {
+      const word = w.toLocaleUpperCase("tr-TR").trim();
+      const counts: Record<string, number> = {};
+      for (const ch of word) counts[ch] = (counts[ch] || 0) + 1;
+      return { word, counts };
+    });
+  }, [wordlist, wordlistLoaded]);
+
   // Get game type from room or URL params - DÜZELTME
   const getGameType = useCallback((): "timed" | "score" => {
     // TURNUVA MODU HER ZAMAN SÜRELİ!
@@ -4505,6 +4516,9 @@ const GamePage = ({
     setSelectedJoker("fisilida");
     setIsJokerActive(true);
 
+    // ⚡ Önce ekran tepkisini çizdir, sonra hesapla
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
     const possibleWords = [
       "KEDİ",
       "MASA",
@@ -4571,22 +4585,14 @@ const GamePage = ({
     let validWords = [];
 
     if (wordlistLoaded) {
-      const wordArray = Array.from(wordlist).map((word) => word.toLocaleUpperCase("tr-TR").trim());
-      validWords = wordArray.filter((word) => {
-        if (usedWords.has(word)) return false;
-
-        const wordLetterCount: { [key: string]: number } = {};
-        for (const letter of word) {
-          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-        }
-
-        for (const [letter, needed] of Object.entries(wordLetterCount)) {
-          if ((letterCount[letter] || 0) < needed) {
-            return false;
-          }
-        }
-        return true;
-      });
+      // ⚡ Önceden hesaplanmış sözlükten hızlı filtre
+      validWords = wordEntries
+        .filter(({ word, counts }) => {
+          if (usedWords.has(word)) return false;
+          for (const l in counts) if ((letterCount[l] || 0) < counts[l]) return false;
+          return true;
+        })
+        .map((e) => e.word);
     } else {
       // Fallback: önceden tanımlı kelimeler
       validWords = possibleWords.filter((word) => {
@@ -4689,6 +4695,9 @@ const GamePage = ({
     setIsJokerActive(true);
     setSelectedJoker("senYaz");
 
+    // ⚡ Önce ekran tepkisini çizdir, sonra hesapla
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
     const possibleWords = [
       "KEDİ",
       "MASA",
@@ -4734,23 +4743,14 @@ const GamePage = ({
     let validWords = [];
 
     if (wordlistLoaded) {
-      // Wordlist'ten mevcut harflerle yapılabilecek kelimeleri bul
-      const wordArray = Array.from(wordlist);
-      validWords = wordArray.filter((word) => {
-        if (usedWords.has(word)) return false;
-
-        const wordLetterCount: { [key: string]: number } = {};
-        for (const letter of word) {
-          wordLetterCount[letter] = (wordLetterCount[letter] || 0) + 1;
-        }
-
-        for (const [letter, needed] of Object.entries(wordLetterCount)) {
-          if ((letterCount[letter] || 0) < needed) {
-            return false;
-          }
-        }
-        return true;
-      });
+      // ⚡ Önceden hesaplanmış sözlükten hızlı filtre
+      validWords = wordEntries
+        .filter(({ word, counts }) => {
+          if (usedWords.has(word)) return false;
+          for (const l in counts) if ((letterCount[l] || 0) < counts[l]) return false;
+          return true;
+        })
+        .map((e) => e.word);
     } else {
       // Fallback: önceden tanımlı kelimeler
       validWords = possibleWords.filter((word) => {
@@ -9400,16 +9400,16 @@ const GamePage = ({
                       </div>
                       <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
                       <p
-  className="text-2xl font-black"
-  style={{
-    color: "#3B82F6",
-    WebkitTextStroke: "1px #FFFFFF",
-    paintOrder: "stroke fill",
-    textShadow: "0 0 12px rgba(59,130,246,0.5)",
-  }}
->
-  {playerScore}
-</p>
+                        className="text-2xl font-black"
+                        style={{
+                          color: "#3B82F6",
+                          WebkitTextStroke: "1px #FFFFFF",
+                          paintOrder: "stroke fill",
+                          textShadow: "0 0 12px rgba(59,130,246,0.5)",
+                        }}
+                      >
+                        {playerScore}
+                      </p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
@@ -9476,16 +9476,16 @@ const GamePage = ({
                         {opponent.name}
                       </p>
                       <p
-  className="text-2xl font-black"
-  style={{
-    color: "#EF4444",
-    WebkitTextStroke: "1px #FFFFFF",
-    paintOrder: "stroke fill",
-    textShadow: "0 0 12px rgba(239,68,68,0.5)",
-  }}
->
-  {opponentScore}
-</p>
+                        className="text-2xl font-black"
+                        style={{
+                          color: "#EF4444",
+                          WebkitTextStroke: "1px #FFFFFF",
+                          paintOrder: "stroke fill",
+                          textShadow: "0 0 12px rgba(239,68,68,0.5)",
+                        }}
+                      >
+                        {opponentScore}
+                      </p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
