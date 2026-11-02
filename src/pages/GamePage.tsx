@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
+import { createPortal } from "react-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
@@ -43,6 +44,7 @@ import NiceCatchText from "@/components/NiceCatchText";
 import { playNativeSound } from "@/services/nativeAudioService";
 
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
+import roketliAdamAnim from "@/assets/roketliAdam.json";
 const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan1.jpg",
   "/macArkaPlanlar/macArkaPlan2.jpg",
@@ -210,6 +212,40 @@ const GamePage = ({
   const [showKelimeleAnim, setShowKelimeleAnim] = useState(false);
   const [altiHarfAnim, setAltiHarfAnim] = useState<any>(null);
   const [showAltiHarfAnim, setShowAltiHarfAnim] = useState(false);
+
+  // 🚀 Roketli Adam (6+ harfli kelime animasyonu)
+  const cardsRowRef = useRef<HTMLDivElement | null>(null);
+  const jokerHeaderRef = useRef<HTMLDivElement | null>(null);
+  const rocketLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const rocketControls = useAnimationControls();
+  const [rocketBox, setRocketBox] = useState({ top: 0, height: 0, width: 0 });
+  const playRocketMan = useCallback(() => {
+    const cards = cardsRowRef.current?.getBoundingClientRect();
+    const joker = jokerHeaderRef.current?.getBoundingClientRect();
+    if (!cards || !joker) return;
+
+    // Üst: profil kartlarının üstü — Alt: "Jokerler" yazısının hizası
+    const top = cards.top;
+    const height = Math.max(joker.bottom - cards.top, 40);
+    const width = height * (720 / 900); // Lottie oranı (720x900)
+    const centerX = cards.left + cards.width / 2 - width / 2; // iki kartın ortası
+    const offLeft = -width;
+    const offRight = window.innerWidth;
+
+    setRocketBox({ top, height, width });
+    rocketLottieRef.current?.goToAndPlay(0, true);
+    rocketControls.set({ x: offLeft, opacity: 1 });
+    rocketControls
+      .start({
+        x: [offLeft, centerX, centerX, offRight],
+        // 0.1 sn giriş + 1 sn bekleme + 0.1 sn çıkış = 1.2 sn
+        transition: { duration: 1.2, times: [0, 0.1 / 1.2, 1.1 / 1.2, 1], ease: "linear" },
+      })
+      .then(() => {
+        rocketControls.set({ opacity: 0 });
+        rocketLottieRef.current?.stop();
+      });
+  }, [rocketControls]);
   const [gunlukKonfetiAnim, setGunlukKonfetiAnim] = useState<any>(null);
   const [showGunlukKonfetiAnim, setShowGunlukKonfetiAnim] = useState(false);
   const [kelimeGondermedinAnim, setKelimeGondermedinAnim] = useState<any>(null);
@@ -8157,6 +8193,7 @@ const GamePage = ({
         // 6+ harfli kelimede puan 2 katına çıkar ve ekstra animasyon göster
         if (isLong) {
           result.points = result.points * 2;
+          playRocketMan(); // 🚀
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
@@ -9339,7 +9376,7 @@ const GamePage = ({
                 )}
 
                 {/* Scores - Oyuncu kartları */}
-                <div className="grid grid-cols-2 gap-3 relative mb-2">
+                <div ref={cardsRowRef} className="grid grid-cols-2 gap-3 relative mb-2">
                   {/* Süre Azalıyor - avatar kartlarının ortasından kayan büyük yazı */}
                   <AnimatePresence>
                     {timeWarningPlayed && displayTime <= 30 && displayTime >= 27 && (
@@ -9524,12 +9561,39 @@ const GamePage = ({
                   </div>
                 </div>
 
+                {/* 🚀 Roketli Adam — body'ye portal, ekran koordinatlarıyla konumlanır */}
+                {createPortal(
+                  <motion.div
+                    animate={rocketControls}
+                    initial={{ x: -9999, opacity: 0 }}
+                    style={{
+                      position: "fixed",
+                      left: 0,
+                      top: rocketBox.top,
+                      width: rocketBox.width,
+                      height: rocketBox.height,
+                      zIndex: 9997,
+                      pointerEvents: "none",
+                      willChange: "transform",
+                    }}
+                  >
+                    <Lottie
+                      lottieRef={rocketLottieRef}
+                      animationData={roketliAdamAnim}
+                      loop
+                      autoplay={false}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </motion.div>,
+                  document.body,
+                )}
+
                 {/* Joker Panel */}
                 <div
                   className="rounded-2xl border border-white/10 p-2 mb-1"
                   style={{ background: "rgba(30,30,50,0.7)" }}
                 >
-                  <div className="flex items-center gap-1.5 mb-1.5">
+                  <div ref={jokerHeaderRef} className="flex items-center gap-1.5 mb-1.5">
                     <img src="/icons/jokerler-gorsel.svg" className="w-5 h-5 object-contain" alt="Jokerler" />
                     <img src="/icons/jokerler-text.svg" className="h-3.5 object-contain" alt="Jokerler" />
                   </div>
