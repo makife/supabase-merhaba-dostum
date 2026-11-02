@@ -763,11 +763,17 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Giden isteğin yanıtını işler (realtime UPDATE + polling fallback aynı fonksiyonu kullanır)
   const handleOutgoingResponse = useCallback(
     async (request: RematchRequest) => {
-      if (!outgoingRequestIdRef.current || request.id !== outgoingRequestIdRef.current) return;
-
-      const responseKey = `resp-${request.id}`;
-      if (processedRef.current.has(responseKey)) return;
-      processedRef.current.add(responseKey);
+      // Sadece bizim gönderdiğimiz ve hâlâ takip ettiğimiz istekler.
+      // outgoingRequestIdRef maç sayfası sıfırlamasıyla temizlenebildiği için
+      // sentRequestsRef (sıfırlamadan etkilenmez) da kabul edilir.
+      const isTracked =
+        request.id === outgoingRequestIdRef.current || sentRequestsRef.current.has(request.id);
+      if (!isTracked) return;
+      if (handledResponseIdsRef.current.has(request.id)) return;
+      if (request.status !== "accepted" && request.status !== "rejected") return;
+      handledResponseIdsRef.current.add(request.id);
+      sentRequestsRef.current.delete(request.id);
+      if (outgoingRequestIdRef.current === request.id) outgoingRequestIdRef.current = null;
 
       if (request.status === "accepted") {
         console.log("✅ Rematch kabul edildi:", request.room_code);
@@ -790,7 +796,14 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const gameType = room.game_mode?.includes("score") ? "score" : "timed";
 
           await setLastRoomId(null);
-          await supabase.from("game_participants").update({ is_ready: true }).eq("room_id", room.id);
+          // Kendi satırımızı hazır işaretle (UPDATE tetikleyicisi geri sayımı başlatır)
+          if (userId) {
+            await supabase
+              .from("game_participants")
+              .update({ is_ready: true })
+              .eq("room_id", room.id)
+              .eq("user_id", userId);
+          }
 
           queueNavigationAfterAnimation(() => {
             toast({
@@ -833,28 +846,37 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // 🔁 Polling fallback: realtime UPDATE kaçarsa (iOS socket kopması vb.)
   // "rakibinizin yanıtı bekleniyor" ekranında kilitlenmeyi önler.
+  // isWaiting'e bağlı DEĞİL: maç sayfası state'i sıfırlasa bile gönderilen
+  // istek TTL boyunca takip edilir, kabul edilirse gönderen de maça girer.
   useEffect(() => {
-    if (!isWaiting) return;
+    if (!userId) return;
 
     const interval = setInterval(async () => {
-      const requestId = outgoingRequestIdRef.current;
-      if (!requestId) return;
+      const tracked = sentRequestsRef.current;
+      if (tracked.size === 0) return;
+
+      const now = Date.now();
+      for (const [id, sentAt] of tracked) {
+        if (now - sentAt > REMATCH_REQUEST_TTL_MS + 15000) tracked.delete(id);
+      }
+      const ids = Array.from(tracked.keys());
+      if (ids.length === 0) return;
 
       const { data, error } = await supabase
         .from("rematch_requests")
         .select("id, room_code, from_user_id, to_user_id, status, game_type, created_at")
-        .eq("id", requestId)
-        .maybeSingle();
+        .in("id", ids);
 
       if (error || !data) return;
-      if (data.status === "pending") return;
-
-      console.log("🔁 Rematch yanıtı polling ile yakalandı:", data.status);
-      await handleOutgoingResponse(data as RematchRequest);
+      for (const row of data) {
+        if (row.status === "pending") continue;
+        console.log("🔁 Rematch yanıtı polling ile yakalandı:", row.status);
+        await handleOutgoingResponse(row as RematchRequest);
+      }
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [isWaiting, handleOutgoingResponse]);
+  }, [userId, handleOutgoingResponse]);
 
   // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
