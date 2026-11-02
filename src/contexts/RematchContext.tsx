@@ -841,7 +841,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       }
     },
-    [toast, navigate, queueNavigationAfterAnimation],
+    [userId, toast, navigate, queueNavigationAfterAnimation],
   );
 
   // 🔁 Polling fallback: realtime UPDATE kaçarsa (iOS socket kopması vb.)
