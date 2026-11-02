@@ -9400,11 +9400,16 @@ const GamePage = ({
                       </div>
                       <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
                       <p
-                        className="text-2xl font-black text-white"
-                        style={{ textShadow: "0 0 20px rgba(103,232,249,0.4)" }}
-                      >
-                        {playerScore}
-                      </p>
+  className="text-2xl font-black"
+  style={{
+    color: "#3B82F6",
+    WebkitTextStroke: "1px #FFFFFF",
+    paintOrder: "stroke fill",
+    textShadow: "0 0 12px rgba(59,130,246,0.5)",
+  }}
+>
+  {playerScore}
+</p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
@@ -9471,11 +9476,16 @@ const GamePage = ({
                         {opponent.name}
                       </p>
                       <p
-                        className="text-2xl font-black text-white"
-                        style={{ textShadow: "0 0 20px rgba(167,139,250,0.4)" }}
-                      >
-                        {opponentScore}
-                      </p>
+  className="text-2xl font-black"
+  style={{
+    color: "#EF4444",
+    WebkitTextStroke: "1px #FFFFFF",
+    paintOrder: "stroke fill",
+    textShadow: "0 0 12px rgba(239,68,68,0.5)",
+  }}
+>
+  {opponentScore}
+</p>
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
