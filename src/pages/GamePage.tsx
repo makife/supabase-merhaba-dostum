@@ -8193,7 +8193,9 @@ const GamePage = ({
         // 6+ harfli kelimede puan 2 katına çıkar ve ekstra animasyon göster
         if (isLong) {
           result.points = result.points * 2;
-          playRocketMan(); // 🚀
+          if (normalizedWord.length >= 4) {
+          playRocketMan();
+        }
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
