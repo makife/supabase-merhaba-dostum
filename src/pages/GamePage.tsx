@@ -4659,7 +4659,7 @@ const GamePage = ({
           setIsFisildaAnimating(false);
           setSelectedJoker(null); // ✅ Buton animasyonunu kapat
         },
-        wordPositions.length * 500 + 800,
+        Math.max(wordPositions.length - 1, 0) * 500 + 400, // son harf söndüğü an
       );
 
       // SADECE BAŞARILI DURUMDA JOKER SAYISINI AZALT
@@ -7959,18 +7959,19 @@ const GamePage = ({
       if (now - (lastCellTapRef.current[cellKey] || 0) < 120) return;
       lastCellTapRef.current[cellKey] = now;
 
-      // Haptic feedback (mobil cihazlarda titreşim)
-      if (!isNative && "vibrate" in navigator) {
-        navigator.vibrate(50);
-      }
-
-      playSound("buttonClick");
-
-      // Functional update: hızlı ardışık dokunmalarda stale state yüzünden harf kaybolmaz
+      // ⚡ ÖNCE harfi ekle — ses/titreşim gecikse ya da hata verse bile harf kaçmaz
       setSelectedLetters((prev) => {
         const exists = prev.some((s) => s.row === row && s.col === col);
         return exists ? prev.filter((s) => !(s.row === row && s.col === col)) : [...prev, { letter, row, col }];
       });
+
+      // Ses ve titreşim sonra, hata verirse harf seçimini etkilemesin
+      try {
+        if (!isNative && "vibrate" in navigator) navigator.vibrate(50);
+        playSound("buttonClick");
+      } catch (err) {
+        console.warn("Harf sesi çalınamadı", err);
+      }
     },
     [
       gameEnded,
@@ -9804,7 +9805,7 @@ const GamePage = ({
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               height: "clamp(40px, 7.2dvh, 59px)",
-                              touchAction: "manipulation",
+                              touchAction: "none", // çift parmakta pinch/zoom hareketi dokunuşu iptal etmesin
 
                               WebkitTapHighlightColor: "transparent",
                               WebkitTouchCallout: "none",
