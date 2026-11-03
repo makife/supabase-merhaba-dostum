@@ -897,6 +897,60 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => clearInterval(interval);
   }, [userId, handleOutgoingResponse]);
 
+  // Gelen istek işleyici (realtime + polling ortak)
+  const handleIncomingRequestRef = useRef<(request: RematchRequest) => Promise<void>>(async () => {});
+  handleIncomingRequestRef.current = async (request: RematchRequest) => {
+    if (request.status !== "pending") return;
+    if (processedRef.current.has(request.id)) return;
+    processedRef.current.add(request.id);
+
+    if (Date.now() - new Date(request.created_at).getTime() > REMATCH_REQUEST_TTL_MS) {
+      await rejectPendingRequest(request.id);
+      return;
+    }
+
+    const { data: sender } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("id", request.from_user_id)
+      .single();
+
+    if (Date.now() - new Date(request.created_at).getTime() > REMATCH_REQUEST_TTL_MS) {
+      await rejectPendingRequest(request.id);
+      return;
+    }
+
+    setIncomingRequest({
+      id: request.id,
+      senderId: request.from_user_id,
+      senderName: sender?.username || "Bilinmeyen oyuncu",
+      senderAvatar: sender?.avatar_url || null,
+      roomCode: request.room_code,
+      gameType: request.game_type,
+    });
+    startIncomingExpiryTimer(request);
+  };
+
+  // 🔁 Gelen istek polling'i: canlı bağlantı kaçarsa istek en geç ~1.5 sn'de görünür
+  useEffect(() => {
+    if (!userId) return;
+    const interval = setInterval(async () => {
+      if (incomingRequestRef.current) return;
+      const since = new Date(Date.now() - REMATCH_REQUEST_TTL_MS).toISOString();
+      const { data } = await supabase
+        .from("rematch_requests")
+        .select("id, room_code, from_user_id, to_user_id, status, game_type, created_at")
+        .eq("to_user_id", userId)
+        .eq("status", "pending")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const row = data?.[0];
+      if (row) await handleIncomingRequestRef.current(row as RematchRequest);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [userId]);
+
   // Global listener for rematch requests (auto-reconnect destekli)
   useEffect(() => {
     if (!userId) return;
@@ -917,46 +971,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
             filter: `to_user_id=eq.${userId}`,
           },
           async (payload) => {
-            const request = payload.new as RematchRequest;
-
-            if (request.status !== "pending") return;
-
-            // Skip if already processed
-            if (processedRef.current.has(request.id)) return;
-            processedRef.current.add(request.id);
-
-            // Check if request is recent (within 30 seconds)
-            const requestAge = Date.now() - new Date(request.created_at).getTime();
-            if (requestAge > REMATCH_REQUEST_TTL_MS) {
-              console.log("⏭️ Eski rematch isteği atlanıyor:", request.id);
-              await rejectPendingRequest(request.id);
-              return;
-            }
-
-            console.log("🔔 Yeni rematch isteği alındı:", request.id);
-
-            // Get sender profile
-            const { data: sender } = await supabase
-              .from("profiles")
-              .select("username, avatar_url")
-              .eq("id", request.from_user_id)
-              .single();
-
-            if (Date.now() - new Date(request.created_at).getTime() > REMATCH_REQUEST_TTL_MS) {
-              console.log("⏭️ Profil yüklenirken süresi dolan rematch isteği atlandı:", request.id);
-              await rejectPendingRequest(request.id);
-              return;
-            }
-
-            setIncomingRequest({
-              id: request.id,
-              senderId: request.from_user_id,
-              senderName: sender?.username || "Bilinmeyen oyuncu",
-              senderAvatar: sender?.avatar_url || null,
-              roomCode: request.room_code,
-              gameType: request.game_type,
-            });
-            startIncomingExpiryTimer(request);
+            await handleIncomingRequestRef.current(payload.new as RematchRequest);
           },
         )
         .on(
