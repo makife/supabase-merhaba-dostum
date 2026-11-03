@@ -10,6 +10,8 @@ interface ScorePopProps {
   burstAnimation: object;
   /** Lottie'nin px cinsinden kare boyutu */
   burstSize?: number;
+  /** Lottie başladığı anda çağrılır (ses çalmak için) */
+  onBurst?: () => void;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -30,6 +32,7 @@ export default function ScorePop({
   score,
   burstAnimation,
   burstSize = 220,
+  onBurst,
   className,
   style,
   children,
@@ -37,6 +40,8 @@ export default function ScorePop({
   const controls = useAnimationControls();
   const prevScoreRef = useRef(score);
   const runIdRef = useRef(0);
+  const onBurstRef = useRef(onBurst);
+  onBurstRef.current = onBurst;
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
 
@@ -67,6 +72,7 @@ export default function ScorePop({
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
       setBurst({ key: runId, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+      onBurstRef.current?.(); // ses Lottie ile aynı anda başlar
     })().catch(() => {});
   }, [score, controls]);
 
