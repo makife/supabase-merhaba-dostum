@@ -45,6 +45,9 @@ import { playNativeSound } from "@/services/nativeAudioService";
 
 import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 import roketliAdamAnim from "@/assets/roketliAdam.json";
+import benimSkorAnim from "@/assets/benimSkor.json";
+import rakipSkorAnim from "@/assets/rakipSkor.json";
+import ScorePop from "@/components/ScorePop";
 const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan1.jpg",
   "/macArkaPlanlar/macArkaPlan2.jpg",
@@ -9437,7 +9440,9 @@ const GamePage = ({
                         )}
                       </div>
                       <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
-                      <p
+                      <ScorePop
+                        score={playerScore}
+                        burstAnimation={benimSkorAnim}
                         className="text-2xl font-black"
                         style={{
                           color: "#3B82F6",
@@ -9445,9 +9450,7 @@ const GamePage = ({
                           paintOrder: "stroke fill",
                           textShadow: "0 0 12px rgba(59,130,246,0.5)",
                         }}
-                      >
-                        {playerScore}
-                      </p>
+                      />
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
@@ -9513,7 +9516,9 @@ const GamePage = ({
                       <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1 truncate max-w-[90px] mx-auto">
                         {opponent.name}
                       </p>
-                      <p
+                      <ScorePop
+                        score={opponentScore}
+                        burstAnimation={rakipSkorAnim}
                         className="text-2xl font-black"
                         style={{
                           color: "#EF4444",
@@ -9521,9 +9526,7 @@ const GamePage = ({
                           paintOrder: "stroke fill",
                           textShadow: "0 0 12px rgba(239,68,68,0.5)",
                         }}
-                      >
-                        {opponentScore}
-                      </p>
+                      />
                       {gameType === "score" && (
                         <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
                           <div
