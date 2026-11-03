@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Lottie from "lottie-react";
 import { motion, useAnimationControls } from "framer-motion";
 
@@ -14,20 +15,21 @@ interface ScorePopProps {
   children?: ReactNode;
 }
 
-const GROW_DURATION = 0.5; // sn: büyüme
-const SHRINK_DURATION = 0.2; // sn: eski boyuta dönüş
-const GROW_SCALE = 1.25; // +%25 (şimdiki ebatın 4'te 1'i kadar)
+const GROW_DURATION = 0.3; // sn: büyüme
+const SHRINK_DURATION = 0.05; // sn: eski boyuta dönüş
+const GROW_SCALE = 1.5; // +%50
 
 /**
  * Skor artınca:
- * 1) 0.5 sn'de %25 büyür
- * 2) 0.2 sn'de eski boyutuna döner
- * 3) döner dönmez Lottie skorun altından (arkasından) oynar, etrafa saçılır
+ * 1) 0.3 sn'de %50 büyür
+ * 2) 0.05 sn'de eski boyutuna döner
+ * 3) döner dönmez Lottie skorun bulunduğu noktadan oynar, etrafa saçılır
+ *    (Lottie portal ile body'ye çizilir, bu yüzden kartın dışına taşabilir)
  */
 export default function ScorePop({
   score,
   burstAnimation,
-  burstSize = 150,
+  burstSize = 220,
   className,
   style,
   children,
@@ -35,7 +37,8 @@ export default function ScorePop({
   const controls = useAnimationControls();
   const prevScoreRef = useRef(score);
   const runIdRef = useRef(0);
-  const [burstKey, setBurstKey] = useState<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [burst, setBurst] = useState<{ key: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
     const prev = prevScoreRef.current;
@@ -45,7 +48,7 @@ export default function ScorePop({
     if (score <= prev) return;
 
     const runId = ++runIdRef.current;
-    setBurstKey(null); // önceki patlamayı kes
+    setBurst(null); // önceki patlamayı kes
 
     (async () => {
       controls.stop();
@@ -60,40 +63,48 @@ export default function ScorePop({
         transition: { duration: SHRINK_DURATION, ease: "easeIn" },
       });
       if (runId !== runIdRef.current) return;
-      setBurstKey(runId); // eski boyuta döner dönmez Lottie başlar
+      // eski boyuta döner dönmez Lottie başlar (skorun merkezinden)
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setBurst({ key: runId, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     })().catch(() => {});
   }, [score, controls]);
 
   useEffect(() => () => controls.stop(), [controls]);
 
   return (
-    <div className="relative inline-block">
-      {burstKey !== null && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2"
-          style={{
-            width: burstSize,
-            height: burstSize,
-            transform: "translate(-50%, -50%)",
-            zIndex: 0,
-          }}
-        >
-          <Lottie
-            key={burstKey}
-            animationData={burstAnimation}
-            loop={false}
-            autoplay
-            onComplete={() => setBurstKey(null)}
-            style={{ width: "100%", height: "100%" }}
-          />
-        </div>
-      )}
+    <div ref={wrapRef} className="relative inline-block">
+      {burst !== null &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            aria-hidden
+            className="pointer-events-none fixed"
+            style={{
+              left: burst.x,
+              top: burst.y,
+              width: burstSize,
+              height: burstSize,
+              transform: "translate(-50%, -50%)",
+              zIndex: 9999,
+            }}
+          >
+            <Lottie
+              key={burst.key}
+              animationData={burstAnimation}
+              loop={false}
+              autoplay
+              onComplete={() => setBurst(null)}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>,
+          document.body,
+        )}
       <motion.p
         animate={controls}
         initial={{ scale: 1 }}
         className={`relative ${className ?? ""}`}
-        style={{ ...style, zIndex: 1, transformOrigin: "center center" }}
+        style={{ ...style, transformOrigin: "center center" }}
       >
         {children ?? score}
       </motion.p>
