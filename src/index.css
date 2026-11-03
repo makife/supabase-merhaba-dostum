@@ -336,11 +336,16 @@ All colors MUST be HSL.
   html.is-android-native .home-viewport {
     --home-safe-bottom: 0px;
     position: absolute;
-    top: var(--android-stable-safe-top, 0px);
+    top: 0;
     bottom: auto;
-    left: var(--android-stable-safe-left, 0px);
-    right: var(--android-stable-safe-right, 0px);
-    height: calc(var(--android-stable-height, 100vh) - var(--android-stable-safe-top, 0px) - var(--android-stable-safe-bottom, 0px));
+    left: 0;
+    right: 0;
+    height: var(--android-stable-height, 100vh);
+    box-sizing: border-box;
+    padding-top: var(--android-stable-safe-top, 0px);
+    padding-bottom: var(--android-stable-safe-bottom, 0px);
+    padding-left: var(--android-stable-safe-left, 0px);
+    padding-right: var(--android-stable-safe-right, 0px);
   }
 
   /* Performance optimizations for native - scoped to opted-in elements only */
