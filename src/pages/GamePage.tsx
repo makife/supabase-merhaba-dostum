@@ -47,7 +47,6 @@ import sureAzaliyorAnim from "@/assets/sureAzaliyor.json";
 import roketliAdamAnim from "@/assets/roketliAdam.json";
 import benimSkorAnim from "@/assets/benimSkor.json";
 import rakipSkorAnim from "@/assets/rakipSkor.json";
-import bubbleSkorSound from "@/assets/bubbleSkor.mp3";
 import ScorePop from "@/components/ScorePop";
 const MAC_ARKA_PLANLAR: string[] = [
   "/macArkaPlanlar/macArkaPlan1.jpg",
@@ -8198,6 +8197,7 @@ const GamePage = ({
         if (isLong) {
           result.points = result.points * 2;
           playRocketMan(); // 🚀
+          playSpecialSound("/altiUzeriRoket.mp3"); // 🚀 roket sesi, animasyonla aynı anda
           if (normalizedWord.length >= 7) {
             setShowGunlukKonfetiAnim(true);
             setTimeout(() => setShowGunlukKonfetiAnim(false), 2500);
@@ -9444,7 +9444,7 @@ const GamePage = ({
                       <ScorePop
                         score={playerScore}
                         burstAnimation={benimSkorAnim}
-                        onBurst={() => playSpecialSound(bubbleSkorSound)}
+                        onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
                         className="text-2xl font-black"
                         style={{
                           color: "#3B82F6",
@@ -9521,7 +9521,7 @@ const GamePage = ({
                       <ScorePop
                         score={opponentScore}
                         burstAnimation={rakipSkorAnim}
-                        onBurst={() => playSpecialSound(bubbleSkorSound)}
+                        onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
                         className="text-2xl font-black"
                         style={{
                           color: "#EF4444",
