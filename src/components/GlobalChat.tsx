@@ -443,7 +443,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       if (payload.mode === "reply") setIsAiTyping(true);
 
       try {
-        const history = messagesRef.current.slice(-8).map((m) => ({ username: m.username, message: m.message }));
+        const history = messagesRef.current.slice(-15).map((m) => ({ username: m.username, message: m.message }));
         const { error } = await supabase.functions.invoke("chat-ai-bot", {
           body: {
             mode: payload.mode,
