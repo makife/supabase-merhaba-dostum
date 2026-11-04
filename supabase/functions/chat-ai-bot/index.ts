@@ -102,11 +102,6 @@ Deno.serve(async (req) => {
     const { data: userData, error: userError } = await authClient.auth.getUser();
     if (userError || !userData?.user) return json({ error: "Unauthorized" }, 401);
 
-    const now = Date.now();
-    const prev = lastCall.get(userData.user.id) ?? 0;
-    if (now - prev < COOLDOWN_MS) return json({ error: "Biraz yavas kanka, birkac saniye sonra tekrar yaz." }, 429);
-    lastCall.set(userData.user.id, now);
-
     const body = await req.json().catch(() => ({}));
     const mode = body?.mode === "greeting" ? "greeting" : "reply";
     const username = String(body?.username ?? "Oyuncu").slice(0, 40);
@@ -119,6 +114,14 @@ Deno.serve(async (req) => {
       : "";
 
     if (mode === "reply" && !message) return json({ error: "message required" }, 400);
+
+    if (mode === "reply") {
+      const now = Date.now();
+      if (now - (lastCall.get(userData.user.id) ?? 0) < COOLDOWN_MS) {
+        return json({ error: "Biraz yavas kanka, birkac saniye sonra tekrar yaz." }, 429);
+      }
+      lastCall.set(userData.user.id, now);
+    }
 
     const GAME_KNOWLEDGE = [
       "OYUN BILGI TABANI (sadece buradaki bilgileri gercek kabul et, uydurma yapma):",
