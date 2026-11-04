@@ -463,15 +463,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Kendi eski bekleyen isteklerini SİL (status'u rejected yapmak kendi
-        // dinleyicimizi tetikleyip "rakip reddetti" sanılmasına yol açıyordu)
-        await supabase
-          .from("rematch_requests")
-          .delete()
-          .eq("from_user_id", userId)
-          .eq("to_user_id", opponentId)
-          .eq("status", "pending");
-
         // Create room
         const roomCode = generateRoomCode();
         const mode = `private-room-${gameType}`;
@@ -526,15 +517,16 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
 
         // Get sender profile for notification
-        const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
-
-        // Create notification
-        await supabase.rpc("create_notification", {
-          p_user_id: opponentId,
-          p_type: "rematch",
-          p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor`,
-          p_related_id: roomCode,
-        });
+        // Bildirim arka planda — bekleme ekranını geciktirmez
+        void (async () => {
+          const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+          await supabase.rpc("create_notification", {
+            p_user_id: opponentId,
+            p_type: "rematch",
+            p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor`,
+            p_related_id: roomCode,
+          });
+        })();
 
         // Push bildirim gönderilMEZ - rematch sadece in-app realtime + polling ile çalışır
         console.log("ℹ️ Rematch push bildirimi atlandı (tasarım gereği)");
