@@ -72,6 +72,10 @@ const SOUND_DEFINITIONS: SoundDefinition[] = [
   { assetId: 'tournament_eliminated', assetPath: 'public/turnuvaElenmeSes.mp3', volume: 0.8 },
   { assetId: 'boost_arti_ses', assetPath: 'public/BoostArtiSes.mp3', volume: 0.8, channels: 3 },
   { assetId: 'boost_aktif', assetPath: 'public/boostAktif.mp3', volume: 0.7 },
+  // Skor artış patlama sesi (ScorePop)
+  { assetId: 'bubble_skor', assetPath: 'public/bubbleSkor.mp3', volume: 0.7, channels: 3 },
+  // 6+ harfli kelime roket sesi (roketliAdam animasyonu)
+  { assetId: 'alti_uzeri_roket', assetPath: 'public/altiUzeriRoket.mp3', volume: 0.8 },
 ];
 
 const toIOSNativeAssetPath = (assetPath: string): string => {
@@ -392,6 +396,8 @@ export const playSpecialNativeSound = async (soundFile: string, volume: number =
   else if (soundFile.includes('turKazanma.mp3')) assetId = 'tournament_win';
   else if (soundFile.includes('turnuvaElenmeSes.mp3')) assetId = 'tournament_eliminated';
   
+  else if (soundFile.includes('bubbleSkor.mp3')) assetId = 'bubble_skor';
+  else if (soundFile.includes('altiUzeriRoket.mp3')) assetId = 'alti_uzeri_roket';
   else if (soundFile.includes('carkSesi.mp3')) assetId = 'cark';
   else if (soundFile.includes('carkDonmeSesi.mp3')) assetId = 'cark_tick';
   else if (soundFile.includes('carkDoluGeldi.mp3')) assetId = 'cark_dolu';
