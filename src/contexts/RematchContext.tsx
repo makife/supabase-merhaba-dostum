@@ -339,8 +339,31 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         console.log("🔄 Rematch gönderiliyor:", { from: userId.slice(-8), to: opponentId.slice(-8) });
 
-        // 🔒 HAK KONTROLÜ: Her zaman taze profilden kontrol et
-        const senderAccess = await getFreshPlayAccess(userId);
+        // ⚡ Ön kontroller paralel: hak, opt-out, karşı istek, eski istek temizliği
+        const [senderAccess, , optOutRes, existingRes] = await Promise.all([
+          getFreshPlayAccess(userId),
+          supabase.from("rematch_opt_outs").delete().eq("user_id", userId),
+          supabase
+            .from("rematch_opt_outs")
+            .select("opt_out_until, updated_at")
+            .eq("user_id", opponentId)
+            .maybeSingle(),
+          supabase
+            .from("rematch_requests")
+            .select("id, room_code, game_type, created_at")
+            .eq("from_user_id", opponentId)
+            .eq("to_user_id", userId)
+            .eq("status", "pending")
+            .gte("created_at", new Date(Date.now() - REMATCH_REQUEST_TTL_MS).toISOString())
+            .maybeSingle(),
+          // Kendi eski bekleyen isteklerini SİL (rejected yapmak kendi dinleyicimizi tetikliyordu)
+          supabase
+            .from("rematch_requests")
+            .delete()
+            .eq("from_user_id", userId)
+            .eq("to_user_id", opponentId)
+            .eq("status", "pending"),
+        ]);
 
         if (!senderAccess.hasAccess) {
           toast({
@@ -354,23 +377,11 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return false;
         }
 
-        // Clear own opt-out since we want to rematch
-        await supabase.from("rematch_opt_outs").delete().eq("user_id", userId);
-
-        // Check if opponent explicitly opted out (clicked "Ana Menüye Dön")
-        // Only block if opt-out was set very recently (within last 30 seconds)
-        // This prevents blocking from stale opt-out entries
-        const { data: optOut } = await supabase
-          .from("rematch_opt_outs")
-          .select("opt_out_until, updated_at")
-          .eq("user_id", opponentId)
-          .maybeSingle();
-
+        const optOut = optOutRes.data;
         const now = new Date();
         const thirtySecondsAgo = new Date(now.getTime() - 30000);
 
         if (optOut && new Date(optOut.opt_out_until) > now && new Date(optOut.updated_at) > thirtySecondsAgo) {
-          console.log("❌ Rakip son 30 saniye içinde opt-out yaptı");
           toast({
             title: "Rematch Gönderilemedi",
             description: "Rakibiniz oyunu terk etti",
@@ -380,15 +391,7 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return false;
         }
 
-        // FIRST-WINS: Check if opponent already sent a pending request to us
-        const { data: existingFromOpponent } = await supabase
-          .from("rematch_requests")
-          .select("id, room_code, game_type, created_at")
-          .eq("from_user_id", opponentId)
-          .eq("to_user_id", userId)
-          .eq("status", "pending")
-          .gte("created_at", new Date(Date.now() - REMATCH_REQUEST_TTL_MS).toISOString()) // Son 30 saniye içinde
-          .maybeSingle();
+        const existingFromOpponent = existingRes.data;
 
         if (existingFromOpponent) {
           const existingRequestAge = existingFromOpponent.created_at
@@ -460,15 +463,6 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
         }
 
-        // Kendi eski bekleyen isteklerini SİL (status'u rejected yapmak kendi
-        // dinleyicimizi tetikleyip "rakip reddetti" sanılmasına yol açıyordu)
-        await supabase
-          .from("rematch_requests")
-          .delete()
-          .eq("from_user_id", userId)
-          .eq("to_user_id", opponentId)
-          .eq("status", "pending");
-
         // Create room
         const roomCode = generateRoomCode();
         const mode = `private-room-${gameType}`;
@@ -523,15 +517,16 @@ export const RematchProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
 
         // Get sender profile for notification
-        const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
-
-        // Create notification
-        await supabase.rpc("create_notification", {
-          p_user_id: opponentId,
-          p_type: "rematch",
-          p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor`,
-          p_related_id: roomCode,
-        });
+        // Bildirim arka planda — bekleme ekranını geciktirmez
+        void (async () => {
+          const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+          await supabase.rpc("create_notification", {
+            p_user_id: opponentId,
+            p_type: "rematch",
+            p_message: `${profile?.username || "Bir oyuncu"} tekrar oyun istiyor`,
+            p_related_id: roomCode,
+          });
+        })();
 
         // Push bildirim gönderilMEZ - rematch sadece in-app realtime + polling ile çalışır
         console.log("ℹ️ Rematch push bildirimi atlandı (tasarım gereği)");
