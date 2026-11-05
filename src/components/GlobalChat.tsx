@@ -434,28 +434,33 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
     }
   };
 
+  // 🤖 Bot ile konuşma sürerken (son cevaptan 30 sn) etiketsiz mesajlar da bota gider
+  const aiConversationUntilRef = useRef(0);
+
   // 🤖 AI sohbet botu (@kelimele) — edge function üzerinden cevap/karşılama üretir
   const callAiBot = useCallback(
-    async (payload: { mode: "reply" | "greeting"; message?: string }) => {
+    async (payload: { mode: "reply" | "greeting"; message?: string; followUp?: boolean }) => {
       if (!user?.id) return;
       if (aiBotBusyRef.current) return;
       aiBotBusyRef.current = true;
-      if (payload.mode === "reply") setIsAiTyping(true);
+      if (payload.mode === "reply" && !payload.followUp) setIsAiTyping(true);
 
       try {
         const history = messagesRef.current.slice(-15).map((m) => ({ username: m.username, message: m.message }));
-        const { error } = await supabase.functions.invoke("chat-ai-bot", {
+        const { data, error } = await supabase.functions.invoke("chat-ai-bot", {
           body: {
             mode: payload.mode,
             username: profile?.username || user.email?.split("@")[0] || "Oyuncu",
             message: payload.message ?? "",
             history,
+            followUp: !!payload.followUp,
           },
         });
         if (error) throw error;
+        if (payload.mode === "reply" && !(data as any)?.skipped) aiConversationUntilRef.current = Date.now() + 30_000;
       } catch (error) {
         console.error("🤖 AI bot hatası:", error);
-        if (payload.mode === "reply") toast.error("kelimele şu an cevap veremiyor, birazdan tekrar dene");
+        if (payload.mode === "reply" && !payload.followUp) toast.error("kelimele şu an cevap veremiyor, birazdan tekrar dene");
       } finally {
         aiBotBusyRef.current = false;
         setIsAiTyping(false);
@@ -602,6 +607,8 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       // 🤖 @kelimele etiketlenmişse AI botu cevaplasın
       if (mentionsAiBot(trimmedMessage)) {
         void callAiBot({ mode: "reply", message: trimmedMessage });
+      } else if (Date.now() < aiConversationUntilRef.current && !/@\w+/.test(trimmedMessage)) {
+        void callAiBot({ mode: "reply", message: trimmedMessage, followUp: true });
       }
 
       playSound("buttonClick");

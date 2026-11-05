@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
           .join("\n")
       : "";
 
+    const followUp = mode === "reply" && body?.followUp === true;
     if (mode === "reply" && !message) return json({ error: "message required" }, 400);
 
     if (mode === "reply") {
@@ -287,10 +288,11 @@ Deno.serve(async (req) => {
     const input =
       mode === "greeting"
         ? `Sohbete "${username}" adlı oyuncu katıldı. Sen kelimele uygulamasının yapay zeka sohbet asistanısın. Ona samimi, esprili ve her seferinde farklı bir karşılama mesajı yaz. İsmini kullan. Günün nasıl geçtiğini sormak zorunda değilsin; bazen oyunla, bazen sohbetle, bazen de kısa bir espriyle karşıla. Tek cümle olsun ve kesinlikle yapay zeka olduğunu belli edecek şekilde doğal konuş.`
-        : `${liveContext ? liveContext + "\n\n" : ""}Genel sohbet geçmişi:\n${history || "(yok)"}\n\n"${username}" sana şunu yazdı: ${message}\n\nOna doğal bir şekilde cevap ver, ismini kullanabilirsin.`;
+        : `${liveContext ? liveContext + "\n\n" : ""}Genel sohbet geçmişi:\n${history || "(yok)"}\n\n"${username}" ${followUp ? "az önce seninle konuşuyordu ve seni etiketlemeden şunu yazdı" : "sana şunu yazdı"}: ${message}\n\n${followUp ? "ÖNEMLİ: Bu mesaj seninle olan konuşmanın devamı mı (sana bir soru/cevap/tepki mi, konuyla ilgili mi) yoksa başka birine ya da alakasız bir şeye mi yazılmış karar ver. Eğer sana yönelik veya konuyla ilgili DEĞİLSE sadece PAS yaz, başka hiçbir şey yazma. İlgiliyse ona doğal bir şekilde cevap ver." : "Ona doğal bir şekilde cevap ver, ismini kullanabilirsin."}`;
 
 
     let reply = await askAI(apiKey, instructions, input);
+    if (followUp && (!reply || /^\s*PAS\b/i.test(reply))) return json({ skipped: true });
     if (!reply) {
       reply =
         mode === "greeting"
