@@ -10,6 +10,7 @@ import {
   playIOSWebSound,
   isIOSWebAudioTarget,
 } from './iosWebAudioService';
+import { areSoundEffectsEnabled } from './soundSettings';
 
 
 // Platform kontrolü
@@ -267,6 +268,9 @@ export const stopAllHTML5Sounds = (): void => {
  * Native ses çal - Preload tamamlanmamışsa bekle, hata durumunda HTML5 fallback
  */
 export const playNativeSound = async (assetId: string, volume?: number): Promise<boolean> => {
+  // Ses efektleri kapatıldıysa (maç ekranı 3 kademeli düğme / ayarlar) çalma.
+  if (!areSoundEffectsEnabled()) return false;
+
   // 🔧 AUDIO FAILSAFE: Web ortamında direkt HTML5 kullan
   if (!isNative) {
     const soundDef = getSoundDefinition(assetId);
@@ -380,6 +384,9 @@ export const playJokerSound = async (jokerType: 'degistir' | 'fisilda' | 'senyaz
  * Özel ses çal (dosya adından assetId çıkar)
  */
 export const playSpecialNativeSound = async (soundFile: string, volume: number = 0.7): Promise<boolean> => {
+  // Ses efektleri kapatıldıysa (maç ekranı 3 kademeli düğme / ayarlar) çalma.
+  if (!areSoundEffectsEnabled()) return false;
+
   // Dosya adından assetId çıkar
   let assetId = '';
   
