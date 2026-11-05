@@ -17,6 +17,7 @@
  */
 
 import { isIOSWebAudioTarget, playIOSWebSound } from "./iosWebAudioService";
+import { areSoundEffectsEnabled } from "./soundSettings";
 
 type WebAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
@@ -92,6 +93,9 @@ export const playPitchedBeep = async (
   playbackRate: number = 1,
   volume: number = 0.7
 ): Promise<boolean> => {
+  // Ses efektleri kapatıldıysa (maç ekranı 3 kademeli düğme / ayarlar) çalma.
+  if (!areSoundEffectsEnabled()) return false;
+
   // Aynı kaynaktan çok hızlı tekrar çağrıları yut (defansif guard).
   const now = performance.now();
   const key = url || "__default__";
