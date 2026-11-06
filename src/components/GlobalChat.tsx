@@ -89,6 +89,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [isLoading, setIsLoading] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const aiBotBusyRef = useRef(false);
+  const sendingRef = useRef(false);
   const { cooldownRemaining, isCoolingDown, startCooldown } = useMessageCooldown();
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
