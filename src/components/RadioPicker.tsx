@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useRadio } from "@/contexts/RadioContext";
 import { Loader2, X } from "lucide-react";
 import { useSounds } from "@/hooks/useSounds";
@@ -12,6 +13,10 @@ interface RadioPickerProps {
 export function RadioPicker({ open, onClose }: RadioPickerProps) {
   const { stations, currentStation, isPlaying, isLoading, play, stop } = useRadio();
   const { playSound } = useSounds();
+  const openedAtRef = useRef(0);
+  useEffect(() => { if (open) openedAtRef.current = Date.now(); }, [open]);
+  // Açılıştaki dokunuşun "hayalet tıklaması" pencereyi hemen kapatmasın
+  const safeClose = () => { if (Date.now() - openedAtRef.current > 450) onClose(); };
 
   if (!open) return null;
 
@@ -26,7 +31,7 @@ export function RadioPicker({ open, onClose }: RadioPickerProps) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4"
-      onClick={onClose}
+      onClick={safeClose}
     >
       <div
         className="relative w-full max-w-[380px] animate-in fade-in zoom-in-95 duration-300"
