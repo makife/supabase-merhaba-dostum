@@ -89,6 +89,7 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   const [isLoading, setIsLoading] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const aiBotBusyRef = useRef(false);
+  const sendingRef = useRef(false);
   const { cooldownRemaining, isCoolingDown, startCooldown } = useMessageCooldown();
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -373,7 +374,15 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
           setMessages((prev) => {
             const exists = prev.some((msg) => msg.id === newMessage.id);
             if (exists) return prev;
-            return [...prev, newMessage].sort(
+            // Kendi mesajımızın geçici kopyası varsa onu gerçek mesajla değiştir
+            const tempIdx = prev.findIndex(
+              (msg) =>
+                String(msg.id).startsWith("temp-") &&
+                msg.user_id === newMessage.user_id &&
+                msg.message === newMessage.message,
+            );
+            const base = tempIdx >= 0 ? prev.filter((_, i) => i !== tempIdx) : prev;
+            return [...base, newMessage].sort(
               (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
             );
           });
@@ -487,6 +496,17 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
   }, [isOpen, user?.id, profile?.username, callAiBot]);
 
   const sendMessage = async () => {
+    if (sendingRef.current) return;
+    if (!newMessage.trim() || !user || !profile) return;
+    sendingRef.current = true;
+    try {
+      await sendMessageInner();
+    } finally {
+      sendingRef.current = false;
+    }
+  };
+
+  const sendMessageInner = async () => {
     if (!newMessage.trim() || !user || !profile) return;
 
     const isBanned = await isUserBanned(user.id);
@@ -568,7 +588,9 @@ export function GlobalChat({ isOpen, onClose, isFullPage = false, onStartPrivate
       if (insertError) throw insertError;
 
       setMessages((prev) =>
-        prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
+        prev.some((msg) => msg.id === insertData.id)
+          ? prev.filter((msg) => msg.id !== tempMessage.id)
+          : prev.map((msg) => (msg.id === tempMessage.id ? { ...insertData, id: insertData.id } : msg)),
       );
 
       const mentionRegex = /@([\p{L}\p{N}_.-]+)/gu;
