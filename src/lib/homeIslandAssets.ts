@@ -101,8 +101,8 @@ export const getIslandMask = (src: string) => maskCache.get(src) ?? null;
 
 export const areHomeIslandsReady = () => ISLANDS.every((i) => imageCache.get(i.src)?.complete);
 
-/** GMT (UTC) saatine göre akşam/gece mi? 18:00 - 06:00 arası gece kabul edilir. */
+/** Cihazın yerel saatine göre gece mi? 19:00 - 06:00 arası gece kabul edilir. */
 export const isNightTimeUTC = (d: Date = new Date()) => {
-  const h = d.getUTCHours();
-  return h >= 18 || h < 6;
+  const h = d.getHours();
+  return h >= 19 || h < 6;
 };
