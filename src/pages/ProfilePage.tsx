@@ -986,7 +986,7 @@ const ProfilePage = () => {
   return (
     <div ref={swipeRef} {...swipeHandlers} className="min-h-screen bg-gradient-to-br from-[#0f1729] via-[#1a1a2e] to-[#16213e] overflow-hidden">
       {/* HEADER */}
-      <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20">
+      <div className="sticky top-0 z-50 bg-[#1e2d45] border-b border-indigo-500/20" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="px-5 py-4 flex items-center gap-4">
           <Button
             onClick={() => {
