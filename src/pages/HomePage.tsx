@@ -923,7 +923,7 @@ const HomePage = () => {
           backgroundColor: "hsl(var(--app-shell))",
           backgroundImage: isNight
             ? "url('/alttaban/kompleyesilarkaplangece.jpg')"
-            : "url('/alttaban/kompleyesilarkaplan.svg')",
+            : "url('/alttaban/kompleyesilarkaplan.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
