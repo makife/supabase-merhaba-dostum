@@ -123,6 +123,131 @@ import nativeStorage, { STORAGE_KEYS } from "@/utils/nativeStorage";
 import { useAppReviewPrompt } from "@/hooks/useAppReviewPrompt";
 import SoundEffectsToggle from "@/components/SoundEffectsToggle";
 
+// 🎨 Maç ekranı tema stilleri (oyun içi görünüm)
+const KM_STAR_8 =
+  "polygon(50% 0%,64.5% 14.9%,85.4% 14.6%,85.1% 35.5%,100% 50%,85.1% 64.5%,85.4% 85.4%,64.5% 85.1%,50% 100%,35.5% 85.1%,14.6% 85.4%,14.9% 64.5%,0% 50%,14.9% 35.5%,14.6% 14.6%,35.5% 14.9%)";
+const KM_STAR_16 =
+  "polygon(50% 0%,57.8% 10.8%,69.1% 3.8%,72.2% 16.7%,85.4% 14.6%,83.3% 27.8%,96.2% 30.9%,89.2% 42.2%,100% 50%,89.2% 57.8%,96.2% 69.1%,83.3% 72.2%,85.4% 85.4%,72.2% 83.3%,69.1% 96.2%,57.8% 89.2%,50% 100%,42.2% 89.2%,30.9% 96.2%,27.8% 83.3%,14.6% 85.4%,16.7% 72.2%,3.8% 69.1%,10.8% 57.8%,0% 50%,10.8% 42.2%,3.8% 30.9%,16.7% 27.8%,14.6% 14.6%,27.8% 16.7%,30.9% 3.8%,42.2% 10.8%)";
+const KM_SHIELD = "polygon(0 0,100% 0,100% 80%,50% 100%,0 80%)";
+
+const KM_STYLES = `
+.km-font{font-family:'Fredoka','Baloo 2','Nunito',system-ui,sans-serif}
+.km-stroke{-webkit-text-stroke:1px rgba(0,0,0,.55);paint-order:stroke fill;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+
+/* Metal butonlar (Geri / Ses) */
+.km-metal-btn{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:12px;
+  background:linear-gradient(180deg,#6d7d95 0%,#47556b 50%,#2c3647 100%);border:2px solid #161c27;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.3),0 3px 0 #10151e,0 5px 10px rgba(0,0,0,.4);
+  color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 0 rgba(0,0,0,.6);
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s}
+.km-metal-btn:active{transform:translateY(2px)}
+.km-icon-box{width:40px;padding:0;justify-content:center}
+.km-icon-box button{background:transparent!important;border:0!important;box-shadow:none!important;color:#fff!important}
+.km-icon-box svg{color:#fff}
+
+/* Dijital sayaç */
+.km-timer{position:relative;padding:4px;border-radius:14px;
+  background:linear-gradient(180deg,#7a8aa2,#3a465a 55%,#252e3d);border:2px solid #0e131c;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 3px 0 #0a0e15,0 6px 14px rgba(0,0,0,.5)}
+.km-timer::before,.km-timer::after{content:"";position:absolute;top:50%;width:6px;height:24px;transform:translateY(-50%);
+  border-radius:3px;background:#ff3d3d;box-shadow:0 0 10px #ff3d3d,0 0 4px #ff8080}
+.km-timer::before{left:-6px}.km-timer::after{right:-6px}
+.km-timer-screen{min-width:104px;text-align:center;background:#041019;border-radius:9px;padding:1px 14px;
+  border:1px solid rgba(34,211,238,.45);box-shadow:inset 0 0 14px rgba(34,211,238,.25)}
+.km-timer.low .km-timer-screen{border-color:rgba(239,68,68,.7);box-shadow:inset 0 0 14px rgba(239,68,68,.35)}
+
+/* Profil kartları */
+.km-card-shadow{filter:drop-shadow(0 5px 6px rgba(0,0,0,.55))}
+.km-shield{clip-path:${KM_SHIELD};padding:3px}
+.km-shield-in{clip-path:${KM_SHIELD};position:relative}
+.km-shield.gold{background:linear-gradient(180deg,#fbe08a,#c8922f 50%,#7d5314)}
+.km-shield.bronze{background:linear-gradient(180deg,#f0b47a,#a8642b 50%,#5c3011)}
+.km-shield-in.blue{background:linear-gradient(180deg,#46679f 0%,#2b4274 55%,#1b2b52 100%)}
+.km-shield-in.brown{background:linear-gradient(180deg,#8a5444 0%,#5e3328 55%,#3c1f19 100%)}
+.km-avatar-ring{position:relative;padding:4px;border-radius:9999px;
+  background:conic-gradient(#fff4b8,#d9a53c,#8a5a12,#f7d56b,#c08a26,#fff4b8);box-shadow:0 0 0 2px #3b2507,0 4px 10px rgba(0,0,0,.5)}
+.km-avatar-ring.bronze{background:conic-gradient(#f7c894,#b06a2e,#5e3412,#e7a66a,#9c5a24,#f7c894);box-shadow:0 0 0 2px #2e1606,0 4px 10px rgba(0,0,0,.5)}
+.km-wings{position:absolute;inset:-9px;border-radius:9999px;clip-path:${KM_STAR_16};
+  background:linear-gradient(135deg,#ffe9a0,#c38b2b 45%,#7a4f10)}
+.km-burst{position:absolute;inset:-12px;clip-path:${KM_STAR_16};background:linear-gradient(180deg,#e9b67c,#8a4c1f 60%,#4f2a0e)}
+
+/* VS */
+.km-vs{font-family:'Fredoka','Baloo 2',system-ui,sans-serif;font-weight:800;font-style:italic;font-size:46px;line-height:1;
+  letter-spacing:-2px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.45)) drop-shadow(0 0 10px rgba(255,200,80,.35))}
+.km-vs .v{background:linear-gradient(180deg,#fff7cc,#f7c548 50%,#b07210);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.5px #5a3806}
+.km-vs .s{background:linear-gradient(180deg,#ffffff,#b8c4d6 50%,#5d6b82);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.5px #232c3a}
+
+/* Joker paneli */
+.km-panel{border-radius:18px;padding:3px;background:linear-gradient(180deg,#f6d77a,#b07d26 50%,#7a5212);box-shadow:0 5px 12px rgba(0,0,0,.45)}
+.km-panel-in{border-radius:15px;padding:6px 8px 10px;background:linear-gradient(180deg,#6e3fa6,#4a2480 55%,#341760);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -2px 6px rgba(0,0,0,.3)}
+.km-joker{position:relative;height:60px;border-radius:12px;padding:3px;
+  background:linear-gradient(180deg,#b4bfce,#5b6578 60%,#3a4252);box-shadow:0 3px 0 rgba(0,0,0,.45);
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,filter .15s}
+.km-joker:active:not(:disabled){transform:translateY(2px)}
+.km-joker-in{height:100%;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -3px 8px rgba(0,0,0,.35)}
+.km-joker.blue .km-joker-in{background:radial-gradient(circle at 50% 35%,#4fb4ff 0%,#2160b8 50%,#122a5a 100%)}
+.km-joker.gold .km-joker-in{background:radial-gradient(circle at 50% 35%,#ffe27a 0%,#c98b1c 50%,#6b420a 100%)}
+.km-joker.purple .km-joker-in{background:radial-gradient(circle at 50% 35%,#b47cff 0%,#6b2fc4 50%,#2e0f63 100%)}
+.km-joker.off{filter:grayscale(.75) brightness(.6);cursor:not-allowed}
+.km-joker-badge{position:absolute;top:-12px;right:-10px;width:38px;height:38px;z-index:5;clip-path:${KM_STAR_8};
+  background:linear-gradient(180deg,#f5d36b,#a8761c);display:flex;align-items:center;justify-content:center}
+.km-joker-badge > span{position:absolute;inset:2.5px;clip-path:${KM_STAR_8};display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#8a4fe8,#4a1f9a);color:#ffe14a;font-weight:800;font-size:10.5px;
+  -webkit-text-stroke:.6px #2a0d55;paint-order:stroke fill}
+
+/* Kelime alanı */
+.km-input{height:56px;border-radius:16px;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1.5px solid rgba(255,255,255,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 10px rgba(0,0,0,.25);transition:border-color .2s,box-shadow .2s}
+.km-input.f-ok{border:2px solid #34d399;box-shadow:0 0 20px rgba(52,211,153,.5)}
+.km-input.f-long{border:2px solid #fff;box-shadow:0 0 20px rgba(255,255,255,.55)}
+.km-input.f-xlong{border:2px solid #22d3ee;box-shadow:0 0 20px rgba(34,211,238,.55)}
+.km-input.f-err{border:2px solid #ef4444;box-shadow:0 0 20px rgba(239,68,68,.5)}
+.km-mini-tile{flex:0 1 30px;min-width:14px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#f9dc95,#dfa94f);border:1.5px solid #6b4315;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 2px 0 #5a3610;color:#3a230b;font-weight:800;line-height:1}
+.km-count{width:46px;height:46px;flex-shrink:0;border-radius:12px;padding:3px;background:linear-gradient(180deg,#f6d77a,#9c6c1c);
+  box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.km-count > div{width:100%;height:100%;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#2c3c5e,#16203a);color:#ffe9a6;font-weight:800;font-size:20px}
+
+/* Harf ızgarası */
+.km-grid-panel{border-radius:20px;background:rgba(12,18,32,.55);border:1.5px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 2px 10px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3)}
+.km-tile{position:relative;border-radius:12px;border:2px solid #8a5a22;color:#3b2410;font-weight:700;
+  font-size:clamp(22px,3.8dvh,30px);line-height:1;
+  background:linear-gradient(180deg,#fdeccb 0%,#f2d59d 55%,#e2b672 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.75),inset 0 -3px 0 rgba(150,95,30,.3),0 4px 0 #6b4317,0 6px 10px rgba(0,0,0,.35);
+  transition:transform .07s,box-shadow .12s;outline:none}
+.km-tile:active{transform:translateY(2px)}
+.km-tile.sel{border-color:#123a85;color:#0b1e4d;
+  background:linear-gradient(180deg,#7cc0ff 0%,#3b82ea 55%,#2257bf 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(10,40,110,.35),0 4px 0 #0f2d6b,0 0 14px rgba(80,160,255,.7)}
+.km-tile.last{border-color:#ffcf3a;
+  box-shadow:0 0 0 2px #ffe27a,inset 0 2px 0 rgba(255,255,255,.75),0 4px 0 #6b4317,0 0 18px rgba(255,205,60,.85)}
+.km-tile.locked{opacity:.55}
+
+/* Alt butonlar */
+.km-btn{height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;
+  font-weight:700;font-size:21px;text-shadow:0 2px 0 rgba(0,0,0,.35);border:2px solid;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .07s,filter .15s}
+.km-btn.red{border-color:#5e0b0d;background:linear-gradient(180deg,#ff7356 0%,#e3352c 50%,#a8161a 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #5e0b0d,0 6px 10px rgba(0,0,0,.4)}
+.km-btn.green{border-color:#0b4a18;background:linear-gradient(180deg,#6ee878 0%,#27b83f 50%,#14792a 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #0b4a18,0 6px 10px rgba(0,0,0,.4)}
+.km-btn:active:not(:disabled){transform:translateY(3px)}
+.km-btn:disabled{filter:saturate(.55) brightness(.8);cursor:not-allowed}
+
+/* İfadeler çubuğu */
+.km-emoji-bar{height:44px;border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,#76839a,#46526a 55%,#323c4f);border:2px solid #171d28;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 0 #0f141c}
+.km-emoji-bar > *{width:100%;height:100%}
+.km-emoji-bar button{width:100%!important;height:100%!important;background:transparent!important;border:0!important;
+  box-shadow:none!important;border-radius:0!important;display:flex;align-items:center;justify-content:center;color:#fff}
+`;
+
 // Level calculation helper (same formula as LevelProgress)
 function calcLevelFromScore(totalScore: number): number {
   let level = 1;
@@ -9277,99 +9402,97 @@ const GamePage = ({
                   />
                 </div>
               )}
-              <div className="h-full flex flex-col px-2 relative z-15 min-h-0">
-                {/* Header */}
-                <div className="flex items-center justify-between py-2 shrink-0">
-                  {/* Sol taraf - Geri butonu */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs px-2 py-1 h-8 text-slate-300 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/10"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleBackToMenu();
-                    }}
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Çıkış
-                  </Button>
+              {/* Okunabilirlik için hafif karartma */}
+              <div
+                className="absolute inset-0 pointer-events-none z-[1]"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.45) 100%)",
+                }}
+              />
+              <style>{KM_STYLES}</style>
+              <div className="km-font h-full flex flex-col px-2.5 relative z-[2] min-h-0">
+                {/* ─── Header ─── */}
+                <div className="grid grid-cols-[1fr_auto_1fr] items-start pb-2 shrink-0">
+                  {/* Geri */}
+                  <div className="justify-self-start">
+                    <button
+                      type="button"
+                      className="km-metal-btn"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleBackToMenu();
+                      }}
+                    >
+                      <ArrowLeft className="w-5 h-5" strokeWidth={3} />
+                      Geri
+                    </button>
+                  </div>
 
-                  {/* Orta kısım - Timer veya hedef + Turnuva bilgisi */}
-                  {gameType === "timed" ? (
-                    <div className="flex flex-col items-center space-y-1">
-                      {gameMode === "tournament" && tournamentMatch && (
-                        <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
-                          {tournamentMatch.round === 1
-                            ? "⚔️ Çeyrek Final"
-                            : tournamentMatch.round === 2
-                              ? "🥊 Yarı Final"
-                              : "🏆 Final"}{" "}
-                          · Maç {tournamentMatch.match_number}
-                        </div>
-                      )}
-                      <div className="relative">
-                        <div
-                          className={`flex items-center justify-center h-9 px-4 rounded-xl transition-all duration-300 ${
-                            displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
-                          } ${
-                            displayTime <= 30
-                              ? "bg-red-500/15 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]"
-                              : "bg-slate-900/70 border border-white/10"
-                          }`}
-                          style={{ minWidth: "110px" }}
-                        >
+                  {/* Sayaç / hedef */}
+                  <div className="flex flex-col items-center gap-1">
+                    {gameMode === "tournament" && tournamentMatch && (
+                      <div className="text-[10px] text-amber-300 font-bold tracking-wide uppercase km-stroke">
+                        {tournamentMatch.round === 1
+                          ? "⚔️ Çeyrek Final"
+                          : tournamentMatch.round === 2
+                            ? "🥊 Yarı Final"
+                            : "🏆 Final"}{" "}
+                        · Maç {tournamentMatch.match_number}
+                      </div>
+                    )}
+                    {gameType === "timed" ? (
+                      <div
+                        className={`km-timer transition-opacity duration-300 ${displayTime <= 30 ? "low" : ""} ${
+                          displayTime <= 9 ? "invisible opacity-0" : "visible opacity-100"
+                        }`}
+                      >
+                        <div className="km-timer-screen">
                           <span
-                            className={`font-mono text-lg font-black tracking-wider ${
-                              displayTime <= 30 ? "text-red-400" : "text-cyan-300"
-                            }`}
+                            className={`text-[26px] font-black ${displayTime <= 30 ? "text-red-400" : "text-cyan-300"}`}
                             style={{
                               fontFamily: "'Orbitron', 'Courier New', monospace",
                               textShadow:
-                                displayTime <= 30 ? "0 0 12px rgba(239,68,68,0.6)" : "0 0 12px rgba(103,232,249,0.5)",
+                                displayTime <= 30
+                                  ? "0 0 10px rgba(239,68,68,0.8), 0 0 2px rgba(255,160,160,0.9)"
+                                  : "0 0 10px rgba(34,211,238,0.85), 0 0 2px rgba(180,250,255,0.9)",
                               fontVariantNumeric: "tabular-nums",
-                              letterSpacing: "0.1em",
+                              letterSpacing: "0.06em",
                             }}
                           >
                             {formatTime(displayTime)}
                           </span>
                         </div>
-                        {/* Süre Azalıyor - moved to avatar cards overlay below */}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center space-y-1">
-                      {gameMode === "tournament" && tournamentMatch && (
-                        <div className="text-[10px] text-amber-400 font-bold tracking-wide uppercase">
-                          {tournamentMatch.round === 1
-                            ? "⚔️ Çeyrek Final"
-                            : tournamentMatch.round === 2
-                              ? "🥊 Yarı Final"
-                              : "🏆 Final"}{" "}
-                          · Maç {tournamentMatch.match_number}
+                    ) : (
+                      <div className="km-timer">
+                        <div className="km-timer-screen flex items-center justify-center gap-1.5 py-1">
+                          <Target className="w-4 h-4 text-cyan-300" />
+                          <span className="text-sm font-bold text-cyan-200">500 Puan</span>
                         </div>
-                      )}
-                      <div className="flex items-center space-x-2 bg-white/5 border border-white/15 rounded-xl px-3 py-1.5">
-                        <Target className="w-4 h-4 text-cyan-400" />
-                        <span className="text-sm font-bold text-white">500 Puan</span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {/* Sağ taraf - Ses efekti aç/kapa + turnuva bilgisi */}
-                  <div className="w-16 flex flex-col items-end justify-center gap-1">
-                    <SoundEffectsToggle />
+                  {/* Ses */}
+                  <div className="justify-self-end flex flex-col items-end gap-1">
+                    <div className="km-metal-btn km-icon-box">
+                      <SoundEffectsToggle />
+                    </div>
                     {gameMode === "tournament" && (
-                      <div className="text-[10px] text-slate-400">vs {getOpponentDisplayName()}</div>
+                      <div className="text-[10px] text-slate-200 km-stroke max-w-[90px] truncate">
+                        vs {getOpponentDisplayName()}
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* 🏆 Turnuva bilgi bandı */}
                 {gameMode === "tournament" && tournamentMatch?.round && tournamentMatch.round <= 3 && (
-                  <div className="mb-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 flex items-center space-x-2">
+                  <div className="mb-2 rounded-xl border border-amber-400/50 bg-black/40 backdrop-blur-sm px-3 py-1.5 flex items-center gap-2 shrink-0">
                     <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="text-xs font-medium text-amber-200">
+                    <span className="text-xs font-semibold text-amber-100">
                       {tournamentMatch.round === 1
                         ? "Çeyrek final maçı! Kazanırsan sonraki tura geçeceksin."
                         : tournamentMatch.round === 2
@@ -9379,9 +9502,12 @@ const GamePage = ({
                   </div>
                 )}
 
-                {/* Scores - Oyuncu kartları */}
-                <div ref={cardsRowRef} className="grid grid-cols-2 gap-3 relative mb-2">
-                  {/* Süre Azalıyor - avatar kartlarının ortasından kayan büyük yazı */}
+                {/* ─── Profil kartları ─── */}
+                <div
+                  ref={cardsRowRef}
+                  className="relative grid grid-cols-[1fr_auto_1fr] items-start gap-1 mb-2.5 shrink-0"
+                >
+                  {/* Süre Azalıyor */}
                   <AnimatePresence>
                     {timeWarningPlayed && displayTime <= 30 && displayTime >= 27 && (
                       <motion.div
@@ -9403,12 +9529,7 @@ const GamePage = ({
                           transition={{ duration: 1.6, times: [0, 0.1875, 0.8125, 1], ease: "easeInOut" }}
                         >
                           <div style={{ width: "7rem", height: "7rem" }} className="shrink-0">
-                            <Lottie
-                              animationData={sureAzaliyorAnim}
-                              loop
-                              autoplay
-                              style={{ width: "100%", height: "100%" }}
-                            />
+                            <Lottie animationData={sureAzaliyorAnim} loop autoplay style={{ width: "100%", height: "100%" }} />
                           </div>
                           <div className="flex flex-col items-start">
                             <span>Süre</span>
@@ -9418,60 +9539,71 @@ const GamePage = ({
                       </motion.div>
                     )}
                   </AnimatePresence>
+
                   {/* Oyuncu kartı */}
-                  <div
-                    className="relative rounded-2xl border border-white/10 overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}
-                  >
-                    {/* Üst glow çizgisi */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-                    <div className="p-3 text-center relative overflow-hidden">
-                      {isMultiplayerMode && emojiReactions.PlayerEmojiOverlay}
-                      <div className="relative inline-block">
-                        <Avatar className="w-14 h-14 mx-auto mb-1.5 ring-2 ring-white/10">
+                  <div className="relative flex flex-col items-center pt-2">
+                    {isMultiplayerMode && emojiReactions.PlayerEmojiOverlay}
+                    <div className="relative z-10 -mb-7">
+                      <div className="km-wings" aria-hidden="true" />
+                      <div className="km-avatar-ring">
+                        <Avatar className="w-16 h-16 border-2 border-[#3b2507]">
                           <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} alt="Profile" />
-                          <AvatarFallback className="bg-slate-700">
-                            <User className="w-7 h-7 text-slate-300" />
+                          <AvatarFallback className="bg-pink-400">
+                            <User className="w-8 h-8 text-white" />
                           </AvatarFallback>
                         </Avatar>
-                        {isPremium && !!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
-                          <div className="absolute -bottom-1 -right-1 z-20">
-                            <VipBadge size="sm" />
-                          </div>
-                        )}
                       </div>
-                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1">Siz</p>
-                      <ScorePop
-                        score={playerScore}
-                        burstAnimation={benimSkorAnim}
-                        onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
-                        className="text-2xl font-black"
-                        style={{
-                          color: "#3B82F6",
-                          WebkitTextStroke: "1px #FFFFFF",
-                          paintOrder: "stroke fill",
-                          textShadow: "0 0 12px rgba(59,130,246,0.5)",
-                        }}
-                      />
-                      {gameType === "score" && (
-                        <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
-                            style={{ width: `${Math.min((playerScore / 500) * 100, 100)}%` }}
-                          />
+                      {isPremium && !!profile?.premium_until && new Date(profile.premium_until) > new Date() && (
+                        <div className="absolute -bottom-1 -right-1 z-20">
+                          <VipBadge size="sm" />
                         </div>
                       )}
                     </div>
+                    <div className="km-card-shadow w-full max-w-[150px]">
+                      <div className="km-shield gold">
+                        <div className="km-shield-in blue pt-9 pb-6 px-2 text-center">
+                          <p className="text-[15px] text-white font-bold uppercase tracking-wide km-stroke leading-tight">
+                            Siz
+                          </p>
+                          <ScorePop
+                            score={playerScore}
+                            burstAnimation={benimSkorAnim}
+                            onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
+                            className="text-[34px] font-black leading-none"
+                            style={{
+                              color: "#FFD23F",
+                              WebkitTextStroke: "1.5px #6b3d00",
+                              paintOrder: "stroke fill",
+                              textShadow: "0 3px 0 rgba(0,0,0,0.45), 0 0 12px rgba(255,210,63,0.45)",
+                            }}
+                          />
+                          {gameType === "score" && (
+                            <div className="mt-1.5 mx-3 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 transition-all duration-500"
+                                style={{ width: `${Math.min((playerScore / 500) * 100, 100)}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Son 10 saniye geri sayım - kartların ortasında, ifadelerin üstünde */}
+                  {/* VS */}
+                  <div className="km-vs self-center mt-6 px-0.5 select-none" aria-hidden="true">
+                    <span className="v">V</span>
+                    <span className="s">S</span>
+                  </div>
+
+                  {/* Son 10 saniye geri sayım */}
                   {gameStarted && !gameEnded && gameType === "timed" && displayTime >= 1 && displayTime <= 11 && (
                     <div className="absolute left-1/2 top-1/2 z-[9999] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                       <FinalCountdown displayTime={displayTime} onCountdownTick={handleFinalCountdownTick} />
                     </div>
                   )}
 
-                  {/* 🔥 Combo Boost (2x..9x) ve bonus puan animasyonu */}
+                  {/* 🔥 Combo Boost ve bonus puan animasyonu */}
                   {gameStarted && !gameEnded && (
                     <div className="absolute left-1/2 top-1/2 z-[9998] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                       <ComboBoost
@@ -9495,79 +9627,82 @@ const GamePage = ({
                   )}
 
                   {/* Rakip kartı */}
-                  <div
-                    className="relative rounded-2xl border border-white/10 overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(45,52,54,0.95) 0%, rgba(99,110,114,0.6) 100%)" }}
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
-                    <div className="p-3 text-center relative overflow-hidden">
-                      {isMultiplayerMode && emojiReactions.OpponentEmojiOverlay}
-                      <div className="relative inline-block">
-                        <Avatar className="w-14 h-14 mx-auto mb-1.5 ring-2 ring-white/10 bg-transparent">
+                  <div className="relative flex flex-col items-center pt-2">
+                    {isMultiplayerMode && emojiReactions.OpponentEmojiOverlay}
+                    <div className="relative z-10 -mb-7">
+                      <div className="km-burst" aria-hidden="true" />
+                      <div className="km-avatar-ring bronze">
+                        <Avatar className="w-16 h-16 border-2 border-[#2e1606] bg-transparent">
                           <AvatarImage src={opponent.avatar} alt="Opponent" />
-                          <AvatarFallback className="bg-slate-700">
-                            <opponent.icon className="w-7 h-7 text-slate-300" />
+                          <AvatarFallback className="bg-sky-500">
+                            <opponent.icon className="w-8 h-8 text-white" />
                           </AvatarFallback>
                         </Avatar>
-                        {opponent.isPremium && (
-                          <div className="absolute -bottom-1 -right-1 z-20">
-                            <VipBadge size="sm" />
-                          </div>
-                        )}
                       </div>
-                      <p className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-1 truncate max-w-[90px] mx-auto">
-                        {opponent.name}
-                      </p>
-                      <ScorePop
-                        score={opponentScore}
-                        burstAnimation={rakipSkorAnim}
-                        onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
-                        className="text-2xl font-black"
-                        style={{
-                          color: "#EF4444",
-                          WebkitTextStroke: "1px #FFFFFF",
-                          paintOrder: "stroke fill",
-                          textShadow: "0 0 12px rgba(239,68,68,0.5)",
-                        }}
-                      />
-                      {gameType === "score" && (
-                        <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-violet-400 to-purple-500 transition-all duration-500"
-                            style={{ width: `${Math.min((opponentScore / 500) * 100, 100)}%` }}
-                          />
+                      {opponent.isPremium && (
+                        <div className="absolute -bottom-1 -right-1 z-20">
+                          <VipBadge size="sm" />
                         </div>
                       )}
-
-                      {preparingOpponent && (
-                        <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center rounded-2xl">
-                          {preparingOpponent === "preparing" ? (
-                            <div className="text-center animate-pulse">
-                              <p className="text-xs font-bold text-slate-300">
-                                {gameMode === "vs-computer" ? "AI Hazırlanıyor..." : "Oyuncu Hazırlanıyor..."}
-                              </p>
-                              <div className="flex gap-1 justify-center mt-2">
-                                {[0, 150, 300].map((delay) => (
-                                  <div
-                                    key={delay}
-                                    className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
-                                    style={{ animationDelay: `${delay}ms` }}
-                                  />
-                                ))}
-                              </div>
+                    </div>
+                    <div className="km-card-shadow w-full max-w-[150px]">
+                      <div className="km-shield bronze">
+                        <div className="km-shield-in brown pt-9 pb-6 px-2 text-center">
+                          <p className="text-[15px] text-white font-bold uppercase tracking-wide km-stroke leading-tight truncate">
+                            {opponent.name}
+                          </p>
+                          <ScorePop
+                            score={opponentScore}
+                            burstAnimation={rakipSkorAnim}
+                            onBurst={() => playSpecialSound("/bubbleSkor.mp3")}
+                            className="text-[34px] font-black leading-none"
+                            style={{
+                              color: "#FF4B3A",
+                              WebkitTextStroke: "1.5px #4a0a05",
+                              paintOrder: "stroke fill",
+                              textShadow: "0 3px 0 rgba(0,0,0,0.45), 0 0 12px rgba(255,75,58,0.45)",
+                            }}
+                          />
+                          {gameType === "score" && (
+                            <div className="mt-1.5 mx-3 h-1.5 rounded-full bg-black/40 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-500"
+                                style={{ width: `${Math.min((opponentScore / 500) * 100, 100)}%` }}
+                              />
                             </div>
-                          ) : (
-                            <span className="text-xs font-bold text-green-400 animate-pulse">
-                              ✓ {gameMode === "vs-computer" ? "AI Hazır!" : "Oyuncu Hazır!"}
-                            </span>
+                          )}
+
+                          {preparingOpponent && (
+                            <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center">
+                              {preparingOpponent === "preparing" ? (
+                                <div className="text-center animate-pulse pt-4">
+                                  <p className="text-xs font-bold text-slate-200">
+                                    {gameMode === "vs-computer" ? "AI Hazırlanıyor..." : "Oyuncu Hazırlanıyor..."}
+                                  </p>
+                                  <div className="flex gap-1 justify-center mt-2">
+                                    {[0, 150, 300].map((delay) => (
+                                      <div
+                                        key={delay}
+                                        className="w-1.5 h-1.5 bg-amber-300 rounded-full animate-bounce"
+                                        style={{ animationDelay: `${delay}ms` }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-bold text-green-400 animate-pulse pt-4">
+                                  ✓ {gameMode === "vs-computer" ? "AI Hazır!" : "Oyuncu Hazır!"}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 🚀 Roketli Adam — body'ye portal, ekran koordinatlarıyla konumlanır */}
+                {/* 🚀 Roketli Adam — body'ye portal */}
                 {createPortal(
                   <motion.div
                     animate={rocketControls}
@@ -9594,323 +9729,237 @@ const GamePage = ({
                   document.body,
                 )}
 
-                {/* Joker Panel */}
-                <div
-                  className="rounded-2xl border border-white/10 p-2 mb-1"
-                  style={{ background: "rgba(30,30,50,0.7)" }}
-                >
-                  <div ref={jokerHeaderRef} className="flex items-center gap-1.5 mb-1.5">
-                    <img src="/icons/jokerler-gorsel.svg" className="w-5 h-5 object-contain" alt="Jokerler" />
-                    <img src="/icons/jokerler-text.svg" className="h-3.5 object-contain" alt="Jokerler" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {/* Değiştir */}
-                    <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
-                        jokers.degistir <= 0 || isJokerActive || !gameStarted
-                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-emerald-500/30 bg-emerald-900/30 active:scale-95"
-                      }`}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useDegisTirJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.degistir <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useDegisTirJoker();
-                      }}
-                      disabled={jokers.degistir <= 0 || isJokerActive || !gameStarted}
-                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                    >
-                      <img src="/icons/degistir.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Değiştir" />
-                      <span className="text-[10px] font-bold text-slate-300">Değiştir</span>
-                      <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span
-                          className="absolute text-[10px] font-bold text-white"
-                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
-                        >
-                          {jokers.degistir}
-                        </span>
-                      </div>
-                    </button>
-                    {/* Fısılda */}
-                    <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
-                        jokers.fisilida <= 0 || isJokerActive || !gameStarted
-                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-cyan-500/30 bg-cyan-900/30 active:scale-95"
-                      }`}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useFisildaJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.fisilida <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useFisildaJoker();
-                      }}
-                      disabled={jokers.fisilida <= 0 || isJokerActive || !gameStarted}
-                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                    >
-                      <img src="/icons/fisilda.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Fısılda" />
-                      <span className="text-[10px] font-bold text-slate-300">Fısılda</span>
-                      <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span
-                          className="absolute text-[10px] font-bold text-white"
-                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
-                        >
-                          {jokers.fisilida}
-                        </span>
-                      </div>
-                    </button>
-                    {/* Sen Yaz */}
-                    <button
-                      className={`joker-button relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors duration-150 overflow-visible ${
-                        jokers.senYaz <= 0 || isJokerActive || !gameStarted
-                          ? "opacity-40 cursor-not-allowed border-white/5 bg-white/5"
-                          : "border-violet-500/30 bg-violet-900/30 active:scale-95"
-                      }`}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useSenYazJoker();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (jokers.senYaz <= 0 || isJokerActive || !gameStarted || gameEnded) return;
-                        useSenYazJoker();
-                      }}
-                      disabled={jokers.senYaz <= 0 || isJokerActive || !gameStarted}
-                      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                    >
-                      <img src="/icons/senyaz.svg" className="w-7 h-7 mb-0.5 object-contain" alt="Sen Yaz" />
-                      <span className="text-[10px] font-bold text-slate-300">Sen Yaz</span>
-                      <div className="absolute -top-2 -right-2 flex items-center justify-center">
-                        <img src="/icons/jokerler-badge.svg" className="w-7 h-7" alt="badge" />
-                        <span
-                          className="absolute text-[10px] font-bold text-white"
-                          style={{ WebkitTextStroke: "0.5px black", textShadow: "0 0 2px black" }}
-                        >
-                          {jokers.senYaz}
-                        </span>
-                      </div>
-                    </button>
+                {/* ─── Joker paneli ─── */}
+                <div className="km-panel mb-2.5 shrink-0">
+                  <div className="km-panel-in">
+                    <div ref={jokerHeaderRef} className="flex items-center gap-1.5 mb-2.5 pl-0.5">
+                      <img src="/icons/jokerler-gorsel.svg" className="w-5 h-5 object-contain" alt="" />
+                      <span
+                        className="text-[17px] font-bold leading-none"
+                        style={{
+                          color: "#FFD84A",
+                          WebkitTextStroke: "1px #5a2e00",
+                          paintOrder: "stroke fill",
+                          textShadow: "0 2px 0 rgba(0,0,0,0.4)",
+                        }}
+                      >
+                        Jokerler
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2.5 pr-1.5">
+                      {(
+                        [
+                          { key: "degistir", label: "Değiştir", icon: "/icons/degistir.svg", tone: "blue", count: jokers.degistir, run: useDegisTirJoker },
+                          { key: "fisilida", label: "Fısılda", icon: "/icons/fisilda.svg", tone: "gold", count: jokers.fisilida, run: useFisildaJoker },
+                          { key: "senYaz", label: "Sen Yaz", icon: "/icons/senyaz.svg", tone: "purple", count: jokers.senYaz, run: useSenYazJoker },
+                        ] as const
+                      ).map((j) => {
+                        const off = j.count <= 0 || isJokerActive || !gameStarted;
+                        const trigger = (e: React.SyntheticEvent) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (off || gameEnded) return;
+                          j.run();
+                        };
+                        return (
+                          <button
+                            key={j.key}
+                            type="button"
+                            className={`km-joker ${j.tone} ${off ? "off" : ""}`}
+                            onTouchStart={trigger}
+                            onClick={trigger}
+                            disabled={off}
+                          >
+                            <div className="km-joker-in">
+                              <img src={j.icon} className="w-7 h-7 object-contain drop-shadow" alt="" />
+                              <span className="text-[12px] font-bold text-white km-stroke leading-none">{j.label}</span>
+                            </div>
+                            <div className="km-joker-badge">
+                              <span>{j.count}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Current Word Input */}
-                <div className="mb-1">
-                  <div className="flex items-center space-x-2 w-full">
-                    <div
-                      className={`flex items-center justify-center h-14 w-full rounded-2xl backdrop-blur-md transition-all duration-200 px-3 relative overflow-hidden ${
-                        inputFlash === "success-xlong"
-                          ? "border-2 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)] bg-cyan-950/40"
-                          : inputFlash === "success-long"
-                            ? "border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.5)] bg-white/15"
-                            : inputFlash === "success"
-                              ? "border-2 border-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.4)] bg-emerald-950/40"
-                              : inputFlash === "error"
-                                ? "border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] bg-red-950/40"
-                                : "border border-white/10 bg-slate-900/70"
-                      }`}
-                    >
-                      <AnimatePresence mode="popLayout">
-                        {inputFeedback && (
-                          <motion.div
-                            key={inputFeedback.text + Date.now()}
-                            initial={{ opacity: 1, x: 0 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -200 }}
-                            transition={{ duration: 0.3, ease: "easeIn" }}
-                            className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
-                              inputFeedback.type === "bonus"
-                                ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
-                                : inputFeedback.type === "success-xlong"
-                                  ? "bg-cyan-500/90 shadow-[0_0_20px_rgba(34,211,238,0.6)]"
-                                  : inputFeedback.type === "success-long"
-                                    ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)] text-slate-900"
-                                    : inputFeedback.type === "success"
-                                      ? "bg-emerald-500/90"
-                                      : "bg-red-500/90"
-                            }`}
-                          >
-                            <span
-                              className={`font-black font-mono tracking-wider drop-shadow-md ${inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"} ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
-                            >
-                              {inputFeedback.text}
-                            </span>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <AnimatePresence>
-                        {showKelimeGondermedinAnim && kelimeGondermedinAnim && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.25 }}
-                            className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
-                            style={{ gap: "16px" }}
-                          >
-                            <div style={{ height: "100%", aspectRatio: "1 / 1", transform: "scale(1.6) translateX(-6px)", transformOrigin: "center" }}>
-                              <Lottie
-                                animationData={kelimeGondermedinAnim}
-                                loop
-                                autoplay
-                                style={{ height: "100%", width: "100%" }}
-                              />
-                            </div>
-                            <div style={{ height: "100%", aspectRatio: "1 / 1", transform: "scale(1.6) translateX(6px)", transformOrigin: "center" }}>
-                              <Lottie
-                                animationData={kelimeGondermedinAnim}
-                                loop
-                                autoplay
-                                style={{ height: "100%", width: "100%" }}
-                              />
-                            </div>
-
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {selectedLetters.length === 0 && !isJokerActive && !inputFeedback && !showKelimeGondermedinAnim && (
-                        <span className="text-white/20 font-bold font-mono text-lg select-none tracking-widest uppercase">
-                          K E L İ M E L E
-                        </span>
-                      )}
-
-                      <div className="flex gap-1 items-center justify-center z-10">
-                        {selectedLetters.map((item, idx) => (
+                {/* ─── Kelime alanı ─── */}
+                <div className="flex items-center gap-2 mb-2.5 shrink-0">
+                  <div
+                    className={`km-input relative flex-1 min-w-0 flex items-center justify-center px-2 overflow-hidden ${
+                      inputFlash === "success-xlong"
+                        ? "f-xlong"
+                        : inputFlash === "success-long"
+                          ? "f-long"
+                          : inputFlash === "success"
+                            ? "f-ok"
+                            : inputFlash === "error"
+                              ? "f-err"
+                              : ""
+                    }`}
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {inputFeedback && (
+                        <motion.div
+                          key={inputFeedback.text + Date.now()}
+                          initial={{ opacity: 1, x: 0 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -200 }}
+                          transition={{ duration: 0.3, ease: "easeIn" }}
+                          className={`absolute inset-0 flex items-center justify-center z-20 rounded-2xl ${
+                            inputFeedback.type === "bonus"
+                              ? "bg-violet-600/95 shadow-[0_0_20px_rgba(139,92,246,0.6)]"
+                              : inputFeedback.type === "success-xlong"
+                                ? "bg-cyan-500/90 shadow-[0_0_20px_rgba(34,211,238,0.6)]"
+                                : inputFeedback.type === "success-long"
+                                  ? "bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+                                  : inputFeedback.type === "success"
+                                    ? "bg-emerald-500/90"
+                                    : "bg-red-500/90"
+                          }`}
+                        >
                           <span
-                            key={`input-${item.row}-${item.col}`}
-                            style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
-                            className="text-3xl font-mono font-extrabold text-white drop-shadow-sm select-none"
+                            className={`font-black tracking-wider drop-shadow-md ${
+                              inputFeedback.type === "success-long" ? "text-slate-900" : "text-white"
+                            } ${inputFeedback.type === "bonus" ? "text-2xl animate-pulse" : "text-xl"}`}
                           >
-                            {item.letter}
+                            {inputFeedback.text}
                           </span>
-                        ))}
-                        {currentWord.length > selectedLetters.length && (
-                          <span className="text-3xl font-mono font-extrabold text-white drop-shadow-sm">
-                            {currentWord.slice(selectedLetters.length)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                    <div className="bg-slate-900/70 border border-white/10 text-white text-base font-black px-3 py-1 min-w-10 h-10 flex items-center justify-center shrink-0 rounded-xl shadow-md">
-                      {currentWord.length}
-                    </div>
+                    <AnimatePresence>
+                      {showKelimeGondermedinAnim && kelimeGondermedinAnim && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+                          style={{ gap: "16px" }}
+                        >
+                          {[-6, 6].map((tx) => (
+                            <div
+                              key={tx}
+                              style={{
+                                height: "100%",
+                                aspectRatio: "1 / 1",
+                                transform: `scale(1.6) translateX(${tx}px)`,
+                                transformOrigin: "center",
+                              }}
+                            >
+                              <Lottie animationData={kelimeGondermedinAnim} loop autoplay style={{ height: "100%", width: "100%" }} />
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {(() => {
+                      const extra = currentWord.length > selectedLetters.length ? currentWord.slice(selectedLetters.length) : "";
+                      const showPlaceholder =
+                        selectedLetters.length === 0 && !extra && !isJokerActive && !inputFeedback && !showKelimeGondermedinAnim;
+                      const letters: { key: string; ch: string }[] = showPlaceholder
+                        ? Array.from("KELİMELE").map((ch, i) => ({ key: `ph-${i}`, ch }))
+                        : [
+                            ...selectedLetters.map((s) => ({ key: `input-${s.row}-${s.col}`, ch: s.letter })),
+                            ...Array.from(extra).map((ch, i) => ({ key: `extra-${i}`, ch })),
+                          ];
+                      const n = letters.length;
+                      const fontSize = n > 11 ? 12 : n > 8 ? 15 : 19;
+                      return (
+                        <div
+                          className={`flex items-center justify-center gap-[3px] w-full z-10 select-none ${
+                            showPlaceholder ? "opacity-60" : ""
+                          }`}
+                        >
+                          {letters.map((l) => (
+                            <span
+                              key={l.key}
+                              className="km-mini-tile"
+                              style={{ fontSize, transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
+                            >
+                              {l.ch}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="km-count">
+                    <div>{currentWord.length}</div>
                   </div>
                 </div>
 
-                {/* Game Grid */}
+                {/* ─── Harf ızgarası ─── */}
                 <div
-                  className="rounded-2xl border border-white/10 mb-2 flex-1 min-h-0 flex items-center justify-center p-3"
-                  style={{
-                    background: "rgba(20,20,40,0.6)",
-                    transform: "translateZ(0)",
-                    WebkitTransform: "translateZ(0)",
-                  }}
+                  className="km-grid-panel mb-2.5 flex-1 min-h-0 flex items-center justify-center p-3"
+                  style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
                 >
-                  <div className="grid grid-cols-4 gap-2 w-full">
+                  <div className="grid grid-cols-4 gap-x-3 gap-y-3 w-full">
                     {gameGrid.map((row, rowIndex) =>
                       row.map((letter, colIndex) => {
-                        const isSelected = selectedLetters.some((s) => s.row === rowIndex && s.col === colIndex);
+                        const selectionOrder = selectedLetters.findIndex((s) => s.row === rowIndex && s.col === colIndex);
+                        const isSelected = selectionOrder >= 0;
+                        const isLast = isSelected && selectionOrder === selectedLetters.length - 1;
                         const isHighlighted = highlightedLetters.some((h) => h.row === rowIndex && h.col === colIndex);
-                        const highlightStyle =
-                          isHighlighted && selectedJoker === "degistir"
+                        const highlightStyle: React.CSSProperties | undefined = !isHighlighted
+                          ? undefined
+                          : selectedJoker === "degistir"
                             ? {
-                                background: "linear-gradient(135deg, #4ade80 0%, #16a34a 100%)",
-                                borderColor: "rgba(34,197,94,0.9)",
-                                boxShadow: "0 0 20px rgba(34,197,94,0.6)",
+                                background: "linear-gradient(180deg, #86efac 0%, #22c55e 55%, #15803d 100%)",
+                                borderColor: "#14532d",
+                                boxShadow: "0 4px 0 #14532d, 0 0 18px rgba(34,197,94,0.8)",
+                                color: "#052e16",
                               }
-                            : isHighlighted && selectedJoker === "fisilida"
+                            : selectedJoker === "fisilida"
                               ? {
-                                  background: "linear-gradient(135deg, #fde047 0%, #d97706 100%)",
-                                  borderColor: "rgba(234,179,8,0.9)",
-                                  boxShadow: "0 0 20px rgba(234,179,8,0.6)",
+                                  background: "linear-gradient(180deg, #fef08a 0%, #facc15 55%, #ca8a04 100%)",
+                                  borderColor: "#713f12",
+                                  boxShadow: "0 4px 0 #713f12, 0 0 18px rgba(234,179,8,0.85)",
+                                  color: "#422006",
                                 }
-                              : isHighlighted && selectedJoker === "senYaz"
+                              : selectedJoker === "senYaz"
                                 ? {
-                                    background: "linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)",
-                                    borderColor: "rgba(59,130,246,0.9)",
-                                    boxShadow: "0 0 20px rgba(59,130,246,0.6)",
+                                    background: "linear-gradient(180deg, #d8b4fe 0%, #a855f7 55%, #7e22ce 100%)",
+                                    borderColor: "#3b0764",
+                                    boxShadow: "0 4px 0 #3b0764, 0 0 18px rgba(168,85,247,0.8)",
+                                    color: "#2e1065",
                                   }
                                 : undefined;
-                        const selectedStyle = isSelected
-                          ? {
-                              background: "linear-gradient(135deg, #a855f7 0%, #6d28d9 100%)",
-                              borderColor: "rgba(168,85,247,0.9)",
-                              boxShadow: "0 0 20px rgba(168,85,247,0.5)",
-                            }
-                          : undefined;
-                        const colorStyle = { ...selectedStyle, ...highlightStyle };
-                        const hasColor = Boolean(selectedStyle || highlightStyle);
-                        const selectionOrder = selectedLetters.findIndex(
-                          (s) => s.row === rowIndex && s.col === colIndex,
-                        );
                         return (
                           <button
                             key={`${rowIndex}-${colIndex}`}
                             type="button"
-                            className={`letter-button text-xl font-black relative overflow-visible rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ${isSelected ? "selected" : ""} ${!gameStarted ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`km-tile ${isLast ? "last" : isSelected ? "sel" : ""} ${
+                              !gameStarted ? "locked cursor-not-allowed" : ""
+                            }`}
                             disabled={!gameStarted}
-                            onPointerDown={(e) => {
+                            onPointerDown={() => {
                               if (!gameStarted) return;
-                              // Fire immediately on first contact — works per-pointer for multi-touch
                               handleLetterClick(letter, rowIndex, colIndex);
                             }}
                             onContextMenu={(e) => e.preventDefault()}
                             style={{
                               height: "clamp(40px, 7.2dvh, 59px)",
-                              touchAction: "none", // çift parmakta pinch/zoom hareketi dokunuşu iptal etmesin
-
+                              touchAction: "none",
                               WebkitTapHighlightColor: "transparent",
                               WebkitTouchCallout: "none",
                               WebkitUserSelect: "none",
                               userSelect: "none",
                               pointerEvents: !gameStarted ? "none" : "auto",
+                              ...highlightStyle,
                             }}
                           >
                             <span
-                              aria-hidden="true"
-                              className="absolute -inset-px rounded-xl border pointer-events-none z-0"
-                              style={{
-                                opacity: hasColor ? 1 : 0,
-                                borderColor: "transparent",
-                                ...colorStyle,
-                              }}
-                            />
-                            <span
-                              className={`absolute inset-0 flex items-center justify-center z-10 ${isSelected ? "opacity-100 text-white font-black" : "opacity-0"}`}
+                              className="relative z-10"
+                              style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
                             >
                               {letter}
                             </span>
-                            {!isSelected && (
-                              <span
-                                className="relative z-10"
-                                style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
-                              >
-                                {letter}
-                              </span>
-                            )}
-                            {isSelected && selectionOrder >= 0 && (
-                              <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black border-2 border-slate-900 z-20 shadow-sm">
-                                {selectionOrder + 1}
-                              </span>
-                            )}
                           </button>
                         );
                       }),
@@ -9918,10 +9967,11 @@ const GamePage = ({
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 shrink-0">
-                  <Button
-                    variant="ghost"
+                {/* ─── Sil / Gönder ─── */}
+                <div className="grid grid-cols-2 gap-3 shrink-0">
+                  <button
+                    type="button"
+                    className="km-btn red"
                     onTouchStart={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
@@ -9932,15 +9982,15 @@ const GamePage = ({
                       e.preventDefault();
                       clearWord();
                     }}
-                    className="h-12 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 hover:border-white/20 rounded-xl font-bold"
                     disabled={selectedLetters.length === 0 || isJokerActive || !gameStarted}
-                    style={{ touchAction: "manipulation" }}
                   >
-                    <img src="/icons/silgi-gorsel.svg" alt="Sil" className="w-5 h-5 mr-2" />
+                    <Trash2 className="w-6 h-6" strokeWidth={2.5} />
                     Sil
-                  </Button>
+                  </button>
 
-                  <Button
+                  <button
+                    type="button"
+                    className="km-btn green"
                     onTouchStart={(e) => {
                       if (!gameStarted) return;
                       e.preventDefault();
@@ -9955,20 +10005,18 @@ const GamePage = ({
                       playSound("buttonClick");
                       submitWord();
                     }}
-                    className="h-12 rounded-xl font-black text-base bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-0 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
                     disabled={currentWord.length < 3 || isValidating || isJokerActive || !gameStarted}
-                    style={{ touchAction: "manipulation" }}
                   >
-                    <img src="/icons/gonder-gorsel.svg" alt="Gönder" className="w-5 h-5 mr-2" />
+                    <Send className="w-6 h-6" strokeWidth={2.5} />
                     {isValidating ? "Kontrol..." : "Gönder"}
-                  </Button>
+                  </button>
                 </div>
 
-                {/* İfadeler butonu - sadece multiplayer */}
+                {/* ─── İfadeler (sadece multiplayer) ─── */}
                 {isMultiplayerMode && (
-                  <div className="relative shrink-0 mt-2">
+                  <div className="relative shrink-0 mt-2.5">
                     {emojiReactions.PickerPanel}
-                    {emojiReactions.PickerButton}
+                    <div className="km-emoji-bar">{emojiReactions.PickerButton}</div>
                   </div>
                 )}
               </div>
